@@ -417,38 +417,82 @@ func (l *todoLane) boundary(d *todoDriver, st *run.State) {
 // meets that work the session steers the writer; here nobody would read the
 // steer, so the item blocks with the collision as its evidence.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
-func (l *todoLane) catchUp() string {
+//
+// It answers too with the slugs whose landings it carried, which are the
+// lane's copy having changed: a verdict reached before them is about another
+// tree (State.VerifyAgain).
+func (l *todoLane) catchUp() (string, []string) {
 	if l == nil {
-		return ""
+		return "", nil
 	}
 	l.set.land.Lock()
 	defer l.set.land.Unlock()
+	return l.catchUpLocked()
+}
+
+// catchUpLocked is catchUp for a caller that holds the land lock.
+func (l *todoLane) catchUpLocked() (string, []string) {
+	var carried []string
 	for l.seen < len(l.set.landings) {
 		landed := l.set.landings[l.seen]
 		if err := l.wt.Reseed(landed.patch); err != nil {
 			var clash *worktree.ReseedCollision
 			if errors.As(err, &clash) {
 				return fmt.Sprintf("%s landed on the checkout (%s) and its patch does not carry into this lane's copy over %s, which this lane changed too: %s",
-					landed.slug, strings.Join(clash.Landed, ", "), strings.Join(clash.Files, ", "), clash.Reason)
+					landed.slug, strings.Join(clash.Landed, ", "), strings.Join(clash.Files, ", "), clash.Reason), carried
 			}
 			return fmt.Sprintf("%s landed on the checkout and its patch could not be carried into this lane's copy: %s",
-				landed.slug, todoFirstProblem(err.Error()))
+				landed.slug, todoFirstProblem(err.Error())), carried
 		}
+		carried = append(carried, landed.slug)
 		l.seen++
 	}
-	return ""
+	return "", carried
+}
+
+// again writes on the lane's row that it is verifying a tree the named
+// landings changed, and clears it with no slugs. The row is the checkpoint's.
+func (l *todoLane) again(slugs []string) {
+	if l == nil {
+		return
+	}
+	words := ""
+	if len(slugs) > 0 {
+		words = "verifying again · " + strings.Join(slugs, ", ") + " landed"
+	}
+	l.set.mu.Lock()
+	defer l.set.mu.Unlock()
+	if lane, ok := l.set.sp.Lane(l.slug); ok {
+		lane.Again = words
+	}
+	l.set.saveLocked()
 }
 
 // land puts the lane's patch onto the checkout and adds what landed to the
 // patches every other lane carries. The caller holds the land lock. A merge
 // that leaves a conflict region lands nothing and is answered by
 // integrateConflict.
-func (l *todoLane) land() ([]string, error) {
-	patch, err := l.wt.LandPatch()
+//
+// A verified lane lands plain: only where the checkout still holds what the
+// copy's base holds for every file the patch touches. Everything other lanes
+// landed was carried into the copy, so a checkout that differs was moved by a
+// hand outside the sprint, and a merge would land a tree no gate ran over.
+func (l *todoLane) land(plain bool) ([]string, error) {
+	land := l.wt.LandPatch
+	if plain {
+		land = l.wt.LandPlain
+	}
+	patch, err := land()
 	if err != nil {
 		var conflict *worktree.MergeConflict
 		if errors.As(err, &conflict) {
 			return nil, l.integrateConflict(conflict)
+		}
+		var moved *worktree.CheckoutMoved
+		if errors.As(err, &moved) {
+			l.kept = true
+			return nil, fmt.Errorf("the checkout moved outside the sprint in %s since this lane's copy was verified, so nothing was landed; this lane's work is kept in %s",
+				strings.Join(moved.Files, ", "), l.wt.Root())
 		}
 		return nil, fmt.Errorf("the lane's patch would not apply onto the checkout: %s", todoFirstProblem(err.Error()))
 	}
@@ -482,14 +526,81 @@ func (l *todoLane) integrateConflict(conflict *worktree.MergeConflict) error {
 		strings.Join(conflict.Files, ", "), l.wt.Root())
 }
 
+// laneCommit is a lane's commit step. The lane takes the land lock and holds
+// it from the last look at the branch to the commit: it carries whatever
+// landed since its last boundary, verifies again in its copy if anything
+// carried, and lands only then. A failure in that verify is a fix round and
+// not a commit, and the lock is let go for it, so a landing during the fix is
+// carried at the next boundary. Holding the lock for one verify serialises
+// landings, which landing them was already.
+// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+func (d *todoDriver) laneCommit(ctx context.Context, st *run.State, it todo.Item) run.Step {
+	l := d.lane
+	l.set.land.Lock()
+	defer l.set.land.Unlock()
+	why, carried := l.catchUpLocked()
+	if why != "" {
+		return st.Block(why)
+	}
+	if step, redirected := d.verifyAfterCarry(ctx, st, it, carried, true); redirected {
+		return step
+	}
+	files, err := l.landCommit(d, st)
+	if err != nil {
+		return st.Block("the commit could not be made: " + err.Error())
+	}
+	return st.Committed(files)
+}
+
+// verifyAfterCarry is the one place a lane answers a carry that changed its
+// copy: the tree a passed verdict was about is not the tree the lane would
+// review or land. Nothing failed, so no fix round is spent.
+//
+// At a step boundary (atCommit false) the run goes back to its verify step
+// and the loop runs it, and redirected is whether there was a passed verdict
+// to go back over. At the commit the lock is held and the verify runs here;
+// redirected is true with the step to take instead of committing when it
+// failed (a fix round) or could not run (a block), and false when it passed.
+func (d *todoDriver) verifyAfterCarry(ctx context.Context, st *run.State, it todo.Item, carried []string, atCommit bool) (run.Step, bool) {
+	if len(carried) == 0 {
+		return run.Step{}, false
+	}
+	l := d.lane
+	if !atCommit {
+		step, ok := st.VerifyAgain()
+		if ok {
+			l.again(carried)
+			fmt.Fprintf(d.out, "… %s verifying again · %s landed\n", l.slug, strings.Join(carried, ", "))
+		}
+		return step, ok
+	}
+	command, ok := st.VerifyCommand()
+	if !ok {
+		return run.Step{}, false
+	}
+	l.again(carried)
+	fmt.Fprintf(d.out, "… %s verifying again · %s landed\n", l.slug, strings.Join(carried, ", "))
+	st.Checked = false
+	v := d.verify(ctx, st, command)
+	l.again(nil)
+	if v.output != "" {
+		fmt.Fprintln(d.out, v.output)
+	}
+	switch {
+	case v.blocked != "":
+		return st.Block(v.blocked), true
+	case !v.ok:
+		return st.VerifyResult(it, false, v.output), true
+	}
+	return run.Step{}, false
+}
+
 // landCommit is a lane's commit: its patch applied to the checkout and
 // committed there, while no other lane may write the branch. What the commit
 // holds is what the patch touched, re-expressed from the checkout, and never
-// the backlog (run.Committable).
+// the backlog (run.Committable). The caller holds the land lock.
 func (l *todoLane) landCommit(d *todoDriver, st *run.State) ([]string, error) {
-	l.set.land.Lock()
-	defer l.set.land.Unlock()
-	files, err := l.land()
+	files, err := l.land(true)
 	if err != nil {
 		return nil, err
 	}
@@ -561,7 +672,7 @@ func (l *todoLane) end(ctx context.Context, d *todoDriver, st *run.State, it tod
 	}
 	if st.Stage == run.StageDone && !l.landed {
 		l.set.land.Lock()
-		files, err := l.land()
+		files, err := l.land(false)
 		l.set.land.Unlock()
 		if err != nil {
 			st.Block(err.Error())

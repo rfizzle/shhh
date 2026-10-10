@@ -140,8 +140,15 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 		}
 		// A lane told the branch moved under it catches up before its next
 		// step, so the step reads the tree the lane will land into.
-		if why := d.lane.catchUp(); why != "" {
+		why, carried := d.lane.catchUp()
+		if why != "" {
 			step = st.Block(why)
+			continue
+		}
+		// A carry changed the copy, so a verdict reached before it is about
+		// another tree: back to verify, without a fix round.
+		if again, ok := d.verifyAfterCarry(ctx, st, it, carried, false); ok {
+			step = again
 			continue
 		}
 		step = d.carry(ctx, deadline, st, it, step)
@@ -284,6 +291,7 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		return st.Observe(it, t.text)
 	case run.ActionVerify:
 		v := d.verify(ctx, st, step.Command)
+		d.lane.again(nil)
 		if v.output != "" {
 			fmt.Fprintln(d.out, v.output)
 		}
@@ -310,12 +318,12 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		return d.fanOut(ctx, deadline, st, it, step)
 	case run.ActionCommit:
 		// A lane's commit is its landing: the patch goes onto the checkout
-		// and the commit is made there, one lane at a time.
-		commit := d.commit
+		// and the commit is made there, one lane at a time, after a last
+		// carry and, if it changed the copy, a verify (laneCommit).
 		if d.lane != nil {
-			commit = func(st *run.State) ([]string, error) { return d.lane.landCommit(d, st) }
+			return d.laneCommit(ctx, st, it)
 		}
-		files, err := commit(st)
+		files, err := d.commit(st)
 		if err != nil {
 			return st.Block("the commit could not be made: " + err.Error())
 		}

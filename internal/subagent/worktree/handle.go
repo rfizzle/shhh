@@ -76,7 +76,25 @@ func (w *Worktree) Land() ([]string, error) {
 // list: the writer's own where it applied plainly, the merge where the
 // checkout had moved, and with the regenerated files where there were any —
 // what the checkout moved by, which is what every other copy is owed.
-func (w *Worktree) LandPatch() (string, error) {
+func (w *Worktree) LandPatch() (string, error) { return w.land(false) }
+
+// CheckoutMoved is a landing refused because the checkout holds a file the
+// patch touches otherwise than the copy's base says: the checkout moved by a
+// hand the copy never carried. A merge would land a tree nobody verified.
+type CheckoutMoved struct{ Files []string }
+
+func (e *CheckoutMoved) Error() string {
+	return "the checkout moved since the copy's base, in " + PatchPaths(e.Files)
+}
+
+// LandPlain is LandPatch for a copy whose tree was verified and must land as
+// verified: it lands only when the checkout still holds, for every file the
+// patch touches, what the copy's base holds, so the landing is the plain
+// apply of the copy's own patch and never a merge. A checkout that moved in
+// such a file lands nothing and comes back as a *CheckoutMoved.
+func (w *Worktree) LandPlain() (string, error) { return w.land(true) }
+
+func (w *Worktree) land(plain bool) (string, error) {
 	patch, err := WorktreePatch(w.h.Dir)
 	if err != nil {
 		return "", err
@@ -86,7 +104,18 @@ func (w *Worktree) LandPatch() (string, error) {
 	}
 	generated := GeneratedPaths(w.gen, PatchFiles(patch))
 	offer := WithoutFiles(patch, generated)
-	if offer != "" {
+	if offer != "" && plain {
+		m, err := MergeWorktree(w.h.Dir, w.h.RepoTop, generated)
+		switch {
+		case err != nil:
+			return "", err
+		case len(m.Moved) > 0:
+			return "", &CheckoutMoved{Files: m.Moved}
+		}
+		if err := CheckPatch(w.h.RepoTop, offer); err != nil {
+			return "", err
+		}
+	} else if offer != "" {
 		if applyErr := CheckPatch(w.h.RepoTop, offer); applyErr != nil {
 			m, err := MergeWorktree(w.h.Dir, w.h.RepoTop, generated)
 			switch {

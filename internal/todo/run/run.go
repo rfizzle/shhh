@@ -961,6 +961,43 @@ func (s *State) VerifyResult(it todo.Item, ok bool, output string) Step {
 	return s.advance(it, ps.Name)
 }
 
+// VerifyCommand is the command the pipeline's verify step runs, empty for the
+// step that runs the item's own checks and the workspace's gate, and false for
+// a pipeline with no such step.
+func (s *State) VerifyCommand() (string, bool) {
+	ps, ok := s.verifyStep()
+	return ps.Command, ok
+}
+
+func (s *State) verifyStep() (PipelineStep, bool) {
+	for _, ps := range s.Shape().Steps {
+		if ps.Kind == KindCommand {
+			return ps, true
+		}
+	}
+	return PipelineStep{}, false
+}
+
+// VerifyAgain sends a run whose tree moved after a passed verify back to the
+// verify step. A verdict is about the tree it ran over, and what the review
+// read and the commit would land is the tree a carried landing changed. It
+// costs no remediation round: nothing failed, the verdict only went stale. A
+// run that has not passed a verify yet, one in the middle of a fix, and a
+// pipeline with no verify step have nothing stale and answer false.
+func (s *State) VerifyAgain() (Step, bool) {
+	if !s.Verified || s.Over() || s.Remediating() {
+		return Step{}, false
+	}
+	ps, ok := s.verifyStep()
+	if !ok {
+		return Step{}, false
+	}
+	s.Checked = false
+	step := s.command(ps)
+	step.Shown = s.label(ps.Name + " again")
+	return step, true
+}
+
 // readBy is the reading step. The grade the profile names reads its own work
 // in the orchestrator's turn; anything else is read by a child that did not
 // write it, which is what makes the second opinion one. The child's task is

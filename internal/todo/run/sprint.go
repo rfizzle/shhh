@@ -147,7 +147,10 @@ type SprintLane struct {
 	// Wait is what the lane is held up on where it is held up, as a
 	// reader of the board should read it: `waiting for a check slot (2
 	// running)`. Empty when the lane is working.
-	Wait    string    `json:"wait,omitempty"`
+	Wait string `json:"wait,omitempty"`
+	// Again is the lane verifying a tree a landing changed, as the board
+	// reads it: `verifying again · a-one landed`. Empty otherwise.
+	Again   string    `json:"again,omitempty"`
 	Started time.Time `json:"started,omitempty"`
 	Ledger  string    `json:"ledger,omitempty"`
 	Turns   int       `json:"turns,omitempty"`
@@ -157,10 +160,13 @@ type SprintLane struct {
 // Where is the lane as the board reads it: its step, and what it is held up
 // on where it is.
 func (l SprintLane) Where() string {
-	if l.Wait == "" {
-		return string(l.Stage)
+	switch {
+	case l.Wait != "":
+		return string(l.Stage) + " — " + l.Wait
+	case l.Again != "":
+		return string(l.Stage) + " — " + l.Again
 	}
-	return string(l.Stage) + " — " + l.Wait
+	return string(l.Stage)
 }
 
 // StartSprint begins a sprint. prevMode is the mode to put the session back

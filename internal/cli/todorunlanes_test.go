@@ -368,7 +368,7 @@ func TestTodoLane_ALandingThatConflictsKeepsBothPatches(t *testing.T) {
 	set := &todoLanes{root: root, out: &strings.Builder{}, top: todoRepoTop(root)}
 	lane := &todoLane{set: set, slug: "b-two", wt: wt}
 
-	files, err := lane.land()
+	files, err := lane.land(false)
 	if err == nil || !strings.Contains(err.Error(), "conflicts with what landed on the checkout before it, in shared.txt") {
 		t.Fatalf("the landing names the conflicting file: %v (landed %v)", err, files)
 	}

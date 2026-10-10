@@ -1087,13 +1087,27 @@ check slot (2 running)` on the board and in `sprint.log`.
 **Landing is one lane at a time, in the order they finish, and it is the
 session's landing.** A lane is a writer, and its patch lands the way a
 writer's does ([`subagents.md`](subagents.md#a-writer-starts-from-your-tree)):
-merged against its base where the checkout moved under it, a generated file
-regenerated rather than merged, and what landed carried into every other
-lane's copy at that lane's next step — a step is what a round is to a
-writer — so what it verifies and what it is reviewed on is the tree it will
-land into. A lane that reaches its commit lands and commits while no other
-lane may write the checkout; a sprint asked for without commits lands the
-same way and leaves the change uncommitted. Two endings differ from the
+a generated file regenerated rather than merged, and what landed carried into
+every other lane's copy at that lane's next step — a step is what a round is
+to a writer — so what it verifies and what it is reviewed on is the tree it
+will land into.
+
+**A lane commits only a tree its gate passed.** A carry that changed the
+copy after a verify passed sends the lane back to verify before its review
+or its commit, and spends no fix round: nothing failed, the verdict only
+went stale, and the row reads `verifying again · a-one landed` while it
+runs. At its commit the lane takes the landing lock, carries anything still
+outstanding and, if anything carried, verifies again in its copy before it
+lands; a failure there is a fix round and not a commit. It lands only where
+the checkout still holds, in every file the patch touches, what the copy's
+base holds, so the landing is a plain apply of the verified patch and never
+a merge of two trees nobody ran the checks over. The reason is that the
+batch this replaces landed by fast-forward of a hash its gate had passed and
+nothing else. Holding the lock for one verify serialises landings, which
+landing them one at a time already did. A checkout that moved by a hand
+outside the sprint blocks the lane with the files named and its copy kept.
+A sprint asked for without commits lands the same way at the end and leaves
+the change uncommitted. Two endings differ from the
 session's, because an unattended run has nobody to steer: a landing that
 will not carry into a lane's copy blocks that lane's item with the collision
 as the evidence, and a merge that leaves a conflict blocks it with both
