@@ -16,7 +16,7 @@ setup printf 'package agent\n\nconst limit = 25\n\nfunc round(a *Agent) error {\
 setup printf 'The cap is read from one place.\n' > notes.md
 snap 01-start "Some things worth doing first"
 keys "raise the round cap" Enter
-snap 02-card "RoundsExhausted" "run it once"
+snap 02-card "RoundsExhausted" "apply the change"
 sleep 1
 keys C-Space
 sleep 0.3
