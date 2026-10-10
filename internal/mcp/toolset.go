@@ -1170,18 +1170,31 @@ func CompactArgs(raw json.RawMessage) string {
 
 // Close ends every session: the servers that joined, the ones that answered
 // and were waiting for a boundary, and — through settle — any that answer
-// after this.
-func (ts *Toolset) Close() {
+// after this. They close together, so the quit costs the slowest server's
+// end and not the sum of them; what they report comes back joined.
+func (ts *Toolset) Close() error {
 	if ts == nil {
-		return
+		return nil
 	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 	ts.closed = true
+	var all []*Server
 	for _, s := range ts.servers {
-		s.Close()
+		all = append(all, s)
 	}
 	for _, r := range ts.reports {
-		r.Server.Close()
+		all = append(all, r.Server)
 	}
+	errs := make([]error, len(all))
+	var wg sync.WaitGroup
+	for i, s := range all {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errs[i] = s.Close()
+		}()
+	}
+	wg.Wait()
+	return errors.Join(errs...)
 }

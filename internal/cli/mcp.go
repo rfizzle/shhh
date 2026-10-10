@@ -1146,13 +1146,13 @@ func (s *chatSession) useMCP(ts *mcp.Toolset, cat *mcp.Catalog, wait bool) func(
 	}
 	if !wait {
 		s.mcpJoins = true
-		return ts.Close
+		return func() { _ = ts.Close() }
 	}
 	if ts.Len() > 0 {
 		s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), ts.Definitions()...)
 		s.promptExtra = prompt.CombineExtra(s.promptExtra, mcp.PromptBlock(ts))
 	}
-	return ts.Close
+	return func() { _ = ts.Close() }
 }
 
 // requestTools is the tool list one request carries: the session's own, and

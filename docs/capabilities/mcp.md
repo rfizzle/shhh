@@ -380,6 +380,16 @@ reason, and a line joins the transcript beside the ones a server that never
 started at all would have printed. Once, and not at every boundary after
 that — a notice nobody can act on is wallpaper.
 
+## A server is given a second to leave
+
+Quitting closes every server together, not one after another. A stdio server
+is told to go the way the protocol says: its stdin is closed. One that ignores
+that is sent SIGTERM a second later, and killed a second after that, so the
+longest a server can hold the quit is about two seconds, however many there
+are. A grandchild that kept the server's stderr open cannot stretch the wait
+past that. A remote server has no process of ours to end; its session is
+simply closed.
+
 ## A call that hangs can be given up
 
 A call to a server is the one request in a session that nothing else can

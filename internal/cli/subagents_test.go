@@ -1501,7 +1501,7 @@ func TestAProfilesToolSectionNamesTheSharedToolsItHolds(t *testing.T) {
 		Name: "docs", Scope: mcp.ScopeUser, Transport: mcp.TransportStdio,
 		Command: exe, Env: map[string]string{fakeMCPEnv: "1"}, ReadOnly: true,
 	}}}, mcp.Options{Timeout: 20 * time.Second})
-	t.Cleanup(ts.Close)
+	t.Cleanup(func() { _ = ts.Close() })
 	reads := ts.ReadOnlyDefinitions()
 	if len(reads) == 0 {
 		t.Fatalf("the fake server offered no read: %+v", ts.Reports())

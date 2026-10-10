@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -48,6 +49,10 @@ const slowServer = "slow"
 // its result embeds the page under its https address, beside a link it
 // only points at, which is the shape the ledger files a read from.
 const pageServer = "page"
+
+// stubbornServer is the value of serverEnv for a server that serves, then
+// ignores its stdin closing and SIGTERM alike, as an npx wrapper does.
+const stubbornServer = "stubborn"
 
 func TestMain(m *testing.M) {
 	if path := os.Getenv(envDumpEnv); path != "" {
@@ -172,6 +177,12 @@ func runTestServer() {
 				{URI: req.Params.URI, MIMEType: "text/html", Text: "the doc body"},
 			}}, nil
 		})
+	}
+	if os.Getenv(serverEnv) == stubbornServer {
+		signal.Ignore(syscall.SIGTERM)
+		_ = server.Run(context.Background(), &sdk.StdioTransport{})
+		// stdin has closed and the server carries on: only SIGKILL ends it.
+		select {}
 	}
 	if err := server.Run(context.Background(), &sdk.StdioTransport{}); err != nil {
 		os.Exit(1)
@@ -1499,5 +1510,47 @@ func TestPagesReadIsAnEmbeddedWebResource(t *testing.T) {
 	}
 	if pagesRead(nil) != nil {
 		t.Error("a nil result read a page")
+	}
+}
+
+func stubbornDefinition(t *testing.T, name string) Definition {
+	t.Helper()
+	d := testDefinition(t)
+	d.Name = name
+	d.Env[serverEnv] = stubbornServer
+	return d
+}
+
+// A server that ignores EOF and SIGTERM is ended by the SIGKILL two steps
+// of a second in, not the SDK's ten seconds.
+func TestServerClose_EndsAnEOFIgnoringServerInTwoSeconds(t *testing.T) {
+	s, err := Dial(context.Background(), stubbornDefinition(t, "stubborn"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	started := time.Now()
+	s.Close()
+	took := time.Since(started)
+	if took < 1500*time.Millisecond || took > 3*time.Second {
+		t.Fatalf("Close took %s; want about two seconds (TERM at 1s, KILL at 2s)", took)
+	}
+}
+
+// Three servers that each need the two seconds close in the time of one.
+func TestToolsetClose_ClosesServersTogether(t *testing.T) {
+	var defs []Definition
+	for _, n := range []string{"one", "two", "three"} {
+		defs = append(defs, stubbornDefinition(t, n))
+	}
+	ts := Connect(context.Background(), &Catalog{Servers: defs}, Options{})
+	for _, r := range ts.Reports() {
+		if r.Server == nil {
+			t.Fatalf("server %s did not start: %s", r.Definition.Name, r.Error)
+		}
+	}
+	started := time.Now()
+	_ = ts.Close()
+	if took := time.Since(started); took > 3500*time.Millisecond {
+		t.Fatalf("three servers took %s to close; they should close together, in about two seconds", took)
 	}
 }

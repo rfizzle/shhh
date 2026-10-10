@@ -251,7 +251,12 @@ func (s *Server) transport(ctx context.Context, mask func(name string) bool) (sd
 		s.stderr = &tailBuffer{max: 4096}
 		cmd.Stderr = s.stderr
 		s.cmd = cmd
-		return &sdk.CommandTransport{Command: cmd}, nil
+		// A server that ignores its stdin closing is given a second to go,
+		// then SIGTERM and a second more, then SIGKILL; the SDK's own
+		// schedule is five seconds a step. WaitDelay bounds the wait on a
+		// grandchild that kept stderr open after the server itself went.
+		cmd.WaitDelay = closeStep
+		return &sdk.CommandTransport{Command: cmd, TerminateDuration: closeStep}, nil
 	case TransportHTTP:
 		return &sdk.StreamableClientTransport{
 			Endpoint:   def.URL,
@@ -1093,18 +1098,28 @@ func (s *Server) Stderr() string {
 	return s.stderr.String()
 }
 
-// Close ends the session; a stdio server gets stdin closed, then a
-// SIGTERM, then a SIGKILL, on the SDK's schedule.
-func (s *Server) Close() {
+// closeStep is how long a stdio server is given at each step of its end:
+// stdin closed, then SIGTERM, then SIGKILL.
+const closeStep = time.Second
+
+// Close ends the session; a stdio server gets stdin closed, then a SIGTERM
+// a second later, then a SIGKILL a second after that. It returns what the
+// session's close reported.
+func (s *Server) Close() error {
 	if s == nil {
-		return
+		return nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.session != nil {
-		_ = s.session.Close()
-		s.session = nil
+	if s.session == nil {
+		return nil
 	}
+	err := s.session.Close()
+	s.session = nil
+	if err != nil {
+		return s.wrapErr("close", err)
+	}
+	return nil
 }
 
 // tailBuffer keeps the last max bytes written to it. A server's stderr is
