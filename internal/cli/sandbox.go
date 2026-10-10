@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -327,13 +328,14 @@ const (
 //
 // What goes in is the session's commands, through the helper, attached so a
 // cancel reaches them (runner.RunCaptureArgvInAttached), and a started
-// process, through the same helper with the stream as its stdin. A hook is
+// process, through the same helper with the stream as its stdin, and the
+// quality gate's checks, through the same helper too (containGate). A hook is
 // not run, since it cannot follow the commands into the container yet; Wrap
 // is nil for that reason. A command at its ceiling goes to the supervisor as
 // anywhere: what it holds is the exec client, and stopping the client stops
 // the command through the stream.
 // See docs/capabilities/containment.md#a-started-process-is-contained-too.
-func sandboxContainment(ctx context.Context, cfg config.Config, workspace string, sc *scope.Scope, sup *process.Supervisor) (_ chat.Containment, cleanup func(), err error) {
+func sandboxContainment(ctx context.Context, cfg config.Config, workspace string, sc *scope.Scope, sup *process.Supervisor, gate *quality.Runner) (_ chat.Containment, cleanup func(), err error) {
 	profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile)
 	if err != nil {
 		return chat.Containment{}, nil, fmt.Errorf("config sandbox.profile: %w", err)
@@ -420,6 +422,7 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 		Writers:   "a writer's commands: " + writerRefused + " — " + sandboxWriterWords,
 		Toolchain: sandboxToolchain(ctx, c),
 	}
+	containGate(gate, c)
 	if sup != nil {
 		// A process is one more exec through the helper, with its stdin the
 		// stream (--stdin=inherit): the supervisor's pipes are the client's,
@@ -452,6 +455,54 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 		})
 	}
 	return cont, cleanup, nil
+}
+
+// containedExec is the one path that runs a program through the session's
+// containment: the engine argv that execs argv in the container under the
+// helper, and the second exec that stops it where the stream's hang-up does
+// not arrive (nil for an argv that is not one). A caller whose program is
+// not a command line — a quality check, a hook — takes both from here and
+// spawns the first attached (runner.RunGroupedAttached, or the capture forms
+// with the stop), so no caller builds the helper's argv, or forgets its
+// stop, a second way.
+// See docs/capabilities/containment.md#a-cancelled-command-takes-its-children-with-it.
+func containedExec(c sandbox.Container, e sandbox.HelperExec, argv []string) (wrapped, stop []string, err error) {
+	wrapped, err = c.HelperArgv(e, argv)
+	if err != nil {
+		return nil, nil, err
+	}
+	return wrapped, sandbox.StopArgv(wrapped), nil
+}
+
+// gateGeneratorRefusal is what a generator the gate would run in a tree of
+// its own is told in a sandbox session: the tree is outside the container's
+// one mount, and an engine cannot add a mount to a container that is running.
+const gateGeneratorRefusal = "a generator's tree is outside this session's container, which mounts only the workspace"
+
+// containGate points the session's quality gate at the container, so a check
+// execs where the session's commands do. Every check is wrapped through
+// containedExec with the session's secrets crossing by name, and the runner
+// is told its wrap is attached (StopArgv), which makes it hold the check's
+// stdin open and stop it through the stream.
+//
+// The container mounts the workspace writable, and an exec cannot narrow a
+// mount, so the allow_write a suite declares changes nothing here and the
+// result says so (quality.Runner). A generator runs in a tree of its own,
+// outside the one mount, and is refused rather than run on the host.
+// See docs/capabilities/containment.md#a-sandboxs-checks-run-in-its-container.
+func containGate(gate *quality.Runner, c sandbox.Container) {
+	if gate == nil {
+		return
+	}
+	gate.Mechanism = sandboxMechanism
+	gate.Wrap = func(argv []string, _ bool) ([]string, error) {
+		wrapped, _, err := containedExec(c, sandbox.HelperExec{Secrets: runner.SessionEnvNames()}, argv)
+		return wrapped, err
+	}
+	gate.StopArgv = sandbox.StopArgv
+	gate.WrapIn = func(string, []string) ([]string, error) {
+		return nil, errors.New(gateGeneratorRefusal)
+	}
 }
 
 // sandboxWriterWords is why a writer's commands are refused in a sandbox
@@ -521,13 +572,13 @@ func sandboxToolchain(ctx context.Context, c sandbox.Container) chat.Toolchain {
 // claiming every tool is missing.
 func containerMissing(ctx context.Context, c sandbox.Container, check []string) []string {
 	script := `for t in "$@"; do command -v "$t" >/dev/null 2>&1 || echo "$t"; done`
-	argv, err := c.HelperArgv(sandbox.HelperExec{}, append([]string{"/bin/sh", "-c", script, "sh"}, check...))
+	argv, stop, err := containedExec(c, sandbox.HelperExec{}, append([]string{"/bin/sh", "-c", script, "sh"}, check...))
 	if err != nil {
 		return nil
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	result := runner.RunCaptureArgvInAttached(ctx, "", "toolchain check", argv, sandbox.StopArgv(argv))
+	result := runner.RunCaptureArgvInAttached(ctx, "", "toolchain check", argv, stop)
 	if result.Outcome != tools.ExecSucceeded {
 		return nil
 	}

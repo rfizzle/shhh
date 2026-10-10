@@ -23,7 +23,16 @@ import (
 // with a read-only workspace when a mechanism is available, and full
 // check output lands in the evidence store when one is open, scrubbed of
 // the session's secrets on the way in.
-func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) *quality.Runner {
+//
+// sandboxed says the session's commands run in a disposable container, and
+// then the checks do too: a check is a command, and the image is where the
+// declared tools are. The container does not exist yet at this point in the
+// build, so the runner leaves its checks unwrapped and sandboxContainment
+// hands it the container (containGate) before anything can run one — a
+// runner is never left on the host's mechanism beside a session the person
+// asked to have contained by a container.
+// See docs/capabilities/containment.md#a-sandboxs-checks-run-in-its-container.
+func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope, sandboxed bool) *quality.Runner {
 	// The suites are command text out of a file that arrived with the
 	// clone, and the tool runs them without an approval. So an untrusted
 	// checkout gets no runner and no quality_gate tool at all, rather than a
@@ -57,7 +66,7 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) 
 	// A session whose store would not open has no reducer to read it from
 	// and keeps no durable copy either; the method is safe on the nil one.
 	r.SetScrub(red.Scrub)
-	if avail := sandbox.Detect(); avail.OK {
+	if avail := sandbox.Detect(); avail.OK && !sandboxed {
 		if policy, err := sandboxPolicy(cfg, sc.Beyond()...); err == nil {
 			policy.PrivateGoCache = true
 			r.Mechanism = avail.Mechanism

@@ -25,7 +25,7 @@ func TestSandboxSessionRemovesItsContainerOnASignal(t *testing.T) {
 		t.Run(tc.sig.String(), func(t *testing.T) {
 			log := fakeSandboxEngine(t, helperAnswers)
 			cfg, sc, ws := sandboxTestSetup(t)
-			_, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil)
+			_, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

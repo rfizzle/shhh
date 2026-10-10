@@ -198,7 +198,7 @@ func (b *screenBuild) toolset(sc *scope.Scope) toolsetOpts {
 	}
 	// A session pops a browser for a page the model published,
 	// because somebody is here to read it.
-	return toolsetOpts{scope: sc, browser: true, resident: true, gitWrites: gitWrites, asks: true}
+	return toolsetOpts{scope: sc, browser: true, resident: true, gitWrites: gitWrites, asks: true, sandboxed: session.sandbox}
 }
 
 // policy is the mode and its cycle, the readers the mode leans on, and the
@@ -279,7 +279,7 @@ func (b *screenBuild) policy() error {
 		if err != nil {
 			return fmt.Errorf("sandbox: %w", err)
 		}
-		if b.containment, b.closeSandbox, err = sandboxContainment(b.cmd.Context(), cfg, ws, b.asm.sc, procSup); err != nil {
+		if b.containment, b.closeSandbox, err = sandboxContainment(b.cmd.Context(), cfg, ws, b.asm.sc, procSup, b.asm.ts.gate); err != nil {
 			return fmt.Errorf("sandbox: %w", err)
 		}
 		said = func(c chat.Containment) commandEnvironment { return sandboxCommandEnvironment(c, cfg, procSup != nil) }

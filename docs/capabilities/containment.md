@@ -592,7 +592,8 @@ spend are recorded where every other session's are; the file tools, which are
 shhh's own scope-checked code writing the same mounted tree; the reading of
 the tree between rounds, which is the host's own git, already kept from
 running anything a command wrote; and the language servers, MCP servers and
-the web tools. A started process runs in the container too. A hook is not run
+the web tools. A started process runs in the container too, and so do the
+quality gate's checks ([below](#a-sandboxs-checks-run-in-its-container)). A hook is not run
 and says so, and a sub-agent's commands are refused with a sentence, since they
 do not follow the session's into the container yet and a writer's worktree is
 outside its one mount; neither may fall back to running on the host, which
@@ -628,6 +629,27 @@ a command writes as the container's root is owned by root on the host.
 
 `shhh chat --sandbox` is refused: a conversation runs no command, so there is
 nothing for a container to contain.
+
+### A sandbox's checks run in its container
+
+The quality gate's checks run in the session's container, in `shhh code
+--sandbox` and in `-p --sandbox` alike. A check is a command, and the image is
+where the tools a checkout declared are: a check run on this machine instead
+would find this machine's toolchain, not the one the session was prepared
+with, and would sit outside the containment the person asked for. Each check
+is one more exec through the helper, so a cancel or a timeout stops it the way
+it stops any command in the container, and a tool only the image carries is
+found by the container's `PATH` rather than this machine's.
+
+The result names the container as what contained the checks, in the words the
+command's row uses ([what is reported is what is in
+force](#what-is-reported-is-what-is-in-force)), and says the workspace is
+writable. That is the cost: a container mounts the workspace once, and an
+exec cannot narrow a mount, so a suite's read-only default cannot be kept
+there and `allow_write` changes nothing. The verdict's fingerprint of the tree
+still catches a check that wrote. A generator that regenerates a file in a
+tree of its own is refused with a sentence, since that tree is outside the
+container's one mount; it is not run on this machine instead.
 
 ## A checkout declares the toolchain its work needs
 

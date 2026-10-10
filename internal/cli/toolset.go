@@ -58,6 +58,9 @@ type toolsetOpts struct {
 	// a surface with no record of its own writes gets, having nothing to
 	// stage from.
 	gitWrites *structural.Writes
+	// sandboxed says the surface's commands run in a disposable container,
+	// which the quality gate's checks then run in too (containGate).
+	sandboxed bool
 	// asks says a person can answer a slash command during the session — a
 	// /secret for a masked variable. A -p run and a served session cannot,
 	// so what they tell the model names the flag for the next run instead.
@@ -171,7 +174,7 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 	// The quality gate: the model runs the project's own checks by suite
 	// name, and command text only ever comes from trusted config.
 	if session.gate {
-		t.gate = openQualityGate(cfg, t.evidence, opts.scope)
+		t.gate = openQualityGate(cfg, t.evidence, opts.scope, opts.sandboxed)
 	}
 	if t.gate != nil {
 		register(quality.ToolDefinition())

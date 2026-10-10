@@ -105,7 +105,7 @@ func TestSandboxContainmentValues(t *testing.T) {
 	}
 	t.Cleanup(sup.Close)
 
-	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup)
+	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}
@@ -166,7 +166,7 @@ func TestSandboxContainmentValues(t *testing.T) {
 func TestSandboxSessionRefusesToDowngrade(t *testing.T) {
 	cfg, sc, ws := sandboxTestSetup(t)
 	t.Setenv("PATH", t.TempDir())
-	_, _, err := sandboxContainment(context.Background(), cfg, ws, sc, nil)
+	_, _, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err == nil || !strings.Contains(err.Error(), "container") {
 		t.Fatalf("no engine: %v, want a refusal", err)
 	}
@@ -180,7 +180,7 @@ func TestSandboxSessionRefusesToDowngrade(t *testing.T) {
 func TestSandboxSessionRefusesAnImageWithoutTheHelper(t *testing.T) {
 	log := fakeSandboxEngine(t, "echo 'OCI runtime exec failed: no such file or directory' >&2; exit 126")
 	cfg, sc, ws := sandboxTestSetup(t)
-	_, _, err := sandboxContainment(context.Background(), cfg, ws, sc, nil)
+	_, _, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err == nil {
 		t.Fatal("an image without the helper was accepted")
 	}
@@ -234,7 +234,7 @@ func TestPrintSandboxKeepsItsRefusals(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(sup.Close)
-	box, cleanup, err := startPrintSandbox(context.Background(), cfg, sc, sup)
+	box, cleanup, err := startPrintSandbox(context.Background(), cfg, sc, sup, nil)
 	if err != nil {
 		t.Fatalf("startPrintSandbox: %v", err)
 	}
@@ -258,7 +258,7 @@ func TestSandboxToolchainReadsTheContainer(t *testing.T) {
 	log := fakeSandboxEngine(t, helperAnswers)
 	cfg, sc, ws := sandboxTestSetup(t)
 	writeDeclaration(t, "check = [\"sh\", \"shhh-no-such-tool\"]\n")
-	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil)
+	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}
@@ -341,7 +341,7 @@ func sandboxProcessSession(t *testing.T) (*process.Supervisor, string) {
 		t.Fatal(err)
 	}
 	t.Cleanup(sup.Close)
-	_, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup)
+	_, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}
@@ -434,7 +434,7 @@ func cancelInTheContainer(t *testing.T, hold bool) string {
 	}
 	t.Setenv("SHHH_SANDBOX_EXEC_DIR", t.TempDir())
 	cfg, sc, ws := sandboxTestSetup(t)
-	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil)
+	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}

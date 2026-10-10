@@ -567,7 +567,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		kind: "print",
 		toolset: func(sc *scope.Scope) toolsetOpts {
 			own = &writtenByCalls{}
-			return toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own, ConfigFrom(cmd.Context()).Commit.SecretIgnore)}
+			return toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own, ConfigFrom(cmd.Context()).Commit.SecretIgnore), sandboxed: opts.sandbox}
 		},
 		register: unattendedRegistration(true, true),
 	})
@@ -607,7 +607,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var box *contained
 	if opts.sandbox {
 		var cleanup func()
-		box, cleanup, err = startPrintSandbox(cmd.Context(), cfg, sc, procSup)
+		box, cleanup, err = startPrintSandbox(cmd.Context(), cfg, sc, procSup, qgate)
 		if err != nil {
 			return err
 		}
@@ -1107,12 +1107,12 @@ func printPrompt(args []string, cfg config.Config) (string, error) {
 // host's containment, and hands back what tears it down. The container is
 // the session's own builder's (sandboxContainment), so a scripted run and a
 // session are contained by the same code.
-func startPrintSandbox(ctx context.Context, cfg config.Config, sc *scope.Scope, procSup *process.Supervisor) (*contained, func(), error) {
+func startPrintSandbox(ctx context.Context, cfg config.Config, sc *scope.Scope, procSup *process.Supervisor, gate *quality.Runner) (*contained, func(), error) {
 	ws, err := os.Getwd()
 	if err != nil {
 		return nil, nil, fmt.Errorf("sandbox: %w", err)
 	}
-	box, cleanup, err := sandboxContainment(ctx, cfg, ws, sc, procSup)
+	box, cleanup, err := sandboxContainment(ctx, cfg, ws, sc, procSup, gate)
 	if err != nil {
 		return nil, nil, fmt.Errorf("sandbox: %w", err)
 	}

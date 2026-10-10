@@ -184,6 +184,17 @@ type Runner struct {
 	// Mechanism names the containment mechanism Wrap uses, for the result's
 	// containment line.
 	Mechanism string
+	// StopArgv marks Wrap as one that runs a check in a container, through a
+	// stream (an engine's exec): the argv the runner spawns is a client, and
+	// the check is on the far end of it. It answers the second exec that
+	// reaches the far end for one wrapped argv, nil where there is none. A
+	// check is then spawned with a stdin held open until it is to stop
+	// (runner.RunGroupedAttached), its executable is resolved by the
+	// container and not by this machine's PATH, and the result says the
+	// container mounts the workspace writable, since an exec cannot narrow a
+	// mount. Nil is a Wrap that runs the check itself.
+	// See docs/capabilities/containment.md#a-sandboxs-checks-run-in-its-container.
+	StopArgv func(wrapped []string) []string
 	// Evidence stores full check output; nil keeps only the inline excerpt.
 	Evidence EvidenceFunc
 	// Observe reports one completed run's verdict to the session record,
@@ -436,7 +447,7 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 	argvs := make([][]string, len(suite.Checks))
 	paths := make([]string, len(suite.Checks))
 	for i, check := range suite.Checks {
-		path, err := resolveExe(r.Workspace, check.Exe)
+		path, err := r.resolve(r.Workspace, check.Exe)
 		if err != nil {
 			return blocked(fmt.Sprintf("check %q: %v", check.Name, err))
 		}
@@ -623,7 +634,12 @@ func (r *Runner) spawnCheck(ctx context.Context, dir, suite string, check Check,
 	// what it started. Killing the leader alone released the slot with that
 	// work still running under it. On Windows there is no group, and this
 	// stays the single-process kill it always was.
-	err := runner.RunGrouped(cmd)
+	var err error
+	if r.StopArgv != nil {
+		err = runner.RunGroupedAttached(cmd, r.StopArgv(argv))
+	} else {
+		err = runner.RunGrouped(cmd)
+	}
 	cr.Duration = time.Since(start)
 
 	switch {
@@ -714,10 +730,32 @@ func (r *Runner) containDescription(allowWrite bool) string {
 	if mech == "" {
 		mech = "contained"
 	}
+	if r.StopArgv != nil {
+		// An exec cannot narrow the container's one mount, so allow_write
+		// changes nothing here and the words do not pretend it does.
+		return mech + ", workspace writable (the container mounts it so)"
+	}
 	if allowWrite {
 		return mech + ", workspace writable (suite allow_write)"
 	}
 	return mech + ", read-only workspace"
+}
+
+// resolve is resolveExe for a runner whose checks may run elsewhere. A check
+// in a container is found by the container: a bare name stays a name for its
+// PATH, which is the image's, and a path stays as written, relative to the
+// workspace, the directory the exec starts in. A path is still looked for
+// here, since the workspace is the same tree on both sides of the mount.
+func (r *Runner) resolve(workspace, exe string) (string, error) {
+	if r.StopArgv == nil {
+		return resolveExe(workspace, exe)
+	}
+	if strings.ContainsRune(exe, os.PathSeparator) {
+		if _, err := resolveExe(workspace, exe); err != nil {
+			return "", err
+		}
+	}
+	return exe, nil
 }
 
 // resolveExe resolves a check's executable: a bare name against PATH, a path

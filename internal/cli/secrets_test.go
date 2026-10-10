@@ -106,7 +106,7 @@ func TestOpenQualityGate_TakesTheScrubOpenedAfterIt(t *testing.T) {
 	// this case is about is what the runner does with a check's output once
 	// it does exist.
 	withProjectTrust(t, project.Trust{Root: "/repo", Granted: true})
-	gate := openQualityGate(config.Config{}, red, nil)
+	gate := openQualityGate(config.Config{}, red, nil, false)
 	if gate == nil {
 		t.Fatal("a gate is expected wherever the working directory resolves")
 	}

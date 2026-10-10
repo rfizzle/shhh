@@ -38,11 +38,11 @@ func TestQualityGateIsWithheldUntilTheCheckoutIsTrusted(t *testing.T) {
 	red := evidence.NewReducer(store)
 
 	withProjectTrust(t, project.Trust{Root: "/repo", Present: []project.Kind{project.KindGate}})
-	if gate := openQualityGate(config.Config{}, red, nil); gate != nil {
+	if gate := openQualityGate(config.Config{}, red, nil, false); gate != nil {
 		t.Fatal("an untrusted checkout's suites are loaded")
 	}
 	withProjectTrust(t, project.Trust{Root: "/repo", Granted: true})
-	if gate := openQualityGate(config.Config{}, red, nil); gate == nil {
+	if gate := openQualityGate(config.Config{}, red, nil, false); gate == nil {
 		t.Fatal("a trusted checkout has its gate")
 	}
 }
@@ -313,7 +313,7 @@ func TestATrustedCheckoutKeepsItsGateAndIsToldOnce(t *testing.T) {
 
 	// The first session after the edit.
 	first := readTrustAt(t, root)
-	if openQualityGate(config.Config{}, nil, nil) == nil {
+	if openQualityGate(config.Config{}, nil, nil, false) == nil {
 		t.Fatal("an edit to the suites took the gate away")
 	}
 	note := trustStartupNote()
@@ -340,7 +340,7 @@ func TestATrustedCheckoutKeepsItsGateAndIsToldOnce(t *testing.T) {
 	if note := trustStartupNote(); note != "" {
 		t.Errorf("the second session said it again: %q", note)
 	}
-	if openQualityGate(config.Config{}, nil, nil) == nil {
+	if openQualityGate(config.Config{}, nil, nil, false) == nil {
 		t.Fatal("the second session lost the gate")
 	}
 
@@ -352,7 +352,7 @@ func TestATrustedCheckoutKeepsItsGateAndIsToldOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	readTrustAt(t, root)
-	if openQualityGate(config.Config{}, nil, nil) != nil {
+	if openQualityGate(config.Config{}, nil, nil, false) != nil {
 		t.Error("`shhh trust off` left the gate registered")
 	}
 	if _, ok := first.Digests[project.KindGate]; !ok {

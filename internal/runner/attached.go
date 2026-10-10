@@ -128,3 +128,28 @@ func RunCaptureArgvInAttached(ctx context.Context, dir, command string, argv, st
 func RunCaptureArgvTailAttached(ctx context.Context, command string, argv, stop []string, onLine func(string)) tools.ExecResult {
 	return capture(ctx, "", command, argv, spawnAttached, stop, onLine)
 }
+
+// RunGroupedAttached is RunGrouped for an attached argv: the command leads a
+// group of its own, holds its stdin open until it is to stop, and is stopped
+// the attached way — hang-up, the wait for the far end, the second exec stop
+// names, then the kill. A caller that spawns its own commands rather than
+// capturing them, as the quality gate's checks are, stops a command in a
+// container through it. cmd.Stdin and cmd.WaitDelay are the stop's and are
+// set here.
+func RunGroupedAttached(cmd *exec.Cmd, stop []string) error {
+	g := &group{cmd: cmd, exited: make(chan struct{})}
+	cmd.SysProcAttr = sysProcAttr()
+	held, err := holdStdin(g, stop)
+	if err != nil {
+		return err
+	}
+	err = g.start()
+	// The child has its own copy now; this one would keep the stream open
+	// from this end after the write end is closed.
+	_ = held.Close()
+	if err != nil {
+		g.hangUp()
+		return err
+	}
+	return g.wait()
+}

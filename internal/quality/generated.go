@@ -176,7 +176,7 @@ func (r *Runner) Regenerate(ctx context.Context, dir string, paths []string) ([]
 	for _, g := range gens {
 		check := Check{Name: g.gen.Name, Exe: g.gen.Exe, Args: g.args}
 		command := strings.Join(append([]string{check.Exe}, check.Args...), " ")
-		exe, err := resolveExe(dir, check.Exe)
+		exe, err := r.resolve(dir, check.Exe)
 		if err != nil {
 			return ran, fmt.Errorf("%s did not run: %w", command, err)
 		}
