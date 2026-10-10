@@ -55,7 +55,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check tui-shot tui-check tui-longpath help
+.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check tui-shot tui-check tui-longpath design help
 
 all: help
 
@@ -149,6 +149,13 @@ docs-check: ## Verify every docs/ citation resolves and every generated section 
 	@python3 scripts/check-docs.py
 	@echo "${MAGENTA}Checking the generated documentation sections...${RESET}"
 	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -count=1 -run "TestReference|TestDocs_RefusedKeys" ./internal/config ./internal/ui/keys ./internal/project
+
+# The design book is on demand and not part of `docs`: it is the goldens and
+# the scenes laid out for reading, 15 MB of HTML under a gitignored directory,
+# and nothing in the gate reads it.
+design: ## Build the design book under docs/design from the goldens and the scenes
+	@echo "${MAGENTA}Building the design book...${RESET}"
+	@python3 -I scripts/design/book.py
 
 ## Pipeline:
 # The platforms goreleaser ships. A Unix-only syscall compiles perfectly on the

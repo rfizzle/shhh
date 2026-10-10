@@ -9,6 +9,17 @@ The rules every surface obeys, and what each surface is for.
 | [`departures.md`](departures.md) | Where the implementation deliberately differs from the design system, and why |
 | [`reserved-keys.md`](reserved-keys.md) | The chords the desktops, terminals and multiplexers take, which the register may not spend |
 
+**The goldens are the design record.** Every surface is captured by its golden
+test at four widths in two palettes, and every driven scene leaves a text and
+a colour capture for each step it names; both are the binary's own output, so
+neither can drift from it. `make design` lays them out as a static book under
+`docs/design/` (not committed, built on demand): one page per golden with the
+110-column colour render first, the other widths below it, the mono render on a
+toggle, and the section of [`surfaces.md`](surfaces.md) that speaks for it,
+then a page per scene. Open `docs/design/index.html`. A surface that is not
+built yet is drafted as a text panel in its story, in the golden's shape, and
+approved there before the code.
+
 **Exact visual specification is not here.** Column widths, colour rungs, glyph
 assignments and the artboards are normative in the `shhh Design System`
 project in Claude Design (projectId `8bd9b60d-8d86-403e-a591-c15a9ebccfd9`,

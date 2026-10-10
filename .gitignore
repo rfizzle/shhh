@@ -6,5 +6,6 @@
 # Binary
 /shhh
 /bin
+/docs/design/
 /docker/sandbox/bin
 .design
