@@ -77,10 +77,6 @@ linters:
       - linters: [gocognit]
         path: ^internal/ui/chat/click\.go$
         text: 'func `\(Model\)\.clickRow`'
-      # The key router: every overlay and mode's keys routed in one function.
-      - linters: [gocognit]
-        path: ^internal/ui/chat/keyroute\.go$
-        text: 'func `\(Model\)\.updateKey`'
       # Nesting over 10, one rule per function.
       # activityRowDetail: the command row's detail is built in one nested branch.
       - linters: [nestif]

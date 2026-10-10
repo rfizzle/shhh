@@ -203,60 +203,431 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	if backlogKey == todoOpenScreen {
 		return answered(m.openTodoScreen())
 	}
+	if next, cmd, ok := m.draftChord(msg, armed); ok {
+		return next, cmd, true
+	}
+	// The fold is one character as far as the keyboard is concerned
+	// (docs/interface/surfaces.md#the-input-frame), and this is where that is
+	// true: an arrow steps over the whole run and a backspace at its closing
+	// quote takes the token and the paste together.
+	//
+	// These four are matched on the key's own code and not against the
+	// register, because they are not offers. They are the line editor's, the
+	// way the readline chords the draft deliberately does not declare are
+	// (internal/ui/keys/keys.go), and nothing on any rail names them. What
+	// the fold changes is how much one press of a key the reader already has
+	// consumes — never what the key means.
+	if next, claimed := m.pasteFoldKey(msg); claimed {
+		return next, nil, true
+	}
+	return m, nil, false
+}
+
+// cancelChord answers the cancel chord: it acts on an attached child, skips
+// the classifier, stops a run, clears a sentence, or is the first press of a
+// quit.
+func (m Model) cancelChord(armed armedPress) (tea.Model, tea.Cmd, bool) {
+	// While attached, Ctrl+C acts on the child: cancel its turn.
+	if m.attachedTo != "" {
+		return answered(m.attachedCancel())
+	}
+	if m.state == stateClassifying {
+		// Skip the classifier check and ask the user directly. The
+		// card arrives through the one door every decision arrives
+		// through, so it takes an empty draft's keyboard like any
+		// other arrival instead of showing keys nobody can press.
+		if m.classifier.cancel != nil {
+			m.classifier.cancel()
+			m.classifier.cancel = nil
+		}
+		m.setTurnState(stateConfirmRun)
+		m.syncViewport()
+		return m, nil, true
+	}
+	// The first press stops a running command, a working or parked
+	// turn, or a turn waiting on a decision that arrived beside the
+	// sentence — no draft can produce the chord, so it stays live while
+	// the card waits — and arms nothing: what the turn already did is
+	// kept and autosaved, and a stop never becomes a quit by itself
+	// (cancel.go).
+	if next, cmd, stopped := m.stopRun(); stopped {
+		return next, cmd, true
+	}
+	if strings.TrimSpace(m.input.Value()) != "" {
+		// The one chord that clears a sentence keeps it first: the
+		// draft goes into the history the up arrow walks, so a press
+		// that was a reflex costs one keystroke to undo
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+		m.recordInput(m.input.Value())
+		m.clearDraft()
+		return m, nil, true
+	}
+	// An empty idle draft: the chord means quit, and quitting is
+	// two presses of the same chord like every other way of walking
+	// away.
+	return answered(m.quitPress(armed))
+}
+
+// pointerArrow answers the pointer chord: the start screen's step, or the
+// pointer moved from the prompt.
+func (m Model) pointerArrow(pressed string) (tea.Model, tea.Cmd, bool) {
+	// The pointer: reading mode's cursor moved from the prompt, with
+	// the draft keeping the keyboard and every letter it has
+	// (pointer.go). On the start screen the offers are the rows, and
+	// the chord is the plain arrow's act there.
+	dir := -1
+	if keys.Is(pressed, keys.Draft.PointDown) {
+		dir = 1
+	}
+	if next, claimed := m.startKey(dir); claimed {
+		return next, nil, true
+	}
+	// Claimed whenever the input is live, even with nothing to point
+	// at: the textarea underneath binds shift on the arrows to
+	// selecting text, and a chord declared on the input must not fall
+	// through to a meaning nothing offered.
+	if m.inputLive() {
+		if m.attachedTo == "" {
+			m.movePointer(dir)
+		}
+		return m, nil, true
+	}
+	return m, nil, false
+}
+
+// escChord answers esc by leaving the most recent thing put on the screen: a
+// selection, the pointer, the menu, the attached child, the opened rows, then
+// the rewind gesture.
+func (m Model) escChord(armed armedPress) (tea.Model, tea.Cmd, bool) {
+	// A visible selection is what esc cancels first.
+	// It is the only thing on the surface esc could mean while one
+	// is lit, and it says so without touching the draft — a reader
+	// who selected the wrong six screens has not also abandoned the
+	// sentence they were writing.
+	if m.cancelSelection() {
+		m.refreshTranscript()
+		return m, nil, true
+	}
+	// A lit pointer is the next thing esc leaves, for the same reason
+	// and ahead of the draft: it is the thing most recently put on the
+	// screen, and dropping it costs no letters.
+	if m.dropPointer() {
+		return m, nil, true
+	}
+	// With the completion menu open, esc only dismisses the menu; the
+	// draft survives and further typing re-opens it.
+	if m.completionActive() {
+		m.dismissCompletions()
+		m.syncViewport()
+		return m, nil, true
+	}
+	// Attached with an empty draft esc pops one breadcrumb level; a
+	// draft with text in it is never cleared by esc.
+	if m.attachedTo != "" && strings.TrimSpace(m.input.Value()) == "" {
+		m.detachOne()
+		return m, nil, true
+	}
+	// Then every row the reader opened, folded back to its resting
+	// state. The reflex the product teaches is "esc puts the screen
+	// back", and an opened row is the same kind of thing as a
+	// selection or a menu, with more of them
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer,
+	// docs/interface/surfaces.md#the-input-frame). It comes after the
+	// four above because each of those is the thing most recently put
+	// on the screen and costs nothing to drop, and before everything
+	// below because those are what esc means once nothing is open.
+	//
+	// With text in the box it never runs: a reader who pressed esc to
+	// abandon a sentence has not also asked for the pane to change. It
+	// does run under a streaming turn, because it is the one act on
+	// this surface that abandons nothing — rows the turn lands after
+	// it arrive at their resting state, which is what they would have
+	// done anyway.
+	if strings.TrimSpace(m.input.Value()) == "" {
+		if m.readerOpenedARow() {
+			// Where the pane is anchored is read before the fold moves
+			// it, and put back after (render.go).
+			follow := m.viewport.AtBottom()
+			anchor := topEntry(m.entryLineStarts(), m.viewport.YOffset())
+			n := m.foldOpenedRows()
+			m.refreshTranscript()
+			m.anchorTo(anchor, follow)
+			m.pointer.foldNotice = foldedNotice(n)
+			// A fold answers nothing and abandons nothing, so it is
+			// not the press that spends a two-press window
+			// (cancel.go) — the judgement the inert press below makes,
+			// for the same reason.
+			m.armed = armed
+			return m, nil, true
+		}
+		// Nothing of the reader's was open, so the press is not
+		// claimed: a fold that did nothing must not be the press that
+		// changes what the next press means, and the chain goes on to
+		// mean what it has always meant. The rail still says why,
+		// where every open row on screen is the setting's.
+		if m.settingHoldsRowsOpen() {
+			m.pointer.foldNotice = verbosityHoldsNotice
+		}
+	}
+	// Empty draft while the turn streams: nothing at all. Esc is
+	// the key that leaves whatever is open, and the reflex that
+	// closes a diff or drops a selection arrives at a draft that
+	// happens to be empty often enough that letting it interrupt
+	// costs a turn nobody meant to stop. The two-press window is fed
+	// by the cancel chord alone
+	// (docs/interface/surfaces.md#the-input-frame).
+	//
+	// Inert here means inert: whatever two-press window was open is
+	// put back, because every key consumes one on the way in
+	// (cancel.go) and a key that does nothing must not be the thing
+	// that changes what the next press means.
+	if strings.TrimSpace(m.input.Value()) == "" && m.state == stateStreaming {
+		m.armed = armed
+		return m, nil, true
+	}
+	// Esc esc on an empty idle draft opens the rewind picker — the
+	// gesture three of the five harnesses share, over the surface
+	// /rewind already owns (docs/interface/surfaces.md#the-input-frame).
+	// Idle only: attached, the press above was the detach, and while
+	// a turn is live it was nothing — a picker offering to unwind a
+	// conversation the model is still writing into would be asking
+	// about a shape that has not settled. The window is short because
+	// the two presses are one gesture, not a press and a decision. A
+	// session with nothing to rewind to arms nothing: esc on an empty
+	// idle draft has always meant nothing, no rail advertises the
+	// gesture, and the alternative was a reflexive double-esc
+	// spending the start screen on a notice about a picker that
+	// cannot open.
+	if strings.TrimSpace(m.input.Value()) == "" && m.state == stateInput &&
+		len(m.checkpoints) > 0 {
+		if armed.open(armRewind) {
+			return answered(m.openRewindPick())
+		}
+		return m, m.armPressFor(armRewind, keys.Shown(keys.Draft.Clear), rewindPressWindow), true
+	}
+	// Esc never clears a sentence: what is typed stays exactly as it
+	// was, and ctrl+c is the chord that clears it (after recording it).
+	// An empty draft has nothing to keep; it only settles the history
+	// walk and the viewport.
+	if strings.TrimSpace(m.input.Value()) == "" {
+		m.clearDraft()
+	}
+	return m, nil, true
+}
+
+// historyBack answers the up arrow: the completion menu, the start screen's
+// list, then the draft's recall.
+func (m Model) historyBack() (tea.Model, tea.Cmd, bool) {
+	if m.completionActive() {
+		if m.complete.idx > 0 {
+			m.complete.idx--
+		}
+		m.complete.moved = true
+		return m, nil, true
+	}
+	// The start screen's suggestion list claims ↑↓ only while it is
+	// live: an empty draft on a session that has not started yet,
+	// which is also the only time the input history has nothing to
+	// browse.
+	if next, claimed := m.startKey(-1); claimed {
+		return next, nil, true
+	}
+	// Recall is the draft's, wherever the draft has the keyboard
+	//. It used to be the idle turn's: ↑ did nothing
+	// while the agent streamed, ran a command or waited on the
+	// classifier, and nothing under an approval card that had not
+	// been given the keyboard — the four states steering and the
+	// mid-sentence rule exist
+	// to keep the sentence live in. A key that is the input's in
+	// every state and a frame that is live but cannot recall
+	// were two claims about the same three lines, and the code was
+	// answering the older one.
+	if m.inputLive() && len(m.inputHistory) > 0 &&
+		(m.browsingHistory() || strings.TrimSpace(m.input.Value()) == "") {
+		if m.historyIdx > 0 {
+			m.historyIdx--
+			m.recallDraft(m.inputHistory[m.historyIdx])
+		}
+		return m, nil, true
+	}
+	// ↑ used to hand the keyboard to the transcript on an empty draft
+	// with no history to recall. It is the input's key in every other
+	// state, and a key that changes surface depending on how much
+	// history a session happens to have is one nobody can learn
+	//. Alternate scroll made it worse than unlearnable: on a
+	// terminal that synthesises arrows for the wheel, a flick opened
+	// reading mode (altscroll.go). Scrolling has its own keys now.
+	return m, nil, false
+}
+
+// historyForward answers the down arrow, the way historyBack answers the up
+// arrow.
+func (m Model) historyForward() (tea.Model, tea.Cmd, bool) {
+	if m.completionActive() {
+		if m.complete.idx < len(m.complete.items)-1 {
+			m.complete.idx++
+		}
+		m.complete.moved = true
+		return m, nil, true
+	}
+	if next, claimed := m.startKey(1); claimed {
+		return next, nil, true
+	}
+	if m.inputLive() && m.browsingHistory() {
+		m.historyIdx++
+		if m.historyIdx >= len(m.inputHistory) {
+			m.historyIdx = len(m.inputHistory)
+			m.recallDraft("")
+		} else {
+			m.recallDraft(m.inputHistory[m.historyIdx])
+		}
+		return m, nil, true
+	}
+	return m, nil, false
+}
+
+// sendChord answers enter: a continued line, an attached child, an offer on
+// the start screen, the pointed row, or the draft sent.
+func (m Model) sendChord() (tea.Model, tea.Cmd, bool) {
+	// A trailing backslash turns this enter into a newline, the
+	// shell's own continuation (continuation.go).
+	if m.holdSend() {
+		return m, nil, true
+	}
+	// While attached, Enter acts on the child: scoped commands and
+	// mid-turn steering.
+	if m.attachedTo != "" {
+		return answered(m.attachedSubmit())
+	}
+	// Enter on a live start screen types the focused suggestion and
+	// submits it, so choosing an offer and typing it are the same
+	// act down to the dispatch.
+	if action := m.startAction(); action != "" {
+		m.input.SetValue(action)
+		return answered(m.submitInput())
+	}
+	// And enter on an empty draft with the pointer lit is the pointer's
+	// open — the reading the start screen established, held everywhere.
+	// With a draft, enter sends the draft, pointer or not.
+	if m.pointerLit() && strings.TrimSpace(m.input.Value()) == "" {
+		return answered(m.openCursorRow(m.state))
+	}
+	// One submit path for every state that keeps the input live
+	// (command.go): commands run, plain text is a message when
+	// idle and steering while the agent works.
+	if m.inputLive() {
+		return answered(m.submitInput())
+	}
+	return m, nil, false
+}
+
+// modeChord cycles the permission mode: the attached child's, clamped to the
+// orchestrator's ceiling, or the session's own.
+func (m Model) modeChord() (tea.Model, tea.Cmd, bool) {
+	// Cycle the permission mode; attached, it cycles the
+	// child's mode clamped to the orchestrator's ceiling. A
+	// conversation has none to cycle, and says so.
+	if m.wiring.Conversation {
+		m.noteOneMode()
+		return m, nil, true
+	}
+	if m.attachedTo != "" {
+		return answered(m.cycleAttachedMode())
+	}
+	m.applyMode(agent.NextMode(m.policy.cycle, m.policy.mode))
+	return m, nil, true
+}
+
+// pageChord pages the transcript and leaves the keyboard in the draft.
+func (m Model) pageChord(pressed string) (tea.Model, tea.Cmd, bool) {
+	// The pager keys read the transcript and leave the keyboard in
+	// the draft. Reading is not a decision — the wheel
+	// has always said so — and the reader scrolling back to check a
+	// path mid-sentence is not asking to stop writing the sentence.
+	// Paging used to hand the keyboard over, which took the draft off
+	// the screen to answer a question about the pane above it.
+	//
+	// No draft can produce these keys, which is what makes them safe
+	// to spend here and why the letters bubbles binds to the same job
+	// (j/k/u/d/f/b and the spacebar) are still not offered at all.
+	if m.inputLive() {
+		dir := -1
+		if keys.Is(pressed, keys.Draft.PageDown) {
+			dir = 1
+		}
+		m.scrollPage(dir)
+		return m, nil, true
+	}
+	return m, nil, false
+}
+
+// openChord is enter's act on the pointed row, reached without emptying the
+// draft.
+func (m Model) openChord() (tea.Model, tea.Cmd, bool) {
+	// Enter's act on the pointed row, reached without emptying the
+	// draft: an offer on the start screen runs, a row opens.
+	if action := m.startAction(); action != "" {
+		m.input.SetValue(action)
+		return answered(m.submitInput())
+	}
+	if m.pointerLit() {
+		return answered(m.openCursorRow(m.state))
+	}
+	if m.inputLive() {
+		return m, nil, true
+	}
+	return m, nil, false
+}
+
+// completeChord writes the focused completion into the input.
+func (m Model) completeChord() (tea.Model, tea.Cmd, bool) {
+	// Tab writes the focused completion into the input. A file
+	// mention also stages an image, exactly as enter would
+	// (mention.go).
+	if m.completionActive() {
+		if m.complete.files {
+			return answered(m.insertMention())
+		}
+		m.acceptCompletion()
+		m.syncViewport()
+		return m, nil, true
+	}
+	return m, nil, false
+}
+
+// queueChord queues the draft behind the live turn, or takes the newest queued
+// message back.
+func (m Model) queueChord() (tea.Model, tea.Cmd, bool) {
+	// One chord, read by the draft's emptiness (followup.go): with a
+	// turn live and something typed it queues the draft for after
+	// the turn; on an empty draft it takes the newest queued message
+	// back. Claimed whenever the input is live, because the textarea
+	// underneath has a meaning for it that nothing offered.
+	if next, cmd, claimed := m.queueFollowUp(); claimed {
+		return next, cmd, true
+	}
+	if next, cmd, claimed := m.pullQueued(); claimed {
+		return next, cmd, true
+	}
+	if m.inputLive() {
+		return m, nil, true
+	}
+	return m, nil, false
+}
+
+// draftChord answers a key that is one of the draft's declared chords,
+// each in its own helper below. It reports false for a key that is none of
+// them, which then goes on to the line editor.
+func (m Model) draftChord(msg tea.KeyPressMsg, armed armedPress) (tea.Model, tea.Cmd, bool) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Draft.Cancel):
-		// While attached, Ctrl+C acts on the child: cancel its turn.
-		if m.attachedTo != "" {
-			return answered(m.attachedCancel())
-		}
-		if m.state == stateClassifying {
-			// Skip the classifier check and ask the user directly. The
-			// card arrives through the one door every decision arrives
-			// through, so it takes an empty draft's keyboard like any
-			// other arrival instead of showing keys nobody can press.
-			if m.classifier.cancel != nil {
-				m.classifier.cancel()
-				m.classifier.cancel = nil
-			}
-			m.setTurnState(stateConfirmRun)
-			m.syncViewport()
-			return m, nil, true
-		}
-		// The first press stops a running command, a working or parked
-		// turn, or a turn waiting on a decision that arrived beside the
-		// sentence — no draft can produce the chord, so it stays live while
-		// the card waits — and arms nothing: what the turn already did is
-		// kept and autosaved, and a stop never becomes a quit by itself
-		// (cancel.go).
-		if next, cmd, stopped := m.stopRun(); stopped {
+		if next, cmd, ok := m.cancelChord(armed); ok {
 			return next, cmd, true
 		}
-		if strings.TrimSpace(m.input.Value()) != "" {
-			// The one chord that clears a sentence keeps it first: the
-			// draft goes into the history the up arrow walks, so a press
-			// that was a reflex costs one keystroke to undo
-			// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-			m.recordInput(m.input.Value())
-			m.clearDraft()
-			return m, nil, true
-		}
-		// An empty idle draft: the chord means quit, and quitting is
-		// two presses of the same chord like every other way of walking
-		// away.
-		return answered(m.quitPress(armed))
 	case keys.Is(pressed, keys.Draft.Mode):
-		// Cycle the permission mode; attached, it cycles the
-		// child's mode clamped to the orchestrator's ceiling. A
-		// conversation has none to cycle, and says so.
-		if m.wiring.Conversation {
-			m.noteOneMode()
-			return m, nil, true
+		if next, cmd, ok := m.modeChord(); ok {
+			return next, cmd, true
 		}
-		if m.attachedTo != "" {
-			return answered(m.cycleAttachedMode())
-		}
-		m.applyMode(agent.NextMode(m.policy.cycle, m.policy.mode))
-		return m, nil, true
 	case keys.Is(pressed, keys.Draft.Agents):
 		// Agent manager; without a supervisor the key keeps its
 		// textarea meaning (character back).
@@ -300,17 +671,8 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// cannot keep a stream open (terminal.go).
 		return answered(m.suspend())
 	case keys.Is(pressed, keys.Draft.Reasoning):
-		// Reasoning effort: the level the next request asks for.
-		// It changes nothing about the conversation and nothing about the
-		// turn in flight, so like the rest of the live surfaces it is
-		// answered while one runs — and it is a chord, so the draft below
-		// keeps every letter it has.
-		if m.inputLive() && m.attachedTo == "" {
-			next, note := m.cycleReasoning()
-			m = next
-			m.appendEntry(entry{kind: entrySystem, text: note})
-			m.syncViewport()
-			return m, nil, true
+		if next, cmd, ok := m.reasoningChord(); ok {
+			return next, cmd, true
 		}
 	case keys.Is(pressed, keys.Draft.HistorySearch):
 		// Reverse search over the input ring: the shell's own key,
@@ -363,269 +725,40 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return answered(m.openKeyPopup())
 		}
 	case keys.Is(pressed, keys.Draft.PageUp, keys.Draft.PageDown):
-		// The pager keys read the transcript and leave the keyboard in
-		// the draft. Reading is not a decision — the wheel
-		// has always said so — and the reader scrolling back to check a
-		// path mid-sentence is not asking to stop writing the sentence.
-		// Paging used to hand the keyboard over, which took the draft off
-		// the screen to answer a question about the pane above it.
-		//
-		// No draft can produce these keys, which is what makes them safe
-		// to spend here and why the letters bubbles binds to the same job
-		// (j/k/u/d/f/b and the spacebar) are still not offered at all.
-		if m.inputLive() {
-			dir := -1
-			if keys.Is(pressed, keys.Draft.PageDown) {
-				dir = 1
-			}
-			m.scrollPage(dir)
-			return m, nil, true
+		if next, cmd, ok := m.pageChord(pressed); ok {
+			return next, cmd, true
 		}
 	case keys.Is(pressed, keys.Draft.PointUp, keys.Draft.PointDown):
-		// The pointer: reading mode's cursor moved from the prompt, with
-		// the draft keeping the keyboard and every letter it has
-		// (pointer.go). On the start screen the offers are the rows, and
-		// the chord is the plain arrow's act there.
-		dir := -1
-		if keys.Is(pressed, keys.Draft.PointDown) {
-			dir = 1
-		}
-		if next, claimed := m.startKey(dir); claimed {
-			return next, nil, true
-		}
-		// Claimed whenever the input is live, even with nothing to point
-		// at: the textarea underneath binds shift on the arrows to
-		// selecting text, and a chord declared on the input must not fall
-		// through to a meaning nothing offered.
-		if m.inputLive() {
-			if m.attachedTo == "" {
-				m.movePointer(dir)
-			}
-			return m, nil, true
+		if next, cmd, ok := m.pointerArrow(pressed); ok {
+			return next, cmd, true
 		}
 	case keys.Is(pressed, keys.Draft.Open):
-		// Enter's act on the pointed row, reached without emptying the
-		// draft: an offer on the start screen runs, a row opens.
-		if action := m.startAction(); action != "" {
-			m.input.SetValue(action)
-			return answered(m.submitInput())
-		}
-		if m.pointerLit() {
-			return answered(m.openCursorRow(m.state))
-		}
-		if m.inputLive() {
-			return m, nil, true
+		if next, cmd, ok := m.openChord(); ok {
+			return next, cmd, true
 		}
 	case keys.Is(pressed, keys.Draft.Close):
-		if m.pointerLit() {
-			m.closePointed()
-			return m, nil, true
-		}
-		if m.inputLive() {
-			return m, nil, true
+		if next, cmd, ok := m.closeChord(); ok {
+			return next, cmd, true
 		}
 	case keys.Is(pressed, keys.Draft.Clear):
-		// A visible selection is what esc cancels first.
-		// It is the only thing on the surface esc could mean while one
-		// is lit, and it says so without touching the draft — a reader
-		// who selected the wrong six screens has not also abandoned the
-		// sentence they were writing.
-		if m.cancelSelection() {
-			m.refreshTranscript()
-			return m, nil, true
+		if next, cmd, ok := m.escChord(armed); ok {
+			return next, cmd, true
 		}
-		// A lit pointer is the next thing esc leaves, for the same reason
-		// and ahead of the draft: it is the thing most recently put on the
-		// screen, and dropping it costs no letters.
-		if m.dropPointer() {
-			return m, nil, true
-		}
-		// With the completion menu open, esc only dismisses the menu; the
-		// draft survives and further typing re-opens it.
-		if m.completionActive() {
-			m.dismissCompletions()
-			m.syncViewport()
-			return m, nil, true
-		}
-		// Attached with an empty draft esc pops one breadcrumb level; a
-		// draft with text in it is never cleared by esc.
-		if m.attachedTo != "" && strings.TrimSpace(m.input.Value()) == "" {
-			m.detachOne()
-			return m, nil, true
-		}
-		// Then every row the reader opened, folded back to its resting
-		// state. The reflex the product teaches is "esc puts the screen
-		// back", and an opened row is the same kind of thing as a
-		// selection or a menu, with more of them
-		// (docs/interface/principles.md#esc-is-always-the-safe-answer,
-		// docs/interface/surfaces.md#the-input-frame). It comes after the
-		// four above because each of those is the thing most recently put
-		// on the screen and costs nothing to drop, and before everything
-		// below because those are what esc means once nothing is open.
-		//
-		// With text in the box it never runs: a reader who pressed esc to
-		// abandon a sentence has not also asked for the pane to change. It
-		// does run under a streaming turn, because it is the one act on
-		// this surface that abandons nothing — rows the turn lands after
-		// it arrive at their resting state, which is what they would have
-		// done anyway.
-		if strings.TrimSpace(m.input.Value()) == "" {
-			if m.readerOpenedARow() {
-				// Where the pane is anchored is read before the fold moves
-				// it, and put back after (render.go).
-				follow := m.viewport.AtBottom()
-				anchor := topEntry(m.entryLineStarts(), m.viewport.YOffset())
-				n := m.foldOpenedRows()
-				m.refreshTranscript()
-				m.anchorTo(anchor, follow)
-				m.pointer.foldNotice = foldedNotice(n)
-				// A fold answers nothing and abandons nothing, so it is
-				// not the press that spends a two-press window
-				// (cancel.go) — the judgement the inert press below makes,
-				// for the same reason.
-				m.armed = armed
-				return m, nil, true
-			}
-			// Nothing of the reader's was open, so the press is not
-			// claimed: a fold that did nothing must not be the press that
-			// changes what the next press means, and the chain goes on to
-			// mean what it has always meant. The rail still says why,
-			// where every open row on screen is the setting's.
-			if m.settingHoldsRowsOpen() {
-				m.pointer.foldNotice = verbosityHoldsNotice
-			}
-		}
-		// Empty draft while the turn streams: nothing at all. Esc is
-		// the key that leaves whatever is open, and the reflex that
-		// closes a diff or drops a selection arrives at a draft that
-		// happens to be empty often enough that letting it interrupt
-		// costs a turn nobody meant to stop. The two-press window is fed
-		// by the cancel chord alone
-		// (docs/interface/surfaces.md#the-input-frame).
-		//
-		// Inert here means inert: whatever two-press window was open is
-		// put back, because every key consumes one on the way in
-		// (cancel.go) and a key that does nothing must not be the thing
-		// that changes what the next press means.
-		if strings.TrimSpace(m.input.Value()) == "" && m.state == stateStreaming {
-			m.armed = armed
-			return m, nil, true
-		}
-		// Esc esc on an empty idle draft opens the rewind picker — the
-		// gesture three of the five harnesses share, over the surface
-		// /rewind already owns (docs/interface/surfaces.md#the-input-frame).
-		// Idle only: attached, the press above was the detach, and while
-		// a turn is live it was nothing — a picker offering to unwind a
-		// conversation the model is still writing into would be asking
-		// about a shape that has not settled. The window is short because
-		// the two presses are one gesture, not a press and a decision. A
-		// session with nothing to rewind to arms nothing: esc on an empty
-		// idle draft has always meant nothing, no rail advertises the
-		// gesture, and the alternative was a reflexive double-esc
-		// spending the start screen on a notice about a picker that
-		// cannot open.
-		if strings.TrimSpace(m.input.Value()) == "" && m.state == stateInput &&
-			len(m.checkpoints) > 0 {
-			if armed.open(armRewind) {
-				return answered(m.openRewindPick())
-			}
-			return m, m.armPressFor(armRewind, keys.Shown(keys.Draft.Clear), rewindPressWindow), true
-		}
-		// Esc never clears a sentence: what is typed stays exactly as it
-		// was, and ctrl+c is the chord that clears it (after recording it).
-		// An empty draft has nothing to keep; it only settles the history
-		// walk and the viewport.
-		if strings.TrimSpace(m.input.Value()) == "" {
-			m.clearDraft()
-		}
-		return m, nil, true
 	case keys.Is(pressed, keys.Draft.Complete):
-		// Tab writes the focused completion into the input. A file
-		// mention also stages an image, exactly as enter would
-		// (mention.go).
-		if m.completionActive() {
-			if m.complete.files {
-				return answered(m.insertMention())
-			}
-			m.acceptCompletion()
-			m.syncViewport()
-			return m, nil, true
+		if next, cmd, ok := m.completeChord(); ok {
+			return next, cmd, true
 		}
 	case keys.Is(pressed, keys.Draft.HistoryPrev):
-		if m.completionActive() {
-			if m.complete.idx > 0 {
-				m.complete.idx--
-			}
-			m.complete.moved = true
-			return m, nil, true
+		if next, cmd, ok := m.historyBack(); ok {
+			return next, cmd, true
 		}
-		// The start screen's suggestion list claims ↑↓ only while it is
-		// live: an empty draft on a session that has not started yet,
-		// which is also the only time the input history has nothing to
-		// browse.
-		if next, claimed := m.startKey(-1); claimed {
-			return next, nil, true
-		}
-		// Recall is the draft's, wherever the draft has the keyboard
-		//. It used to be the idle turn's: ↑ did nothing
-		// while the agent streamed, ran a command or waited on the
-		// classifier, and nothing under an approval card that had not
-		// been given the keyboard — the four states steering and the
-		// mid-sentence rule exist
-		// to keep the sentence live in. A key that is the input's in
-		// every state and a frame that is live but cannot recall
-		// were two claims about the same three lines, and the code was
-		// answering the older one.
-		if m.inputLive() && len(m.inputHistory) > 0 &&
-			(m.browsingHistory() || strings.TrimSpace(m.input.Value()) == "") {
-			if m.historyIdx > 0 {
-				m.historyIdx--
-				m.recallDraft(m.inputHistory[m.historyIdx])
-			}
-			return m, nil, true
-		}
-		// ↑ used to hand the keyboard to the transcript on an empty draft
-		// with no history to recall. It is the input's key in every other
-		// state, and a key that changes surface depending on how much
-		// history a session happens to have is one nobody can learn
-		//. Alternate scroll made it worse than unlearnable: on a
-		// terminal that synthesises arrows for the wheel, a flick opened
-		// reading mode (altscroll.go). Scrolling has its own keys now.
 	case keys.Is(pressed, keys.Draft.HistoryNext):
-		if m.completionActive() {
-			if m.complete.idx < len(m.complete.items)-1 {
-				m.complete.idx++
-			}
-			m.complete.moved = true
-			return m, nil, true
-		}
-		if next, claimed := m.startKey(1); claimed {
-			return next, nil, true
-		}
-		if m.inputLive() && m.browsingHistory() {
-			m.historyIdx++
-			if m.historyIdx >= len(m.inputHistory) {
-				m.historyIdx = len(m.inputHistory)
-				m.recallDraft("")
-			} else {
-				m.recallDraft(m.inputHistory[m.historyIdx])
-			}
-			return m, nil, true
+		if next, cmd, ok := m.historyForward(); ok {
+			return next, cmd, true
 		}
 	case keys.Is(pressed, keys.Draft.Queue):
-		// One chord, read by the draft's emptiness (followup.go): with a
-		// turn live and something typed it queues the draft for after
-		// the turn; on an empty draft it takes the newest queued message
-		// back. Claimed whenever the input is live, because the textarea
-		// underneath has a meaning for it that nothing offered.
-		if next, cmd, claimed := m.queueFollowUp(); claimed {
+		if next, cmd, ok := m.queueChord(); ok {
 			return next, cmd, true
-		}
-		if next, cmd, claimed := m.pullQueued(); claimed {
-			return next, cmd, true
-		}
-		if m.inputLive() {
-			return m, nil, true
 		}
 	case keys.Is(pressed, keys.Draft.Queued):
 		// The keyboard moves into what is queued, where any one message can
@@ -634,49 +767,38 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return next, cmd, true
 		}
 	case keys.Is(pressed, keys.Draft.Send):
-		// A trailing backslash turns this enter into a newline, the
-		// shell's own continuation (continuation.go).
-		if m.holdSend() {
-			return m, nil, true
-		}
-		// While attached, Enter acts on the child: scoped commands and
-		// mid-turn steering.
-		if m.attachedTo != "" {
-			return answered(m.attachedSubmit())
-		}
-		// Enter on a live start screen types the focused suggestion and
-		// submits it, so choosing an offer and typing it are the same
-		// act down to the dispatch.
-		if action := m.startAction(); action != "" {
-			m.input.SetValue(action)
-			return answered(m.submitInput())
-		}
-		// And enter on an empty draft with the pointer lit is the pointer's
-		// open — the reading the start screen established, held everywhere.
-		// With a draft, enter sends the draft, pointer or not.
-		if m.pointerLit() && strings.TrimSpace(m.input.Value()) == "" {
-			return answered(m.openCursorRow(m.state))
-		}
-		// One submit path for every state that keeps the input live
-		// (command.go): commands run, plain text is a message when
-		// idle and steering while the agent works.
-		if m.inputLive() {
-			return answered(m.submitInput())
+		if next, cmd, ok := m.sendChord(); ok {
+			return next, cmd, true
 		}
 	}
-	// The fold is one character as far as the keyboard is concerned
-	// (docs/interface/surfaces.md#the-input-frame), and this is where that is
-	// true: an arrow steps over the whole run and a backspace at its closing
-	// quote takes the token and the paste together.
-	//
-	// These four are matched on the key's own code and not against the
-	// register, because they are not offers. They are the line editor's, the
-	// way the readline chords the draft deliberately does not declare are
-	// (internal/ui/keys/keys.go), and nothing on any rail names them. What
-	// the fold changes is how much one press of a key the reader already has
-	// consumes — never what the key means.
-	if next, claimed := m.pasteFoldKey(msg); claimed {
-		return next, nil, true
+	return m, nil, false
+}
+
+// reasoningChord cycles the reasoning effort the next request asks for.
+func (m Model) reasoningChord() (tea.Model, tea.Cmd, bool) {
+	// Reasoning effort: the level the next request asks for.
+	// It changes nothing about the conversation and nothing about the
+	// turn in flight, so like the rest of the live surfaces it is
+	// answered while one runs — and it is a chord, so the draft below
+	// keeps every letter it has.
+	if m.inputLive() && m.attachedTo == "" {
+		next, note := m.cycleReasoning()
+		m = next
+		m.appendEntry(entry{kind: entrySystem, text: note})
+		m.syncViewport()
+		return m, nil, true
+	}
+	return m, nil, false
+}
+
+// closeChord closes the pointed row.
+func (m Model) closeChord() (tea.Model, tea.Cmd, bool) {
+	if m.pointerLit() {
+		m.closePointed()
+		return m, nil, true
+	}
+	if m.inputLive() {
+		return m, nil, true
 	}
 	return m, nil, false
 }
