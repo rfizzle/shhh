@@ -25,8 +25,6 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/runner"
-	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -609,7 +607,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var box *contained
 	if opts.sandbox {
 		var cleanup func()
-		box, cleanup, err = startPrintSandbox(cmd.Context(), cfg, session.vault.Names(), procSup)
+		box, cleanup, err = startPrintSandbox(cmd.Context(), cfg, sc, procSup)
 		if err != nil {
 			return err
 		}
@@ -1100,59 +1098,34 @@ func printPrompt(args []string, cfg config.Config) (string, error) {
 
 // startPrintSandbox starts the disposable container a --sandbox run's
 // approved commands exec inside, in the pieces the tail reads in place of the
-// host's containment, and hands back what tears it down.
-func startPrintSandbox(ctx context.Context, cfg config.Config, secrets []string, procSup *process.Supervisor) (*contained, func(), error) {
-	srun, cleanup, err := startSandbox(ctx, cfg, secrets)
+// host's containment, and hands back what tears it down. The container is
+// the session's own builder's (sandboxContainment), so a scripted run and a
+// session are contained by the same code.
+func startPrintSandbox(ctx context.Context, cfg config.Config, sc *scope.Scope, procSup *process.Supervisor) (*contained, func(), error) {
+	ws, err := os.Getwd()
 	if err != nil {
 		return nil, nil, fmt.Errorf("sandbox: %w", err)
 	}
-	c := &contained{
-		run: srun,
+	box, cleanup, err := sandboxContainment(ctx, cfg, ws, sc, procSup)
+	if err != nil {
+		return nil, nil, fmt.Errorf("sandbox: %w", err)
+	}
+	return &contained{
+		run:     box.Run,
+		profile: box.Profile,
+		missing: box.Toolchain.Missing,
 		// The mechanism is settled by the container existing, and the
-		// profile only names it: a session told nothing about the profile
-		// would still be wrong to be told nothing contains its commands.
-		// A ceiling backgrounds a command that is still printing only where
-		// there is a supervisor to hand it to, and that is taken back below.
-		said: commandEnvironment{Mechanism: "a disposable container", Ceiling: cfg.CommandTimeout(), Backgrounds: procSup != nil},
+		// profile only names it. The ceiling stops a command rather than
+		// backgrounding it: the builder took the adopter away, since what a
+		// supervisor would hold is the exec client.
+		said: sandboxCommandEnvironment(box, cfg),
 		// No hook runs in this run: a hook cannot follow the commands into the
 		// disposable container, and running it on the host instead would put
 		// the person's own command line outside the strongest containment this
 		// run has — the same answer, for the same reason, a process start gets.
 		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
 		noHooks: "» hooks: none run in a --sandbox run; a hook cannot follow the commands into the container",
-	}
-	// The container took the same profile the spec parsed; a name the
-	// parser refused could not have started it.
-	if profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile); err == nil {
-		c.profile = string(profile)
-		c.said.Profile = string(profile)
-		c.said.Network = profile != sandbox.ProfileWorkspaceNetless
-	}
-	if procSup != nil {
-		// Approved commands exec inside the disposable container and a
-		// started process cannot follow them in: what the supervisor
-		// would hold is the exec client, not the process, so stopping
-		// it would leave something running in a container nothing is
-		// watching. Starting on the host instead would put the one
-		// thing that keeps running outside the strongest containment
-		// this run has, so a start is refused and says why.
-		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
-		procSup.SetContainment(process.Containment{
-			Mechanism: "container sandbox",
-			Wrap: func(string, []string, []string) ([]string, error) {
-				return nil, fmt.Errorf("a long-running process cannot be started inside this run's disposable container; use execute_command, or run without --sandbox")
-			},
-		})
-		// The command ceiling answers to the same fact. A command that
-		// will not finish here is running in the container and the local
-		// process is the exec client, so handing that to the supervisor
-		// would put a name and a stop verb on something that is not the
-		// process. It is stopped at the ceiling instead.
-		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
-		runner.SetAdopter(nil)
-		c.said.Backgrounds = false
-	}
-	return c, cleanup, nil
+	}, cleanup, nil
 }
 
 // interruptOnSignal turns the first interrupt or termination signal the run

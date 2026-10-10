@@ -57,7 +57,10 @@ type screenBuild struct {
 	mode        agent.Mode
 	cycle       []agent.Mode
 	containment chat.Containment
-	hooks       *hook.Runner
+	// closeSandbox destroys a sandbox session's container; nil for every
+	// other session.
+	closeSandbox func()
+	hooks        *hook.Runner
 
 	// The readers built before the containment, in the order they always
 	// were.
@@ -99,6 +102,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	b.asm, b.env, b.cfg = asm, asm.env, asm.env.cfg
 	b.proj = ProjectConfigFrom(cmd.Context())
 
+	// The container goes last of everything the session opened, so the
+	// commands attached to it have been stopped before it is removed.
+	defer func() {
+		if b.closeSandbox != nil {
+			b.closeSandbox()
+		}
+	}()
 	if err := b.policy(); err != nil {
 		return err
 	}
@@ -247,8 +257,35 @@ func (b *screenBuild) policy() error {
 	// Process containment: assistant commands run wrapped when a
 	// mechanism is available; the confirm prompt shows the state either way.
 	procSup := b.asm.ts.proc
-	b.containment, err = buildContainment(cfg, b.asm.sc, procSup)
-	if err != nil {
+	said := func(c chat.Containment) commandEnvironment {
+		return commandEnvironment{
+			Mechanism: c.Mechanism,
+			Profile:   c.Profile,
+			Network:   c.Network,
+			Hosts:     c.Hosts,
+			Refused:   c.Refusal != "",
+			Ceiling:   cfg.CommandTimeout(),
+			// A ceiling backgrounds a command that is still printing only
+			// where there is a supervisor to hand it to (process.go).
+			Backgrounds: procSup != nil,
+		}
+	}
+	if session.sandbox {
+		// --sandbox puts the session's commands in a disposable container,
+		// and a container that cannot be made stops the session here rather
+		// than opening it under the host's mechanism or none. The container
+		// is destroyed when the session ends, after the screen's drain has
+		// stopped every command still attached to it.
+		// See docs/capabilities/containment.md#a-session-can-run-in-the-sandbox.
+		ws, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("sandbox: %w", err)
+		}
+		if b.containment, b.closeSandbox, err = sandboxContainment(b.cmd.Context(), cfg, ws, b.asm.sc, procSup); err != nil {
+			return fmt.Errorf("sandbox: %w", err)
+		}
+		said = func(c chat.Containment) commandEnvironment { return sandboxCommandEnvironment(c, cfg) }
+	} else if b.containment, err = buildContainment(cfg, b.asm.sc, procSup); err != nil {
 		return err
 	}
 	// …and what the model is told about it, beside where it was told the
@@ -258,17 +295,7 @@ func (b *screenBuild) policy() error {
 	// that; it is joined to the session's own extra too, so the next
 	// /new builds a conversation that was told the same thing.
 	c := b.containment
-	commandEnv := commandEnvironmentBlock(commandEnvironment{
-		Mechanism: c.Mechanism,
-		Profile:   c.Profile,
-		Network:   c.Network,
-		Hosts:     c.Hosts,
-		Refused:   c.Refusal != "",
-		Ceiling:   cfg.CommandTimeout(),
-		// A ceiling backgrounds a command that is still printing only
-		// where there is a supervisor to hand it to (process.go).
-		Backgrounds: procSup != nil,
-	})
+	commandEnv := commandEnvironmentBlock(said(c))
 	env.addBuiltPrompt(commandEnv)
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, commandEnv)
 	// …and which of the tools the checkout declared its commands will
@@ -294,10 +321,22 @@ func (b *screenBuild) openingHooks() {
 	env, session := b.env, b.session
 	hookCwd, _ := os.Getwd()
 	hooked := hookSet(b.cfg)
-	b.hooks = buildHooks(b.cfg, hooked, b.containment.Wrap, hookCwd)
 	for _, note := range hookNotes(hooked) {
 		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: "hooks: " + note})
 	}
+	if session.sandbox {
+		// A hook cannot follow the commands into the container yet, and run
+		// on the host it would be the person's own command line outside the
+		// containment they asked for — the answer a process start gets. So
+		// none runs, and that is said rather than left to be noticed.
+		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+		if hooked.Len() > 0 {
+			_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn,
+				Subject: "hooks: none run in a sandbox session; a hook cannot follow the commands into the container"})
+		}
+		return
+	}
+	b.hooks = buildHooks(b.cfg, hooked, b.containment.Wrap, hookCwd)
 	// A session opening is the first seam, and the one place where adding to
 	// what the model has been told is still free. The prompt is already built
 	// — it had to be, for the provider to be resolved — so what the hook says

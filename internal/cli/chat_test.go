@@ -19,9 +19,10 @@ func TestChatCmd_TheFlagsAnUnattendedRunIsDrivenBy(t *testing.T) {
 		}
 	}
 	// Nothing here edits or runs a command, so there is nothing for the
-	// coding agent's command flags to be about.
+	// coding agent's command flags to be about. --sandbox is registered only
+	// to be refused in a sentence (TestChatRefusesSandbox), and hidden.
 	for _, name := range []string{"allow", "sandbox", "require-sandbox"} {
-		if cmd.Flags().Lookup(name) != nil {
+		if f := cmd.Flags().Lookup(name); f != nil && !f.Hidden {
 			t.Errorf("`shhh chat` offers --%s and has no command to run", name)
 		}
 	}

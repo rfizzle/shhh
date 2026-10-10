@@ -140,6 +140,15 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		// A profile that may write and not execute holds no command, and a
 		// paragraph about refused commands would describe a tool it never had.
 		commandsRefused := childCommandsRefused(cfg, writer, avail) && holdsCommand(streamDefs)
+		runCommand := childCommandRunner(cfg, croot, sc, writer, avail)
+		commandRefusal := childCommandRefusal(cfg, writer, avail)
+		if session.sandbox && writer {
+			// A writer's worktree is outside the session's container, so its
+			// commands have nowhere contained to run, and on the host they
+			// would be outside what the person asked for (sandbox.go).
+			runCommand, commandRefusal = nil, sandboxWriterRefusal
+			commandsRefused = holdsCommand(streamDefs)
+		}
 
 		stream := childStream{
 			ctx:             cctx,
@@ -154,6 +163,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 			provider:        childProvider,
 			refusable:       refusable,
 			commandsRefused: commandsRefused,
+			sandboxWriter:   session.sandbox && writer,
 		}.stream()
 
 		return subagent.Env{
@@ -161,11 +171,11 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 			Stream:       stream,
 			Executor:     session.vault.WrapExecutor(subagent.RootedExecutor(croot, autoExec)),
 			ExecuteGated: session.vault.WrapExecutor(gatedExec),
-			RunCommand:   scrubResultRunner(session.vault, childCommandRunner(cfg, croot, sc, writer, avail)),
+			RunCommand:   scrubResultRunner(session.vault, runCommand),
 			// The refusal, answered ahead of the card: a command that could
 			// run nowhere whatever the person said is never put to them. A
 			// child it is set for is given no runner above.
-			CommandRefusal: childCommandRefusal(cfg, writer, avail),
+			CommandRefusal: commandRefusal,
 			// The same pipeline the parent's own commands go through, and
 			// the same store behind it: a child's evidence entries land
 			// beside the session's, so the id in a reduction notice is one
@@ -423,6 +433,9 @@ type childStream struct {
 	provider        provider.Provider
 	refusable       bool
 	commandsRefused bool
+	// sandboxWriter is a writer in a sandbox session, whose commands are
+	// refused for the container's reason rather than the host's.
+	sandboxWriter bool
 }
 
 // stream is the child's stream function. Each request is a fresh read of the
@@ -451,7 +464,11 @@ func (c childStream) stream() agent.StreamFunc {
 			msgs = withModeInstructions(msgs, mode, c.readOnlyExtra, c.defs)
 		}
 		if c.commandsRefused && choice != provider.ToolChoiceNone {
-			msgs = withRefusedCommands(msgs)
+			if c.sandboxWriter {
+				msgs = withSystemParagraph(msgs, prompt.SandboxWriterInstructions)
+			} else {
+				msgs = withRefusedCommands(msgs)
+			}
 		}
 		ev, sErr := c.provider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
 			Model:      c.model,

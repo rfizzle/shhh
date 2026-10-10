@@ -285,21 +285,17 @@ func sandboxImageFor(cfg config.Config) string {
 	return sandboxImage
 }
 
-// containerSpec builds the sandbox-container spec from config: workspace is
-// the current directory and the netless containment profile also removes the
-// container's network.
-func containerSpec(cfg config.Config) (sandbox.ContainerSpec, error) {
+// containerSpec builds the sandbox-container spec from config over
+// workspace, the one directory the container mounts; the netless
+// containment profile also removes the container's network.
+func containerSpec(cfg config.Config, workspace string) (sandbox.ContainerSpec, error) {
 	profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile)
 	if err != nil {
 		return sandbox.ContainerSpec{}, fmt.Errorf("config sandbox.profile: %w", err)
 	}
-	ws, err := os.Getwd()
-	if err != nil {
-		return sandbox.ContainerSpec{}, err
-	}
 	return sandbox.ContainerSpec{
 		Image:     sandboxImageFor(cfg),
-		Workspace: ws,
+		Workspace: workspace,
 		Network:   profile != sandbox.ProfileWorkspaceNetless,
 		Memory:    cfg.Sandbox.ContainerMemory,
 		CPUs:      cfg.Sandbox.ContainerCPUs,
@@ -308,15 +304,41 @@ func containerSpec(cfg config.Config) (sandbox.ContainerSpec, error) {
 	}, nil
 }
 
-// startSandbox creates the disposable container behind `shhh code -p
-// --sandbox` and returns the runner that execs agent commands into it plus
-// the cleanup that destroys it. Any unverifiable requirement — no engine, an
-// unpinned or unlisted image, or a required isolation level that cannot be
-// met — fails creation; there is no silent downgrade to a weaker sandbox.
-func startSandbox(ctx context.Context, cfg config.Config, env []string) (run func(context.Context, string) tools.ExecResult, cleanup func(), err error) {
+// sandboxMechanism is what the chip, the card and /status call a container
+// sandbox, and sandboxSaid what the model is told it is.
+const (
+	sandboxMechanism = "container sandbox"
+	sandboxSaid      = "a disposable container"
+)
+
+// sandboxContainment creates the disposable container a sandbox session's
+// commands run in, and answers the session's containment backed by it, with
+// the cleanup that destroys it. `shhh code --sandbox` and `shhh code -p
+// --sandbox` are both built on it.
+//
+// Any requirement it cannot verify — no engine, an unpinned or unlisted
+// image, a required isolation level that cannot be met, a declaration that
+// does not prepare, an image without the command helper — fails the build,
+// and the session does not open: there is no falling back to the host's
+// mechanism or to nothing. A person who asked for a container and was handed
+// Seatbelt would be told one thing and given another.
+// See docs/capabilities/containment.md#a-session-can-run-in-the-sandbox.
+//
+// What goes in is the session's commands, through the helper, attached so a
+// cancel reaches them (runner.RunCaptureArgvInAttached). A process start is
+// refused and a hook is not run, since neither can follow the commands into
+// the container yet; Wrap is nil for the second reason. A command at its
+// ceiling is stopped rather than handed to the supervisor, which would hold
+// the exec client rather than the command.
+// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+func sandboxContainment(ctx context.Context, cfg config.Config, workspace string, sc *scope.Scope, sup *process.Supervisor) (_ chat.Containment, cleanup func(), err error) {
+	profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile)
+	if err != nil {
+		return chat.Containment{}, nil, fmt.Errorf("config sandbox.profile: %w", err)
+	}
 	store, err := sandbox.OpenStore()
 	if err != nil {
-		return nil, nil, err
+		return chat.Containment{}, nil, err
 	}
 	sandbox.Reconcile(ctx, store, time.Now().UTC())
 
@@ -325,42 +347,170 @@ func startSandbox(ctx context.Context, cfg config.Config, env []string) (run fun
 	if s := cfg.Sandbox.RequireIsolation; s != "" {
 		configured, err := sandbox.ParseIsolation(s)
 		if err != nil {
-			return nil, nil, fmt.Errorf("config sandbox.require_isolation: %w", err)
+			return chat.Containment{}, nil, fmt.Errorf("config sandbox.require_isolation: %w", err)
 		}
 		if configured.Rank() > required.Rank() {
 			required = configured
 		}
 	}
 	if err := sandbox.VerifyIsolation(required, sandbox.Detect(), eng); err != nil {
-		return nil, nil, err
+		return chat.Containment{}, nil, err
 	}
 
-	spec, err := containerSpec(cfg)
+	spec, err := containerSpec(cfg, workspace)
 	if err != nil {
-		return nil, nil, err
+		return chat.Containment{}, nil, err
 	}
 	if spec.Prepared, err = preparedImage(ctx, eng, spec, cfg.Sandbox.ImageAllowlist, store); err != nil {
-		return nil, nil, err
+		return chat.Containment{}, nil, err
 	}
 	c, err := sandbox.CreateContainer(ctx, eng, spec, cfg.Sandbox.ImageAllowlist, store)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	run = func(ctx context.Context, command string) tools.ExecResult {
-		return runner.RunCaptureArgvInResult(ctx, "", command, c.ExecArgv(command, env...))
+		return chat.Containment{}, nil, err
 	}
 	cleanup = func() {
-		// The parent ctx is usually done by cleanup time; destruction gets its
-		// own bounded lifetime so the container never outlives the run by
-		// accident (and the TTL reaper backstops a failure here).
+		// The parent ctx is usually done by cleanup time; destruction gets
+		// its own bounded lifetime so the container never outlives the
+		// session by accident (and the TTL reaper backstops a failure here).
 		dctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 		if err := sandbox.DestroyContainer(dctx, eng.Path, store, c.Record); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: sandbox %s not destroyed: %v (TTL reaping will retry)\n", c.Record.ID, err)
 		}
 	}
-	return run, cleanup, nil
+	// The helper is asked once, before anything runs: a container without
+	// it would run a command whose cancel never reaches it, which is the
+	// one thing a sandbox session is not allowed to be.
+	if err := c.ProbeHelper(ctx); err != nil {
+		cleanup()
+		return chat.Containment{}, nil, fmt.Errorf("the sandbox image %s cannot run this session's commands: %v; "+
+			"use the image released with this shhh (leave sandbox.container_image unset), or an image built FROM it", spec.Image, err)
+	}
+
+	// The session's secrets cross by name, read when the command runs, as
+	// the host's mechanisms read them: the vault can be answered mid-session.
+	run := func(ctx context.Context, command string, onLine func(string)) tools.ExecResult {
+		argv, err := c.HelperCommand(sandbox.HelperExec{Secrets: runner.SessionEnvNames()}, command)
+		if err != nil {
+			return runner.WrapFailure("", err)
+		}
+		if onLine == nil {
+			return runner.RunCaptureArgvInAttached(ctx, "", command, argv)
+		}
+		return runner.RunCaptureArgvTailAttached(ctx, command, argv, onLine)
+	}
+	report := func() string { return sandboxSessionReport(c, spec, profile) }
+	cont := chat.Containment{
+		Run:     func(ctx context.Context, command string) tools.ExecResult { return run(ctx, command, nil) },
+		TailRun: run,
+		Status:  fmt.Sprintf("contained: %s (%s profile)", sandboxMechanism, profile),
+		Report:  report(),
+		Now:     report,
+		// The container's network is the profile's switch and nothing
+		// narrower: it holds no host list, so none is named.
+		Mechanism: sandboxMechanism,
+		Profile:   string(profile),
+		Network:   spec.Network,
+		Required:  cfg.Sandbox.Require,
+		GitStore:  c.GitStoreWords(),
+		Detail:    joinDetail(eng.Detail, "image "+shortImage(spec.Image)),
+		Manage:    sandboxManage(cfg, sc, sup),
+		Writers:   "a writer's commands: " + writerRefused + " — " + sandboxWriterWords,
+		Toolchain: sandboxToolchain(ctx, c),
+	}
+	if sup != nil {
+		sup.SetContainment(process.Containment{
+			Mechanism: sandboxMechanism,
+			Wrap: func(string, []string, []string) ([]string, error) {
+				return nil, fmt.Errorf("a long-running process cannot be started inside this session's disposable container yet; use execute_command, or run without --sandbox")
+			},
+		})
+		runner.SetAdopter(nil)
+	}
+	return cont, cleanup, nil
+}
+
+// sandboxWriterWords is why a writer's commands are refused in a sandbox
+// session, and sandboxWriterRefusal the refusal each one gets: a writer works
+// in a worktree of its own, outside the container's one mount, and an engine
+// cannot add a mount to a container that is running. Running them on the
+// host instead would put the work nobody watches outside the containment the
+// person asked for.
+const (
+	sandboxWriterWords   = "a writer's worktree is outside this session's container"
+	sandboxWriterRefusal = "error: a writer's commands are refused in a sandbox session: " + sandboxWriterWords +
+		", and they do not run anywhere else. Leave the commands to the session, or run without --sandbox."
+)
+
+// sandboxCommandEnvironment is what the model is told its commands run under
+// in a sandbox session: a disposable container, its profile and its network.
+// A command at the ceiling is stopped, since there is nowhere to move one to.
+// See docs/capabilities/containment.md#the-model-is-told-what-its-commands-run-under.
+func sandboxCommandEnvironment(c chat.Containment, cfg config.Config) commandEnvironment {
+	return commandEnvironment{
+		Mechanism: sandboxSaid,
+		Profile:   c.Profile,
+		Network:   c.Network,
+		Ceiling:   cfg.CommandTimeout(),
+	}
+}
+
+// sandboxSessionReport is the session's own container, for /sandbox and
+// /safety: which one it is, what it started from and what it holds the
+// commands to.
+func sandboxSessionReport(c sandbox.Container, spec sandbox.ContainerSpec, profile sandbox.Profile) string {
+	network := "none"
+	if spec.Network {
+		network = "open"
+	}
+	return "Command containment: " + sandboxMechanism + " " + c.Record.ID + " (" + c.Engine.Name + ")\n" +
+		"  image:     " + shortImage(spec.Image) + "\n" +
+		"  workspace: " + c.Record.Workspace + " (the one mount)\n" +
+		"  profile:   " + string(profile) + " · network " + network
+}
+
+// sandboxToolchain is the checkout's declaration as a sandbox session holds
+// it: what the container lacks, asked of the container, since its commands
+// find what the prepared image holds and not what this machine's PATH does.
+// Nothing is offered to install: the image is where a sandbox's tools come
+// from, and the declaration is what prepares it.
+// See docs/capabilities/containment.md#a-sandbox-starts-from-an-image-prepared-from-it.
+func sandboxToolchain(ctx context.Context, c sandbox.Container) chat.Toolchain {
+	t := chat.Toolchain{Moved: toolchainMoved}
+	tc, declared, _ := project.LoadToolchain(projectTrust())
+	if !declared || len(tc.Check) == 0 {
+		return t
+	}
+	t.Declared = tc.Check
+	t.Missing = containerMissing(ctx, c, tc.Check)
+	t.Refusal = "this session's commands run in its sandbox container, so nothing is installed on this machine for them: " +
+		"what the container lacks is installed by the declaration, which prepares the image the next sandbox session starts from"
+	t.Reread = func() chat.Toolchain { return t }
+	return t
+}
+
+// containerMissing asks the container which of the declared tools its PATH
+// lacks. A container that cannot say leaves the list empty rather than
+// claiming every tool is missing.
+func containerMissing(ctx context.Context, c sandbox.Container, check []string) []string {
+	script := `for t in "$@"; do command -v "$t" >/dev/null 2>&1 || echo "$t"; done`
+	argv, err := c.HelperArgv(sandbox.HelperExec{}, append([]string{"/bin/sh", "-c", script, "sh"}, check...))
+	if err != nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	result := runner.RunCaptureArgvInAttached(ctx, "", "toolchain check", argv)
+	if result.Outcome != tools.ExecSucceeded {
+		return nil
+	}
+	var missing []string
+	for _, line := range strings.Split(strings.TrimSpace(result.Output), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			missing = append(missing, line)
+		}
+	}
+	return missing
 }
 
 // preparedImage is the image the run's container starts from when the

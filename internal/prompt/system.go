@@ -511,6 +511,16 @@ Your commands are required to run contained, and this machine has no containment
 - Make the change with file reads and edits alone. Do not run a command to build, test or inspect.
 - In your report, name the commands that would verify the change, so the session can run them where it can.`
 
+// SandboxWriterInstructions is UncontainedWriterInstructions for a writer in
+// a session whose commands run in a sandbox container: the writer's worktree
+// is outside the container, so its commands are refused there too, and the
+// reason it is told is that one rather than a machine with no containment.
+// See docs/capabilities/containment.md#a-session-can-run-in-the-sandbox.
+const SandboxWriterInstructions = `# Commands are refused here
+This session runs its commands in a sandbox container, and your worktree is outside it, so every command you run is refused before it starts; no approval can run one.
+- Make the change with file reads and edits alone. Do not run a command to build, test or inspect.
+- In your report, name the commands that would verify the change, so the session can run them in its container.`
+
 // ReadOnlyModeInstructions is appended to the system prompt while the session
 // is in read-only mode. It says what the mode is and stops: the mode has no
 // product of its own, so an instruction about what to produce instead would be

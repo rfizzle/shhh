@@ -31,6 +31,7 @@ func newChatCmd() *cobra.Command {
 	var addDirs []string
 	var secretFlags []string
 	var mode string
+	var sandboxFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "chat [prompt]",
@@ -44,6 +45,12 @@ func newChatCmd() *cobra.Command {
 			// See docs/capabilities/chat.md#a-conversation-has-one-mode.
 			if cmd.Flags().Changed("mode") {
 				return errConversationMode
+			}
+			// A sandbox contains a session's commands, and a conversation runs
+			// none, so a container asked for here would contain nothing.
+			// See docs/capabilities/containment.md#a-session-can-run-in-the-sandbox.
+			if cmd.Flags().Changed("sandbox") {
+				return errConversationSandbox
 			}
 			// What the run will write, from the two spellings that say it.
 			// It is settled before a provider is resolved for the reason the
@@ -113,6 +120,8 @@ func newChatCmd() *cobra.Command {
 	// does not offer what the command will not take.
 	cmd.Flags().StringVar(&mode, "mode", "", "refused: a conversation has one mode")
 	_ = cmd.Flags().MarkHidden("mode")
+	cmd.Flags().BoolVar(&sandboxFlag, "sandbox", false, "refused: a conversation runs no command")
+	_ = cmd.Flags().MarkHidden("sandbox")
 
 	return cmd
 }
@@ -120,6 +129,11 @@ func newChatCmd() *cobra.Command {
 // errConversationMode is the refusal --mode on `shhh chat` answers with.
 var errConversationMode = errors.New("shhh chat has one mode, read-only: a conversation changes nothing in the tree or on the machine, " +
 	"so there is no permission to choose. Drop --mode, or use shhh code --mode for a session that acts")
+
+// errConversationSandbox is the refusal --sandbox on `shhh chat` answers
+// with.
+var errConversationSandbox = errors.New("shhh chat runs no command, so there is nothing for a sandbox to contain. " +
+	"Drop --sandbox, or use shhh code --sandbox for a session whose commands run in a container")
 
 // conversationSession is `shhh chat`'s session, shared with `shhh chats`,
 // which is the same conversation opened on a saved one. The toolset is every

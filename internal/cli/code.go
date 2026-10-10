@@ -68,7 +68,7 @@ func newCodeCmd() *cobra.Command {
 			if popts.schema, err = outputSchema(schemaPath); err != nil {
 				return err
 			}
-			headless := printMode || popts.json || popts.sandbox || cmd.Flags().Changed("output") || cmd.Flags().Changed("output-schema")
+			headless := printMode || popts.json || cmd.Flags().Changed("output") || cmd.Flags().Changed("output-schema")
 			// The permission mode, which only a run with nobody in front of
 			// it takes as a flag: a session cycles its own with Shift+Tab
 			// and starts in behavior.default_mode, so a flag here would be a
@@ -150,7 +150,7 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
 	cmd.Flags().StringVar(&mode, "mode", "", "with --print, the permission mode: `auto` puts a call --yes and --allow do not answer to the permission classifier, which refuses whatever it cannot approve (the only mode a run with no terminal takes)")
-	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "run approved commands inside a disposable container sandbox; needs a configured digest-pinned image (implies --print)")
+	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "contain the session's commands in a disposable container sandbox (the agent and its key stay on this machine); needs a container engine and the released image, or one built from it")
 	cmd.Flags().BoolVar(&requireSandbox, "require-sandbox", false, "refuse the assistant's commands outright where no containment mechanism is in force, rather than running them unconfined")
 	cmd.Flags().IntVar(&popts.maxRounds, "max-rounds", 0, "cap consecutive tool-call rounds per turn (0 removes the cap, for a run left unattended; default: behavior.max_tool_rounds)")
 

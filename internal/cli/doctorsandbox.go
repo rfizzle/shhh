@@ -109,7 +109,7 @@ func doctorSandbox(avail sandbox.Availability, policy sandbox.Policy, goos strin
 		f.FixLabel = "show what can be done instead"
 		f.Fix = []string{
 			"there is no containment mechanism on " + goos,
-			"run the agent inside a container sandbox instead: shhh code -p --sandbox",
+			"run the session's commands inside a container sandbox instead: shhh code --sandbox",
 		}
 	}
 	return f
@@ -136,13 +136,17 @@ func probeEngine(_ context.Context, cfg config.Config) doctorFinding {
 func probeImage(ctx context.Context, cfg config.Config) doctorFinding {
 	tc, declared, err := project.LoadToolchain(projectTrust())
 	r := preparedReading{declared: declared && sandbox.NeedsPreparing(tc), broken: err != nil}
-	if !r.declared {
-		return doctorImage(r)
-	}
 	eng := sandbox.DetectEngine(cfg.Sandbox.ContainerEngine)
 	base := sandboxImageFor(cfg)
 	if !eng.OK || sandbox.ValidateImage(base, cfg.Sandbox.ImageAllowlist) != nil {
 		// The engine row says which, and why.
+		return doctorImage(r)
+	}
+	// Whether the image carries the helper is the image's own question,
+	// declaration or none: an image without it is one no sandbox session
+	// will start.
+	r.helper, _ = sandbox.ImageHelper(ctx, eng, base)
+	if !r.declared {
 		return doctorImage(r)
 	}
 	r.sandbox = true
@@ -163,6 +167,9 @@ type preparedReading struct {
 	id string
 	// err is an engine that could not say.
 	err error
+	// helper is whether the base carries the command helper, as
+	// sandbox.ImageHelper reads it, or "" where nothing was read.
+	helper string
 }
 
 // doctorImage reads the image a --sandbox run starts from: the declaration it
@@ -174,6 +181,31 @@ type preparedReading struct {
 // does not load is the needs row's to explain, since one fault is not two.
 // See docs/capabilities/containment.md#a-sandbox-starts-from-an-image-prepared-from-it.
 func doctorImage(r preparedReading) doctorFinding {
+	return withHelper(preparedImageFinding(r), r.helper)
+}
+
+// withHelper adds to the image row whether the image carries the command
+// helper. One that lacks it is the one reading that warns: a sandbox session
+// refuses such an image rather than running commands its cancel cannot reach.
+// See docs/capabilities/containment.md#a-session-can-run-in-the-sandbox.
+func withHelper(f doctorFinding, helper string) doctorFinding {
+	switch helper {
+	case sandbox.HelperCarried:
+		f.Detail = joinDetail(f.Detail, "carries the command helper")
+	case sandbox.HelperUnpulled:
+		f.Detail = joinDetail(f.Detail, "not pulled yet; a sandbox session checks the helper when it starts")
+	case sandbox.HelperLacking:
+		f.Detail = joinDetail(f.Detail, "no command helper")
+		f.Outcome, f.State = "no helper", components.DoctorWarned
+		f.Consequence = joinConsequence(f.Consequence, "a sandbox session refuses this image: a command in it could not be stopped from here")
+		f.FixLabel = "show what to use instead"
+		f.Fix = []string{"the image released with this shhh carries it: leave sandbox.container_image unset", "or build yours FROM that image"}
+	}
+	return f
+}
+
+// preparedImageFinding is the image row's reading of the preparation.
+func preparedImageFinding(r preparedReading) doctorFinding {
 	switch {
 	case r.broken:
 		return doctorFinding{Subject: "unreadable", Detail: project.ToolchainFile + " · --sandbox refuses until it loads",
@@ -211,7 +243,7 @@ func ownedSandboxCount() int {
 }
 
 // doctorEngine reads container sandboxes, which are opt-in: `shhh code
-// -p --sandbox` asks for one and nothing else does. So a machine with no
+// --sandbox` asks for one, with or without -p, and nothing else does. So a machine with no
 // engine is `⊘ not checked` rather than a failure — the row states what is
 // not available instead of claiming something is broken (invariant 4).
 func doctorEngine(eng sandbox.Engine, image string, imageErr error, owned int) doctorFinding {
@@ -219,7 +251,7 @@ func doctorEngine(eng sandbox.Engine, image string, imageErr error, owned int) d
 		return doctorFinding{
 			Subject: "no container engine", Detail: eng.Detail,
 			Outcome: "not available", State: components.DoctorSkipped,
-			Consequence: "shhh code -p --sandbox will refuse to start; nothing else needs one",
+			Consequence: "shhh code --sandbox will refuse to start, with or without -p; nothing else needs one",
 			FixLabel:    "show what a sandbox needs",
 			Fix: []string{
 				"install podman (rootless, preferred) or docker",

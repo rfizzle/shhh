@@ -557,6 +557,59 @@ is built here — from an allowed base and a declaration the checkout was
 trusted for — with both recorded on it as labels. It is run by its image ID,
 which is as fixed as a digest, and never by its tag.
 
+## A session can run in the sandbox
+
+`shhh code --sandbox` opens the session with its commands in a disposable
+container, and `-p` makes the same thing a scripted run. The container is made
+when the session starts, from the released image or one prepared from it, with
+the workspace as its one mount, every capability dropped and no network under
+the netless profile; it is removed when the session ends, after the commands
+still running in it have been stopped, and a session resumed later gets a new
+one. The ownership record and the reaper behind it are the backstop for a
+session that ends without removing it.
+
+**What goes in is what starts a program.** The assistant's commands run in the
+container. What stays on this machine stays on purpose: the agent and its
+provider key, which never enter the container; the store, so sessions and
+spend are recorded where every other session's are; the file tools, which are
+shhh's own scope-checked code writing the same mounted tree; the reading of
+the tree between rounds, which is the host's own git, already kept from
+running anything a command wrote; and the language servers, MCP servers and
+the web tools. A process start is refused, a hook is not run and says so, and
+a writer's commands are refused with a sentence, since a writer's worktree is
+outside the container's one mount; none of them may fall back to running on
+the host, which would put the one thing outside the containment the person
+asked for.
+
+**A command in the container is reached through its stream.** An engine's exec
+forwards no signal, so stopping the client on this machine would leave the
+command running inside. Every exec therefore runs the command under shhh's own
+helper, which the image carries: it holds the command in a process group of its
+own and watches its stdin, which is the far end of the client's. Stopping a
+command — a cancel, the ceiling, the session ending — first closes that
+stream, and the hang-up is the helper's cue to interrupt the group, wait the
+grace and freeze and kill whatever ignored it, the same sequence a command on
+the host gets ([below](#a-cancelled-command-takes-its-children-with-it)).
+Nothing on this machine names a process inside the container.
+
+**An image without the helper is refused, and so is every other failure.** The
+session asks the helper which protocol it speaks before its first turn. A
+container whose image lacks it, or answers another, stops the session with the
+image named and the fix: the image released with this shhh, or one built from
+it. No engine, an unpinned image, a declaration that does not prepare — each
+stops the session too, rather than opening it under the host's mechanism or
+under nothing, because a person who asked for a container and was handed
+something weaker would be told one thing and given another. `shhh doctor`
+says on its image row whether the image carries the helper.
+
+**The share has a cost.** The file tools write the tree here and the commands
+read it in the container, across the engine's file share. A watcher started in
+the container may not be told of an edit made here, and on a Linux host a file
+a command writes as the container's root is owned by root on the host.
+
+`shhh chat --sandbox` is refused: a conversation runs no command, so there is
+nothing for a container to contain.
+
 ## A checkout declares the toolchain its work needs
 
 The image carries the toolchains most projects build with and nothing a

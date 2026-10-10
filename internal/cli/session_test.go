@@ -515,6 +515,22 @@ func (assemblyProvider) StreamCompletion(context.Context, []provider.Message, pr
 // what that model was given.
 func buildSession(t *testing.T, args ...string) chat.Wiring {
 	t.Helper()
+	got, built, out, err := assembleSessionWith(t, "", args...)
+	if err != nil {
+		t.Fatalf("shhh %v: %v\n%s", args, err, out)
+	}
+	if !built {
+		t.Fatalf("shhh %v returned before it built a session", args)
+	}
+	return got
+}
+
+// assembleSessionWith is buildSession over a config with extra appended to
+// it, handing back whatever came of it rather than failing the test: the
+// wiring and whether the screen was built, what the command printed and its
+// error.
+func assembleSessionWith(t *testing.T, extra string, args ...string) (chat.Wiring, bool, string, error) {
+	t.Helper()
 	home := t.TempDir()
 	// The session installs its host reading for the whole process, over the
 	// lists in this home's cache, and nothing a test-ended session runs takes
@@ -547,7 +563,7 @@ func buildSession(t *testing.T, args ...string) chat.Wiring {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"),
-		[]byte("[hooks.entries.assembly]\nevent = \"pre_tool\"\ncommand = \"true\"\n"), 0o644); err != nil {
+		[]byte("[hooks.entries.assembly]\nevent = \"pre_tool\"\ncommand = \"true\"\n"+extra), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -568,13 +584,8 @@ func buildSession(t *testing.T, args ...string) chat.Wiring {
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
 	cmd.SetArgs(append(args, "--provider", "assembly-test", "--model", "assembly"))
-	if err := execute(context.Background(), cmd); err != nil {
-		t.Fatalf("shhh %v: %v\n%s", args, err, out.String())
-	}
-	if !built {
-		t.Fatalf("shhh %v returned before it built a session", args)
-	}
-	return got
+	err := execute(context.Background(), cmd)
+	return got, built, out.String(), err
 }
 
 // Every mechanism here is one whose absence a person discovers by working
