@@ -399,8 +399,9 @@ func (r headlessApproval) approveServerCall(tc provider.ToolCall, call agent.Cla
 	return r.red.Process(tc.Name, agent.ExecuteWith(r.mcpTools.Execute, tc))
 }
 
-// approveFetch answers web_fetch, an external action: --yes opts in, the
-// default denies like every other gated call.
+// approveFetch answers web_fetch, an external action: --yes opts in to any
+// host the deny list does not name, the default denies like every other
+// gated call.
 func (r headlessApproval) approveFetch(tc provider.ToolCall, call agent.Classified) string {
 	// The host is on the action because it is the unit a fetch is judged
 	// on: the classifier is being asked whether this page is an outbound
@@ -426,6 +427,24 @@ func (r headlessApproval) approveFetch(tc provider.ToolCall, call agent.Classifi
 		}
 		reason = observe.ReasonCode(why)
 	} else {
+		// --yes is a yes to every gated call and never to a host the person
+		// refused: the host deny list is read here, through the rules the
+		// screen asks, before the flag answers and before the fetcher is
+		// handed the call, so the model reads the screen's sentence. The
+		// plan leaves the host off where the fetcher's own copy of the list
+		// refused it, and that is the host the rules have to read.
+		// See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
+		if r.opts.yes {
+			ruled := call
+			ruled.Action = fetchAction
+			if ruled.Action.Host == "" {
+				ruled.Action.Host = web.FetchHost(json.RawMessage(tc.Arguments))
+			}
+			if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, ruled)); refused {
+				r.refuse(tc, "", refusal.Code)
+				return refusal.Result
+			}
+		}
 		var ok bool
 		reason, took, ok = r.answer(tc, fetchAction,
 			r.opts.yes, observe.ReasonHeadlessYes, "web fetch", "external actions by default (run with --yes)")

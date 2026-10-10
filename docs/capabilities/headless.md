@@ -381,7 +381,12 @@ brings back can change the tree or the machine
 ([`chat.md`](chat.md#a-conversation-has-one-mode)). A run that refused the
 read the screen beside it allows would be the same session with two answers.
 The flag is still accepted there, so a script that passes it keeps running; a
-coding run's fetch is an external action and still takes it.
+coding run's fetch is an external action and still takes it. Taking it does
+not take a fetch past the host list: a `--yes` run reads `web.deny_hosts`
+before the fetch is made, through the rules the screen asks
+([one assembly, two doors](approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow)),
+and the model is told what the screen tells it — that no URL on that host
+will be fetched, so another path will not work either.
 
 A flag the run cannot honour is a usage error rather than a silent no-op.
 `--resume` with no chat named opens a picker, and a run with nobody in front

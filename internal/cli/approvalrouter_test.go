@@ -3,6 +3,8 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net/netip"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,9 +30,10 @@ import (
 // by a rule.
 //
 // The unattended run is given --yes, the widest answer it has, so a rule it
-// reads after its flags — the working scope — is reached; the one fetch row
-// is a conversation's, the run whose host deny list is read through a policy
-// rather than behind a flag.
+// reads after its flags — the working scope — is reached. Of the two fetch
+// rows one is a conversation's, the run whose host deny list is read through
+// a policy rather than behind a flag, and the other a coding run's, whose
+// --yes the host deny list is read ahead of.
 func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 	base := t.TempDir()
 	home, ws := filepath.Join(base, "home"), filepath.Join(base, "ws")
@@ -94,6 +97,8 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 		{name: "a process start destroying the filesystem root", call: processStartCall("wipe", "rm -rf /"),
 			rule: agent.DenyReasonIrreplaceable, code: observe.ReasonSafety, sameWords: true},
 		{name: "a fetch to a refused host", call: fetch("https://evil.test/page"), conversation: true,
+			rule: agent.DenyReasonHost, code: observe.ReasonDenylist, sameWords: true},
+		{name: "a fetch to a refused host under --yes", call: fetch("https://evil.test/page"),
 			rule: agent.DenyReasonHost, code: observe.ReasonDenylist, sameWords: true},
 		{name: "a command where nothing contains it", call: execCall("go version"), contained: true,
 			rule: "containment", sameWords: true},
@@ -184,6 +189,68 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 			}
 			if c.sameWords && sResult != hResult {
 				t.Fatalf("the doors told the model different things:\nscreen: %s\nrun:    %s", sResult, hResult)
+			}
+		})
+	}
+}
+
+// A run given --yes reads the host deny list before its fetcher runs: the
+// refusal is the standing rules', in the sentence and under the code the
+// screen and a conversation give it, whether or not the fetcher holds its own
+// copy of the list — the production fetcher does, and refuses the host while
+// the call is still being read. The other two answers a coding run has for a
+// fetch keep theirs: auto mode's judge reads the list through its own policy
+// and says so in its own refusal, and a run given no flag refuses every fetch
+// the way it always has.
+func TestApprovalRouter_AYesFetchReadsTheHostList(t *testing.T) {
+	denyHosts := []string{"evil.test"}
+	call := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://evil.test/page"}`}
+	for _, c := range []struct {
+		name string
+		yes  bool
+		// fetcherDenies hands the fetcher the list as openWebTools does.
+		fetcherDenies bool
+		judge         *autoJudge
+		want          string
+		code          string
+	}{
+		{name: "--yes, the fetcher holding the list too", yes: true, fetcherDenies: true,
+			want: agent.DeniedHostResult, code: observe.ReasonDenylist},
+		{name: "--yes, the fetcher holding none", yes: true,
+			want: agent.DeniedHostResult, code: observe.ReasonDenylist},
+		{name: "--mode auto", judge: &autoJudge{denyHosts: denyHosts},
+			want: agent.UnattendedRefusedResult("web fetch", agent.DenyReasonHost), code: observe.ReasonDenylist},
+		{name: "no flag", want: "error: web fetch not approved: headless mode denies external actions by default (run with --yes)",
+			code: observe.ReasonHeadlessDefault},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			policy := web.Policy{}
+			if c.fetcherDenies {
+				policy.DenyHost = func(host string) bool { return agent.HostMatches(denyHosts, host) }
+			}
+			fetcher := web.NewFetcher(policy)
+			resolved := 0
+			fetcher.Resolve = func(context.Context, string) ([]netip.Addr, error) {
+				resolved++
+				return nil, errors.New("no network in this test")
+			}
+			webTools := web.NewToolset(fetcher, nil)
+			var decision, code string
+			resolve := headlessApprover(context.Background(), headlessApproval{
+				opts:     printOpts{yes: c.yes},
+				rules:    approval.Router{DenyHosts: denyHosts},
+				record:   func(d, r string) { decision, code = d, r },
+				webTools: webTools,
+				un:       unattended{judge: c.judge},
+			})
+			if got := resolve(call); got != c.want {
+				t.Fatalf("the model was told:\n%s\nwant:\n%s", got, c.want)
+			}
+			if decision != observe.DecisionDeny || code != c.code {
+				t.Fatalf("filed as %s/%q, want %s/%q", decision, code, observe.DecisionDeny, c.code)
+			}
+			if resolved != 0 {
+				t.Fatalf("the fetcher ran (%d lookups); the approver refuses the host first", resolved)
 			}
 		})
 	}
