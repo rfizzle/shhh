@@ -217,6 +217,7 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 		Groomed:  todo.GroomingBlock(d.root, it),
 		Wordings: d.wordings,
 		Pipeline: d.pipeline,
+		ItemCopy: d.lane.copyPath(),
 	}
 	if it.Status == todo.StatusInProgress {
 		if st, err := run.Load(d.root, it.Slug); err == nil && !st.Over() {
@@ -231,6 +232,7 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 			// stages it never had — and refused for having changed shape,
 			// which is the sentence a run that really did change gets.
 			st.Pipeline = opt.Steps()
+			st.ItemCopy = opt.ItemCopy
 			return st, st.Continue(it)
 		}
 		// An item left in progress by something that wrote no checkpoint is

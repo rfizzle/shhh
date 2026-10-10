@@ -117,6 +117,9 @@ type todoLane struct {
 	// reconciling is a landing the lane's next turn reconciles, from the
 	// carry that marked the copy until the turn is judged; nil otherwise.
 	reconciling *todoReconcile
+	// itemCopy is the lane's copy of its item, inside the lane's copy of the
+	// checkout, which the stages tick; empty where it could not be made.
+	itemCopy string
 }
 
 // todoLaneResult is what a lane's item ended as, for the loop to record.
@@ -312,6 +315,13 @@ func (d *todoDriver) runLane(ctx context.Context, set *todoLanes, it todo.Item) 
 		wt.UseGenerators(d.gate)
 	}
 	lane := &todoLane{set: set, slug: it.Slug, wt: wt, seen: seen}
+	// The item is ticked in a copy inside the lane's copy: a stage has no way
+	// to write the checkout's file, and the runner applies the ticks to it at
+	// the finish. See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+	if lane.itemCopy, err = run.CopyItem(wt.Root(), it); err != nil {
+		fmt.Fprintf(d.out, "lane %s: no copy of the item could be made, so its criteria are not ticked: %v\n", it.Slug, err)
+		lane.itemCopy = ""
+	}
 	set.placed(it.Slug, wt.Root())
 	ld := d.laneDriver(lane)
 	st := ld.work(ctx, it, nil)
@@ -951,10 +961,34 @@ func (l *todoLane) end(ctx context.Context, d *todoDriver, st *run.State, it tod
 		fmt.Fprintf(d.out, "the lane's work so far is kept in %s; `git worktree list` names it\n", d.tree)
 	}
 	l.set.land.Lock()
+	l.applyTicks(d, it)
 	d.finish(st, it, nil)
 	l.set.land.Unlock()
 	d.settleChats(st)
 	return true
+}
+
+// copyPath is the lane's copy of its item, empty outside a lane.
+func (l *todoLane) copyPath() string {
+	if l == nil {
+		return ""
+	}
+	return l.itemCopy
+}
+
+// applyTicks puts the boxes the lane's stages ticked in its copy of the item
+// onto the item itself, a line at a time, before the item is filed.
+func (l *todoLane) applyTicks(d *todoDriver, it todo.Item) {
+	if l.itemCopy == "" {
+		return
+	}
+	n, err := run.ApplyTicks(it.Path, l.itemCopy)
+	switch {
+	case err != nil:
+		fmt.Fprintf(d.out, "lane %s: its ticks could not be put on the item — %v\n", l.slug, err)
+	case n > 0:
+		fmt.Fprintf(d.out, "lane %s ticked %s on the item\n", l.slug, countOf(n, "criterion", "criteria"))
+	}
 }
 
 // admin holds the lock worktree administration takes, for a step inside a

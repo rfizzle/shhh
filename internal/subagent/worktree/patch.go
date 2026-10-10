@@ -12,6 +12,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/hostgit"
+	"github.com/rfizzle/shhh/internal/todo"
 )
 
 // WorktreePatch stages everything in the worktree (so new files are included)
@@ -39,7 +40,10 @@ func stageAll(worktree string) error {
 	if err != nil {
 		return err
 	}
-	args := []string{"add", "-A", "--", "."}
+	// A backlog's per-run scratch is never a change a copy makes: a lane's
+	// copy of its item lives there and is not the work that lands.
+	// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+	args := []string{"add", "-A", "--", ".", ":(exclude,literal)" + todo.StateDir + "/" + todo.Subdir + "/" + todo.RunSubdir}
 	for _, entry := range strings.Split(listed, "\x00") {
 		meta, path, ok := strings.Cut(entry, "\t")
 		if ok && strings.HasPrefix(meta, "160000 ") {

@@ -293,6 +293,10 @@ type State struct {
 	// sprint's goal is: a run continued a day later must state the reading
 	// the run was started with rather than whatever is on disk by then.
 	Groomed string `json:"groomed,omitempty"`
+	// ItemCopy is the lane's copy of the item that the item block names in
+	// its place (Options.ItemCopy). It is the copy's path in the lane's
+	// tree, so a continued run is handed it again rather than reading it.
+	ItemCopy string `json:"-"`
 	// Checked reports a passing verdict already reached over the tree the
 	// writing step left, which the command step takes instead of running
 	// the same suite again. It is spent by the verify it was recorded for,
@@ -349,6 +353,9 @@ type Options struct {
 	// nowhere to put it without a notebook, so it files what the code can
 	// say instead.
 	Notebook bool
+	// ItemCopy is the path of the lane's copy of the item, which the item
+	// block names in place of the checkout's file. Empty outside a lane.
+	ItemCopy string
 }
 
 // Steps is the pipeline this run works: the profile's, with a commit finish
@@ -389,6 +396,7 @@ func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State
 		CloseGate: opt.CloseGate,
 		InSprint:  opt.InSprint,
 		Groomed:   opt.Groomed,
+		ItemCopy:  opt.ItemCopy,
 		// Each set is carried and its digest recorded, so a run continued
 		// after either moved can say so.
 		Wordings:   opt.Wordings,
@@ -923,6 +931,9 @@ func answersBlock(answers []string) string {
 // block, which the run's first step takes as whatever context it was started
 // with instead.
 func (s *State) prompt(it todo.Item, ps PipelineStep, answers string) string {
+	if s.ItemCopy != "" {
+		it.Path = s.ItemCopy
+	}
 	a := promptArgs{step: ps, item: it, repo: s.Repo,
 		plan: s.Plan, answers: answers, findings: s.Findings}
 	// The set's goal and the reading the person accepted ride with the item

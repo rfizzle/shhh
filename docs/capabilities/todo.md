@@ -1092,6 +1092,20 @@ every other lane's copy at that lane's next step — a step is what a round is
 to a writer — so what it verifies and what it is reviewed on is the tree it
 will land into.
 
+**A lane ticks a copy of its item, and the runner ticks the item.** The item
+file is in the checkout, and a lane's stages can write nowhere outside their
+own copy of it: an unattended write past that scope is refused after the yes,
+so a stage told to tick the item's own file would leave the archive with every
+box open. The lane is given a copy of the item at
+`.shhh/todo/.run/<slug>.item.md` inside its copy of the checkout, the item
+block names that file, and the implement and remediate stages tick it there.
+The copy is run scratch — it is never committed and never part of what lands.
+When the lane's run is over, the runner reads the boxes the copy ticked and
+ticks the same boxes in the item, a line at a time, matching each by its text
+after the box and changing nothing else in the file, before the item is
+archived. A criterion the item no longer holds, or already holds ticked, is
+left as it is.
+
 **Two collisions a rule settles are carried, not blocked.** A landing that
 meets the lane's own work on the same lines is merged three ways into the
 lane's copy, file by file, and git settles what it can. Of the regions it
