@@ -24,7 +24,9 @@ keys C-c
 snap 05-over-a-card "⊘" "stopped" "[ctrl+c] ×2 quit"
 
 keys x
-snap 06-still-open "the session never closed" "x"
+# A stop ends the turn, so the model is not asked again; the draft taking
+# the key is what shows the session is still open.
+snap 06-still-open "▸ x" "[ctrl+c] clear"
 keys C-c
 keys C-c
 snap 07-quit-armed "again quits" "[ctrl+c] again quits"
