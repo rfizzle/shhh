@@ -359,6 +359,65 @@ func TestConfigScreen_DecliningTheDiscardKeepsTheEdits(t *testing.T) {
 	}
 }
 
+// Over edits the running session holds the question is where they go, not
+// whether they are thrown away: yes leaves them on the session, the write
+// chord writes them and leaves, and n, enter and esc stay with everything
+// still staged.
+func TestConfigScreen_LeavingOverHeldEditsAsksWhereTheyGo(t *testing.T) {
+	ask := func() *ConfigScreen {
+		c := configFixture()
+		c.InSession, c.Changed, c.Held = true, 2, 2
+		if done, result := c.Update(key("esc")); done || result != (ConfigResult{}) {
+			t.Fatalf("esc over held edits asks first: done=%v result=%#v", done, result)
+		}
+		return c
+	}
+	view := stripANSI(ask().View(110))
+	for _, want := range []string{"Leave 2 changes on this session only?", "[y] this session only", "[ctrl+s] write first", "[esc] stay"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the question lacks %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "Discard") {
+		t.Fatalf("a held edit is not discarded:\n%s", view)
+	}
+	if done, result := ask().Update(key("y")); !done || result.Write || !result.Canceled {
+		t.Errorf("y leaves them on the session: done=%v result=%#v", done, result)
+	}
+	if done, result := ask().Update(key("ctrl+s")); !done || !result.Write || !result.Canceled {
+		t.Errorf("the write chord writes first and leaves: done=%v result=%#v", done, result)
+	}
+	for _, k := range []string{"n", "enter", "esc"} {
+		c := ask()
+		if done, result := c.Update(key(k)); done || result != (ConfigResult{}) || c.Changed != 2 {
+			t.Errorf("%s stays with the edits: done=%v result=%#v", k, done, result)
+		}
+		if done, _ := c.Update(key("y")); done {
+			t.Errorf("%s left the question armed", k)
+		}
+	}
+
+	c := configFixture()
+	c.InSession, c.Changed, c.Held = true, 3, 2
+	c.Update(key("esc"))
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "Leave 2 changes on this session and drop 1 change?") {
+		t.Errorf("a change the session cannot take is counted as dropped:\n%s", view)
+	}
+}
+
+// The footer names the way out by where the staged edits end up.
+func TestConfigScreen_TheFooterNamesWhereHeldEditsGo(t *testing.T) {
+	c := configFixture()
+	c.InSession, c.Changed, c.Held = true, 2, 2
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] keep on this session, after asking") {
+		t.Fatalf("esc over held edits keeps them, after asking:\n%s", view)
+	}
+	c.Held = 1
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] leave, after asking") {
+		t.Fatalf("esc over some held edits leaves, after asking:\n%s", view)
+	}
+}
+
 // The footer says what the way out does, which is not the same sentence with
 // something staged as without it.
 func TestConfigScreen_TheFooterNamesWhatTheWayOutDoes(t *testing.T) {

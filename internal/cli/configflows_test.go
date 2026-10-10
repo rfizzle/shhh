@@ -82,6 +82,14 @@ func TestConfigScreen_FlowsSayWhichStepAnswered(t *testing.T) {
 
 // stagedFlowScreen is `/config` opened from env, the way a session opens it,
 // over a user file holding fileText.
+// reopenedScreen opens the screen again over the file already pointed at.
+func reopenedScreen(t *testing.T, env *sessionEnv) chat.ConfigSession {
+	t.Helper()
+	session, err := configSessionOpener(env)([]string{"model-a", "model-b", "reader-model"})
+	must(t, err)
+	return session
+}
+
 func stagedFlowScreen(t *testing.T, fileText string, env *sessionEnv) (path string, session chat.ConfigSession) {
 	t.Helper()
 	path = pointConfigAt(t, fileText)
@@ -175,26 +183,36 @@ func TestConfigScreen_AFlowTakenForTheSessionReachesItsReader(t *testing.T) {
 	}
 }
 
-// Discarding staged changes puts the session back on what the file holds, so
-// `unwritten` is always this session only.
-func TestConfigScreen_ADiscardedFlowGoesBackToTheFile(t *testing.T) {
+// Leaving the screen does not give a flow's model back: the session keeps it
+// as it was staged, the screen opened again says so, and the row's reset is
+// what puts the reader back on the file's.
+func TestConfigScreen_AResetFlowGoesBackToTheFile(t *testing.T) {
 	env := &sessionEnv{provName: "anthropic", modelName: "session-model"}
 	moved := 0
 	env.flowsMoved = func() { moved++ }
-	_, session := stagedFlowScreen(t, "[summary]\nmodel = \"file-model\"\n", env)
+	path, first := stagedFlowScreen(t, "[summary]\nmodel = \"file-model\"\n", env)
 	cfg := config.Config{}
 	cfg.Summary.Model = "file-model"
 	reader := env.flowModelAt(cfg, flowReading)
 
-	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "summary.model", Value: "reader-model"}})
+	first.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "summary.model", Value: "reader-model"}})
+	first.Answer(true, components.ConfigResult{Canceled: true})
 	if got := reader(); got != "reader-model" {
-		t.Fatalf("the reader asks %q while the change stands", got)
+		t.Fatalf("the reader asks %q after leaving, want the staged one", got)
 	}
-	session.Answer(true, components.ConfigResult{Canceled: true})
+
+	again := reopenedScreen(t, env)
+	if row := flowRow(t, again.Screen.Rows, "reading"); row.Source != "session" {
+		t.Errorf("the flow's row reads %q on the screen opened again, want `session`", row.Source)
+	}
+	again.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "summary.model", Reset: true}})
 	if got := reader(); got != "file-model" {
-		t.Errorf("the reader asks %q after the discard, want the file's", got)
+		t.Errorf("the reader asks %q after the reset, want the file's", got)
 	}
 	if moved != 2 {
-		t.Errorf("the record was told %d times, want once for the take and once for the discard", moved)
+		t.Errorf("the record was told %d times, want once for the take and once for the reset", moved)
+	}
+	if got, _ := os.ReadFile(path); !strings.Contains(string(got), "file-model") {
+		t.Errorf("the reset touched the file:\n%s", got)
 	}
 }

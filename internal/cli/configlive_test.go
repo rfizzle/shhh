@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -110,31 +111,107 @@ func TestConfigScreen_ALiveKeyIsTakenAsItIsStaged(t *testing.T) {
 	}
 }
 
-// Discarding staged changes puts the session back on what the file holds, for
-// every live key the discard throws away.
-func TestConfigScreen_ADiscardedLiveKeyGoesBackToTheFile(t *testing.T) {
+// Leaving the screen over a taken value keeps it on the session, the screen
+// opened again reads it as `session` and counts it as unwritten, and a later
+// write carries it and names only what it carried.
+func TestConfigScreen_LeavingKeepsAStagedLiveKey(t *testing.T) {
 	env := &sessionEnv{provName: "anthropic", modelName: "session-model"}
-	_, session := stagedFlowScreen(t, "[behavior]\nmax_tool_rounds = 30\n[summary]\nmin_gap_seconds = 50\n", env)
+	path, session := stagedFlowScreen(t, "[behavior]\nmax_tool_rounds = 30\n", env)
 
 	stage(session, "behavior.max_tool_rounds", "40")
-	stage(session, "summary.min_gap_seconds", "5")
+	stage(session, "behavior.command_timeout_seconds", "90")
+	if session.Screen.Held != 1 || session.Screen.Changed != 2 {
+		t.Errorf("the screen holds %d of %d staged changes, want 1 of 2: the startup key waits for the next session",
+			session.Screen.Held, session.Screen.Changed)
+	}
 	w := chat.Wiring{MaxToolRounds: 30}
 	session.Take(&w)
-	if w.MaxToolRounds != 40 {
-		t.Fatalf("the session runs on %d rounds while the change stands", w.MaxToolRounds)
+	session.Answer(true, components.ConfigResult{Canceled: true})
+	if session.Take(&w) || w.MaxToolRounds != 40 {
+		t.Errorf("leaving moved the session off its 40 rounds: %d", w.MaxToolRounds)
 	}
+
+	again := reopenedScreen(t, env)
+	row := settingRow(t, again.Screen.Rows, "behavior.max_tool_rounds")
+	if row.Source != "session" || row.Value != "40" {
+		t.Errorf("the reopened row reads %q from %q, want 40 from `session`", row.Value, row.Source)
+	}
+	if again.Screen.Changed != 1 || again.Screen.Held != 1 {
+		t.Errorf("the reopened header counts %d changes, %d held, want 1 and 1", again.Screen.Changed, again.Screen.Held)
+	}
+	if row := settingRow(t, again.Screen.Rows, "behavior.command_timeout_seconds"); strings.Contains(row.Source, "session") {
+		t.Errorf("a key the session never took reads %q", row.Source)
+	}
+
+	note := again.Answer(false, components.ConfigResult{Write: true})
+	if !strings.Contains(note, "behavior.max_tool_rounds") || strings.Contains(note, "command_timeout") {
+		t.Errorf("the receipt of the write reads %q", note)
+	}
+	if got, _ := os.ReadFile(path); !strings.Contains(string(got), "max_tool_rounds = 40") {
+		t.Errorf("the write did not carry the held value:\n%s", got)
+	}
+	cfg := config.Config{}
+	cfg.Behavior.MaxToolRounds = 40
+	if held := heldAtExit(env, cfg); held != "" {
+		t.Errorf("a written value is named on the way out: %q", held)
+	}
+}
+
+// A row the session holds goes back to what the file holds on its reset, and
+// the session is handed the file's value.
+func TestConfigScreen_AResetRowGoesBackToTheFile(t *testing.T) {
+	env := &sessionEnv{provName: "anthropic", modelName: "session-model"}
+	_, first := stagedFlowScreen(t, "[behavior]\nmax_tool_rounds = 30\n[summary]\nmin_gap_seconds = 50\n", env)
+	stage(first, "behavior.max_tool_rounds", "40")
+	stage(first, "summary.min_gap_seconds", "5")
+	w := chat.Wiring{MaxToolRounds: 30}
+	first.Take(&w)
+	first.Answer(true, components.ConfigResult{Canceled: true})
 	cfg := config.Config{}
 	cfg.Summary.MinGapSeconds = 50
 	if _, gap := env.cadenceAt(cfg)(); gap != 5*time.Second {
-		t.Fatalf("the readings' floor is %s while the change stands", gap)
+		t.Fatalf("the readings' floor is %s after leaving", gap)
 	}
 
-	session.Answer(true, components.ConfigResult{Canceled: true})
-	if !session.Take(&w) || w.MaxToolRounds != 30 {
-		t.Errorf("the session runs on %d rounds after the discard, want the file's 30", w.MaxToolRounds)
+	again := reopenedScreen(t, env)
+	again.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "behavior.max_tool_rounds", Reset: true}})
+	again.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "summary.min_gap_seconds", Reset: true}})
+	if !again.Take(&w) || w.MaxToolRounds != 30 {
+		t.Errorf("the session runs on %d rounds after the reset, want the file's 30", w.MaxToolRounds)
 	}
 	if _, gap := env.cadenceAt(cfg)(); gap != 50*time.Second {
-		t.Errorf("the readings' floor is %s after the discard, want the file's", gap)
+		t.Errorf("the readings' floor is %s after the reset, want the file's", gap)
+	}
+	if again.Screen.Changed != 0 {
+		t.Errorf("the header counts %d changes with every row back on the file", again.Screen.Changed)
+	}
+}
+
+// A value the session holds is `session` on the screen opened again, and a
+// session that ends holding values names each once; a value the file has
+// caught up with is not named.
+func TestConfigScreen_ASessionValueIsNamedSession(t *testing.T) {
+	env := &sessionEnv{provName: "anthropic", modelName: "session-model"}
+	_, session := stagedFlowScreen(t, "", env)
+	stage(session, "appearance.verbosity", "high")
+	stage(session, "summary.model", "reader-model")
+	if row := settingRow(t, session.Screen.Rows, "appearance.verbosity"); row.Source != "unwritten" {
+		t.Errorf("a value staged now reads %q", row.Source)
+	}
+	session.Answer(true, components.ConfigResult{Canceled: true})
+	again := reopenedScreen(t, env)
+	if row := settingRow(t, again.Screen.Rows, "appearance.verbosity"); row.Source != "session" {
+		t.Errorf("a value the session holds reads %q", row.Source)
+	}
+	got := heldAtExit(env, config.Config{})
+	if !strings.Contains(got, "appearance.verbosity") || !strings.Contains(got, "summary.model") ||
+		strings.Count(got, "appearance.verbosity") != 1 {
+		t.Errorf("the way out says %q", got)
+	}
+	cfg := config.Config{}
+	cfg.Appearance.Verbosity = "high"
+	if got := heldAtExit(env, cfg); strings.Contains(got, "verbosity") {
+		t.Errorf("a value the file holds is named: %q", got)
 	}
 }
 

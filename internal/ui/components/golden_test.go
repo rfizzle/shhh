@@ -2965,7 +2965,7 @@ func TestGolden_ConfigScreen(t *testing.T) {
 			}).View(width)},
 			{Label: "staged in a session · a key read at the open says the next session takes it", View: flowsScreen(func(c *ConfigScreen) {
 				rounds, url := len(goldenFlowRows())+1, len(goldenFlowRows())+7
-				c.Focus, c.Changed = url, 2
+				c.Focus, c.Changed, c.Held = url, 2, 1
 				c.Rows[rounds].Value = "40"
 				c.Rows[rounds].Source, c.Rows[rounds].SourceTone = "unwritten", ToneOpen
 				c.Rows[url].Value = "https://gateway.internal/v1"
@@ -2984,6 +2984,22 @@ func TestGolden_ConfigScreen(t *testing.T) {
 			}).View(width)},
 			{Label: "the way out · the same question over the same count", View: func() string {
 				c := screen(func(c *ConfigScreen) { c.Changed = 2 })
+				c.Update(key("esc"))
+				return c.View(width)
+			}()},
+			{Label: "reopened in the session · a value it holds reads `session`, and the header counts it unwritten", View: flowsScreen(func(c *ConfigScreen) {
+				rounds := len(goldenFlowRows()) + 1
+				c.Focus, c.Changed, c.Held = rounds, 1, 1
+				c.Rows[rounds].Value = "40"
+				c.Rows[rounds].Source, c.Rows[rounds].SourceTone = "session", ToneOpen
+			}).View(width)},
+			{Label: "the way out in a session · the changes stay on it, and the question is where else they go", View: func() string {
+				c := flowsScreen(func(c *ConfigScreen) { c.Changed, c.Held = 2, 2 })
+				c.Update(key("esc"))
+				return c.View(width)
+			}()},
+			{Label: "the way out in a session · a change it cannot take is dropped, and the count says so", View: func() string {
+				c := flowsScreen(func(c *ConfigScreen) { c.Changed, c.Held = 3, 2 })
 				c.Update(key("esc"))
 				return c.View(width)
 			}()},

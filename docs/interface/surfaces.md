@@ -3204,8 +3204,9 @@ For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
 it does in this same vocabulary instead of inventing one: the settings screen
-*leaves* with nothing staged and *discards, after asking* with something
-staged; rating *stops*; and the drafting flow unwinds one exchange at a time,
+*leaves* with nothing staged, *keeps on this session, after asking* when
+every staged change is one the running session has taken, and *discards, after
+asking* when it is not; rating *stops*; and the drafting flow unwinds one exchange at a time,
 so what its esc says is which of the four things it is about to do — leave,
 go back a step, stop the drafting turn, or drop the draft
 ([the profile drafter](#the-profile-drafter)). That flow is also the one
@@ -3244,10 +3245,9 @@ header counts it, and the source column reads `<link> · unwritten`. The
 session takes a staged flow model as it is staged, so the model answers that
 flow from its next call, and `unwritten` means one thing here: this session
 only. `[ctrl+s]` writes it to the file the header names, and the session
-stays on it; leaving over it asks the question every staged change asks, and
-discarding puts the session back on what the file holds, as it does for
-every setting a session takes at its next turn
-([the settings screen](#the-settings-screen)). A flow no
+stays on it; leaving over it keeps it on the session, as it does for every
+setting a session takes at its next turn, and the row's reset puts the session
+back on what the file holds ([the settings screen](#the-settings-screen)). A flow no
 session sends — the one-shot's description, and the compaction an unattended
 run makes — stages and writes the same way and changes nothing in the
 session. `shhh config` has no session, so its flows rows only stage.
@@ -3499,9 +3499,12 @@ Two rules they share are worth stating: none of them changes how your machine
 behaves without a card, and doctor in particular names fixes rather than
 applying them — the screen that changes settings is the one that asks first.
 It asks in both directions. Nothing on the settings screen reaches the file
-until the write key, so the way out of it is a discard of everything typed
-there, and that gets the same one-line question over the same count the header
-has been carrying ([invariant 3](principles.md#esc-is-always-the-safe-answer)).
+until the write key, so where the screen has no session beneath it the way out
+is a discard of everything typed there, and that gets a one-line question over
+the same count the header has been carrying
+([invariant 3](principles.md#esc-is-always-the-safe-answer)). Inside a session
+the values it has taken are not discarded by leaving, so the question there is
+where they go ([the settings screen](#the-settings-screen)).
 Rating writes on a keystroke and is not the exception it looks like: what it
 writes is a record of something that already happened, and the card the
 keystroke answers is on the screen while it is pressed.
@@ -3537,7 +3540,22 @@ turns, at the next turn's start while one runs, the mode and the model drawn
 as `/permissions` and `/model` draw them — and one it wires when it opens is
 written for the next session only, its row reading `unwritten · next session`
 ([every setting](../capabilities/configuration.md#every-setting) says which is
-which). A value in
+which).
+
+Leaving does not give a taken value back. Over staged changes the running
+session holds, esc asks `Leave 2 changes on this session only?` with three
+answers on the same row, `[y] this session only`, `[ctrl+s] write first` and
+`[esc] stay`; where some of the staged changes are ones the session wires when
+it opens, the question counts them as dropped (`Leave 2 changes on this
+session and drop 1 change?`), and where the row is too narrow for the question
+and its answers the answers take a second line, never clipped. The foot row
+before the question says `[esc] keep on this session, after asking`, or
+`[esc] leave, after asking` when some would be dropped. The screen opened again
+in the same session shows a value the session holds with the source `session`,
+the way a flow model held for the session reads, and the header counts it
+among the changes unwritten; `[ctrl+s]` writes it, and `[ctrl+r]` on that row
+is the one way to give it back, putting the session on what the file holds.
+A session that ends holding values says so once, by name. A value in
 a field or a picker that `[enter]` has not taken yet is taken by `[ctrl+s]`
 first and then written, so the chord is never swallowed by what is being
 typed; `[esc]` in a field closes it and stages nothing. `[ctrl+r]` and
@@ -3551,8 +3569,8 @@ writes every staged change to the file in the header at once. It is the
 chord every write of a file, a setting, a profile or a buffer is spelled as
 ([a key is inert until its surface holds the
 keyboard](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)),
-and it asks nothing: the one question this screen asks is the discard, because
-that is the act that cannot be taken back. While anything is staged the key row
+and it asks nothing: the one question this screen asks is the way out over
+staged work, because a discard is the act that cannot be taken back. While anything is staged the key row
 offers `[ctrl+s] write 2 changes` and, beside it or under it when it does not
 fit, says `nothing is written until [ctrl+s]`, at every width. With nothing
 staged the key says `nothing staged to write` on the foot row and writes

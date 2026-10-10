@@ -138,6 +138,12 @@ type ConfigScreen struct {
 	// them and the write is not offered while it is zero — a key that cannot act is
 	// not offered (invariant 5).
 	Changed int
+	// Held is how many of those a running session has taken for itself, so
+	// leaving does not give them back: the question over them is where they
+	// go, not whether they are thrown away. It is zero outside a session, and
+	// for the settings a session reads only when it opens
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Held int
 	// maxLines bounds the screen height; everything pinned comes off the list's
 	// budget before its window is drawn. 0 is unbounded, which is what a test or
 	// a host that sizes itself gets.
@@ -166,6 +172,11 @@ type ConfigScreen struct {
 	// question and goes down with it, so a decline cannot hand it to whatever
 	// is asked next.
 	pending ConfigResult
+	// keeping says the question up is the one that offers the running
+	// session the edits and the file a write first: yes leaves them on the
+	// session, the write chord writes them and leaves, and anything else
+	// stays.
+	keeping bool
 }
 
 // MaskSecret renders a secret the way the config screen asks for: the last
@@ -274,8 +285,28 @@ func (c *ConfigScreen) leave() (bool, ConfigResult) {
 	if c.Changed == 0 {
 		return true, ConfigResult{Canceled: true}
 	}
+	if c.Held > 0 {
+		c.askKeep()
+		return false, ConfigResult{}
+	}
 	c.ask("Discard "+plural(c.Changed, "change")+"?", ConfigResult{Canceled: true})
 	return false, ConfigResult{}
+}
+
+// askKeep is the question over edits a running session has taken: they stay
+// on the session whichever way the screen is left, so declining to write
+// them costs the reader nothing they cannot take back with the row's reset,
+// and the answers are where they go. A change the session cannot take is
+// dropped with the screen and the question says so by its count.
+func (c *ConfigScreen) askKeep() {
+	prompt := "Leave " + plural(c.Held, "change") + " on this session only?"
+	if dropped := c.Changed - c.Held; dropped > 0 {
+		prompt = "Leave " + plural(c.Held, "change") + " on this session and drop " + plural(dropped, "change") + "?"
+	}
+	c.ask(prompt, ConfigResult{Canceled: true})
+	c.keeping = true
+	c.confirm.Answers = sty.dim.Render(keys.Bracket(keys.Confirm.Yes) + " this session only  " +
+		keys.Bracket(keys.Screen.Write) + " write first  " + keys.Bracket(keys.Screen.Quit) + " stay")
 }
 
 // ask arms the inline confirm in front of a key, with what saying yes to it
@@ -429,10 +460,15 @@ func (c *ConfigScreen) updateSecret(msg tea.KeyPressMsg) (bool, ConfigResult) {
 // screen because there is nothing left for it to say. Declining — n, enter or
 // esc — leaves the screen and every staged edit exactly as they were.
 func (c *ConfigScreen) updateConfirm(msg tea.KeyPressMsg) (bool, ConfigResult) {
+	if c.keeping && keys.Is(msg.String(), keys.Screen.Write) {
+		c.confirm, c.pending, c.keeping = nil, ConfigResult{}, false
+		return true, ConfigResult{Write: true, Canceled: true}
+	}
 	answered, yes := confirmed(&c.confirm, msg)
 	if !answered {
 		return false, ConfigResult{}
 	}
+	c.keeping = false
 	// The armed act goes down with the question either way: it was armed for
 	// this question, and a decline that left it behind would hand it to
 	// whatever is asked next.
@@ -608,6 +644,11 @@ func (c *ConfigScreen) footer(width int) keyFooter {
 	f := keyFooter{offers: c.offers(), register: c.keyList(), showing: c.keys, field: c.footField(), keepField: c.Changed > 0}
 	if c.confirm != nil {
 		f.taken = c.confirm.View(width)
+		// The answers are what may never be clipped away: where the question
+		// and its three answers do not share a row, they take two.
+		if c.keeping && lipgloss.Width(c.confirm.Prompt)+2+lipgloss.Width(c.confirm.Answers) > width {
+			f.taken = Clip(c.confirm.Prompt, width) + "\n" + Clip(c.confirm.Answers, width)
+		}
 	}
 	return f
 }
@@ -654,8 +695,14 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		// the ask in the same breath: a row that promised only "discard" would
 		// be describing the old key, and one that promised only "leave" would be
 		// hiding what leaving costs.
-		return append(offers, keyOfferAs(keys.Screen.Write, "write "+plural(c.Changed, "change")),
-			wayOut("discard, after asking"))
+		way := "discard, after asking"
+		switch {
+		case c.Held == c.Changed:
+			way = "keep on this session, after asking"
+		case c.Held > 0:
+			way = "leave, after asking"
+		}
+		return append(offers, keyOfferAs(keys.Screen.Write, "write "+plural(c.Changed, "change")), wayOut(way))
 	}
 	return append(offers, wayOut("leave"))
 }
@@ -671,6 +718,10 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 	if c.Changed > 0 {
 		out, quit = "leave the picker, or ask before discarding the lot",
 			"ask before discarding the lot and leaving"
+		if c.Held > 0 {
+			out, quit = "leave the picker, or ask where the changes go",
+				"ask whether to write the changes or leave them on this session, and leave"
+		}
 	}
 	list := []KeyOffer{
 		keyOfferAs(keys.Screen.Move, "move between settings"),

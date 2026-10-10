@@ -250,10 +250,43 @@ func (o *flowOverrides) over(cfg config.Config) config.Config {
 
 // holds reports whether the session took a value for key.
 func (o *flowOverrides) holds(key string) bool {
+	_, ok := o.value(key)
+	return ok
+}
+
+// value is what the session took for key, and whether it took one.
+func (o *flowOverrides) value(key string) (string, bool) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	_, ok := o.keys[key]
-	return ok
+	v, ok := o.keys[key]
+	return v, ok
+}
+
+// put takes value for key whatever kind of key it is: the store behind the
+// settings a session reads at a turn boundary, which are handed to the
+// session rather than asked for (liveTakers), but must be remembered so the
+// screen opened again says what the session holds.
+func (o *flowOverrides) put(key, value string) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.keys == nil {
+		o.keys = map[string]string{}
+	}
+	o.keys[key] = value
+}
+
+// drop lets go of key: the session is on the file's value of it again.
+func (o *flowOverrides) drop(key string) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	delete(o.keys, key)
+}
+
+// names is every key held, in order.
+func (o *flowOverrides) names() []string {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return slices.Sorted(maps.Keys(o.keys))
 }
 
 // flowKey reports whether key names some flow's model.

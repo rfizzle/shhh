@@ -182,8 +182,13 @@ anything.
 The screen has no separate act for it. A flow's model is staged like every
 other row's, and the session takes it as it is staged: until it is written,
 `unwritten` on the row means this session only. Writing it to the file the
-header names does not move the session, which is already on it; discarding it
-puts the session back on what the file holds.
+header names does not move the session, which is already on it. Leaving the
+screen does not give it back either: a value the session took stays on the
+session, and the screen opened again reads it as `session` in the source
+column and counts it among the changes unwritten. The way to give one back is
+the row's reset, which puts the session on what the file holds. A session that
+ends holding such values says so once on the way out, by name, because the
+next session starts on the files.
 
 A value held before it is written is written nowhere. It is staged against a
 file, it is in neither file yet, and it dies with the process unless the

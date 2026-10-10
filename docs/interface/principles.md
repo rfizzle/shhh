@@ -82,6 +82,14 @@ does not enter into it: a screen whose other way out abandons what its Esc
 would have asked about has moved the hole rather than closed it. Esc without
 staged work still leaves on the press, because there is nothing to put back.
 
+The question is about what leaving would cost, so a screen whose staged work
+leaving cannot lose asks where the work goes instead. Settings a running
+session has already taken are the case: leaving keeps them on the session, so
+Esc asks *Leave 2 changes on this session only?* with the write offered
+beside it, and the row's reset is the way to give one back. Esc still never
+does the irreversible thing unasked; it asks about the one choice left, and
+declining it changes nothing.
+
 ### Fold, never hide
 
 A collapsed group still counts what it swallowed — `▸ 6 reads · 2 searches`.

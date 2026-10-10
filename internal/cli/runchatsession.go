@@ -1050,6 +1050,13 @@ func (b *screenBuild) run(model chat.Model, programOpts []tea.ProgramOption) err
 	if m, ok := final.(chat.Model); ok {
 		printExitBanner(m.ExitBanner(b.resume))
 	}
+	// The values the settings screen took for this session alone end with
+	// it, and the next session starts on the files' — said once, by name.
+	if cfg, _, err := loadLayeredConfig(workingDir()); err == nil {
+		if note := heldAtExit(b.env, cfg); note != "" {
+			_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
+		}
+	}
 	// The last seam: the session stopping. It fires here rather than inside
 	// the program because there is no screen left to hold it up, and because
 	// every way out of a session — the quit chord, an error, the last turn —

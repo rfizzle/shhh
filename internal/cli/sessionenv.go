@@ -82,6 +82,11 @@ type sessionEnv struct {
 	// (summarizer.go). Its zero value holds none, which is every surface but
 	// the interactive session.
 	flows flowOverrides
+	// live holds the values the config screen had the session take at a turn
+	// boundary and that no file holds, so the screen opened again says what
+	// the session is on (configModel.resume). It is the memory of what was
+	// handed over, not what moves the session.
+	live flowOverrides
 	// flowsMoved is told when one of them changes, so the record can say
 	// what the rest of the session is asked on. Nil tells nobody.
 	flowsMoved func()

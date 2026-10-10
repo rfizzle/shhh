@@ -381,6 +381,10 @@ type configModel struct {
 	// session is now to run on. A key read at the call is held by the
 	// session's own readers instead (holdFlow), and needs no handing.
 	moved map[string]string
+	// opened is each key the session already held when the screen opened, with
+	// the value it held: a row still reading it says `session`, and a row the
+	// reader has changed since reads `unwritten`.
+	opened map[string]string
 
 	screen components.ConfigScreen
 }
@@ -401,7 +405,8 @@ type configFlows struct {
 const defaultConfigWidth = 110
 
 func newConfigModel(cfg config.Config, proj config.Project) *configModel {
-	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}, moved: map[string]string{}, path: config.WritePath()}
+	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}, moved: map[string]string{},
+		opened: map[string]string{}, path: config.WritePath()}
 	// Outside a session the chain falls back on what a session started now
 	// would run, which is the doctor's flows row's reading too.
 	resolved := resolve.Resolve(resolve.Opts{ConfigProvider: cfg.Provider.Default, ConfigModel: cfg.Provider.Model})
@@ -498,9 +503,6 @@ func (m *configModel) handle(result components.ConfigResult) (receipt, note stri
 		// carried it has nothing it asked to write: the refusal is the answer.
 		return "", ""
 	}
-	if result.Canceled {
-		m.discard()
-	}
 	if result.Scope {
 		m.switchScope()
 	}
@@ -561,6 +563,14 @@ func (m *configModel) landed(edits []config.Edit) {
 			_ = config.Set(&m.base, e.Key, e.Value)
 		}
 		delete(m.staged, e.Key)
+		delete(m.opened, e.Key)
+		if env := m.flows.env; env != nil {
+			// The session holds what the file now holds, unless a checkout's
+			// file still outranks the write.
+			if v, ok := env.live.value(e.Key); ok && v == configLoaded(m.base, e.Key) {
+				env.live.drop(e.Key)
+			}
+		}
 		loaded, _ := config.Value(m.base, e.Key)
 		_ = config.Set(&m.cfg, e.Key, loaded)
 	}
@@ -592,6 +602,7 @@ func configSessionOpener(env *sessionEnv) chat.ConfigOpener {
 		}
 		m.standIn(false, workingDir())
 		m.screen.InSession = true
+		m.resume()
 		m.refresh()
 		return chat.ConfigSession{Screen: &m.screen, Answer: m.answered, Take: m.take}, nil
 	}
@@ -645,6 +656,9 @@ func (m *configModel) apply(change components.ConfigChange) bool {
 	if change.Reset {
 		value = ""
 	}
+	if change.Reset && m.release(change.Key) {
+		return true
+	}
 	if err := checkConfigValue(change.Key, value); err != nil {
 		m.screen.Notice = err.Error()
 		return false
@@ -673,6 +687,59 @@ func (m *configModel) apply(change components.ConfigChange) bool {
 	return true
 }
 
+// release is the reset of a row the session holds and the reader has not
+// changed since the screen opened: the session goes back to what the file
+// holds, which is the one way a taken value is given back
+// (docs/interface/surfaces.md#the-settings-screen). It reports whether the
+// key was such a row; any other reset goes to the key's default.
+func (m *configModel) release(key string) bool {
+	env := m.flows.env
+	if env == nil {
+		return false
+	}
+	file := configLoaded(m.base, key)
+	if heldKey(key) {
+		if !env.flows.holds(key) || configLoaded(m.cfg, key) != file {
+			return false
+		}
+		env.flows.drop(key)
+		if env.flowsMoved != nil {
+			env.flowsMoved()
+		}
+	} else {
+		held, ok := m.opened[key]
+		if !ok || m.staged[key] != held {
+			return false
+		}
+		_ = config.Set(&m.cfg, key, file)
+		delete(m.staged, key)
+		delete(m.opened, key)
+		m.hold(key, file)
+	}
+	m.screen.Notice = key + " is back to what the file holds"
+	m.refresh()
+	return true
+}
+
+// resume puts the values the session already holds back on the screen as
+// staged edits: they stand against the file and a write carries them, but
+// they are not new, so their rows say `session`.
+func (m *configModel) resume() {
+	env := m.flows.env
+	if env == nil {
+		return
+	}
+	for _, key := range env.live.names() {
+		value, _ := env.live.value(key)
+		if value == configLoaded(m.base, key) || config.Set(&m.cfg, key, value) != nil {
+			// The file has caught up with the session, or the key is gone.
+			env.live.drop(key)
+			continue
+		}
+		m.staged[key], m.opened[key] = value, value
+	}
+}
+
 // hold has the running session take a key it reads at a turn boundary as
 // the key is staged, so a row's "unwritten" means "this session only"
 // (docs/interface/surfaces.md#the-settings-screen). A key read at the call
@@ -688,6 +755,11 @@ func (m *configModel) hold(key, value string) {
 		return
 	}
 	m.moved[key] = value
+	if env := m.flows.env; value == configLoaded(m.base, key) {
+		env.live.drop(key)
+	} else {
+		env.live.put(key, value)
+	}
 }
 
 // holdFlow has the running session take a value its readers ask for at the
@@ -722,16 +794,6 @@ func (m *configModel) take(w *chat.Wiring) bool {
 	}
 	clear(m.moved)
 	return true
-}
-
-// discard is the way out over staged work: the session goes back to what the
-// file holds for every live key that was staged, so a value it took for the
-// time the change stood does not outlive the change.
-func (m *configModel) discard() {
-	for key := range m.staged {
-		m.hold(key, configLoaded(m.base, key))
-	}
-	clear(m.staged)
 }
 
 // flowRows are the flows section: every bounded call outside the main agent,
@@ -820,15 +882,23 @@ func (m *configModel) refresh() {
 	if m.flows.env != nil {
 		nextSession(rows)
 	}
+	for i, row := range rows {
+		if held, ok := m.opened[row.Key]; ok && m.staged[row.Key] == held && strings.HasPrefix(row.Source, "unwritten") {
+			rows[i].Source, rows[i].SourceTone = "session", components.ToneOpen
+		}
+	}
 	m.screen.Rows = append(m.flowRows(), rows...)
-	changed := 0
+	changed, held := 0, 0
 	for _, s := range configSettings(m.cfg, m.base) {
 		staged, _ := config.Value(m.cfg, s.Key)
 		if loaded, _ := config.Value(m.base, s.Key); staged != loaded {
 			changed++
+			if m.flows.env != nil && config.Live(s.Key) {
+				held++
+			}
 		}
 	}
-	m.screen.Changed = changed
+	m.screen.Changed, m.screen.Held = changed, held
 }
 
 // nextSession marks every staged row a running session cannot take: a key

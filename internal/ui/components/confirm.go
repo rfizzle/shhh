@@ -29,6 +29,9 @@ type Confirm struct {
 	// is the first thing the row gives up: a confirm is one line, and the
 	// answers are what may never be clipped away.
 	KeyList bool
+	// Answers replaces the `[y/N]` pair for a question with more than two
+	// answers, already styled. Empty is the ordinary pair.
+	Answers string
 }
 
 // Update resolves on the first decisive key: y confirms; n, enter and esc
@@ -65,7 +68,11 @@ func (c *Confirm) View(width int) string {
 	if c.NotYetLive {
 		return Clip(sty.body.Render(c.Prompt), width)
 	}
-	return Clip(sty.body.Render(c.Prompt)+"  "+c.withKeyList(confirmKeys(), width-lipgloss.Width(c.Prompt)-2), width)
+	answers := confirmKeys()
+	if c.Answers != "" {
+		answers = c.Answers
+	}
+	return Clip(sty.body.Render(c.Prompt)+"  "+c.withKeyList(answers, width-lipgloss.Width(c.Prompt)-2), width)
 }
 
 // withKeyList is an answer set with `[?] keys` after it where the confirm

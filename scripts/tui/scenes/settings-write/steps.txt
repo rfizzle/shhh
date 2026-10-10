@@ -20,6 +20,12 @@
 # timeout is read when the session opens: staged, its source reads
 # `unwritten · next session` (07), and the receipt of its write carries the
 # sentence (08).
+#
+# Leaving a taken value does not give it back. A second round limit is staged
+# (10) and Escape asks where it goes (11): `y` leaves it on the session only,
+# and /config opened again reads the row `session` with the header counting it
+# unwritten (12). The golden for the question and the reopened header is
+# config-screen.
 snap 01-start "Some things worth doing first"
 keys "/config" Enter
 snap 02-open "/config" "FLOWS"
@@ -54,3 +60,23 @@ sleep 0.3
 keys C-s
 keys Escape
 snap 08-startup-receipt "behavior.command_timeout_seconds" "keeps the settings it started on"
+keys "/config" Enter
+snap 09-reopen-again "/config" "FLOWS"
+keys "/"
+keys "round limit"
+keys Enter
+keys BSpace BSpace BSpace
+keys "60" Enter
+keys Escape
+sleep 0.3
+keys Escape
+sleep 0.3
+snap 10-live-staged "1 change unwritten" "[esc] keep on this session, after asking"
+keys Escape
+snap 11-leave-question "Leave 1 change on this session only?" "[y] this session only" "[ctrl+s] write first" "[esc] stay"
+keys y
+sleep 0.3
+keys "/config" Enter
+keys "/"
+keys "round limit"
+snap 12-held-reads-session "round limit" "60" "session" "1 change unwritten"

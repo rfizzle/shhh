@@ -11,6 +11,8 @@ package cli
 // See docs/interface/surfaces.md#the-settings-screen.
 
 import (
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -102,4 +104,29 @@ func sessionResolved(c config.Config, env *sessionEnv) resolve.Resolved {
 		return env.resolveWith(c)
 	}
 	return resolve.Resolved{Model: c.Provider.Model, Reasoning: c.Provider.Reasoning}
+}
+
+// heldAtExit is what a session ending says of the values it took from the
+// settings screen that no file holds: they end with the session, and the next
+// one starts on the file's, which would otherwise be a surprise. It names
+// each key once and reads the files as they stand now, so a value written
+// since, or equal to the file's, is not named. Empty when there is nothing
+// to say.
+func heldAtExit(env *sessionEnv, cfg config.Config) string {
+	var names []string
+	for _, key := range slices.Compact(slices.Sorted(slices.Values(
+		slices.Concat(env.live.names(), env.flows.names())))) {
+		held, ok := env.live.value(key)
+		if !ok {
+			held, _ = env.flows.value(key)
+		}
+		if held != configLoaded(cfg, key) {
+			names = append(names, key)
+		}
+	}
+	if len(names) == 0 {
+		return ""
+	}
+	return "this session ends with " + strings.Join(names, ", ") +
+		" held for it alone; no file holds them, and the next session starts on the file's"
 }
