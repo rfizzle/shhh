@@ -27,6 +27,8 @@ snap 01-start "Some things worth doing first"
 keys "/model" Enter
 snap 02-models "scripted-mini" "(current)"
 keys Escape
+sleep 0.3
+keys Escape
 sleep 0.5
 keys "/config" Enter
 snap 03-checkout "/config · the checkout's file · .shhh/config.toml" "[shift+tab] write yours" "FLOWS"
