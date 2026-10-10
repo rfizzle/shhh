@@ -248,8 +248,10 @@ func (m Model) stopRun() (tea.Model, tea.Cmd, bool) {
 		// A decision on its card is a stage of the turn, and stopping the
 		// turn is the one thing the chord does to it: the card's own no is
 		// a letter. A /run the reader typed has no turn under it, and the
-		// press goes on to arm the quit.
-		if m.cancel != nil {
+		// press goes on to arm the quit. The turn is open while a card
+		// waits, but its stream is over and its cancel is gone, so the open
+		// turn is what says there is something to stop.
+		if m.cancel != nil || m.turnOpen {
 			return m.stopped(m.cancelTurnNow())
 		}
 	}

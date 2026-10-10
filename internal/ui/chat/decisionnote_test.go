@@ -242,15 +242,13 @@ func TestApproval_CtrlCStopsTheRunNotTheRequest(t *testing.T) {
 	for _, draft := range []string{"", "half a thought"} {
 		var decisions []string
 		m := draftedCardModel(t, noRun(t), draft)
-		stopped := false
-		m.cancel = func() { stopped = true }
+		// As the driven program has it: the round's stream is over, so its
+		// cancel is gone, and the turn is still open under the card.
+		m.cancel, m.turnOpen = nil, true
 		m.wiring.Observer = observe.Observer{
 			Decision: func(_ observe.Pos, decision, _ string) { decisions = append(decisions, decision) },
 		}
 		m, _ = pressKey(t, m, ctrlC)
-		if !stopped {
-			t.Fatalf("draft %q: ctrl+c over a card should stop the turn", draft)
-		}
 		if m.state == stateConfirmRun || m.approval.request != nil {
 			t.Fatalf("draft %q: the stop should take the card with the turn, got state %d", draft, m.state)
 		}
