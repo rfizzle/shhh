@@ -374,8 +374,29 @@ func (m Model) handoffOwed() bool {
 	if !m.handoffWired() || m.handoff.kept != "" {
 		return false
 	}
+	prev := int64(0)
 	for _, e := range m.transcript {
-		if e.kind == entryTurnClose && !e.restored && e.close != nil && e.close.Changes != nil && e.close.Commit == nil {
+		if e.kind != entryTurnClose || e.close == nil {
+			continue
+		}
+		if !e.restored && e.close.Commit == nil {
+			if e.close.Changes != nil || m.steeredTurnsWrote(prev, e.turn) {
+				return true
+			}
+		}
+		prev = e.turn
+	}
+	return false
+}
+
+// steeredTurnsWrote reports whether a turn between two closes changed files.
+// A steer is a turn of its own and a run closes once, on its last turn, so
+// what the turns before it wrote is on no close row of theirs; a close whose
+// own turn wrote nothing still follows that work, and it is uncommitted
+// because no close of theirs could have carried the commit.
+func (m Model) steeredTurnsWrote(after, upTo int64) bool {
+	for n := after + 1; n < upTo; n++ {
+		if t, ok := m.changes.Turn(n); ok && t.Files() > 0 {
 			return true
 		}
 	}

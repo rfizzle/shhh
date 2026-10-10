@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -197,6 +198,20 @@ func TestHandoff_TheQuitOffersOneAndNoQuits(t *testing.T) {
 	// Twice the quit chord reaches the same offer.
 	m, _ = handoffModel(t, &handoffProvider{})
 	m = uncommittedTurn(m)
+	m, _ = pressKey(t, m, ctrlC)
+	m, _ = pressKey(t, m, ctrlC)
+	if m.state != stateQuitConfirm || m.quitting {
+		t.Fatalf("the second press should offer the handoff first (state %v, quitting %v)", m.state, m.quitting)
+	}
+}
+
+// A steer is a turn of its own, so a run that wrote and then took a steer
+// closes on a turn that wrote nothing: the quit still owes the offer for the
+// work the turn before it left uncommitted.
+func TestHandoff_ASteeredRunStillOwesTheOffer(t *testing.T) {
+	m, _ := handoffModel(t, &handoffProvider{})
+	m.changes.Add(1, changeset.Record{Path: "notes.md", After: "# Notes\n", AfterExists: true})
+	m.appendEntry(entry{kind: entryTurnClose, turn: 2, close: &components.TurnClose{}})
 	m, _ = pressKey(t, m, ctrlC)
 	m, _ = pressKey(t, m, ctrlC)
 	if m.state != stateQuitConfirm || m.quitting {
