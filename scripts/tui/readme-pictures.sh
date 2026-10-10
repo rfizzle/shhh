@@ -82,7 +82,7 @@ mkdir -p "$work" "$dest"
 stills=(
 	"readme-hero 03-command-card 1-13,25-40 [y] run it once"
 	"readme-fanout 05-three-states 1-29,36-52 waiting approval"
-	"readme-hero 04-close 1-18,36-40 1 file changed"
+	"readme-hero 04-close 1-4,7-9,13-15,19-20,23-28,36-40 1 file changed"
 	"readme-one-shot 01-result 1-6 awk keeps the rows"
 	"readme-sprint 03-sprint-tab 1-28,38-40 working · 3 at once"
 )
