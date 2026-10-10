@@ -38,9 +38,8 @@ import (
 //
 // So each rung says what it is, and nothing derives anything.
 //
-// The values are transcribed from tokens/colors.css in the shhh Design System
-// project, which states both halves already: a hex, and the 256 index
-// it stands for.
+// The values are transcribed from the palette goldens (docs/interface/README.md),
+// which state both halves already: a hex, and the 256 index it stands for.
 //
 // Lip Gloss v2 has no CompleteColor and no renderer to degrade through: a
 // Style holds a resolved image/color.Color and Render always emits it at full
@@ -76,8 +75,8 @@ func token(hex, ansi256, ansi16 string) Token {
 // chat and generate style files, so every TUI surface uses identical tokens.
 // No new colors without adding them here.
 //
-// The assignments below are reconciled with tokens/colors.css in the shhh
-// Design System project: same token set, one documented job each.
+// The assignments below are reconciled with the palette goldens
+// (docs/interface/README.md): same token set, one documented job each.
 // Three of them carry the redesign — Spin means anything in motion and only
 // that, Accent additionally means the mutation rail, and Key marks every key
 // the interface offers, so a key written in any other color is not an offer.

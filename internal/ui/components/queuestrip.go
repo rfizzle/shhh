@@ -1,8 +1,8 @@
 package components
 
 // The approval queue strip (
-// docs/interface/surfaces.md#the-approval-card; the Approvals artboard in the
-// shhh Design System project). Five separate cards, one after the other, is
+// docs/interface/surfaces.md#the-approval-card; the approvals golden, which
+// docs/interface/README.md names as the record). Five separate cards, one after the other, is
 // how you train someone to hit enter without reading. The strip is the
 // alternative: what is stacked behind this decision, in the order it will be
 // asked, and — before the key applies it — which of them one keystroke would

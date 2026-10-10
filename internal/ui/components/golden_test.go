@@ -49,8 +49,8 @@ func rowOffer(b keys.Binding, label string) TurnKey {
 	return TurnKey{Key: keys.Bracket(b), Label: label}
 }
 
-// goldenWidths are the width breakpoints from guidelines/layout-breakpoints
-// in the shhh Design System project: minimal, folded, one-pane-with-vitals,
+// goldenWidths are the width breakpoints the four-width set docs/interface/README.md
+// names as the design record: minimal, folded, one-pane-with-vitals,
 // and the two-pane split. Every surface is captured at all four so the drop
 // order and the folding are covered rather than assumed.
 var goldenWidths = []int{60, 80, 110, 130}

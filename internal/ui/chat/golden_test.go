@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 }
 
 // goldenWidths are the terminal widths behind the breakpoints of
-// guidelines/layout-breakpoints in the shhh Design System project. They are
+// the four-width set docs/interface/README.md names as the design record. They are
 // terminal columns, not content columns: the surface loses horizontalPadding
 // on each side before any of these thresholds are read.
 var goldenWidths = []int{60, 80, 110, 130}

@@ -17,7 +17,7 @@ Two rules carry most of this. **Each document answers exactly one question.**
 | `docs/architecture.md` | What are the big shapes, and why those? |
 | `docs/capabilities/` | What can it do, and why does that exist? |
 | `docs/interface/` | What must every surface obey? |
-| the `shhh Design System` project | What does it look like, exactly? |
+| the goldens and `make design` | What does it look like, exactly? |
 | `AGENTS.md` | Where is the code, what are the traps? |
 | a code comment | Why is *this* line like this? |
 

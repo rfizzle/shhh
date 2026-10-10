@@ -779,14 +779,12 @@ them needs the chat session to be linked in.
 
 ## Design lives outside the repository
 
-The visual specification — tokens, components, artboards, and the guidelines
-that constrain them — is a design-system project in Claude Design, and it is
-normative. This repository implements it.
-
-That direction is deliberate. Markdown re-drawings of an artboard become a
-second source of truth that disagrees with the first, and the disagreement is
-discovered by a reader who cannot tell which one is stale. What lives here is
-what the rules *are* and why they hold; what the design system holds is what
-they measure.
+The visual specification is the goldens: every surface is captured by its
+golden test, every driven scene by its steps, and `make design` lays them out
+as a book on demand, so the record is the binary's own output and cannot
+drift from it ([`interface/README.md`](interface/README.md)). Markdown
+re-drawings of a surface become a second source of truth that disagrees with
+the first. What lives in prose here is what the rules *are* and why they hold;
+the goldens hold what they measure.
 
 See [`interface/`](interface/).

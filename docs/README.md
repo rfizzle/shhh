@@ -13,7 +13,7 @@ given fact belongs, and how code refers back to it.
 | [`architecture.md`](architecture.md) | What are the big shapes, and why those? | a structural decision is taken or reversed |
 | [`capabilities/`](capabilities/) | What can it do, and why does that exist? | a capability is added, or its rationale shifts |
 | [`interface/`](interface/) | What must every surface obey? | an invariant changes |
-| the `shhh Design System` project | What does it look like, exactly? | the visual spec changes |
+| the goldens and `make design` | What does it look like, exactly? | the visual spec changes |
 | [`AGENTS.md`](../AGENTS.md) | Where is the code, what are the traps? | the code moves |
 | code comments | Why is *this* line like this? | the line changes |
 

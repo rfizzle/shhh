@@ -1,9 +1,8 @@
 # Surfaces
 
 What each surface is *for*, and when the session puts it in front of you. How
-each one is drawn is normative in the `shhh Design System` project in Claude
-Design; the rules every one of them obeys are
-[`principles.md`](principles.md).
+each one is drawn is the goldens' (see [`README.md`](README.md)); the rules
+every one of them obeys are [`principles.md`](principles.md).
 
 Surfaces are grouped by weight, which is the same order as
 [weight tracks risk](principles.md#weight-tracks-risk): rows are the cheapest

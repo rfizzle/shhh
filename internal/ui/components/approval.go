@@ -253,8 +253,8 @@ func (f CardField) Standing() bool {
 }
 
 // fieldLabelWidth is the blast-radius block's label column, matching the
-// `touches / undo / network` gutter in the Approvals artboard of the shhh
-// Design System project.
+// `touches / undo / network` gutter in the approvals golden
+// (docs/interface/README.md).
 const fieldLabelWidth = 10
 
 // SpawnRow is one child the spawn variant asks about: the agent, what it was

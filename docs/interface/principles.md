@@ -5,8 +5,8 @@ an invariant is wrong even when it looks right, and these are checked before
 anything else about it.
 
 Exact measurements — column widths, colour rungs, glyph assignments, the
-artboards themselves — are normative in the `shhh Design System` project in
-Claude Design, not here. This page is what the rules are and why they hold.
+artboards themselves — are what the goldens capture (see [`README.md`](README.md)),
+not stated here. This page is what the rules are and why they hold.
 
 ## The five invariants
 
@@ -422,7 +422,7 @@ the selected row's ground as well. A named palette whose published tones fall
 under it records the shortfall in the departures rather than leaving it
 unsaid.
 
-The exact rungs are the design system's. What is fixed here is that there are
+The exact rungs are the goldens'. What is fixed here is that there are
 three of them, that five defer to the terminal, that the dark ground is
 painted and the others are asked for, and that no surface may reach for a
 colour outside the palette.

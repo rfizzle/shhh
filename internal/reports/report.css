@@ -1,7 +1,7 @@
 /* tokens/report.css — every color a report page may use, and the type it is set in.
-   The normative home is tokens/report.css in the shhh Design System project
-   (docs/architecture.md#design-lives-outside-the-repository); this file is its
-   transcription, and the one a served page actually embeds. A page is
+   The record is the report goldens (docs/interface/README.md, cited by
+   docs/architecture.md#design-lives-outside-the-repository); this file is the
+   one a served page actually embeds. A page is
    self-contained — no fetches, no webfonts — so each alias carries its value
    here, with the colors.css token it copies named on the line.
 

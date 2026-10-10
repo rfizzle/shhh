@@ -22,7 +22,7 @@ approved there before the code.
 
 **Exact visual specification is not here.** Column widths, colour rungs and
 glyph assignments are what the goldens capture, and `make design` builds them
-into the book. The `shhh Design System` project in Claude Design was retired
+into the book. The Claude Design project was retired
 on 2026-10-10; a drawing of it that a reader still holds is old
 ([departures](departures.md#the-design-project-was-retired-and-its-last-drawings-are-old)).
 
