@@ -505,6 +505,63 @@ func TestResume_ReassertsAlternateScroll(t *testing.T) {
 	}
 }
 
+// The line saying how to come back goes out between the release and the stop,
+// and the terminal is restored after it. The steps are recorded rather than
+// taken: a real SIGTSTP would stop the test run.
+func TestSuspend_SaysHowToComeBackBeforeItStops(t *testing.T) {
+	var steps []string
+	s := Suspender{
+		Release: func() error { steps = append(steps, "release"); return nil },
+		Note:    func() { steps = append(steps, "note") },
+		Stop:    func() { steps = append(steps, "stop") },
+		Restore: func() error { steps = append(steps, "restore"); return nil },
+	}
+	got := s.Filter(windowModel(t), tea.SuspendMsg{})
+	if _, ok := got.(tea.ResumeMsg); !ok {
+		t.Fatalf("the suspend came back as a %T, want the ResumeMsg Bubble Tea would send", got)
+	}
+	if want := "release note stop restore"; strings.Join(steps, " ") != want {
+		t.Errorf("steps = %q, want %q", strings.Join(steps, " "), want)
+	}
+	if !strings.Contains(SuspendNote, "fg") || strings.Contains(SuspendNote, "bg") {
+		t.Errorf("the note %q must name fg and nothing else", SuspendNote)
+	}
+
+	// Anything that is not a suspend passes untouched, with no step taken.
+	steps = nil
+	if got := s.Filter(windowModel(t), ctrlL); got != ctrlL || len(steps) != 0 {
+		t.Errorf("a key was touched: %v, steps %v", got, steps)
+	}
+}
+
+// Where the process cannot be stopped there is no note: the message passes
+// through and Bubble Tea does what it does there. A terminal that will not be
+// released is not written to either.
+func TestSuspend_NoNoteWhereItCannotStop(t *testing.T) {
+	noted := false
+	note := func() { noted = true }
+	s := Suspender{
+		Release: func() error { t.Error("released a terminal that cannot be stopped"); return nil },
+		Note:    note,
+		Restore: func() error { return nil },
+	}
+	if got := s.Filter(windowModel(t), tea.SuspendMsg{}); got != (tea.SuspendMsg{}) {
+		t.Errorf("the suspend was replaced by %T", got)
+	}
+	s = Suspender{
+		Release: func() error { return errors.New("cannot release") },
+		Note:    note,
+		Stop:    func() { t.Error("stopped with the terminal still held") },
+		Restore: func() error { return nil },
+	}
+	if got := s.Filter(windowModel(t), tea.SuspendMsg{}); got != nil {
+		t.Errorf("a failed release still produced %T", got)
+	}
+	if noted {
+		t.Error("a note was written where the session did not stop")
+	}
+}
+
 // The redraw repaints and does nothing else.
 func TestRedraw_RepaintsAndKeepsEverything(t *testing.T) {
 	m := typeChars(t, windowModel(t), "half a sentence")

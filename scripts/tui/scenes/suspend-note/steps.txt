@@ -1,0 +1,21 @@
+# program test: none — the route is a real stop and continue under a shell's job control, which no in-process program can take
+#
+# The order of the steps is held by TestSuspend_SaysHowToComeBackBeforeItStops.
+# Suspending says how to come back
+# (docs/interface/surfaces.md#the-input-frame). The pane runs an interactive
+# shell (the launch file), shhh is started from its prompt, and ctrl+z on the
+# start screen stops it as a job. No golden: the line is written after the
+# alternate screen has gone, outside any frame.
+#
+# What the captures are for: the shell's own screen after the stop, with the
+# one line `shhh suspended · fg brings it back` above the shell's `Stopped`
+# line and no remnant of the start screen; and, after fg, the start screen
+# painted whole again, the draft empty, nothing of the shell left on it. Read
+# the .gif by eye for the screen coming back clean.
+snap 00-shell "$ "
+keys '$SHHH_BIN code' Enter
+snap 01-start "Some things worth doing first"
+keys C-z
+snap 02-suspended "shhh suspended · fg brings it back" "Stopped"
+keys fg Enter
+snap 03-back "Some things worth doing first"

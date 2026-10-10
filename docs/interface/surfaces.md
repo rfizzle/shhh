@@ -1546,7 +1546,11 @@ answers both because a terminal in raw mode will not. One suspends shhh back
 to the shell, and it is refused while a turn is in flight or a decision is
 waiting, for the reason the editor is: a stopped process is not reading the
 stream it asked for, and a request that times out while nobody is there is
-worse than being told to press the key again in a moment. The other redraws
+worse than being told to press the key again in a moment. Suspending leaves
+one dim line on the shell's screen saying `fg` brings the session back, for
+the reason the exit banner exists: a session on the alternate screen leaves
+nothing behind, and a stopped shhh would otherwise look like a crashed one.
+The other redraws
 the screen from what the session already holds — the way back from a display
 something else wrote over — and it changes nothing: the draft, the history and
 any live selection are the same afterwards, because none of them lived on the

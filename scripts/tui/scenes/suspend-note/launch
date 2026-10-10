@@ -1,0 +1,7 @@
+# An interactive shell with job control, and not the binary: a pane whose
+# command is shhh has no prompt left to type fg at, and the shell has to
+# outlive the stop. The steps start shhh from this shell's prompt, so ctrl+z
+# stops it as a job and fg continues it. The run's environment, SHHH_BIN
+# included, is exported by the driver before this line, and the shell inherits
+# it.
+PS1='$ ' exec bash --norc --noprofile -i

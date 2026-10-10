@@ -1017,9 +1017,17 @@ func (b *screenBuild) run(model chat.Model, programOpts []tea.ProgramOption) err
 	// The filter needs the program's own Send for its flush probe, which the
 	// program cannot hand out before it exists — hence the two steps.
 	wheel := chat.NewWheelFilter()
-	programOpts = append(programOpts, tea.WithFilter(wheel.Filter))
+	// The suspend filter needs the program too, for the release and the
+	// restore, so it is built the same way and consulted first: a suspend is
+	// a control message the wheel filter would only pass along
+	// (chat/suspend.go).
+	suspend := &chat.Suspender{Note: printSuspendNote, Stop: chat.StopProcess}
+	programOpts = append(programOpts, tea.WithFilter(func(m tea.Model, msg tea.Msg) tea.Msg {
+		return wheel.Filter(m, suspend.Filter(m, msg))
+	}))
 	program := newProgram(model, programOpts...)
 	wheel.SetSend(program.Send)
+	suspend.Release, suspend.Restore = program.ReleaseTerminal, program.RestoreTerminal
 	final, err := program.Run()
 	if err != nil {
 		// os.Exit skips the deferred restore, so the terminal is put back
@@ -1050,6 +1058,12 @@ func (b *screenBuild) run(model chat.Model, programOpts []tea.ProgramOption) err
 		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: "hooks: " + note})
 	}
 	return nil
+}
+
+// printSuspendNote writes the line a suspended session leaves on the shell's
+// screen, on stderr the way the exit banner is.
+func printSuspendNote() {
+	fprintStyled(os.Stderr, components.SuspendLine(chat.SuspendNote))
 }
 
 // printExitBanner writes the exit banner on stderr, beside everything else

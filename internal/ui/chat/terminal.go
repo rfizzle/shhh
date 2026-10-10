@@ -243,7 +243,9 @@ func (m Model) suspend() (tea.Model, tea.Cmd) {
 	// Bubble Tea puts the terminal back the way it found it, stops itself,
 	// and restores the alt screen, the mouse mode and the focus reporting
 	// from the last View when the shell brings it back — which is the same
-	// argument for those being fields rather than commands.
+	// argument for those being fields rather than commands. The host's
+	// Suspender writes the line saying how to come back between the release
+	// and the stop (suspend.go).
 	return m, tea.Suspend
 }
 

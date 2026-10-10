@@ -144,6 +144,14 @@ func partingLine(width int) string {
 	return sty.dim.Render(Clip(partingWords, width))
 }
 
+// SuspendLine is the one dim line a suspended session leaves on the shell's
+// screen (docs/interface/surfaces.md#the-input-frame): the banner's reason
+// again, a session on the alternate screen leaves nothing behind. Words, not
+// clipped; the terminal wraps what it must.
+func SuspendLine(words string) string {
+	return sty.dim.Render(words)
+}
+
 // row lays one labelled line out: the label in Status in its column, as a
 // card's field label is, and the value in
 // the tone the row is read for.

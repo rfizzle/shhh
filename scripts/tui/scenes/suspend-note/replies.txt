@@ -1,0 +1,2 @@
+# No turn is taken: the scene suspends an idle session on its start screen.
+[session]
