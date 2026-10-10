@@ -153,6 +153,10 @@ func createArgv(eng Engine, name string, s ContainerSpec) []string {
 		"--memory", s.Memory,
 		"--cpus", s.CPUs,
 		"--pids-limit", strconv.Itoa(s.PidsLimit),
+		// The engine's init is pid 1 and reaps: the keeper sleep reaps
+		// nothing, and every orphan a stop killed would stay a zombie
+		// counted against the pids limit.
+		"--init",
 	}
 	argv = append(argv, gitVolumes(s.Workspace, s.git)...)
 	if !s.Network {

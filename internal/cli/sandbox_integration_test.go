@@ -131,7 +131,11 @@ func TestSandboxCancelStopsTheContainerGroup(t *testing.T) {
 	for {
 		out := containerProcesses(t, enginePath, name)
 		if liveSleeps(out) <= 1 {
-			// The one sleep left is the container's own keeper.
+			// The one sleep left is the container's own keeper, and the
+			// container's init reaps what the stop killed: no zombie.
+			if strings.Contains(out, " Z") {
+				t.Fatalf("a zombie outlived the cancel inside the container:\n%s", out)
+			}
 			break
 		}
 		if time.Now().After(deadline) {

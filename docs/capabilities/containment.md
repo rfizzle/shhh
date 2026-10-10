@@ -639,6 +639,16 @@ Where the hang-up does not arrive, a second exec of the helper stops the
 group the first one recorded. Nothing on this machine names a process inside
 the container.
 
+**The container's first process reaps.** The container is created with the
+engine's init (`--init`), beside its `--pids-limit`, so pid 1 collects what a
+stopped command left behind. The keeper is a plain `sleep` and reaps nothing:
+without the init, every orphan a stop killed would stay a zombie that still
+counts against the pids limit, and a session that runs for hours would run out
+of room to start anything. Docker carries its init; podman needs the
+`catatonit` package on the host. Where the engine refuses the flag, the
+container is not created and the session stops with the engine's own error;
+install the package, or use docker.
+
 **An image without the helper is refused, and so is every other failure.** The
 session asks the helper which protocol it speaks before its first turn. A
 container whose image lacks it, or answers another, stops the session with the

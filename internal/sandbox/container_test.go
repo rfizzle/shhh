@@ -112,6 +112,7 @@ func TestCreateArgvHardening(t *testing.T) {
 		"--memory " + DefaultContainerMemory,
 		"--cpus " + DefaultContainerCPUs,
 		"--pids-limit 256",
+		"--init",
 		"--volume " + ws + ":" + workspaceMount,
 		"--workdir " + workspaceMount,
 		"--entrypoint ",
