@@ -718,7 +718,7 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 	m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
 		exitCode: msg.exitCode, commandResult: result, localRun: msg.local, duration: msg.duration,
 		allowedBy: allowedBy, allowElapsed: allowElapsed, approvedBy: approvedBy,
-		amendedFrom: amendedFrom, end: msg.end})
+		amendedFrom: amendedFrom, end: msg.end, ranIn: msg.ranIn})
 	if m.approval.request != nil {
 		call := m.approval.request.call
 		m.approval.request = nil

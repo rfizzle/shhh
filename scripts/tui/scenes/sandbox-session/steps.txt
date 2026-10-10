@@ -12,6 +12,13 @@
 # refused; the command's three lines arrive a second apart through the
 # helper, and the row settles with all three. The quit removes the container,
 # which the stand-in does not show and the program tests do.
+#
+# Then a command the person types. `!echo hi` is theirs, and in a sandbox
+# session it runs in the container too: the stand-in's exec answers it through
+# the helper like the assistant's, and the row ends in `container` to say where
+# it ran (golden: TestGolden_SandboxBang). A host session's row says nothing of
+# where; this one does, and the run carries no ceiling. The row reads
+# `ok · container · 1 line` beside `echo hi`.
 setup mkdir -p ../engine && cp "$scene/docker" ../engine/docker && chmod +x ../engine/docker
 snap 01-start "Some things worth doing first"
 keys "/status" Enter
@@ -21,7 +28,11 @@ snap 03-card "[y] run it once"
 keys y
 snap 04-tail "two" "▸ run"
 snap 05-settled "The three lines came back from the container" "three"
+keys "!echo hi" Enter
+snap 06-bang-card "[y] run it once"
+keys y
+snap 07-bang-row "echo hi" "ok · container"
 keys C-c
-snap 06-quit-armed "again quits"
+snap 08-quit-armed "again quits"
 keys C-c
-snap 07-exit "that is everything the screen was holding"
+snap 09-exit "that is everything the screen was holding"

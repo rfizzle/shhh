@@ -1,11 +1,24 @@
 package chat
 
+// ContainerSandbox is the Mechanism of a sandbox session, whose commands run
+// in a disposable container. The host that fills a Containment and the model
+// that reads one agree on this word, because it is also what decides whose
+// commands go through Run.
+const ContainerSandbox = "container sandbox"
+
 // Containment is the process-containment setup for assistant commands.
 // When Run is set, approved and waved-through execute_command calls run
-// through it (the sandbox-wrapped runner) instead of the plain runner; /run —
-// the user's own command — always stays on the plain runner. Status is the
-// one-line state shown on the exec confirm prompt, and Report is the full
-// doctor text behind /sandbox.
+// through it (the sandbox-wrapped runner) instead of the plain runner. The
+// user's own command — /run, ! and !! — stays on the plain runner and is
+// never refused, with one exception: in a sandbox session (Mechanism is
+// ContainerSandbox) it runs through TailRun too, because the container is
+// the machine the work is on, and a check made on the host would be a check
+// of a machine the work is not on. That is the person's decision of
+// 2026-10-01, and it moves nothing about the ceiling or the refusal: the
+// command is still theirs.
+// See docs/capabilities/containment.md#containment-can-be-required.
+// Status is the one-line state shown on the exec confirm prompt, and Report
+// is the full doctor text behind /sandbox.
 type Containment struct {
 	// Run answers with the typed result rather than an output and a status,
 	// because a wrap that could not be built is a command that never started
@@ -85,6 +98,16 @@ type Containment struct {
 	// commands do. The zero value is a checkout that declares nothing.
 	Toolchain Toolchain
 }
+
+// inContainer says the session's commands run in a sandbox container, so the
+// reader's own run in the same place the assistant's do.
+func (c Containment) inContainer() bool {
+	return c.Mechanism == ContainerSandbox && (c.TailRun != nil || c.Run != nil)
+}
+
+// ranInContainer is the word a reader's own command row carries in its outcome
+// when it ran in the sandbox container rather than on this machine.
+const ranInContainer = "container"
 
 // containmentRefusal is the refusal an action gets before it is drawn, or ""
 // when this session runs it. It is asked of the actions that run a command —

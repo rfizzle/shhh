@@ -427,6 +427,13 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 		if e.localRun {
 			row.Outcome += " · " + components.OutcomeLocal
 		}
+		// A command the reader typed that ran in the sandbox container says so
+		// in the outcome, because the outcome is the field that never gives
+		// way to the pane: a reader scrolling back finds which machine it ran
+		// on at any width (run.go).
+		if e.ranIn != "" {
+			row.Outcome += " · " + e.ranIn
+		}
 	} else {
 		// A search's place goes dim behind its pattern, so the column reads
 		// as one question asked somewhere

@@ -213,10 +213,18 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	runFn := m.wiring.Runner
 	tailFn := m.wiring.TailRunner
 	// Assistant commands run contained when a mechanism is available;
-	// /run — the user's own command — stays on the plain runner.
+	// /run, ! and !! — the user's own command — stay on the plain runner,
+	// except in a sandbox session, where the container is the machine the
+	// work is on and they run in it with the assistant's. They carry no
+	// ceiling there either: the context above is the same one.
+	ranIn := ""
 	if m.approval.request != nil && m.containment.Run != nil {
 		runFn = m.containment.Run
 		tailFn = m.containment.TailRun
+	} else if m.approval.request == nil && m.containment.inContainer() {
+		runFn = m.containment.Run
+		tailFn = m.containment.TailRun
+		ranIn = ranInContainer
 	}
 	// An assistant command is a call like any other to the seams either side
 	// of it: what a hook in front of it wanted the model to read leads the
@@ -261,7 +269,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		// reader's cancel from the ceiling from a signal off the machine
 		// (activity.go).
 		return cmdDoneMsg{runID: runID, command: command, output: result.Output, exitCode: result.ExitCode,
-			result: result, duration: time.Since(start), local: local, end: end}
+			result: result, duration: time.Since(start), local: local, end: end, ranIn: ranIn}
 	}
 }
 

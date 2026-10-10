@@ -378,6 +378,9 @@ type cmdDoneMsg struct {
 	// local: a `!!` run — the output lands in the transcript and never in
 	// the conversation (bang.go).
 	local bool
+	// ranIn says where a command the reader typed ran when that was not this
+	// machine: the sandbox container (run.go). Empty is the plain runner.
+	ranIn string
 	// end is how the command ended where its exit code cannot say, read off
 	// the context it ran on while that context is still to hand (run.go).
 	end commandEnd
@@ -535,6 +538,8 @@ type entry struct {
 	// conversation — a `!!` run (bang.go), or a dry run asked for at a card
 	// (run.go) — which its outcome says.
 	localRun bool
+	// ranIn is cmdDoneMsg.ranIn kept for the row, which says it.
+	ranIn string
 	// duration is how long the tool call or command ran, shown on its
 	// activity row; zero hides it.
 	duration time.Duration

@@ -361,6 +361,20 @@ are never contained, and a requirement about the assistant's commands has
 nothing to say about them. The requirement is off by default: a machine with
 no bubblewrap is still a machine somebody has to work on.
 
+**In a sandbox session they run where the work is.** The one place a command
+you typed is not run on this machine is a session whose commands run in a
+container: `/run`, `!` and `!!` run in that same container, through the same
+runner the assistant's commands use, and their row ends in `container` to say
+so. You decided this on 2026-10-01, for a plain reason: on the host they would
+be checking a machine the work is not on, so a test that passed under `!` would
+say nothing about the tree the assistant is changing. Nothing else about them
+moves. They are still never refused, because the requirement is about the
+assistant's commands and your own are not those. They are still never bounded
+by the command ceiling, because you are here and the key that cancels them is
+your ceiling. What the model is told about them is unchanged: `/run` and `!`
+add the same note to the conversation they always did, and `!!` adds nothing.
+Every other session runs your commands on the host as before.
+
 ## A git write is not a command
 
 A session that requires containment on a host with none still puts the

@@ -307,7 +307,7 @@ func containerSpec(cfg config.Config, workspace string) (sandbox.ContainerSpec, 
 // sandboxMechanism is what the chip, the card and /status call a container
 // sandbox, and sandboxSaid what the model is told it is.
 const (
-	sandboxMechanism = "container sandbox"
+	sandboxMechanism = chat.ContainerSandbox
 	sandboxSaid      = "a disposable container"
 )
 
