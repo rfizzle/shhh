@@ -1,7 +1,8 @@
 # program test: TestProgram_ARunningCommandTailsIntoItsRow, TestProgram_TheQuitChordArmsThenLeaves
 #
 # golden: TestGolden_SandboxSession (sandbox-session); the container behind
-# the screen is internal/cli's TestSandboxContainmentValues.
+# the screen is internal/cli's TestSandboxContainmentValues, and a writer's
+# own container is TestSandboxWriterGetsItsOwnContainer.
 #
 # A session whose commands run in a disposable container, driven on a host
 # with no engine: a stand-in `docker` (this directory) answers the create,
@@ -9,7 +10,8 @@
 # built shhh as the helper, so the helper's flags and its stream are real.
 # Read the captures against the golden's layout block: /status names the
 # container sandbox and its profile, and says a writer's commands are
-# refused; the command's three lines arrive a second apart through the
+# contained by the container sandbox, in a container of the writer's own; the
+# command's three lines arrive a second apart through the
 # helper, and the row settles with all three. A second turn starts a process,
 # which is one more exec through the helper with the stream as its stdin, and
 # reads a line from it and stops it: the card is the ordinary start card (the
@@ -27,7 +29,7 @@
 setup mkdir -p ../engine && cp "$scene/docker" ../engine/docker && chmod +x ../engine/docker
 snap 01-start "Some things worth doing first"
 keys "/status" Enter
-snap 02-status "container sandbox ·" "Containment" "a writer's commands: refused"
+snap 02-status "container sandbox ·" "Containment" "a writer's commands: contained · container sandbox"
 keys "count to three" Enter
 snap 03-card "[y] run it once"
 keys y
@@ -41,7 +43,25 @@ keys "start a ticker process" Enter
 snap 08-process-card "[y] allow it" "ticker"
 keys y
 snap 09-process-read "The process printed ready inside the container"
+# Then a writer (golden: TestGolden_SandboxWriterSpawnCard). Its card says,
+# before the answer, what its commands run under: `commands  contained ·
+# container sandbox`, the session indicator's words. Started, the writer is
+# given a copy of the checkout and a container of its own whose one mount is
+# that copy — the stand-in's second create — and its one command is put to
+# you on its own card, named for the writer. Answered, it runs in the
+# writer's container through the helper, and the writer's report says what
+# it printed. The quit removes the writer's container with the session's;
+# the stand-in writes both names to its log of removals, and the screen does
+# not show it (internal/cli's TestSandboxWriterGetsItsOwnContainer does).
+keys "start a writer" Enter
+snap 10-writer-card "Start a writer" "contained · container sandbox"
+sleep 1
+keys y
+snap 11-writer-ask "echo from-the-writer" "writer-1"
+sleep 1
+keys y
+snap 12-writer-done "✓ done" "writer-1"
 keys C-c
-snap 10-quit-armed "again quits"
+snap 13-quit-armed "again quits"
 keys C-c
-snap 11-exit "that is everything the screen was holding"
+snap 14-exit "that is everything the screen was holding"

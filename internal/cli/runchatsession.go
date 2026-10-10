@@ -279,7 +279,7 @@ func (b *screenBuild) policy() error {
 		if err != nil {
 			return fmt.Errorf("sandbox: %w", err)
 		}
-		if b.containment, b.closeSandbox, err = sandboxContainment(b.cmd.Context(), cfg, ws, b.asm.sc, procSup, b.asm.ts.gate); err != nil {
+		if b.containment, b.session.writers, b.closeSandbox, err = sandboxContainment(b.cmd.Context(), cfg, ws, b.asm.sc, procSup, b.asm.ts.gate); err != nil {
 			return fmt.Errorf("sandbox: %w", err)
 		}
 		said = func(c chat.Containment) commandEnvironment { return sandboxCommandEnvironment(c, cfg, procSup != nil) }
@@ -834,6 +834,13 @@ func (b *screenBuild) wireFetch(w *chat.Wiring, reach *hostReach, gatedPreviews 
 func (b *screenBuild) spawnPreview(reach *hostReach) chat.GatedPreviewFunc {
 	session, agents, sup := b.session, b.asm.agents, b.sup
 	writerCommands := writerContainment(b.cfg, childContainment()).field()
+	if session.writers != nil {
+		// In a sandbox session a writer's commands go in a container of its
+		// own, whatever the host has, and the card says so in the words the
+		// session's indicator uses.
+		// See docs/capabilities/containment.md#a-sandbox-writer-works-in-a-container-of-its-own.
+		writerCommands = session.writers.words.field()
+	}
 	return func(args json.RawMessage) (chat.GatedPreview, error) {
 		summary, err := subagent.SpawnSummary(agents.snapshot(), args)
 		if err != nil {

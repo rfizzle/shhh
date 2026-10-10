@@ -120,6 +120,11 @@ type chatSession struct {
 	// from an image the declaration was prepared into, so the host's PATH
 	// is not what they will find.
 	sandbox bool
+	// writers is a sandbox session's writers' containers, one per writer's
+	// copy of the checkout, made from the session's image and profile; nil
+	// for every other session.
+	// See docs/capabilities/containment.md#a-sandbox-writer-works-in-a-container-of-its-own.
+	writers *writerBoxes
 	// secretFlags are the --secret specs; vault is what they and
 	// secrets.env resolved to, opened by openSecrets before anything that
 	// runs a command. Both `shhh chat` and `shhh code`, headless included.

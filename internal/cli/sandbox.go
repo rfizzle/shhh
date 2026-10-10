@@ -335,14 +335,20 @@ const (
 // anywhere: what it holds is the exec client, and stopping the client stops
 // the command through the stream.
 // See docs/capabilities/containment.md#a-started-process-is-contained-too.
-func sandboxContainment(ctx context.Context, cfg config.Config, workspace string, sc *scope.Scope, sup *process.Supervisor, gate *quality.Runner) (_ chat.Containment, cleanup func(), err error) {
+//
+// What comes back beside the containment is its writers' half: a writer's
+// copy of the checkout is outside the container's one mount, so each writer
+// gets a container of its own from the same image and profile, and the
+// cleanup removes those too.
+// See docs/capabilities/containment.md#a-sandbox-writer-works-in-a-container-of-its-own.
+func sandboxContainment(ctx context.Context, cfg config.Config, workspace string, sc *scope.Scope, sup *process.Supervisor, gate *quality.Runner) (_ chat.Containment, writers *writerBoxes, cleanup func(), err error) {
 	profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile)
 	if err != nil {
-		return chat.Containment{}, nil, fmt.Errorf("config sandbox.profile: %w", err)
+		return chat.Containment{}, nil, nil, fmt.Errorf("config sandbox.profile: %w", err)
 	}
 	store, err := sandbox.OpenStore()
 	if err != nil {
-		return chat.Containment{}, nil, err
+		return chat.Containment{}, nil, nil, err
 	}
 	sandbox.Reconcile(ctx, store, time.Now().UTC())
 
@@ -351,28 +357,39 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 	if s := cfg.Sandbox.RequireIsolation; s != "" {
 		configured, err := sandbox.ParseIsolation(s)
 		if err != nil {
-			return chat.Containment{}, nil, fmt.Errorf("config sandbox.require_isolation: %w", err)
+			return chat.Containment{}, nil, nil, fmt.Errorf("config sandbox.require_isolation: %w", err)
 		}
 		if configured.Rank() > required.Rank() {
 			required = configured
 		}
 	}
 	if err := sandbox.VerifyIsolation(required, sandbox.Detect(), eng); err != nil {
-		return chat.Containment{}, nil, err
+		return chat.Containment{}, nil, nil, err
 	}
 
 	spec, err := containerSpec(cfg, workspace)
 	if err != nil {
-		return chat.Containment{}, nil, err
+		return chat.Containment{}, nil, nil, err
 	}
 	if spec.Prepared, err = preparedImage(ctx, eng, spec, cfg.Sandbox.ImageAllowlist, store); err != nil {
-		return chat.Containment{}, nil, err
+		return chat.Containment{}, nil, nil, err
 	}
 	c, err := sandbox.CreateContainer(ctx, eng, spec, cfg.Sandbox.ImageAllowlist, store)
 	if err != nil {
-		return chat.Containment{}, nil, err
+		return chat.Containment{}, nil, nil, err
 	}
+	writers = newWriterBoxes(cfg, eng, spec, store, profile, sup != nil)
 	cleanup = func() {
+		// The writers' containers go with the session's, by the same path:
+		// a quit and a hang-up or termination both come here. They go side
+		// by side with it rather than ahead of it, so a slow removal of a
+		// writer's does not spend the bound a signal allows the session's.
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			writers.close()
+		}()
+		defer func() { <-done }()
 		// The parent ctx is usually done by cleanup time; destruction gets
 		// its own bounded lifetime so the container never outlives the
 		// session by accident (and the TTL reaper backstops a failure here).
@@ -387,7 +404,7 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 	// one thing a sandbox session is not allowed to be.
 	if err := c.ProbeHelper(ctx); err != nil {
 		cleanup()
-		return chat.Containment{}, nil, fmt.Errorf("the sandbox image %s cannot run this session's commands: %v; "+
+		return chat.Containment{}, nil, nil, fmt.Errorf("the sandbox image %s cannot run this session's commands: %v; "+
 			"use the image released with this shhh (leave sandbox.container_image unset), or an image built FROM it", spec.Image, err)
 	}
 
@@ -419,7 +436,7 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 		GitStore:  c.GitStoreWords(),
 		Detail:    joinDetail(eng.Detail, "image "+shortImage(spec.Image)),
 		Manage:    sandboxManage(cfg, sc, sup),
-		Writers:   "a writer's commands: " + writerRefused + " — " + sandboxWriterWords,
+		Writers:   writers.words.line(),
 		Toolchain: sandboxToolchain(ctx, c),
 		// A hook is one more exec through the helper, with its payload on the
 		// stream (--stdin=inherit). Its stdin is closed on purpose once the
@@ -471,7 +488,7 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 			WrapTTY:   start(true),
 		})
 	}
-	return cont, cleanup, nil
+	return cont, writers, cleanup, nil
 }
 
 // containedExec is the one path that runs a program through the session's
@@ -522,18 +539,14 @@ func containGate(gate *quality.Runner, c sandbox.Container) {
 	}
 }
 
-// sandboxWriterWords is why a writer's commands are refused in a sandbox
-// session: a writer works in a worktree of its own, outside the container's
-// one mount, and an engine cannot add a mount to a container that is running.
-// sandboxChildRefusal is what every sub-agent's command gets there, a
-// writer's or not, since none of them follows the session's into its
-// container yet. Running them on the host instead would put the work nobody
-// watches outside the containment the person asked for.
-const (
-	sandboxWriterWords  = "a writer's worktree is outside this session's container"
-	sandboxChildRefusal = "error: a sub-agent's commands are refused in a sandbox session: they cannot follow the session's into its container " +
-		"(" + sandboxWriterWords + "), and they do not run anywhere else. Leave the commands to the session, or run without --sandbox."
-)
+// sandboxChildRefusal is what a sub-agent's command gets in a sandbox session
+// where no container holds it: a child that changes nothing, which is given
+// none, and a writer whose container was not made. Running it on the host
+// instead would put the work nobody watches outside the containment the
+// person asked for.
+// See docs/capabilities/containment.md#a-sandbox-writer-works-in-a-container-of-its-own.
+const sandboxChildRefusal = "error: this sub-agent's commands are refused in a sandbox session: only the session's own commands and a writer's run in a container, " +
+	"and they do not run anywhere else. Leave the commands to the session or a writer, or run without --sandbox."
 
 // sandboxCommandEnvironment is what the model is told its commands run under
 // in a sandbox session: a disposable container, its profile and its network.

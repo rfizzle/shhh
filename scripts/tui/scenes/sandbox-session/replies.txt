@@ -2,6 +2,10 @@
 # read as the lines cross from the container through the engine's exec. The
 # session's own queue, so /status asking for a reading of the session does
 # not take the reply written for the turn.
+#
+# The third turn spawns a writer, whose own queue runs one command and
+# answers: the command is the writer's, and it runs in the writer's own
+# container, whose one mount is the writer's copy of the checkout.
 [session]
 tool:execute_command:{"command":"echo one; sleep 1; echo two; sleep 1; echo three"}
 The three lines came back from the container.
@@ -9,3 +13,10 @@ tool:process:{"action":"start","name":"ticker","command":"echo ready; sleep 300"
 tool:process:{"action":"read","name":"ticker"}
 tool:process:{"action":"stop","name":"ticker"}
 The process printed ready inside the container, and it is stopped.
+Starting a writer to run the check in a container of its own.
++tool:spawn_agent:{"role":"writer","task":"Run the check.","name":"writer-1"}
+The writer is running the check in its own container.
+
+[writer-1]
+tool:execute_command:{"command":"echo from-the-writer"}
+Ran the check in a container of my own: from-the-writer.

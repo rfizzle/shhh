@@ -26,6 +26,8 @@ type contained struct {
 	said    commandEnvironment
 	// missing is the declared tools the commands will not find.
 	missing []string
+	// writers is a sandbox run's writers' containers; nil elsewhere.
+	writers *writerBoxes
 }
 
 // hostContainment is the containment the host has for a session's commands,

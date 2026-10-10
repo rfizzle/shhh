@@ -145,7 +145,19 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		commandsRefused := childCommandsRefused(cfg, writer, avail) && holds
 		sandboxChild := session.sandbox && holds
 		runCommand, commandRefusal := childCommands(cfg, croot, sc, writer, avail, sandboxChild)
-		if sandboxChild {
+		if sandboxChild && writer && session.writers != nil {
+			// A writer in a sandbox session runs its commands in a container
+			// of its own over its copy, and is told so in the block the
+			// session's own prompt carries; the host's mechanism, or its
+			// absence, has nothing to say about them.
+			// See docs/capabilities/containment.md#a-sandbox-writer-works-in-a-container-of-its-own.
+			sandboxChild, commandsRefused = false, false
+			sysPrompt += "\n\n" + commandEnvironmentBlock(session.writers.said)
+			var err error
+			if runCommand, commandRefusal, err = sandboxWriterCommandsIn(cctx, session.writers, spec, root); err != nil {
+				return subagent.Env{}, err
+			}
+		} else if sandboxChild {
 			commandsRefused = true
 		}
 
@@ -339,6 +351,9 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 		ScopeDirs: sc.Dirs,
 		Untracked: untracked,
+		// A writer's container goes when its copy does, and the session's
+		// close removes any still standing.
+		Removed: session.writers.releaser(),
 		LoadHandoff: func(handle string) ([]byte, error) {
 			if db == nil {
 				return nil, fmt.Errorf("failure handoffs are unavailable without session storage")

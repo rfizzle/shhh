@@ -35,7 +35,7 @@ or just type what you want
 
   Containment
   container sandbox · workspace-netless · read-only git hooks and config
-  a writer's commands: refused — a writer's worktree is outside this session's container
+  a writer's commands: contained · container sandbox — required · its own container over its worktree · workspace-netless · network closed
 
   Toolchain
   golangci-lint — declared, not in the sandbox image
@@ -73,7 +73,7 @@ or just type what you want
 
   ␛[38;5;244mContainment␛[m
   ␛[38;5;244mcontainer sandbox · workspace-netless · read-only git hooks and config␛[m
-  ␛[38;5;244ma writer's commands: refused — a writer's worktree is outside this session's container␛[m
+  ␛[38;5;244ma writer's commands: contained · container sandbox — required · its own container over its worktree · workspace-netless · network closed␛[m
 
   ␛[38;5;244mToolchain␛[m
   ␛[38;5;244mgolangci-lint — declared, not in the sandbox image␛[m

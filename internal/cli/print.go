@@ -612,6 +612,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			return err
 		}
 		defer cleanup()
+		// A writer this run spawns gets a container of its own from the
+		// same image, and the cleanup above removes it with the run's.
+		session.writers = box.writers
 	}
 	// The mode a run this shape answers with. It is empty unless --mode auto
 	// was given: a run answering with --yes and --allow alone is not in a
@@ -1112,7 +1115,7 @@ func startPrintSandbox(ctx context.Context, cfg config.Config, sc *scope.Scope, 
 	if err != nil {
 		return nil, nil, fmt.Errorf("sandbox: %w", err)
 	}
-	box, cleanup, err := sandboxContainment(ctx, cfg, ws, sc, procSup, gate)
+	box, writers, cleanup, err := sandboxContainment(ctx, cfg, ws, sc, procSup, gate)
 	if err != nil {
 		return nil, nil, fmt.Errorf("sandbox: %w", err)
 	}
@@ -1127,7 +1130,8 @@ func startPrintSandbox(ctx context.Context, cfg config.Config, sc *scope.Scope, 
 		// A hook execs in the container too, under the helper with its
 		// payload on the stream.
 		// See docs/capabilities/hooks.md#a-hook-is-a-command-like-any-other.
-		wrap: box.Wrap,
+		wrap:    box.Wrap,
+		writers: writers,
 	}, cleanup, nil
 }
 

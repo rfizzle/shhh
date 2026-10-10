@@ -94,8 +94,9 @@ func sandboxTestSetup(t *testing.T) (config.Config, *scope.Scope, string) {
 // A sandbox session's containment is values backed by its container: the
 // commands go through the helper, attached, the chip names the container and
 // the profile, the network is the profile's switch and no host list, and
-// nothing wraps a hook. A process start goes in the container, and the
-// container is destroyed by the cleanup it came with.
+// nothing wraps a hook; a writer's commands are contained by a container of
+// their own. A process start goes in the container, and the container is
+// destroyed by the cleanup it came with.
 func TestSandboxContainmentValues(t *testing.T) {
 	log := fakeSandboxEngine(t, helperAnswers)
 	cfg, sc, ws := sandboxTestSetup(t)
@@ -105,7 +106,7 @@ func TestSandboxContainmentValues(t *testing.T) {
 	}
 	t.Cleanup(sup.Close)
 
-	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup, nil)
+	c, _, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}
@@ -121,7 +122,7 @@ func TestSandboxContainmentValues(t *testing.T) {
 	if !strings.Contains(c.Detail, "docker") || !strings.Contains(c.Detail, "example.com/shhh-sandbox") {
 		t.Errorf("detail = %q, want the engine and the image", c.Detail)
 	}
-	if !strings.Contains(c.Status, "container sandbox") || !strings.Contains(c.Writers, "refused") {
+	if !strings.Contains(c.Status, "container sandbox") || !strings.Contains(c.Writers, "contained · container sandbox") {
 		t.Errorf("status %q, writers %q", c.Status, c.Writers)
 	}
 
@@ -166,7 +167,7 @@ func TestSandboxContainmentValues(t *testing.T) {
 func TestSandboxSessionRefusesToDowngrade(t *testing.T) {
 	cfg, sc, ws := sandboxTestSetup(t)
 	t.Setenv("PATH", t.TempDir())
-	_, _, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
+	_, _, _, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err == nil || !strings.Contains(err.Error(), "container") {
 		t.Fatalf("no engine: %v, want a refusal", err)
 	}
@@ -180,7 +181,7 @@ func TestSandboxSessionRefusesToDowngrade(t *testing.T) {
 func TestSandboxSessionRefusesAnImageWithoutTheHelper(t *testing.T) {
 	log := fakeSandboxEngine(t, "echo 'OCI runtime exec failed: no such file or directory' >&2; exit 126")
 	cfg, sc, ws := sandboxTestSetup(t)
-	_, _, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
+	_, _, _, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err == nil {
 		t.Fatal("an image without the helper was accepted")
 	}
@@ -258,7 +259,7 @@ func TestSandboxToolchainReadsTheContainer(t *testing.T) {
 	log := fakeSandboxEngine(t, helperAnswers)
 	cfg, sc, ws := sandboxTestSetup(t)
 	writeDeclaration(t, "check = [\"sh\", \"shhh-no-such-tool\"]\n")
-	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
+	c, _, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}
@@ -274,11 +275,13 @@ func TestSandboxToolchainReadsTheContainer(t *testing.T) {
 	}
 }
 
-// In a sandbox session no child runs a command, writer or not: a child's
-// commands do not follow the session's into its container, and run on the
-// host they would be outside what the person asked for. Outside one, a child
-// that holds a command on a host with a mechanism is given a runner.
-func TestSandboxSessionRefusesEveryChildsCommands(t *testing.T) {
+// In a sandbox session no child is given a runner on the host, writer or
+// not: run there its commands would be outside what the person asked for. A
+// writer's runner is its own container's instead
+// (TestSandboxWriterGetsItsOwnContainer), and a child that changes nothing
+// keeps the refusal. Outside one, a child that holds a command on a host with
+// a mechanism is given a runner.
+func TestSandboxSessionGivesNoChildAHostRunner(t *testing.T) {
 	cfg, sc, ws := sandboxTestSetup(t)
 	avail := sandbox.Availability{OK: true, Mechanism: "bwrap"}
 	for _, writer := range []bool{false, true} {
@@ -341,7 +344,7 @@ func sandboxProcessSession(t *testing.T) (*process.Supervisor, string) {
 		t.Fatal(err)
 	}
 	t.Cleanup(sup.Close)
-	_, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup, nil)
+	_, _, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}
@@ -497,7 +500,7 @@ func cancelInTheContainer(t *testing.T, hold bool) string {
 	}
 	t.Setenv("SHHH_SANDBOX_EXEC_DIR", t.TempDir())
 	cfg, sc, ws := sandboxTestSetup(t)
-	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
+	c, _, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}
@@ -574,7 +577,7 @@ func TestSandboxHookRunsInTheContainer(t *testing.T) {
 		t.Fatalf("startPrintSandbox: %v", err)
 	}
 	defer cleanup()
-	c, closeSession, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
+	c, _, closeSession, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}

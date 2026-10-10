@@ -1,12 +1,15 @@
 #!/bin/sh
 # A stand-in container engine, put on PATH as `docker`, so a sandbox session
 # can be driven on a host with no engine at all. It answers the calls a
-# sandbox session makes: the engine probe, the create, an exec, and the
-# remove. An exec runs the argv after the container's name here, with the
-# built shhh standing in for the copy the image carries at the helper's path
-# — so the command still runs under the helper, with the flags the session
-# gave it, and its stream and its stop are the helper's own. The container's
-# one mount is remembered from the create, and --workdir is resolved under it.
+# sandbox session makes: the engine probe, a create, an exec, and a remove,
+# for the session's container and for each writer's. An exec runs the argv
+# after the container's name here, with the built shhh standing in for the
+# copy the image carries at the helper's path — so the command still runs under the helper, with the flags the session
+# gave it, and its stream and its stop are the helper's own. Each container's
+# one mount is remembered from its create, under the container's name, and
+# --workdir is resolved under the mount of the container an exec names: a
+# writer's container mounts the writer's copy rather than the workspace. A
+# remove forgets the container and writes its name to the log of removals.
 state=${HOME:?}/.sandbox-engine
 mkdir -p "$state"
 case "$1" in
@@ -14,17 +17,20 @@ info)
 	echo '[name=seccomp name=rootless]'
 	;;
 run)
+	name= mount=
 	while [ $# -gt 0 ]; do
 		case "$1" in
+		--name) name=$2; shift ;;
 		--volume)
 			case "$2" in
-			*:/workspace) printf '%s\n' "${2%:/workspace}" > "$state/workspace" ;;
+			*:/workspace) mount=${2%:/workspace} ;;
 			esac
 			shift
 			;;
 		esac
 		shift
 	done
+	printf '%s\n' "$mount" > "$state/$name"
 	echo 0123456789ab
 	;;
 exec)
@@ -39,11 +45,17 @@ exec)
 		esac
 	done
 	# The container's name, then the helper's path inside the image.
+	name=$1
 	shift 2
-	cd "$(cat "$state/workspace")${workdir#/workspace}" || exit 126
+	cd "$(cat "$state/$name")${workdir#/workspace}" || exit 126
 	exec "$SHHH_BIN" "$@"
 	;;
-rm | inspect)
+rm)
+	# rm --force <name>
+	rm -f "$state/$3"
+	printf '%s\n' "$3" >> "$state/removed"
+	;;
+inspect)
 	;;
 image)
 	echo 'Error: No such image' >&2

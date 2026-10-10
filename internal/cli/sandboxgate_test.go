@@ -51,7 +51,7 @@ func TestGateRunsInTheSandboxContainer(t *testing.T) {
 	if gate.Wrap != nil || gate.WrapIn != nil {
 		t.Fatal("a sandbox session's gate was wrapped by the host's mechanism")
 	}
-	_, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, gate)
+	_, _, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, gate)
 	if err != nil {
 		t.Fatalf("sandboxContainment: %v", err)
 	}
