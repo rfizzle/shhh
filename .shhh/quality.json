@@ -118,6 +118,33 @@
         }
       ]
     },
+    "tui-check": {
+      "timeout_seconds": 1800,
+      "allow_write": true,
+      "checks": [
+        {
+          "name": "tui-check",
+          "exe": "make",
+          "args": [
+            "tui-check",
+            "TUI_JOBS=2"
+          ]
+        }
+      ]
+    },
+    "prepush": {
+      "timeout_seconds": 3600,
+      "allow_write": true,
+      "checks": [
+        {
+          "name": "prepush",
+          "exe": "make",
+          "args": [
+            "prepush"
+          ]
+        }
+      ]
+    },
     "fast": {
       "timeout_seconds": 120,
       "require_containment": true,

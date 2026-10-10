@@ -107,6 +107,31 @@ Sixty-eight literals came out of twenty files.
 
 [↑↓/jk] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
 
+· a checkpoint passed · the suite's name and its count, under the meter
+backlog · sprint · the cockpit sprint            5 items · [?] keys · [esc] back
+────────────────────────────────────────────────────────────────────────────────
+
+Put the backlog, the run and the sprint on screen, so watching a night's work is
+a glance rather than a scroll.
+▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1 of 4 done  ·  9 turns · $1.42
+checkpoint · tui · 94/94
+next · prose-renderer
+────────────────────────────────────────────────────────────────────────────────
+❯ ✓ keys-are-declared-once  HM  done  Every key is declared once                
+  ▸ rail-todo-block  HM  implement  The backlog block on the inspector rail
+  · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
+  · prose-renderer  MS  ready  One renderer for every piece of prose
+  ! cache-warm  --  dropped from the backlog
+────────────────────────────────────────────────────────────────────────────────
+keys-are-declared-once
+Every key is declared once
+chore · high · size M · done · written 2026-08-20 · in the cockpit sprint
+────────────────────────────────────────────────────────────────────────────────
+
+Sixty-eight literals came out of twenty files.
+
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
+
 · lanes over the ready list · no file, so no name, goal or meter; the lanes and their items
 backlog · sprint                                 3 items · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
@@ -311,6 +336,31 @@ Reads as a minor release.
   ␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  implement  The backlog block on the inspector rail␛[m
   ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  verify  A screen over the whole backlog, with the bo…␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  research  One renderer for every piece of prose␛[m
+  ␛[38;5;254m!␛[m ␛[38;5;254mcache-warm␛[m  ␛[38;5;244m--␛[m␛[38;5;244m  dropped from the backlog␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;38;5;254mkeys-are-declared-once␛[m
+␛[38;5;244mEvery key is declared once␛[m
+␛[38;5;244mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244mSixty-eight literals came out of twenty files.␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+
+· a checkpoint passed · the suite's name and its count, under the meter
+␛[1;38;5;254mbacklog␛[m␛[38;5;244m · sprint␛[m␛[38;5;244m · the cockpit sprint␛[m            ␛[38;5;244m5 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244mPut the backlog, the run and the sprint on screen, so watching a night's work is␛[m
+␛[38;5;244ma glance rather than a scroll.␛[m
+␛[38;5;254m▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1 of 4 done␛[m␛[38;5;244m  ·  9 turns · $1.42␛[m
+␛[38;5;244mcheckpoint · tui · 94/94␛[m
+␛[38;5;244mnext · ␛[m␛[38;5;254mprose-renderer␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✓␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mkeys-are-declared-once  HM  done  Every key is declared once                ␛[m␛[m
+  ␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  implement  The backlog block on the inspector rail␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block +1  A screen over the whole…␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece of prose␛[m
   ␛[38;5;254m!␛[m ␛[38;5;254mcache-warm␛[m  ␛[38;5;244m--␛[m␛[38;5;244m  dropped from the backlog␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mkeys-are-declared-once␛[m

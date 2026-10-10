@@ -76,6 +76,10 @@ type SprintBoard struct {
 	// None draws nothing: a sprint working one item at a time says which on
 	// that item's own row.
 	Lanes []SprintLane
+	// Checkpoint is what the last checkpoint said, in the host's words
+	// (`checkpoint · tui · 94/94`), drawn under the lanes' count. Empty
+	// draws no row.
+	Checkpoint string
 }
 
 // SprintLane is one item a sprint is working beside others.
@@ -403,6 +407,9 @@ func (board *SprintBoard) headRows(width int) []string {
 		rows = append(rows, wrapWarn("⚠ "+board.Stopped, width)...)
 	}
 	rows = append(rows, laneRows(board.Lanes, width)...)
+	if board.Checkpoint != "" {
+		rows = append(rows, sty.dim.Render(Clip(board.Checkpoint, width)))
+	}
 	if board.Next != "" {
 		rows = append(rows, sty.dim.Render(Clip("next · ", width))+
 			sty.body.Render(Clip(board.Next, max(width-7, 1))))

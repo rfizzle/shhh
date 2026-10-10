@@ -574,6 +574,7 @@ func (m Model) openSprintBoard(s *todo.Store) *components.SprintBoard {
 		for _, l := range sp.Lanes {
 			board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: l.Where()})
 		}
+		board.Checkpoint = sp.Checkpoint
 	}
 	if c := m.todo.sprintClosed; c != nil && c.report != "" && c.name == s.Sprint.Name {
 		board.Report = c.report
@@ -595,6 +596,7 @@ func (m Model) lanesBoard(s *todo.Store, sp *run.Sprint) *components.SprintBoard
 	if next, ok := sp.Peek(s); ok {
 		board.Next = next.Slug
 	}
+	board.Checkpoint = sp.Checkpoint
 	for _, l := range sp.Lanes {
 		board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: l.Where()})
 		if it, ok := s.Find(l.Slug); ok {

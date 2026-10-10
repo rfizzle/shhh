@@ -1173,6 +1173,28 @@ on taking items, and ends blocked — naming each item that blocked — only
 once nothing more can be taken. The cap and the ceiling end it the same way:
 no further item is started, and the lanes in flight are allowed to finish.
 
+**A sprint can look at the checkout between landings.** Each lane's patch
+passed its gate in its own copy, and a screen no gate draws can still drift
+over several of them that each passed alone. `todo.checkpoint_every` (a
+number of landings; zero, the default, is none) with `todo.checkpoint_suite`
+(a suite in `.shhh/quality.json`) makes the sprint run that suite on the
+checkout itself after every Nth landing. While it runs the sprint takes no
+item, the lanes in flight go on until their next step boundary and wait there
+at the lock the checkpoint holds, and nothing lands, is carried or is copied
+from the checkout until the suite has answered. A pass goes on. A check that
+fails is run again, alone, which is the rule every gate run follows for a
+load race, and a second failure ends the sprint blocked: nothing further is
+taken, the lanes in flight finish, and the ending names the checkpoint, the
+check and the evidence id of the failing run. The board's head and the
+sprint's log say a pass in the same words, `checkpoint · tui · 94/94`, the
+suite's name and its own count where a check prints one. A checkpoint asked
+for with no suite named, or in a checkout that is not trusted to run its
+suites, is a block and never a skip. The model is told nothing: a checkpoint
+is between items and no stage's prompt mentions it. The project names two
+suites for it: `tui-check` drives every scene (`make tui-check` with two
+jobs), and `prepush` runs everything CI runs that the host can run, which is
+the one the person's own orchestrator runs every five landings.
+
 The checkpoint carries the lanes: each item, its copy, its own checkpoint,
 the step it is at and what it has spent so far, written by one writer so two
 lanes finishing together cannot each leave a file that forgets the other. The

@@ -3327,6 +3327,8 @@ func TestGolden_SprintBoard(t *testing.T) {
 		oneLane := goldenSprintBoard()
 		oneLane.Rows[1].Note = "implement"
 		oneLane.Lanes = []SprintLane{{Slug: oneLane.Rows[1].Slug, Stage: "implement"}}
+		checked := goldenSprintBoard()
+		checked.Checkpoint = "checkpoint · tui · 94/94"
 		ready := &SprintBoard{Spend: "6 turns · $1.20", Next: goldenSprintRows()[0].Slug}
 		for i, stage := range []string{"implement", "verify", "research"} {
 			row := goldenSprintRows()[i+1]
@@ -3364,6 +3366,8 @@ func TestGolden_SprintBoard(t *testing.T) {
 				View: goldenSprintScreen(oneLane).View(width)},
 			{Label: "three lanes at once · the head counts them and each row names its step",
 				View: goldenSprintScreen(lanes).View(width)},
+			{Label: "a checkpoint passed · the suite's name and its count, under the meter",
+				View: goldenSprintScreen(checked).View(width)},
 			{Label: "lanes over the ready list · no file, so no name, goal or meter; the lanes and their items",
 				View: readyScreen.View(width)},
 			{Label: "stopped on a block · the block on the board with the item that wrote it",

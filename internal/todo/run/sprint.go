@@ -121,6 +121,15 @@ type Sprint struct {
 	// ready — so what it stopped is remembered here until nothing more can
 	// be taken, and the sprint ends blocked on them then.
 	Blocked []string `json:"blocked,omitempty"`
+	// Checkpoint is the last checkpoint's words as the board and the log
+	// read them: `checkpoint · tui · 94/94`, or the same ending in
+	// `running` while the suite is on the checkout. Empty before one has run.
+	// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+	Checkpoint string `json:"checkpoint,omitempty"`
+	// Halted is why the sprint takes no further item though the ready list
+	// holds some: a checkpoint's check failed twice. The lanes in flight
+	// finish, and the sprint ends blocked on it.
+	Halted string `json:"halted,omitempty"`
 	// Ended is one of the words above once the sprint is over, and Reason
 	// the evidence behind it.
 	Ended  string `json:"ended,omitempty"`
@@ -319,6 +328,10 @@ func (s *Sprint) TakeLane(store *todo.Store) (todo.Item, bool) {
 		s.drained(SprintCapped, fmt.Sprintf("spent %s of the %s the sprint was allowed", Dollars(s.Cost), CapDollars(s.CapCents)))
 		return todo.Item{}, false
 	}
+	if s.Halted != "" {
+		s.drained(SprintBlocked, strings.Join(s.Blocked, "; "))
+		return todo.Item{}, false
+	}
 	for _, l := range s.Lanes {
 		if len(l.Paths) == 0 {
 			return todo.Item{}, false
@@ -345,6 +358,14 @@ func (s *Sprint) TakeLane(store *todo.Store) (todo.Item, bool) {
 		s.drained(SprintEmpty, "nothing is ready: every open item waits on another, or the backlog is empty")
 	}
 	return todo.Item{}, false
+}
+
+// Halt stops the sprint taking items for why, which it ends blocked on once
+// the lanes in flight are over; the reason joins what blocked, so the ending
+// names it with them.
+func (s *Sprint) Halt(why string) {
+	s.Halted = why
+	s.Blocked = append(s.Blocked, oneLine(why))
 }
 
 // drained ends the sprint for why, but only once no lane is running: a

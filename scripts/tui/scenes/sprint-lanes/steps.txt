@@ -16,7 +16,7 @@ setup printf -- '---\ntitle: Give the cache a lifetime\nsize: S\n---\n## Tests\n
 setup printf -- '---\ntitle: Evict what the lifetime expired\nsize: S\n---\n## Tests\n- true\n\n## Touches\n- `cache/evict.go`\n' > .shhh/todo/cache-evict.md
 setup printf -- '---\ntitle: Say what the cache holds\nsize: S\n---\n## Tests\n- true\n\n## Touches\n- `cache/report.go`\n' > .shhh/todo/cache-report.md
 setup printf -- '---\nname: caching\n---\nMake an entry'"'"'s lifetime mean something.\n\n## Items\n- cache-ttl\n- cache-evict\n- cache-report\n' > .shhh/todo/sprint.md
-setup printf '{"session":"scene","started":"2026-09-23T09:00:00Z","updated":"2026-09-23T09:40:00Z","parallel":3,"turns":5,"cost":1.2,"attempts":["cache-ttl","cache-evict","cache-report"],"lanes":[{"slug":"cache-ttl","stage":"implement"},{"slug":"cache-evict","stage":"verify"},{"slug":"cache-report","stage":"research"}]}\n' > .shhh/todo/.run/sprint.json
+setup printf '{"session":"scene","started":"2026-09-23T09:00:00Z","updated":"2026-09-23T09:40:00Z","parallel":3,"turns":5,"cost":1.2,"attempts":["cache-ttl","cache-evict","cache-report"],"lanes":[{"slug":"cache-ttl","stage":"implement"},{"slug":"cache-evict","stage":"verify"},{"slug":"cache-report","stage":"research"}],"checkpoint":"checkpoint · tui · 94/94"}\n' > .shhh/todo/.run/sprint.json
 snap 01-start "Some things worth doing first"
 keys "/todo" Enter
 snap 02-backlog "cache-evict" "cache-report"
@@ -29,5 +29,5 @@ snap 02c-back "[?] keys"
 keys Tab
 # The head: the goal, the meter and the spend, then how many lanes are at
 # work; under it the set's rows, each lane's saying its step — the one place
-# a lane is named.
-snap 03-sprint-tab 'working · 3 at once' "cache-ttl  MS  implement" "cache-evict  MS  verify" "cache-report  MS  research"
+# a lane is named. The last checkpoint's row sits under the lanes' count.
+snap 03-sprint-tab 'working · 3 at once' 'checkpoint · tui · 94/94' "cache-ttl  MS  implement" "cache-evict  MS  verify" "cache-report  MS  research"

@@ -1377,6 +1377,8 @@ own file could hold.
 | `item_timeout_minutes` | number | 0 (no cap) | next session | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |
 | `sprint_cost_cap_cents` | number | 0 (off) | next session | Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session. `--cost-cap` is read ahead of the file. |
 | `groom_stale_commits` | number | the profile's own | next session | How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off. |
+| `checkpoint_every` | number | 0 (off) | next session | After this many landings a parallel sprint stops taking items, lets the lanes in flight reach their next step, runs todo.checkpoint_suite on the checkout, and goes on when it passes; zero runs no checkpoint. |
+| `checkpoint_suite` | text | (none) | next session | The quality suite a sprint's checkpoint runs on the checkout, named as .shhh/quality.json names it; a check that fails twice, the second time alone, ends the sprint blocked. |
 
 **`[commit]`**
 

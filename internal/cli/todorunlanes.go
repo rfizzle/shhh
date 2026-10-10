@@ -92,6 +92,9 @@ type todoLanes struct {
 	// landings is every patch that has landed on the checkout this sprint,
 	// in the order it landed, for each lane to carry into its copy.
 	landings []todoLanding
+	// cp is the checkpoint the sprint runs on the checkout every few
+	// landings, and nil for none.
+	cp *todoCheckpoint
 }
 
 // todoLanding is one lane's patch as it landed on the checkout.
@@ -160,7 +163,7 @@ func (d *todoDriver) sprintParallel(ctx context.Context, maxItems, n int) bool {
 	// The sprint's checks take turns across every process it starts, under
 	// the run directory.
 	d.slots = subagent.OpenFileSlots(filepath.Join(run.Dir(d.root), todoSlotsDir), d.slotCount, "")
-	set := &todoLanes{root: d.root, out: d.out, sp: sp, top: todoRepoTop(d.root)}
+	set := &todoLanes{root: d.root, out: d.out, sp: sp, top: todoRepoTop(d.root), cp: d.checkpointPlan()}
 	for _, l := range sp.Orphans() {
 		d.orphaned(sp, l)
 	}
@@ -242,6 +245,10 @@ func (d *todoDriver) orphaned(sp *run.Sprint, l run.SprintLane) {
 func (s *todoLanes) take() (todo.Item, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// A checkpoint on the checkout takes no item beside it.
+	if s.checkpointing() {
+		return todo.Item{}, false
+	}
 	it, ok := s.sp.TakeLane(todo.Load(todoProfile(), s.root))
 	s.saveLocked()
 	return it, ok
@@ -738,6 +745,7 @@ func (l *todoLane) land(plain bool) ([]string, error) {
 		// the lane wrote: a merge or a regenerated file lands something else,
 		// and the other copies are owed what the checkout now holds.
 		l.set.landings = append(l.set.landings, todoLanding{slug: l.slug, patch: patch})
+		l.set.landedOne()
 	}
 	// The lane's own landing is not one it has to carry.
 	l.seen = len(l.set.landings)
@@ -788,7 +796,7 @@ func (d *todoDriver) laneCommit(ctx context.Context, st *run.State, it todo.Item
 	if step, redirected := d.verifyAfterCarry(ctx, st, it, carried, true); redirected {
 		return step
 	}
-	files, err := l.landCommit(d, st)
+	files, err := l.landCommit(ctx, d, st)
 	if err != nil {
 		return st.Block("the commit could not be made: " + err.Error())
 	}
@@ -842,7 +850,7 @@ func (d *todoDriver) verifyAfterCarry(ctx context.Context, st *run.State, it tod
 // committed there, while no other lane may write the branch. What the commit
 // holds is what the patch touched, re-expressed from the checkout, and never
 // the backlog (run.Committable). The caller holds the land lock.
-func (l *todoLane) landCommit(d *todoDriver, st *run.State) ([]string, error) {
+func (l *todoLane) landCommit(ctx context.Context, d *todoDriver, st *run.State) ([]string, error) {
 	files, err := l.land(true)
 	if err != nil {
 		return nil, err
@@ -854,6 +862,9 @@ func (l *todoLane) landCommit(d *todoDriver, st *run.State) ([]string, error) {
 		return nil, fmt.Errorf("%w — the lane's patch is on the checkout, uncommitted", err)
 	}
 	fmt.Fprintf(d.out, "lane %s landed %s\n", l.slug, countOf(len(committed), "file", "files"))
+	// The checkout holds this landing as a commit, and the lock is still
+	// held: the checkpoint, if this was the Nth, looks at exactly it.
+	l.set.checkpoint(ctx)
 	return committed, nil
 }
 
@@ -925,6 +936,9 @@ func (l *todoLane) end(ctx context.Context, d *todoDriver, st *run.State, it tod
 	if st.Stage == run.StageDone && !l.landed {
 		l.set.land.Lock()
 		files, err := l.land(false)
+		if err == nil {
+			l.set.checkpoint(ctx)
+		}
 		l.set.land.Unlock()
 		if err != nil {
 			st.Block(err.Error())

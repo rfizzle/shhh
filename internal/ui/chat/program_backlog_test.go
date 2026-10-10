@@ -52,7 +52,7 @@ func TestProgram_TheSprintTabListsTheLanesAtWork(t *testing.T) {
 		".shhh/todo/cache-report.md": item("Say what the cache holds"),
 		".shhh/todo/sprint.md":       "---\nname: caching\n---\nMake an entry's lifetime mean something.\n\n## Items\n- cache-ttl\n- cache-evict\n- cache-report\n",
 		".shhh/todo/.run/sprint.json": `{"session":"s","parallel":3,"turns":5,"cost":1.2,"lanes":[` +
-			`{"slug":"cache-ttl","stage":"implement"},{"slug":"cache-evict","stage":"verify"},{"slug":"cache-report","stage":"research"}]}`,
+			`{"slug":"cache-ttl","stage":"implement"},{"slug":"cache-evict","stage":"verify"},{"slug":"cache-report","stage":"research"}],"checkpoint":"checkpoint · tui · 94/94"}`,
 	})
 	m, _ := scriptedSession(programTurn{text: "nothing to do"})
 	m.wiring.Workspace = root
@@ -68,5 +68,5 @@ func TestProgram_TheSprintTabListsTheLanesAtWork(t *testing.T) {
 	programPress(t, tm, "tab")
 	waitForText(t, tm, "working · 3 at once")
 
-	frameHas(t, finalFrame(t, tm), "cache-ttl", "implement", "cache-evict", "verify", "cache-report", "research")
+	frameHas(t, finalFrame(t, tm), "cache-ttl", "implement", "cache-evict", "verify", "cache-report", "research", "checkpoint · tui · 94/94")
 }

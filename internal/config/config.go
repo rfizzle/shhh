@@ -129,6 +129,16 @@ type TodoConfig struct {
 	// every file that already set it says.
 	// See docs/capabilities/todo.md#an-item-is-checked-before-it-is-worked.
 	GroomStaleCommits int `toml:"groom_stale_commits"`
+	// CheckpointEvery is how many landings a parallel sprint makes between
+	// runs of the suite CheckpointSuite names. Zero, the default, runs none.
+	// A suite is spent on the checkout rather than on a lane's copy, because
+	// what it finds is drift between landings that each passed alone.
+	// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+	CheckpointEvery int `toml:"checkpoint_every"`
+	// CheckpointSuite is the quality suite a checkpoint runs, by the name
+	// the project's quality file gives it. Empty with a count set blocks the
+	// sprint at the first checkpoint rather than skipping it.
+	CheckpointSuite string `toml:"checkpoint_suite"`
 }
 
 // CommitConfig is what a commit shhh makes is told about this checkout.

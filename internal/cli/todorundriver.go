@@ -48,6 +48,11 @@ type todoDriver struct {
 	// every stage's process is told where they are (stageEnv).
 	slots     *subagent.FileSlots
 	slotCount int
+	// checkpointEvery and checkpointSuite are todo.checkpoint_every and
+	// todo.checkpoint_suite: the landings between a parallel sprint's runs
+	// of a suite on the checkout, and which suite.
+	checkpointEvery int
+	checkpointSuite string
 	// closeGate reports that the workspace names an on-close suite, so a
 	// stage's own process checks the tree as it closes and the verify stage
 	// can take that verdict instead of running the same suite again.
@@ -219,6 +224,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	d.secretIgnore = cfg.Commit.SecretIgnore
 	d.trailers = cfg.Commit.Trailers
 	d.slotCount = cfg.Agents.CheckSlots
+	d.checkpointEvery, d.checkpointSuite = cfg.Todo.CheckpointEvery, cfg.Todo.CheckpointSuite
 	worktree.SetDir(cfg.Agents.WorktreeDir)
 	// The suites are command text out of a file that arrived with the clone
 	// and the runner spends no approval on them, so an untrusted checkout

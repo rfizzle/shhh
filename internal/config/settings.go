@@ -751,6 +751,12 @@ var settings = []Setting{
 	}, {
 		Key: "todo.groom_stale_commits", Kind: KindInt, Taken: AtStart, Default: "the profile's own", Literal: "0",
 		Desc: "How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off.",
+	}, {
+		Key: "todo.checkpoint_every", Kind: KindInt, Taken: AtStart, Default: "0 (off)", Literal: "0",
+		Desc: "After this many landings a parallel sprint stops taking items, lets the lanes in flight reach their next step, runs todo.checkpoint_suite on the checkout, and goes on when it passes; zero runs no checkpoint.",
+	}, {
+		Key: "todo.checkpoint_suite", Kind: KindString, Taken: AtStart, Default: "(none)",
+		Desc: "The quality suite a sprint's checkpoint runs on the checkout, named as .shhh/quality.json names it; a check that fails twice, the second time alone, ends the sprint blocked.",
 	},
 
 	{
