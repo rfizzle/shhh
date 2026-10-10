@@ -1352,7 +1352,7 @@ func TestTypedSteeringEndsTheSessionsWaitOnItsChildren(t *testing.T) {
 		if !strings.HasPrefix(text, "Woken by a steer") {
 			t.Fatalf("the wait should say a steer woke it:\n%s", text)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(factBound):
 		t.Fatal("typed steering did not end the session's wait")
 	}
 }
@@ -1403,7 +1403,7 @@ func TestApprovingASpawnHandsOverTheTurnsAsTheyStoodAtDispatch(t *testing.T) {
 		if !strings.Contains(got, "user: the ask at the card") || strings.Contains(got, "a later ask") {
 			t.Fatalf("the child was not handed the turn as it stood at dispatch:\n%s", got)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(factBound):
 		t.Fatal("the child never opened")
 	}
 }

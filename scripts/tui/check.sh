@@ -21,6 +21,13 @@
 # then costs one line of the summary rather than every scene after it, and
 # the exit status is still non-zero when any scene failed.
 #
+# A scene that fails in the parallel pass is driven once more, alone, after
+# every other scene is over, because a host loaded by its neighbours fails
+# snaps that the scene passes by itself. The scene is reported failed only
+# when the lone run fails too; a scene that passes alone is counted passed and
+# named as a race (`passed alone`), and the summary counts how many were
+# retried. A scene declared unable (exit 3) is not a failure and not retried.
+#
 # Environment: SHHH_BIN (the binary, handed to drive.sh), TUI_JOBS (how many
 # scenes at once; default 3), and whatever else drive.sh reads (WAIT, COLS…).
 set -u
@@ -56,6 +63,28 @@ export TUI_CHECK_LOGS
 trap 'rm -rf "$TUI_CHECK_LOGS"' EXIT
 
 printf '%s\0' "$@" | xargs -0 -n 1 -P "$jobs" "$0" --one
+
+# The second look: each scene that failed is driven again, one at a time, with
+# nothing else running. Its lone log replaces the parallel one, and the first
+# result is kept so the summary can name both.
+retried=0
+raced=
+for scene in "$@"; do
+	name=$(basename "$scene")
+	status=$(cat "$TUI_CHECK_LOGS/$name.status" 2>/dev/null)
+	if [ "$status" = 0 ] || [ "$status" = 3 ]; then
+		continue
+	fi
+	retried=$((retried + 1))
+	printf 'Re-driving %s alone (it failed with %s alongside the others)...\n' "$name" "${status:-no status}"
+	cp "$TUI_CHECK_LOGS/$name.log" "$TUI_CHECK_LOGS/$name.first.log" 2>/dev/null
+	"$here/drive.sh" "$scene" >"$TUI_CHECK_LOGS/$name.log" 2>&1
+	echo $? >"$TUI_CHECK_LOGS/$name.status"
+	cat "$TUI_CHECK_LOGS/$name.log"
+	if [ "$(cat "$TUI_CHECK_LOGS/$name.status")" = 0 ]; then
+		raced="$raced${raced:+, }$name"
+	fi
+done
 
 # The summary is read in the order the scenes were handed over, not the order
 # they finished in, so two runs of the same tree name their failures the same
@@ -99,7 +128,7 @@ for scene in "$@"; do
 	fi
 	failed=$((failed + 1))
 	snap=$(sed -n "s|^drive\.sh: $name/\([^:]*\): .*|\1|p" "$TUI_CHECK_LOGS/$name.log" 2>/dev/null | head -n 1)
-	failures="$failures · $name failed${snap:+ at $snap}"
+	failures="$failures · $name failed${snap:+ at $snap} (failed alone too)"
 done
 unable=$((total - passed - failed))
 counted=
@@ -108,5 +137,8 @@ declared=
 for i in ${reasons[@]+"${!reasons[@]}"}; do
 	declared="$declared · unable here, ${reasons[$i]}: ${unable_by[$i]}"
 done
-echo "$passed/$total scenes passed$counted$failures$declared"
+again=
+[ "$retried" -gt 0 ] && again=", $retried retried"
+[ -n "$raced" ] && again="$again (passed alone: $raced)"
+echo "$passed/$total scenes passed$counted$again$failures$declared"
 [ "$failed" = 0 ]

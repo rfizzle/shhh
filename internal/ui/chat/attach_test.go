@@ -563,7 +563,7 @@ func TestKillAllHandsTheCascadeItsRoots(t *testing.T) {
 // request object (the child consumes the response itself).
 func pumpAsks(t *testing.T, m Model, sup *subagent.Supervisor, want int) Model {
 	t.Helper()
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(factBound)
 	for len(m.childAsks) < want {
 		select {
 		case ev := <-sup.Events():

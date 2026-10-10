@@ -42,7 +42,7 @@ func TestProgram_ALineFromAnotherSessionStartsATurn(t *testing.T) {
 		if word != rpc.TakenDelivered {
 			t.Errorf("the sender was told %q", word)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(factBound):
 		t.Fatal("the sender was never told what became of its line")
 	}
 

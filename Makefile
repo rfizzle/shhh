@@ -344,7 +344,7 @@ tui-shot: ## Drive one scene and capture every step; with agg, draw them too (SC
 # The scripted endpoint's own tests run first: a scene that passes against
 # an endpoint answering the wrong request is no reading of the surface.
 TUI_JOBS ?= 3
-tui-check: ## Drive every scene, TUI_JOBS at a time, and fail naming each step that never draws what it waits for
+tui-check: ## Drive every scene, TUI_JOBS at a time, re-drive a failure alone, and fail naming each step that never draws what it waits for
 	@PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -q -s scripts/tui -p '*_test.py'
 	@$(tui_build)
 	@SHHH_BIN=$$PWD/$(TUI_BIN) TUI_JOBS=$(TUI_JOBS) scripts/tui/check.sh $(SCENES)

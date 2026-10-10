@@ -132,7 +132,7 @@ func TestProgram_TheQuitChordArmsThenLeaves(t *testing.T) {
 	tm.Send(programCancel)
 	waitForText(t, tm, "again quits")
 	tm.Send(programCancel)
-	tm.WaitFinished(t, teatest.WithFinalTimeout(10*time.Second))
+	tm.WaitFinished(t, teatest.WithFinalTimeout(factBound))
 
 	final := tm.FinalModel(t).(watched).Model
 	if banner := stripANSI(final.ExitBanner("").View(120)); !strings.Contains(banner, "session") {

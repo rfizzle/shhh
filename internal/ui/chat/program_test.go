@@ -216,7 +216,7 @@ func finalFrame(t *testing.T, tm *program) string {
 	if err := tm.Quit(); err != nil {
 		t.Fatalf("quitting the program: %v", err)
 	}
-	final, ok := tm.FinalModel(t, teatest.WithFinalTimeout(10*time.Second)).(watched)
+	final, ok := tm.FinalModel(t, teatest.WithFinalTimeout(factBound)).(watched)
 	if !ok {
 		t.Fatal("the program did not end on the chat model")
 	}
