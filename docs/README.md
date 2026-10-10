@@ -74,12 +74,10 @@ It runs as part of `make ci`.
   so a reference to one is a reference a reader cannot follow.
 - **Roadmaps, phases and open questions.** Planning artefacts age faster than
   anything around them, and none of them is a description of the software.
-- **Exact visual specification.** Column widths, colour rungs, glyph
-  assignments and the artboards themselves are normative in the
-  `shhh Design System` project in Claude Design (projectId
-  `8bd9b60d-8d86-403e-a591-c15a9ebccfd9`, read with the DesignSync tool).
-  Re-drawing an artboard in Markdown produces a second copy that disagrees
-  with the first. [`interface/`](interface/) says what the rules *are* and why
+- **Exact visual specification.** Column widths, colour rungs and glyph
+  assignments are what the goldens capture, and `make design` builds them
+  into a book. Re-drawing a golden in Markdown produces a second copy that
+  disagrees with the first. [`interface/`](interface/) says what the rules *are* and why
   they hold; the design system says what they *measure*.
 - **Changelogs.** A document describes the software as it is now. How it got
   that way is what git is for.

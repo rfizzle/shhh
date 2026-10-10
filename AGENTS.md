@@ -31,8 +31,10 @@ serious harm may be called out separately as a windfall; don't fold it in.
   same commit. `make docs-check` verifies every citation resolves.
 - **Never reference a story, sprint, backlog item or `.plan/`** in a comment,
   document or test name. `make docs-check` fails on a story identifier.
-- **Exact visual specification lives in the `shhh Design System` project in
-  Claude Design** (read with DesignSync), not in Markdown here.
+- **The goldens and `make design` are the record of exact visual
+  specification**; a surface not yet built is drafted as a text panel in its
+  story, in the golden's shape, and approved there before the code. Markdown
+  here says what the rules are, not what they measure.
 
 ### Where the model reads it
 

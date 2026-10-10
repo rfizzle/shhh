@@ -20,13 +20,13 @@ then a page per scene. Open `docs/design/index.html`. A surface that is not
 built yet is drafted as a text panel in its story, in the golden's shape, and
 approved there before the code.
 
-**Exact visual specification is not here.** Column widths, colour rungs, glyph
-assignments and the artboards are normative in the `shhh Design System`
-project in Claude Design (projectId `8bd9b60d-8d86-403e-a591-c15a9ebccfd9`,
-read with the DesignSync tool — not from the published Artifact, which is a
-viewer).
+**Exact visual specification is not here.** Column widths, colour rungs and
+glyph assignments are what the goldens capture, and `make design` builds them
+into the book. The `shhh Design System` project in Claude Design was retired
+on 2026-10-10; a drawing of it that a reader still holds is old
+([departures](departures.md#the-design-project-was-retired-and-its-last-drawings-are-old)).
 
-Re-drawing an artboard in Markdown produces a second source of truth that
+Re-drawing a golden in Markdown produces a second source of truth that
 disagrees with the first, and the disagreement is found by a reader who cannot
-tell which one is stale. These two documents say what the rules *are* and why
-they hold; the design system says what they measure.
+tell which one is stale. These documents say what the rules *are* and why they
+hold; the goldens say what they measure.

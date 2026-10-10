@@ -11,7 +11,10 @@ Inventory of 2026-09-05, read from the vendors' own lists (sources at the
 end). The tables are written by `make docs` from the table in
 `internal/ui/keys/reserved.go`, which is the declaration the register's test
 and the keymap file's refusal both read; this page is it printed, and
-`make docs-check` fails when the two drift. Two places in the prose are
+`make docs-check` fails when the two drift. `TestRegister_OneSpellingPerAct`
+(`internal/ui/keys/vocabulary_test.go`) holds the other half: every act has
+one spelling in the register, so no hint, doc or drawing can offer a key the
+register does not bind. Two places in the prose are
 marked *verify*: a default known from use, not from a page.
 
 ## The draft spends chords only

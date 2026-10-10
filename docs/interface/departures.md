@@ -1,9 +1,11 @@
 # Departures from the design system
 
-The `shhh Design System` project is normative
-([why](../architecture.md#design-lives-outside-the-repository)). These are the
-places the binary deliberately does something else, with the reason, so that
-the next reader finds a decision rather than a discrepancy.
+The goldens are the record of what the binary draws, and the `shhh Design
+System` project in Claude Design was retired on 2026-10-10
+([the entry](#the-design-project-was-retired-and-its-last-drawings-are-old)).
+These are the places the binary deliberately does something else than a
+drawing of that project, with the reason, so that the next reader finds a
+decision rather than a discrepancy.
 
 Two positions are allowed and there is no third: a divergence is either fixed
 in the implementation, or it is recorded here. What counts as a divergence is
@@ -26,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 24 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 25 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -1797,3 +1799,23 @@ N earlier` above them where the window has moved down. A finished step's line
 names the step by the plan's number; `writes left` counts the steps that
 write which the run had not reached when it took this one, and a step that
 broke ticks with `✗`.
+
+## The design project was retired and its last drawings are old
+
+_Filed 2026-10-10 · closes by the binary_
+
+*A gap.* The `shhh Design System` project in Claude Design is retired and its
+local mirror deleted; the goldens and the book `make design` builds from them
+are the record, and a surface not yet built is drafted as a text panel in its
+story and approved there before the code. A reader of a remote artboard
+should treat these as drawn before the register sweep and so old: settings,
+the backlog screen, reading mode, the agent manager, approvals, the
+supporting programs, rewind and the drop row, one-shot, the model picker and
+held settings. Their keys, captions and rows are the golden's, not the
+drawing's: `[q] back` is `[esc] back`, `[d] full diff` is folded into enter,
+`[x] drop` is `[d]`, `[r] rename it` is `[e]`, `[c] code only` is `[o]`, and
+the drop row's `[c] continue from here` is `[g]`.
+
+One decision the retired drawings recorded is kept: the inspector rail never
+holds the keyboard, so there is no `[v] review all 8` on it. `/diff` and a
+click on the marker or the heading open everything.
