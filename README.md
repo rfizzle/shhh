@@ -19,9 +19,10 @@ enough detail to say no.
 
 The agent. It reads, edits, runs, checks its work, and can hand parts of the
 job to child agents working in their own isolated copies of the repository.
-It tells you what it changed at the end of every turn, and any turn can be
-put back — from records the session kept rather than from git, so a turn is
-undoable whether or not the repository is clean.
+It tells you what it changed at the end of every turn, and `/undo` puts a
+turn's edits back — from records the session kept rather than from git, so it
+works whether or not the repository is clean. A command's effects are not
+recorded, and a commit is outside it.
 
 It is one agent loop with several front ends: the terminal session, a
 headless run for scripts and CI (`shhh code -p`, with a documented set of exit
@@ -159,7 +160,10 @@ $ shhh chat
 ```
 
 shhh speaks to Anthropic, OpenAI, Gemini, OpenRouter, any OpenAI-compatible
-endpoint, and gateway profiles in front of them.
+endpoint, and gateway profiles in front of them. With nothing set it uses
+OpenAI's Responses API (`openai-responses`); `--provider`, `SHHH_PROVIDER` or
+`provider.default` in the settings file chooses another. In a session,
+`ctrl+c` stops a running turn, and pressed twice on an empty prompt it quits.
 
 ## Configuration
 
@@ -193,7 +197,7 @@ The pictures on this page are drawn from the TUI harness's own scenes by
 ```sh
 $ make build
 $ make test vet lint fmt-check docs-check   # the quality gate
-$ make ci                                   # the gate, cross-platform vet and the driven TUI scenes
+$ make ci                                   # the gate, a cross-platform vet, the host-list age check and the driven TUI scenes
 ```
 
 ## License

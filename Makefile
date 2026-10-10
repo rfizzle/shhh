@@ -181,9 +181,10 @@ cross: ## Check every released platform still compiles
 
 # The CI pipeline, and nothing but the targets above in one order: the same
 # spelling a person runs is the one the runner runs. The quality gate
-# (.shhh/quality.json) is the first five; cross, the driven scenes and the host-snapshot age check are what
-# CI adds, because a scene wants a terminal a contained session has not got.
-ci: cross fmt-check docs-check test vet lint host-lists-check tui-check ## Run the CI pipeline
+# (.shhh/quality.json) is test, vet, lint, fmt-check and docs-check; cross, the
+# driven scenes and the host-snapshot age check are what CI adds, because a
+# scene wants a terminal a contained session has not got.
+ci: cross fmt-check docs-check test vet lint host-lists-check tui-check ## The gate, a cross-platform vet, the host-list age check and the driven TUI scenes
 
 # Everything CI runs that this host can run, on CI's Go. The pin is the version
 # go.mod names: a `toolchain` line equal to the `go` line is refused under
