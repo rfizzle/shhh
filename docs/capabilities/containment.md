@@ -576,10 +576,10 @@ shhh's own scope-checked code writing the same mounted tree; the reading of
 the tree between rounds, which is the host's own git, already kept from
 running anything a command wrote; and the language servers, MCP servers and
 the web tools. A process start is refused, a hook is not run and says so, and
-a writer's commands are refused with a sentence, since a writer's worktree is
-outside the container's one mount; none of them may fall back to running on
-the host, which would put the one thing outside the containment the person
-asked for.
+a sub-agent's commands are refused with a sentence, since they do not follow
+the session's into the container yet and a writer's worktree is outside its
+one mount; none of them may fall back to running on the host, which would put
+the one thing outside the containment the person asked for.
 
 **A command in the container is reached through its stream.** An engine's exec
 forwards no signal, so stopping the client on this machine would leave the

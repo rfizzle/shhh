@@ -265,6 +265,24 @@ func TestSandboxToolchainReadsTheContainer(t *testing.T) {
 	}
 }
 
+// In a sandbox session no child runs a command, writer or not: a child's
+// commands do not follow the session's into its container, and run on the
+// host they would be outside what the person asked for. Outside one, a child
+// that holds a command on a host with a mechanism is given a runner.
+func TestSandboxSessionRefusesEveryChildsCommands(t *testing.T) {
+	cfg, sc, ws := sandboxTestSetup(t)
+	avail := sandbox.Availability{OK: true, Mechanism: "bwrap"}
+	for _, writer := range []bool{false, true} {
+		run, refusal := childCommands(cfg, ws, sc, writer, avail, true)
+		if run != nil || refusal != sandboxChildRefusal {
+			t.Errorf("writer %v: a sandbox session's child was given a runner (refusal %q)", writer, refusal)
+		}
+	}
+	if run, refusal := childCommands(cfg, ws, sc, false, avail, false); run == nil || refusal != "" {
+		t.Errorf("outside a sandbox session a reader with a mechanism got no runner (refusal %q)", refusal)
+	}
+}
+
 // The doctor's image row says whether the image carries the helper, and an
 // image without it is the one reading that warns: a sandbox session will
 // refuse it.

@@ -431,15 +431,16 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 }
 
 // sandboxWriterWords is why a writer's commands are refused in a sandbox
-// session, and sandboxWriterRefusal the refusal each one gets: a writer works
-// in a worktree of its own, outside the container's one mount, and an engine
-// cannot add a mount to a container that is running. Running them on the
-// host instead would put the work nobody watches outside the containment the
-// person asked for.
+// session: a writer works in a worktree of its own, outside the container's
+// one mount, and an engine cannot add a mount to a container that is running.
+// sandboxChildRefusal is what every sub-agent's command gets there, a
+// writer's or not, since none of them follows the session's into its
+// container yet. Running them on the host instead would put the work nobody
+// watches outside the containment the person asked for.
 const (
-	sandboxWriterWords   = "a writer's worktree is outside this session's container"
-	sandboxWriterRefusal = "error: a writer's commands are refused in a sandbox session: " + sandboxWriterWords +
-		", and they do not run anywhere else. Leave the commands to the session, or run without --sandbox."
+	sandboxWriterWords  = "a writer's worktree is outside this session's container"
+	sandboxChildRefusal = "error: a sub-agent's commands are refused in a sandbox session: they cannot follow the session's into its container " +
+		"(" + sandboxWriterWords + "), and they do not run anywhere else. Leave the commands to the session, or run without --sandbox."
 )
 
 // sandboxCommandEnvironment is what the model is told its commands run under

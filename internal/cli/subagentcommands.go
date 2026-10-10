@@ -210,3 +210,16 @@ func childCommandRunnerIn(cfg config.Config, dir string, sc *scope.Scope, writer
 		return runner.RunCaptureInResult(ctx, dir, command)
 	}
 }
+
+// childCommands is a child's runner and the refusal its commands get. In a
+// sandbox session a child that holds a command has nowhere contained to run
+// it — a child's commands do not follow the session's into its container
+// yet, and a writer's worktree is outside its one mount — and on the host
+// they would be outside what the person asked for, so every one is refused
+// and the child is given no runner (sandbox.go).
+func childCommands(cfg config.Config, dir string, sc *scope.Scope, writer bool, avail sandbox.Availability, inSandbox bool) (chat.RunFunc, string) {
+	if inSandbox {
+		return nil, sandboxChildRefusal
+	}
+	return childCommandRunner(cfg, dir, sc, writer, avail), childCommandRefusal(cfg, writer, avail)
+}
