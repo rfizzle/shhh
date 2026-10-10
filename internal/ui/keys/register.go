@@ -489,7 +489,7 @@ func register() [surfaceCount]Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  "/handoff, or the yes on the quit's offer of one",
-			Bindings: []Binding{Decision.Accept, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
+			Bindings: []Binding{Proposal.Write, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
 		},
 		OnProposal: {
 			// The scaffold card's shape for a write the record proposed: an

@@ -27,7 +27,7 @@ sleep 0.3
 keys C-c
 snap 04-offer "Write a handoff first?" "Changes are uncommitted." "[y/N]"
 keys y
-snap 05-card "[y] keep it" "Approve handoff" "summary   Retry backoff capped; the timer test still flakes" "open      the timer test flakes under load" "[e] edit first"
+snap 05-card "[y] keep it" "enter opened this card and keeps nothing" "Approve handoff" "summary   Retry backoff capped; the timer test still flakes" "open      the timer test flakes under load" "[e] edit first"
 keys y
 # The second sitting: the resume offer's detail is the handoff's first line.
 snap 06-start-offer "pick up" "Retry backoff capped; the timer test still flakes"

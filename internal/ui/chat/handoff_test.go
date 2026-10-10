@@ -138,6 +138,23 @@ func TestHandoff_IsWrittenOnYesOnly(t *testing.T) {
 	}
 }
 
+// Enter is what typed the command, so a second tap of it keeps nothing and
+// leaves the card up: only [y] does, and the card says so on its foot.
+func TestHandoff_ADoubleTappedEnterKeepsNothing(t *testing.T) {
+	m, db := handoffModel(t, &handoffProvider{})
+	m = writeHandoff(t, m, "/handoff")
+	if !strings.Contains(ansi.Strip(strings.Join(m.handoffLines(), "\n")), "enter opened this card and keeps nothing — only [y] does") {
+		t.Fatal("the card does not say enter keeps nothing")
+	}
+	m = press(t, m, "enter")
+	if m.state != stateHandoff {
+		t.Fatalf("enter should leave the card up (state %v)", m.state)
+	}
+	if got, _ := db.ChatHandoff(m.sessionName); got != "" || m.handoff.kept != "" {
+		t.Fatalf("enter kept a handoff: %q", got)
+	}
+}
+
 // [e]'s edit comes back onto the card, and an edit that empties the file
 // leaves the draft as it was.
 func TestHandoff_AnEditComesBackOntoTheCard(t *testing.T) {

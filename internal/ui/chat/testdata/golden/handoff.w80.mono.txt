@@ -43,6 +43,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] keep it · [n] nothing kept · [e] edit first · [?] keys               │
 │ [esc] leave — nothing kept, and the draft waits                          │
+│ enter opened this card and keeps nothing — only [y] does                 │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · the quit · uncommitted work and no handoff
@@ -102,6 +103,7 @@ Write a handoff first? Changes are uncommitted.  [y/N] · [?] keys
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mkeep it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mnothing kept␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave — nothing kept, and the draft waits␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244menter opened this card and keeps nothing — only [y] does␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the quit · uncommitted work and no handoff

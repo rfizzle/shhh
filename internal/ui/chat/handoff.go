@@ -206,8 +206,12 @@ func (m Model) handoffCard() *components.ApprovalCard {
 		Act:      "keep this handoff on " + m.sessionName,
 		Summary:  "the next sitting of this conversation opens on it",
 		Answer:   "keep it",
-		Decline:  "nothing kept",
-		Return:   "leave — nothing kept, and the draft waits",
+		// Enter is what typed the command, so a second tap of it keeps
+		// nothing: only the letter does, and the card says so.
+		LetterOnly: true,
+		Footnote:   "enter opened this card and keeps nothing — only [y] does",
+		Decline:    "nothing kept",
+		Return:     "leave — nothing kept, and the draft waits",
 		ExtraHints: []components.KeyOffer{
 			{Key: keys.Bracket(keys.Decision.Revise), Label: "edit first"},
 		},
@@ -247,8 +251,8 @@ func (m Model) handoffCard() *components.ApprovalCard {
 }
 
 // answerHandoff routes the card's keys: esc leaves with the draft waiting and
-// nothing kept, [n] drops it, [e] hands it to the editor, and only the yes
-// writes anything.
+// nothing kept, [n] drops it, [e] hands it to the editor, and only [y]
+// writes anything: enter, which opened the card, answers nothing.
 func (m *Model) answerHandoff(msg tea.KeyPressMsg) (bool, overlayAction) {
 	w := m.handoff.writing
 	switch {
@@ -261,7 +265,7 @@ func (m *Model) answerHandoff(msg tea.KeyPressMsg) (bool, overlayAction) {
 		return true, overlayAction{close: true, note: "nothing kept; " + handoffCommandName + " writes another"}
 	case keys.Match(msg, keys.Decision.Revise):
 		return true, m.editHandoff()
-	case keys.Match(msg, keys.Decision.Accept):
+	case keys.Match(msg, keys.Proposal.Write):
 		if w == nil || w.draft == "" {
 			return true, overlayAction{close: true}
 		}
