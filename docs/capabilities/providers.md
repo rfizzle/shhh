@@ -806,6 +806,47 @@ the marks are still sent, because a marked request to an endpoint without a
 cache costs and says what it would have without them. The model is told none
 of this.
 
+## The session measures how long the cache lives
+
+Nobody documents the lifetime of a gateway's cache, and a lease is only a
+request: the Messages API measures it from the start of the request that
+wrote or read the entry and refreshes it on every read, OpenAI's is a
+load-dependent range, and a proxy in between subtracts whatever it likes. It
+cannot be read off a response, so it is bounded from the pauses a session
+already has. When a request carries the earlier request's messages as its
+prefix, after a pause of a minute or more, the response either read what the
+earlier one cached (the cache **survived** that gap) or wrote the prompt over
+again (it **expired** within it). A trim, a compaction, a rewrite of the
+workspace or a model switch changes bytes inside the prefix and would read as
+an expiry, so a request after one yields no observation. Nothing is sent to
+find out.
+
+The reading keeps the longest gap survived and the shortest expired within,
+each with how many were seen, per endpoint and lease, and across sessions.
+It shows the raw bound and its counts rather than one invented number. A
+session that never pauses past its lease can only raise the survival, and the
+row says no expiry was seen. On a model that takes a lease the lease is the
+lifetime and the measurement is a check on it: an expiry shorter than the
+lease is the gateway not keeping its word, and is drawn in the warn tone.
+`/context` carries it under the cache row with the idle clock, and `shhh
+providers` on the cache row.
+
+An expiry leaves one receipt: how long the person was away, what was written
+again at what multiple of the input price, and what an idle compaction would
+have cost instead. Where the model has no price the receipt says the tokens
+and no money.
+
+**The hour is not always the dearer lease.** An hour's write costs twice the
+input price and five minutes' 1.25 times, so the hour pays three quarters of
+the input price more for everything it writes, and recovers it with every
+pause past five minutes that it carries the prefix across, where five minutes
+would have written the whole prefix again, at 1.25 times less a read. The
+ledger counts both from the same observations, for the lease the session
+asked for and for the other, and `/stats` prints what the writes cost beside
+what the other lease would have. The other figure is "about", priced by the
+published multipliers rather than anything billed. The model is told none of
+this.
+
 ## Failures are classified before they are surfaced
 
 Every provider error is mapped into a closed set — unauthorised, rate limited,
