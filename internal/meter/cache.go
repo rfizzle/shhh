@@ -78,6 +78,14 @@ type CacheReading struct {
 	Confirmed string
 	// Reports is every cache field the endpoint has sent.
 	Reports provider.CacheFields
+	// SurvivedMax is the longest gap between two requests the cache was seen
+	// to outlast and ExpiredMin the shortest it was seen to expire within,
+	// each with how many gaps were seen; zero is a bound nothing has
+	// measured (lifetime.go). LastStart is when the latest request was sent,
+	// which is the cache's own clock: an idle cache is measured from there.
+	SurvivedMax, ExpiredMin time.Duration
+	SurvivedN, ExpiredN     int
+	LastStart               time.Time
 	// OffBy names the profile that declared the model has no prompt cache
 	// on this endpoint: the endpoint's own, since a declaration about one
 	// gateway's cache says nothing about another's.
@@ -139,14 +147,7 @@ func (l *Ledger) ObserveCache(providerName, model string, u provider.Usage) {
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	key := CacheKey{Provider: providerName, Model: model}
-	if provider.TakesCacheLease(model) || u.Reports&provider.FieldCacheLease != 0 {
-		// A lease that will not parse went out as the default; the
-		// provider package says so where it is sent.
-		lease, _ := provider.ParseCacheTTL(l.lease)
-		key.Lease = string(lease)
-	}
-	r := l.cacheReading(key)
+	r := l.cacheReading(l.cacheKey(providerName, model, u))
 	r.Requests++
 	if cached {
 		r.WithReads++

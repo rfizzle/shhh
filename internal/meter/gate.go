@@ -98,6 +98,7 @@ func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Messag
 	if err := g.ledger.AllowRequest(); err != nil {
 		return nil, err
 	}
+	req := g.ledger.BeginGap(messages, opts)
 	events, err := g.inner.StreamCompletion(ctx, messages, opts)
 	if err != nil {
 		return nil, err
@@ -116,7 +117,7 @@ func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Messag
 			// abandons still bills what the provider already reported: it was
 			// spent whether or not anyone read the answer.
 			if ev.Usage != nil {
-				g.record(model, *ev.Usage)
+				g.record(model, req, *ev.Usage)
 			}
 			select {
 			case out <- ev:
@@ -125,7 +126,7 @@ func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Messag
 				// goroutine finishes and any usage it still owes is billed.
 				for rest := range events {
 					if rest.Usage != nil {
-						g.record(model, *rest.Usage)
+						g.record(model, req, *rest.Usage)
 					}
 				}
 				return
@@ -137,9 +138,10 @@ func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Messag
 
 // record bills one response and reads what it said about the cache of the
 // endpoint that answered it.
-func (g *gated) record(model string, u provider.Usage) {
+func (g *gated) record(model string, req GapRequest, u provider.Usage) {
 	g.ledger.Record(g.origin, model, u)
 	g.ledger.ObserveCache(g.inner.Name(), model, u)
+	g.ledger.ObserveGap(g.origin, g.inner.Name(), model, req, u)
 }
 
 func (g *gated) listModels(ctx context.Context) ([]string, error) {

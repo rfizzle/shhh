@@ -154,6 +154,12 @@ type Ledger struct {
 	// what has been learned about where it is sent.
 	caches []CacheReading
 	lease  string
+	// prev, expiries and leases are what the lifetime measurement keeps
+	// (lifetime.go): each origin's last request, the expiries seen, and the
+	// lease counterfactual's running figures.
+	prev     map[Origin]prevRequest
+	expiries []CacheExpiry
+	leases   map[string]*leaseCounter
 	// now is the clock a reading is stamped with; nil is time.Now.
 	now func() time.Time
 }
