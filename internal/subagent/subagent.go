@@ -586,6 +586,12 @@ type Options struct {
 	// because a session goes on writing while its children run. Nil carries
 	// none, which is a writer starting from the last commit.
 	Untracked func() []string
+	// Removed is told the directory of each writer's copy once it has been
+	// torn down, so what the surface made for that copy goes with it: in a
+	// sandbox session, the container the writer's commands ran in. Nil tells
+	// nobody.
+	// See docs/capabilities/containment.md#a-sandbox-writer-works-in-a-container-of-its-own.
+	Removed func(worktree string)
 	// Generators is the project's declaration of the files it generates: a
 	// writer's patch regenerates those at its landing, and a landing carried
 	// into a live writer's copy regenerates them there, rather than merging

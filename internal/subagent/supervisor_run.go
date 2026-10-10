@@ -82,7 +82,7 @@ func (s *Supervisor) run(c *child) {
 			// A killed agent's copy of the checkout goes only once the
 			// subtree the same kill cancelled has ended in it.
 			s.awaitSubtree(c)
-			wtree.RemoveWorktree(repoTop, worktree)
+			s.removeWorktree(repoTop, worktree)
 		}
 	}()
 

@@ -481,7 +481,7 @@ func (s *Supervisor) Close() {
 		s.mu.Unlock()
 		for _, c := range kids {
 			if worktree, repoTop := c.workspace(); worktree != "" {
-				wtree.RemoveWorktree(repoTop, worktree)
+				s.removeWorktree(repoTop, worktree)
 			}
 		}
 		s.sendMu.Lock()
@@ -489,6 +489,20 @@ func (s *Supervisor) Close() {
 		close(s.events)
 		s.sendMu.Unlock()
 	})
+}
+
+// removeWorktree tears a writer's copy down and then tells the surface
+// (Options.Removed), so whatever was made for the copy goes with it on every
+// path a copy goes by: the end of the child, the end of the session, and an
+// environment that could not be built over it.
+func (s *Supervisor) removeWorktree(repoTop, worktree string) {
+	if worktree == "" {
+		return
+	}
+	wtree.RemoveWorktree(repoTop, worktree)
+	if s.opts.Removed != nil {
+		s.opts.Removed(worktree)
+	}
 }
 
 // isClosed reports whether Close has closed the event stream, so a caller

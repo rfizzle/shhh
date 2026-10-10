@@ -150,7 +150,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 		Worktree: w.wt.Dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Attempt: attempt,
 		Inherit: c.inheritTurns, Integrates: c.integrates.sourceName()})
 	if err != nil {
-		wtree.RemoveWorktree(w.wt.RepoTop, w.wt.Dir)
+		s.removeWorktree(w.wt.RepoTop, w.wt.Dir)
 		return workspace{}, fmt.Errorf("the agent's environment could not be built: %w", err)
 	}
 	// Its checks take the session's slots, whatever the surface built.
