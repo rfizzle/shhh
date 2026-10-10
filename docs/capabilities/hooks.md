@@ -268,10 +268,11 @@ runs both bare. The session's secrets reach a hook exactly as they reach a
 command, and the mask that keeps everything else out applies the same way
 ([`secrets.md`](secrets.md#a-secret-is-an-environment-variable)).
 
-The one exception is a `--sandbox` run, which creates a disposable container
-and runs approved commands inside it. A hook cannot follow them in, and
-running it on the host instead would put your own command line outside the
-strongest containment the run has — so such a run fires no hooks and says so.
+The one exception is a `--sandbox` session or run, which creates a disposable
+container and runs approved commands inside it. A hook cannot follow them in
+yet, and running it on the host instead would put your own command line
+outside the strongest containment the session has — so such a session fires no
+hooks and says so.
 It is the same answer, for the same reason, that a long-running process start
 gets there
 ([`containment.md`](containment.md#a-started-process-is-contained-too)).

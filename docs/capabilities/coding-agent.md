@@ -1759,4 +1759,6 @@ fix it.
   the event stream
 - [`subagents.md`](subagents.md) — handing work to children
 - [`approvals-and-safety.md`](approvals-and-safety.md) — what it may do
+- [`containment.md`](containment.md#a-session-can-run-in-the-sandbox) — a session
+  whose commands run in a disposable container: `--sandbox`, with or without `-p`
 - [`../architecture.md`](../architecture.md) — why the loop is passive

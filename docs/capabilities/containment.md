@@ -458,7 +458,7 @@ its one writable mount is the workspace, and a container is just as unable to
 mount over a path that is not there. The entries inside the workspace that
 exist are bound read-only over that mount, with `.git` bound over itself
 before them so it cannot be renamed aside; an absent entry or a link is not
-held, and nothing in a `--sandbox` run names it. A store outside the workspace
+held, and nothing in a `--sandbox` session names it. A store outside the workspace
 — a linked worktree's, or the checkout's when the run starts below its top —
 is not in the container at all.
 
@@ -770,7 +770,7 @@ what that changed straight away instead of a state from before it.
 
 ### A sandbox starts from an image prepared from it
 
-A `--sandbox` run's container has no network under the netless profile and no
+A `--sandbox` session's container has no network under the netless profile and no
 installer the checkout can reach through, so the declaration is carried out
 before the container exists rather than inside it. Preparing is a step of its
 own: a throwaway container from the base image runs the declaration, is kept
@@ -819,7 +819,7 @@ and the run stops naming that line and quoting the end of its output, which
 is where an installer says why. It never falls back to the bare base: a run
 started without the tools its checks need would only fail those checks, inside
 the container, far from the line that was meant to install them. A
-declaration that does not load stops a `--sandbox` run for the same reason,
+declaration that does not load stops a `--sandbox` session for the same reason,
 where on this machine it is a note.
 
 A run that prepares says so in one line before it starts, since the installs
@@ -1010,14 +1010,14 @@ errors is gone the moment one is used. The mechanism wraps such a process
 exactly as it wraps any other, and where the platform has no terminal to give,
 the start says so in a sentence rather than pretending.
 
-The exception is a run whose commands go inside a disposable container. A
-process cannot follow them in: what would be left holding it is the client
-that started the exec rather than the process itself, so stopping it would
-leave something running in a container nobody is watching. Such a run
-refuses a start rather than spawning it on the host, which is the same
-answer for the same reason — outside the container is bare. The command
-ceiling answers to the same fact: there is nowhere to move a command to, so
-one that reaches it there is stopped whether or not it was still printing.
+The exception is a session whose commands go inside a disposable container
+([above](#a-session-can-run-in-the-sandbox)). A process cannot follow them in
+yet: what would be left holding it is the client that started the exec
+rather than the process itself. Such a session refuses a start rather than
+spawning it on the host, which is the same answer for the same reason —
+outside the container is bare. The command ceiling answers to the same fact:
+there is nowhere to move a command to, so one that reaches it there is
+stopped whether or not it was still printing.
 
 ## The model is told what its commands run under
 
@@ -1041,8 +1041,8 @@ other host is a refusal the model has already read about rather than a
 surprise it goes on to debug.
 
 The ceiling is stated in the same place and for the same reason. What happens
-at it is not the same on every surface — a run whose commands are inside a
-disposable container has nowhere to move one to — so what is stated is what
+at it is not the same on every surface — a session whose commands are inside
+a disposable container has nowhere to move one to — so what is stated is what
 this session will actually do, not the rule in general.
 
 ## What is reported is what is in force
