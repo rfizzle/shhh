@@ -899,7 +899,6 @@ func (c Config) AgentModel(role string, depth int, sessionModel string) string {
 }
 
 type AppearanceConfig struct {
-	AccentColor string `toml:"accent_color"`
 	// Theme is which of the shipped colour tables every surface draws with:
 	// `auto`, which asks the terminal what its own background is and takes
 	// the table chosen against that ground, or one of them by name. It is a

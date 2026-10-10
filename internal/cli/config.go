@@ -1312,7 +1312,6 @@ var configLabels = map[string]string{
 	"mcp.disabled":                         "mcp servers",
 	"web.allow_private":                    "network",
 	"sandbox.profile":                      "sandbox",
-	"appearance.accent_color":              "accent colour",
 	"appearance.mouse":                     "mouse reporting",
 	"appearance.notify":                    "desktop notifications",
 	"appearance.paste_lines":               "paste staged taller than",

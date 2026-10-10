@@ -512,9 +512,6 @@ var settings = []Setting{
 	},
 
 	{
-		Key: "appearance.accent_color", Kind: KindString, Taken: AtStart, Default: "(the palette's own)",
-		Desc: "The accent the surfaces are painted with.",
-	}, {
 		Key: "appearance.theme", Kind: KindEnum, Taken: AtTurn, Default: "auto",
 		Values: []string{"auto", "dark", "light", "charm"},
 		Desc:   "Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one.",

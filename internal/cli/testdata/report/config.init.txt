@@ -1,6 +1,6 @@
   shhh config init — /home/dev/.config/shhh
 
-  ✓ wrote /home/dev/.config/shhh/config.toml · 152 settings, each comme…  [user]
+  ✓ wrote /home/dev/.config/shhh/config.toml · 151 settings, each comme…  [user]
         uncomment a line to change one; above each key is what it decides
   ✓ wrote /home/dev/.config/shhh/prompts/ · 14 wordings, each the built…  [user]
         edit one and it is what a session is told; delete it and the built-in

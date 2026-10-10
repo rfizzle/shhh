@@ -34,6 +34,9 @@ type UnknownKey struct {
 	Key     string
 	Nearest string
 	Renamed string
+	// Retired is what became of a key that was removed because nothing read
+	// it.
+	Retired string
 }
 
 func (e *UnknownKeyError) Error() string {
@@ -42,6 +45,8 @@ func (e *UnknownKeyError) Error() string {
 	for i, k := range e.Keys {
 		parts[i] = fmt.Sprintf("%q", k.Key)
 		switch {
+		case k.Retired != "":
+			parts[i] += " (" + k.Retired + ")"
 		case k.Renamed != "":
 			parts[i] += fmt.Sprintf(" (renamed %q)", k.Renamed)
 			renamed = true
@@ -101,7 +106,7 @@ func unknownKeys(path, update string, undecoded []toml.Key) error {
 		if underRefused(keys, k) {
 			continue
 		}
-		u := UnknownKey{Key: k.String(), Nearest: nearestKey(k)}
+		u := UnknownKey{Key: k.String(), Nearest: nearestKey(k), Retired: retiredNote(k.String())}
 		if r, ok := renameOf(u.Key); ok {
 			u.Renamed = r.To
 		}

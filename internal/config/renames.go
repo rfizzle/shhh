@@ -32,6 +32,24 @@ var renames = []Rename{
 	{From: "agents.reviewer_model", To: "agents.profiles.reviewer.model", Moved: "v0.9.5"},
 }
 
+// retired is every key that was removed because nothing read it. A file
+// still holding one is refused like any unknown key, and the refusal says
+// what happened to it instead of offering a nearby key it was never meant to
+// be. The value is the sentence.
+var retired = map[string]string{
+	"appearance.accent_color": "removed, it never changed a colour; delete the line",
+}
+
+// retiredNote is the sentence for a key that was removed, or "".
+func retiredNote(key string) string {
+	for k, note := range retired {
+		if strings.EqualFold(k, key) {
+			return note
+		}
+	}
+	return ""
+}
+
 // Renames is the table, for a surface that lists what moved.
 func Renames() []Rename { return renames }
 

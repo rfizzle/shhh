@@ -253,6 +253,20 @@ func TestLoad_ARenamedKeyIsRefusedWithItsNewName(t *testing.T) {
 	}
 }
 
+// A file still setting the key that was removed for reading nothing is
+// refused with the sentence saying so, not with a guess at a nearby key.
+func TestLoad_ARetiredKeyIsRefusedWithWhatBecameOfIt(t *testing.T) {
+	path := writeTemp(t, "[appearance]\naccent_color = \"magenta\"\n")
+	_, err := LoadFrom(path)
+	if err == nil {
+		t.Fatal("a retired key loaded")
+	}
+	want := `"appearance.accent_color" (removed, it never changed a colour; delete the line)`
+	if !strings.Contains(err.Error(), want) {
+		t.Errorf("the refusal %q does not say %q", err, want)
+	}
+}
+
 // The written file keeps its mode, and a link to it is still a link after.
 func TestUpdateFile_WritesThroughALinkAndKeepsTheMode(t *testing.T) {
 	dir := t.TempDir()

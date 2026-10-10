@@ -36,7 +36,7 @@ silent_mode = true
 shell = "/bin/zsh"
 
 [appearance]
-accent_color = "magenta"
+mouse = true
 `
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
@@ -68,8 +68,8 @@ accent_color = "magenta"
 	if cfg.Behavior.Shell != "/bin/zsh" {
 		t.Errorf("behavior.shell = %q, want %q", cfg.Behavior.Shell, "/bin/zsh")
 	}
-	if cfg.Appearance.AccentColor != "magenta" {
-		t.Errorf("appearance.accent_color = %q, want %q", cfg.Appearance.AccentColor, "magenta")
+	if cfg.Appearance.Mouse == nil || !*cfg.Appearance.Mouse {
+		t.Errorf("appearance.mouse = %v, want true", cfg.Appearance.Mouse)
 	}
 }
 

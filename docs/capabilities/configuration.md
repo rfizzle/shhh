@@ -1239,7 +1239,6 @@ own file could hold.
 
 | Key | Takes | Default | A session takes it | What it decides |
 |---|---|---|---|---|
-| `accent_color` | text | (the palette's own) | next session | The accent the surfaces are painted with. |
 | `theme` | word: `auto`, `dark`, `light`, `charm` | `auto` | next turn | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. |
 | `verbosity` | word: `low`, `normal`, `high` | `normal` | next turn | How much the screen explains, one rung for every surface: `low` draws what you act on and little else, `normal` adds the readings, `high` every gloss, hint and field. |
 | `mouse` | true/false | `on` | next turn | Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection. |
