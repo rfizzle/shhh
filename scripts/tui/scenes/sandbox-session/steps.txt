@@ -1,4 +1,7 @@
-# golden: TestGolden_SandboxSession (sandbox-session)
+# program test: TestProgram_ARunningCommandTailsIntoItsRow, TestProgram_TheQuitChordArmsThenLeaves
+#
+# golden: TestGolden_SandboxSession (sandbox-session); the container behind
+# the screen is internal/cli's TestSandboxContainmentValues.
 #
 # A session whose commands run in a disposable container, driven on a host
 # with no engine: a stand-in `docker` (this directory) answers the create,
