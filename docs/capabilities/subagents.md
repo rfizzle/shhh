@@ -1092,6 +1092,10 @@ check slot (2 running)` on the sprint's board and in `sprint.log`. Across
 processes a waiting check polls and no order is promised, and a slot comes
 back when its process ends, however it ends.
 
+A writer's copy of the checkout is made under the system's temporary directory,
+or under `agents.worktree_dir` when that is set, so a host whose temporary
+directory is a small tmpfs can put the copies where there is room.
+
 The checks share a build cache as well. Every contained command of the
 session that builds Go — each check the gate runs and each command a child
 runs — points `GOCACHE` at one directory in the session's own scratch under

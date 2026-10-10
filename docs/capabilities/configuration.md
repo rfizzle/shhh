@@ -1300,6 +1300,7 @@ own file could hold.
 | `max_depth` | number | `3` | next session | How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs. |
 | `max_children` | number | `32` | next session | How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot. |
 | `check_slots` | number | `2` | next session | How many checks may run at once across this session — a child's build or test run, a child's quality gate run, and your own gate each take one; the rest wait their turn. |
+| `worktree_dir` | text | (the system's temporary directory) | next session | The directory a writer's copy of the checkout is made under, and a parallel sprint lane's; set it where there is room when the temporary directory is a small tmpfs. |
 | `delegation` | word: `off`, `explicit`, `proactive` | `explicit` | next session | When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three. |
 | `require_sandbox` | true/false | `on` | next session | Run a writer's commands contained, and refuse them where no containment mechanism is in force rather than running them unconfined. Off, a writer follows sandbox.require as the session's own commands do. |
 

@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -218,6 +219,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	d.secretIgnore = cfg.Commit.SecretIgnore
 	d.trailers = cfg.Commit.Trailers
 	d.slotCount = cfg.Agents.CheckSlots
+	worktree.SetDir(cfg.Agents.WorktreeDir)
 	// The suites are command text out of a file that arrived with the clone
 	// and the runner spends no approval on them, so an untrusted checkout
 	// gets no gate at all rather than one that refuses when it is reached.

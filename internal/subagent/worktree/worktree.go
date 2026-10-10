@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/rfizzle/shhh/internal/hostgit"
 )
@@ -38,6 +39,29 @@ func lockWorktrees(ctx context.Context, repoTop string) (func(), error) {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+var baseDir atomic.Pointer[string]
+
+// SetDir moves the copies this package makes under dir, which is
+// agents.worktree_dir; empty is the system's temporary directory again. It is
+// set when a process reads its configuration, before any copy is made.
+func SetDir(dir string) {
+	if dir != "" {
+		if abs, err := filepath.Abs(dir); err == nil {
+			dir = abs
+		}
+	}
+	baseDir.Store(&dir)
+}
+
+// Dir is the directory copies are made under; empty is the system's
+// temporary directory.
+func Dir() string {
+	if d := baseDir.Load(); d != nil {
+		return *d
+	}
+	return ""
 }
 
 // WorktreeHandle is a writer's isolated checkout: the worktree directory,
@@ -76,7 +100,13 @@ func AddWorktreeContext(ctx context.Context, root string, untracked []string) (W
 	}
 	h.RepoTop = strings.TrimSpace(top)
 
-	h.Dir, err = os.MkdirTemp("", "shhh-agent-*")
+	base := Dir()
+	if base != "" {
+		if err = os.MkdirAll(base, 0o755); err != nil {
+			return WorktreeHandle{}, err
+		}
+	}
+	h.Dir, err = os.MkdirTemp(base, "shhh-agent-*")
 	if err != nil {
 		return WorktreeHandle{}, err
 	}

@@ -783,6 +783,11 @@ type AgentsConfig struct {
 	// supervisor's default.
 	// See docs/capabilities/subagents.md#what-they-share.
 	CheckSlots int `toml:"check_slots"`
+	// WorktreeDir is the directory a writer's copy of the checkout is made
+	// under, so a host whose temporary directory is a small tmpfs can move
+	// them. Empty is the system's temporary directory.
+	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+	WorktreeDir string `toml:"worktree_dir"`
 	// Delegation is the session's policy on starting children: "off",
 	// "explicit" (the default) or "proactive". It is the model's side of the
 	// decision — when to ask — and the spawn card stays the person's.

@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/subagent"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -46,6 +47,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		agents = &agentProfiles{profiles: subagent.BuiltinProfiles()}
 	}
 	spawnable := spawnModels{env: env, agents: agents, prices: prices}
+	wtree.SetDir(cfg.Agents.WorktreeDir)
 	// The supervisor a child delegates through is the session's own, and
 	// newEnv is what puts it on a child's chain — but newEnv is built here
 	// and the supervisor is built from it, so the two are tied together

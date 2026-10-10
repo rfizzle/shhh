@@ -606,6 +606,9 @@ var settings = []Setting{
 		Key: "agents.check_slots", Kind: KindInt, Taken: AtStart, Default: "2",
 		Desc: "How many checks may run at once across this session — a child's build or test run, a child's quality gate run, and your own gate each take one; the rest wait their turn.",
 	}, {
+		Key: "agents.worktree_dir", Kind: KindString, Taken: AtStart, Default: "(the system's temporary directory)",
+		Desc: "The directory a writer's copy of the checkout is made under, and a parallel sprint lane's; set it where there is room when the temporary directory is a small tmpfs.",
+	}, {
 		Key: "agents.delegation", Kind: KindEnum, Taken: AtStart, Default: "explicit",
 		Values: []string{"off", "explicit", "proactive"},
 		Desc:   "When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three.",
