@@ -211,7 +211,34 @@ func (s *Sprint) Save(root string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(sprintPath(root), data, 0o644)
+	return writeWhole(sprintPath(root), data)
+}
+
+// writeWhole puts data at path so that a reader sees the old file or the new
+// one and never half of either: it is written beside the target and renamed
+// over it. The checkpoint is read by the board, by the stop file's writer and
+// by every surface asking whether a sprint is going while a lane is saving it,
+// and a file truncated in place reads as no sprint.
+func writeWhole(path string, data []byte) error {
+	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	_, err = f.Write(data)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Chmod(tmp, 0o644)
+	}
+	if err == nil {
+		err = os.Rename(tmp, path)
+	}
+	if err != nil {
+		_ = os.Remove(tmp)
+	}
+	return err
 }
 
 // LoadSprint reads the checkpoint.
