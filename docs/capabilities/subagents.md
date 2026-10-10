@@ -1082,8 +1082,12 @@ not retry, cancel or skip the check because it was slow to start. A check
 still printing when it reaches the command ceiling, and moved to the
 background rather than stopped, is still a build running: it keeps its slot
 until that process exits, and the lanes waiting behind it count it among the
-running. A command that is not a check — a read, a `git status`, a
-formatter — never waits.
+running. A process ends when it exits, not when everything it started has
+let go of its output: a process that exits while a child of its own still
+holds its output open is counted as ended two seconds later, and what the
+child prints after that is not kept, so a stray background child cannot hold
+a slot, or the end of the session, open. A command that is not a check — a
+read, a `git status`, a formatter — never waits.
 
 The slots span a parallel sprint as well as a session. Each lane's stages are
 processes of their own, so a sprint (`todo run --all --parallel N`) keeps the

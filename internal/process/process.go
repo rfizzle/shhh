@@ -57,6 +57,13 @@ const (
 	// A terminal that has already been read to its end returns immediately;
 	// this is only the bound on one that has not.
 	drainGrace = 500 * time.Millisecond
+
+	// waitDelay bounds how long the wait for a process lasts once the
+	// process itself has exited: a child it started that still holds its
+	// output open would otherwise keep the wait, and the slot or the quit
+	// behind it, open for as long as the child lives.
+	// See docs/capabilities/subagents.md.
+	waitDelay = 2 * time.Second
 )
 
 var (
@@ -538,6 +545,7 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	cmd.Dir = dir
 	cmd.Env = append(env, s.env...)
 	cmd.SysProcAttr = sysProcAttr(tty)
+	cmd.WaitDelay = waitDelay
 
 	p := &proc{
 		name:     name,
@@ -637,6 +645,11 @@ func (s *Supervisor) startStatus(p *proc) string {
 // and os/exec allows only one.
 func (s *Supervisor) reap(p *proc, wait func() error) {
 	err := wait()
+	if errors.Is(err, exec.ErrWaitDelay) {
+		// It exited cleanly; only a child's hold on its output outlasted
+		// the bound, and that is not the process failing.
+		err = nil
+	}
 	code := 0
 	if err != nil {
 		code = -1

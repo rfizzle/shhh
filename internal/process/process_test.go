@@ -79,6 +79,24 @@ func TestStartStatusStop_Lifecycle(t *testing.T) {
 	}
 }
 
+// A process that exits while a child of its own still holds its output open
+// is ended after the bound, as the clean exit it was, rather than for as long
+// as the child lives.
+func TestProcess_WaitIsBounded(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	begun := time.Now()
+	execute(t, s, `{"action":"start","name":"leaky","command":"sleep 5 & exit 0"}`)
+	waitFor(t, "the process to be reaped", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"status","name":"leaky"}`), "exited")
+	})
+	if took := time.Since(begun); took > waitDelay+3*time.Second {
+		t.Errorf("the wait took %v, longer than its bound", took)
+	}
+	if out := execute(t, s, `{"action":"status","name":"leaky"}`); !strings.Contains(out, "exited (code 0)") {
+		t.Errorf("a clean exit with a lingering child should be code 0, got %q", out)
+	}
+}
+
 func TestStart_InstantFailureReportsExit(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 	s.probe = startProbe // the full probe window is what this test exercises
