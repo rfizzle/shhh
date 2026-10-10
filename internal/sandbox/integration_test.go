@@ -1009,16 +1009,6 @@ func listenLocally(t *testing.T) string {
 	return ln.Addr().String()
 }
 
-// TestMain lets this test binary stand in for shhh as the network bridge: a
-// bubblewrap wrap with a host list runs the program that built it inside the
-// namespace, and under test that program is this one.
-func TestMain(m *testing.M) {
-	if len(os.Args) > 1 && os.Args[1] == BridgeArg {
-		os.Exit(RunBridge(os.Args[2:]))
-	}
-	os.Exit(m.Run())
-}
-
 // The host list put to the kernel: a real command, through the real proxy,
 // reaches the listed host, is refused the unlisted one, and cannot reach
 // anything directly — the last half is what says the command's own network

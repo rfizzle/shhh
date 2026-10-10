@@ -31,6 +31,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.3.1
 	golang.org/x/mod v0.33.0
 	golang.org/x/net v0.41.0
+	golang.org/x/sys v0.47.0
 	google.golang.org/genai v1.55.0
 	modernc.org/sqlite v1.50.0
 )
@@ -96,7 +97,6 @@ require (
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect

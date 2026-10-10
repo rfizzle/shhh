@@ -200,3 +200,39 @@ func RunGrouped(cmd *exec.Cmd) error {
 	g.once.Do(func() { close(g.exited) })
 	return err
 }
+
+// RunGroupUntil runs cmd in a process group of its own, configured as a
+// captured command is, and stops that group the way a cancelled captured
+// command is stopped if stop is closed before the wait has returned:
+// interrupt, killGrace, then freeze and kill whatever ignored it. Nothing is
+// signalled once the wait has returned, for the reason the rest of this file
+// keeps to.
+//
+// It is the sandbox's command helper's whole job inside a container, and it
+// lives here so that a command stopped in a container is stopped by the same
+// sequence as one stopped on the host — a second copy of the sequence is a
+// second place for the frozen-first kill to be forgotten.
+// See docs/capabilities/containment.md#a-cancelled-command-takes-its-children-with-it.
+//
+// cmd's output should be a writer that is not an *os.File: the wait then
+// blocks on what a surviving relative still holds open, as a captured
+// command's does, which is what keeps the group signallable while something
+// the command started is still printing. waitDelay bounds that wait.
+func RunGroupUntil(cmd *exec.Cmd, stop <-chan struct{}) error {
+	g := &group{cmd: cmd, exited: make(chan struct{})}
+	cmd.SysProcAttr = sysProcAttr()
+	cmd.WaitDelay = waitDelay
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go func() {
+		select {
+		case <-stop:
+			_ = stopGroup(g)
+		case <-g.exited:
+		}
+	}()
+	err := cmd.Wait()
+	g.once.Do(func() { close(g.exited) })
+	return err
+}

@@ -25,6 +25,12 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == sandbox.BridgeArg {
 		os.Exit(sandbox.RunBridge(os.Args[2:]))
 	}
+	// Inside a sandbox container, the same binary is the helper every
+	// program a session starts there runs under, and is answered here for
+	// the same reason: there is no configuration in the container to load.
+	if len(os.Args) > 1 && os.Args[1] == sandbox.ExecArg {
+		os.Exit(sandbox.RunExec(os.Args[2:]))
+	}
 	// The user's keymap moves a key before there is a command to answer one.
 	// Every hint and every handler reads the register, so a file applied
 	// after a program had started would be a screen offering keys it no
