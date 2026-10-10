@@ -35,7 +35,11 @@ SCENES = "scripts/tui/scenes"
 CAPTURES = "bin/tui"
 PICTURES = "docs/readme"
 # The size the book must stay under, checked after the build.
-BUDGET = 16 * 1024 * 1024
+# A ceiling on the whole book, so a runaway capture set is noticed rather
+# than written: the goldens alone are about 14 MB, and a full set of scene
+# captures under bin/tui adds about 10 MB more, so 64 MB is well clear of
+# any honest build and well short of a mistake.
+BUDGET = 64 * 1024 * 1024
 
 # SECTION_OF names the surfaces.md section that speaks for a golden: golden
 # name -> the heading's anchor. It is the one piece of hand upkeep. An entry
