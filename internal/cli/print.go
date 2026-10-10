@@ -1124,12 +1124,10 @@ func startPrintSandbox(ctx context.Context, cfg config.Config, sc *scope.Scope, 
 		// profile only names it. The ceiling moves a still-printing command to
 		// the supervisor, whose processes run in the container too.
 		said: sandboxCommandEnvironment(box, cfg, procSup != nil),
-		// No hook runs in this run: a hook cannot follow the commands into the
-		// disposable container, and running it on the host instead would put
-		// the person's own command line outside the strongest containment this
-		// run has.
-		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
-		noHooks: "» hooks: none run in a --sandbox run; a hook cannot follow the commands into the container",
+		// A hook execs in the container too, under the helper with its
+		// payload on the stream.
+		// See docs/capabilities/hooks.md#a-hook-is-a-command-like-any-other.
+		wrap: box.Wrap,
 	}, cleanup, nil
 }
 

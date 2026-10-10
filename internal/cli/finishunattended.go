@@ -26,9 +26,6 @@ type contained struct {
 	said    commandEnvironment
 	// missing is the declared tools the commands will not find.
 	missing []string
-	// noHooks, where it is set, is what is said on stderr in place of
-	// building the hooks, because nothing here can contain one.
-	noHooks string
 }
 
 // hostContainment is the containment the host has for a session's commands,
@@ -152,11 +149,7 @@ func finishUnattended(cmd *cobra.Command, asm *assembly, session *chatSession, o
 	for _, note := range hookNotes(hooked) {
 		fmt.Fprintf(os.Stderr, "» hooks: %s\n", note)
 	}
-	if c.noHooks != "" && hooked.Len() > 0 {
-		fmt.Fprintln(os.Stderr, c.noHooks)
-	} else {
-		t.hooks = buildHooks(cfg, hooked, c.wrap, t.hookCwd)
-	}
+	t.hooks = buildHooks(cfg, hooked, c.wrap, t.hookCwd)
 	// The first seam. The prompt is already built — it had to be, for the
 	// provider to be resolved — so what a session-start hook says is joined to
 	// it here rather than folded in before it.

@@ -322,18 +322,6 @@ func (b *screenBuild) openingHooks() {
 	for _, note := range hookNotes(hooked) {
 		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: "hooks: " + note})
 	}
-	if session.sandbox {
-		// A hook cannot follow the commands into the container yet, and run
-		// on the host it would be the person's own command line outside the
-		// containment they asked for — the answer a process start gets. So
-		// none runs, and that is said rather than left to be noticed.
-		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
-		if hooked.Len() > 0 {
-			_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn,
-				Subject: "hooks: none run in a sandbox session; a hook cannot follow the commands into the container"})
-		}
-		return
-	}
 	b.hooks = buildHooks(b.cfg, hooked, b.containment.Wrap, hookCwd)
 	// A session opening is the first seam, and the one place where adding to
 	// what the model has been told is still free. The prompt is already built

@@ -29,6 +29,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -87,7 +88,6 @@ func hookExec(wrap func(string) ([]string, error)) hook.Exec {
 		}
 		cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 		cmd.Env = runner.Environ()
-		cmd.Stdin = bytes.NewReader(stdin)
 		// stdout is the answer and stderr is the hook's own noise, so they are
 		// kept apart: a formatter that logs to stderr must not turn its reply
 		// into text that will not parse.
@@ -96,7 +96,7 @@ func hookExec(wrap func(string) ([]string, error)) hook.Exec {
 		// A hook that leaves a child holding the pipe would otherwise keep the
 		// wait open past the kill the deadline sends.
 		cmd.WaitDelay = time.Second
-		err := cmd.Run()
+		err := runHookCmd(cmd, argv, stdin)
 		var exitErr *exec.ExitError
 		switch {
 		case err == nil:
@@ -106,6 +106,23 @@ func hookExec(wrap func(string) ([]string, error)) hook.Exec {
 		}
 		return out.String(), -1, err
 	}
+}
+
+// runHookCmd runs a hook's process with its payload on stdin. A hook wrapped
+// into a sandbox's container is attached: the payload crosses the held stream
+// and its close is not a cancel (the helper was told to ignore the hang-up),
+// and a hook that is cancelled or outruns its ceiling is stopped through the
+// second exec, as any contained program is. Anywhere else the payload is
+// simply the process's stdin.
+func runHookCmd(cmd *exec.Cmd, argv []string, payload []byte) error {
+	if stop := sandbox.StopArgv(argv); len(stop) > 0 {
+		if payload == nil {
+			payload = []byte{}
+		}
+		return runner.RunGroupedAttachedInput(cmd, stop, payload)
+	}
+	cmd.Stdin = bytes.NewReader(payload)
+	return cmd.Run()
 }
 
 // buildHooks is the session's runner, or nil where there is nothing to fire.

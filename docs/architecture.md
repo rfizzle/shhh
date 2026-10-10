@@ -388,11 +388,8 @@ What a scripted run keeps for itself, around the tail:
   argument or stdin and refuses an empty one before any containment is built,
   so a run with nothing to do never starts a disposable container.
 - **The disposable container**, which stands in for the first step: started
-  for the run, torn down after the tail's own steps are closed, and the
-  reason no hook runs in that run — a hook cannot follow the commands into
-  the container, and running it on the host would put the person's own
-  command outside the strongest containment the run has. That is said on
-  stderr in place of building the hooks.
+  for the run, torn down after the tail's own steps are closed. The run's
+  hooks exec in it too, so the tail builds them as it does anywhere.
 - **Saying the containment only where it offers commands**, because a
   conversation that cannot run one is not told what one would run under.
 - **Its stderr**: every line a run prints is a `»` line beside its activity,

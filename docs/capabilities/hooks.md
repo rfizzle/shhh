@@ -268,14 +268,19 @@ runs both bare. The session's secrets reach a hook exactly as they reach a
 command, and the mask that keeps everything else out applies the same way
 ([`secrets.md`](secrets.md#a-secret-is-an-environment-variable)).
 
-The one exception is a `--sandbox` session or run, which creates a disposable
-container and runs approved commands inside it. A hook cannot follow them in
-yet, and running it on the host instead would put your own command line
-outside the strongest containment the session has — so such a session fires no
-hooks and says so.
-It is the same answer, for the same reason, that a long-running process start
-gets there
-([`containment.md`](containment.md#a-started-process-is-contained-too)).
+A `--sandbox` session or run is no exception: its hooks run in the
+disposable container, beside the commands, through the same helper that keeps
+a cancelled command from outliving the client
+([`containment.md`](containment.md#a-cancelled-command-takes-its-children-with-it)).
+The payload still reaches the hook on its stdin and the hook's own ceiling
+still applies, held by the helper in the container as well as here.
+
+What that costs is whatever the hook needs that the container lacks. A hook
+that calls a program only your machine has, a desktop notification above all,
+fails there, and its failure is reported the way any hook's is
+([a failure decides nothing yes](#nothing-decides-yes-on-a-failure)). There is no way to
+send one hook out to the host; a hook is contained exactly as much as the
+assistant's commands are.
 
 This is why a `session_start` hook fires after the session's containment is
 in force rather than before its prompt is assembled: what it adds to the

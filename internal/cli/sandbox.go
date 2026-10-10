@@ -330,9 +330,8 @@ const (
 // What goes in is the session's commands, through the helper, attached so a
 // cancel reaches them (runner.RunCaptureArgvInAttached), and a started
 // process, through the same helper with the stream as its stdin, and the
-// quality gate's checks, through the same helper too (containGate). A hook is
-// not run, since it cannot follow the commands into the container yet; Wrap
-// is nil for that reason. A command at its ceiling goes to the supervisor as
+// quality gate's checks, through the same helper too (containGate), and a hook,
+// whose payload rides the stream and whose ceiling is the helper's (Wrap). A command at its ceiling goes to the supervisor as
 // anywhere: what it holds is the exec client, and stopping the client stops
 // the command through the stream.
 // See docs/capabilities/containment.md#a-started-process-is-contained-too.
@@ -422,6 +421,21 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 		Manage:    sandboxManage(cfg, sc, sup),
 		Writers:   "a writer's commands: " + writerRefused + " — " + sandboxWriterWords,
 		Toolchain: sandboxToolchain(ctx, c),
+		// A hook is one more exec through the helper, with its payload on the
+		// stream (--stdin=inherit). Its stdin is closed on purpose once the
+		// payload is written, so the hang-up is ignored, and the ceiling is the
+		// helper's own: a hook that outruns it does not outlive the client.
+		// The second exec comes from the argv (hookExec).
+		// See docs/capabilities/hooks.md#a-hook-is-a-command-like-any-other.
+		Wrap: func(command string) ([]string, error) {
+			wrapped, _, err := containedExec(c, sandbox.HelperExec{
+				Secrets:      runner.SessionEnvNames(),
+				Inherit:      true,
+				IgnoreHangup: true,
+				Timeout:      cfg.HookCeiling(),
+			}, []string{"/bin/sh", "-c", command})
+			return wrapped, err
+		},
 	}
 	containGate(gate, c)
 	if sup != nil {

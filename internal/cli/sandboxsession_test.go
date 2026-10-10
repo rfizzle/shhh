@@ -112,8 +112,8 @@ func TestSandboxContainmentValues(t *testing.T) {
 	if c.Mechanism != "container sandbox" || c.Profile != "workspace-netless" || c.Network || len(c.Hosts) != 0 {
 		t.Errorf("mechanism %q, profile %q, network %v, hosts %v", c.Mechanism, c.Profile, c.Network, c.Hosts)
 	}
-	if c.Wrap != nil {
-		t.Error("a sandbox session wraps a hook, which cannot follow the commands into the container")
+	if c.Wrap == nil {
+		t.Error("a sandbox session leaves a hook on the host")
 	}
 	if c.Manage == nil || !strings.Contains(c.Manage([]string{"scope"}), "/sandbox scope") {
 		t.Error("the /sandbox subcommands are not wired")
@@ -224,7 +224,7 @@ func TestSandboxSessionDestroysItsContainer(t *testing.T) {
 }
 
 // A scripted --sandbox run is built on the session's builder and keeps what
-// it refuses: a hook is not run and says so. A command at its ceiling goes to
+// it refuses. A command at its ceiling goes to
 // the supervisor as anywhere, and the model is told so.
 func TestPrintSandboxKeepsItsRefusals(t *testing.T) {
 	fakeSandboxEngine(t, helperAnswers)
@@ -239,8 +239,8 @@ func TestPrintSandboxKeepsItsRefusals(t *testing.T) {
 		t.Fatalf("startPrintSandbox: %v", err)
 	}
 	defer cleanup()
-	if box.noHooks == "" || box.wrap != nil {
-		t.Error("a --sandbox run builds hooks")
+	if box.wrap == nil {
+		t.Error("a --sandbox run builds no hooks")
 	}
 	if !box.said.Backgrounds || box.said.Mechanism != "a disposable container" || box.profile != "workspace-netless" {
 		t.Errorf("said %+v, profile %q", box.said, box.profile)
@@ -559,5 +559,46 @@ func TestAttachedStopFallsBackToTheSecondExec(t *testing.T) {
 	second := regexp.MustCompile(regexp.QuoteMeta(stop) + `\S+ ` + regexp.QuoteMeta(sandbox.HelperPath+" "+sandbox.ExecArg+" --stop="+first[1]) + "\n")
 	if !second.MatchString(calls) || strings.Count(calls, "--stop=") != 1 {
 		t.Errorf("want one second exec stopping %s:\n%s", first[1], calls)
+	}
+}
+
+// A hook runs where the session's commands do: the helper's exec in the
+// container, the payload on the stream, the stream's close not a cancel, and
+// the ceiling the helper's own. A hook that fails there fails as any hook
+// does, with its status.
+func TestSandboxHookRunsInTheContainer(t *testing.T) {
+	log := fakeSandboxEngine(t, helperAnswers)
+	cfg, sc, ws := sandboxTestSetup(t)
+	box, cleanup, err := startPrintSandbox(context.Background(), cfg, sc, nil, nil)
+	if err != nil {
+		t.Fatalf("startPrintSandbox: %v", err)
+	}
+	defer cleanup()
+	c, closeSession, err := sandboxContainment(context.Background(), cfg, ws, sc, nil, nil)
+	if err != nil {
+		t.Fatalf("sandboxContainment: %v", err)
+	}
+	defer closeSession()
+	for name, wrap := range map[string]func(string) ([]string, error){"print": box.wrap, "session": c.Wrap} {
+		if wrap == nil {
+			t.Fatalf("%s: no hook wrap in a sandbox", name)
+		}
+		exec := hookExec(wrap)
+		out, code, err := exec(context.Background(), "cat; echo end", []byte("payload\n"))
+		if err != nil || code != 0 || out != "payload\nend\n" {
+			t.Errorf("%s: out %q code %d err %v, want the payload read then end", name, out, code, err)
+		}
+		out, code, err = exec(context.Background(), "echo no >&2; exit 3", []byte("x"))
+		if err != nil || code != 3 {
+			t.Errorf("%s: failing hook gave %q, %d, %v, want status 3", name, out, code, err)
+		}
+	}
+	calls, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "--stdin=inherit --hangup=ignore --timeout=" + cfg.HookCeiling().String() + " -- /bin/sh -c cat; echo end"
+	if !strings.Contains(string(calls), want) {
+		t.Errorf("no exec carried %q in:\n%s", want, calls)
 	}
 }

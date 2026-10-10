@@ -143,6 +143,19 @@ func RunCaptureArgvTailAttached(ctx context.Context, command string, argv, stop 
 // container through it. cmd.Stdin and cmd.WaitDelay are the stop's and are
 // set here.
 func RunGroupedAttached(cmd *exec.Cmd, stop []string) error {
+	return runGroupedAttached(cmd, stop, nil)
+}
+
+// RunGroupedAttachedInput is RunGroupedAttached for a command that is handed
+// what it reads and then left to finish: the payload is written to the held
+// stdin and the stdin is closed. The close is a hang-up like any other, so
+// the far end must have been told to ignore it (a hook's helper is), or the
+// command would be stopped as the payload ends.
+func RunGroupedAttachedInput(cmd *exec.Cmd, stop []string, payload []byte) error {
+	return runGroupedAttached(cmd, stop, payload)
+}
+
+func runGroupedAttached(cmd *exec.Cmd, stop []string, payload []byte) error {
 	g := &group{cmd: cmd, exited: make(chan struct{})}
 	cmd.SysProcAttr = sysProcAttr()
 	held, err := holdStdin(g, stop)
@@ -156,6 +169,14 @@ func RunGroupedAttached(cmd *exec.Cmd, stop []string) error {
 	if err != nil {
 		g.hangUp()
 		return err
+	}
+	if payload != nil {
+		// Written beside the wait: a command that never reads would otherwise
+		// hold this on a full pipe, and the wait's own hang-up ends the write.
+		go func() {
+			_, _ = g.stdin.Write(payload)
+			g.hangUp()
+		}()
 	}
 	return g.wait()
 }
