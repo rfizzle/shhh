@@ -175,6 +175,13 @@ type Model struct {
 	// to one that could have taken a schema is free.
 	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
 	StructuredOutputs *bool `toml:"structured_outputs"`
+	// PromptCache may be written as false, and only as false: it declares
+	// the endpoint keeps no prompt cache for the model, so the session's
+	// cache reading says "off" rather than "not seen". The marks are still
+	// sent and any figures that arrive are still billed. There is no true,
+	// because whether the cache works is read off the responses.
+	// See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
+	PromptCache *bool `toml:"prompt_cache"`
 	// Flows scopes a declaration to one bounded call: a flow word, then the
 	// settings declared for that flow alone, as in
 	// `flows = { classifier = { structured_outputs = false } }`. Every word
@@ -190,9 +197,15 @@ type Model struct {
 // may scope and the same rule. Words and keys are read in order, so the
 // first refusal is the same on every load.
 func (m Model) validateDeclarations() error {
-	if m.StructuredOutputs != nil {
-		if d, ok := provider.DeclarationFor(keyStructuredOutputs); ok {
-			if err := d.Check(*m.StructuredOutputs); err != nil {
+	for _, wide := range []struct {
+		key   string
+		value *bool
+	}{{keyStructuredOutputs, m.StructuredOutputs}, {provider.KeyPromptCache, m.PromptCache}} {
+		if wide.value == nil {
+			continue
+		}
+		if d, ok := provider.DeclarationFor(wide.key); ok {
+			if err := d.Check(*wide.value); err != nil {
 				return err
 			}
 		}
@@ -228,6 +241,12 @@ func (m Model) declared() (provider.Declared, bool) {
 	var d provider.Declared
 	if m.StructuredOutputs != nil {
 		d.Model = map[string]any{keyStructuredOutputs: *m.StructuredOutputs}
+	}
+	if m.PromptCache != nil {
+		if d.Model == nil {
+			d.Model = map[string]any{}
+		}
+		d.Model[provider.KeyPromptCache] = *m.PromptCache
 	}
 	for word, settings := range m.Flows {
 		if len(settings) == 0 {

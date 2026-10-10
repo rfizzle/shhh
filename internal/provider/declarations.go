@@ -112,7 +112,46 @@ var declarations = []Declaration{{
 		c.NoSchema = true
 	},
 	Instead: "its tool, not a schema",
+}, {
+	// The endpoint keeps no prompt cache, so its reading says "off"
+	// rather than waiting on figures that will never come. It narrows
+	// nothing a request carries: the marks still go out, because a marked
+	// request to an endpoint without a cache costs what it would have cost
+	// and says what it would have said.
+	// See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
+	Key:      KeyPromptCache,
+	Unscoped: "caching is a property of the endpoint, not of a call",
+	// There is no true: an endpoint's cache is read off its responses,
+	// and a declaration that it has one would be a claim the reading
+	// could only contradict.
+	Check: func(value any) error {
+		b, ok := value.(bool)
+		if !ok || b {
+			return fmt.Errorf("prompt_cache can only be false: whether the cache works is read off the responses")
+		}
+		return nil
+	},
+	Narrow: func(c *Capabilities, _ any) { c.NoPromptCache = true },
 }}
+
+// KeyPromptCache is the registry key that declares an endpoint keeps no
+// prompt cache.
+const KeyPromptCache = "prompt_cache"
+
+// PromptCacheOff names the profile that declared model's prompt cache off on
+// the provider called providerName, or nothing. Unlike the narrowings a
+// request carries, this one is answered for one provider only: the cache is
+// the endpoint's, so a gateway profile declaring it off says nothing about
+// the same model reached directly or through another gateway.
+func PromptCacheOff(providerName, model string) []string {
+	name := normalizeName(providerName)
+	for _, by := range DeclaredOn(model, "", KeyPromptCache) {
+		if by == name {
+			return []string{by}
+		}
+	}
+	return nil
+}
 
 // Declarations is the registry, in the order a listing reads it.
 func Declarations() []Declaration { return slices.Clone(declarations) }

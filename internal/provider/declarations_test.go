@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -111,8 +112,15 @@ func TestDeclarations_NarrowingsCombineAndNothingElseIsReached(t *testing.T) {
 
 func TestDeclarations_TheRegistry(t *testing.T) {
 	d, ok := DeclarationFor("structured_outputs")
-	if !ok || len(Declarations()) != 1 {
-		t.Fatalf("the registry holds one entry today, got %+v", Declarations())
+	if !ok || len(Declarations()) != 2 {
+		t.Fatalf("the registry holds two entries today, got %+v", Declarations())
+	}
+	cache, ok := DeclarationFor(KeyPromptCache)
+	if !ok || len(cache.Flows) != 0 || cache.Unscoped != "caching is a property of the endpoint, not of a call" {
+		t.Errorf("prompt_cache is scoped by no flow: %+v", cache)
+	}
+	if cache.Check(false) != nil || cache.Check(true) == nil || cache.Check("false") == nil {
+		t.Error("prompt_cache is written only as false")
 	}
 	if !reflect.DeepEqual(d.Flows, []Flow{FlowClassifier, FlowBacklog}) {
 		t.Errorf("structured_outputs scopes %v", d.Flows)
@@ -182,5 +190,51 @@ func TestAnthropic_ScopedNoSchemaSendsTheToolForThatFlowOnly(t *testing.T) {
 	}
 	if _, ok := body["tools"]; ok {
 		t.Error("backlog: a request carrying a schema must not also offer tools")
+	}
+}
+
+// prompt_cache = false says the endpoint keeps no cache, and changes nothing
+// that goes out: the marks are still sent, on both the Messages API and a
+// gateway route, and the request is byte for byte what it was.
+func TestDeclarations_PromptCacheOffChangesNoRequest(t *testing.T) {
+	const model = "claude-sonnet-5-5"
+	var body []byte
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"m","type":"message","role":"assistant","content":[],"model":"claude-sonnet-5-5","usage":{"input_tokens":1,"output_tokens":1}}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	}))
+	defer srv.Close()
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	send := func() []byte {
+		t.Helper()
+		events, err := p.StreamCompletion(context.Background(), []Message{
+			{Role: RoleSystem, Content: "sys"},
+			{Role: RoleUser, Content: "hi"},
+		}, CompletionOpts{Model: model})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, _, _ = drainAnthropic(t, events)
+		return body
+	}
+	before := send()
+	declare(t, "gw", map[string]Declared{model: {Model: map[string]any{KeyPromptCache: false}}})
+	if !CapabilitiesFor(model).NoPromptCache {
+		t.Fatal("the declaration did not narrow the model")
+	}
+	after := send()
+	if !bytes.Equal(before, after) {
+		t.Errorf("the request changed:\n%s\n%s", before, after)
+	}
+	if !bytes.Contains(after, []byte(`"cache_control"`)) {
+		t.Errorf("the marks must still be sent: %s", after)
+	}
+
+	gateway := []byte(`{"model":"anthropic/claude-sonnet-5-5","messages":[{"role":"system","content":"sys"},{"role":"user","content":"hi"}]}`)
+	declare(t, "gw", map[string]Declared{"anthropic/claude-sonnet-5-5": {Model: map[string]any{KeyPromptCache: false}}})
+	if marked := markOpenAICacheBody(gateway, CacheTTL1h); !bytes.Contains(marked, []byte(`"cache_control"`)) {
+		t.Errorf("a gateway route keeps its marks: %s", marked)
 	}
 }

@@ -130,6 +130,12 @@ var modelDeclarations = []func(Model) string{
 		return ""
 	},
 	func(m Model) string {
+		if m.PromptCache != nil {
+			return "prompt_cache = " + strconv.FormatBool(*m.PromptCache) + "\n"
+		}
+		return ""
+	},
+	func(m Model) string {
 		if len(m.Flows) == 0 {
 			return ""
 		}

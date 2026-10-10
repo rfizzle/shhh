@@ -37,6 +37,12 @@ type Capabilities struct {
 	// model-wide or on the flow asked (declarations.go). It outranks the
 	// floor and can only narrow it.
 	NoSchema bool
+	// NoPromptCache is a declaration that the model's endpoint keeps no
+	// prompt cache (declarations.go). Nothing a request carries reads it:
+	// the marks are sent regardless, because they change what a request
+	// costs and nothing about what it says. What reads it is the cache
+	// reading, which then says "off" rather than "not seen".
+	NoPromptCache bool
 }
 
 // capabilityLookup is the table-backed answer, installed by the CLI once it
