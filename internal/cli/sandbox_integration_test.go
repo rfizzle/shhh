@@ -57,11 +57,12 @@ func integrationContainer(t *testing.T) (sandbox.Container, string, string) {
 
 	name := "shhh-sbx-it-" + strings.ReplaceAll(t.Name(), "/", "-")
 	name = strings.ToLower(name)
-	run := exec.Command(enginePath, "run", "--detach", "--name", name, "--entrypoint", "",
-		"--volume", ws+":/workspace", "--workdir", "/workspace",
-		"--volume", helper+":"+sandbox.HelperPath+":ro",
-		"--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--network", "none",
-		image, "sleep", "2147483647")
+	args := []string{"run", "--detach", "--name", name, "--entrypoint", "",
+		"--volume", ws + ":/workspace", "--workdir", "/workspace",
+		"--volume", helper + ":" + sandbox.HelperPath + ":ro"}
+	args = append(args, sandbox.HardeningFlags(sandbox.DefaultContainerPids, false)...)
+	args = append(args, image, "sleep", "2147483647")
+	run := exec.Command(enginePath, args...)
 	if out, err := run.CombinedOutput(); err != nil {
 		t.Fatalf("%s run: %v\n%s", engineName, err, out)
 	}

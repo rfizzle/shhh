@@ -148,21 +148,31 @@ func createArgv(eng Engine, name string, s ContainerSpec) []string {
 		"--workdir", workspaceMount,
 		"--env", "HOME=/root",
 		"--env", containerPath,
-		"--cap-drop", "ALL",
-		"--security-opt", "no-new-privileges",
 		"--memory", s.Memory,
 		"--cpus", s.CPUs,
-		"--pids-limit", strconv.Itoa(s.PidsLimit),
-		// The engine's init is pid 1 and reaps: the keeper sleep reaps
-		// nothing, and every orphan a stop killed would stay a zombie
-		// counted against the pids limit.
+	}
+	argv = append(argv, HardeningFlags(s.PidsLimit, s.Network)...)
+	argv = append(argv, gitVolumes(s.Workspace, s.git)...)
+	return append(argv, s.run(), "sleep", "2147483647")
+}
+
+// HardeningFlags is the part of a session container's run argv that confines
+// it: no capabilities, no re-escalation, a pids ceiling, the engine's init as
+// pid 1 (the keeper sleep reaps nothing, and every orphan a stop killed would
+// stay a zombie counted against the pids limit) and, unless network is true,
+// no network. createArgv and the integration tests both take it from here, so
+// a test's container is the shape a session gets.
+func HardeningFlags(pids int, network bool) []string {
+	flags := []string{
+		"--cap-drop", "ALL",
+		"--security-opt", "no-new-privileges",
+		"--pids-limit", strconv.Itoa(pids),
 		"--init",
 	}
-	argv = append(argv, gitVolumes(s.Workspace, s.git)...)
-	if !s.Network {
-		argv = append(argv, "--network", "none")
+	if !network {
+		flags = append(flags, "--network", "none")
 	}
-	return append(argv, s.run(), "sleep", "2147483647")
+	return flags
 }
 
 // containerGit reads the workspace repository's program paths the way
@@ -352,7 +362,13 @@ func (c Container) workdir(dir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot resolve %s for the sandbox: %w", dir, err)
 	}
-	rel, err := filepath.Rel(c.Record.Workspace, resolved)
+	// The workspace is resolved too: a dir under /private/var is inside a
+	// workspace recorded as /var. The bind mount keeps the path as given.
+	root := c.Record.Workspace
+	if r, err := resolvePath(root); err == nil {
+		root = r
+	}
+	rel, err := filepath.Rel(root, resolved)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
 		return "", fmt.Errorf("%s is outside the sandbox's workspace %s, the one directory its container can see", dir, c.Record.Workspace)
 	}
