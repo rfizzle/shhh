@@ -70,6 +70,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The Dockerfile copies shhh in as the sandbox's command helper; the
+      # release builds it the same way before its image, so this job does too.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build the sandbox helper
+        run: |
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build -trimpath -ldflags="-s -w" \
+              -o docker/sandbox/bin/linux-$arch/shhh ./cmd/shhh
+          done
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
