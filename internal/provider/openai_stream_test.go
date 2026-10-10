@@ -84,7 +84,7 @@ func TestStreamOpenAI_AToolRoundReportsTheUsageThatFollowsIt(t *testing.T) {
 			if final.Usage == nil {
 				t.Fatal("a tool round reported no usage, so nothing downstream can bill it")
 			}
-			want := Usage{PromptTokens: 999, CompletionTokens: 42, CachedTokens: 128}
+			want := Usage{PromptTokens: 999, CompletionTokens: 42, CachedTokens: 128, Reports: FieldCachedTokens}
 			if *final.Usage != want {
 				t.Errorf("usage = %+v, want %+v", *final.Usage, want)
 			}

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"strings"
@@ -128,7 +129,7 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 		stopped := false
 
 		for {
-			resp, err := stream.Recv()
+			resp, raw, err := recvOpenAIChunk(stream)
 			// Every chunk pushes the idle deadline forward, the empty ones
 			// this loop goes on to ignore included: what it watches for is
 			// silence on the wire (idle.go).
@@ -152,13 +153,7 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 			}
 
 			if resp.Usage != nil {
-				usage = &Usage{
-					PromptTokens:     resp.Usage.PromptTokens,
-					CompletionTokens: resp.Usage.CompletionTokens,
-				}
-				if d := resp.Usage.PromptTokensDetails; d != nil {
-					usage.CachedTokens = d.CachedTokens
-				}
+				usage = openAIChatUsage(resp.Usage, raw)
 				// With stream_options.include_usage the tokens for the whole
 				// round come in a chunk of their own, after the chunk that
 				// named the finish reason and with no choices in it. A round
@@ -215,6 +210,73 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 		}
 	}()
 	return ch
+}
+
+// recvOpenAIChunk reads the next chunk as the client would, and keeps the
+// chunk's own bytes beside it. The client decodes usage into a closed struct
+// with no place for a cache write, and by the time the decoded chunk is in
+// hand the bytes it came from are gone; reading them first is the only way
+// the write a gateway reports reaches the ledger.
+func recvOpenAIChunk(stream *openai.ChatCompletionStream) (openai.ChatCompletionStreamResponse, []byte, error) {
+	var resp openai.ChatCompletionStreamResponse
+	raw, err := stream.RecvRaw()
+	if err != nil {
+		return resp, nil, err
+	}
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		return resp, nil, err
+	}
+	return resp, raw, nil
+}
+
+// gatewayUsage is the part of a chunk's usage the client's struct drops: a
+// gateway forwarding to the Messages API, LiteLLM among them, reports what
+// it wrote into the cache as `cache_creation_input_tokens` at the top of the
+// usage, beside the read OpenAI's own shape carries under the prompt's
+// details. Pointers, because a field that was sent as zero and one that was
+// not sent at all are different answers about the cache.
+type gatewayUsage struct {
+	Usage struct {
+		CacheCreationInputTokens *int `json:"cache_creation_input_tokens"`
+		PromptTokensDetails      *struct {
+			CachedTokens *int `json:"cached_tokens"`
+		} `json:"prompt_tokens_details"`
+	} `json:"usage"`
+}
+
+// openAIChatUsage is a chunk's usage in Usage's terms. Without the write a
+// gateway's cache writes were billed as fresh input, which understated every
+// round on it by the write premium: twice the input rate on the hour's
+// lease, and every round of a growing conversation writes something.
+// See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
+func openAIChatUsage(u *openai.Usage, raw []byte) *Usage {
+	usage := &Usage{
+		PromptTokens:     u.PromptTokens,
+		CompletionTokens: u.CompletionTokens,
+	}
+	if d := u.PromptTokensDetails; d != nil {
+		usage.CachedTokens = d.CachedTokens
+	}
+	var extra gatewayUsage
+	if json.Unmarshal(raw, &extra) != nil {
+		return usage
+	}
+	if d := extra.Usage.PromptTokensDetails; d != nil && d.CachedTokens != nil {
+		usage.Reports |= FieldCachedTokens
+	}
+	if w := extra.Usage.CacheCreationInputTokens; w != nil {
+		usage.Reports |= FieldCacheCreation
+		usage.CacheCreationTokens = max(*w, 0)
+		// Usage promises the write is inside the prompt count. A gateway
+		// that counted it beside the prompt instead would otherwise leave
+		// less than nothing for the fresh part, and the ledger would price
+		// a negative input; it is added, as the Messages API's converter
+		// adds it.
+		if usage.CachedTokens+usage.CacheCreationTokens > usage.PromptTokens {
+			usage.PromptTokens += usage.CacheCreationTokens
+		}
+	}
+	return usage
 }
 
 // terminalOpenAIEvent is the event that ends the stream, whichever of the two
