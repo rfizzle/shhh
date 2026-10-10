@@ -37,3 +37,24 @@ func TestStart_APtyIsATerminalAndAPipeIsNot(t *testing.T) {
 		t.Errorf("a terminal-backed process should capture nothing as stderr, got %q", status)
 	}
 }
+
+// A mechanism that has to be told a start wants a terminal is asked through
+// WrapTTY, and only for a start that asked: a plain start goes through Wrap.
+func TestSetContainment_ATerminalStartTakesWrapTTY(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	said := func(word string) func(string, []string, []string) ([]string, error) {
+		return func(string, []string, []string) ([]string, error) {
+			return []string{"/bin/sh", "-c", "echo " + word}, nil
+		}
+	}
+	s.SetContainment(Containment{Mechanism: "testwrap", Wrap: said("plain-wrap"), WrapTTY: said("tty-wrap")})
+
+	execute(t, s, `{"action":"start","name":"a","command":"true"}`)
+	execute(t, s, `{"action":"start","name":"b","command":"true","pty":true}`)
+	waitFor(t, "the plain start to take Wrap", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"read","name":"a"}`), "plain-wrap")
+	})
+	waitFor(t, "the terminal start to take WrapTTY", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"read","name":"b"}`), "tty-wrap")
+	})
+}

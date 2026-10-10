@@ -1121,14 +1121,13 @@ func startPrintSandbox(ctx context.Context, cfg config.Config, sc *scope.Scope, 
 		profile: box.Profile,
 		missing: box.Toolchain.Missing,
 		// The mechanism is settled by the container existing, and the
-		// profile only names it. The ceiling stops a command rather than
-		// backgrounding it: the builder took the adopter away, since what a
-		// supervisor would hold is the exec client.
-		said: sandboxCommandEnvironment(box, cfg),
+		// profile only names it. The ceiling moves a still-printing command to
+		// the supervisor, whose processes run in the container too.
+		said: sandboxCommandEnvironment(box, cfg, procSup != nil),
 		// No hook runs in this run: a hook cannot follow the commands into the
 		// disposable container, and running it on the host instead would put
 		// the person's own command line outside the strongest containment this
-		// run has — the same answer, for the same reason, a process start gets.
+		// run has.
 		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
 		noHooks: "» hooks: none run in a --sandbox run; a hook cannot follow the commands into the container",
 	}, cleanup, nil

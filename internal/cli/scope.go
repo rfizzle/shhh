@@ -188,9 +188,8 @@ type commandEnvironment struct {
 	Ceiling time.Duration
 	// Backgrounds says a command still printing when the ceiling arrives is
 	// handed to the process supervisor rather than stopped. A surface with no
-	// supervisor has nowhere to put one, and a run whose commands are inside
-	// a disposable container has nowhere it could be put — so the two say
-	// different things about the same number.
+	// supervisor has nowhere to put one, so the two say different things
+	// about the same number.
 	Backgrounds bool
 }
 

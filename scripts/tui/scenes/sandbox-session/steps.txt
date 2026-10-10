@@ -10,8 +10,13 @@
 # Read the captures against the golden's layout block: /status names the
 # container sandbox and its profile, and says a writer's commands are
 # refused; the command's three lines arrive a second apart through the
-# helper, and the row settles with all three. The quit removes the container,
-# which the stand-in does not show and the program tests do.
+# helper, and the row settles with all three. A second turn starts a process,
+# which is one more exec through the helper with the stream as its stdin, and
+# reads a line from it and stops it: the card is the ordinary start card (the
+# mechanism is the container's), the read answers "ready" from the process's
+# own stdout, and the stop signals the exec's client, whose hang-up is the
+# helper's cue to stop the process. The quit removes the container, which the
+# stand-in does not show and the program tests do.
 #
 # Then a command the person types. `!echo hi` is theirs, and in a sandbox
 # session it runs in the container too: the stand-in's exec answers it through
@@ -32,7 +37,11 @@ keys "!echo hi" Enter
 snap 06-bang-card "[y] run it once"
 keys y
 snap 07-bang-row "echo hi" "ok · container"
+keys "start a ticker process" Enter
+snap 08-process-card "[y] run it once" "ticker"
+keys y
+snap 09-process-read "The process printed ready inside the container"
 keys C-c
-snap 08-quit-armed "again quits"
+snap 10-quit-armed "again quits"
 keys C-c
-snap 09-exit "that is everything the screen was holding"
+snap 11-exit "that is everything the screen was holding"

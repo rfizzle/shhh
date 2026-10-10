@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -325,11 +326,12 @@ const (
 // See docs/capabilities/containment.md#a-session-can-run-in-the-sandbox.
 //
 // What goes in is the session's commands, through the helper, attached so a
-// cancel reaches them (runner.RunCaptureArgvInAttached). A process start is
-// refused and a hook is not run, since neither can follow the commands into
-// the container yet; Wrap is nil for the second reason. A command at its
-// ceiling is stopped rather than handed to the supervisor, which would hold
-// the exec client rather than the command.
+// cancel reaches them (runner.RunCaptureArgvInAttached), and a started
+// process, through the same helper with the stream as its stdin. A hook is
+// not run, since it cannot follow the commands into the container yet; Wrap
+// is nil for that reason. A command at its ceiling goes to the supervisor as
+// anywhere: what it holds is the exec client, and stopping the client stops
+// the command through the stream.
 // See docs/capabilities/containment.md#a-started-process-is-contained-too.
 func sandboxContainment(ctx context.Context, cfg config.Config, workspace string, sc *scope.Scope, sup *process.Supervisor) (_ chat.Containment, cleanup func(), err error) {
 	profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile)
@@ -419,13 +421,35 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 		Toolchain: sandboxToolchain(ctx, c),
 	}
 	if sup != nil {
+		// A process is one more exec through the helper, with its stdin the
+		// stream (--stdin=inherit): the supervisor's pipes are the client's,
+		// so read and input work as they do for any process, and stopping
+		// the client's group hangs the stream up, which is the helper's cue
+		// to stop the process inside. Nothing names a pid in the container.
+		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+		start := func(tty bool) func(dir string, argv, env []string) ([]string, error) {
+			return func(dir string, argv, env []string) ([]string, error) {
+				if len(argv) == 0 {
+					return nil, errors.New("nothing to run in the sandbox")
+				}
+				// The supervisor composed the host's shell around the
+				// command, and the host's shell is not the image's: the
+				// command text rides under /bin/sh, as every command of the
+				// session does.
+				return c.HelperCommand(sandbox.HelperExec{
+					Dir:     dir,
+					TTY:     tty,
+					Secrets: runner.SessionEnvNames(),
+					Env:     env,
+					Inherit: true,
+				}, argv[len(argv)-1])
+			}
+		}
 		sup.SetContainment(process.Containment{
 			Mechanism: sandboxMechanism,
-			Wrap: func(string, []string, []string) ([]string, error) {
-				return nil, fmt.Errorf("a long-running process cannot be started inside this session's disposable container yet; use execute_command, or run without --sandbox")
-			},
+			Wrap:      start(false),
+			WrapTTY:   start(true),
 		})
-		runner.SetAdopter(nil)
 	}
 	return cont, cleanup, nil
 }
@@ -445,14 +469,16 @@ const (
 
 // sandboxCommandEnvironment is what the model is told its commands run under
 // in a sandbox session: a disposable container, its profile and its network.
-// A command at the ceiling is stopped, since there is nowhere to move one to.
+// A command at the ceiling is moved to the supervisor's processes, which run
+// in the container too, wherever the session has a supervisor (backgrounds).
 // See docs/capabilities/containment.md#the-model-is-told-what-its-commands-run-under.
-func sandboxCommandEnvironment(c chat.Containment, cfg config.Config) commandEnvironment {
+func sandboxCommandEnvironment(c chat.Containment, cfg config.Config, backgrounds bool) commandEnvironment {
 	return commandEnvironment{
-		Mechanism: sandboxSaid,
-		Profile:   c.Profile,
-		Network:   c.Network,
-		Ceiling:   cfg.CommandTimeout(),
+		Mechanism:   sandboxSaid,
+		Profile:     c.Profile,
+		Network:     c.Network,
+		Ceiling:     cfg.CommandTimeout(),
+		Backgrounds: backgrounds,
 	}
 }
 

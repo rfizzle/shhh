@@ -113,6 +113,13 @@ type Containment struct {
 	// environment takes the extras with it — a server told PORT=3001 comes
 	// up on 3000, and the model debugs a server that is running fine.
 	Wrap func(dir string, argv, env []string) ([]string, error)
+	// WrapTTY is Wrap for a start that asked for a terminal, for a mechanism
+	// whose wrapper has to be told: a container's exec gives the program a
+	// terminal of its own only when it is asked with -t, and the pseudo-
+	// terminal this supervisor puts on the wrapper's client would otherwise
+	// end at the client. Nil means Wrap serves both, as it does where the
+	// wrapper runs the program on the terminal it is given.
+	WrapTTY func(dir string, argv, env []string) ([]string, error)
 }
 
 // inForce reports whether this containment can actually wrap a start. A
@@ -492,7 +499,11 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	// about to replace.
 	argv := shell.Execution().Argv(command)
 	if contain := s.containment(); contain.inForce() {
-		wrapped, err := contain.Wrap(dir, argv, extras)
+		wrap := contain.Wrap
+		if tty && contain.WrapTTY != nil {
+			wrap = contain.WrapTTY
+		}
+		wrapped, err := wrap(dir, argv, extras)
 		if err != nil {
 			// Refused, never started bare. Every surface in this session
 			// says the mechanism is containing what the assistant runs, and

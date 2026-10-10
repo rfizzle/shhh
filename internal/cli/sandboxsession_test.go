@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/process"
@@ -78,8 +79,8 @@ func sandboxTestSetup(t *testing.T) (config.Config, *scope.Scope, string) {
 // A sandbox session's containment is values backed by its container: the
 // commands go through the helper, attached, the chip names the container and
 // the profile, the network is the profile's switch and no host list, and
-// nothing wraps a hook. A process start is refused, and the container is
-// destroyed by the cleanup it came with.
+// nothing wraps a hook. A process start goes in the container, and the
+// container is destroyed by the cleanup it came with.
 func TestSandboxContainmentValues(t *testing.T) {
 	log := fakeSandboxEngine(t, helperAnswers)
 	cfg, sc, ws := sandboxTestSetup(t)
@@ -126,15 +127,11 @@ func TestSandboxContainmentValues(t *testing.T) {
 		t.Errorf("the helper was not probed:\n%s", calls)
 	}
 
-	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"dev","command":"sleep 1"}`)); err == nil {
-		t.Error("a process started in a sandbox session, where nothing can stop it in the container")
-	}
-
 	// What the model is told: a disposable container, its profile and its
-	// network, and a ceiling that stops a command rather than moving it.
+	// network, and a ceiling that moves a command to the background.
 	cfg.Behavior.CommandTimeoutSeconds = 600
-	said := commandEnvironmentBlock(sandboxCommandEnvironment(c, cfg))
-	for _, want := range []string{"contained by a disposable container under the workspace-netless profile", "no network at all", "is stopped"} {
+	said := commandEnvironmentBlock(sandboxCommandEnvironment(c, cfg, true))
+	for _, want := range []string{"contained by a disposable container under the workspace-netless profile", "no network at all", "moved to the background"} {
 		if !strings.Contains(said, want) {
 			t.Errorf("the prompt does not say %q:\n%s", want, said)
 		}
@@ -212,8 +209,8 @@ func TestSandboxSessionDestroysItsContainer(t *testing.T) {
 }
 
 // A scripted --sandbox run is built on the session's builder and keeps what
-// it refused: a hook is not run and says so, and a command at its ceiling is
-// stopped rather than moved to the background.
+// it refuses: a hook is not run and says so. A command at its ceiling goes to
+// the supervisor as anywhere, and the model is told so.
 func TestPrintSandboxKeepsItsRefusals(t *testing.T) {
 	fakeSandboxEngine(t, helperAnswers)
 	cfg, sc, ws := sandboxTestSetup(t)
@@ -230,11 +227,8 @@ func TestPrintSandboxKeepsItsRefusals(t *testing.T) {
 	if box.noHooks == "" || box.wrap != nil {
 		t.Error("a --sandbox run builds hooks")
 	}
-	if box.said.Backgrounds || box.said.Mechanism != "a disposable container" || box.profile != "workspace-netless" {
+	if !box.said.Backgrounds || box.said.Mechanism != "a disposable container" || box.profile != "workspace-netless" {
 		t.Errorf("said %+v, profile %q", box.said, box.profile)
-	}
-	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"dev","command":"sleep 1"}`)); err == nil {
-		t.Error("a --sandbox run started a process")
 	}
 	if got := box.run(context.Background(), "echo ran"); !strings.Contains(got.Output, "ran") {
 		t.Errorf("run = %+v", got)
@@ -318,5 +312,83 @@ func TestChatRefusesSandbox(t *testing.T) {
 	}
 	if f := newChatCmd().Flags().Lookup("sandbox"); f == nil || !f.Hidden {
 		t.Error("the refused flag is offered in the help")
+	}
+}
+
+// sandboxProcessSession is a sandbox session's supervisor with the container
+// behind it, for the process tests below.
+func sandboxProcessSession(t *testing.T) (*process.Supervisor, string) {
+	t.Helper()
+	log := fakeSandboxEngine(t, helperAnswers)
+	cfg, sc, ws := sandboxTestSetup(t)
+	sup, err := process.New(ws, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(sup.Close)
+	_, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, sup)
+	if err != nil {
+		t.Fatalf("sandboxContainment: %v", err)
+	}
+	t.Cleanup(cleanup)
+	return sup, log
+}
+
+// untilProcess polls the process tool until its answer holds want.
+func untilProcess(t *testing.T, sup *process.Supervisor, args, want string) string {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		got, err := sup.Execute(json.RawMessage(args))
+		if err == nil && strings.Contains(got, want) {
+			return got
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("%s never answered %q; last %q, %v", args, want, got, err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+// A process a sandbox session starts is an exec through the helper with the
+// stream as its stdin, and what it prints is read through the client's stdout
+// as it is for any process.
+func TestContainerProcessOutputIsRead(t *testing.T) {
+	sup, log := sandboxProcessSession(t)
+	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"dev","command":"echo ready; sleep 30"}`)); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	untilProcess(t, sup, `{"action":"read","name":"dev"}`, "ready")
+	calls := engineCalls(t, log)
+	want := "exec -i --workdir /workspace shhh-sbx-"
+	helper := sandbox.HelperPath + " " + sandbox.ExecArg + " --stdin=inherit --hangup=stop -- /bin/sh -c echo ready; sleep 30"
+	if !strings.Contains(calls, want) || !strings.Contains(calls, helper) {
+		t.Errorf("the process did not start through the helper with its stdin inherited:\n%s", calls)
+	}
+}
+
+// Input reaches the process through the client's stdin, and a stop signals
+// the client's group — the stop the supervisor already has — which ends the
+// exec and so hangs the stream up for the helper. A terminal is asked of the
+// engine with -t.
+func TestContainerProcessStopReachesTheClient(t *testing.T) {
+	sup, log := sandboxProcessSession(t)
+	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"echoer","command":"cat"}`)); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if _, err := sup.Execute(json.RawMessage(`{"action":"input","name":"echoer","text":"hello\n"}`)); err != nil {
+		t.Fatalf("input: %v", err)
+	}
+	untilProcess(t, sup, `{"action":"read","name":"echoer"}`, "hello")
+	if _, err := sup.Execute(json.RawMessage(`{"action":"stop","name":"echoer"}`)); err != nil {
+		t.Fatalf("stop: %v", err)
+	}
+	untilProcess(t, sup, `{"action":"status","name":"echoer"}`, "exited")
+
+	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"term","command":"sleep 30","pty":true}`)); err != nil {
+		t.Fatalf("start with a terminal: %v", err)
+	}
+	if calls := engineCalls(t, log); !strings.Contains(calls, "exec -i -t --workdir /workspace") {
+		t.Errorf("a terminal was not asked of the engine:\n%s", calls)
 	}
 }

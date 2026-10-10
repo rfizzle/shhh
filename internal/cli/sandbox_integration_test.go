@@ -13,6 +13,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,11 +22,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 )
 
-func TestSandboxCancelStopsTheContainerGroup(t *testing.T) {
+// integrationContainer starts a container from the engine and image the
+// environment names, with this checkout's helper bound where the released
+// image carries it, and probes it. It skips where they are not named.
+func integrationContainer(t *testing.T) (sandbox.Container, string, string) {
+	t.Helper()
 	engineName, image := os.Getenv("SHHH_SANDBOX_IT_ENGINE"), os.Getenv("SHHH_SANDBOX_IT_IMAGE")
 	if engineName == "" || image == "" {
 		t.Skip("set SHHH_SANDBOX_IT_ENGINE (docker or podman) and SHHH_SANDBOX_IT_IMAGE to put the cancel to an engine")
@@ -67,6 +73,14 @@ func TestSandboxCancelStopsTheContainerGroup(t *testing.T) {
 	if err := c.ProbeHelper(ctx); err != nil {
 		t.Fatalf("the bound helper does not answer: %v", err)
 	}
+
+	return c, enginePath, name
+}
+
+func TestSandboxCancelStopsTheContainerGroup(t *testing.T) {
+	c, enginePath, name := integrationContainer(t)
+	ws := c.Record.Workspace
+	ctx := context.Background()
 
 	// The share, read through the helper: a file written here is the file
 	// the container's command reads.
@@ -117,6 +131,57 @@ func TestSandboxCancelStopsTheContainerGroup(t *testing.T) {
 		}
 		if time.Now().After(deadline) {
 			t.Fatalf("a sleep outlived the cancel inside the container:\n%s", out)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+}
+
+// A process started in the container is read through the client's stdout and
+// stopped by the supervisor signalling the client, and nothing of it is left
+// in the container: the stop reaches the helper through the stream.
+func TestSandboxProcessStopsInsideTheContainer(t *testing.T) {
+	c, enginePath, name := integrationContainer(t)
+	sup, err := process.New(c.Record.Workspace, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(sup.Close)
+	sup.SetContainment(process.Containment{
+		Mechanism: sandboxMechanism,
+		Wrap: func(dir string, argv, env []string) ([]string, error) {
+			return c.HelperCommand(sandbox.HelperExec{Dir: dir, Env: env, Inherit: true}, argv[len(argv)-1])
+		},
+	})
+	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"dev","command":"echo ready; sleep 300 & wait"}`)); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		got, _ := sup.Execute(json.RawMessage(`{"action":"read","name":"dev"}`))
+		if strings.Contains(got, "ready") {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the process printed nothing through the container: %q", got)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if _, err := sup.Execute(json.RawMessage(`{"action":"stop","name":"dev"}`)); err != nil {
+		t.Fatalf("stop: %v", err)
+	}
+	deadline = time.Now().Add(10 * time.Second)
+	for {
+		out, err := exec.Command(enginePath, "exec", name, "/bin/sh", "-c",
+			`for p in /proc/[0-9]*; do cat "$p/comm" 2>/dev/null; done`).CombinedOutput()
+		if err != nil {
+			t.Fatalf("list the container's processes: %v\n%s", err, out)
+		}
+		if strings.Count(string(out), "sleep\n") <= 1 {
+			// The one sleep left is the container's own keeper.
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the stopped process left a sleep in the container:\n%s", out)
 		}
 		time.Sleep(200 * time.Millisecond)
 	}

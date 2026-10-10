@@ -592,11 +592,11 @@ spend are recorded where every other session's are; the file tools, which are
 shhh's own scope-checked code writing the same mounted tree; the reading of
 the tree between rounds, which is the host's own git, already kept from
 running anything a command wrote; and the language servers, MCP servers and
-the web tools. A process start is refused, a hook is not run and says so, and
-a sub-agent's commands are refused with a sentence, since they do not follow
-the session's into the container yet and a writer's worktree is outside its
-one mount; none of them may fall back to running on the host, which would put
-the one thing outside the containment the person asked for.
+the web tools. A started process runs in the container too. A hook is not run
+and says so, and a sub-agent's commands are refused with a sentence, since they
+do not follow the session's into the container yet and a writer's worktree is
+outside its one mount; neither may fall back to running on the host, which
+would put the one thing outside the containment the person asked for.
 
 **A command in the container is reached through its stream.** An engine's exec
 forwards no signal, so stopping the client on this machine would leave the
@@ -1027,14 +1027,16 @@ errors is gone the moment one is used. The mechanism wraps such a process
 exactly as it wraps any other, and where the platform has no terminal to give,
 the start says so in a sentence rather than pretending.
 
-The exception is a session whose commands go inside a disposable container
-([above](#a-session-can-run-in-the-sandbox)). A process cannot follow them in
-yet: what would be left holding it is the client that started the exec
-rather than the process itself. Such a session refuses a start rather than
-spawning it on the host, which is the same answer for the same reason —
-outside the container is bare. The command ceiling answers to the same fact:
-there is nowhere to move a command to, so one that reaches it there is
-stopped whether or not it was still printing.
+A session whose commands go inside a disposable container
+([above](#a-session-can-run-in-the-sandbox)) starts its processes there too:
+a start is one more exec through the helper, with the stream as the process's
+stdin, and a terminal is asked of the engine with `exec -t`. The supervisor
+holds the exec's client, so its reads and its input are the process's own
+output and input, and stopping it signals the client's group, which hangs the
+stream up and so tells the helper to stop the process inside the container
+with the sequence a command gets. A command that reaches its ceiling while it
+is still printing is handed to the supervisor as anywhere, and the session
+ending removes the container with whatever process is left in it.
 
 ## The model is told what its commands run under
 
@@ -1058,9 +1060,9 @@ other host is a refusal the model has already read about rather than a
 surprise it goes on to debug.
 
 The ceiling is stated in the same place and for the same reason. What happens
-at it is not the same on every surface — a session whose commands are inside
-a disposable container has nowhere to move one to — so what is stated is what
-this session will actually do, not the rule in general.
+at it is not the same on every surface — a surface with no process supervisor
+has nowhere to move a command to — so what is stated is what this session will
+actually do, not the rule in general.
 
 ## What is reported is what is in force
 

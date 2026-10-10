@@ -5,3 +5,7 @@
 [session]
 tool:execute_command:{"command":"echo one; sleep 1; echo two; sleep 1; echo three"}
 The three lines came back from the container.
+tool:process:{"action":"start","name":"ticker","command":"echo ready; sleep 300"}
+tool:process:{"action":"read","name":"ticker"}
+tool:process:{"action":"stop","name":"ticker"}
+The process printed ready inside the container, and it is stopped.

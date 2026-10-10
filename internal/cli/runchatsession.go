@@ -282,7 +282,7 @@ func (b *screenBuild) policy() error {
 		if b.containment, b.closeSandbox, err = sandboxContainment(b.cmd.Context(), cfg, ws, b.asm.sc, procSup); err != nil {
 			return fmt.Errorf("sandbox: %w", err)
 		}
-		said = func(c chat.Containment) commandEnvironment { return sandboxCommandEnvironment(c, cfg) }
+		said = func(c chat.Containment) commandEnvironment { return sandboxCommandEnvironment(c, cfg, procSup != nil) }
 	} else if b.containment, err = buildContainment(cfg, b.asm.sc, procSup); err != nil {
 		return err
 	}
