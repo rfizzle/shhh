@@ -19,7 +19,7 @@
 #                                        profile denies the mounts bwrap makes.
 FROM ubuntu:24.04
 
-ARG GO_VERSION=1.26.2
+ARG GO_VERSION=1.26.9
 ARG GOLANGCI_LINT_VERSION=v2.12.2
 ARG TARGETARCH
 
