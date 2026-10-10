@@ -33,8 +33,9 @@ type Capabilities struct {
 	// it has no column for it — so it is answered by the family floor even
 	// for a model the table describes.
 	StructuredOutputs bool
-	// NoSchema is a profile's declaration that the model takes no response
-	// schema. It outranks the floor and can only narrow it.
+	// NoSchema is a declaration that the model takes no response schema,
+	// model-wide or on the flow asked (declarations.go). It outranks the
+	// floor and can only narrow it.
 	NoSchema bool
 }
 
@@ -49,8 +50,22 @@ func SetCapabilityLookup(fn func(model string) (Capabilities, bool)) {
 }
 
 // CapabilitiesFor is what is known about a model: the table's entry when it
-// has one, the family floor otherwise.
+// has one, the family floor otherwise, narrowed by what the registered
+// profiles declare for the model as a whole. It is the answer for a surface
+// that reads no request; a request reads its own flow's answer
+// (CompletionOpts.Capabilities).
 func CapabilitiesFor(model string) Capabilities {
+	return narrow(described(model), model, "")
+}
+
+// capabilitiesOn is the answer for one flow's request: the model-wide
+// answer, then the declarations scoped to that flow, by the same narrowing.
+func capabilitiesOn(model string, flow Flow) Capabilities {
+	return narrow(described(model), model, flow)
+}
+
+// described is the table's entry or the floor, before any declaration.
+func described(model string) Capabilities {
 	if capabilityLookup != nil {
 		if c, ok := capabilityLookup(model); ok {
 			c.Known = true

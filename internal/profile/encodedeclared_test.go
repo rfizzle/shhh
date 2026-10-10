@@ -12,6 +12,10 @@ func TestProfile_AWrittenProfileKeepsEveryDeclaration(t *testing.T) {
 		Reasoning:         Reasoning{Kind: "effort", Levels: []string{"xhigh", "max"}, AlwaysOn: true},
 		Decisions:         true,
 		StructuredOutputs: &no,
+		Flows: map[string]map[string]any{
+			"classifier": {"structured_outputs": false},
+			"backlog":    {"structured_outputs": false},
+		},
 	}}}
 	dir := t.TempDir()
 	got, err := LoadFile(writeProfile(t, dir, "providers.toml", Encode([]Profile{p})))

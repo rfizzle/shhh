@@ -294,9 +294,18 @@ type CompletionOpts struct {
 	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
 	ResponseSchema *ResponseSchema
 	// Flow is the bounded call this request is, set by the code that builds
-	// it and never by a wrapper. Empty is the main agent and its children.
+	// it and never by a wrapper, so a profile's declaration scoped to that
+	// flow narrows this request and no other. Empty is the main agent and
+	// its children, where nothing may be scoped.
 	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
 	Flow Flow
+}
+
+// Capabilities is what the named model can be asked on this request: the
+// model-wide answer, narrowed by whatever is declared for the request's
+// flow.
+func (o CompletionOpts) Capabilities(model string) Capabilities {
+	return capabilitiesOn(model, o.Flow)
 }
 
 // ResponseSchema is a JSON Schema the answer is validated against before it
@@ -338,7 +347,7 @@ func (o CompletionOpts) SchemaFor(model string) *ResponseSchema {
 	if s == nil || !isJSONObject(s.Schema) {
 		return nil
 	}
-	if !CapabilitiesFor(model).StructuredOutputs {
+	if !o.Capabilities(model).StructuredOutputs {
 		return nil
 	}
 	return s

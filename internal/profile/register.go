@@ -45,6 +45,9 @@ func Loaded() []Profile {
 // Register makes every profile resolvable as a provider by its name, with its
 // declared models seeding the picker's catalog.
 func Register(profiles []Profile) {
+	for _, p := range registered {
+		provider.RegisterDeclarations(p.Name, nil)
+	}
 	registered = append([]Profile(nil), profiles...)
 	for _, p := range profiles {
 		p := p
@@ -57,7 +60,23 @@ func Register(profiles []Profile) {
 		})
 		provider.RegisterModels(p.Name, p.ModelIDs())
 		provider.RegisterDecisions(p.Name, p.DeclaresDecisions)
+		// What a model's line narrows is registered as the decisions are,
+		// rather than carried on the price table: a line that declares only
+		// a narrowing is not a price, and the doctor reads the answer
+		// without loading prices at all.
+		provider.RegisterDeclarations(p.Name, p.declarations())
 	}
+}
+
+// declarations is what each declared model's line narrows, by model id.
+func (p Profile) declarations() map[string]provider.Declared {
+	out := map[string]provider.Declared{}
+	for _, m := range p.declaredModels() {
+		if d, ok := m.declared(); ok {
+			out[m.ID] = d
+		}
+	}
+	return out
 }
 
 // defaultModel is the profile's first declared model, if any — the model a

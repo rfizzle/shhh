@@ -175,16 +175,79 @@ type Model struct {
 	// to one that could have taken a schema is free.
 	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
 	StructuredOutputs *bool `toml:"structured_outputs"`
+	// Flows scopes a declaration to one bounded call: a flow word, then the
+	// settings declared for that flow alone, as in
+	// `flows = { classifier = { structured_outputs = false } }`. Every word
+	// and setting is judged against the provider's registry at load, which
+	// refuses a flow with nothing for the setting to narrow.
+	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+	Flows map[string]map[string]any `toml:"flows"`
+}
+
+// validateDeclarations judges what the model declares against the
+// provider's registry: the model-wide key by its entry's rule, and each flow
+// scope by the closed set of flows, the registry's keys, the flows each key
+// may scope and the same rule. Words and keys are read in order, so the
+// first refusal is the same on every load.
+func (m Model) validateDeclarations() error {
+	if m.StructuredOutputs != nil {
+		if d, ok := provider.DeclarationFor(keyStructuredOutputs); ok {
+			if err := d.Check(*m.StructuredOutputs); err != nil {
+				return err
+			}
+		}
+	}
+	for _, word := range sortedKeys(m.Flows) {
+		flow, ok := provider.ParseFlow(word)
+		if !ok {
+			return fmt.Errorf("flows: unknown flow %q (valid: %s)", word, provider.FlowWords())
+		}
+		settings := m.Flows[word]
+		for _, key := range sortedKeys(settings) {
+			d, ok := provider.DeclarationFor(key)
+			if !ok {
+				return fmt.Errorf("flows.%s: unknown setting %q (valid: %s)", word, key, provider.DeclarationKeys())
+			}
+			if !d.Scopes(flow) {
+				return fmt.Errorf("flows.%s.%s: `%s` %s", word, key, word, d.Unscoped)
+			}
+			if err := d.Check(settings[key]); err != nil {
+				return fmt.Errorf("flows.%s: %w", word, err)
+			}
+		}
+	}
+	return nil
+}
+
+// keyStructuredOutputs is the registry key the model-wide field declares.
+const keyStructuredOutputs = "structured_outputs"
+
+// declared is what the model's line declares, in the registry's terms, and
+// whether it declares anything.
+func (m Model) declared() (provider.Declared, bool) {
+	var d provider.Declared
+	for word, settings := range m.Flows {
+		if len(settings) == 0 {
+			continue
+		}
+		if d.Flows == nil {
+			d.Flows = map[provider.Flow]map[string]any{}
+		}
+		d.Flows[provider.Flow(word)] = settings
+	}
+	return d, d.Flows != nil
 }
 
 // NoSchema reports whether the model is declared to take no response schema.
 func (m Model) NoSchema() bool { return m.StructuredOutputs != nil && !*m.StructuredOutputs }
 
-func (m Model) validateSchema() error {
-	if m.StructuredOutputs != nil && *m.StructuredOutputs {
-		return fmt.Errorf("structured_outputs can only be false: a schema sent to a model that cannot take one is a refused request")
+func sortedKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
 	}
-	return nil
+	sort.Strings(keys)
+	return keys
 }
 
 // Reasoning declares a model's thinking knob: its shape, the rungs above
@@ -645,7 +708,7 @@ func (p *Profile) Validate() error {
 		if err := m.Reasoning.validate(); err != nil {
 			return fmt.Errorf("models[%d]: %w", i, err)
 		}
-		if err := m.validateSchema(); err != nil {
+		if err := m.validateDeclarations(); err != nil {
 			return fmt.Errorf("models[%d]: %w", i, err)
 		}
 	}
@@ -703,7 +766,7 @@ func (e *Endpoint) validate() error {
 		if err := m.Reasoning.validate(); err != nil {
 			return fmt.Errorf("models[%d]: %w", i, err)
 		}
-		if err := m.validateSchema(); err != nil {
+		if err := m.validateDeclarations(); err != nil {
 			return fmt.Errorf("models[%d]: %w", i, err)
 		}
 	}

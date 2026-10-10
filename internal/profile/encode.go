@@ -129,6 +129,16 @@ var modelDeclarations = []func(Model) string{
 		}
 		return ""
 	},
+	func(m Model) string {
+		if len(m.Flows) == 0 {
+			return ""
+		}
+		table := make(map[string]any, len(m.Flows))
+		for word, settings := range m.Flows {
+			table[word] = map[string]any(settings)
+		}
+		return "flows = " + tomlValue(table) + "\n"
+	},
 }
 
 // encodeCost writes the inline table model cards are quoted in, omitting the

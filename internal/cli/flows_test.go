@@ -150,3 +150,19 @@ func TestFlows_TheSetAgreesWithTheChain(t *testing.T) {
 		t.Errorf("the chain's flows are %v, want %v", words, provider.Flows())
 	}
 }
+
+// Each declaration may be scoped to exactly the flows whose request carries
+// what it narrows: a flow that starts sending a schema without being listed
+// fails here, and so does a listed flow that sends none.
+func TestDeclarations_OnlyFlowsThatSendASchemaMayScopeIt(t *testing.T) {
+	schema := sendsSchema(t)
+	d, ok := provider.DeclarationFor("structured_outputs")
+	if !ok {
+		t.Fatal("structured_outputs is not in the registry")
+	}
+	for _, f := range provider.Flows() {
+		if d.Scopes(f) != schema[f] {
+			t.Errorf("flow %q: scopable %v, sends a schema %v", f, d.Scopes(f), schema[f])
+		}
+	}
+}
