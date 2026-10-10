@@ -428,6 +428,8 @@ not open a close of its own: the run's close covers every turn since the last
 close, steers included, so the files written before the steer are on the row
 that offers their review and their commit, and no `changed no files` row
 follows work that did change them.
+The gate, the rail and the round pause read that same fold, and `/undo` takes one
+turn, so a folded row names the span: `/undo 3 … /undo 5 takes it back`.
 
 What it did is the turn's total, and the total is one slot in three states. It
 is the last line of its turn, and it appears when the turn ends: flat, dim, on

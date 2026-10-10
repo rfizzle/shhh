@@ -208,14 +208,16 @@ func closeState(e receipt.TurnEnd) components.TurnState {
 // and the honest key for that is `git revert` — a sentence somebody types,
 // not a key shhh can put on a row. The commit row below says so in words.
 func (m Model) turnChangesRow(committed bool) *components.TurnChanges {
-	t, ok := m.runChangeset(m.runFrom, m.turnCount, m.changes.Turn)
+	t, ok := m.runNow()
 	if !ok {
 		return nil
 	}
 	row := m.turnChangesFor(t, committed)
 	if row != nil && m.runFrom > 0 && m.runFrom < m.turnCount {
 		// /undo takes back one turn, and this row speaks for several.
-		row.Back = ""
+		if row.Back != "" {
+			row.Back = undoSpan(m.runWriters(m.runFrom, m.turnCount, m.changes.Turn)) + " takes it back"
+		}
 	}
 	return row
 }
@@ -246,6 +248,40 @@ func (m Model) runChangeset(from, to int64, get func(int64) (changeset.Turn, boo
 	folded := changeset.Fold(turns)
 	folded.N = to
 	return folded, true
+}
+
+// runNow is the changeset of the run now going, read the way its close row
+// reads it. The gate, the rail, the round pause and the suggestions ask about
+// the run and not about whichever turn a steer last opened.
+func (m Model) runNow() (changeset.Turn, bool) {
+	return m.runChangeset(m.runFrom, m.turnCount, m.changes.Turn)
+}
+
+// runWriters is the turns of the fold that wrote something, which are the
+// ones /undo can take back.
+func (m Model) runWriters(from, to int64, get func(int64) (changeset.Turn, bool)) []int64 {
+	if from <= 0 || from > to {
+		from = to
+	}
+	var ns []int64
+	for n := from; n <= to; n++ {
+		if _, ok := get(n); ok {
+			ns = append(ns, n)
+		}
+	}
+	return ns
+}
+
+// undoSpan names the /undo commands that take a fold back: the one turn that
+// wrote, or the first and the last of the turns that did.
+func undoSpan(ns []int64) string {
+	switch len(ns) {
+	case 0:
+		return "/undo"
+	case 1:
+		return fmt.Sprintf("/undo %d", ns[0])
+	}
+	return fmt.Sprintf("/undo %d … /undo %d", ns[0], ns[len(ns)-1])
 }
 
 // closeFrom is the first turn the close row for turn n folds.

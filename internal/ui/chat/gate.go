@@ -145,7 +145,7 @@ func (m Model) closeGateOwed() bool {
 	}
 	// A turn that changed nothing, or changed only shhh's own state
 	// directory, has nothing a suite could have an opinion about.
-	t, ok := m.changes.Turn(m.turnCount)
+	t, ok := m.runNow()
 	return ok && t.Checkable()
 }
 

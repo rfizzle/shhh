@@ -4,11 +4,13 @@ package chat
 // since the last close.
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -103,4 +105,53 @@ func TestClose_TheTurnCountIsUntouchedByTheFold(t *testing.T) {
 		}
 	}
 	t.Fatal("no close row")
+}
+
+func TestGate_AScopedGateReadsTheRunsFold(t *testing.T) {
+	m, runs := closeGateModel(t, quality.VerdictPass)
+	m = steerRun(startEditedTurn(t, m))
+
+	if !m.closeGateOwed() {
+		t.Fatal("the run wrote a file before the steer, so the gate is owed on its close")
+	}
+	closeTurnWithGate(t, m)
+	if *runs != 1 {
+		t.Fatalf("the suite ran %d times for the steered run, want once", *runs)
+	}
+}
+
+func TestRail_ChangesCountTheRunAfterASteer(t *testing.T) {
+	m := steeredWrite(t)
+
+	c := m.inspectorChanges()
+	if c == nil || len(c.Files) != 1 {
+		t.Fatalf("the rail's CHANGES block lists the file the run wrote, got %+v", c)
+	}
+	if !c.Files[0].ThisTurn {
+		t.Fatal("the file the run wrote before the steer is still the running run's")
+	}
+}
+
+func TestUndo_AFoldedRunNamesItsSpan(t *testing.T) {
+	m := turnModel(t)
+	m = sendText(t, m, "write the files")
+	dir := t.TempDir()
+	m = applyWrite(t, m, filepath.Join(dir, "a.go"), "package a\n", "y")
+	m = steerRun(m)
+	m = applyWrite(t, m, filepath.Join(dir, "b.go"), "package b\n", "y")
+	from, to := m.runFrom, m.turnCount
+	m = finishTurn(t, m)
+
+	c := lastClose(t, m)
+	if c.Changes == nil || c.Changes.Files != 2 {
+		t.Fatalf("the run's close counts both files, got %+v", c.Changes)
+	}
+	want := fmt.Sprintf("/undo %d … /undo %d takes it back", from, to)
+	if c.Changes.Back != want {
+		t.Fatalf("the folded row's undo hint = %q, want %q", c.Changes.Back, want)
+	}
+	tr, _ := m.changes.Recall(to)
+	if got := reviewShieldDetail(to, tr, m.runWriters(m.closeFrom(to), to, m.changes.Recall)); !strings.Contains(got, fmt.Sprintf("/undo %d … /undo %d", from, to)) {
+		t.Fatalf("the review's shield says %q", got)
+	}
 }

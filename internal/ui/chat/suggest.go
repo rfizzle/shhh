@@ -251,7 +251,7 @@ func (m Model) suggestCloseEvidence() string {
 		}
 		parts = append(parts, strings.TrimSpace(fmt.Sprintf("checks %s: %s %s", verdict, ch.Label, ch.Counts)))
 	}
-	if t, ok := m.changes.Turn(m.turnCount); ok && len(t.Records) > 0 {
+	if t, ok := m.runNow(); ok && len(t.Records) > 0 {
 		paths := make([]string, 0, len(t.Records))
 		for _, r := range t.Records {
 			paths = append(paths, r.Path)

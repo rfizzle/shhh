@@ -95,7 +95,7 @@ func (m Model) pauseAtRoundLimit() (tea.Model, tea.Cmd) {
 		// running figure is the turn's whole cost up to this stop.
 		spend: m.totalsLabel(m.turnSpend()),
 	}
-	if t, ok := m.changes.Turn(m.turnCount); ok {
+	if t, ok := m.runNow(); ok {
 		p.files, p.added, p.removed = t.Files(), t.Added, t.Removed
 	}
 	m.roundPause = p

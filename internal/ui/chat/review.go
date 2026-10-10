@@ -71,7 +71,7 @@ func (m Model) openReview(n int64) (tea.Model, tea.Cmd) {
 		Files:        reviewFiles(t),
 		Verdict:      m.reviewVerdict(n),
 		Shield:       "nothing is committed",
-		ShieldDetail: reviewShieldDetail(n, t),
+		ShieldDetail: reviewShieldDetail(n, t, m.runWriters(m.closeFrom(n), n, m.changes.Recall)),
 	}
 	return m.showReview(v, n)
 }
@@ -112,7 +112,10 @@ func reviewFiles(t changeset.Turn) []components.ReviewFile {
 
 // reviewShieldDetail is the second line of the standing "nothing is
 // committed" note: how the turn is taken back, and what that restores from.
-func reviewShieldDetail(n int64, t changeset.Turn) string {
+func reviewShieldDetail(n int64, t changeset.Turn, writers []int64) string {
+	if len(writers) > 1 {
+		return fmt.Sprintf("%s restores the %s this run wrote", undoSpan(writers), plural(t.Files(), "file"))
+	}
 	return fmt.Sprintf("/undo %d restores the %s this turn wrote", n, plural(t.Files(), "file"))
 }
 

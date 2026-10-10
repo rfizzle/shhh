@@ -304,7 +304,7 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 	}
 	var c components.InspectorChanges
 	touched := map[string]bool{}
-	if t, ok := m.changes.Turn(m.turnCount); ok {
+	if t, ok := m.runNow(); ok {
 		for _, r := range t.Records {
 			touched[r.Path] = true
 		}
