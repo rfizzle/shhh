@@ -220,7 +220,7 @@ prepush: ## Run every CI check this host can run, on CI's Go, naming what it ski
 	echo "${MAGENTA}prepush under $$GOTOOLCHAIN${RESET}"; \
 	skips="$$($(prepush_skips))"; \
 	failed=""; \
-	for t in cross fmt-check docs-check test vet lint host-lists-check tui-check test-contract test-integration; do \
+	for t in cross fmt-check docs-check test vet lint vulncheck host-lists-check tui-check test-contract test-integration; do \
 		if printf '%s\n' "$$skips" | grep -q "^skip $$t:"; then echo "${YELLOW}skipped $$t${RESET}"; continue; fi; \
 		$(MAKE) --no-print-directory $$t || failed="$$failed $$t"; \
 	done; \
