@@ -30,7 +30,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/mcp"
+	"github.com/rfizzle/shhh/internal/mcp/mcpname"
 )
 
 // The outcome words. A closed set of two, because the question a reading asks
@@ -88,12 +88,12 @@ func Arg(tool, rawArgs string) string {
 	if err := json.Unmarshal([]byte(rawArgs), &args); err != nil {
 		return FirstLine(rawArgs)
 	}
-	if server, ok := mcp.SplitName(tool); ok {
+	if server, ok := mcpname.SplitName(tool); ok {
 		// The target names the server and the tool, then the arguments
 		// compacted: `github get_issue number=42`. The verb column already
 		// says `mcp`, so the row reads as where, what, with what.
-		target := server + " " + strings.TrimPrefix(tool, server+mcp.Separator)
-		if compact := mcp.CompactArgs(json.RawMessage(rawArgs)); compact != "" {
+		target := server + " " + strings.TrimPrefix(tool, server+mcpname.Separator)
+		if compact := mcpname.CompactArgs(json.RawMessage(rawArgs)); compact != "" {
 			target += " " + compact
 		}
 		return target

@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/mcp/mcpname"
 	"github.com/rfizzle/shhh/internal/provider"
 	calldescribe "github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -1139,34 +1140,7 @@ func (ts *Toolset) Preview(name string, args json.RawMessage) (Preview, error) {
 
 // CompactArgs renders arguments as `key=value` pairs on one line, values
 // clipped, keys sorted — enough to recognise a call, never a page of it.
-func CompactArgs(raw json.RawMessage) string {
-	var args map[string]any
-	if err := json.Unmarshal(raw, &args); err != nil || len(args) == 0 {
-		return ""
-	}
-	keys := make([]string, 0, len(args))
-	for k := range args {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	parts := make([]string, 0, len(keys))
-	for _, k := range keys {
-		var v string
-		switch x := args[k].(type) {
-		case string:
-			v = x
-		default:
-			b, _ := json.Marshal(x)
-			v = string(b)
-		}
-		v = strings.ReplaceAll(v, "\n", " ")
-		if r := []rune(v); len(r) > 60 {
-			v = string(r[:57]) + "..."
-		}
-		parts = append(parts, k+"="+v)
-	}
-	return strings.Join(parts, " ")
-}
+func CompactArgs(raw json.RawMessage) string { return mcpname.CompactArgs(raw) }
 
 // Close ends every session: the servers that joined, the ones that answered
 // and were waiting for a boundary, and — through settle — any that answer

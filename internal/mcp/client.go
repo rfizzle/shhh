@@ -18,6 +18,7 @@ import (
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/mcp/mcpname"
 	"github.com/rfizzle/shhh/internal/profile"
 )
 
@@ -695,10 +696,8 @@ func (s *Server) toolFrom(t *sdk.Tool, taken map[string]bool) Tool {
 // MaxToolNameLength is the shortest provider limit on a tool name.
 const MaxToolNameLength = 64
 
-// Separator joins a server name to a tool name. No tool of shhh's own
-// contains it, which is what lets a name be recognised as a server's
-// without a registry lookup.
-const Separator = "__"
+// Separator joins a server name to a tool name (see mcpname.Separator).
+const Separator = mcpname.Separator
 
 // PromptSeparator joins a server name to a prompt name. It is a colon and
 // not the tool separator because the two are different vocabularies reached
@@ -757,13 +756,7 @@ func joinName(server, sep, remote, fallback string, taken map[string]bool) strin
 
 // SplitName returns the server part of a session tool name, and whether
 // the name is a server's at all.
-func SplitName(name string) (server string, ok bool) {
-	server, _, ok = strings.Cut(name, Separator)
-	if !ok || server == "" {
-		return "", false
-	}
-	return server, true
-}
+func SplitName(name string) (server string, ok bool) { return mcpname.SplitName(name) }
 
 // Call invokes a tool by its session name and flattens the result to the
 // text the model reads. A tool error is returned as an error so the agent
