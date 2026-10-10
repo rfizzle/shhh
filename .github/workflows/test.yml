@@ -120,6 +120,24 @@ jobs:
 
       - run: make test-integration
 
+  # A sandbox session's cancel reaches its command through the engine's exec
+  # stream, which only a real engine can show. The test names its engine and
+  # image, so a runner without them would skip it; this job gives it docker,
+  # which is the engine it has to pass on.
+  sandbox-session-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - run: go test -mod=readonly -tags=integration -count=1 -v -run 'TestSandboxCancelStopsTheContainerGroup$' ./internal/cli
+        env:
+          SHHH_SANDBOX_IT_ENGINE: docker
+          SHHH_SANDBOX_IT_IMAGE: alpine:3.20
+
   # Seatbelt is macOS's mechanism and lives at a fixed path, so nothing on a
   # Linux runner can stand in for it: the containment tests there skip it by
   # name. This job is the only place that claim is put to an actual kernel,
