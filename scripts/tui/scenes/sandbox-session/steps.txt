@@ -59,6 +59,9 @@ sleep 1
 keys y
 snap 11-writer-ask "echo from-the-writer" "writer-1"
 sleep 1
+# The writer's card arrives over an idle draft, which keeps the keyboard:
+# ctrl+space hands it to the card, then y allows the command.
+keys C-Space
 keys y
 snap 12-writer-done "✓ done" "writer-1"
 keys C-c
