@@ -5,9 +5,11 @@
 # A session keeps a standing account of itself while it runs
 # (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write). Two
 # turns, then quit: a turn has closed since the last account was asked for,
-# so the save on the way out carries one. The second process opens the
+# but the quit never waits on a model request, so the slot is saved owing
+# its reading and the next sitting takes it. The second process opens the
 # picker `--resume` shows on its own, and the capture is for the preview of
-# the slot the first sitting left: its title, and under it the account.
+# the slot the first sitting left: its title, and the turns it holds; the
+# account is not there yet, because nothing was asked for it on the way out.
 snap 01-start "Some things worth doing first"
 keys "why does the retry backoff double" Enter
 snap 02-first "the client both wait"
@@ -16,8 +18,7 @@ snap 03-second "the client's own wait is gone"
 keys C-c
 sleep 0.3
 keys C-c
-# Wait on the account's own words: only the picker's preview draws them. The
-# preview wraps the account to its column, and where a line breaks moves with
-# the terminal's width, so the wait is one word and the comparisons are the
-# title and the account's opening, which start a line at every width.
-snap 04-picker "removed" "shhh chats" "The retry backoff doubling" "Fixing the retry"
+# Wait on the title, which only the picker draws; the preview wraps to its
+# column, so the comparisons are the title and the turn count, which start a
+# line at every width.
+snap 04-picker "The retry backoff doubling" "shhh chats" "2 turns"
