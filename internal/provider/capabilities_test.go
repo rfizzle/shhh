@@ -85,3 +85,31 @@ func TestFamilyCapabilities_StructuredOutput(t *testing.T) {
 		}
 	}
 }
+
+// A declared "no schema" outranks the floor and can only narrow it.
+func TestSchemaFor_AProfileCanDeclareNoSchema(t *testing.T) {
+	SetCapabilityLookup(func(model string) (Capabilities, bool) {
+		switch model {
+		case "claude-sonnet-5-5":
+			return Capabilities{Reasoning: true, Adaptive: true, NoSchema: true}, true
+		case "claude-opus-5-5":
+			return Capabilities{Reasoning: true, Adaptive: true}, true
+		}
+		return Capabilities{}, false
+	})
+	defer SetCapabilityLookup(nil)
+
+	opts := CompletionOpts{ResponseSchema: &ResponseSchema{Name: "verdict", Schema: []byte(`{"type":"object"}`)}}
+	if opts.SchemaFor("claude-sonnet-5-5") != nil {
+		t.Error("a model declared to take no schema should be sent none")
+	}
+	if CapabilitiesFor("claude-sonnet-5-5").StructuredOutputs {
+		t.Error("the declaration should outrank the floor")
+	}
+	if opts.SchemaFor("claude-opus-5-5") == nil {
+		t.Error("a model that declared nothing keeps the floor's answer")
+	}
+	if opts.SchemaFor("llama3") != nil {
+		t.Error("nothing is widened: an undescribed model still gets none")
+	}
+}

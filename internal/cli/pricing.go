@@ -43,6 +43,7 @@ func installCapabilities(table *pricing.Table) {
 			XHigh:           e.XHighEffort,
 			Max:             e.MaxEffort,
 			MaxOutputTokens: e.MaxOutputTokens,
+			NoSchema:        e.NoStructuredOutputs,
 		}, true
 	})
 }

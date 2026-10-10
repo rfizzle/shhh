@@ -24,7 +24,7 @@ func Pricing(profiles []Profile) map[string]pricing.ModelPricing {
 	out := map[string]pricing.ModelPricing{}
 	for _, p := range profiles {
 		for _, m := range p.declaredModels() {
-			if !m.Cost.anyRate() && m.ContextWindow == 0 && !m.Reasoning.Declared() {
+			if !m.Cost.anyRate() && m.ContextWindow == 0 && !m.Reasoning.Declared() && !m.NoSchema() {
 				continue
 			}
 			// The cache rates travel with the other two. A gateway session
@@ -43,6 +43,7 @@ func Pricing(profiles []Profile) map[string]pricing.ModelPricing {
 				MaxOutputTokens:           m.MaxTokens,
 			}
 			m.Reasoning.fill(&entry)
+			entry.NoStructuredOutputs = m.NoSchema()
 			out[m.ID] = entry
 		}
 	}

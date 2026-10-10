@@ -33,6 +33,9 @@ type Capabilities struct {
 	// it has no column for it — so it is answered by the family floor even
 	// for a model the table describes.
 	StructuredOutputs bool
+	// NoSchema is a profile's declaration that the model takes no response
+	// schema. It outranks the floor and can only narrow it.
+	NoSchema bool
 }
 
 // capabilityLookup is the table-backed answer, installed by the CLI once it
@@ -64,7 +67,7 @@ func CapabilitiesFor(model string) Capabilities {
 			// which every model takes, while a schema sent to a model that
 			// does not take one is a refused request. The two ways to be
 			// wrong are not symmetric here, so silence means the tools.
-			c.StructuredOutputs = familyCapabilities(model).StructuredOutputs
+			c.StructuredOutputs = familyCapabilities(model).StructuredOutputs && !c.NoSchema
 			return c
 		}
 	}

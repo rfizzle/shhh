@@ -720,6 +720,54 @@ func TestAnthropic_SchemaRidesTheOutputConfigBesideTheEffort(t *testing.T) {
 	}
 }
 
+// A model declared to take no schema is sent the tool the classifier already
+// offers, with tool_choice auto, and no format; the effort stays in
+// output_config.
+func TestAnthropic_NoSchemaSendsTheToolAndNoOutputFormat(t *testing.T) {
+	SetCapabilityLookup(func(model string) (Capabilities, bool) {
+		return Capabilities{Reasoning: true, Adaptive: true, NoSchema: true}, model == "claude-sonnet-5-5"
+	})
+	defer SetCapabilityLookup(nil)
+
+	var body map[string]any
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		body = nil
+		_ = json.Unmarshal(raw, &body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"m","type":"message","role":"assistant","content":[],"model":"claude-sonnet-5-5","usage":{"input_tokens":1,"output_tokens":1}}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	}))
+	defer srv.Close()
+
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	events, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "hi"}}, CompletionOpts{
+		Model:          "claude-sonnet-5-5",
+		Effort:         EffortLow,
+		Tools:          []Tool{{Name: "permission_decision", Parameters: json.RawMessage(`{"type":"object","properties":{}}`)}},
+		ToolChoice:     ToolChoiceAuto,
+		ResponseSchema: &ResponseSchema{Name: "verdict", Schema: json.RawMessage(`{"type":"object","additionalProperties":false}`)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, _ = drainAnthropic(t, events)
+	config, _ := body["output_config"].(map[string]any)
+	if config == nil || config["effort"] != "low" {
+		t.Fatalf("the effort must stay in output_config, got %v", body["output_config"])
+	}
+	if _, ok := config["format"]; ok {
+		t.Errorf("no format may be sent, got %v", config["format"])
+	}
+	tools, _ := body["tools"].([]any)
+	if len(tools) != 1 {
+		t.Fatalf("the tool must be offered, got %v", body["tools"])
+	}
+	if choice, _ := body["tool_choice"].(map[string]any); choice["type"] != "auto" {
+		t.Errorf("tool_choice should be auto, got %v", body["tool_choice"])
+	}
+}
+
 func TestAnthropicStop_MapsEveryReasonTheDialectNames(t *testing.T) {
 	cases := []struct {
 		reason anthropic.StopReason

@@ -167,6 +167,24 @@ type Model struct {
 	// endpoint that has none is a classifier that fails on every call.
 	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
 	Decisions bool `toml:"decisions"`
+	// StructuredOutputs may be written as false, and only as false: it
+	// declares the model takes no response schema, so a bounded call asks
+	// for its answer through the tool it already offers. Left out, the
+	// by-family floor answers. There is no true, because a schema sent to
+	// a model that cannot take one is a refused request while a tool sent
+	// to one that could have taken a schema is free.
+	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+	StructuredOutputs *bool `toml:"structured_outputs"`
+}
+
+// NoSchema reports whether the model is declared to take no response schema.
+func (m Model) NoSchema() bool { return m.StructuredOutputs != nil && !*m.StructuredOutputs }
+
+func (m Model) validateSchema() error {
+	if m.StructuredOutputs != nil && *m.StructuredOutputs {
+		return fmt.Errorf("structured_outputs can only be false: a schema sent to a model that cannot take one is a refused request")
+	}
+	return nil
 }
 
 // Reasoning declares a model's thinking knob: its shape, the rungs above
@@ -587,6 +605,9 @@ func (p *Profile) Validate() error {
 		if err := m.Reasoning.validate(); err != nil {
 			return fmt.Errorf("models[%d]: %w", i, err)
 		}
+		if err := m.validateSchema(); err != nil {
+			return fmt.Errorf("models[%d]: %w", i, err)
+		}
 	}
 	for i := range p.Rewrite {
 		if err := p.Rewrite[i].validate(); err != nil {
@@ -640,6 +661,9 @@ func (e *Endpoint) validate() error {
 			return fmt.Errorf("models[%d]: id is required", i)
 		}
 		if err := m.Reasoning.validate(); err != nil {
+			return fmt.Errorf("models[%d]: %w", i, err)
+		}
+		if err := m.validateSchema(); err != nil {
 			return fmt.Errorf("models[%d]: %w", i, err)
 		}
 	}

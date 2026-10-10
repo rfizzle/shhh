@@ -318,6 +318,18 @@ round — the tools are what every model takes, while a schema sent to a model
 that cannot take one is a refused request, and one of those two mistakes is
 free.
 
+**A profile may declare that a model takes no schema**, with
+`structured_outputs = false` on its `[[models]]` line. It outranks the
+by-family floor, and the bounded call is then sent the tool it already
+offers, with `tool_choice: auto`, and no schema. This is for a gateway whose
+policy refuses structured outputs on models the floor says take them. The
+key only narrows: there is no `true`, and a profile that writes one is
+refused at load, for the reason above — a schema sent to a model that cannot
+take one is a refused request, while a tool sent to a model that could have
+taken a schema is free. A refused schema is not retried as the tools; what a
+model takes is declared, and a retry would hide a real fault behind a second
+request.
+
 The narrowest answer of all is a probability, and one bounded call can ask
 for it: the permission classifier, through a model's Decisions API
 ([`approvals-and-safety.md`](approvals-and-safety.md#the-classifier-can-answer-as-a-probability)).

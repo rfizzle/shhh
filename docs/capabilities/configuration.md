@@ -618,6 +618,10 @@ The second needs a model that offers the Decisions API: OpenAI's own
 `gpt-6-luna`, or a gateway profile's model declared with `decisions = true`
 on its `[[models]]` line. A replaced wording is not sent there.
 
+A gateway that refuses structured outputs on a model can say so on the same line with
+`structured_outputs = false`, and the classifier then asks for its verdict through
+its tool instead ([`providers.md`](providers.md#a-bounded-call-asks-for-the-shape-of-its-answer)).
+
 ## A failure is written down
 
 A refused request is a row on the screen for as long as the screen lasts.

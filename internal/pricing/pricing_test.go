@@ -278,6 +278,24 @@ func TestOverlayKeepsCacheRatesAnEntryLeavesOut(t *testing.T) {
 	}
 }
 
+func TestOverlay_AStructuredOutputsDeclarationSurvivesTheMerge(t *testing.T) {
+	tbl := cachedTable(t)
+	tbl.Overlay(map[string]ModelPricing{"cached-model": {NoStructuredOutputs: true}})
+	tbl.Overlay(map[string]ModelPricing{"cached-model": {InputCostPerToken: 20, OutputCostPerToken: 200}})
+	p, ok := tbl.lookup("cached-model")
+	if !ok || !p.NoStructuredOutputs {
+		t.Fatalf("an entry that says nothing keeps the declaration it lands on, got %+v", p)
+	}
+	if p.CacheReadCostPerToken != 1 {
+		t.Errorf("the rest of the entry must still merge, got %+v", p)
+	}
+	// And the declaration lands on a model the table has never heard of.
+	tbl.Overlay(map[string]ModelPricing{"new-model": {NoStructuredOutputs: true}})
+	if p, ok := tbl.lookup("new-model"); !ok || !p.NoStructuredOutputs {
+		t.Errorf("a declaration alone describes a model, got %+v", p)
+	}
+}
+
 // The shipped snapshot has to actually carry the rates, or the split prices
 // every model at the fallback and nothing is ever cheaper.
 func TestSnapshotCarriesCacheRatesForTheCachingModels(t *testing.T) {
