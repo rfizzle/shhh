@@ -740,6 +740,17 @@ type BehaviorConfig struct {
 	// ProgressIntervalCalls, for one long-running command. Zero or less keeps
 	// the built-in interval.
 	ProgressIntervalSeconds int `toml:"progress_interval_seconds"`
+	// CompactWhenIdle lets a session fold its conversation into a summary a
+	// few minutes before the prompt cache would expire, when the window is
+	// worth folding (docs/capabilities/coding-agent.md#the-session-can-compact-while-you-are-away).
+	// Off by default: the fold is the price of the saving.
+	CompactWhenIdle bool `toml:"compact_when_idle"`
+	// CompactWhenIdleMarginMinutes is how long before the cache's lifetime
+	// ends the fold fires, and CompactWhenIdleFloorPercent the occupancy
+	// below which it never does. Zero or less keeps the built-in value
+	// (IdleCompactMargin, IdleCompactFloor).
+	CompactWhenIdleMarginMinutes int `toml:"compact_when_idle_margin_minutes"`
+	CompactWhenIdleFloorPercent  int `toml:"compact_when_idle_floor_percent"`
 	// ProviderRetries bounds how many times one stall — a rate limit, an
 	// overloaded provider, a connection that died before a token — is asked
 	// again before the failure stands. Unset keeps the built-in bound; zero
@@ -1217,6 +1228,31 @@ func (c Config) TitlesEnabled() bool {
 		return true
 	}
 	return *c.Summary.Title
+}
+
+// The built-in margin and floor of an idle compaction when the keys are unset.
+const (
+	DefaultIdleCompactMarginMinutes = 5
+	DefaultIdleCompactFloorPercent  = 30
+)
+
+// IdleCompactMargin is how long before the cache's lifetime an idle
+// compaction fires.
+func (c Config) IdleCompactMargin() time.Duration {
+	m := c.Behavior.CompactWhenIdleMarginMinutes
+	if m <= 0 {
+		m = DefaultIdleCompactMarginMinutes
+	}
+	return time.Duration(m) * time.Minute
+}
+
+// IdleCompactFloor is the window occupancy, in percent, below which an idle
+// compaction never fires.
+func (c Config) IdleCompactFloor() int {
+	if f := c.Behavior.CompactWhenIdleFloorPercent; f > 0 {
+		return f
+	}
+	return DefaultIdleCompactFloorPercent
 }
 
 // SuggestionsEnabled reports whether an idle session offers a next step in

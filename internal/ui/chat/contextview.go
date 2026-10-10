@@ -160,7 +160,16 @@ func (m Model) contextCache() components.ContextCache {
 		Confirmed: r.Confirmed,
 		Share:     fmt.Sprintf("%d%%", r.LastShare()),
 	}
-	c.Lifetime, c.Expired, c.Idle = cacheLifetimeWords(r, time.Now())
+	c.Lifetime, c.Expired, c.Idle = cacheLifetimeWords(r, clock())
+	// While the switch is on, the idle clock is read against the moment the
+	// session would fold: `12m of 55m`.
+	if at, ok := m.idleFireAt(r); ok && m.wiring.IdleCompact.On && c.Idle != "" {
+		since := r.LastStart
+		if since.IsZero() {
+			since = r.LastAt
+		}
+		c.Idle += " of " + meter.GapLabel(at.Sub(since))
+	}
 	return c
 }
 

@@ -90,3 +90,30 @@ func TestHeadlessLoop_ALiveKeyLandsAtTheNextBoundary(t *testing.T) {
 		t.Errorf("a --max-rounds session runs on %d rounds after the boundary, want its own 12", got)
 	}
 }
+
+// Compacting while idle is a session's: a scripted run and a served session
+// never wait on a person between rounds, so the switch reaches neither the
+// loop they are given nor the keys a served session takes again at each turn.
+func TestHeadless_NoIdleCompaction(t *testing.T) {
+	var cfg config.Config
+	cfg.Behavior.CompactWhenIdle = true
+	cfg.Behavior.CompactWhenIdleMarginMinutes = 3
+	w := headlessLoop(cfg, &sessionEnv{}, chatSession{}, &toolset{}, 0, nil)
+	if w.IdleCompact != (chat.IdleCompact{}) {
+		t.Errorf("an unattended run was wired to compact while idle: %+v", w.IdleCompact)
+	}
+	for _, key := range loopKeys {
+		if strings.Contains(key, "compact_when_idle") {
+			t.Errorf("a served session retakes %s at each turn", key)
+		}
+	}
+	for _, file := range []string{"print.go", "serve.go"} {
+		b, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(b), "IdleCompact") {
+			t.Errorf("%s wires idle compaction", file)
+		}
+	}
+}

@@ -1334,6 +1334,56 @@ the parent can see it: an answer that came out of a summary of the child's own
 work is a different reading from one that still had every result in front of
 it.
 
+## The session can compact while you are away
+
+A long session left for an hour comes back to a cold cache: the next turn
+writes the whole window again at the write price, where a warm one would have
+read it at a tenth. A summary written a few minutes before the cache expires
+turns that write into a smaller one. Say the window holds 100k and the lease is
+an hour on Sonnet 4.6: the next turn costs about $0.60 as it stands, and about
+$0.23 after a fold that reads the warm prefix ($0.03), writes a thousand tokens
+of summary ($0.015) and then writes the 30k that remain ($0.18). The saving is
+about $0.38 and the session carries on in a third of the window. If you never
+come back it cost $0.045 for nothing.
+
+**It is off, and three settings govern it.** `behavior.compact_when_idle` turns
+it on, `behavior.compact_when_idle_margin_minutes` says how long before the
+cache's lifetime it fires (five), and `behavior.compact_when_idle_floor_percent`
+the occupancy at or under which it never does (thirty). It is off because the
+fold is the price: the folded turns leave the model's view, and stay on the
+transcript as folded turns, and a summary is a lossy thing to have chosen for
+somebody who was not there. The `/context` figures and the receipt are how
+somebody decides whether it is worth it.
+
+**It fires only when every part of the rule holds at the moment it fires.**
+When a turn closes the session schedules one wake-up for the margin before the
+cache's lifetime; a later turn's close replaces it. The wake-up is not trusted:
+the rule is read again, and the session folds only if the cache has been seen
+to work on this endpoint and was written for the lease that was asked for; the
+lifetime is known (the lease, or what was measured where the gateway does not
+keep it, [`providers.md`](providers.md#the-session-measures-how-long-the-cache-lives));
+the cache has been idle for that lifetime less the margin and has not yet
+expired; the window is above the floor; and no turn is running, no compaction
+is under way, no screen is taken and nothing was typed inside the margin. A
+person typing is about to send, and the send refreshes the cache for free; a
+keypress in the margin cancels that pause's fold and it is not asked again until
+another turn closes. A cache already expired is left alone: the fold would be
+paid in full for nothing.
+
+The fold is an ordinary compaction asked for by the session. The summary
+request is the one every compaction sends, and the model is told nothing about
+why. It leaves the receipt the other compactions leave, with the reason first
+([`surfaces.md`](../interface/surfaces.md#the-compaction-receipt)), and a
+`pre_compact` hook sees `trigger: idle` and may refuse it
+([`hooks.md`](hooks.md#a-compaction-is-a-seam)). The doctor warns when the
+switch is on and the cache has not been seen to work where the model resolves
+to, because there it will never fire. A margin as long as the lifetime leaves
+no time to wait, so on a five-minute lease the default margin never fires.
+
+A scripted run and a sub-agent have nobody to be away: they never wait between
+rounds for a person, and their window is recovered at the round boundary above.
+This is a session's alone.
+
 ## Steps are a reading of the turn, not a protocol
 
 A forty-tool turn is unreadable as forty rows, so consecutive calls group

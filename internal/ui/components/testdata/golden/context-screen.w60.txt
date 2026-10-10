@@ -187,6 +187,43 @@
 
 [enter] expand or fold · [esc] back to the prompt
 
+· the lifetime row · idle against the moment compacting fires
+/context                     ~312.4k · [?] keys · [esc] back
+────────────────────────────────────────────────────────────
+
+  █▓▒▒▒▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
+  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
+  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
+  ▰▰░▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
+  ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
+  ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
+  ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
+  ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
+  ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
+  ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
+
+  claude-opus-5[1m]
+  anthropic
+  ~312.4k of 1m · 31% full · provider-reported
+  cache reads · 298.1k of 312.4k input · 95%
+  cache · works on agoda · claude-sonnet-5-5
+    lease 1h, confirmed 1h · 95% of the last input
+  lifetime · survived 48m (6), no expiry seen
+    idle 12m of 55m
+
+  OCCUPANCY BY CATEGORY
+  █ system prompt          3.8k   0.4%
+  ▓ project context          61   0.0%
+  ▒ tool definitions      22.3k   2.2%
+  ▰ messages             283.3k  28.3%
+  ░ tool results           2.9k   0.3%
+  ▱ free space           687.6k  68.8%
+
+  ❯ ▸ tool definitions · 24 tools · 22.3k    [enter] expand 
+    ▸ tool results · 9 tools · 2.9k
+
+[enter] expand or fold · [esc] back to the prompt
+
 · the lifetime row · an expiry inside the lease
 /context                     ~312.4k · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
@@ -450,6 +487,43 @@
   ␛[38;5;245m  ␛[m␛[38;5;245mlease ␛[m␛[38;5;252m1h␛[m␛[38;5;245m, confirmed ␛[m␛[38;5;252m1h␛[m␛[38;5;245m · ␛[m␛[38;5;252m95%␛[m␛[38;5;245m of the last input␛[m
   ␛[38;5;245mlifetime · ␛[m␛[38;5;252msurvived 48m (6), no expiry seen␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245midle ␛[m␛[38;5;252m12m␛[m
+
+  ␛[1;94mOCCUPANCY BY CATEGORY␛[m
+  ␛[38;5;246m█ ␛[m␛[38;5;246msystem prompt     ␛[m␛[38;5;246m     3.8k␛[m␛[38;5;245m   0.4%␛[m
+  ␛[94m▓ ␛[m␛[94mproject context   ␛[m␛[94m       61␛[m␛[38;5;245m   0.0%␛[m
+  ␛[38;5;214m▒ ␛[m␛[38;5;214mtool definitions  ␛[m␛[38;5;214m    22.3k␛[m␛[38;5;245m   2.2%␛[m
+  ␛[38;5;252m▰ ␛[m␛[38;5;252mmessages          ␛[m␛[38;5;252m   283.3k␛[m␛[38;5;245m  28.3%␛[m
+  ␛[38;5;248m░ ␛[m␛[38;5;248mtool results      ␛[m␛[38;5;248m     2.9k␛[m␛[38;5;245m   0.3%␛[m
+  ␛[38;5;245m▱ ␛[m␛[38;5;245mfree space        ␛[m␛[38;5;245m   687.6k␛[m␛[38;5;245m  68.8%␛[m
+
+  ␛[94m❯ ␛[m␛[38;5;245m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m▸ ␛[m␛[48;5;61m␛[38;5;252m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mtool definitions · 24 tools · 22.3k    [enter] expand ␛[m␛[m
+    ␛[38;5;245m▸ ␛[m␛[38;5;252mtool results␛[m␛[38;5;245m · 9 tools · 2.9k␛[m
+
+␛[38;5;103m[enter]␛[m␛[38;5;245m expand or fold␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+
+· the lifetime row · idle against the moment compacting fires
+␛[1;97m/context␛[m                     ␛[92m~312.4k␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;246m█␛[m␛[94m▓␛[m␛[38;5;214m▒▒▒␛[m␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m
+  ␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m
+  ␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m
+  ␛[38;5;252m▰▰␛[m␛[38;5;248m░␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
+
+  ␛[1;97mclaude-opus-5[1m]␛[m
+  ␛[38;5;245manthropic␛[m
+  ␛[38;5;252m~312.4k␛[m␛[38;5;245m of 1m · ␛[m␛[92m31%␛[m␛[38;5;245m full␛[m␛[38;5;245m · provider-reported␛[m
+  ␛[38;5;245mcache reads · ␛[m␛[38;5;252m298.1k␛[m␛[38;5;245m of 312.4k input · ␛[m␛[38;5;252m95%␛[m
+  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on agoda␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
+  ␛[38;5;245m  ␛[m␛[38;5;245mlease ␛[m␛[38;5;252m1h␛[m␛[38;5;245m, confirmed ␛[m␛[38;5;252m1h␛[m␛[38;5;245m · ␛[m␛[38;5;252m95%␛[m␛[38;5;245m of the last input␛[m
+  ␛[38;5;245mlifetime · ␛[m␛[38;5;252msurvived 48m (6), no expiry seen␛[m
+  ␛[38;5;245m  ␛[m␛[38;5;245midle ␛[m␛[38;5;252m12m of 55m␛[m
 
   ␛[1;94mOCCUPANCY BY CATEGORY␛[m
   ␛[38;5;246m█ ␛[m␛[38;5;246msystem prompt     ␛[m␛[38;5;246m     3.8k␛[m␛[38;5;245m   0.4%␛[m

@@ -62,13 +62,18 @@ func Events() []string {
 		PreCompact, PostCompact, TurnClose, Stop}
 }
 
-// The two ways a compaction starts, as a compaction hook is told them. Manual
-// is somebody asking for one; auto is the round tail recovering a window the
-// next request would not otherwise fit in — which is why a hook may refuse the
-// first and only remark on the second.
+// The three ways a compaction starts, as a compaction hook is told them.
+// Manual is somebody asking for one; auto is the round tail recovering a
+// window the next request would not otherwise fit in; idle is the session
+// folding its conversation before the prompt cache expires while nobody is
+// there. A hook may refuse the first and the last and only remark on the
+// second: nothing depends on an idle compaction happening, and a refusal
+// leaves the conversation as it was.
+// See docs/capabilities/hooks.md#a-compaction-is-a-seam.
 const (
 	TriggerManual = "manual"
 	TriggerAuto   = "auto"
+	TriggerIdle   = "idle"
 )
 
 // Decisions a hook may answer with. They are the words the record already

@@ -207,6 +207,9 @@ func (m *Model) takeSettings(from, to Wiring) {
 		m.wiring.ProgressCalls, m.wiring.ProgressElapsed = to.ProgressCalls, to.ProgressElapsed
 		ApplySettings(m.agent, m.wiring)
 	}
+	if to.IdleCompact != from.IdleCompact {
+		m.wiring.IdleCompact = to.IdleCompact
+	}
 	if to.Suggestions != from.Suggestions {
 		m.suggest.on = to.Suggestions
 	}

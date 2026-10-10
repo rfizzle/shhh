@@ -1452,3 +1452,31 @@ func TestConfig_ATrailerMustBeAKeyAndAValue(t *testing.T) {
 		}
 	}
 }
+
+func TestSet_IdleCompactConfig(t *testing.T) {
+	var cfg Config
+	if cfg.Behavior.CompactWhenIdle || cfg.IdleCompactMargin() != 5*time.Minute || cfg.IdleCompactFloor() != 30 {
+		t.Errorf("a zero config should leave it off at 5 minutes and 30 percent, got %v/%v/%d",
+			cfg.Behavior.CompactWhenIdle, cfg.IdleCompactMargin(), cfg.IdleCompactFloor())
+	}
+	for key, value := range map[string]string{
+		"behavior.compact_when_idle":                "true",
+		"behavior.compact_when_idle_margin_minutes": "8",
+		"behavior.compact_when_idle_floor_percent":  "45",
+	} {
+		if err := Set(&cfg, key, value); err != nil {
+			t.Fatalf("Set(%s): %v", key, err)
+		}
+		if !Live(key) {
+			t.Errorf("%s should be taken at the next turn", key)
+		}
+	}
+	if !cfg.Behavior.CompactWhenIdle || cfg.IdleCompactMargin() != 8*time.Minute || cfg.IdleCompactFloor() != 45 {
+		t.Errorf("the keys did not land: %v/%v/%d", cfg.Behavior.CompactWhenIdle, cfg.IdleCompactMargin(), cfg.IdleCompactFloor())
+	}
+	for _, key := range []string{"behavior.compact_when_idle_margin_minutes", "behavior.compact_when_idle_floor_percent"} {
+		if err := Set(&cfg, key, "-1"); err == nil {
+			t.Errorf("Set(%q, -1) should be refused", key)
+		}
+	}
+}

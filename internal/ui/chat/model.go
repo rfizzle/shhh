@@ -1412,6 +1412,10 @@ type Model struct {
 	// what follows the summary is the request that round was about to send
 	// rather than the input.
 	compactResume bool
+	// idle is the bookkeeping behind compacting while the person is away
+	// (idlecompact.go): the generation the latest turn close scheduled its
+	// tick in, so a later close supersedes it.
+	idle idleState
 	// screens is every screen a register row holds while it is up — the
 	// context, sources, steps, readings, turns, safety, notes, backlog and
 	// settings screens — keyed by the row's state (overlay.go). Each is built
@@ -1892,6 +1896,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// a size to draw the screen at.
 	if read := mm.startOffersCmd(); read != nil {
 		cmd = tea.Batch(cmd, read)
+	}
+	// And the tick that folds the conversation before the cache expires
+	// (idlecompact.go), scheduled by the same transition and superseded by the
+	// next one.
+	if tick := mm.idleCompactCmd(m); tick != nil {
+		cmd = tea.Batch(cmd, tick)
 	}
 	// And the repository's own checks over what the turn wrote (gate.go).
 	// The turn has reached its close and is waiting on the verdict, which

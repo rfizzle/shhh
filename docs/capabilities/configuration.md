@@ -1228,6 +1228,9 @@ own file could hold.
 | `check_in_max_doublings` | number | 2 doublings | next turn | How far that interval widens over one turn; a negative fixes it, so a long turn is asked at the same rate throughout. |
 | `progress_interval_calls` | number | 12 calls | next turn | How many tool calls without assistant prose earn a public progress checkpoint. |
 | `progress_interval_seconds` | number | 90 seconds | next turn | How long a tool run may stay silent before it earns a public progress checkpoint. |
+| `compact_when_idle` | true/false | `off` | next turn | Fold the conversation into a summary a few minutes before the prompt cache expires, when the window is worth folding, so the next turn writes the small prompt instead of the large one; the summary replaces the folded turns in the model's view. |
+| `compact_when_idle_margin_minutes` | number | 5 minutes | next turn | How long before the cache's lifetime ends an idle compaction fires; typing inside that window cancels it for this pause. |
+| `compact_when_idle_floor_percent` | number | 30 percent | next turn | The window occupancy below which an idle compaction never fires, because folding a small window saves too little to pay for what it loses. |
 | `provider_retries` | number | 3 attempts | next session | How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait. |
 | `flake_alert_count` | number | 3 flakes | next session | How many times a quality check must have flaked in this checkout before the rail's ALERTS block stands it as an alert. |
 | `flake_alert_days` | number | 7 days | next session | How long that alert stands after the check's latest flake; it settles once this many days pass without another. |

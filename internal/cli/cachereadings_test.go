@@ -6,10 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 func cacheTestStore(t *testing.T) *storage.DB {
@@ -106,5 +108,31 @@ func TestProviders_CacheRowCarriesTheMeasuredLifetime(t *testing.T) {
 	quiet := cacheRow(storage.CacheReading{Provider: "agoda", Model: "m", Requests: 9, WithReads: 8})
 	if strings.Contains(quiet.Detail, "survived") || strings.Contains(quiet.Detail, "expired") {
 		t.Errorf("a row nothing was measured on says a lifetime: %q", quiet.Detail)
+	}
+}
+
+// The doctor warns when compacting while idle is on and the cache has not
+// been seen to work where the model resolves to: there it will never fire.
+func TestDoctorModel_WarnsWhenIdleCompactionCannotFire(t *testing.T) {
+	readings := []storage.CacheReading{
+		{Provider: "agoda", Endpoint: "default", Model: "claude-sonnet-5-5", Lease: "1h", Requests: 9, WithReads: 8, LastPct: 95},
+		{Provider: "vllm-local", Endpoint: "vllm-local", Model: "qwen3", Requests: 14},
+	}
+	var on config.Config
+	on.Behavior.CompactWhenIdle = true
+	ok := withIdleCompactWarning(doctorFinding{Outcome: "ok"}, on, readings, "agoda", "claude-sonnet-5-5")
+	if ok.State != components.DoctorPassed || ok.Outcome != "ok" {
+		t.Errorf("a cache that works needs no warning: %+v", ok)
+	}
+	warned := withIdleCompactWarning(doctorFinding{Outcome: "ok"}, on, readings, "vllm-local", "qwen3")
+	if warned.State != components.DoctorWarned ||
+		warned.Consequence != "compact_when_idle is on but the cache has not been seen on vllm-local; it will not fire" {
+		t.Errorf("a cache not seen should warn: %+v", warned)
+	}
+	if none := withIdleCompactWarning(doctorFinding{}, on, nil, "openai", "gpt-5"); none.State != components.DoctorWarned {
+		t.Errorf("no reading at all should warn too: %+v", none)
+	}
+	if off := withIdleCompactWarning(doctorFinding{}, config.Config{}, readings, "vllm-local", "qwen3"); off.State != components.DoctorPassed {
+		t.Errorf("the switch off should say nothing: %+v", off)
 	}
 }

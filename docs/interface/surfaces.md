@@ -704,6 +704,12 @@ either side and what the summary cost — `compacted turns 1–2 into a 7-line
 summary · 74k tokens · context 88% → 28% · $0.02` — and how long it took.
 There is no mutation rail: nothing on the machine was touched.
 
+A compaction the session began itself, while nobody was there and before the
+prompt cache expired, states that first and the turns after it: `compacted
+while idle, before the cache expired · turns 1–7 into a 9-line summary · 74k
+tokens · context 88% → 28% · $0.03 · 6s`
+([`coding-agent.md`](../capabilities/coding-agent.md#the-session-can-compact-while-you-are-away)).
+
 Under the line, while it is open, the summary: the model's own words, so it
 is slanted, at the column a card's sentence starts on, and bounded like every
 other body — the foot counts what the cap swallowed and says where the turns

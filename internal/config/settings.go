@@ -405,6 +405,15 @@ var settings = []Setting{
 		Key: "behavior.progress_interval_seconds", Kind: KindInt, Taken: AtTurn, Signed: true, Default: "90 seconds", Literal: "90",
 		Desc: "How long a tool run may stay silent before it earns a public progress checkpoint.",
 	}, {
+		Key: "behavior.compact_when_idle", Kind: KindBool, Taken: AtTurn, Default: "off",
+		Desc: "Fold the conversation into a summary a few minutes before the prompt cache expires, when the window is worth folding, so the next turn writes the small prompt instead of the large one; the summary replaces the folded turns in the model's view.",
+	}, {
+		Key: "behavior.compact_when_idle_margin_minutes", Kind: KindInt, Taken: AtTurn, Default: "5 minutes", Literal: "5",
+		Desc: "How long before the cache's lifetime ends an idle compaction fires; typing inside that window cancels it for this pause.",
+	}, {
+		Key: "behavior.compact_when_idle_floor_percent", Kind: KindInt, Taken: AtTurn, Default: "30 percent", Literal: "30",
+		Desc: "The window occupancy below which an idle compaction never fires, because folding a small window saves too little to pay for what it loses.",
+	}, {
 		Key: "behavior.provider_retries", Kind: KindInt, Taken: AtStart, Default: "3 attempts", Literal: "3",
 		Desc: "How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait.",
 	}, {

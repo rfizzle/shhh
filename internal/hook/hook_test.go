@@ -171,6 +171,9 @@ func TestRunner_AnAutomaticCompactionIsNeverRefused(t *testing.T) {
 	if v := r.PreCompact(ctx, Pos{}, Compaction{Trigger: TriggerManual, BeforePct: 60}); !v.Denied() || v.Reason != "hold" {
 		t.Errorf("a manual compaction should be refused: %+v", v)
 	}
+	if v := r.PreCompact(ctx, Pos{}, Compaction{Trigger: TriggerIdle, BeforePct: 61}); !v.Denied() || v.Reason != "hold" {
+		t.Errorf("a compaction the session began while nobody was there should be refused: %+v", v)
+	}
 	v := r.PreCompact(ctx, Pos{}, Compaction{Trigger: TriggerAuto, BeforePct: 92})
 	if v.Denied() || v.Decision != "" {
 		t.Fatalf("an automatic compaction was refused: %+v", v)

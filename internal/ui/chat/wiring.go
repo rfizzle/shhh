@@ -167,6 +167,9 @@ type Wiring struct {
 	// Steering is the interruption machinery's tuning; zero is the built-in
 	// set.
 	Steering agent.Steering
+	// IdleCompact is the three settings behind compacting while the person is
+	// away (idlecompact.go); the zero value is off.
+	IdleCompact IdleCompact
 	// ProgressCalls and ProgressElapsed are the two public-status clocks;
 	// zero keeps each one's default.
 	ProgressCalls   int

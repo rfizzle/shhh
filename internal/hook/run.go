@@ -206,13 +206,13 @@ func (r *Runner) SubagentStop(ctx context.Context, at Pos, a Agent, final string
 }
 
 // PreCompact fires in front of a compaction, before the summary is asked
-// for. A refusal stops one somebody asked for. On one the round tail asked
-// for it is a note and the compaction goes ahead: that compaction is what
+// for. A refusal stops one somebody asked for, or one the session began while
+// nobody was there. On one the round tail asked for it is a note and the compaction goes ahead: that compaction is what
 // keeps the next request sendable, and refusing it would leave a turn
 // sending a request the provider will refuse for its size.
 func (r *Runner) PreCompact(ctx context.Context, at Pos, c Compaction) Verdict {
 	v := lifeOnly(r.fire(ctx, PreCompact, "", compactPayload(PreCompact, at, c), false))
-	if v.Denied() && c.Trigger != TriggerManual {
+	if v.Denied() && c.Trigger == TriggerAuto {
 		v.Notes = append(v.Notes, v.Reason+" refused an automatic compaction; it went ahead, because the next request would not fit without it")
 		v.Decision, v.Reason, v.Said = "", "", ""
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -73,7 +74,44 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 	// that strips the marks is a bill paid in full with nothing else to
 	// show for it.
 	// See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
-	return withCacheNote(f, storedCacheReadings(), resolved.Provider, resolved.Model)
+	readings := storedCacheReadings()
+	return withIdleCompactWarning(withCacheNote(f, readings, resolved.Provider, resolved.Model),
+		cfg, readings, resolved.Provider, resolved.Model)
+}
+
+// withIdleCompactWarning warns on the model row when compacting while idle is
+// switched on and the cache has not been seen to work where the model
+// resolves to: the rule only fires on a cache that works, so the switch is
+// doing nothing and the person who turned it on should hear that now rather
+// than never.
+// See docs/capabilities/coding-agent.md#the-session-can-compact-while-you-are-away.
+func withIdleCompactWarning(f doctorFinding, cfg config.Config, readings []storage.CacheReading, providerName, model string) doctorFinding {
+	if !cfg.Behavior.CompactWhenIdle || model == "" || f.State == components.DoctorFailed {
+		return f
+	}
+	state := meter.CacheNoneYet
+	if len(provider.PromptCacheOff(providerName, model)) > 0 {
+		state = meter.CacheOff
+	} else {
+		for _, r := range readings {
+			if r.Provider == providerName && r.Model == model {
+				state = storedCacheState(r)
+				break
+			}
+		}
+	}
+	if state == meter.CacheWorks {
+		return f
+	}
+	said := "has not been seen on " + providerName
+	if state == meter.CacheOff {
+		said = "is declared off on " + providerName
+	}
+	f.State, f.Outcome = components.DoctorWarned, "cache unseen"
+	f.Consequence = "compact_when_idle is on but the cache " + said + "; it will not fire"
+	f.FixLabel = "show the setting to change"
+	f.Fix = []string{"shhh config set behavior.compact_when_idle false"}
+	return f
 }
 
 // withCacheNote is the model row with the cache's reading appended.

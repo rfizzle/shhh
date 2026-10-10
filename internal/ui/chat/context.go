@@ -355,6 +355,13 @@ func (m *Model) dropCompactingNotice() {
 // startCompact asks the provider to summarize the conversation; the response
 // is handled by finishCompact instead of joining the conversation.
 func (m Model) startCompact() (tea.Model, tea.Cmd) {
+	return m.startCompactFor(false)
+}
+
+// startCompactFor is startCompact with who is asking: the session itself,
+// folding before the cache expires while nobody is there (idle), or
+// somebody asking.
+func (m Model) startCompactFor(idle bool) (tea.Model, tea.Cmd) {
 	if len(m.agent.Messages()) <= 1 {
 		m.appendEntry(entry{kind: entrySystem, text: "nothing to compact yet"})
 		m.viewport.SetLines(m.renderHistoryLines())
@@ -366,9 +373,10 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	// of it survives the act: the occupancy it is about to change, and the
 	// spend the summary's own request is about to add to.
 	m.compactRun = &compactStart{
-		at:    time.Now(),
+		at:    clock(),
 		pct:   m.contextPercent(),
 		spent: m.sessionSpend().Cost,
+		idle:  idle,
 	}
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
@@ -392,9 +400,13 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 }
 
 // compactTrigger is who asked for the compaction under way, in the word a
-// compaction hook is told: the round tail recovering its window, or somebody
-// asking — /compact, the pressure card, the failure row's key.
+// compaction hook is told: the session folding before the cache expires, the
+// round tail recovering its window, or somebody asking — /compact, the
+// pressure card, the failure row's key.
 func (m Model) compactTrigger() string {
+	if m.compactRun != nil && m.compactRun.idle {
+		return hook.TriggerIdle
+	}
 	if m.compactResume {
 		return hook.TriggerAuto
 	}
@@ -648,6 +660,9 @@ type compactStart struct {
 	at    time.Time
 	pct   int
 	spent float64
+	// idle is a compaction the session began itself, while nobody was there
+	// and before the cache expired (idlecompact.go); the receipt says so.
+	idle bool
 }
 
 // compactReceipt is the account behind the receipt block: what a compaction
@@ -675,6 +690,9 @@ type compactReceipt struct {
 	// for. Empty on a compaction that folded something, which is nearly all
 	// of them.
 	floor string
+	// idle marks a compaction the session began itself before the prompt
+	// cache expired, which the receipt states first.
+	idle bool
 }
 
 // turns is how many turns the receipt folded away.
@@ -849,7 +867,7 @@ func turnsPhrase(first, last int64) string {
 func (m Model) compactReceiptFor(started *compactStart, turns compactTurns, dropped int64) *compactReceipt {
 	r := &compactReceipt{now: m.contextPercent(), tokens: dropped, first: turns.first, last: turns.last}
 	if started != nil {
-		r.was, r.duration = started.pct, time.Since(started.at)
+		r.was, r.duration, r.idle = started.pct, clock().Sub(started.at), started.idle
 		if spent := m.sessionSpend().Cost - started.spent; spent > 0 {
 			r.cost = formatCost(spent)
 		}
@@ -957,6 +975,12 @@ func (m Model) compactSummaryLines(text string, width int) []string {
 // reader prices opening it by, so it is stated in lines.
 func compactNotice(r compactReceipt, summaryLines int, word string) string {
 	said := "compacted " + turnsPhrase(r.first, r.last)
+	if r.idle {
+		said = "compacted while idle, before the cache expired"
+		if r.first != 0 {
+			said += " · " + turnsPhrase(r.first, r.last)
+		}
+	}
 	if summaryLines > 0 {
 		said += " into " + summaryLength(summaryLines)
 	}

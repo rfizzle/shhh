@@ -829,7 +829,10 @@ row says no expiry was seen. On a model that takes a lease the lease is the
 lifetime and the measurement is a check on it: an expiry shorter than the
 lease is the gateway not keeping its word, and is drawn in the warn tone.
 `/context` carries it under the cache row with the idle clock, and `shhh
-providers` on the cache row.
+providers` on the cache row. While compacting when idle is switched on the
+idle clock reads against the moment the session would fold, `idle 12m of
+55m`
+([`coding-agent.md`](coding-agent.md#the-session-can-compact-while-you-are-away)).
 
 An expiry leaves one receipt: how long the person was away, what was written
 again at what multiple of the input price, and what an idle compaction would

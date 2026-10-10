@@ -2770,6 +2770,10 @@ func TestGolden_ContextScreen(t *testing.T) {
 				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
 					Lifetime: "survived 48m (6), no expiry seen", Idle: "12m"}
 			})},
+			{Label: "the lifetime row · idle against the moment compacting fires", View: screen(func(c *ContextScreen) {
+				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
+					Lifetime: "survived 48m (6), no expiry seen", Idle: "12m of 55m"}
+			})},
 			{Label: "the lifetime row · an expiry inside the lease", View: screen(func(c *ContextScreen) {
 				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
 					Lifetime: "survived 8m (3)", Expired: "expired by 12m, lease 1h", Idle: "2m"}

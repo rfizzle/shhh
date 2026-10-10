@@ -65,6 +65,15 @@ var liveTakers = map[string]liveTaker{
 	"behavior.progress_interval_seconds": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
 		w.ProgressElapsed = time.Duration(c.Behavior.ProgressIntervalSeconds) * time.Second
 	},
+	"behavior.compact_when_idle": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
+		w.IdleCompact.On = c.Behavior.CompactWhenIdle
+	},
+	"behavior.compact_when_idle_margin_minutes": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
+		w.IdleCompact.Margin = c.IdleCompactMargin()
+	},
+	"behavior.compact_when_idle_floor_percent": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
+		w.IdleCompact.Floor = c.IdleCompactFloor()
+	},
 	"behavior.suggestions": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
 		w.Suggestions = c.SuggestionsEnabled()
 	},

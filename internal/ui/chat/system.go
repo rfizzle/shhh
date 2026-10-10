@@ -161,6 +161,13 @@ func (m Model) updateSystem(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		return m, nil, true
 
+	case idleCompactMsg:
+		// The tick a turn's close scheduled, firing into the rule as it
+		// stands now (idlecompact.go). A tick from an earlier close matches
+		// nothing.
+		next, cmd := m.fireIdleCompact(msg)
+		return next, cmd, true
+
 	case progressClearedMsg:
 		// The tab's red has been up long enough (terminal.go). A stale tick —
 		// another turn has started or broken since — matches nothing and

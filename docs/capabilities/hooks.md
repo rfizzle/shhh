@@ -79,7 +79,8 @@ The child and compaction seams add the stream's own spellings of what they
 are about. A child is `agent`, an object with the child's `name`, `role` and
 `parent` — the three fields the stream's agent line carries under the same
 names, so there is one way to spell a child. A compaction is `trigger`
-(`manual` where somebody asked for it, `auto` where the round tail did),
+(`manual` where somebody asked for it, `auto` where the round tail did,
+`idle` where the session folded itself before the cache expired),
 `before_pct` and, behind it, `after_pct`: the shares of the window the
 stream's compaction line states.
 
@@ -198,6 +199,10 @@ recover its window is not: that compaction is what keeps the next request
 sendable, and refusing it would leave the turn sending a request the provider
 refuses for its size. There the refusal is said, and the compaction goes ahead
 ([`coding-agent.md`](coding-agent.md#the-window-recovers-where-nobody-is-watching)).
+A compaction the session began while nobody was there, to beat the prompt
+cache's expiry, is refused like one you asked for: nothing depends on it
+happening, and the conversation stays as it was
+([`coding-agent.md`](coding-agent.md#the-session-can-compact-while-you-are-away)).
 
 In a session both seams run off the screen, the way the seam in front of a
 gated call does: a compaction already waits on one request, and a hook is not
