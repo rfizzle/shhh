@@ -265,13 +265,13 @@ var editFile = Definition{
 	Tool: provider.Tool{
 		Name: EditFileName,
 		Description: "Change an existing file: replace exact text snippets in it, or add text to its end. Give one replacement as old_text/new_text, several as edits — one entry per place — or the text to add as append, and never two of these in the same call. " +
-			"Batch when one file needs changing in several places: that is one round, one diff and one decision instead of one of each per pair. A second file is a second call. " +
+			"Batch changes to one file into one call; a second file is a second call. " +
 			"Every old_text must match the file content exactly (including whitespace) and match exactly once, unless replace_all is set. " +
-			"Strip read_file's `<line number>\t` prefix before quoting a line here — the numbers are a reading aid and are not in the file. " +
-			"Every quote is matched against the file as it stands, not against the result of the edit before it, so the order does not matter and two edits that would touch the same text are refused. Nothing is written unless all of them apply. " +
-			"A file that has changed since you last read it is refused: read it again and rebase the edits on what it says now. " +
-			"append is for adding to the end of a file without reading it first — a new entry in a log, a changelog, a backlog or a list: it quotes nothing, so no read is needed and a file that moved is not refused; a newline goes before the text when the file does not end with one. Use it rather than a shell redirect. " +
-			"Whether the change is applied straight away or is shown to the user as a diff for approval first is the session's permission mode's to decide; a declined call returns an error result.",
+			"Strip read_file's `<line number>\t` prefix before quoting a line here; the numbers are not in the file. " +
+			"Every quote is matched against the file as it stands, not against the edit before it, so the order does not matter and two edits that would touch the same text are refused. Nothing is written unless all of them apply. " +
+			"A file that has changed since you last read it is refused: read it again and rebase the edits. " +
+			"append is for adding to the end of a file without reading it first — a new entry in a log, a changelog, a backlog or a list: it quotes nothing, so a file that moved is not refused; a newline goes before the text when the file does not end with one. Use it rather than a shell redirect. " +
+			"Whether the change is applied straight away or shown for approval is the session's permission mode's to decide; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -279,7 +279,7 @@ var editFile = Definition{
 				"old_text": {"type": "string", "description": "Exact existing text to replace, for a call that changes one place"},
 				"new_text": {"type": "string", "description": "Replacement text, for a call that changes one place"},
 				"replace_all": {"type": "boolean", "description": "Replace every occurrence instead of requiring a unique match"},
-				"append": {"type": "string", "description": "Text to add at the end of the existing file, for a call that only adds — a log line, a changelog entry, an item on a list. Pass it instead of reading the file to quote its last line: it needs no read_file first. Give it without old_text/new_text or edits"},
+				"append": {"type": "string", "description": "Text to add at the end of the existing file, for a call that only adds — a log line, a changelog entry, an item on a list. It needs no read_file first. Give it without old_text/new_text or edits"},
 				"edits": {
 					"type": "array",
 					"description": "Several places in this one file, applied together against the file as it stands",

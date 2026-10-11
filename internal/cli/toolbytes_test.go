@@ -14,7 +14,7 @@ import (
 // carries its reasoning into the prompt. The reasoning belongs in the
 // capability document the description cites. See
 // docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has.
-const maxToolBytes = 6100
+const maxToolBytes = 4900
 
 // toolBytes is each distinct tool of the full coding toolset plus every
 // optional registration, serialised the way a provider sends it.

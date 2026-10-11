@@ -82,22 +82,22 @@ var gitTool = provider.Tool{
 	Name: GitToolName,
 	Description: "Read this repository's history: status, log, show, diff, blame. It is read-only, so it answers without an approval. " +
 		"Read a broad comparison in stages: diff or show with stat: true first for the per-file summary, then the patch narrowed with paths to the files that matter. " +
-		"stat counts how much moved in each file; names: true says what moved — each path with its status letter (A added, D deleted, M modified, R renamed, a rename being one row) — so reach for names when the question is which files were added, deleted or renamed. " +
-		"A range such as upstream/main...HEAD is one ref. log returns 20 commits unless limit asks for more or fewer — set limit rather than cutting the output short. " +
+		"stat counts how much moved in each file; names: true says what moved, each path with its status letter (A, D, M, R), for which files were added, deleted or renamed. " +
+		"A range such as upstream/main...HEAD is one ref. log returns 20 commits unless limit says otherwise; set limit rather than cutting the output short. " +
 		"Questions that do not depend on each other, such as the log and the diff of one range, are separate calls in the same round. " +
 		"log takes search for git's pickaxe: the commits that added or removed a given string. blame says who last touched each line and when. " +
-		"Only these five verbs and the arguments below exist — git's other flags have no field here — and anything that changes the repository (commit, checkout, reset, push, clean) is not reachable.",
+		"Only these five verbs exist, and nothing that changes the repository (commit, checkout, reset, push, clean) is reachable.",
 	Parameters: json.RawMessage(`{
 		"type": "object",
 		"properties": {
 			"verb": {"type": "string", "enum": ["status", "log", "show", "diff", "blame"], "description": "Which history question to ask of the repository"},
-			"ref": {"type": "string", "description": "A branch, tag or commit, or for log and diff a range such as upstream/main...HEAD: log starts there or walks the range, show displays it, diff compares against it, blame reads the file as of it"},
+			"ref": {"type": "string", "description": "A branch, tag or commit, or for log and diff a range such as upstream/main...HEAD: log starts there, show displays it, diff compares against it, blame reads the file as of it"},
 			"to_ref": {"type": "string", "description": "diff only: the second side of the comparison"},
 			"paths": {"type": "array", "items": {"type": "string"}, "description": "Limit to these paths, relative to the workspace root; blame needs exactly one. After a stat, name the files whose patch you need"},
-			"limit": {"type": "integer", "description": "log only: how many commits (default 20, max 100); set it instead of cutting the output short"},
+			"limit": {"type": "integer", "description": "log only: how many commits (default 20, max 100)"},
 			"search": {"type": "string", "description": "log only: only commits that changed the number of occurrences of this string"},
-			"stat": {"type": "boolean", "description": "show/diff only: per-file counts of changed lines instead of the patch; ask for it first on a broad comparison, then for the patch narrowed by paths"},
-			"names": {"type": "boolean", "description": "show/diff only: each changed path with its status letter (A, D, M, R for a rename) instead of the patch; for what moved rather than how much, and not together with stat"},
+			"stat": {"type": "boolean", "description": "show/diff only: per-file counts of changed lines instead of the patch; ask for it first on a broad comparison"},
+			"names": {"type": "boolean", "description": "show/diff only: each changed path with its status letter (A, D, M, R for a rename) instead of the patch; not together with stat"},
 			"staged": {"type": "boolean", "description": "diff only: compare the index rather than the working tree; not together with to_ref"},
 			"start_line": {"type": "integer", "description": "blame only: first line to attribute"},
 			"end_line": {"type": "integer", "description": "blame only: last line to attribute"}

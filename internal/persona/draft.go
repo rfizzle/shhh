@@ -161,7 +161,7 @@ const draftSchemaTemplate = `{
 				"tools": {"type": "array", "items": {"type": "string", "enum": %s}, "description": "Optional: narrow the toolset to these names, within the tiers you granted. Omit unless narrowing is the point of the role"},
 				"sections": {
 					"type": "object",
-					"description": "The standing instructions, second person, 80-300 words across the five sections. Answer every section by name; where the brief gives you nothing to put in one and you cannot reasonably assume it, answer it with an empty string rather than leaving it out or folding it into another, so the person sees it is empty",
+					"description": "The standing instructions, second person, 80-300 words across the five sections. Answer every section by name; where the brief gives you nothing for one and you cannot reasonably assume it, answer it with an empty string rather than leaving it out or folding it into another",
 					"properties": {
 						"purpose": {"type": "string", "description": "Purpose: the job, and what done looks like"},
 						"scope": {"type": "string", "description": "Scope: the paths and areas it works in, and what it must leave alone"},
@@ -171,7 +171,7 @@ const draftSchemaTemplate = `{
 					},
 					"required": ["purpose", "scope", "restrictions", "method", "report"]
 				},
-				"intent": {"type": "string", "description": "Optional, for a role that runs commands: one sentence on what its commands are for. It can only make approvals stricter; omit it for a role that runs none"},
+				"intent": {"type": "string", "description": "Optional, for a role that runs commands: one sentence on what its commands are for; omit it for a role that runs none"},
 				"deny": {"type": "array", "items": {"type": "string"}, "description": "Optional: command prefixes this role must never run, such as \"git push\". They are refused outright; omit when the brief names none"},
 				"max_tokens": {"type": "integer", "description": "Token budget for one task; omit for the default"},
 				"why": {"type": "string", "description": "One sentence on the choices that were not obvious"}

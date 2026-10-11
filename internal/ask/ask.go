@@ -360,14 +360,13 @@ func ToolDefinition() provider.Tool {
 		Description: "Put a question to the person and wait for their answer. " +
 			"Only for a fork you cannot decide and where the answers would lead to materially different work: " +
 			"which of several approaches, whether a change should reach further, what a thing should be called. " +
-			"Where the answers would lead to the same work, and for anything the request, the tree or the project's own documents already answer, do not ask: state the assumption you would have asked about and carry on. Asking instead of reading spends the person's attention. " +
+			"Where the answers would lead to the same work, and for anything the request, the tree or the project's own documents already answer, do not ask: state the assumption you would have asked about and carry on. " +
 			"A turn has room for only a few questions, and one past that count is answered skipped without reaching anybody. " +
-			"Offer the answers you can see; the person can always answer with something you did not offer, or leave a note beside their pick. " +
+			"Offer the answers you can see; the person can answer with something you did not offer, or leave a note beside their pick. " +
 			"You are told how they answered: a pick on the card, typed text, skipped, or nobody to ask. " +
-			"An answer of skipped means nobody chose — state the assumption you would have asked about and carry on. " +
-			"Where you need several answers before you can start, ask for them in one call through `questions` (at most four): " +
-			"they are put on one card as tabs, so the person sees the third before answering the first, " +
-			"and the answers come back in the order you sent them, each naming its own question.",
+			"Skipped means nobody chose: state the assumption and carry on. " +
+			"Where you need several answers before you can start, ask for them in one call through `questions` (at most four), " +
+			"put on one card as tabs; the answers come back in the order you sent them, each naming its own question.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {

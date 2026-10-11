@@ -39,15 +39,15 @@ func (p *Publisher) ToolDefinition() provider.Tool {
 	return provider.Tool{
 		Name: ToolName,
 		Description: "Publish an answer that is a page rather than a paragraph — timings, comparisons, " +
-			"structures, anything a terminal cannot hold — as a graphical page served locally for the user's browser. " +
-			"Stay in plain text when a sentence or a short table answers: a page for three rows teaches the user to ignore the link. " +
-			"Build from typed blocks: stats (a band of large numbers), table, bar_chart / line_chart (series are colored in fixed order), " +
+			"structures, anything a terminal cannot hold — as a page served locally for the user's browser. " +
+			"Stay in plain text when a sentence or a short table answers. " +
+			"Build from typed blocks: stats (a band of large numbers), table, bar_chart / line_chart, " +
 			"diff (unified diff text), tree (depth-indented rows), prose, " +
-			"sources (the pages a claim rests on: each an address and the page's title, with read=false for one cited but never fetched). " +
-			"When the answer is a drawing no block holds — a graph, a timeline, a state machine — add a freehand block of static HTML and inline SVG: " +
-			"no scripts, no event handlers, no external references, and every color written as var(--token) from the report stylesheet " +
+			"sources (the pages a claim rests on: each an address and title, read=false for one cited but never fetched). " +
+			"For a drawing no block holds — a graph, a timeline, a state machine — add a freehand block of static HTML and inline SVG: " +
+			"no scripts, event handlers or external references, and every color written as var(--token) " +
 			"(--heading --prose --secondary --caption for text; --ok --fail --risk --running for state; --add --del --hunk for change; " +
-			"--series-1 … --series-8 for categorical data, in order, meaning nothing; --card --rule --track for surfaces). " +
+			"--series-1 … --series-8 for categorical data, in order; --card --rule --track for surfaces). " +
 			p.resultSentence(),
 		Parameters: json.RawMessage(`{
 			"type": "object",

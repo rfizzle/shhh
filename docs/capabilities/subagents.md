@@ -1272,6 +1272,12 @@ off, and the card names the tools it dropped. In a coding session, a profile is 
 job: what it changes, how it verifies, what its patch may contain. A single
 drafter hedging between the two would draft a profile that hedges too.
 
+Every section of a drafted profile is answered by name. Where the brief gives
+the drafter nothing for a section and it cannot reasonably assume it, the
+section comes back as an empty string rather than missing or folded into
+another, so the card shows the person that it is empty instead of a gap
+somebody filled on their behalf.
+
 How a coding role verifies decides what it is granted, so the drafter is told
 the rule above: running the project's own suite is `quality_gate`, which the
 `read` tier already grants, and `execute` is for a role that must run

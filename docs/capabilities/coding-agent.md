@@ -626,6 +626,14 @@ answers it can see, and the reader is shown a card. The answer comes back as
 the result of the call, the turn carries on, and the transcript records the
 decision as one row.
 
+**Several answers needed before the work can start are one call.** A model
+that needs three answers and asks them one at a time makes the reader wait
+three turns for a decision that was one. So a call may carry up to four
+questions, drawn as tabs on one card, and the reader sees the third before
+answering the first, which is what lets an answer to one change the answer to
+another. The answers come back in the order they were asked, each naming its
+own question, so the model never has to match them up.
+
 **A question is a decision, so it is a card; it changed nothing, so it
 carries no rail.** That is the weight the interface gives it
 ([`../interface/principles.md`](../interface/principles.md#weight-tracks-risk)),
