@@ -6,5 +6,7 @@
 # Binary
 /shhh
 /bin
+/dist
+/THIRD_PARTY_LICENSES
 /docs/design/
 /docker/sandbox/bin

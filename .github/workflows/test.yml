@@ -8,9 +8,16 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request supersedes the run in flight; a master run is
+# never cancelled, because the release job waits on it.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 

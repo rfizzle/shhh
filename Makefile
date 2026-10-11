@@ -60,7 +60,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check tui-shot tui-check tui-longpath design help
+.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check third-party-licenses tui-shot tui-check tui-longpath design help
 
 all: help
 
@@ -321,6 +321,13 @@ host-lists: ## Regenerate the built-in host-list snapshots from the public lists
 host-lists-check: ## Fail if a shipped host-list snapshot is older than its bound
 	@echo "${MAGENTA}Checking the age of internal/web/hosts/...${RESET}"
 	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=hostlists -count=1 -run TestShippedHostSnapshotsAreFresh ./internal/web
+
+# The license text of every module the binary links, for the release archive.
+# Generated at release by goreleaser's before hook and gitignored: the file is
+# never committed, so it cannot fall behind go.mod.
+third-party-licenses: ## Write THIRD_PARTY_LICENSES from go-licenses (needs the network)
+	@echo "${MAGENTA}Writing THIRD_PARTY_LICENSES...${RESET}"
+	@sh scripts/third-party-licenses.sh THIRD_PARTY_LICENSES
 
 ## TUI:
 # The golden tests render a surface in-process. These drive the built binary

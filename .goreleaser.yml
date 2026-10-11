@@ -1,10 +1,18 @@
 version: 2
 
+before:
+  hooks:
+    - make third-party-licenses
+
 builds:
   - main: ./cmd/shhh
     binary: shhh
     env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    # The commit's own time, so the same tag builds the same bytes.
+    mod_timestamp: "{{ .CommitTimestamp }}"
     ldflags:
       - -s -w -X github.com/rfizzle/shhh/internal/cli.version={{.Version}} -X github.com/rfizzle/shhh/internal/cli.sandboxImage={{ envOrDefault "SHHH_SANDBOX_IMAGE" "" }}
     goos:
@@ -23,6 +31,8 @@ archives:
       - goos: windows
         format: zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - THIRD_PARTY_LICENSES
 
 brews:
   - repository:

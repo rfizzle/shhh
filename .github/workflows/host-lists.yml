@@ -1,0 +1,50 @@
+name: Host lists
+
+# The shipped snapshots age out at 60 days (internal/web/snapshot_age_test.go)
+# and `make ci` and the release go red when they do. This refreshes them
+# monthly and opens a pull request, so the lists are reviewed and not silent.
+# It uses the gh CLI the runner carries rather than a third-party action. The
+# repository setting "Allow GitHub Actions to create and approve pull
+# requests" must be on. A PR opened with GITHUB_TOKEN does not start CI; close
+# and reopen it, or push to it, to run the checks.
+on:
+  schedule:
+    - cron: "17 5 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: host-lists
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerate the snapshots
+        run: make host-lists
+
+      - name: Open a pull request when they changed
+        run: |
+          if git diff --quiet -- internal/web/hosts; then
+            echo "host lists unchanged"
+            exit 0
+          fi
+          branch="chore/host-lists-$(date -u +%Y-%m)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add internal/web/hosts
+          git commit -m "chore(web): refresh the shipped host-list snapshots"
+          git push --force origin "$branch"
+          gh pr create --base "${GITHUB_REF_NAME}" --head "$branch" \
+            --title "chore(web): refresh the shipped host-list snapshots" \
+            --body "Monthly run of \`make host-lists\`."
