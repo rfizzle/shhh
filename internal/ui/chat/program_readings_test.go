@@ -6,8 +6,9 @@ package chat
 import (
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 )
 
 // `/readings` reaches the screen through the whole program, newest first, and
@@ -15,8 +16,8 @@ import (
 // reading whole in the preview, the instruction it was read against included.
 func TestProgram_ReadingsOpensEveryReadingTheSessionTook(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading."})
-	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop and its counter.", State: agent.SummaryOnTarget, Round: 3})
-	landReading(&m, agent.SummaryVerdict{Text: "Rewriting the README.", State: agent.SummaryOffTarget,
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Reading the loop and its counter.", State: sidejobs.SummaryOnTarget, Round: 3})
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Rewriting the README.", State: sidejobs.SummaryOffTarget,
 		Reason: "docs were not asked for", Round: 9})
 	tm := runProgramAt(t, m, 130, 40)
 

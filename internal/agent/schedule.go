@@ -20,7 +20,11 @@ package agent
 // is a reason.
 // See docs/capabilities/coding-agent.md#two-failures-two-interruptions.
 
-import "time"
+import (
+	"time"
+
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+)
 
 // SummarySchedule is when the next reading of one turn is due. The zero value
 // is a turn that has never been read and has not been interrupted, which is
@@ -58,7 +62,7 @@ func (s SummarySchedule) roundsDue(rounds, interval int) bool {
 	if s.lastRound == 0 {
 		// The first reading comes early, so a long turn has a verdict to act
 		// on well before a whole interval has gone by.
-		return rounds >= FirstSummaryRound
+		return rounds >= sidejobs.FirstSummaryRound
 	}
 	if rounds-s.lastRound >= interval {
 		return true
@@ -74,7 +78,7 @@ func (s SummarySchedule) roundsDue(rounds, interval int) bool {
 	// at the boundary of the very round the reading that earned it was taken
 	// at, and a reading already in flight when it was delivered knows nothing
 	// about it either way.
-	return s.intervenedRound >= s.lastRound && rounds-s.intervenedRound >= FirstSummaryRound
+	return s.intervenedRound >= s.lastRound && rounds-s.intervenedRound >= sidejobs.FirstSummaryRound
 }
 
 // Read records a reading taken at this round: both bounds move.
@@ -126,5 +130,5 @@ func (s SummarySchedule) Moved(rounds int) bool {
 // is what sits on the rail while nothing else moves, and the unattended run,
 // where it is the last thing the record says about the turn.
 func (s SummarySchedule) CloseDue(rounds int) bool {
-	return rounds >= SummaryCloseMinRounds && s.Moved(rounds)
+	return rounds >= sidejobs.SummaryCloseMinRounds && s.Moved(rounds)
 }

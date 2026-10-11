@@ -1,4 +1,4 @@
-package agent
+package sidejobs
 
 // The explanation of a command, for a reader deciding whether to run it
 // (docs/interface/surfaces.md#the-approval-card). A cheap model reads the
@@ -95,7 +95,7 @@ func (e *Explainer) Model() string {
 	if e == nil {
 		return ""
 	}
-	return modelAt(e.cfg.ModelAt, e.cfg.Model)
+	return ModelAt(e.cfg.ModelAt, e.cfg.Model)
 }
 
 // ExplainRequest is the command a paragraph is asked about.
@@ -134,7 +134,7 @@ func (e *Explainer) Explain(ctx context.Context, req ExplainRequest) ExplainVerd
 		v.Err = "there is no command to explain"
 		return finish(v)
 	}
-	command = truncateTail(command, maxExplainCommand)
+	command = TruncateTail(command, maxExplainCommand)
 
 	attemptCtx, cancel := context.WithTimeout(ctx, e.cfg.timeout())
 	defer cancel()

@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -291,7 +293,7 @@ func (h headlessObserver) usage(u provider.Usage) {
 // session hands the run an observer fixed to the turn it was built for
 // (inTurn), since by the time a closing reading lands the loop may be
 // counting the next.
-func (h headlessObserver) summary(v agent.SummaryVerdict) {
+func (h headlessObserver) summary(v sidejobs.SummaryVerdict) {
 	h.signalAt(h.at(v.Round), observe.SignalSummary, observe.SummaryCode(v.State))
 }
 

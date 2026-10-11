@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -163,9 +164,9 @@ func railPlanModel(t *testing.T) Model {
 func railSummaryModel(t *testing.T) Model {
 	t.Helper()
 	m := railDoorModel(t)
-	m.summary.writer = agent.NewSummarizer(&readingProvider{text: "Reading."},
-		agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1})
-	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
+	m.summary.writer = sidejobs.NewSummarizer(&readingProvider{text: "Reading."},
+		sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1})
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Reading the loop.", State: sidejobs.SummaryOnTarget, Round: 3})
 	return m
 }
 

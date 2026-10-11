@@ -6,7 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -45,8 +46,8 @@ func TestHeadlessSave_CarriesTheRevisedAccount(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "the timer is fixed"},
 	}
 	var asked []string
-	writer := agent.NewAccountant(accountAnswer{answer: "Fixed the retry flake. Left off with the tests green.", asked: &asked},
-		agent.AccountConfig{Model: "small"})
+	writer := sidejobs.NewAccountant(accountAnswer{answer: "Fixed the retry flake. Left off with the tests green.", asked: &asked},
+		sidejobs.AccountConfig{Model: "small"})
 
 	c := &headlessChat{db: db, slot: "run", kind: "code", summary: "Reading the retry code."}
 	if _, err := db.ClaimChatSlot("run"); err != nil {
@@ -66,7 +67,7 @@ func TestHeadlessSave_CarriesTheRevisedAccount(t *testing.T) {
 	}
 
 	// A disabled writer asks nothing and leaves the account as it was.
-	off := agent.NewAccountant(accountAnswer{answer: "x", asked: &asked}, agent.AccountConfig{Model: "small", Disabled: true})
+	off := sidejobs.NewAccountant(accountAnswer{answer: "x", asked: &asked}, sidejobs.AccountConfig{Model: "small", Disabled: true})
 	c.reviseAccount(off, msgs)
 	if len(asked) != 1 || c.summary != "Fixed the retry flake. Left off with the tests green." {
 		t.Fatalf("a disabled writer changed the account: %q, asked %d", c.summary, len(asked))
@@ -100,8 +101,8 @@ func TestServedAccount_RevisesOnTheIntervalAndOnceMoreAtTheEnd(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "the timer is fixed"},
 	}
 	var asked []string
-	writer := agent.NewAccountant(accountAnswer{answer: "Fixed the retry flake.", asked: &asked},
-		agent.AccountConfig{Model: "small"})
+	writer := sidejobs.NewAccountant(accountAnswer{answer: "Fixed the retry flake.", asked: &asked},
+		sidejobs.AccountConfig{Model: "small"})
 	c := &headlessChat{db: db, slot: "served", kind: "code"}
 	if _, err := db.ClaimChatSlot("served"); err != nil {
 		t.Fatal(err)

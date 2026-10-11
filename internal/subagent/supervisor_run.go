@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -522,7 +524,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 			}
 			s.emitUpdate(c)
 		},
-		OnSummary: func(v agent.SummaryVerdict) {
+		OnSummary: func(v sidejobs.SummaryVerdict) {
 			// The reading's own round, not the child's live one. This is the
 			// one hook that can be called from the reading's goroutine while
 			// the child goes on running — a closing reading is handed over

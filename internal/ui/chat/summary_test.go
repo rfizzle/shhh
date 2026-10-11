@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -40,7 +42,7 @@ func (p *readingProvider) StreamCompletion(ctx context.Context, msgs []provider.
 	ch <- provider.StreamEvent{
 		ToolCalls: []provider.ToolCall{{
 			ID:        "s1",
-			Name:      agent.SummaryToolName,
+			Name:      sidejobs.SummaryToolName,
 			Arguments: `{"summary":"` + p.text + `","state":"` + state + `","reason":"` + p.reason + `"}`,
 		}},
 		Usage: &provider.Usage{PromptTokens: 800, CompletionTokens: 30},
@@ -62,7 +64,7 @@ func summaryModel(t *testing.T, p provider.Provider) Model {
 	ledger := meter.New(nil)
 	m := gatedModel(t, nil, nil)
 	m.wiring.Ledger = ledger
-	m.summary.writer = agent.NewSummarizer(ledger.For(p, meter.SourceSummary), agent.SummaryConfig{
+	m.summary.writer = sidejobs.NewSummarizer(ledger.For(p, meter.SourceSummary), sidejobs.SummaryConfig{
 		Model: "fast", IntervalRounds: 10, MinGap: -1,
 	})
 	m.summaryTarget = "make the round limit a checkpoint"
@@ -98,7 +100,7 @@ func applyReading(t *testing.T, m Model) Model {
 // empty rail.
 func TestSummaryDue_FirstReadingComesEarly(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
-	for round := 0; round < agent.FirstSummaryRound; round++ {
+	for round := 0; round < sidejobs.FirstSummaryRound; round++ {
 		if m.summaryDue() {
 			t.Fatalf("no reading is due at round %d, before the first", m.agent.Rounds())
 		}
@@ -112,12 +114,12 @@ func TestSummaryDue_FirstReadingComesEarly(t *testing.T) {
 // After the first, readings come on the interval and not before it.
 func TestSummaryDue_ThenOnTheInterval(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
-	for i := 0; i < agent.FirstSummaryRound; i++ {
+	for i := 0; i < sidejobs.FirstSummaryRound; i++ {
 		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
 	}
 	m = applyReading(t, m)
 	first := m.summary.schedule.LastRound()
-	if first != agent.FirstSummaryRound {
+	if first != sidejobs.FirstSummaryRound {
 		t.Fatalf("the reading is stamped with the round it read: got %d", first)
 	}
 	for i := 1; i < m.summaryInterval(); i++ {
@@ -138,10 +140,10 @@ func TestSummaryDue_ThenOnTheInterval(t *testing.T) {
 // seconds.
 func TestSummaryDue_WallClockFloorHoldsTheInterval(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
-	m.summary.writer = agent.NewSummarizer(&readingProvider{text: "x"}, agent.SummaryConfig{
+	m.summary.writer = sidejobs.NewSummarizer(&readingProvider{text: "x"}, sidejobs.SummaryConfig{
 		Model: "fast", IntervalRounds: 1, MinGap: time.Hour,
 	})
-	m.summary.last = &agent.SummaryVerdict{Text: "standing"}
+	m.summary.last = &sidejobs.SummaryVerdict{Text: "standing"}
 	m.summary.schedule.Read(1)
 	for i := 0; i < 5; i++ {
 		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
@@ -179,8 +181,8 @@ func TestSummary_FailedReadingKeepsWhatStood(t *testing.T) {
 		t.Fatal("expected a standing reading")
 	}
 
-	m.summary.writer = agent.NewSummarizer(&readingProvider{err: errors.New("overloaded")},
-		agent.SummaryConfig{Model: "fast", MinGap: -1})
+	m.summary.writer = sidejobs.NewSummarizer(&readingProvider{err: errors.New("overloaded")},
+		sidejobs.SummaryConfig{Model: "fast", MinGap: -1})
 	m = applyReading(t, m)
 	if m.summary.last == nil || m.summary.last.Text != stood {
 		t.Fatalf("a failed reading keeps the last one, got %+v", m.summary.last)
@@ -388,8 +390,8 @@ func TestSummary_StaleOnlyOnceTheSessionHasOutrunIt(t *testing.T) {
 func TestSummary_DisabledIsSilent(t *testing.T) {
 	p := &readingProvider{text: "Reading the loop."}
 	m := gatedModel(t, nil, nil)
-	m.summary.writer = agent.NewSummarizer(p,
-		agent.SummaryConfig{Model: "fast", Disabled: true})
+	m.summary.writer = sidejobs.NewSummarizer(p,
+		sidejobs.SummaryConfig{Model: "fast", Disabled: true})
 	for i := 0; i < 30; i++ {
 		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
 	}
@@ -423,7 +425,7 @@ func TestSummary_ReachesTheRail(t *testing.T) {
 	if s.Text != "Wiring the pause into the model." || s.Round != 4 {
 		t.Fatalf("block = %+v", s)
 	}
-	if s.State != summaryTone(agent.SummaryOffTarget) {
+	if s.State != summaryTone(sidejobs.SummaryOffTarget) {
 		t.Fatalf("state = %v", s.State)
 	}
 	// The rail draws it first, above THIS TURN.
@@ -543,8 +545,8 @@ func TestStatusCommand_AnswersAndRefreshes(t *testing.T) {
 
 func TestStatusCommand_SaysWhenItIsOff(t *testing.T) {
 	m := gatedModel(t, nil, nil)
-	m.summary.writer = agent.NewSummarizer(&readingProvider{},
-		agent.SummaryConfig{Model: "fast", Disabled: true})
+	m.summary.writer = sidejobs.NewSummarizer(&readingProvider{},
+		sidejobs.SummaryConfig{Model: "fast", Disabled: true})
 	note, cmd := m.statusCommand()
 	if cmd != nil {
 		t.Fatal("a disabled summary takes no reading")
@@ -568,7 +570,7 @@ func TestStatusCommand_BeforeTheFirstReading(t *testing.T) {
 }
 
 // summaryRowEntry is a landed reading as the transcript holds it.
-func summaryRowEntry(v agent.SummaryVerdict, target string) entry {
+func summaryRowEntry(v sidejobs.SummaryVerdict, target string) entry {
 	return entry{kind: entrySummary, reading: &summaryReading{verdict: v, target: target}}
 }
 
@@ -695,7 +697,7 @@ func TestSummaryRow_AFailedReadingLandsNoRow(t *testing.T) {
 func TestSummaryRow_OpensToTheWholeReading(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	long := strings.Repeat("the run is still reading the loop and has touched nothing. ", 12)
-	e := summaryRowEntry(agent.SummaryVerdict{Text: long, State: agent.SummaryOnTarget, Round: 18}, "")
+	e := summaryRowEntry(sidejobs.SummaryVerdict{Text: long, State: sidejobs.SummaryOnTarget, Round: 18}, "")
 	e.expanded = true
 	got := m.renderEntry(e, 76)
 	if strings.Contains(got, "…") {
@@ -714,8 +716,8 @@ func TestSummaryRow_OpensToTheWholeReading(t *testing.T) {
 // keyboard. What it was read against waits for the row to be opened.
 func TestSummaryRow_ClosedIsTheReadingAndItsVerdict(t *testing.T) {
 	m := gatedModel(t, nil, nil)
-	e := summaryRowEntry(agent.SummaryVerdict{
-		Text: strings.Repeat("still reading the loop. ", 10), State: agent.SummaryOffTarget, Round: 18,
+	e := summaryRowEntry(sidejobs.SummaryVerdict{
+		Text: strings.Repeat("still reading the loop. ", 10), State: sidejobs.SummaryOffTarget, Round: 18,
 	}, "make the round limit a checkpoint")
 	got := ansi.Strip(m.renderEntry(e, 76))
 	first := strings.Split(got, "\n")[0]
@@ -732,8 +734,8 @@ func TestSummaryRow_ClosedIsTheReadingAndItsVerdict(t *testing.T) {
 // answer.
 func TestSummaryRow_SaysWhatItWasReadAgainst(t *testing.T) {
 	m := gatedModel(t, nil, nil)
-	e := summaryRowEntry(agent.SummaryVerdict{
-		Text: "Rewriting the README.", State: agent.SummaryOffTarget,
+	e := summaryRowEntry(sidejobs.SummaryVerdict{
+		Text: "Rewriting the README.", State: sidejobs.SummaryOffTarget,
 		Reason: "docs were not asked for", Round: 9,
 	}, "make the round limit a checkpoint")
 	e.expanded = true
@@ -761,7 +763,7 @@ func TestSummaryRow_KeepsTheTargetItWasReadAgainst(t *testing.T) {
 // Reading mode can put its cursor on the row and open it, which is the one
 // mechanism behind "[enter] expand" everywhere in the transcript.
 func TestSummaryRow_IsExpandableAndCopyable(t *testing.T) {
-	e := summaryRowEntry(agent.SummaryVerdict{Text: "Reading the loop.", Round: 4}, "")
+	e := summaryRowEntry(sidejobs.SummaryVerdict{Text: "Reading the loop.", Round: 4}, "")
 	if !expandable(e) {
 		t.Fatal("reading mode expands the summary row")
 	}
@@ -802,8 +804,8 @@ func TestSummary_AReadersSteerExtendsTheTarget(t *testing.T) {
 	}
 	// And the reader is shown what it will be judged against, on the row and
 	// on /status, bounded the way one instruction always was.
-	e := summaryRowEntry(agent.SummaryVerdict{
-		Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 4,
+	e := summaryRowEntry(sidejobs.SummaryVerdict{
+		Text: "Reading the loop.", State: sidejobs.SummaryOnTarget, Round: 4,
 	}, m.summaryTarget)
 	e.expanded = true
 	if got := ansi.Strip(m.renderEntry(e, 76)); !strings.Contains(got,
@@ -817,7 +819,7 @@ func TestSummary_AReadersSteerExtendsTheTarget(t *testing.T) {
 	if r := m.summary.schedule.LastRound(); r != 0 {
 		t.Fatalf("the schedule still points at round %d, past the reset counter", r)
 	}
-	m = advanceRounds(m, agent.FirstSummaryRound)
+	m = advanceRounds(m, sidejobs.FirstSummaryRound)
 	if !m.summaryDue() {
 		t.Fatal("a reading is due on the turn-start count after a steer")
 	}
@@ -867,7 +869,7 @@ func TestSummary_AReadersSteerRetiresTheReadingInFlight(t *testing.T) {
 
 // summaryTurn is a turn whose round either said something before its calls
 // or did not, with the reading the round earned after them.
-func summaryTurn(t *testing.T, said bool, state agent.SummaryState) Model {
+func summaryTurn(t *testing.T, said bool, state sidejobs.SummaryState) Model {
 	t.Helper()
 	m := activityModel(t)
 	m.transcript = []entry{{kind: entryUser, text: "check it"}}
@@ -876,7 +878,7 @@ func summaryTurn(t *testing.T, said bool, state agent.SummaryState) Model {
 	}
 	m.transcript = append(m.transcript,
 		entry{kind: entryCommand, text: "git status --short", toolResult: "?? .plan/"},
-		entry{kind: entrySummary, reading: &summaryReading{verdict: agent.SummaryVerdict{
+		entry{kind: entrySummary, reading: &summaryReading{verdict: sidejobs.SummaryVerdict{
 			State: state, Round: 2, Text: "Checking the tree before it writes anything."}}},
 	)
 	m.invalidateRenderCache()
@@ -887,7 +889,7 @@ func summaryTurn(t *testing.T, said bool, state agent.SummaryState) Model {
 // card's body and its verdict sits on the card, and no row of its own
 // repeats it (docs/interface/surfaces.md#the-session-summary).
 func TestSummary_IsTheBodyWhenTheRoundSaidNothing(t *testing.T) {
-	m := summaryTurn(t, false, agent.SummaryOnTarget)
+	m := summaryTurn(t, false, sidejobs.SummaryOnTarget)
 	view := stripANSI(m.renderHistory())
 	if n := strings.Count(view, "Checking the tree before it writes anything."); n != 1 {
 		t.Fatalf("the reading is drawn %d times, want once:\n%s", n, view)
@@ -903,7 +905,7 @@ func TestSummary_IsTheBodyWhenTheRoundSaidNothing(t *testing.T) {
 // Where the round said something, the reading is a flat row of its own after
 // the card: `≡` in the glyph slot, the sentence, the verdict on the right.
 func TestSummary_IsItsOwnRowOtherwise(t *testing.T) {
-	m := summaryTurn(t, true, agent.SummaryOffTarget)
+	m := summaryTurn(t, true, sidejobs.SummaryOffTarget)
 	view := stripANSI(m.renderHistory())
 	if n := strings.Count(view, "Checking the tree before it writes anything."); n != 1 {
 		t.Fatalf("the reading is drawn %d times, want once:\n%s", n, view)
@@ -924,14 +926,14 @@ func TestSummary_IsItsOwnRowOtherwise(t *testing.T) {
 // way in. The other three state their word and offer nothing.
 func TestSummary_OnlyUnclearOffersAKey(t *testing.T) {
 	for _, tc := range []struct {
-		state agent.SummaryState
+		state sidejobs.SummaryState
 		word  string
 		offer bool
 	}{
-		{agent.SummaryOnTarget, "on target", false},
-		{agent.SummarySufficient, "has enough", false},
-		{agent.SummaryOffTarget, "off target", false},
-		{agent.SummaryUncertain, "unclear", true},
+		{sidejobs.SummaryOnTarget, "on target", false},
+		{sidejobs.SummarySufficient, "has enough", false},
+		{sidejobs.SummaryOffTarget, "off target", false},
+		{sidejobs.SummaryUncertain, "unclear", true},
 	} {
 		t.Run(tc.word, func(t *testing.T) {
 			m := summaryTurn(t, true, tc.state)

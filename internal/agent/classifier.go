@@ -17,6 +17,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -252,19 +254,6 @@ func NewClassifier(p provider.Provider, cfg ClassifierConfig) *Classifier {
 	return &Classifier{provider: p, cfg: cfg}
 }
 
-// modelAt is the model a bounded reader asks with: what at answers, where
-// the surface handed one, and the fixed name it was built with otherwise.
-// It is asked once per call and the answer kept for the whole of it, so a
-// reader moved onto another model for the rest of a session takes it on its
-// next call and one already in flight finishes on the model it started with.
-// See docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does.
-func modelAt(at func() string, fixed string) string {
-	if at != nil {
-		return strings.TrimSpace(at())
-	}
-	return strings.TrimSpace(fixed)
-}
-
 // ClassifierRequest is one proposed tool call plus the evidence the
 // classifier judges it with.
 type ClassifierRequest struct {
@@ -332,7 +321,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 
 	model := ""
 	if c != nil {
-		model = modelAt(c.cfg.ModelAt, c.cfg.Model)
+		model = sidejobs.ModelAt(c.cfg.ModelAt, c.cfg.Model)
 	}
 	if c == nil || c.provider == nil || model == "" {
 		v.Reason = "the permission classifier is not configured"
@@ -341,7 +330,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 
 	proposed := map[string]string{
 		"tool":      req.Tool,
-		"arguments": truncateTail(req.Arguments, maxEvidenceArgChars),
+		"arguments": sidejobs.TruncateTail(req.Arguments, maxEvidenceArgChars),
 	}
 	if req.Reading.Standing != "" {
 		proposed["host_standing"] = string(req.Reading.Standing)
@@ -603,7 +592,7 @@ func ParseDecisionText(text string) (Decision, string, bool) {
 		}
 	}
 
-	if match := decisionLineRe.FindStringSubmatch(firstNonEmptyLine(trimmed)); match != nil {
+	if match := decisionLineRe.FindStringSubmatch(sidejobs.FirstNonEmptyLine(trimmed)); match != nil {
 		return normalizeDecision(match[1], match[2])
 	}
 	return Ask, "", false
@@ -624,15 +613,6 @@ func normalizeDecision(decision, reason string) (Decision, string, bool) {
 		return Deny, reason, true
 	}
 	return Ask, "", false
-}
-
-func firstNonEmptyLine(s string) string {
-	for _, line := range strings.Split(s, "\n") {
-		if strings.TrimSpace(line) != "" {
-			return line
-		}
-	}
-	return ""
 }
 
 // ResolveAuto is a classifier verdict resolved for a session with a person
@@ -759,7 +739,7 @@ func RecentContext(msgs []provider.Message, maxMessages, maxChars int) string {
 			if !done && tc.ID != "" {
 				continue
 			}
-			row := SummaryActivity(tc.Name, digest.Arg(tc.Name, tc.Arguments), outcome)
+			row := sidejobs.SummaryActivity(tc.Name, digest.Arg(tc.Name, tc.Arguments), outcome)
 			entries = append(entries, entry{text: "[Tool] " + row, call: true})
 			calls++
 		}
@@ -815,15 +795,6 @@ func keepTailUTF8(s string, max int) string {
 		s = s[1:]
 	}
 	return s
-}
-
-// truncateTail keeps the head of an oversized string with a note about what
-// was dropped.
-func truncateTail(s string, maxChars int) string {
-	if len(s) <= maxChars {
-		return s
-	}
-	return fmt.Sprintf("%s\n... [%d characters omitted]", s[:maxChars], len(s)-maxChars)
 }
 
 // ResolveUnattended is ResolveAuto for a surface with nobody in front of it:

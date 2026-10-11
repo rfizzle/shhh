@@ -1,4 +1,4 @@
-package agent
+package sidejobs
 
 // Session titles: after a session's first completed turn, a cheap model reads
 // the exchange and writes the handful of words a listing shows beside the
@@ -108,7 +108,7 @@ func (t *Titler) Model() string {
 	if t == nil {
 		return ""
 	}
-	return modelAt(t.cfg.ModelAt, t.cfg.Model)
+	return ModelAt(t.cfg.ModelAt, t.cfg.Model)
 }
 
 var titleSchema = json.RawMessage(`{

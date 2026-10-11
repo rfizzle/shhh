@@ -19,6 +19,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -94,7 +96,7 @@ func (r approvalRig) start(t *testing.T) *approvalDriver {
 		m.classifier.judge = agent.NewClassifier(r.judge, agent.ClassifierConfig{Model: "judge"})
 	}
 	if r.explain != nil {
-		m.wiring.Explainer = agent.NewExplainer(r.explain, agent.ExplainConfig{Model: "small", Prompt: explainWording})
+		m.wiring.Explainer = sidejobs.NewExplainer(r.explain, sidejobs.ExplainConfig{Model: "small", Prompt: explainWording})
 	}
 	d.tm = runProgram(t, m)
 	for i := 0; i < r.presses; i++ {

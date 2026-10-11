@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -539,8 +540,8 @@ func TestTurnClose_TheNotebookIsToldWhichTurnIsOpen(t *testing.T) {
 // answer.
 func TestTurnClose_ASummaryFoldBesideItExpandsRatherThanReviews(t *testing.T) {
 	m, _ := undoModel(t)
-	m.appendEntry(summaryRowEntry(agent.SummaryVerdict{
-		Text: "Capped the rounds and nothing else.", State: agent.SummaryOnTarget, Round: 3}, ""))
+	m.appendEntry(summaryRowEntry(sidejobs.SummaryVerdict{
+		Text: "Capped the rounds and nothing else.", State: sidejobs.SummaryOnTarget, Round: 3}, ""))
 	at := len(m.transcript) - 1
 	m.pointer.lit, m.focusIdx = true, at
 	m.refreshCursorView()

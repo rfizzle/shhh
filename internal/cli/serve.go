@@ -28,6 +28,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/hook"
@@ -214,7 +216,7 @@ type serveLoop struct {
 	// summarizer takes the periodic readings of a turn. The run over it is
 	// built per turn because what a reading is judged against is that turn's
 	// instruction, and a session has one per turn.
-	summarizer *agent.Summarizer
+	summarizer *sidejobs.Summarizer
 	// account keeps the slot's standing account for this session, revised
 	// at a turn's close on the interval a session on a screen uses and once
 	// more where the session ends.
@@ -1204,7 +1206,7 @@ func (l *serveLoop) release() {
 // the save that carries it, as the headless run's is, because a served
 // turn's close is where its conversation is written down.
 type servedAccount struct {
-	writer *agent.Accountant
+	writer *sidejobs.Accountant
 	// every is how many closed turns pass between two readings; zero is off.
 	every int
 	// turns counts the turns closed since the last reading.

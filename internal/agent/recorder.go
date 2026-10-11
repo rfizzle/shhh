@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/digest"
 )
 
@@ -51,7 +53,7 @@ func (r *Recorder) Tool(name, args, result string) {
 	if r == nil {
 		return
 	}
-	row := SummaryActivity(name, digest.Arg(name, args), digest.Outcome(result))
+	row := sidejobs.SummaryActivity(name, digest.Arg(name, args), digest.Outcome(result))
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.calls++
@@ -67,7 +69,7 @@ func (r *Recorder) Command(command string, exitCode int) {
 	if r == nil {
 		return
 	}
-	row := SummaryActivity("command", digest.FirstLine(command), ExitOutcome(exitCode))
+	row := sidejobs.SummaryActivity("command", digest.FirstLine(command), ExitOutcome(exitCode))
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.calls++

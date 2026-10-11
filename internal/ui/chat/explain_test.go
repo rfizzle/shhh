@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -64,13 +65,13 @@ const explainWording = "Explain this shell command concisely."
 // command does, wired the way the session wires it: the explainer reaches the
 // provider through the gate, so what it spends is billed without the model
 // counting anything itself (internal/cli/approvals.go).
-func explainerModel(t *testing.T, p provider.Provider, cfg agent.ExplainConfig) Model {
+func explainerModel(t *testing.T, p provider.Provider, cfg sidejobs.ExplainConfig) Model {
 	t.Helper()
 	var bare, contained []string
 	ledger := meter.New(nil)
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
 	m.wiring.Ledger = ledger
-	m.wiring.Explainer = agent.NewExplainer(ledger.For(p, meter.SourceExplanation), cfg)
+	m.wiring.Explainer = sidejobs.NewExplainer(ledger.For(p, meter.SourceExplanation), cfg)
 	return m
 }
 
@@ -99,7 +100,7 @@ func drainExplain(t *testing.T, cmd tea.Cmd) explainDoneMsg {
 
 func TestApprovalCard_TheFullViewExplainsAndDecidesNothing(t *testing.T) {
 	p := &paragraphProvider{text: "rsync copies src/ into dst/ and deletes anything in dst/ that is not in src/."}
-	m := explainerModel(t, p, agent.ExplainConfig{Model: "small", Prompt: explainWording})
+	m := explainerModel(t, p, sidejobs.ExplainConfig{Model: "small", Prompt: explainWording})
 	m = execApproval(t, m, "rsync -a --delete src/ dst/")
 	if card := m.approvalCard(); !offersExplain(card) {
 		t.Fatalf("a command card in a session with an explainer should say its full view explains:\n%s", m.View().Content)
@@ -179,7 +180,7 @@ func TestApprovalCard_TheFullViewExplainsAndDecidesNothing(t *testing.T) {
 
 func TestApprovalCard_ExplainIsBilledUnderItsOwnSource(t *testing.T) {
 	p := &paragraphProvider{text: "it copies src/ into dst/."}
-	m := explainerModel(t, p, agent.ExplainConfig{Model: "small", Prompt: explainWording})
+	m := explainerModel(t, p, sidejobs.ExplainConfig{Model: "small", Prompt: explainWording})
 	m = execApproval(t, m, "rsync -a --delete src/ dst/")
 
 	m, cmd := openFull(t, m)
@@ -209,25 +210,25 @@ func TestApprovalCard_AFailedExplanationSaysSoAndReturns(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		p    *paragraphProvider
-		cfg  agent.ExplainConfig
+		cfg  sidejobs.ExplainConfig
 		want string
 	}{
 		{
 			name: "the request failed",
 			p:    &paragraphProvider{err: errors.New("no route to host")},
-			cfg:  agent.ExplainConfig{Model: "small", Prompt: explainWording},
+			cfg:  sidejobs.ExplainConfig{Model: "small", Prompt: explainWording},
 			want: "no route to host",
 		},
 		{
 			name: "the deadline passed",
 			p:    &paragraphProvider{hang: true},
-			cfg:  agent.ExplainConfig{Model: "small", Prompt: explainWording, Timeout: time.Millisecond},
+			cfg:  sidejobs.ExplainConfig{Model: "small", Prompt: explainWording, Timeout: time.Millisecond},
 			want: "deadline exceeded",
 		},
 		{
 			name: "the model said nothing",
 			p:    &paragraphProvider{text: "   "},
-			cfg:  agent.ExplainConfig{Model: "small", Prompt: explainWording},
+			cfg:  sidejobs.ExplainConfig{Model: "small", Prompt: explainWording},
 			want: "no explanation",
 		},
 	} {
@@ -272,11 +273,11 @@ func TestApprovalCard_AFailedExplanationSaysSoAndReturns(t *testing.T) {
 func TestApprovalCard_ExplainNotOfferedWithoutAModel(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		cfg  agent.ExplainConfig
+		cfg  sidejobs.ExplainConfig
 	}{
-		{name: "nothing configured at all", cfg: agent.ExplainConfig{}},
-		{name: "a model and no instruction", cfg: agent.ExplainConfig{Model: "small"}},
-		{name: "an instruction and no model", cfg: agent.ExplainConfig{Prompt: explainWording}},
+		{name: "nothing configured at all", cfg: sidejobs.ExplainConfig{}},
+		{name: "a model and no instruction", cfg: sidejobs.ExplainConfig{Model: "small"}},
+		{name: "an instruction and no model", cfg: sidejobs.ExplainConfig{Prompt: explainWording}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &paragraphProvider{text: "unused"}
@@ -314,7 +315,7 @@ func TestApprovalCard_ExplainIsNotOfferedOnAnEdit(t *testing.T) {
 	ledger := meter.New(nil)
 	m := handover(t, interruptedModel(t, ""))
 	m.wiring.Ledger = ledger
-	m.wiring.Explainer = agent.NewExplainer(ledger.For(p, meter.SourceExplanation), agent.ExplainConfig{Model: "small", Prompt: explainWording})
+	m.wiring.Explainer = sidejobs.NewExplainer(ledger.For(p, meter.SourceExplanation), sidejobs.ExplainConfig{Model: "small", Prompt: explainWording})
 	if m.approval.request == nil || m.approval.request.kind != approvalDiff {
 		t.Fatalf("the fixture should be sitting on an edit card, got %v", m.approval.request)
 	}
@@ -330,7 +331,7 @@ func TestApprovalCard_ExplainIsNotOfferedOnAnEdit(t *testing.T) {
 // neither lands on the new line's view nor ends the asking about it.
 func TestApprovalCard_AnAmendedLinesReadingIsNotTheOldOnes(t *testing.T) {
 	p := &paragraphProvider{text: "it copies src/ into dst/."}
-	m := explainerModel(t, p, agent.ExplainConfig{Model: "small", Prompt: explainWording})
+	m := explainerModel(t, p, sidejobs.ExplainConfig{Model: "small", Prompt: explainWording})
 	m = execApproval(t, m, "rsync -a --delete src/ dst/")
 	m, cmd := openFull(t, m)
 	old := drainExplain(t, cmd)

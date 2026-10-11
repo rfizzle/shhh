@@ -9,10 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -1238,7 +1239,7 @@ func heldScreensModel(t *testing.T) Model {
 	m.wiring.Sources = web.NewLedger(nil)
 	m.bindSources()
 	m.wiring.ConfigScreen = func([]string) (ConfigSession, error) { return h.session(), nil }
-	m.summary.writer = agent.NewSummarizer(&readingProvider{text: "Reading."}, agent.SummaryConfig{
+	m.summary.writer = sidejobs.NewSummarizer(&readingProvider{text: "Reading."}, sidejobs.SummaryConfig{
 		Model: "fast", IntervalRounds: 10, MinGap: -1,
 	})
 	_, _, _ = m.wiring.Notebook.Write(notebook.Orchestrator, "The freeze is the target", "better, not wider")
@@ -1246,7 +1247,7 @@ func heldScreensModel(t *testing.T) Model {
 		return []storage.Flake{{Suite: "default", Check: "test", Command: "make test", Seen: 2}}, nil
 	}}, &alertMemo{}
 	m.patterns.cfg, m.patterns.wording = new(proposalRecorder).patterns(t), -1
-	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Reading the loop.", State: sidejobs.SummaryOnTarget, Round: 3})
 	m.workSteps = stepsCalled(t, `{"steps":[{"title":"Locate the round accounting."},{"title":"Patch the limit"}]}`)
 	m.transcript = append(m.transcript,
 		entry{kind: entryUser, text: "raise the cap", turn: 1},

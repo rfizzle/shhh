@@ -23,6 +23,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -229,21 +231,21 @@ type Wiring struct {
 	Classifier *agent.Classifier
 	// Explainer is the command card's explanation key. Without one the card
 	// offers nothing and the key does nothing.
-	Explainer *agent.Explainer
+	Explainer *sidejobs.Explainer
 	// Summarizer writes the session summary; nil leaves the block undrawn.
-	Summarizer *agent.Summarizer
+	Summarizer *sidejobs.Summarizer
 	// Titler names the session's rows, and Titles says it starts on.
-	Titler *agent.Titler
+	Titler *sidejobs.Titler
 	Titles bool
 	// Accountant writes the standing account every AccountEvery turns; nil,
 	// or zero turns, asks nothing.
-	Accountant   *agent.Accountant
+	Accountant   *sidejobs.Accountant
 	AccountEvery int
 	// Handoff writes what /handoff puts on its card; nil offers no handoff.
-	Handoff *agent.HandoffWriter
+	Handoff *sidejobs.HandoffWriter
 	// Suggester writes the offered next step, and Suggestions says the
 	// session starts with offers on.
-	Suggester   *agent.Suggester
+	Suggester   *sidejobs.Suggester
 	Suggestions bool
 	// StartOfferer writes the start screen's offers, from what
 	// StartOffersGather reads off the UI goroutine. Nil asks nothing.

@@ -1,4 +1,4 @@
-package agent
+package sidejobs
 
 // A session's handoff: what a person leaving mid-task writes down for the
 // sitting that picks the work up — what was done, what is open, what was
@@ -188,7 +188,7 @@ func (w *HandoffWriter) Model() string {
 	if w == nil {
 		return ""
 	}
-	return modelAt(w.cfg.ModelAt, w.cfg.Model)
+	return ModelAt(w.cfg.ModelAt, w.cfg.Model)
 }
 
 var handoffSchema = json.RawMessage(`{

@@ -1,5 +1,9 @@
 package agent
 
+import (
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+)
+
 // The round tail: the boundary after a tool round's results are recorded and
 // before the next request is asked. Every driver of the loop crosses it, and
 // what it owes the next round is the same whoever is driving: a hold, then
@@ -62,7 +66,7 @@ type RoundTail struct {
 
 	OnTree      func(TreeNotice)
 	OnIntervene func(Intervention)
-	OnSummary   func(SummaryVerdict)
+	OnSummary   func(sidejobs.SummaryVerdict)
 	OnWithheld  func(reason string)
 }
 

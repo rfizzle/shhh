@@ -22,6 +22,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -125,7 +127,7 @@ type Headless struct {
 	// caller has already exited, which is the one-shot case and loses the
 	// reading rather than racing anything.
 	// See docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did.
-	OnSummary func(v SummaryVerdict)
+	OnSummary func(v sidejobs.SummaryVerdict)
 
 	// OnRetry, when set, is told before each wait the run puts itself on
 	// after a request the provider never answered. An unattended run that

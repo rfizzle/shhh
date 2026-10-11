@@ -120,7 +120,7 @@ func (w *writtenByCalls) paths() []string {
 // lines. Nothing here reads a file either side of a write — the list is the
 // calls that were made, not a record of what they did — and a count of files
 // is what the reading needs to tell a run that has started acting from one
-// that is still reading (agent.SummaryChanges takes both shapes). A file
+// that is still reading (sidejobs.SummaryChanges takes both shapes). A file
 // written twice is one file, as it is on the rail.
 func (w *writtenByCalls) changed() (files, added, removed int) {
 	w.mu.Lock()

@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -27,7 +28,7 @@ func (p *titleProvider) StreamCompletion(ctx context.Context, msgs []provider.Me
 	}
 	ch := make(chan provider.StreamEvent, 1)
 	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "t1", Name: agent.TitleToolName, Arguments: `{"title":"` + p.title + `"}`}},
+		ToolCalls: []provider.ToolCall{{ID: "t1", Name: sidejobs.TitleToolName, Arguments: `{"title":"` + p.title + `"}`}},
 		Usage:     &provider.Usage{PromptTokens: 200, CompletionTokens: 6},
 		Done:      true,
 	}
@@ -44,7 +45,7 @@ func titledModel(t *testing.T, p provider.Provider) (Model, *storage.DB) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, multiTokenStream("hi there"), Wiring{
 		DB:     db,
-		Titler: agent.NewTitler(p, agent.TitleConfig{Model: "fast"}),
+		Titler: sidejobs.NewTitler(p, sidejobs.TitleConfig{Model: "fast"}),
 		Titles: true,
 	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -258,7 +259,7 @@ func TestTitle_UICommandTogglesAndReports(t *testing.T) {
 	}
 
 	unconfigured := m
-	unconfigured.titles.writer, unconfigured.titles.on = agent.NewTitler(p, agent.TitleConfig{}), false
+	unconfigured.titles.writer, unconfigured.titles.on = sidejobs.NewTitler(p, sidejobs.TitleConfig{}), false
 	if out := unconfigured.uiCommand([]string{"/ui", "title"}); !strings.Contains(out, "turned off in the config (summary.title)") {
 		t.Fatalf("off in the config should say where, got %q", out)
 	}

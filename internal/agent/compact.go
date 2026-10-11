@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -541,7 +543,7 @@ func compactNoticeText(n CompactNotice) string {
 	switch {
 	case n.Compacted && n.Kept > 0:
 		text = fmt.Sprintf("Context compacted at %d%%: continuing from a summary and the last %d %s (now %d%%).",
-			n.BeforePct, n.Kept, plural(n.Kept, "turn"), n.AfterPct)
+			n.BeforePct, n.Kept, sidejobs.Plural(n.Kept, "turn"), n.AfterPct)
 	case n.Compacted:
 		text = fmt.Sprintf("Context compacted at %d%%: continuing from a summary (now %d%%).",
 			n.BeforePct, n.AfterPct)
@@ -549,7 +551,7 @@ func compactNoticeText(n CompactNotice) string {
 		text = fmt.Sprintf("Context is at %d%% and could not be compacted: %s.", n.BeforePct, n.Err)
 	case n.Elided > 0:
 		text = fmt.Sprintf("Context trimmed at %d%%: %d older tool %s elided (now %d%%).",
-			n.BeforePct, n.Elided, plural(n.Elided, "result"), n.AfterPct)
+			n.BeforePct, n.Elided, sidejobs.Plural(n.Elided, "result"), n.AfterPct)
 	}
 	switch {
 	case !n.Overflow:

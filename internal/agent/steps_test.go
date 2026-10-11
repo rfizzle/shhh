@@ -3,6 +3,8 @@ package agent
 import (
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 )
 
 // A run's own plan reaches the reading beside its changes, in the one
@@ -12,7 +14,7 @@ func TestSummaryRun_TheOwnPlanReachesTheDigest(t *testing.T) {
 	p := &slowProvider{}
 	r, _ := testSummaryRun(t, p, "ship the parser")
 	r.WithSteps(func() (int, int, string) { return 3, 7, "add the tests" })
-	waitVerdict(t, r, FirstSummaryRound)
+	waitVerdict(t, r, sidejobs.FirstSummaryRound)
 	sent := p.requests()[0]
 	for _, want := range []string{`"own_plan_progress"`, "3 of 7 steps done · on: add the tests"} {
 		if !strings.Contains(sent, want) {
@@ -23,7 +25,7 @@ func TestSummaryRun_TheOwnPlanReachesTheDigest(t *testing.T) {
 	p = &slowProvider{}
 	r, _ = testSummaryRun(t, p, "ship the parser")
 	r.WithSteps(func() (int, int, string) { return 0, 0, "" })
-	waitVerdict(t, r, FirstSummaryRound)
+	waitVerdict(t, r, sidejobs.FirstSummaryRound)
 	if sent := p.requests()[0]; strings.Contains(sent, `"own_plan_progress"`) {
 		t.Errorf("a run with no plan sends no plan progress:\n%s", sent)
 	}
@@ -40,8 +42,8 @@ func TestSummarySteps(t *testing.T) {
 		{7, 7, "", "7 of 7 steps done"},
 		{9, 7, "", "7 of 7 steps done"},
 	} {
-		if got := SummarySteps(tc.done, tc.total, tc.current); got != tc.want {
-			t.Errorf("SummarySteps(%d, %d, %q) = %q, want %q", tc.done, tc.total, tc.current, got, tc.want)
+		if got := sidejobs.SummarySteps(tc.done, tc.total, tc.current); got != tc.want {
+			t.Errorf("sidejobs.SummarySteps(%d, %d, %q) = %q, want %q", tc.done, tc.total, tc.current, got, tc.want)
 		}
 	}
 }

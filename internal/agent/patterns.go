@@ -19,6 +19,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -114,7 +116,7 @@ func (w *PatternWriter) Model() string {
 	if w == nil {
 		return ""
 	}
-	return modelAt(w.cfg.ModelAt, w.cfg.Model)
+	return sidejobs.ModelAt(w.cfg.ModelAt, w.cfg.Model)
 }
 
 const patternsPrompt = `You word one proposal made from what a person's coding sessions in one checkout kept doing. The code has already decided what is proposed; you choose only the words. The evidence is the pattern's facts and the transcript lines that made it. Answer with JSON and nothing else.

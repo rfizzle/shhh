@@ -1,9 +1,10 @@
-package agent
+package sidejobs
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,8 +110,8 @@ func TestSummarizer_ClampsWhatTheModelWrote(t *testing.T) {
 	if n := len([]rune(v.Text)); n > maxSummaryText {
 		t.Fatalf("summary text = %d runes, want <= %d", n, maxSummaryText)
 	}
-	if n := len([]rune(v.Reason)); n > maxSummaryReason {
-		t.Fatalf("summary reason = %d runes, want <= %d", n, maxSummaryReason)
+	if n := len([]rune(v.Reason)); n > MaxSummaryReason {
+		t.Fatalf("summary reason = %d runes, want <= %d", n, MaxSummaryReason)
 	}
 	if !strings.HasSuffix(v.Text, "…") {
 		t.Fatal("a clamped summary says it was clamped")
@@ -250,7 +251,7 @@ func TestSummaryRequest_DigestFieldsAreFlattenedAndBounded(t *testing.T) {
 // judging the work against words they have already replaced.
 func TestSummaryRequest_DigestKeepsEveryPartOfTheInstruction(t *testing.T) {
 	req := testSummaryRequest()
-	req.Target = ExtendTarget(strings.Repeat("ship the parser. ", 60), "actually, fix the lexer first")
+	req.Target = extendTarget(strings.Repeat("ship the parser. ", 60), "actually, fix the lexer first")
 	target, _ := req.digest()["instruction"].(string)
 	if !strings.Contains(target, "actually, fix the lexer first") {
 		t.Fatalf("the digest dropped what the person asked for last: %q", target)
@@ -273,8 +274,8 @@ func TestSummaryRequest_DigestKeepsEveryPartOfTheInstruction(t *testing.T) {
 // newest — the steer — is never the one the bound drops.
 func TestSummaryRequest_DigestKeepsThePlanAndTheSteerBesideTheAsk(t *testing.T) {
 	req := testSummaryRequest()
-	req.Target = ExtendTarget(
-		ExtendTarget(strings.Repeat("build the CSV exporter. ", 20),
+	req.Target = extendTarget(
+		extendTarget(strings.Repeat("build the CSV exporter. ", 20),
 			"The approved plan: "+strings.Repeat("1. read the schema; ", 20)),
 		"actually, skip the docs")
 	target, _ := req.digest()["instruction"].(string)
@@ -552,8 +553,8 @@ func TestSummarizer_ACancelledReadingWritesNothing(t *testing.T) {
 func TestSummaryRequest_CarriesTheInterventionsDelivered(t *testing.T) {
 	req := testSummaryRequest()
 	req.Interventions = []string{
-		Intervention{Kind: InterveneSteer, Reason: "editing files outside the exporter"}.Row(14),
-		Intervention{Kind: InterveneEnough, Reason: "has named the file and the line"}.Row(20),
+		"round 14 · steered · editing files outside the exporter",
+		"round 20 · check-in · has named the file and the line",
 	}
 	rows, ok := req.digest()["interventions"].([]string)
 	if !ok || len(rows) != 2 {
@@ -604,7 +605,7 @@ func TestSummaryRequest_DigestBoundsTheInterventions(t *testing.T) {
 	req := testSummaryRequest()
 	for i := 0; i < maxSummaryInterventions+5; i++ {
 		req.Interventions = append(req.Interventions,
-			Intervention{Kind: InterveneCheckIn}.Row(i))
+			fmt.Sprintf("round %d · check-in", i))
 	}
 	rows := req.digest()["interventions"].([]string)
 	if len(rows) != maxSummaryInterventions {
@@ -623,5 +624,15 @@ func TestSummaryWording_TellsTheReaderWhatAnInterventionMeans(t *testing.T) {
 		if !strings.Contains(wording, want) {
 			t.Errorf("the reading instruction should say %q:\n%s", want, wording)
 		}
+	}
+}
+
+// The reading instruction is the built-in literal until a file replaces it.
+func TestSummaryPromptOverride(t *testing.T) {
+	if got := (SummaryConfig{}).prompt(); got != summaryPrompt {
+		t.Error("an unset reading instruction must be the built-in one")
+	}
+	if got := (SummaryConfig{Prompt: "read it"}).prompt(); got != "read it" {
+		t.Errorf("reading instruction override: %q", got)
 	}
 }

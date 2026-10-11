@@ -15,9 +15,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -502,7 +503,7 @@ func decisionCards(t *testing.T) []decisionCard {
 			name: "the session's command card with an explanation",
 			open: func(t *testing.T) Model {
 				m := explainerModel(t, &paragraphProvider{text: "it copies src/ into dst/."},
-					agent.ExplainConfig{Model: "small", Prompt: explainWording})
+					sidejobs.ExplainConfig{Model: "small", Prompt: explainWording})
 				return execApproval(t, m, "rsync -a --delete src/ dst/")
 			},
 			card: sessionCard,

@@ -3,6 +3,8 @@ package observe
 import (
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe/record"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -221,16 +223,16 @@ func TestCompactReasonsAreDistinctFromEachOtherAndFromATrim(t *testing.T) {
 // have to keep the four spellings a stored rate is grouped by.
 func TestSummaryCode(t *testing.T) {
 	for _, c := range []struct {
-		state agent.SummaryState
+		state sidejobs.SummaryState
 		want  string
 	}{
-		{agent.SummaryOnTarget, "on-target"},
-		{agent.SummaryOffTarget, "off-target"},
-		{agent.SummarySufficient, "sufficient"},
-		{agent.SummaryUncertain, "unclear"},
+		{sidejobs.SummaryOnTarget, "on-target"},
+		{sidejobs.SummaryOffTarget, "off-target"},
+		{sidejobs.SummarySufficient, "sufficient"},
+		{sidejobs.SummaryUncertain, "unclear"},
 		// A state nothing declared reads as unclear rather than as a fifth
 		// code: the reading is what is uncertain, not the vocabulary.
-		{agent.SummaryState(99), "unclear"},
+		{sidejobs.SummaryState(99), "unclear"},
 	} {
 		if got := SummaryCode(c.state); got != c.want {
 			t.Errorf("SummaryCode(%v) = %q, want %q", c.state, got, c.want)

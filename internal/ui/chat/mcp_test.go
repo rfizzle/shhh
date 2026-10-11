@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -260,8 +262,8 @@ func TestStatusCommand_NamesTheToolSources(t *testing.T) {
 		components.InspectorToolSource{Name: "docs", State: components.ToolSourceUp, Note: "2 tools"},
 		components.InspectorToolSource{Name: "linear", State: components.ToolSourceFailed, Note: "timeout"},
 	)
-	m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
-	m.summary.last = &agent.SummaryVerdict{Text: "wiring the pause", State: agent.SummaryOnTarget, Round: 7}
+	m.summary.writer = sidejobs.NewSummarizer(&readingProvider{}, sidejobs.SummaryConfig{Model: "fast"})
+	m.summary.last = &sidejobs.SummaryVerdict{Text: "wiring the pause", State: sidejobs.SummaryOnTarget, Round: 7}
 	text, _ := m.statusCommand()
 	for _, want := range []string{"wiring the pause", "Tools", "built-in — up · 3 tools", "docs — up · 2 tools", "linear — error · timeout"} {
 		if !strings.Contains(text, want) {

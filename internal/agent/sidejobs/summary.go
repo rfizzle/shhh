@@ -1,4 +1,4 @@
-package agent
+package sidejobs
 
 // Session summary: every few tool rounds a cheap model reads a small
 // structured digest of the session and answers the one question the inspector
@@ -74,11 +74,11 @@ const (
 	// the same sentence twice.
 	SummaryCloseMinRounds = 2
 
-	// maxSummaryText and maxSummaryReason bound what the model may put on the
+	// maxSummaryText and MaxSummaryReason bound what the model may put on the
 	// rail. They are enforced here rather than asked for in the prompt: a
 	// length the block depends on is not a length a model gets to decide.
 	maxSummaryText   = 240
-	maxSummaryReason = 120
+	MaxSummaryReason = 120
 	// maxSummaryActivity bounds the recent-activity rows in the digest.
 	maxSummaryActivity = 24
 	// maxSummaryInterventions bounds the interruptions in the digest. A turn
@@ -390,7 +390,7 @@ func (s *Summarizer) Config() SummaryConfig {
 
 // Enabled reports whether readings will actually be taken.
 func (s *Summarizer) Enabled() bool {
-	return s != nil && s.provider != nil && !s.cfg.Disabled && modelAt(s.cfg.ModelAt, s.cfg.Model) != ""
+	return s != nil && s.provider != nil && !s.cfg.Disabled && ModelAt(s.cfg.ModelAt, s.cfg.Model) != ""
 }
 
 // Summarize takes one reading. It never returns a partial verdict as a good
@@ -400,7 +400,7 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummaryRequest) SummaryV
 	start := time.Now()
 	v := SummaryVerdict{Round: req.Round, Failed: true}
 	if s != nil {
-		v.Model = modelAt(s.cfg.ModelAt, s.cfg.Model)
+		v.Model = ModelAt(s.cfg.ModelAt, s.cfg.Model)
 	}
 	finish := func(v SummaryVerdict) SummaryVerdict {
 		v.Elapsed = time.Since(start)
@@ -525,7 +525,7 @@ func (r SummaryRequest) digest() map[string]any {
 		// one they asked for last must not be the one the bound drops. An
 		// approved plan is one of those parts (ui/chat/planrun.go), so a
 		// turn carrying out ten steps is read against the ten steps.
-		"instruction":  strings.Join(clampFields(clampTargetParts(r.Target, maxSummaryField)), " · "),
+		"instruction":  strings.Join(clampFields(ClampTargetParts(r.Target, maxSummaryField)), " · "),
 		"tool_round":   r.Round,
 		"elapsed":      r.Elapsed.Round(time.Second).String(),
 		"recent_steps": clampFields(activity),
@@ -575,11 +575,11 @@ func clampFields(in []string) []string {
 // digest field cannot become several lines of forged structure.
 func clampField(s string) string {
 	s = strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(s, "\r", " "), "\n", " "))
-	return clampRunes(s, maxSummaryField)
+	return ClampRunes(s, maxSummaryField)
 }
 
-// clampRunes truncates on a rune boundary, marking what it took.
-func clampRunes(s string, limit int) string {
+// ClampRunes truncates on a rune boundary, marking what it took.
+func ClampRunes(s string, limit int) string {
 	runes := []rune(s)
 	if len(runes) <= limit {
 		return s
@@ -631,7 +631,7 @@ func ParseSummaryText(text string) (string, SummaryState, string, bool) {
 		}
 	}
 
-	line := firstNonEmptyLine(trimmed)
+	line := FirstNonEmptyLine(trimmed)
 	if match := summaryLineRe.FindStringSubmatch(line); match != nil {
 		return normalizeSummary(match[2], match[1], "")
 	}
@@ -642,11 +642,11 @@ func ParseSummaryText(text string) (string, SummaryState, string, bool) {
 // state has to land in the closed set, and both strings are cut to the widths
 // the block was drawn for.
 func normalizeSummary(summary, state, reason string) (string, SummaryState, string, bool) {
-	summary = clampRunes(collapseSpace(summary), maxSummaryText)
+	summary = ClampRunes(CollapseSpace(summary), maxSummaryText)
 	if summary == "" {
 		return "", SummaryUncertain, "", false
 	}
-	reason = clampRunes(collapseSpace(reason), maxSummaryReason)
+	reason = ClampRunes(CollapseSpace(reason), MaxSummaryReason)
 	parsed := SummaryUncertain
 	switch strings.ToLower(strings.TrimSpace(strings.NewReplacer(" ", "_", "-", "_").Replace(state))) {
 	case "on_target":
@@ -662,7 +662,7 @@ func normalizeSummary(summary, state, reason string) (string, SummaryState, stri
 	return summary, parsed, reason, true
 }
 
-func collapseSpace(s string) string {
+func CollapseSpace(s string) string {
 	return strings.Join(strings.Fields(strings.TrimSpace(s)), " ")
 }
 
@@ -672,10 +672,10 @@ func collapseSpace(s string) string {
 // argument cannot crowd out the rest of the digest.
 func SummaryActivity(tool, target, outcome string) string {
 	parts := []string{tool}
-	if target = collapseSpace(target); target != "" {
-		parts = append(parts, clampRunes(target, 80))
+	if target = CollapseSpace(target); target != "" {
+		parts = append(parts, ClampRunes(target, 80))
 	}
-	if outcome = collapseSpace(outcome); outcome != "" {
+	if outcome = CollapseSpace(outcome); outcome != "" {
 		parts = append(parts, outcome)
 	}
 	return strings.Join(parts, " · ")
@@ -692,7 +692,7 @@ func SummaryActivity(tool, target, outcome string) string {
 // change to show for them are a run that has stopped getting anywhere.
 func SummarySweep(tool, scope string, n int) string {
 	return SummaryActivity(tool, scope,
-		fmt.Sprintf("%d %s, nothing written", n, plural(n, "call")))
+		fmt.Sprintf("%d %s, nothing written", n, Plural(n, "call")))
 }
 
 // SummaryElapsed is how a reading's age is stated in words, for /status.
@@ -700,7 +700,7 @@ func SummaryElapsed(rounds int) string {
 	if rounds <= 0 {
 		return "this round"
 	}
-	return fmt.Sprintf("%d %s ago", rounds, plural(rounds, "round"))
+	return fmt.Sprintf("%d %s ago", rounds, Plural(rounds, "round"))
 }
 
 // SummaryChanges is a changeset in the words the digest states one in, and ""
@@ -722,9 +722,9 @@ func SummaryChanges(files, added, removed int) string {
 		return ""
 	}
 	if added == 0 && removed == 0 {
-		return fmt.Sprintf("%d %s", files, plural(files, "file"))
+		return fmt.Sprintf("%d %s", files, Plural(files, "file"))
 	}
-	return fmt.Sprintf("%d %s · +%d −%d", files, plural(files, "file"), added, removed)
+	return fmt.Sprintf("%d %s · +%d −%d", files, Plural(files, "file"), added, removed)
 }
 
 // SummarySteps is a run's progress through its own plan in the words the
@@ -739,14 +739,14 @@ func SummarySteps(done, total int, current string) string {
 	if total <= 0 {
 		return ""
 	}
-	s := fmt.Sprintf("%d of %d %s done", min(max(done, 0), total), total, plural(total, "step"))
+	s := fmt.Sprintf("%d of %d %s done", min(max(done, 0), total), total, Plural(total, "step"))
 	if current != "" {
 		s += " · on: " + current
 	}
 	return s
 }
 
-func plural(n int, word string) string {
+func Plural(n int, word string) string {
 	if n == 1 {
 		return word
 	}

@@ -36,6 +36,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 )
 
 // DefaultCheckInInterval is how many tool rounds pass before a session is
@@ -173,10 +175,10 @@ func stepNote(done, total int, current string) string {
 		return ""
 	}
 	if current == "" {
-		return fmt.Sprintf("By your own plan you have marked all %d %s done.", total, plural(total, "step"))
+		return fmt.Sprintf("By your own plan you have marked all %d %s done.", total, sidejobs.Plural(total, "step"))
 	}
 	return fmt.Sprintf("By your own plan you have marked %d of %d %s done and are on: %s. Say whether that still holds, and mark each step done with its progress line as you finish it.",
-		min(max(done, 0), total), total, plural(total, "step"), current)
+		min(max(done, 0), total), total, sidejobs.Plural(total, "step"), current)
 }
 
 // checkInInterval is the number of rounds owed before the next check-in,
@@ -296,7 +298,7 @@ func budgetNote(written []string) string {
 		names = names[:maxCheckInWritten]
 	}
 	return fmt.Sprintf("So far you have written %d %s: %s%s. Say which of those you consider finished and what is still to be written.",
-		len(written), plural(len(written), "file"), strings.Join(names, ", "), more)
+		len(written), sidejobs.Plural(len(written), "file"), strings.Join(names, ", "), more)
 }
 
 // FinishedInSession and FinishedAsSubAgent are the closing lines for the two

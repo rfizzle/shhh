@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -60,7 +62,7 @@ func TestSessionSettings_FieldByField(t *testing.T) {
 		t.Fatalf("a surface that never asks recorded an interval: %+v", bare)
 	}
 	withSummary := sessionSettings(config.Config{}, runSettings{model: "m", summary: true})
-	if withSummary.SummaryInterval != agent.DefaultSummaryInterval || withSummary.SummaryModel != "m" {
+	if withSummary.SummaryInterval != sidejobs.DefaultSummaryInterval || withSummary.SummaryModel != "m" {
 		t.Fatalf("summary defaults: %+v", withSummary)
 	}
 }

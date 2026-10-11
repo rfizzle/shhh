@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -27,7 +28,7 @@ func (p *accountProvider) StreamCompletion(_ context.Context, msgs []provider.Me
 	answer := p.answers[min(len(p.asked), len(p.answers))-1]
 	ch := make(chan provider.StreamEvent, 1)
 	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "a1", Name: agent.AccountToolName, Arguments: `{"account":"` + answer + `"}`}},
+		ToolCalls: []provider.ToolCall{{ID: "a1", Name: sidejobs.AccountToolName, Arguments: `{"account":"` + answer + `"}`}},
 		Done:      true,
 	}
 	close(ch)
@@ -42,7 +43,7 @@ func accountedModel(t *testing.T, p provider.Provider, every int) (Model, *stora
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, multiTokenStream("hi there"), Wiring{
 		DB:           db,
-		Accountant:   agent.NewAccountant(p, agent.AccountConfig{Model: "fast"}),
+		Accountant:   sidejobs.NewAccountant(p, sidejobs.AccountConfig{Model: "fast"}),
 		AccountEvery: every,
 	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -198,7 +199,7 @@ func TestResume_TakesTheOwedReading(t *testing.T) {
 
 	reopened := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, multiTokenStream("hi there"), Wiring{
 		DB:           db,
-		Accountant:   agent.NewAccountant(p, agent.AccountConfig{Model: "fast"}),
+		Accountant:   sidejobs.NewAccountant(p, sidejobs.AccountConfig{Model: "fast"}),
 		AccountEvery: 5,
 	}).WithResumedMessages(slot, msgs)
 	updated, cmd := reopened.Update(tea.WindowSizeMsg{Width: 130, Height: 30})

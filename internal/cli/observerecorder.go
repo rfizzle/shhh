@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
@@ -423,7 +425,7 @@ func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
 	}
 	if run.summary {
 		out.SummaryModel = modelOr(cfg.Summary.Model, run.model)
-		out.SummaryInterval = agent.SummaryConfig{IntervalRounds: cfg.Summary.IntervalRounds}.Interval()
+		out.SummaryInterval = sidejobs.SummaryConfig{IntervalRounds: cfg.Summary.IntervalRounds}.Interval()
 	}
 	if run.classifier {
 		out.ClassifierModel = modelOr(cfg.Behavior.ClassifierModel, run.model)

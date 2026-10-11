@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/config"
@@ -143,8 +145,8 @@ func gateModel(cfg config.Config, env *sessionEnv) func() string {
 // and `[x]` there, and a second wording here would be the same rule in two
 // places with one of them out of date. The long form is what a screen with
 // nothing else on it is for.
-func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Explainer {
-	return agent.NewExplainer(ledger.For(env.prov, meter.SourceExplanation), agent.ExplainConfig{
+func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sidejobs.Explainer {
+	return sidejobs.NewExplainer(ledger.For(env.prov, meter.SourceExplanation), sidejobs.ExplainConfig{
 		ModelAt: env.flowModelAt(cfg, flowExplanation),
 		Prompt:  prompt.BuildExplain(true),
 	})

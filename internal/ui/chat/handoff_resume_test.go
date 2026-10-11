@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -109,11 +111,11 @@ func TestGolden_Handoff(t *testing.T) {
 	captureGolden(t, "handoff", "the handoff: the resume offer, the card, the quit's offer and the resumed sitting", goldenWidths, func(width int) []golden.Panel {
 		info := startFixture()
 		info.Recent.Name = "retry-backoff"
-		info.Recent.Handoff = agent.HandoffFirstLine(text)
+		info.Recent.Handoff = sidejobs.HandoffFirstLine(text)
 		start := frameModelWith(t, width, 40, Wiring{Start: new(info)})
 
 		db := rewindTestDB(t)
-		wired := Wiring{DB: db, Workspace: t.TempDir(), Handoff: agent.NewHandoffWriter(&handoffProvider{}, agent.HandoffConfig{Model: "fast"})}
+		wired := Wiring{DB: db, Workspace: t.TempDir(), Handoff: sidejobs.NewHandoffWriter(&handoffProvider{}, sidejobs.HandoffConfig{Model: "fast"})}
 		card := frameModelWith(t, width, 40, wired)
 		card.sessionName = "retry-backoff"
 		card.handoff.writing = &handoffWriting{draft: text}

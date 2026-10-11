@@ -1,4 +1,4 @@
-package agent
+package sidejobs
 
 // The standing account of a session: two sentences saying what the session
 // was doing and where it left off, kept on the slot so every listing of saved
@@ -154,7 +154,7 @@ func (a *Accountant) Model() string {
 	if a == nil {
 		return ""
 	}
-	return modelAt(a.cfg.ModelAt, a.cfg.Model)
+	return ModelAt(a.cfg.ModelAt, a.cfg.Model)
 }
 
 var accountSchema = json.RawMessage(`{

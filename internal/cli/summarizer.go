@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -338,8 +340,8 @@ func (env *sessionEnv) flowModelAt(cfg config.Config, f boundedFlow) func() stri
 // surface's switch; a disabled one still returns a summarizer, which reports
 // itself disabled rather than being nil — the callers all handle a disabled
 // reader and none of them should have to handle a nil one as well.
-func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, enabled bool) *agent.Summarizer {
-	return agent.NewSummarizer(ledger.For(env.prov, meter.SourceSummary), agent.SummaryConfig{
+func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, enabled bool) *sidejobs.Summarizer {
+	return sidejobs.NewSummarizer(ledger.For(env.prov, meter.SourceSummary), sidejobs.SummaryConfig{
 		// Model is the answer at start, which is what the settings readout
 		// states; the reading itself asks ModelAt.
 		Model:                      resolveFlow(cfg, flowReading, env.provName, env.modelName).model,
@@ -362,8 +364,8 @@ func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, ena
 // (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write). A
 // session whose settings turned it off still gets one, reporting itself
 // disabled, for newSummarizer's reason.
-func newAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Accountant {
-	return agent.NewAccountant(ledger.For(env.prov, flowAccount.source), agent.AccountConfig{
+func newAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sidejobs.Accountant {
+	return sidejobs.NewAccountant(ledger.For(env.prov, flowAccount.source), sidejobs.AccountConfig{
 		ModelAt:  env.flowModelAt(cfg, flowAccount),
 		Timeout:  time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		Prompt:   env.prompts.account,
@@ -375,8 +377,8 @@ func newAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *ag
 // is asked on the reading's flow, because a handoff is a reading of the
 // session the person asked for by name, and billed as a summary beside it
 // (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
-func newHandoffWriter(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.HandoffWriter {
-	return agent.NewHandoffWriter(ledger.For(env.prov, flowReading.source), agent.HandoffConfig{
+func newHandoffWriter(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sidejobs.HandoffWriter {
+	return sidejobs.NewHandoffWriter(ledger.For(env.prov, flowReading.source), sidejobs.HandoffConfig{
 		ModelAt: env.flowModelAt(cfg, flowReading),
 		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 	})
@@ -391,8 +393,8 @@ func newHandoffWriter(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) 
 // what the offer costs. Whether it is asked at all is the session's switch
 // (behavior.suggestions, then /ui suggest), not the writer's: the setting
 // starts the session off and the command can still turn it on.
-func newSuggester(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Suggester {
-	return agent.NewSuggester(ledger.For(env.prov, flowSuggestion.source), agent.SuggestConfig{
+func newSuggester(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sidejobs.Suggester {
+	return sidejobs.NewSuggester(ledger.For(env.prov, flowSuggestion.source), sidejobs.SuggestConfig{
 		ModelAt: env.flowModelAt(cfg, flowSuggestion),
 		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		Prompt:  env.prompts.suggestion,

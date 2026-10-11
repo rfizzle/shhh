@@ -14,8 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -584,7 +585,7 @@ func (m Model) askExplain() tea.Cmd {
 		// The explainer bounds its own request, the way the classifier and
 		// the titler do: the deadline is a fact about the reading rather than
 		// about the surface that asked for it.
-		v := explainer.Explain(context.Background(), agent.ExplainRequest{Command: command})
+		v := explainer.Explain(context.Background(), sidejobs.ExplainRequest{Command: command})
 		return explainDoneMsg{runID: runID, call: call, command: command, verdict: v}
 	}
 }
@@ -596,7 +597,7 @@ type explainDoneMsg struct {
 	runID   int
 	call    string
 	command string
-	verdict agent.ExplainVerdict
+	verdict sidejobs.ExplainVerdict
 }
 
 // finishExplain keeps the paragraph on the request it was asked about and,

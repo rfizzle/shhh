@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -326,11 +328,11 @@ func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 		return "contents", nil
 	})
 
-	seen := make(chan SummaryVerdict, 4)
+	seen := make(chan sidejobs.SummaryVerdict, 4)
 	h := &Headless{
 		Agent:     a,
 		Summary:   run,
-		OnSummary: func(v SummaryVerdict) { seen <- v },
+		OnSummary: func(v sidejobs.SummaryVerdict) { seen <- v },
 	}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
@@ -339,9 +341,9 @@ func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 	// this is about. The run closes on a second one, which is its own test.
 	select {
 	case v := <-seen:
-		if v.State != SummaryOnTarget || v.Round != FirstSummaryRound {
+		if v.State != sidejobs.SummaryOnTarget || v.Round != sidejobs.FirstSummaryRound {
 			t.Fatalf("OnSummary saw %v at round %d, want the on-target reading of round %d",
-				v.State, v.Round, FirstSummaryRound)
+				v.State, v.Round, sidejobs.FirstSummaryRound)
 		}
 	default:
 		t.Fatal("a reading landed and OnSummary was never told")
@@ -357,7 +359,7 @@ func TestHeadlessRun_OnSummarySilentWithoutAReading(t *testing.T) {
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	called := 0
-	h := &Headless{Agent: a, OnSummary: func(SummaryVerdict) { called++ }}
+	h := &Headless{Agent: a, OnSummary: func(sidejobs.SummaryVerdict) { called++ }}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -1142,7 +1144,7 @@ func TestHeadlessRun_AVerdictTooOldToActOnIsWithheldAndRecorded(t *testing.T) {
 	// collected at the boundary of round 3 is exactly one interval old, which
 	// is the first age that earns nothing.
 	run := NewSummaryRun(
-		NewSummarizer(&slowProvider{}, SummaryConfig{Model: "fast", IntervalRounds: 2, MinGap: -1}),
+		sidejobs.NewSummarizer(&slowProvider{}, sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 2, MinGap: -1}),
 		NewRecorder(0), "ship the parser")
 	if run == nil {
 		t.Fatal("expected a runner")
@@ -1195,8 +1197,8 @@ func TestHeadlessRun_ClosesOnAReadingItDoesNotWaitFor(t *testing.T) {
 	p := &slowProvider{delay: 300 * time.Millisecond}
 	run, _ := testSummaryRun(t, p, "ship the parser")
 
-	seen := make(chan SummaryVerdict, 4)
-	h := &Headless{Agent: a, Summary: run, OnSummary: func(v SummaryVerdict) { seen <- v }}
+	seen := make(chan sidejobs.SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v sidejobs.SummaryVerdict) { seen <- v }}
 	start := time.Now()
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
@@ -1206,7 +1208,7 @@ func TestHeadlessRun_ClosesOnAReadingItDoesNotWaitFor(t *testing.T) {
 	}
 	select {
 	case v := <-seen:
-		if v.State != SummaryOnTarget {
+		if v.State != sidejobs.SummaryOnTarget {
 			t.Fatalf("state = %v, want the closing reading", v.State)
 		}
 	case <-time.After(2 * time.Second):
@@ -1232,14 +1234,14 @@ func TestHeadlessRun_TheClosingVerdictSteersNothing(t *testing.T) {
 
 	run, _ := testSummaryRun(t, &slowProvider{state: "off_target"}, "ship the parser")
 
-	seen := make(chan SummaryVerdict, 4)
-	h := &Headless{Agent: a, Summary: run, OnSummary: func(v SummaryVerdict) { seen <- v }}
+	seen := make(chan sidejobs.SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v sidejobs.SummaryVerdict) { seen <- v }}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 	select {
 	case v := <-seen:
-		if v.State != SummaryOffTarget {
+		if v.State != sidejobs.SummaryOffTarget {
 			t.Fatalf("state = %v, want the off-target close", v.State)
 		}
 	case <-time.After(2 * time.Second):
@@ -1257,7 +1259,7 @@ func TestHeadlessRun_AShortRunClosesOnNothing(t *testing.T) {
 	p := &slowProvider{}
 	run, _ := testSummaryRun(t, p, "ship the parser")
 
-	h := &Headless{Agent: a, Summary: run, OnSummary: func(SummaryVerdict) {
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(sidejobs.SummaryVerdict) {
 		t.Error("a one-round run was read at its close")
 	}}
 	if _, err := h.Run("go"); err != nil {
@@ -1282,8 +1284,8 @@ func TestHeadlessRun_ASecondTurnRetiresTheClosingReading(t *testing.T) {
 
 	run, _ := testSummaryRun(t, &slowProvider{delay: 300 * time.Millisecond}, "ship the parser")
 
-	seen := make(chan SummaryVerdict, 4)
-	h := &Headless{Agent: a, Summary: run, OnSummary: func(v SummaryVerdict) { seen <- v }}
+	seen := make(chan sidejobs.SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v sidejobs.SummaryVerdict) { seen <- v }}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("first turn: %v", err)
 	}

@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -30,7 +31,7 @@ func (p *handoffProvider) StreamCompletion(_ context.Context, msgs []provider.Me
 	p.asked = append(p.asked, msgs[len(msgs)-1].Content)
 	ch := make(chan provider.StreamEvent, 1)
 	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "h1", Name: agent.HandoffToolName, Arguments: handoffAnswer}},
+		ToolCalls: []provider.ToolCall{{ID: "h1", Name: sidejobs.HandoffToolName, Arguments: handoffAnswer}},
 		Done:      true,
 	}
 	close(ch)
@@ -53,7 +54,7 @@ func handoffModel(t *testing.T, p provider.Provider) (Model, *storage.DB) {
 	db := rewindTestDB(t)
 	m := New(handoffConversation(), mockStream, Wiring{
 		DB:      db,
-		Handoff: agent.NewHandoffWriter(p, agent.HandoffConfig{Model: "fast"}),
+		Handoff: sidejobs.NewHandoffWriter(p, sidejobs.HandoffConfig{Model: "fast"}),
 	})
 	if err := db.SaveChat(m.sessionName, handoffConversation()); err != nil {
 		t.Fatal(err)
@@ -130,7 +131,7 @@ func TestHandoff_IsWrittenOnYesOnly(t *testing.T) {
 	m = writeHandoff(t, m, "/handoff")
 	m, _ = pressKey(t, m, keyPress('y'))
 	got, _ := db.ChatHandoff(m.sessionName)
-	if agent.HandoffFirstLine(got) != "Retry backoff capped; the timer test still flakes" || !strings.Contains(got, "open: the timer test flakes under load") {
+	if sidejobs.HandoffFirstLine(got) != "Retry backoff capped; the timer test still flakes" || !strings.Contains(got, "open: the timer test flakes under load") {
 		t.Fatalf("the yes should keep the handoff on the slot, got %q", got)
 	}
 	if m.handoff.kept != got {
@@ -376,7 +377,7 @@ func TestHandoff_ANewCloseReopensTheOffer(t *testing.T) {
 	}
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		DB: db, Workspace: t.TempDir(),
-		Handoff: agent.NewHandoffWriter(&handoffProvider{}, agent.HandoffConfig{Model: "fast"}),
+		Handoff: sidejobs.NewHandoffWriter(&handoffProvider{}, sidejobs.HandoffConfig{Model: "fast"}),
 	}).WithResumedMessages("yesterday", saved)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	m = updated.(Model)

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -17,12 +19,12 @@ import (
 func TestReadings_AQuietReadingIsKeptAcrossTurns(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
 	before := len(m.transcript)
-	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Reading the loop.", State: sidejobs.SummaryOnTarget, Round: 3})
 	if len(m.transcript) != before {
 		t.Fatalf("a quiet reading should leave no row, got %d new entries", len(m.transcript)-before)
 	}
 	m.summary.startTurn()
-	landReading(&m, agent.SummaryVerdict{Text: "Rewriting the README.", State: agent.SummaryOffTarget, Round: 4})
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Rewriting the README.", State: sidejobs.SummaryOffTarget, Round: 4})
 	if got := len(m.summary.readings); got != 2 {
 		t.Fatalf("the history should hold both readings across the turn boundary, got %d", got)
 	}
@@ -34,7 +36,7 @@ func TestReadings_AQuietReadingIsKeptAcrossTurns(t *testing.T) {
 // The history is the session's: a new session starts with none.
 func TestReadings_ANewSessionStartsWithNone(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
-	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Reading the loop.", State: sidejobs.SummaryOnTarget, Round: 3})
 	m.startNewSession()
 	if len(m.summary.readings) != 0 || m.summary.dropped != 0 {
 		t.Fatalf("a new session inherited %d readings", len(m.summary.readings))
@@ -46,7 +48,7 @@ func TestReadings_ANewSessionStartsWithNone(t *testing.T) {
 func TestReadings_TheHistoryIsBounded(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading."})
 	for i := range summaryHistoryMax + 3 {
-		landReading(&m, agent.SummaryVerdict{Text: "Reading.", State: agent.SummaryOnTarget, Round: i + 1})
+		landReading(&m, sidejobs.SummaryVerdict{Text: "Reading.", State: sidejobs.SummaryOnTarget, Round: i + 1})
 	}
 	if got := len(m.summary.readings); got != summaryHistoryMax {
 		t.Fatalf("the history holds %d readings, want %d", got, summaryHistoryMax)
@@ -83,8 +85,8 @@ func TestReadings_ASteerAndItsWithdrawalAreTheReadingsOutcome(t *testing.T) {
 // instruction it was judged against.
 func TestReadings_TheCommandOpensTheReadingWhole(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading."})
-	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
-	landReading(&m, agent.SummaryVerdict{Text: "Rewriting the README.", State: agent.SummaryOffTarget,
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Reading the loop.", State: sidejobs.SummaryOnTarget, Round: 3})
+	landReading(&m, sidejobs.SummaryVerdict{Text: "Rewriting the README.", State: sidejobs.SummaryOffTarget,
 		Reason: "docs were not asked for", Round: 9})
 	next, _ := m.runCommand("/readings", "/readings")
 	opened := next.(Model)
@@ -123,10 +125,10 @@ func TestReadings_NoReadingsSaysSo(t *testing.T) {
 func TestReadings_ASteerIsFiledAgainstTheReadingThatEarnedIt(t *testing.T) {
 	var s summaryState
 	iv := agent.Intervention{Kind: agent.InterveneSteer}
-	s.keepReading(summaryReading{verdict: agent.SummaryVerdict{State: agent.SummaryOffTarget, Round: 3}, turn: 1})
+	s.keepReading(summaryReading{verdict: sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: 3}, turn: 1})
 	s.markSteered(iv, "round 3 · steered")
-	s.keepReading(summaryReading{verdict: agent.SummaryVerdict{State: agent.SummaryOffTarget, Round: 3}, turn: 2})
-	s.keepReading(summaryReading{verdict: agent.SummaryVerdict{State: agent.SummaryOnTarget, Round: 4}, turn: 2})
+	s.keepReading(summaryReading{verdict: sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: 3}, turn: 2})
+	s.keepReading(summaryReading{verdict: sidejobs.SummaryVerdict{State: sidejobs.SummaryOnTarget, Round: 4}, turn: 2})
 	s.markSteered(iv, "round 3 · steered")
 	if s.readings[1].steer == "" || s.readings[2].steer != "" {
 		t.Fatalf("the steer went to the wrong reading: %+v", s.readings)

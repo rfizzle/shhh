@@ -32,6 +32,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -44,7 +46,7 @@ import (
 // frame reads; the rest is what keeps a reading from landing on a turn it
 // was not read for.
 type suggestState struct {
-	writer *agent.Suggester
+	writer *sidejobs.Suggester
 	// on is the session's switch (/ui suggest, behavior.suggestions).
 	on bool
 	// text is the offer drawn in the empty draft, or empty for none.
@@ -68,7 +70,7 @@ type suggestState struct {
 type suggestDoneMsg struct {
 	gen     int
 	turn    int64
-	verdict agent.SuggestVerdict
+	verdict sidejobs.SuggestVerdict
 }
 
 // suggestEnabled reports whether readings are taken at all.
@@ -146,7 +148,7 @@ func (m *Model) suggestCloseCmd(prev Model) tea.Cmd {
 
 // askSuggestion sends one reading, replacing any still out: only the newest
 // may land. byCommand marks a reading the person asked for with /suggest.
-func (m *Model) askSuggestion(req agent.SuggestRequest, byCommand bool) tea.Cmd {
+func (m *Model) askSuggestion(req sidejobs.SuggestRequest, byCommand bool) tea.Cmd {
 	if m.suggest.cancel != nil {
 		m.suggest.cancel()
 	}
@@ -244,8 +246,8 @@ func (m Model) suggestionKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 // suggestRequest is the evidence an offer is read from, all of it what the
 // session already holds at a turn's close: nothing here reads the transcript
 // a second time or a tool result at all.
-func (m Model) suggestRequest() agent.SuggestRequest {
-	req := agent.SuggestRequest{
+func (m Model) suggestRequest() sidejobs.SuggestRequest {
+	req := sidejobs.SuggestRequest{
 		Close:     m.suggestCloseEvidence(),
 		Steps:     m.suggestStepsEvidence(),
 		Account:   m.compactSummary,

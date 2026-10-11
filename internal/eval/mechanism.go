@@ -36,6 +36,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -180,16 +182,16 @@ func missing(text string, needs []string) string {
 // lands, which is a reading a row may write and the one the policy is
 // supposed to do nothing about; a word outside the four is refused at load,
 // so nothing else ever arrives here.
-func summaryState(label string) agent.SummaryState {
+func summaryState(label string) sidejobs.SummaryState {
 	switch label {
 	case LabelOnTarget:
-		return agent.SummaryOnTarget
+		return sidejobs.SummaryOnTarget
 	case LabelOffTarget:
-		return agent.SummaryOffTarget
+		return sidejobs.SummaryOffTarget
 	case LabelSufficient:
-		return agent.SummarySufficient
+		return sidejobs.SummarySufficient
 	}
-	return agent.SummaryUncertain
+	return sidejobs.SummaryUncertain
 }
 
 // askSteer puts one reading to the policy that decides what a turn is told.
@@ -204,7 +206,7 @@ func summaryState(label string) agent.SummaryState {
 // drifted and never says from what.
 func askSteer(row Row) Answer {
 	a := agent.New(nil, nil)
-	verdict := agent.SummaryVerdict{State: summaryState(row.State), Reason: row.Reason, Round: row.Round}
+	verdict := sidejobs.SummaryVerdict{State: summaryState(row.State), Reason: row.Reason, Round: row.Round}
 	rounds := max(row.Rounds, row.Round)
 	if withheld := a.ConsiderVerdict(verdict, rounds, !row.Finished); withheld == agent.InterveneStale {
 		return Answer{Label: LabelStale, Reason: "the reading described work the run had already left behind"}

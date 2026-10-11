@@ -7,6 +7,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/persona"
@@ -44,26 +46,26 @@ var flowBuilders = []struct {
 	{provider.FlowClassifier, "agent.Classifier", func(ctx context.Context, p provider.Provider) {
 		agent.NewClassifier(p, agent.ClassifierConfig{Model: "m"}).Judge(ctx, agent.ClassifierRequest{Tool: "execute_command", Arguments: `{"command":"ls"}`})
 	}},
-	{provider.FlowExplanation, "agent.Explainer", func(ctx context.Context, p provider.Provider) {
-		agent.NewExplainer(p, agent.ExplainConfig{Model: "m", Prompt: "explain"}).Explain(ctx, agent.ExplainRequest{Command: "ls"})
+	{provider.FlowExplanation, "sidejobs.Explainer", func(ctx context.Context, p provider.Provider) {
+		sidejobs.NewExplainer(p, sidejobs.ExplainConfig{Model: "m", Prompt: "explain"}).Explain(ctx, sidejobs.ExplainRequest{Command: "ls"})
 	}},
 	{provider.FlowDescription, "generateDescription", func(ctx context.Context, p provider.Provider) {
 		generateDescription(ctx, p, "m", "m", "ls")
 	}},
-	{provider.FlowReading, "agent.Summarizer", func(ctx context.Context, p provider.Provider) {
-		agent.NewSummarizer(p, agent.SummaryConfig{Model: "m"}).Summarize(ctx, agent.SummaryRequest{})
+	{provider.FlowReading, "sidejobs.Summarizer", func(ctx context.Context, p provider.Provider) {
+		sidejobs.NewSummarizer(p, sidejobs.SummaryConfig{Model: "m"}).Summarize(ctx, sidejobs.SummaryRequest{})
 	}},
-	{provider.FlowReading, "agent.HandoffWriter", func(ctx context.Context, p provider.Provider) {
-		agent.NewHandoffWriter(p, agent.HandoffConfig{Model: "m"}).Write(ctx, agent.HandoffRequest{First: "fix it"})
+	{provider.FlowReading, "sidejobs.HandoffWriter", func(ctx context.Context, p provider.Provider) {
+		sidejobs.NewHandoffWriter(p, sidejobs.HandoffConfig{Model: "m"}).Write(ctx, sidejobs.HandoffRequest{First: "fix it"})
 	}},
-	{provider.FlowTitle, "agent.Titler", func(ctx context.Context, p provider.Provider) {
-		agent.NewTitler(p, agent.TitleConfig{Model: "m"}).Title(ctx, agent.TitleRequest{User: "hi"})
+	{provider.FlowTitle, "sidejobs.Titler", func(ctx context.Context, p provider.Provider) {
+		sidejobs.NewTitler(p, sidejobs.TitleConfig{Model: "m"}).Title(ctx, sidejobs.TitleRequest{User: "hi"})
 	}},
-	{provider.FlowAccount, "agent.Accountant", func(ctx context.Context, p provider.Provider) {
-		agent.NewAccountant(p, agent.AccountConfig{Model: "m"}).Account(ctx, agent.AccountRequest{First: "fix it"})
+	{provider.FlowAccount, "sidejobs.Accountant", func(ctx context.Context, p provider.Provider) {
+		sidejobs.NewAccountant(p, sidejobs.AccountConfig{Model: "m"}).Account(ctx, sidejobs.AccountRequest{First: "fix it"})
 	}},
-	{provider.FlowSuggestion, "agent.Suggester", func(ctx context.Context, p provider.Provider) {
-		agent.NewSuggester(p, agent.SuggestConfig{Model: "m"}).Suggest(ctx, agent.SuggestRequest{Instruction: "fix it"})
+	{provider.FlowSuggestion, "sidejobs.Suggester", func(ctx context.Context, p provider.Provider) {
+		sidejobs.NewSuggester(p, sidejobs.SuggestConfig{Model: "m"}).Suggest(ctx, sidejobs.SuggestRequest{Instruction: "fix it"})
 	}},
 	{provider.FlowStartOffers, "agent.StartOfferer", func(ctx context.Context, p provider.Provider) {
 		agent.NewStartOfferer(p, agent.StartOffersConfig{Model: "m"}).Offer(ctx, agent.StartOffersRequest{Facts: "a checkout"})

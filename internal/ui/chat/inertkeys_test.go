@@ -15,9 +15,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -91,7 +92,7 @@ func register(t *testing.T) []keyedSurface {
 			keys: []string{"x"},
 			open: func(t *testing.T) Model {
 				m := explainerModel(t, &paragraphProvider{text: "it copies src/ into dst/."},
-					agent.ExplainConfig{Model: "small", Prompt: explainWording})
+					sidejobs.ExplainConfig{Model: "small", Prompt: explainWording})
 				return pendingExec(t, typeChars(t, m, draftLead), "rsync -a --delete src/ dst/")
 			},
 			hold: handover,

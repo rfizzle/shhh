@@ -26,6 +26,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -65,7 +67,7 @@ type handoffWriting struct {
 // handoffDraftMsg is a writing's answer.
 type handoffDraftMsg struct {
 	flow    *handoffWriting
-	verdict agent.HandoffVerdict
+	verdict sidejobs.HandoffVerdict
 }
 
 // handoffWired reports a session that can write a handoff and keep it.
@@ -116,7 +118,7 @@ func (m Model) handoffCommand(note string) (tea.Model, tea.Cmd) {
 			return m.openHandoff()
 		}
 	}
-	req := agent.HandoffRequestFrom(note, m.compactSummary, agent.StripResumeContext(m.agent.Messages()))
+	req := sidejobs.HandoffRequestFrom(note, m.compactSummary, agent.StripResumeContext(m.agent.Messages()))
 	if req.Empty() {
 		m.handoff.quitAfter = false
 		return m.systemNotice("nothing to hand off yet: the session has no conversation")

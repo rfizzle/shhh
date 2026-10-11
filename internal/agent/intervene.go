@@ -27,6 +27,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -109,17 +111,11 @@ type Intervention struct {
 // (docs/capabilities/coding-agent.md#the-verdict-is-a-steering-signal-so-the-digest-is-a-boundary).
 func (iv Intervention) Row(round int) string {
 	parts := []string{fmt.Sprintf("round %d", round), iv.Kind.Word()}
-	if reason := collapseSpace(iv.Reason); reason != "" {
-		parts = append(parts, clampRunes(reason, maxSummaryReason))
+	if reason := sidejobs.CollapseSpace(iv.Reason); reason != "" {
+		parts = append(parts, sidejobs.ClampRunes(reason, sidejobs.MaxSummaryReason))
 	}
 	return strings.Join(parts, " · ")
 }
-
-// targetJoin separates the things a person has asked for in one turn. It is a
-// blank line because the target is quoted back to the model whole ("What was
-// asked:"), and two instructions run together on one line read as one
-// sentence that contradicts itself.
-const targetJoin = "\n\n"
 
 // ExtendTarget adds a steer a person typed into a running turn to the
 // instruction that turn's readings are judged against: what was asked, then
@@ -143,7 +139,7 @@ func ExtendTarget(target, steer string) string {
 		return target
 	}
 	if trimmed := strings.TrimSpace(target); trimmed != "" {
-		return trimmed + targetJoin + steer
+		return trimmed + sidejobs.TargetJoin + steer
 	}
 	return steer
 }
@@ -158,7 +154,7 @@ func ExtendTarget(target, steer string) string {
 // this whole pair exists to end. The caller bounds the result — how much room
 // a rail or a row has is the surface's own question.
 func TargetLine(target string) string {
-	parts := strings.Split(strings.TrimSpace(target), targetJoin)
+	parts := strings.Split(strings.TrimSpace(target), sidejobs.TargetJoin)
 	lines := make([]string, 0, len(parts))
 	for _, p := range parts {
 		if line := digest.FirstLine(p); line != "" {
@@ -168,49 +164,17 @@ func TargetLine(target string) string {
 	return strings.Join(lines, " · ")
 }
 
-// clampTargetParts bounds an extended target for a field that has a budget,
-// and returns what was asked as separate parts for the caller to lay out.
-//
-// Every bound in this package truncates the tail, and the tail of an extended
-// target is the newest thing the person said. A long instruction with a steer
-// after it would reach the reader as the instruction alone, and the reader
-// would go on judging the work against words the person had already replaced
-// — the failure ExtendTarget exists to end, arriving by way of the bound
-// instead. So the budget is shared out evenly instead: one instruction is
-// clamped exactly as it always was, and every further one is guaranteed a
-// share of what is left.
-func clampTargetParts(target string, limit int) []string {
-	parts := strings.Split(strings.TrimSpace(target), targetJoin)
-	share := limit
-	if len(parts) > 1 {
-		share = (limit - len(targetJoin)*(len(parts)-1)) / len(parts)
-	}
-	if share < 2 {
-		// Below two runes there is no share to give: a clamped string is at
-		// least the ellipsis that marks it. The newest instruction is the one
-		// that changes the answer, so it takes the whole budget and the rest
-		// are dropped rather than every one of them being reduced to a mark.
-		parts = parts[len(parts)-1:]
-		share = limit
-	}
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		out = append(out, clampRunes(strings.TrimSpace(p), share))
-	}
-	return out
-}
-
 // clampTarget is the target bounded and joined again as the model is shown
 // it — what was asked, then what was said since, a blank line apart.
 func clampTarget(target string, limit int) string {
-	return strings.Join(clampTargetParts(target, limit), targetJoin)
+	return strings.Join(sidejobs.ClampTargetParts(target, limit), sidejobs.TargetJoin)
 }
 
 // interveneState is what an Agent knows about interrupting its own turn: the
 // verdict it has decided to act on but not yet delivered, and the marks that
 // stop it acting twice.
 type interveneState struct {
-	pending      *SummaryVerdict
+	pending      *sidejobs.SummaryVerdict
 	kind         InterveneKind
 	verdictRound int
 	lastRound    int
@@ -263,7 +227,7 @@ func (a *Agent) SetInterveneBounds(interval, cooldownIntervals int) {
 // to zero — zero would drop every reading ever taken.
 func (a *Agent) readingInterval() int {
 	if a.intervene.interval <= 0 {
-		return DefaultSummaryInterval
+		return sidejobs.DefaultSummaryInterval
 	}
 	return a.intervene.interval
 }
@@ -271,7 +235,7 @@ func (a *Agent) readingInterval() int {
 func (a *Agent) interveneCooldown() int {
 	n := a.intervene.cooldownIntervals
 	if n <= 0 {
-		n = DefaultCooldownIntervals
+		n = sidejobs.DefaultCooldownIntervals
 	}
 	return n * a.readingInterval()
 }
@@ -301,7 +265,7 @@ func (a *Agent) interveneCooldown() int {
 // nothing else in the record says the summariser is slower than the run it is
 // reading, and a run that looks like it was never off target is exactly what
 // that failure looks like from the outside.
-func (a *Agent) ConsiderVerdict(v SummaryVerdict, rounds int, working bool) string {
+func (a *Agent) ConsiderVerdict(v sidejobs.SummaryVerdict, rounds int, working bool) string {
 	if !working || v.Failed {
 		return ""
 	}

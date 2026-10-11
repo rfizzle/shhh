@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -518,11 +520,11 @@ func (c *headlessChat) adopt(a *agent.Agent) {
 // conversation as the save will keep it — the reopening's reading left out —
 // revising the account the slot already carried. A reading that fails, or a
 // run with nothing asked in it, leaves the account as it was.
-func (c *headlessChat) reviseAccount(a *agent.Accountant, msgs []provider.Message) {
+func (c *headlessChat) reviseAccount(a *sidejobs.Accountant, msgs []provider.Message) {
 	if c == nil || c.db == nil || c.slot == "" || !a.Enabled() {
 		return
 	}
-	req := agent.AccountRequestFrom(c.summary, c.withoutReading(msgs))
+	req := sidejobs.AccountRequestFrom(c.summary, c.withoutReading(msgs))
 	if req.Empty() {
 		return
 	}
@@ -538,7 +540,7 @@ func (c *headlessChat) reviseAccount(a *agent.Accountant, msgs []provider.Messag
 // where it stood. The stage cannot tell which it will be — the block is
 // decided steps after its own turn — so it pays for no account either way
 // (docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them).
-func headlessAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Accountant {
+func headlessAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sidejobs.Accountant {
 	if item, _ := todoStageStamp(); item != "" {
 		return nil
 	}
@@ -752,7 +754,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// recorded.
 	var lateMu sync.Mutex
 	runOver := false
-	summary := func(v agent.SummaryVerdict) {
+	summary := func(v sidejobs.SummaryVerdict) {
 		lateMu.Lock()
 		defer lateMu.Unlock()
 		if runOver {

@@ -26,6 +26,8 @@ package chat
 import (
 	"context"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
@@ -37,7 +39,7 @@ import (
 // slot, so the two writers of that column share one value and the later
 // write is the one that stands.
 type accountState struct {
-	writer *agent.Accountant
+	writer *sidejobs.Accountant
 	// every is how many closed turns pass between two readings; zero is
 	// off.
 	every int
@@ -61,7 +63,7 @@ type accountState struct {
 // lands.
 type accountDoneMsg struct {
 	name, basis string
-	verdict     agent.AccountVerdict
+	verdict     sidejobs.AccountVerdict
 }
 
 // accountEnabled reports whether readings are taken at all.
@@ -94,8 +96,8 @@ func (m Model) accountOwed() bool {
 
 // accountRequest is the evidence a reading is taken from: the standing
 // account, and the conversation as the slot keeps it.
-func (m Model) accountRequest() agent.AccountRequest {
-	return agent.AccountRequestFrom(m.compactSummary, agent.StripResumeContext(m.agent.Messages()))
+func (m Model) accountRequest() sidejobs.AccountRequest {
+	return sidejobs.AccountRequestFrom(m.compactSummary, agent.StripResumeContext(m.agent.Messages()))
 }
 
 // accountCloseCmd asks for a reading once enough turns have closed since the

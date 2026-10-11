@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -17,8 +19,8 @@ import (
 func statusRowModel(t *testing.T, width int) Model {
 	t.Helper()
 	m := frameModel(t, width, 40)
-	m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
-	m.summary.last = &agent.SummaryVerdict{Text: "wiring the pause", State: agent.SummaryOnTarget, Round: 7}
+	m.summary.writer = sidejobs.NewSummarizer(&readingProvider{}, sidejobs.SummaryConfig{Model: "fast"})
+	m.summary.last = &sidejobs.SummaryVerdict{Text: "wiring the pause", State: sidejobs.SummaryOnTarget, Round: 7}
 	m.summary.schedule.Read(7)
 	m.turnCount = 1
 	m.changes.Add(1, changeset.Record{

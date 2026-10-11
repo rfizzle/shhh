@@ -23,6 +23,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -390,8 +392,8 @@ func askClassifier(ctx context.Context, p provider.Provider, model string, row R
 }
 
 func askSummary(ctx context.Context, p provider.Provider, model string, row Row) Answer {
-	s := agent.NewSummarizer(p, agent.SummaryConfig{Model: model})
-	v := s.Summarize(ctx, agent.SummaryRequest{
+	s := sidejobs.NewSummarizer(p, sidejobs.SummaryConfig{Model: model})
+	v := s.Summarize(ctx, sidejobs.SummaryRequest{
 		Target:    row.Instruction,
 		Plan:      row.Plan,
 		Activity:  row.Activity,
@@ -409,11 +411,11 @@ func askSummary(ctx context.Context, p provider.Provider, model string, row Row)
 	}
 	a.Reason = v.Text
 	switch v.State {
-	case agent.SummaryOnTarget:
+	case sidejobs.SummaryOnTarget:
 		a.Label = LabelOnTarget
-	case agent.SummarySufficient:
+	case sidejobs.SummarySufficient:
 		a.Label = LabelSufficient
-	case agent.SummaryOffTarget:
+	case sidejobs.SummaryOffTarget:
 		a.Label = LabelOffTarget
 	default:
 		a.Label = LabelUnclear

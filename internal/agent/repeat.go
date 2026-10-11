@@ -43,6 +43,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -319,7 +321,7 @@ func (d *RepeatDetector) Sweeps() []string {
 	})
 	rows := make([]string, 0, len(out))
 	for _, s := range out {
-		rows = append(rows, SummarySweep(s.tool, s.scope, s.n))
+		rows = append(rows, sidejobs.SummarySweep(s.tool, s.scope, s.n))
 	}
 	return rows
 }

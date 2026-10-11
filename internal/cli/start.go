@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hostgit"
@@ -147,7 +149,7 @@ func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust
 			}
 			// The handoff the person left on it is the offer's detail.
 			if handoff, err := db.ChatHandoff(recent.Name); err == nil {
-				info.Recent.Handoff = agent.HandoffFirstLine(handoff)
+				info.Recent.Handoff = sidejobs.HandoffFirstLine(handoff)
 			}
 		}
 	}

@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
@@ -418,7 +420,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 	sess.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 4*time.Millisecond, emptyOutcome, emptyClass, "")
 	sess.decisionAt(observe.Pos{Turn: 1, Round: 2}, observe.DecisionAsk,
 		observe.AskReason(agent.Action{Kind: agent.ActionEdit, OutOfScope: []string{"/etc/passwd"}}), 0)
-	sess.signal(observe.Pos{Turn: 1, Round: 3}, observe.SignalSummary, observe.SummaryCode(agent.SummaryOnTarget))
+	sess.signal(observe.Pos{Turn: 1, Round: 3}, observe.SignalSummary, observe.SummaryCode(sidejobs.SummaryOnTarget))
 	// Both gate runs go through the real boundary rather than straight at
 	// the recorder: the second is a suite name that resolved against
 	// nothing, which is the one string on any recording path the model

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
@@ -67,9 +69,9 @@ type screenBuild struct {
 	// The readers built before the containment, in the order they always
 	// were.
 	classifier *agent.Classifier
-	explainer  *agent.Explainer
-	summarizer *agent.Summarizer
-	titler     *agent.Titler
+	explainer  *sidejobs.Explainer
+	summarizer *sidejobs.Summarizer
+	titler     *sidejobs.Titler
 
 	// The record and the boundary.
 	recorder   *observeRecorder
@@ -243,7 +245,7 @@ func (b *screenBuild) policy() error {
 	// Session titles ask the same model. On unless the config says
 	// otherwise, since a model always resolves down the chain; a name the
 	// user gives wins either way.
-	b.titler = agent.NewTitler(ledger.For(env.prov, meter.SourceSummary), agent.TitleConfig{
+	b.titler = sidejobs.NewTitler(ledger.For(env.prov, meter.SourceSummary), sidejobs.TitleConfig{
 		ModelAt:  env.flowModelAt(cfg, flowTitle),
 		Timeout:  time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		Disabled: !cfg.TitlesEnabled(),

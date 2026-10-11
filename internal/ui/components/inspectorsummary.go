@@ -38,7 +38,7 @@ type InspectorSummary struct {
 }
 
 // SummaryTone is the rail's rendering of a summary's state. It mirrors
-// agent.SummaryState; the component keeps its own type for the same reason
+// sidejobs.SummaryState; the component keeps its own type for the same reason
 // PlanStepState is not the transcript's own — the rail draws, it does not
 // import the session's vocabulary.
 type SummaryTone int

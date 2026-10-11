@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -187,7 +188,7 @@ func TestCard_NoProseNoBody(t *testing.T) {
 	}
 
 	m.transcript = append(m.transcript, entry{kind: entrySummary, reading: &summaryReading{
-		verdict: agent.SummaryVerdict{State: agent.SummaryOffTarget, Round: 2, Text: "Checking the tree before it writes."}}})
+		verdict: sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: 2, Text: "Checking the tree before it writes."}}})
 	m.invalidateRenderCache()
 	view := m.renderHistory()
 	lines = strings.Split(stripANSI(view), "\n")
@@ -779,7 +780,7 @@ func openCloseModel(t *testing.T) Model {
 		readEntry(".plan/BACKLOG.md", 1200*time.Millisecond),
 		readEntry(".plan/NOTES.md", 1100*time.Millisecond),
 		{kind: entrySummary, reading: &summaryReading{
-			verdict: agent.SummaryVerdict{State: agent.SummaryOnTarget, Round: 1, Text: "Reading before it writes."}}},
+			verdict: sidejobs.SummaryVerdict{State: sidejobs.SummaryOnTarget, Round: 1, Text: "Reading before it writes."}}},
 		searchEntry("copy", 800*time.Millisecond),
 	}
 	m.invalidateRenderCache()

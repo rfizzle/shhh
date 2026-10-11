@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
@@ -2276,7 +2278,7 @@ func TestGolden_ExplainView(t *testing.T) {
 		func(width int) []golden.Panel {
 			read := explainView(explainDoneMsg{
 				command: "rsync -a --delete src/ dst/",
-				verdict: agent.ExplainVerdict{
+				verdict: sidejobs.ExplainVerdict{
 					Text: "Copies the contents of src/ into dst/, preserving permissions, " +
 						"timestamps and symlinks, and deletes anything already in dst/ that " +
 						"is not in src/.\n\nThe deletion is the part worth reading twice: " +
@@ -2288,7 +2290,7 @@ func TestGolden_ExplainView(t *testing.T) {
 			read.SetSize(width, 20)
 			failed := explainView(explainDoneMsg{
 				command: "rsync -a --delete src/ dst/",
-				verdict: agent.ExplainVerdict{
+				verdict: sidejobs.ExplainVerdict{
 					Failed: true,
 					Model:  "claude-haiku-4-5",
 					Err:    "the explanation could not be read: context deadline exceeded",
@@ -2844,12 +2846,12 @@ func TestGolden_StatusRow(t *testing.T) {
 			// (docs/interface/surfaces.md#the-session-summary).
 			{Label: "a quiet reading lands · its verdict is this row's and the feed's is nothing", View: build(func(m *Model) {
 				m.state = stateStreaming
-				landReading(m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryUncertain, Round: 2})
+				landReading(m, sidejobs.SummaryVerdict{Text: "Reading the loop.", State: sidejobs.SummaryUncertain, Round: 2})
 			})},
 			{Label: "an off-target reading lands · its verdict here and a row in the feed", View: build(func(m *Model) {
 				m.state = stateStreaming
-				landReading(m, agent.SummaryVerdict{
-					Text: "Rewriting the README.", State: agent.SummaryOffTarget,
+				landReading(m, sidejobs.SummaryVerdict{
+					Text: "Rewriting the README.", State: sidejobs.SummaryOffTarget,
 					Reason: "docs were not asked for", Round: 9,
 				})
 			})},
@@ -2859,7 +2861,7 @@ func TestGolden_StatusRow(t *testing.T) {
 
 // landReading lands a reading through the path a session's own takes, so a
 // capture of it draws whatever that path decided to draw.
-func landReading(m *Model, v agent.SummaryVerdict) {
+func landReading(m *Model, v sidejobs.SummaryVerdict) {
 	m.summary.inFlight = true
 	m.finishSummary(summaryDoneMsg{runID: m.summary.runID, gen: m.summary.gen, verdict: v})
 }
@@ -2999,10 +3001,10 @@ func TestGolden_Screen(t *testing.T) {
 			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
-				m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
-				m.summary.last = &agent.SummaryVerdict{
+				m.summary.writer = sidejobs.NewSummarizer(&readingProvider{}, sidejobs.SummaryConfig{Model: "fast"})
+				m.summary.last = &sidejobs.SummaryVerdict{
 					Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and nothing has run the tests yet.",
-					State: agent.SummaryOnTarget,
+					State: sidejobs.SummaryOnTarget,
 					Round: 24,
 					Model: "fast",
 				}
@@ -3016,10 +3018,10 @@ func TestGolden_Screen(t *testing.T) {
 			{Label: "working · a quiet reading lands · the rail's, not the feed's", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
-				m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
-				landReading(m, agent.SummaryVerdict{
+				m.summary.writer = sidejobs.NewSummarizer(&readingProvider{}, sidejobs.SummaryConfig{Model: "fast"})
+				landReading(m, sidejobs.SummaryVerdict{
 					Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and nothing has run the tests yet.",
-					State: agent.SummaryOnTarget,
+					State: sidejobs.SummaryOnTarget,
 					Round: 24,
 					Model: "fast",
 				})
@@ -3027,10 +3029,10 @@ func TestGolden_Screen(t *testing.T) {
 			{Label: "working · an off-target reading lands · a row under the close", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
-				m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
-				landReading(m, agent.SummaryVerdict{
+				m.summary.writer = sidejobs.NewSummarizer(&readingProvider{}, sidejobs.SummaryConfig{Model: "fast"})
+				landReading(m, sidejobs.SummaryVerdict{
 					Text:   "Rewriting the README instead of the round-limit pause.",
-					State:  agent.SummaryOffTarget,
+					State:  sidejobs.SummaryOffTarget,
 					Reason: "docs were not asked for",
 					Round:  24,
 					Model:  "fast",
@@ -3258,7 +3260,7 @@ func TestGolden_LiveCardWords(t *testing.T) {
 // draw its words whole (docs/interface/surfaces.md#the-session-summary).
 func TestGolden_SummaryRow(t *testing.T) {
 	captureGolden(t, "summary-row", "a reading's row in the feed", goldenWidths, func(width int) []golden.Panel {
-		row := func(v agent.SummaryVerdict, open bool) string {
+		row := func(v sidejobs.SummaryVerdict, open bool) string {
 			m := frameModel(t, width, 40)
 			m.summaryTarget = "fix the round limit"
 			if !m.appendSummaryRow(v) {
@@ -3268,18 +3270,18 @@ func TestGolden_SummaryRow(t *testing.T) {
 			last.expanded = open
 			return m.renderEntry(last, m.transcriptWidth())
 		}
-		off := agent.SummaryVerdict{
+		off := sidejobs.SummaryVerdict{
 			Text:   "Rewriting the README instead of the round-limit pause.",
-			State:  agent.SummaryOffTarget,
+			State:  sidejobs.SummaryOffTarget,
 			Reason: "docs were not asked for",
 			Round:  24,
 			Model:  "fast",
 		}
-		long := agent.SummaryVerdict{
+		long := sidejobs.SummaryVerdict{
 			Text: "Wiring the round-limit pause into the chat model: the sentinel is returned from runRound, " +
 				"the loop reads it at the round boundary and parks the turn, and the offer to continue is drawn " +
 				"on the frame. Nothing has run the tests yet, and the changeset holds loop.go and rounds.go.",
-			State: agent.SummaryOnTarget,
+			State: sidejobs.SummaryOnTarget,
 			Round: 31,
 			Model: "fast",
 		}
@@ -4180,7 +4182,7 @@ func retriedTurn(t *testing.T, width int) Model {
 // offers a key.
 func TestGolden_SummaryCard(t *testing.T) {
 	captureGolden(t, "summary-card", "a reading in the card and on its own row", goldenWidths, func(width int) []golden.Panel {
-		build := func(title string, state agent.SummaryState, open bool) string {
+		build := func(title string, state sidejobs.SummaryState, open bool) string {
 			m := frameModel(t, width, 40)
 			m.appendEntry(entry{kind: entryUser, text: "write the copy story"})
 			if title != "" {
@@ -4189,7 +4191,7 @@ func TestGolden_SummaryCard(t *testing.T) {
 			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":".plan/BACKLOG.md"}`, toolResult: "# Backlog", duration: 3100 * time.Millisecond})
 			m.appendEntry(entry{kind: entrySummary, expanded: open, reading: &summaryReading{
 				target: "write the copy story",
-				verdict: agent.SummaryVerdict{State: state, Round: 4, Reason: "the plan never named these files",
+				verdict: sidejobs.SummaryVerdict{State: state, Round: 4, Reason: "the plan never named these files",
 					Text: "Both preconditions held up and nothing read so far contradicts the plan. Writing is next, no detours."},
 			}})
 			m.invalidateRenderCache()
@@ -4197,10 +4199,10 @@ func TestGolden_SummaryCard(t *testing.T) {
 		}
 		const title = "Reading the backlog's format before writing."
 		return []golden.Panel{
-			{Label: "the round said nothing · the reading is the card's body", View: build("", agent.SummaryOnTarget, false)},
-			{Label: "the round said something · the reading is a row of its own", View: build(title, agent.SummaryOnTarget, false)},
-			{Label: "its own row, opened · the reason and what it was read against", View: build(title, agent.SummaryOffTarget, true)},
-			{Label: "unclear · the one reading that offers a key", View: build(title, agent.SummaryUncertain, false)},
+			{Label: "the round said nothing · the reading is the card's body", View: build("", sidejobs.SummaryOnTarget, false)},
+			{Label: "the round said something · the reading is a row of its own", View: build(title, sidejobs.SummaryOnTarget, false)},
+			{Label: "its own row, opened · the reason and what it was read against", View: build(title, sidejobs.SummaryOffTarget, true)},
+			{Label: "unclear · the one reading that offers a key", View: build(title, sidejobs.SummaryUncertain, false)},
 		}
 	})
 }

@@ -32,6 +32,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
@@ -162,16 +164,16 @@ func wordingKeys() []wording {
 			agent.CheckInWording, agent.ValidateCheckIn},
 		{"summary", func(c config.PromptsConfig) string { return c.Summary },
 			setSummary, func(p sessionPrompts) string { return p.summary },
-			agent.SummaryWording, agent.ValidateVerbatim},
+			sidejobs.SummaryWording, agent.ValidateVerbatim},
 		{"classifier", func(c config.PromptsConfig) string { return c.Classifier },
 			setClassifier, func(p sessionPrompts) string { return p.classifier },
 			agent.ClassifierWording, agent.ValidateVerbatim},
 		{"account", func(c config.PromptsConfig) string { return c.Account },
 			setAccount, func(p sessionPrompts) string { return p.account },
-			agent.AccountWording, agent.ValidateVerbatim},
+			sidejobs.AccountWording, agent.ValidateVerbatim},
 		{"suggestion", func(c config.PromptsConfig) string { return c.Suggestion },
 			setSuggestion, func(p sessionPrompts) string { return p.suggestion },
-			agent.SuggestWording, agent.ValidateVerbatim},
+			sidejobs.SuggestWording, agent.ValidateVerbatim},
 	}
 	pipeline := todoPipeline()
 	builtins := pipeline.Builtins()

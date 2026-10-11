@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -475,7 +477,7 @@ func TestASummaryTableComparesTheStateTheReadingCameBackWith(t *testing.T) {
 		return provider.StreamEvent{
 			ToolCalls: []provider.ToolCall{{
 				ID:        "s1",
-				Name:      agent.SummaryToolName,
+				Name:      sidejobs.SummaryToolName,
 				Arguments: `{"summary":"doing the thing","state":"` + state + `","reason":""}`,
 			}},
 			Usage: &provider.Usage{PromptTokens: 300, CompletionTokens: 20},

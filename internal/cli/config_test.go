@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
@@ -222,7 +224,7 @@ func TestConfigRows_SteeringKeysStateTheirDefaults(t *testing.T) {
 	for key, want := range map[string]string{
 		"behavior.check_in_interval_rounds":    strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",
 		"behavior.check_in_max_doublings":      strconv.Itoa(agent.DefaultCheckInDoublings) + " doublings",
-		"summary.intervene_cooldown_intervals": strconv.Itoa(agent.DefaultCooldownIntervals) + " readings",
+		"summary.intervene_cooldown_intervals": strconv.Itoa(sidejobs.DefaultCooldownIntervals) + " readings",
 		"summary.steer_target_chars":           strconv.Itoa(agent.DefaultSteerTargetChars) + " characters",
 		"prompts.steer":                        "(the built-in wording)",
 		"prompts.check_in":                     "(the built-in wording)",

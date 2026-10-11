@@ -5,8 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -44,7 +45,7 @@ func suggestingModel(t *testing.T, p provider.Provider, on bool) (Model, *[]stri
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	var signals []string
 	m := New(msgs, multiTokenStream("hi there"), Wiring{
-		Suggester:   agent.NewSuggester(p, agent.SuggestConfig{Model: "fast"}),
+		Suggester:   sidejobs.NewSuggester(p, sidejobs.SuggestConfig{Model: "fast"}),
 		Suggestions: on,
 		Observer: observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 			if code == observe.SignalSuggestion {

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 )
 
 // The built-in set is what a zero Steering runs, so a surface that
@@ -187,15 +189,9 @@ func TestValidatePlaceholders(t *testing.T) {
 	}
 }
 
-// The reading instruction and the classifier's are the built-in literals
+// The classifier's instruction is the built-in literal
 // until a file replaces them.
 func TestAuxiliaryPromptOverrides(t *testing.T) {
-	if got := (SummaryConfig{}).prompt(); got != summaryPrompt {
-		t.Error("an unset reading instruction must be the built-in one")
-	}
-	if got := (SummaryConfig{Prompt: "read it"}).prompt(); got != "read it" {
-		t.Errorf("reading instruction override: %q", got)
-	}
 	if got := (ClassifierConfig{}).prompt(); got != classifierPrompt {
 		t.Error("an unset classifier instruction must be the built-in one")
 	}
@@ -206,10 +202,10 @@ func TestAuxiliaryPromptOverrides(t *testing.T) {
 
 // The cooldown is counted in reading intervals, and the count is a setting.
 func TestSummaryConfig_CooldownIntervals(t *testing.T) {
-	if got := (SummaryConfig{}).CooldownIntervals(); got != DefaultCooldownIntervals {
-		t.Errorf("unset cooldown = %d, want %d", got, DefaultCooldownIntervals)
+	if got := (sidejobs.SummaryConfig{}).CooldownIntervals(); got != sidejobs.DefaultCooldownIntervals {
+		t.Errorf("unset cooldown = %d, want %d", got, sidejobs.DefaultCooldownIntervals)
 	}
-	if got := (SummaryConfig{InterveneCooldownIntervals: 5}).CooldownIntervals(); got != 5 {
+	if got := (sidejobs.SummaryConfig{InterveneCooldownIntervals: 5}).CooldownIntervals(); got != 5 {
 		t.Errorf("configured cooldown = %d, want 5", got)
 	}
 }

@@ -25,8 +25,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -38,7 +39,7 @@ const titleAttempts = 2
 // row, whether readings are wanted, and how many have been asked for.
 type titleState struct {
 	// writer is the titler, and cancel abandons the reading it has out.
-	writer *agent.Titler
+	writer *sidejobs.Titler
 	cancel context.CancelFunc
 	// on is the session's switch (/ui title, summary.title).
 	on bool
@@ -56,7 +57,7 @@ type titleState struct {
 // it was read for: the session may have moved on by the time it lands.
 type titleDoneMsg struct {
 	name    string
-	verdict agent.TitleVerdict
+	verdict sidejobs.TitleVerdict
 }
 
 // titleEnabled reports whether readings are taken at all.
@@ -116,8 +117,8 @@ func (m *Model) titleCloseCmd(prev Model) tea.Cmd {
 // titleRequest is the exchange the title is read from: the first thing the
 // user asked and the last thing the assistant said. Tool results are not
 // in it, so nothing the agent read can name the session.
-func (m Model) titleRequest() agent.TitleRequest {
-	var req agent.TitleRequest
+func (m Model) titleRequest() sidejobs.TitleRequest {
+	var req sidejobs.TitleRequest
 	for _, msg := range m.agent.Messages() {
 		if msg.Role == provider.RoleUser && strings.TrimSpace(msg.Content) != "" {
 			req.User = msg.Content
