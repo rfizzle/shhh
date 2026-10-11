@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -60,6 +62,28 @@ func TestTools_EscStopsARunningSearch(t *testing.T) {
 		out, err := Execute(ctx, SearchName, args)
 		assertStopped(t, out, err, time.Since(start), time.Second)
 	})
+}
+
+// The walkers check the stop at each step: a stopped glob or listing ends
+// with the stop itself rather than finishing the tree and throwing it away.
+func TestTools_EscStopsAGlobWalk(t *testing.T) {
+	dir := t.TempDir()
+	for _, n := range []string{"a.go", "b.go"} {
+		if err := os.WriteFile(filepath.Join(dir, n), []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: dir})
+	start := time.Now()
+	out, err := Execute(ctx, GlobName, args)
+	assertStopped(t, out, err, time.Since(start), time.Second)
+
+	args, _ = json.Marshal(listDirectoryArgs{Path: dir, Depth: 2})
+	start = time.Now()
+	out, err = Execute(ctx, ListDirectoryName, args)
+	assertStopped(t, out, err, time.Since(start), time.Second)
 }
 
 func TestTools_EscStopsAQuery(t *testing.T) {

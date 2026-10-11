@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -922,7 +923,7 @@ func symbolKind(kind int) string {
 // the matches as bounded file:line references. It asks every started server
 // that indexes symbols and merges what they say, since a match may live in any
 // of the languages the checkout contains.
-func (m *Manager) WorkspaceSymbol(query string) (string, error) {
+func (m *Manager) WorkspaceSymbol(ctx context.Context, query string) (string, error) {
 	servers := m.symbolServers()
 	if len(servers) == 0 {
 		return "", fmt.Errorf("no language server here answers %s", WorkspaceSymbolToolName)
@@ -930,6 +931,9 @@ func (m *Manager) WorkspaceSymbol(query string) (string, error) {
 	var found []symbol
 	var failures []string
 	for _, entry := range servers {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
 		syms, err := entry.srv.workspaceSymbol(query)
 		if err != nil {
 			failures = append(failures, fmt.Sprintf("%s: %v", entry.name, err))

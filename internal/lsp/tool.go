@@ -179,7 +179,14 @@ func parseNavigateArgs(args json.RawMessage) (navigateArgs, error) {
 }
 
 // Execute dispatches an LSP tool call.
-func (t *Toolset) Execute(_ context.Context, name string, args json.RawMessage) (string, error) {
+//
+// A stopped call is not started, and the one tool that asks several servers
+// one after another stops between them
+// (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn).
+func (t *Toolset) Execute(ctx context.Context, name string, args json.RawMessage) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	switch name {
 	case WorkspaceSymbolToolName:
 		var a struct {
@@ -191,7 +198,7 @@ func (t *Toolset) Execute(_ context.Context, name string, args json.RawMessage) 
 		if strings.TrimSpace(a.Query) == "" {
 			return "", fmt.Errorf("query is required")
 		}
-		return t.Manager.WorkspaceSymbol(strings.TrimSpace(a.Query))
+		return t.Manager.WorkspaceSymbol(ctx, strings.TrimSpace(a.Query))
 	case DocumentSymbolToolName:
 		var a struct {
 			Path string `json:"path"`

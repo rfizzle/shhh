@@ -799,7 +799,7 @@ type listDirectoryArgs struct {
 	Depth int    `json:"depth"`
 }
 
-func executeListDirectory(_ context.Context, raw json.RawMessage) (string, error) {
+func executeListDirectory(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args listDirectoryArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -821,7 +821,7 @@ func executeListDirectory(_ context.Context, raw json.RawMessage) (string, error
 	} else if info, statErr := os.Stat(args.Path); statErr == nil && info.Mode().IsRegular() && archiveKindOf(args.Path) != notArchive {
 		lines, err = listArchive(args.Path, "", args.Depth)
 	} else {
-		err = walkDir(args.Path, "", args.Depth, project.LoadIgnore(args.Path), &lines)
+		err = walkDir(ctx, args.Path, "", args.Depth, project.LoadIgnore(args.Path), &lines)
 	}
 	if err != nil {
 		return "", err
@@ -838,9 +838,12 @@ func executeListDirectory(_ context.Context, raw json.RawMessage) (string, error
 // entered: .git is skipped because descending into it is expensive, and the
 // reader still wants to know it is there, but a path git refuses to see is
 // not part of the answer at all.
-func walkDir(base, prefix string, depth int, rules project.Ignore, lines *[]string) error {
+func walkDir(ctx context.Context, base, prefix string, depth int, rules project.Ignore, lines *[]string) error {
 	if depth < 1 {
 		return nil
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	dir := filepath.Join(base, prefix)
 	entries, err := os.ReadDir(dir)
@@ -860,7 +863,10 @@ func walkDir(base, prefix string, depth int, rules project.Ignore, lines *[]stri
 			// the reader then had to narrow by hand, one wasted round for a
 			// question nobody asked.
 			if depth > 1 && !skipWalk(e.Name()) {
-				_ = walkDir(base, rel, depth-1, rules.Descend(full), lines)
+				_ = walkDir(ctx, base, rel, depth-1, rules.Descend(full), lines)
+				if err := ctx.Err(); err != nil {
+					return err
+				}
 			}
 		} else {
 			*lines = append(*lines, "file: "+rel+entrySize(e))

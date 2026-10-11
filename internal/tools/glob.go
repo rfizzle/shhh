@@ -38,7 +38,7 @@ type globArgs struct {
 	Limit   int    `json:"limit"`
 }
 
-func executeGlob(_ context.Context, raw json.RawMessage) (string, error) {
+func executeGlob(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args globArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -77,6 +77,12 @@ func executeGlob(_ context.Context, raw json.RawMessage) (string, error) {
 	truncated := false
 	ignore := newWalkIgnore(args.Path)
 	err = filepath.WalkDir(args.Path, func(p string, d os.DirEntry, walkErr error) error {
+		// A stop ends the walk at the next entry rather than at the end of
+		// the tree
+		// (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn).
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if walkErr != nil {
 			return nil
 		}

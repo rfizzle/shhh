@@ -847,7 +847,7 @@ func TestManager_WorkspaceSymbolMergesEveryIndexingServer(t *testing.T) {
 	})
 	t.Cleanup(m.Shutdown)
 
-	out, err := m.WorkspaceSymbol("handle")
+	out, err := m.WorkspaceSymbol(context.Background(), "handle")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -956,7 +956,7 @@ func TestToolset_SymbolResultsBounded(t *testing.T) {
 	}
 	fake.workspaceSymbolResult = json.RawMessage("[" + strings.Join(entries, ",") + "]")
 
-	out, err := m.WorkspaceSymbol("Sym")
+	out, err := m.WorkspaceSymbol(context.Background(), "Sym")
 	if err != nil {
 		t.Fatal(err)
 	}
