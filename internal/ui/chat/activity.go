@@ -16,6 +16,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt"
@@ -109,10 +110,6 @@ func (t *commandTail) Line() string {
 // pendingToolResult marks a mirrored child tool call that hasn't finished yet
 // ; the activity row renders it as running.
 const pendingToolResult = "running…"
-
-// cancelledToolResult is the synthetic result left on a tool call abandoned
-// when the turn was cancelled.
-const cancelledToolResult = "cancelled by user"
 
 // The deciders named on a denied row: your preference, or a rule.
 const (
@@ -523,7 +520,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// animates for the turn
 			// (docs/interface/surfaces.md#the-step).
 			result = ""
-		case result == cancelledToolResult:
+		case result == agent.CancelledResult:
 			// Ctrl+C during a turn: you stopped it, so it reads as quietly as
 			// your refusal rather than as a break — but in the stop's own
 			// word, because nobody answered it. A call waiting on its card

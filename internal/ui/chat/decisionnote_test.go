@@ -265,7 +265,7 @@ func TestApproval_CtrlCStopsTheRunNotTheRequest(t *testing.T) {
 				row = e
 			}
 		}
-		if row == nil || row.toolResult != cancelledToolResult || row.deniedBy != "" {
+		if row == nil || row.toolResult != agent.CancelledResult || row.deniedBy != "" {
 			t.Fatalf("draft %q: the call should be abandoned by the stop, got %+v", draft, row)
 		}
 		detail := m.activityRowDetail(*row, false, m.contentWidth())

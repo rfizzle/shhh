@@ -159,6 +159,57 @@ func TestProgram_TheCancelChordStopsARunningSearch(t *testing.T) {
 	}
 }
 
+// The cancel chord while an approved tool runs stops the tool itself: it is
+// not a command, so no run is cancelled, and the call waits on nothing but
+// its context. Its row reads stopped and the model is told the person
+// stopped it.
+func TestProgram_TheCancelChordStopsAnApprovedFetch(t *testing.T) {
+	hold, release := quietHold(t)
+	m, _ := scriptedSession(
+		programTurn{hold: hold, calls: []provider.ToolCall{call("f1", "fetch_page", `{"url":"https://example.test/a"}`)}},
+		programTurn{text: "The page was not read."},
+	)
+	m.gatedTools = map[string]GatedPreviewFunc{"fetch_page": func(json.RawMessage) (GatedPreview, error) {
+		return GatedPreview{Action: "fetch", Summary: "fetch a page", Title: "fetch example.test"}, nil
+	}}
+	started, returned := make(chan struct{}), make(chan struct{})
+	m.agent.SetExecutor(func(ctx context.Context, _ string, _ json.RawMessage) (string, error) {
+		close(started)
+		<-ctx.Done()
+		close(returned)
+		return "", ctx.Err()
+	})
+	tm := runProgram(t, m)
+
+	send(tm, "read the page")
+	release()
+	waitForText(t, tm, "fetch example.test")
+	tm.Send(programAllow)
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the approved fetch never started")
+	}
+	tm.Send(programCancel)
+	select {
+	case <-returned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the stop did not reach the approved fetch")
+	}
+	waitForText(t, tm, "The page was not read.")
+
+	var told string
+	for _, msg := range m.agent.Messages() {
+		if msg.Role == provider.RoleTool && msg.ToolCallID == "f1" {
+			told = msg.Content
+		}
+	}
+	if told != agent.CancelledResult {
+		t.Fatalf("the model is told %q, want %q", told, agent.CancelledResult)
+	}
+	frameHas(t, finalFrame(t, tm), "stopped")
+}
+
 // A long command's row tails what it prints while it runs, and settles when
 // it ends.
 func TestProgram_ARunningCommandTailsIntoItsRow(t *testing.T) {

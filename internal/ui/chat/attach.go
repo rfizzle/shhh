@@ -116,11 +116,6 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 		if te.Pending {
 			result = pendingToolResult
 		}
-		// A child's call its stop reached reads as the session's own does:
-		// stopped, and not a failure.
-		if result == agent.CancelledResult {
-			result = cancelledToolResult
-		}
 		// The account of the decision comes across on the act, in the same
 		// fields a session's own call carries it in, so the row the shared
 		// renderers draw for a child says what the row for the session's

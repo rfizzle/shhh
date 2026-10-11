@@ -260,7 +260,7 @@ func TestActivityKinds_ServerCallsDrawByTheUsersWord(t *testing.T) {
 func TestActivityRow_CancelledReadsAsStopped(t *testing.T) {
 	m := activityModel(t)
 	view := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "write_file",
-		toolArgs: `{"path":"a.go"}`, toolResult: cancelledToolResult}, 80))
+		toolArgs: `{"path":"a.go"}`, toolResult: agent.CancelledResult}, 80))
 	for _, want := range []string{"⊘", "stopped", "—"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a cancelled call should read %q:\n%s", want, view)
@@ -269,7 +269,7 @@ func TestActivityRow_CancelledReadsAsStopped(t *testing.T) {
 	if strings.Contains(view, "denied") {
 		t.Fatalf("a cancelled call was not denied:\n%s", view)
 	}
-	if strings.Contains(view, cancelledToolResult) {
+	if strings.Contains(view, agent.CancelledResult) {
 		t.Fatalf("the synthetic result is not output to show:\n%s", view)
 	}
 }

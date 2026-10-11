@@ -247,6 +247,10 @@ func (m Model) stopRun() (tea.Model, tea.Cmd, bool) {
 		if m.runCancel != nil {
 			m.runCancel()
 		}
+		// An approved tool that is not a command has no run to cancel; it
+		// runs under the round's context, and its stopped result lands as
+		// its row (approval.go).
+		m.endToolRound()
 		return m, nil, true
 	case stateStreaming, stateCloseGate:
 		return m.stopped(m.cancelTurnNow())

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -198,7 +199,7 @@ func callRun(es []entry, i int, dropThink bool) int {
 // refusedCall reports whether an entry is a call that never ran: a person
 // or a rule refused it, the queue skipped it, or the reader cancelled it.
 func refusedCall(e entry) bool {
-	return e.kind == entryTool && (e.deniedBy != "" || e.skipped != "" || e.toolResult == cancelledToolResult)
+	return e.kind == entryTool && (e.deniedBy != "" || e.skipped != "" || e.toolResult == agent.CancelledResult)
 }
 
 // stepTitle reports the title an assistant entry offers a step, if any: one

@@ -1088,12 +1088,18 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// What a hook in front of this call wanted the model to read leads the
 	// result, where every other notice goes (hooks.go).
 	lead := m.approval.request.hookContext
+	// The call runs under the context the screen holds, so a stop reaches it
+	// where it runs rather than only drawing its row
+	// (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn).
+	m.endToolRound()
+	ctx, cancel := context.WithCancel(context.Background())
+	m.toolCancel = cancel
 	return m, func() tea.Msg {
 		var result string
 		before := record.before()
 		start := time.Now()
 		if mutating {
-			result = agent.ExecuteWith(context.Background(), tools.ExecuteMutating, call)
+			result = agent.ExecuteWith(ctx, tools.ExecuteMutating, call)
 			if mutated != nil {
 				result = mutated(call.Name, json.RawMessage(call.Arguments), result)
 			}
@@ -1102,7 +1108,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 			}
 			result = repeats.Notice(call.Name, json.RawMessage(call.Arguments), result)
 		} else {
-			result = a.ExecuteCall(context.Background(), call)
+			result = a.ExecuteCall(ctx, call)
 		}
 		if lead != "" {
 			result = lead + "\n" + result

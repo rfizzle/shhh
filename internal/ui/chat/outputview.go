@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -95,7 +96,7 @@ func outputLines(e entry) []string {
 	result := e.toolResult
 	if e.kind != entryCommand {
 		switch {
-		case e.deniedBy != "", result == pendingToolResult, result == cancelledToolResult:
+		case e.deniedBy != "", result == pendingToolResult, result == agent.CancelledResult:
 			return nil
 		}
 	}

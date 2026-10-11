@@ -819,6 +819,7 @@ func (m Model) finishApprovedTool(msg approvedToolDoneMsg) (tea.Model, tea.Cmd) 
 	}
 	req := m.approval.request
 	m.approval.request = nil
+	m.endToolRound()
 	value := m.agent.ResolveApproval(msg.result)
 	m.recordToolResult(req.call, msg.duration, msg.result)
 	// A git write is gated at the write tier, so this is the one place a

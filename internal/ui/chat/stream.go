@@ -259,7 +259,7 @@ func (m *Model) cancelStreaming() {
 			delete(m.approval.classifierAllowed, tc.ID)
 			m.recordDecision(observe.DecisionDeny, observe.ReasonUserStop)
 		}
-		m.appendCallRow(tc.ID, entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: cancelledToolResult})
+		m.appendCallRow(tc.ID, entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: agent.CancelledResult})
 	}
 	m.approval.request = nil
 	m.memoryAsk = nil
