@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 32 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 33 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -432,6 +432,44 @@ purple `#9d7cd8`, which clears the ground and misses the band, lifted to
 distance, on dimmer `#9aa3cc`, which lands on 104 `#8787d7`). Sixteen colours:
 the dark column. The Machado distance is not held for this table; `colorblind`
 remains the answer for that need.
+
+## The `gruvbox-dark` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: https://github.com/morhetz/gruvbox (colors/gruvbox.vim, medium
+contrast, the bright accents). Ground `#282828` (bg0), band `#3c3836` (bg1),
+selected row `#504945` (bg2); painted by default. Bright on the selected row
+reads 7.78:1.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #928374 | 4.02 / 3.16 | #af9f90 | 5.75 / 4.52 |
+| status | #a89984 | 5.30 / 4.17 | #afa08b | 5.77 / 4.54 |
+| del | #fb4934 | 4.29 / 3.37 | #ff7965 | 5.74 / 4.51 |
+| info | #83a598 | 5.48 / 4.31 | #87a99c | 5.75 / 4.52 |
+| spin | #d3869b | 5.37 / 4.23 | #d98ba0 | 5.72 / 4.50 |
+| key | #ab969a | 5.31 / 4.17 | #b29da1 | 5.78 / 4.54 |
+
+`LiftToAA` lifts these six in their own hue. Dim, the gray, keeps its lifted
+value; dimmer, status and subtle are then spaced in even quarters from it up to
+the body `#ebdbb2`, so the lift of status above is not what the table holds:
+status `#beae99`, dimmer `#cdbda1` and subtle `#dcccaa` keep the ladder bright,
+body, subtle, dimmer, status, dim descending (9.31, 8.00 and 6.81 on the
+ground; 7.32, 6.29 and 5.36 on the band). Subtle (fg2 `#d5c4a1`) and dimmer
+(fg3 `#bdae93`) clear on their own and move only to keep the ladder's order.
+Every other ink is as published: add (bright green), hunk (bright aqua),
+accent (bright orange), code (bright yellow), body (fg1) and bright (fg0).
+
+Status is fg4 `#a89984`, which clears the ground and misses the band. Derived,
+not published: key, the mix of the bright purple `#d3869b` and the bright blue
+`#83a598` (`#ab969a`), lifted to `#b29da1`. addBg `#505127` and delBg
+`#643f39` are the ground with 28% of add `#b8bb26` and of the lifted del
+`#ff7965`. 256 rungs: DistinctRungs, worst error 49.3 (RGB distance, on code
+`#fabd2f`, which lands on 214 `#ffaf00`; the study's 51 on delBg was for the
+unlifted del and its own pick). Sixteen colours: the dark column. The Machado
+distance is not held for this table; `colorblind` remains the answer for that
+need.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 

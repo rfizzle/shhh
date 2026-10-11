@@ -505,6 +505,48 @@ var tokyoNightGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// gruvboxDarkPalette is Gruvbox Dark, medium contrast
+// (https://github.com/morhetz/gruvbox, colors/gruvbox.vim): the published hex
+// for every token that clears 4.5:1 on its ground #282828 (bg0) and its band
+// #3c3836 (bg1), the selected row #504945 (bg2). Six inks were short and
+// LiftToAA lifts them in their own hue: dim (gray), the derived status, del
+// (bright red), info (bright blue), spin (bright purple) and the derived key.
+// The grey ladder is respaced: status, dimmer and subtle sit in even quarters
+// from the lifted dim up to body (fg1) so the order holds, subtle moving
+// though it clears on its own. addBg and delBg are the ground with 28% of add
+// and of the lifted del. The 256 rungs are DistinctRungs' and the
+// sixteen-colour column is the dark table's. The figures are in
+// docs/interface/departures.md.
+var gruvboxDarkPalette = ColorTokens{
+	Add:     token("#b8bb26", "142", "10"),
+	Del:     token("#ff7965", "209", "9"),
+	addBg:   token("#505127", "238", "2"),
+	delBg:   token("#643f39", "240", "1"),
+	Hunk:    token("#8ec07c", "108", "14"),
+	Accent:  token("#fe8019", "208", "11"),
+	Info:    token("#87a99c", "109", "12"),
+	FocusBg: token("#504945", "239", "12"),
+	band:    band("#3c3836", "237"),
+	Dim:     token("#af9f90", "247", "8"),
+	Dimmer:  token("#cdbda1", "180", "8"),
+	Spin:    token("#d98ba0", "175", "13"),
+	Status:  token("#beae99", "144", "8"),
+	Bright:  token("#fbf1c7", "230", "15"),
+	Subtle:  token("#dcccaa", "181", "7"),
+	Body:    token("#ebdbb2", "187", "7"),
+	Code:    token("#fabd2f", "214", "3"),
+	Key:     token("#b29da1", "248", "12"),
+}
+
+// gruvboxDarkGround is Gruvbox Dark's bg0, #282828 and 235, painted by default
+// like the dark ground and for the same reason: its band is half of a pair.
+// It has no sixteen-colour rung.
+var gruvboxDarkGround = Token{
+	trueColor: lipgloss.Color("#282828"),
+	ansi256:   lipgloss.Color("235"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -525,6 +567,8 @@ const (
 	ThemeDracula = "dracula"
 	// ThemeTokyoNight is Tokyo Night's night variant, a brand theme.
 	ThemeTokyoNight = "tokyo-night"
+	// ThemeGruvboxDark is Gruvbox Dark, medium contrast, a brand theme.
+	ThemeGruvboxDark = "gruvbox-dark"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -551,6 +595,7 @@ var themes = map[string]theme{
 	ThemeCatppuccinMocha: {catppuccinMochaPalette, catppuccinMochaGround},
 	ThemeDracula:         {draculaPalette, draculaGround},
 	ThemeTokyoNight:      {tokyoNightPalette, tokyoNightGround},
+	ThemeGruvboxDark:     {gruvboxDarkPalette, gruvboxDarkGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -579,7 +624,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark}
 }
 
 var (
@@ -694,7 +739,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark:
 		return true
 	}
 	return false
