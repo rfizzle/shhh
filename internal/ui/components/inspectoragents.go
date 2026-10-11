@@ -116,16 +116,6 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 	for _, a := range folded {
 		b.hidden = append(b.hidden, a.railLines(width)...)
 	}
-	if hint := r.AgentsHint; hint != "" && r.hasChild() {
-		// The trailer goes before anything else the block owns, because a map
-		// missing one session is still a map and a hint standing over no map
-		// is not a hint (docs/interface/surfaces.md#the-inspector-rail). It
-		// goes rather than folds: it is not a session, so the marker has
-		// nothing to count for it and would cost the row it saved.
-		b.rows = append(b.rows, railLine{
-			text: indentRow(sty.hint.Render(hint), width), give: giveFirst, shed: true,
-		})
-	}
 	b.fold = func(hidden []railLine) string { return agentsFold(hidden, r.Agents, width) }
 	return b, true
 }
@@ -159,11 +149,6 @@ func (r InspectorRail) childCount() int {
 	}
 	return n
 }
-
-// giveFirst is the give of a row the block would rather lose than any other.
-// It is below every give orderGiving hands out, so the trailer goes before
-// the first finished child does.
-const giveFirst = -1
 
 // orderGiving numbers the map's rows in the order height truncation may take
 // them: every session that has stopped, oldest first, then every session that
@@ -231,18 +216,6 @@ func subtreeFirst(agents []InspectorAgent) []int {
 		open = open[:len(open)-1]
 	}
 	return order
-}
-
-// hasChild reports whether the map has a session under the orchestrator. The
-// orchestrator alone is not a map, and the trailer naming how to reach the
-// others would be naming nothing.
-func (r InspectorRail) hasChild() bool {
-	for _, a := range r.Agents {
-		if !a.Self {
-			return true
-		}
-	}
-	return false
 }
 
 // inspectorAgentsSettled is how many finished children the map keeps on
@@ -653,8 +626,8 @@ func (a InspectorAgent) detailRow(width int) string {
 	}
 	if a.Handoff {
 		// The row ends on what can still be done about it, and does nothing
-		// about it: the key is the manager's, and the trailer under the block
-		// is how a reader gets there
+		// about it: the key is the manager's, and the heading is how a reader
+		// gets there
 		// (docs/interface/surfaces.md#the-inspector-rail).
 		parts = append(parts, detailField{text: sty.dimmer.Render("handoff kept")},
 			detailField{text: sty.hint.Render(keys.Bracket(keys.Agent.Retry) + " " + keys.Words(keys.Agent.Retry)),
@@ -679,7 +652,7 @@ type detailField struct {
 // kit's rule for a left-hand field, which is dropped rather than cut
 // mid-word. The tool count goes first: it tallies work already done and asks
 // nothing of the reader. The keys go next, retry before review: both are the
-// manager's, the block's trailer names the way there, and a change that never
+// manager's, the block's heading opens the way there, and a change that never
 // reached the checkout is somebody's work where a handoff is a record. Why a
 // child stopped goes last, and only on a row that kept something, since the
 // name row's outcome word still says how it ended. `patch kept` and `handoff

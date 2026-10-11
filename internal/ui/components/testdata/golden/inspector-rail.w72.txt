@@ -29,7 +29,6 @@
   ▸ Return it from runRound                                             
   · Offer more rounds in the chat model                                 
   ⚠ 1 off plan                                                          
-  /plan for the whole list                                              
 
   TODO                                      project · 5 open · 1 blocked
   sprint rail-and-runner                                          2 of 6
@@ -39,7 +38,6 @@
   · M M todo-add-extraction                                             
   ! L M headless-todo-run                                        blocked
   … 2 more                                                              
-  /todo for the whole backlog                                           
 
   CHANGES                                               session · +27 −4
   ▎✎ internal/agent/loop.go                                    +18 −3 3t
@@ -54,11 +52,8 @@
     ▸ docs/loop.md · 4 tools                                            
   ✗ writer-3                                               killed  $0.03
     cancelled · patch kept · [enter] review · handoff kept · [r] retry  
-  f12 agents · shift+f8 next · click to attach                          
 
   TOOLS                                                        2 of 3 up
-  ✓ built-in                                               up · 18 tools
-  ✓ docs                                                    up · 9 tools
   ✗ linear                                               error · timeout
 
   CONTEXT                                                    62% of 200k
@@ -66,13 +61,10 @@
   ▂▃▄▄▅▆▆█ per round                                        ↑41.2k ↓9.8k
 
   SPEND                                                            $0.14
-  gpt-5.2 · $1.70 main · $0.02 ◇                                        
-  gpt-5-mini · $0.14 classifier · summary                               
   session total · $1.86                                                 
 
-· spend · the machinery on the session's model
+· spend · the heading and the session total
   SPEND                                                            $0.41
-  claude-opus-5-5 · $12.34 main · classifier · summary · $0.02 ◇        
   session total · $12.36                                                
 
 · a turn just closed · the heading keeps the turn's figure until the next opens
@@ -83,7 +75,6 @@
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   76k
 
   SPEND                                                          $0.0870
-  gpt-5.2 · $0.4120 main                                                
   session total · $0.4120                                               
 
 · every block, height 16 (truncating)
@@ -196,34 +187,27 @@
 
 · where the tools came from, and which answered
   TOOLS                                                        3 of 5 up
-  ✓ built-in                                               up · 18 tools
-  ✓ docs                                                    up · 9 tools
   ⚠ tracker                                          blocked · untrusted
   ✗ linear                                      error · 401 Unauthorized
   … 1 more                                                              
 
 · a server that broke keeps its name and cuts its note
   TOOLS                                                        1 of 2 up
-  ✓ built-in                                               up · 18 tools
   ✗ tracker error · server tracker: exec: "tracker-mcp-not-installed": …
 
 · every server still starting, each with its seconds
   TOOLS                                                        1 of 4 up
-  ✓ built-in                                               up · 18 tools
   ▸ docs                                                 starting · 3.1s
   ▸ linear                                               starting · 3.1s
   ▸ tracker                                              starting · 3.1s
 
 · a starting server beside one that answered and one that timed out
   TOOLS                                                        2 of 4 up
-  ✓ built-in                                               up · 18 tools
-  ✓ docs                                                    up · 9 tools
   ▸ linear                                                starting · 14s
   ✗ tracker                                              error · timeout
 
 · the fold keeps every starting row before any that is up
   TOOLS                                                        3 of 6 up
-  ✓ built-in                                               up · 18 tools
   ▸ linear                                                starting · 41s
   ✗ tracker                                              error · timeout
   ▸ slack                                                 starting · 41s
@@ -231,7 +215,6 @@
 
 · memories the recall budget could not carry
   TOOLS                                                        1 of 1 up
-  ✓ built-in                                               up · 18 tools
   ⚠ memory                                                 3 did not fit
 
 · the session map · the keyboard is in writer-2
@@ -248,7 +231,6 @@
     read 9 files                                                        
   ◇ reader-7                                                 done  $0.01
     nothing under that path                                             
-  f12 agents · shift+f8 next · click to attach                          
   … 2 more                                                              
 
 · the map with the rail shorter than it (height 12)
@@ -279,7 +261,6 @@
     token budget exceeded · handoff kept · [r] retry                    
   └◇ reader-5                                                      $0.01
      ▸ internal/agent/round.go · 3 tools                                
-  f12 agents · shift+f8 next · click to attach                          
 
 · the map while a hold lands · two children parked, one not yet
   AGENTS                                              2 held · 1 running
@@ -291,7 +272,6 @@
     4 tools                                                             
   ◇ reader-3                                                       $0.01
     ▸ survey internal/ui · 2 tools                                      
-  f12 agents · shift+f8 next · click to attach                          
 
 · a writer waiting for a check slot · two checks run, and its row says what it waits for
   AGENTS                                           1 waiting · 2 running
@@ -303,7 +283,6 @@
     ▸ go test ./internal/ui · 7 tools                                   
   ◇ writer-3                                              waiting  $0.02
     waiting for a check slot (2 running) · 5 tools                      
-  f12 agents · shift+f8 next · click to attach                          
 
 · a writer on its own plan · three of seven steps and its budget's share
   AGENTS                                                       2 running
@@ -313,7 +292,6 @@
     3 of 7 steps · 41% of budget · docs/loop.md · 11 tools              
   ◇ writer-2                                                       $0.02
     ▰▱▱▱▱ step 1 of 4 · internal/agent/round.go · 5 tools               
-  f12 agents · shift+f8 next · click to attach                          
 
 · a finished child taking a follow-up · running again, on the question
   AGENTS                                                       1 running
@@ -323,7 +301,6 @@
     ▸ follow-up · which component owns the rail? · 12 tools             
   ◇ writer-2                                                 done  $0.06
     wrote the loop's two files                                          
-  f12 agents · shift+f8 next · click to attach                          
 
 · a failed sibling beside a nested pair · the subtree moves whole
   AGENTS                                                       3 running
@@ -337,7 +314,6 @@
     its worktree was dirty                                              
   ◇ writer-2                                                       $0.04
     ▸ internal/agent/loop.go · 5 tools                                  
-  f12 agents · shift+f8 next · click to attach                          
 
 · a killed writer · its patch is kept, and enter reviews it
   AGENTS                                                       1 running
@@ -347,7 +323,6 @@
     cancelled · patch kept · [enter] review · handoff kept · [r] retry  
   ◇ writer-2                                                       $0.02
     ▸ internal/agent/round.go · 3 tools                                 
-  f12 agents · shift+f8 next · click to attach                          
 
 · nine writers · the preset draws three, and the marker says the rest are running
   AGENTS                                                       9 running
@@ -359,7 +334,6 @@
     ▸ internal/lane8/lane.go · 2 tools                                  
   ◇ writer-9                                                       $0.02
     ▸ internal/lane9/lane.go · 1 tool                                   
-  f12 agents · shift+f8 next · click to attach                          
   … 6 more · 6 running                                                  
 
 · three writers and two waiting · the waiting rows stay, the older writers fold
@@ -372,7 +346,6 @@
     waiting approval: delete a file                                     
   ◇ writer-4                                                       $0.01
     ▸ docs/loop.md · 2 tools                                            
-  f12 agents · shift+f8 next · click to attach                          
   … 2 more · 2 running                                                  
 
 · the same map three rows short · what it gives up, in order
@@ -387,7 +360,6 @@
     ▸ go test ./internal/agent/... · ⚠ off task ×2 · 12 tools           
   ✗ writer-4                                               failed  $0.07
   └◇ reader-5                                                      $0.01
-     ▸ internal/agent/round.go · 3 tools                                
   … 1 more · 1 running                                                  
 
 · one command broken · the block above the changeset
@@ -450,7 +422,6 @@
   ␛[38;5;205m▸␛[m ␛[1;97mReturn it from runRound␛[m                                             
   ␛[38;5;245m·␛[m ␛[38;5;245mOffer more rounds in the chat model␛[m                                 
   ␛[38;5;214m⚠␛[m ␛[38;5;245m1 off plan␛[m                                                          
-  ␛[38;5;245m/plan for the whole list␛[m                                              
 
   ␛[1;94mTODO␛[m                                      ␛[38;5;245mproject · 5 open · 1 blocked␛[m
   ␛[38;5;245msprint␛[m ␛[38;5;252mrail-and-runner␛[m                                          ␛[38;5;245m2 of 6␛[m
@@ -460,7 +431,6 @@
   ␛[38;5;245m·␛[m ␛[38;5;245mM M␛[m ␛[38;5;252mtodo-add-extraction␛[m                                             
   ␛[91m!␛[m ␛[38;5;245mL M␛[m ␛[38;5;252mheadless-todo-run␛[m                                        ␛[38;5;245mblocked␛[m
   ␛[38;5;245m… 2 more␛[m                                                              
-  ␛[38;5;245m/todo for the whole backlog␛[m                                           
 
   ␛[1;94mCHANGES␛[m                                               ␛[38;5;245msession · ␛[m␛[92m+27␛[m ␛[91m−4␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/loop.go␛[m                                    ␛[92m+18␛[m ␛[91m−3␛[m ␛[38;5;245m3t␛[m
@@ -475,11 +445,8 @@
     ␛[38;5;205m▸ docs/loop.md␛[m␛[38;5;248m · ␛[m␛[38;5;248m4 tools␛[m                                            
   ␛[91m✗␛[m ␛[38;5;252mwriter-3␛[m                                               ␛[91mkilled␛[m  ␛[38;5;245m$0.03␛[m
     ␛[38;5;248mcancelled␛[m␛[38;5;248m · ␛[m␛[38;5;248mpatch kept␛[m␛[38;5;248m · ␛[m␛[38;5;245m[enter] review␛[m␛[38;5;248m · ␛[m␛[38;5;248mhandoff kept␛[m␛[38;5;248m · ␛[m␛[38;5;245m[r] retry␛[m  
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
 
   ␛[1;94mTOOLS␛[m                                                        ␛[38;5;245m2 of 3 up␛[m
-  ␛[92m✓␛[m ␛[38;5;252mbuilt-in␛[m                                               ␛[38;5;245mup␛[m␛[38;5;245m · 18 tools␛[m
-  ␛[92m✓␛[m ␛[38;5;252mdocs␛[m                                                    ␛[38;5;245mup␛[m␛[38;5;245m · 9 tools␛[m
   ␛[91m✗␛[m ␛[38;5;252mlinear␛[m                                               ␛[38;5;252merror␛[m␛[38;5;245m · timeout␛[m
 
   ␛[1;94mCONTEXT␛[m                                                    ␛[92m62% of 200k␛[m
@@ -487,13 +454,10 @@
   ␛[38;5;248m▂▃▄▄▅▆▆█␛[m ␛[38;5;245mper round␛[m                                        ␛[38;5;245m↑41.2k ↓9.8k␛[m
 
   ␛[1;94mSPEND␛[m                                                            ␛[38;5;252m$0.14␛[m
-  ␛[38;5;245mgpt-5.2 · $1.70 main · $0.02 ◇␛[m                                        
-  ␛[38;5;245mgpt-5-mini · $0.14 classifier · summary␛[m                               
   ␛[38;5;245msession total · $1.86␛[m                                                 
 
-· spend · the machinery on the session's model
+· spend · the heading and the session total
   ␛[1;94mSPEND␛[m                                                            ␛[38;5;252m$0.41␛[m
-  ␛[38;5;245mclaude-opus-5-5 · $12.34 main · classifier · summary · $0.02 ◇␛[m        
   ␛[38;5;245msession total · $12.36␛[m                                                
 
 · a turn just closed · the heading keeps the turn's figure until the next opens
@@ -504,7 +468,6 @@
   ␛[92m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m76k␛[m
 
   ␛[1;94mSPEND␛[m                                                          ␛[38;5;252m$0.0870␛[m
-  ␛[38;5;245mgpt-5.2 · $0.4120 main␛[m                                                
   ␛[38;5;245msession total · $0.4120␛[m                                               
 
 · every block, height 16 (truncating)
@@ -617,34 +580,27 @@
 
 · where the tools came from, and which answered
   ␛[1;94mTOOLS␛[m                                                        ␛[38;5;245m3 of 5 up␛[m
-  ␛[92m✓␛[m ␛[38;5;252mbuilt-in␛[m                                               ␛[38;5;245mup␛[m␛[38;5;245m · 18 tools␛[m
-  ␛[92m✓␛[m ␛[38;5;252mdocs␛[m                                                    ␛[38;5;245mup␛[m␛[38;5;245m · 9 tools␛[m
   ␛[38;5;214m⚠␛[m ␛[38;5;252mtracker␛[m                                          ␛[38;5;252mblocked␛[m␛[38;5;245m · untrusted␛[m
   ␛[91m✗␛[m ␛[38;5;252mlinear␛[m                                      ␛[38;5;252merror␛[m␛[38;5;245m · 401 Unauthorized␛[m
   ␛[38;5;245m… 1 more␛[m                                                              
 
 · a server that broke keeps its name and cuts its note
   ␛[1;94mTOOLS␛[m                                                        ␛[38;5;245m1 of 2 up␛[m
-  ␛[92m✓␛[m ␛[38;5;252mbuilt-in␛[m                                               ␛[38;5;245mup␛[m␛[38;5;245m · 18 tools␛[m
   ␛[91m✗␛[m ␛[38;5;252mtracker␛[m ␛[38;5;252merror␛[m␛[38;5;245m · server tracker: exec: "tracker-mcp-not-installed": …␛[m
 
 · every server still starting, each with its seconds
   ␛[1;94mTOOLS␛[m                                                        ␛[38;5;245m1 of 4 up␛[m
-  ␛[92m✓␛[m ␛[38;5;252mbuilt-in␛[m                                               ␛[38;5;245mup␛[m␛[38;5;245m · 18 tools␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;252mdocs␛[m                                                 ␛[38;5;245mstarting␛[m␛[38;5;245m · 3.1s␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;252mlinear␛[m                                               ␛[38;5;245mstarting␛[m␛[38;5;245m · 3.1s␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;252mtracker␛[m                                              ␛[38;5;245mstarting␛[m␛[38;5;245m · 3.1s␛[m
 
 · a starting server beside one that answered and one that timed out
   ␛[1;94mTOOLS␛[m                                                        ␛[38;5;245m2 of 4 up␛[m
-  ␛[92m✓␛[m ␛[38;5;252mbuilt-in␛[m                                               ␛[38;5;245mup␛[m␛[38;5;245m · 18 tools␛[m
-  ␛[92m✓␛[m ␛[38;5;252mdocs␛[m                                                    ␛[38;5;245mup␛[m␛[38;5;245m · 9 tools␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;252mlinear␛[m                                                ␛[38;5;245mstarting␛[m␛[38;5;245m · 14s␛[m
   ␛[91m✗␛[m ␛[38;5;252mtracker␛[m                                              ␛[38;5;252merror␛[m␛[38;5;245m · timeout␛[m
 
 · the fold keeps every starting row before any that is up
   ␛[1;94mTOOLS␛[m                                                        ␛[38;5;245m3 of 6 up␛[m
-  ␛[92m✓␛[m ␛[38;5;252mbuilt-in␛[m                                               ␛[38;5;245mup␛[m␛[38;5;245m · 18 tools␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;252mlinear␛[m                                                ␛[38;5;245mstarting␛[m␛[38;5;245m · 41s␛[m
   ␛[91m✗␛[m ␛[38;5;252mtracker␛[m                                              ␛[38;5;252merror␛[m␛[38;5;245m · timeout␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;252mslack␛[m                                                 ␛[38;5;245mstarting␛[m␛[38;5;245m · 41s␛[m
@@ -652,7 +608,6 @@
 
 · memories the recall budget could not carry
   ␛[1;94mTOOLS␛[m                                                        ␛[38;5;245m1 of 1 up␛[m
-  ␛[92m✓␛[m ␛[38;5;252mbuilt-in␛[m                                               ␛[38;5;245mup␛[m␛[38;5;245m · 18 tools␛[m
   ␛[38;5;214m⚠␛[m ␛[38;5;252mmemory␛[m                                                 ␛[38;5;245m3 did not fit␛[m
 
 · the session map · the keyboard is in writer-2
@@ -669,7 +624,6 @@
     ␛[38;5;248mread 9 files␛[m                                                        
   ␛[92m◇␛[m ␛[38;5;252mreader-7␛[m                                                 ␛[92mdone␛[m  ␛[38;5;245m$0.01␛[m
     ␛[38;5;248mnothing under that path␛[m                                             
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
   ␛[38;5;245m… 2 more␛[m                                                              
 
 · the map with the rail shorter than it (height 12)
@@ -700,7 +654,6 @@
     ␛[38;5;248mtoken budget exceeded␛[m␛[38;5;248m · ␛[m␛[38;5;248mhandoff kept␛[m␛[38;5;248m · ␛[m␛[38;5;245m[r] retry␛[m                    
   ␛[38;5;248m└␛[m␛[94m◇␛[m ␛[38;5;252mreader-5␛[m                                                      ␛[38;5;245m$0.01␛[m
      ␛[38;5;205m▸ internal/agent/round.go␛[m␛[38;5;248m · ␛[m␛[38;5;248m3 tools␛[m                                
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
 
 · the map while a hold lands · two children parked, one not yet
   ␛[1;94mAGENTS␛[m                                              ␛[38;5;245m2 held␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 running␛[m
@@ -712,7 +665,6 @@
     ␛[38;5;248m4 tools␛[m                                                             
   ␛[94m◇␛[m ␛[38;5;252mreader-3␛[m                                                       ␛[38;5;245m$0.01␛[m
     ␛[38;5;205m▸ survey internal/ui␛[m␛[38;5;248m · ␛[m␛[38;5;248m2 tools␛[m                                      
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
 
 · a writer waiting for a check slot · two checks run, and its row says what it waits for
   ␛[1;94mAGENTS␛[m                                           ␛[38;5;245m1 waiting␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 running␛[m
@@ -724,7 +676,6 @@
     ␛[38;5;205m▸ go test ./internal/ui␛[m␛[38;5;248m · ␛[m␛[38;5;248m7 tools␛[m                                   
   ␛[38;5;245m◇␛[m ␛[38;5;252mwriter-3␛[m                                              ␛[38;5;245mwaiting␛[m  ␛[38;5;245m$0.02␛[m
     ␛[38;5;248mwaiting for a check slot (2 running)␛[m␛[38;5;248m · ␛[m␛[38;5;248m5 tools␛[m                      
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
 
 · a writer on its own plan · three of seven steps and its budget's share
   ␛[1;94mAGENTS␛[m                                                       ␛[38;5;245m2 running␛[m
@@ -734,7 +685,6 @@
     ␛[38;5;245m3 of 7 steps␛[m␛[38;5;248m · ␛[m␛[38;5;248m41% of budget␛[m␛[38;5;248m · ␛[m␛[38;5;248mdocs/loop.md␛[m␛[38;5;248m · ␛[m␛[38;5;248m11 tools␛[m              
   ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                                                       ␛[38;5;245m$0.02␛[m
     ␛[94m▰␛[m␛[38;5;245m▱▱▱▱␛[m ␛[38;5;245mstep 1 of 4␛[m␛[38;5;248m · ␛[m␛[38;5;248minternal/agent/round.go␛[m␛[38;5;248m · ␛[m␛[38;5;248m5 tools␛[m               
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
 
 · a finished child taking a follow-up · running again, on the question
   ␛[1;94mAGENTS␛[m                                                       ␛[38;5;245m1 running␛[m
@@ -744,7 +694,6 @@
     ␛[38;5;205m▸ follow-up · which component owns the rail?␛[m␛[38;5;248m · ␛[m␛[38;5;248m12 tools␛[m             
   ␛[92m◇␛[m ␛[38;5;252mwriter-2␛[m                                                 ␛[92mdone␛[m  ␛[38;5;245m$0.06␛[m
     ␛[38;5;248mwrote the loop's two files␛[m                                          
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
 
 · a failed sibling beside a nested pair · the subtree moves whole
   ␛[1;94mAGENTS␛[m                                                       ␛[38;5;245m3 running␛[m
@@ -758,7 +707,6 @@
     ␛[38;5;248mits worktree was dirty␛[m                                              
   ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                                                       ␛[38;5;245m$0.04␛[m
     ␛[38;5;205m▸ internal/agent/loop.go␛[m␛[38;5;248m · ␛[m␛[38;5;248m5 tools␛[m                                  
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
 
 · a killed writer · its patch is kept, and enter reviews it
   ␛[1;94mAGENTS␛[m                                                       ␛[38;5;245m1 running␛[m
@@ -768,7 +716,6 @@
     ␛[38;5;248mcancelled␛[m␛[38;5;248m · ␛[m␛[38;5;248mpatch kept␛[m␛[38;5;248m · ␛[m␛[38;5;245m[enter] review␛[m␛[38;5;248m · ␛[m␛[38;5;248mhandoff kept␛[m␛[38;5;248m · ␛[m␛[38;5;245m[r] retry␛[m  
   ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                                                       ␛[38;5;245m$0.02␛[m
     ␛[38;5;205m▸ internal/agent/round.go␛[m␛[38;5;248m · ␛[m␛[38;5;248m3 tools␛[m                                 
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
 
 · nine writers · the preset draws three, and the marker says the rest are running
   ␛[1;94mAGENTS␛[m                                                       ␛[38;5;245m9 running␛[m
@@ -780,7 +727,6 @@
     ␛[38;5;205m▸ internal/lane8/lane.go␛[m␛[38;5;248m · ␛[m␛[38;5;248m2 tools␛[m                                  
   ␛[94m◇␛[m ␛[38;5;252mwriter-9␛[m                                                       ␛[38;5;245m$0.02␛[m
     ␛[38;5;205m▸ internal/lane9/lane.go␛[m␛[38;5;248m · ␛[m␛[38;5;248m1 tool␛[m                                   
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
   ␛[38;5;245m… 6 more␛[m␛[38;5;245m · ␛[m␛[38;5;245m6 running␛[m                                                  
 
 · three writers and two waiting · the waiting rows stay, the older writers fold
@@ -793,7 +739,6 @@
     ␛[38;5;248mwaiting approval: delete a file␛[m                                     
   ␛[94m◇␛[m ␛[38;5;252mwriter-4␛[m                                                       ␛[38;5;245m$0.01␛[m
     ␛[38;5;205m▸ docs/loop.md␛[m␛[38;5;248m · ␛[m␛[38;5;248m2 tools␛[m                                            
-  ␛[38;5;245mf12 agents · shift+f8 next · click to attach␛[m                          
   ␛[38;5;245m… 2 more␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 running␛[m                                                  
 
 · the same map three rows short · what it gives up, in order
@@ -808,7 +753,6 @@
     ␛[38;5;205m▸ go test ./internal/agent/...␛[m␛[38;5;248m · ␛[m␛[91m⚠ off task ×2␛[m␛[38;5;248m · ␛[m␛[38;5;248m12 tools␛[m           
   ␛[91m✗␛[m ␛[38;5;252mwriter-4␛[m                                               ␛[91mfailed␛[m  ␛[38;5;245m$0.07␛[m
   ␛[38;5;248m└␛[m␛[94m◇␛[m ␛[38;5;252mreader-5␛[m                                                      ␛[38;5;245m$0.01␛[m
-     ␛[38;5;205m▸ internal/agent/round.go␛[m␛[38;5;248m · ␛[m␛[38;5;248m3 tools␛[m                                
   ␛[38;5;245m… 1 more␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 running␛[m                                                  
 
 · one command broken · the block above the changeset

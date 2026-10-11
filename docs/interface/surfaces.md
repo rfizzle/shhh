@@ -1881,11 +1881,10 @@ failed leaving a record a replacement could resume from says the record was
 kept, and names the key that uses it. The row stays inert — that key is the
 manager's — which is the reason the block ends the way it does.
 
-The map ends on a line naming how to reach what it draws, in the voice the
-plan's own list already uses: the manager, the chord to the next session, and
-the pointer. It is there only when there is a session to reach, and it is the
-first row the block gives up when the rail runs short, because a map missing
-one row is still a map and a hint with no map under it is not a hint.
+The map ends on its last session. No block on the rail ends on a line
+naming the key that reaches what it draws: the heading is the door and the
+key list names the chord, so a row of hints would be a figure that never
+moves.
 
 Two of the rail's lists are places to go from rather than only to read. A
 click on a changed file opens that file's diff full screen, and the same
@@ -1925,8 +1924,7 @@ parked rather than working. A block is standing, changing between
 turns and read before the next send: an idle plan or working list, the
 backlog, the changeset, a map whose every agent has settled, tool sources with
 one blocked, broken or still starting. And a block is static, the same from
-send to send: the bill, a window under its warning, every tool source up — and
-the trailers naming keys at the foot of a block, whichever block they end. So
+send to send: the bill, a window under its warning, every tool source up. So
 the same map is history while its agents have all finished and the one block
 that must not go the moment one of them asks for you; the marks already say
 which, so the class is never a colour's job.
@@ -1973,8 +1971,11 @@ was never registered is indistinguishable from one the model chose not to
 call — so the sources say whether they are up in a glyph and a word, with the
 count of tools each brought or the one thing standing in the way. It is
 present only when something outside shhh was configured, because a session
-with nothing but its own tools has no way to have lost any, and it folds past
-a few rows: whether what was configured is up is the question. A source is
+with nothing but its own tools has no way to have lost any, and it draws a
+row only for a source that is not up: the heading's ratio says how many are,
+and a column of green rows would be a figure that never moves. When every
+source is up the block is its heading, and the memory row where the recall
+budget kept something out. A source is
 in one of five states — up, blocked on a person, off on purpose, error, and
 starting — and the fifth is a server the session opened without waiting for
 ([a server that did not answer is a
@@ -1988,31 +1989,26 @@ transcript's line at that boundary for one that ran out its bound carries the
 bound and the key that raises it (`mcp: tracker: did not start (no answer
 within 20s — timeout_seconds) — its tools are not in this session`), and a
 server that answered and went before the boundary is that same line. The heading
-counts only what is up, and the fold takes the healthy rows first, so a
-server still starting keeps its row beside one that failed. The heading and
+counts only what is up, and a source that is up has no row, so a server
+still starting keeps its row beside one that failed. The heading and
 the fold marker open the whole of it (`/mcp`, [the supporting
 screens](#the-supporting-screens)): every source, the tools each brought, and
 for one that is not up what would move it.
 
 The last block is the bill. Its heading carries what the running turn has
 cost, and once the turn has closed what it came to — the figure its close row
-states — until the next turn opens; the rows under it are the session's bill
-in shares, one per model that answered — the model, what its own requests cost and what kinds of request
-they were, then what the children that ran on it cost after their `◇` — and
-the last row is `session total`, which the shares add up to. The machinery
-around a turn — the permission classifier, the session's readings, the title
-— [runs on a smaller model](../capabilities/providers.md#a-bounded-call-runs-on-the-small-model)
-than the turn does, so a session's total is rarely what its own model's row
-says, and the rows are what explain the difference without a reader having
-to know it. A kind of request that spent nothing is not named, and where
-everything ran on one model the block is that one row and the total. As the
-rail narrows a row gives up its words before its figures: the kinds fold to
-the first and a count, then the model's name shortens to its family word,
-then goes. When the rail runs short of height the shares fold and the total
-stays, because it is the one figure the rest of the block is about. The
-heading and the fold marker open the whole bill (`/stats`, [the supporting
-screens](#the-supporting-screens)), which reads the same ledger: every share
-the block draws, each child's by name and each turn's.
+states — until the next turn opens; the one row under it is `session total`,
+the figure the block is read for. The shares that total adds up to are not on
+the rail: how the bill divides by model, the kinds of request each model
+answered and what the children that ran on it cost are `/stats`'s, which the
+heading opens (`/stats`, [the supporting screens](#the-supporting-screens)).
+The machinery around a turn — the permission classifier, the session's
+readings, the title — [runs on a smaller
+model](../capabilities/providers.md#a-bounded-call-runs-on-the-small-model)
+than the turn does, so a session's total is rarely what its own model's price
+alone would make it, and that screen is where the difference is explained. The
+screen reads the same ledger: every share, each child's by name and each
+turn's.
 
 The rail takes the room a wide terminal gives it. Its width is a rule rather
 than a number: it is at its narrowest at the threshold, and above that it

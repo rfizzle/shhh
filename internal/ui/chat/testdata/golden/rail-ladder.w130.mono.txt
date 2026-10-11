@@ -28,15 +28,15 @@
                                                                                  │    ▸ streaming…                                
                                                                                  │  ⚠ researcher-1                                
     ∗ worked 24.7s · 6 tools · $0.14                                             │    waiting approval: run echo hi · 1 tool      
-   ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back         │  f12 agents · shift+f8 next · click to attach  
-    ✗ go test ./internal/agent/... failing · exit 1 · 21s                        │                                                
-                                                                                 │  CONTEXT                          32% of 128k  
+   ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back         │                                                
+    ✗ go test ./internal/agent/... failing · exit 1 · 21s                        │  CONTEXT                          32% of 128k  
                                                                                  │  ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
                                                                                  │                                  ↑41.2k ↓9.8k  
                                                                                  │                                                
                                                                                  │  SPEND                                  $0.51  
-                                                                                 │  gpt-4o · $0.51 main                           
                                                                                  │  session total · $0.51                         
+                                                                                 │                                                
+                                                                                 │                                                
                                                                                  │                                                
                                                                                  │                                                
                                                                                  │                                                
@@ -71,15 +71,15 @@
                                                                                  ␛[38;5;244m│␛[m    ␛[38;5;254m▸ streaming…␛[m                                
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254m⚠␛[m ␛[38;5;254mresearcher-1␛[m                                
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                                             ␛[38;5;244m│␛[m    ␛[38;5;244mwaiting approval: run echo hi · 1 tool␛[m      
-   ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo 1 takes it back␛[m         ␛[38;5;244m│␛[m  ␛[38;5;244mf12 agents · shift+f8 next · click to attach␛[m  
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                        ␛[38;5;244m│␛[m                                                
-                                                                                 ␛[38;5;244m│␛[m  ␛[38;5;254;1mCONTEXT␛[m                          ␛[38;5;254m32% of 128k␛[m  
+   ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo 1 takes it back␛[m         ␛[38;5;244m│␛[m                                                
+    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                        ␛[38;5;244m│␛[m  ␛[38;5;254;1mCONTEXT␛[m                          ␛[38;5;254m32% of 128k␛[m  
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254m▰▰▰▰▰▰▰␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[38;5;254m41k␛[m  
                                                                                  ␛[38;5;244m│␛[m                                  ␛[38;5;244m↑41.2k ↓9.8k␛[m  
                                                                                  ␛[38;5;244m│␛[m                                                
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254;1mSPEND␛[m                                  ␛[38;5;254m$0.51␛[m  
-                                                                                 ␛[38;5;244m│␛[m  ␛[38;5;244mgpt-4o · $0.51 main␛[m                           
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;244msession total · $0.51␛[m                         
+                                                                                 ␛[38;5;244m│␛[m                                                
+                                                                                 ␛[38;5;244m│␛[m                                                
                                                                                  ␛[38;5;244m│␛[m                                                
                                                                                  ␛[38;5;244m│␛[m                                                
                                                                                  ␛[38;5;244m│␛[m                                                

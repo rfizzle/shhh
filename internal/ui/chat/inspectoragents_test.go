@@ -10,7 +10,6 @@ import (
 
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // TestInspectorAgents_CarriesWhatAChildIsAboutToRunOutOf: the three facts the
@@ -53,31 +52,6 @@ func TestInspectorAgents_CarriesWhatAChildIsAboutToRunOutOf(t *testing.T) {
 	}
 	if agents[0].Depth != 0 {
 		t.Fatalf("the orchestrator is the level everything else is under: %d", agents[0].Depth)
-	}
-}
-
-// TestInspectorAgents_TrailerIsTheRegistersOwnLetters: the row under the map
-// names the keys that reach the sessions it draws, and it names them from the
-// register rather than spelling them out, so a rebind moves the row with it.
-func TestInspectorAgents_TrailerIsTheRegistersOwnLetters(t *testing.T) {
-	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
-	t.Cleanup(sup.Close)
-	updated, _ := newSubagentModel(t, sup).Update(tea.WindowSizeMsg{Width: 144, Height: 40})
-	m := updated.(Model)
-	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
-
-	hint := m.resolveInspector().AgentsHint
-	for _, want := range []string{
-		keys.Shown(keys.Draft.Agents) + " agents",
-		keys.Shown(keys.Draft.NextAgent) + " next",
-		"click to attach",
-	} {
-		if !strings.Contains(hint, want) {
-			t.Fatalf("the trailer is missing %q: %q", want, hint)
-		}
-	}
-	if !strings.Contains(stripANSI(m.View().Content), hint) {
-		t.Fatalf("the trailer reaches the screen:\n%s", stripANSI(m.View().Content))
 	}
 }
 

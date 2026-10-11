@@ -24,8 +24,8 @@
                                                                                             │                                     ↑41.2k ↓9.8k  
    ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...       exit 1 · 22s    │                                                   
       Thread the sentinel through the loop                                                  │  SPEND                                     $0.51  
-      --- FAIL: TestRoundLimit                                                    1 line    │  gpt-4o · $0.51 main                              
-                                                                                            │  session total · $0.51                            
+      --- FAIL: TestRoundLimit                                                    1 line    │  session total · $0.51                            
+                                                                                            │                                                   
                                                                                             │                                                   
     ∗ worked 24.7s · 6 tools · $0.14                                                        │                                                   
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back                    │                                                   
@@ -57,8 +57,8 @@
 ␛[48;5;16m  ␛[48;5;234m                                                                                        ␛[48;5;16m  ␛[38;5;248m│␛[39m                                     ␛[38;5;248m↑41.2k ↓9.8k␛[39m  ␛[m
 ␛[48;5;16m  ␛[48;5;234m ␛[38;5;210m▎✗␛[39m ␛[38;5;254mwrote␛[39m ␛[38;5;250minternal/agent/loop.go␛[38;5;248m · ran go test ./internal/agent/...␛[39m       ␛[38;5;210mexit 1␛[38;5;248m · 22s␛[39m  ␛[48;5;16m  ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m  ␛[48;5;234m    ␛[38;5;254mThread the sentinel through the loop␛[39m                                                ␛[48;5;16m  ␛[38;5;248m│␛[39m  ␛[38;5;75;1mSPEND␛[39;22m                                     ␛[38;5;254m$0.51␛[39m  ␛[m
-␛[48;5;16m  ␛[48;5;234m    ␛[38;5;250m--- FAIL: TestRoundLimit␛[39m                                                    ␛[38;5;248m1 line␛[39m  ␛[48;5;16m  ␛[38;5;248m│␛[39m  ␛[38;5;248mgpt-4o · $0.51 main␛[39m                              ␛[m
-␛[48;5;16m  ␛[48;5;234m                                                                                        ␛[48;5;16m  ␛[38;5;248m│␛[39m  ␛[38;5;248msession total · $0.51␛[39m                            ␛[m
+␛[48;5;16m  ␛[48;5;234m    ␛[38;5;250m--- FAIL: TestRoundLimit␛[39m                                                    ␛[38;5;248m1 line␛[39m  ␛[48;5;16m  ␛[38;5;248m│␛[39m  ␛[38;5;248msession total · $0.51␛[39m                            ␛[m
+␛[48;5;16m  ␛[48;5;234m                                                                                        ␛[48;5;16m  ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m                                                                                            ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m    ␛[38;5;248m∗␛[39m ␛[38;5;248mworked 24.7s · 6 tools · $0.14␛[39m                                                        ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m   ␛[38;5;214m▎✎␛[39m ␛[38;5;254m1 file changed ␛[38;5;120m+12␛[39m ␛[38;5;210m−4␛[38;5;248m · all tracked in git · /undo 1 takes it back␛[39m                    ␛[38;5;248m│␛[39m                                                   ␛[m

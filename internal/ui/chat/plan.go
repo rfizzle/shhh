@@ -633,12 +633,6 @@ func sanitizePlanName(name string) string {
 // know; the checklist itself is the bare form.
 const planUsage = "usage: /plan · /plan save [name] · /plan drop"
 
-// planHintRail is the PLAN block's last row. It names the command rather than
-// a bracketed key because the rail's keys are the host's, and the input
-// textarea owns every unmodified letter — a `[p]` printed there would be an
-// offer nothing accepts (the reason the card kept [y/n/a]).
-const planHintRail = "/plan for the whole list"
-
 // declaredSteps is the approved plan's step list, or nil when no plan is
 // running — or when the transcript on screen belongs to a child, which the
 // orchestrator's plan says nothing about.

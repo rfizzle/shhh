@@ -50,8 +50,6 @@ type InspectorPlan struct {
 	// work the plan never named, steps taken out of order, steps skipped.
 	// Empty while the run is following it, because "no drift" is not news.
 	Drift string
-	// Hint is the row under the list naming how to read the whole plan.
-	Hint string
 }
 
 // planBlock is the PLAN checklist. It sits under THIS TURN because it
@@ -101,13 +99,6 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 			text:   railRow(sty.accent.Render("⚠")+" "+sty.dim.Render(p.Drift), "", width, inspectorIndent),
 			pinned: true, shed: true,
 		})
-	}
-	if p.Hint != "" {
-		// It goes rather than folds: the hint is not a step, so the marker
-		// counting what the block hid has nothing to count for it, and would
-		// spend the row the fold just saved while reporting a step hidden
-		// that is still on screen (railLine.shed).
-		b.shedRow(indentRow(sty.hint.Render(p.Hint), width))
 	}
 	return b, true
 }

@@ -234,7 +234,7 @@ func TestInspectorRail_PlanBlockAndTrueDenominator(t *testing.T) {
 		t.Fatalf("the block lists the plan's own titles, got %q", view)
 	}
 	rail := ansi.Strip(data.View(components.InspectorWidth, 0))
-	for _, want := range []string{"PLAN", "1 of 4 done", "✓", "·", planHintRail} {
+	for _, want := range []string{"PLAN", "1 of 4 done", "✓", "·"} {
 		if !strings.Contains(rail, want) {
 			t.Fatalf("the rail should contain %q, got:\n%s", want, rail)
 		}

@@ -39,7 +39,6 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 const (
@@ -217,19 +216,18 @@ func (m Model) transcriptReading() transcriptReading {
 func (m Model) resolveInspector() components.InspectorRail {
 	steps := m.planChecklist()
 	return components.InspectorRail{
-		Summary:    m.inspectorSummary(),
-		Turn:       m.inspectorTurn(steps),
-		Plan:       m.inspectorPlan(steps),
-		Steps:      m.inspectorSteps(),
-		Todo:       m.inspectorTodo(),
-		Alerts:     m.inspectorAlerts(),
-		Changes:    m.inspectorChanges(),
-		Agents:     m.inspectorAgents(),
-		AgentsHint: agentsHintRail(),
-		Tools:      m.inspectorTools(),
-		Context:    m.inspectorContext(),
-		Spend:      m.inspectorSpend(),
-		Doors:      railDoorSet(),
+		Summary: m.inspectorSummary(),
+		Turn:    m.inspectorTurn(steps),
+		Plan:    m.inspectorPlan(steps),
+		Steps:   m.inspectorSteps(),
+		Todo:    m.inspectorTodo(),
+		Alerts:  m.inspectorAlerts(),
+		Changes: m.inspectorChanges(),
+		Agents:  m.inspectorAgents(),
+		Tools:   m.inspectorTools(),
+		Context: m.inspectorContext(),
+		Spend:   m.inspectorSpend(),
+		Doors:   railDoorSet(),
 	}
 }
 
@@ -284,7 +282,6 @@ func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.I
 		Steps: steps,
 		Done:  planStepsDone(steps),
 		Drift: m.planRun.driftLabel(),
-		Hint:  planHintRail,
 	}
 }
 
@@ -782,26 +779,6 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 	return agents
 }
 
-// agentsHintRail is the trailer under the map: the manager, the chord to the
-// next session, and the pointer. The letters are the register's, so a rebind
-// moves the row with it (docs/interface/surfaces.md#the-inspector-rail).
-//
-// The chord walks both ways and only the forward key is named. The row is
-// forty-four columns at the rail's floor, which is exactly what these three
-// clauses take, and the reverse of a chord whose forward key is on screen is
-// the one thing a reader can guess — where a fourth clause would clip one of
-// the other three off the narrowest rail there is. The manager is named by
-// the word the key bar offers it with, agents, which is also the one that
-// fits: with the manager on the function row, "manager" is the column that
-// would clip the pointer's clause.
-func agentsHintRail() string {
-	return strings.Join([]string{
-		keys.Shown(keys.Draft.Agents) + " agents",
-		keys.Shown(keys.Draft.NextAgent) + " next",
-		"click to attach",
-	}, " · ")
-}
-
 // orchestratorAgent is the map's first row: this session itself. Its state is
 // what the session is doing rather than a lifecycle — nothing spawned the
 // orchestrator and nothing collects it — so it is running while a turn is,
@@ -856,20 +833,14 @@ func (m Model) inspectorContext() *components.InspectorContext {
 	return &c
 }
 
-// inspectorSpend is the session's bill one row per model, then the total.
-// The session figure is the ledger's — the agent's turns, the permission
-// classifier, the session summary and every child, each priced against the
-// model that actually answered it — so the rail's bottom line is the whole
-// bill rather than the part of it the main agent ran up, and the model rows
-// above it are what explain the difference: the machinery around a turn
-// usually runs on another model than the turn does
-// (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
-//
-// Every row is read down the block as a share of one bill, so every row is
-// the priced-as-it-went figure and the model rows add up to the total. A row
-// re-priced from its token counts would charge the input the provider served
-// from its cache at the fresh rate, and the block would show a turn costing
-// more than the session it is part of (attach.go).
+// inspectorSpend is the turn's cost and the session's total. The session
+// figure is the ledger's — the agent's turns, the permission classifier, the
+// session summary and every child, each priced against the model that
+// actually answered it — so the rail's bottom line is the whole bill rather
+// than the part of it the main agent ran up. The shares by model that explain
+// the difference are /stats's (spendScreenData), where every one is priced as
+// it went, so they add up to this total
+// (docs/interface/surfaces.md#the-inspector-rail).
 func (m Model) inspectorSpend() *components.InspectorSpend {
 	total := m.billTotal()
 	if !spent(total) {
@@ -878,17 +849,6 @@ func (m Model) inspectorSpend() *components.InspectorSpend {
 	s := components.InspectorSpend{
 		Turn:    m.totalsLabel(m.railTurnSpend()),
 		Session: m.totalsLabel(total),
-	}
-	for _, share := range m.spendShares() {
-		row := components.InspectorSpendModel{
-			Model:    share.model,
-			Cost:     shareLabel(share.own),
-			Children: shareLabel(share.children),
-		}
-		for _, src := range share.sources {
-			row.Sources = append(row.Sources, spendWord(src))
-		}
-		s.Models = append(s.Models, row)
 	}
 	return &s
 }

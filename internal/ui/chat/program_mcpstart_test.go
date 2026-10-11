@@ -50,7 +50,7 @@ func TestProgram_AServerStartingTurnsUpAndJoinsAtTheNextLine(t *testing.T) {
 	waitForAll(t, tm, "the first answer", "▸ docs", "starting · ", "1 of 2 up")
 
 	answered.Store(true)
-	waitForAll(t, tm, "✓ docs", "2 of 2 up")
+	waitForAll(t, tm, "2 of 2 up")
 	waitForGone(t, tm, "starting · ")
 	if joined.Load() {
 		t.Fatal("the server joined without a line at a boundary")

@@ -132,9 +132,6 @@ func (m *Model) reloadTodos() {
 // stuck; the whole list is one command away.
 const todoRailRows = 4
 
-// todoHintRail is the block's last row.
-const todoHintRail = "/todo for the whole backlog"
-
 // inspectorTodo is the TODO block: the active backlog in its working order,
 // the first few rows drawn and the rest counted. Nil without a backlog, so
 // the block is omitted rather than drawn empty.
@@ -146,7 +143,6 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 	t := &components.InspectorTodo{
 		Open:    s.Count(todo.StatusOpen) + s.Count(todo.StatusInProgress),
 		Blocked: s.Count(todo.StatusBlocked),
-		Hint:    todoHintRail,
 	}
 	t.Sprint, t.SprintDone, t.SprintTotal = m.inspectorSprint()
 	// A sprint is working one item at a time and the block is where a reader

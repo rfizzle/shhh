@@ -50,10 +50,7 @@ func classRail() InspectorRail {
 		}},
 		Context: &InspectorContext{Pct: 65, Tokens: 130000, Window: 200000, WarnPct: 60,
 			Tokens1: "↑41.2k", Tokens2: "↓9.8k", Burn: []float64{1, 2, 3, 4}},
-		Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86", Models: []InspectorSpendModel{
-			{Model: "gpt-5.2", Cost: "$1.70", Sources: []string{"main"}},
-			{Model: "gpt-5-mini", Cost: "$0.16", Sources: []string{"classifier"}},
-		}},
+		Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86"},
 	}
 }
 
@@ -168,9 +165,14 @@ func TestInspectorRail_ShedsByClassThenLength(t *testing.T) {
 			}
 		}
 		// (d): the height at which a block first loses a row is monotone in
-		// class, and within a class the longer block goes first.
+		// class, and within a class the longer block goes first. A block with
+		// no row of its own (TOOLS with every source up) has no first loss to
+		// order: it is only ever dropped whole.
 		for _, a := range full {
 			for _, b := range full {
+				if rows0[a.name] == 0 || rows0[b.name] == 0 {
+					continue
+				}
 				ha, hb := firstLoss[a.name], firstLoss[b.name]
 				if a.class < b.class && ha < hb {
 					t.Fatalf("w%d: %s (class %d) first lost a row at %d, after %s (class %d) at %d",
@@ -314,10 +316,7 @@ func TestInspectorRail_PromotionUncollapsesInPlace(t *testing.T) {
 		},
 		Context: &InspectorContext{Pct: 30, Tokens: 60000, Window: 200000,
 			Tokens1: "↑41.2k", Tokens2: "↓9.8k", Burn: []float64{1, 2, 3, 4}},
-		Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86", Models: []InspectorSpendModel{
-			{Model: "gpt-5.2", Cost: "$1.70", Sources: []string{"main"}},
-			{Model: "gpt-5-mini", Cost: "$0.16", Sources: []string{"classifier"}},
-		}},
+		Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86"},
 	}
 	const width = InspectorWidth
 	// The height where the static blocks have collapsed and the settled map

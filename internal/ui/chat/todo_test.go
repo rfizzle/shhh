@@ -66,7 +66,7 @@ func TestInspectorTodo_RowsInWorkingOrderAndCounts(t *testing.T) {
 		t.Fatalf("states = %+v", block.Rows)
 	}
 	rail := ansi.Strip(m.inspectorData().View(components.InspectorWidth, 0))
-	for _, want := range []string{"TODO", "project · 4 open · 1 blocked", "H M a-high", "… 1 more", todoHintRail} {
+	for _, want := range []string{"TODO", "project · 4 open · 1 blocked", "H M a-high", "… 1 more"} {
 		if !strings.Contains(rail, want) {
 			t.Fatalf("the rail should contain %q, got:\n%s", want, rail)
 		}

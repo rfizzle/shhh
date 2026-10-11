@@ -8,6 +8,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // spendModel is a session wired the way the CLI wires one: a ledger behind
@@ -75,7 +76,7 @@ func TestSpend_EachSourceIsPricedAtItsOwnModel(t *testing.T) {
 	}
 }
 
-// The rail's session line is the whole bill; its main line is the agent's own.
+// The rail's session line is the whole bill; the share's own line is the agent's.
 func TestSpend_InspectorSeparatesTheAgentFromTheSession(t *testing.T) {
 	m, ledger := spendModel(t)
 	m.vitals.startTurn()
@@ -87,18 +88,19 @@ func TestSpend_InspectorSeparatesTheAgentFromTheSession(t *testing.T) {
 	if s == nil {
 		t.Fatal("a session that has spent something has a spend block")
 	}
-	if len(s.Models) != 1 {
-		t.Fatalf("everything ran on one model, so there is one row: %+v", s.Models)
+	shares := m.spendShares()
+	if len(shares) != 1 {
+		t.Fatalf("everything ran on one model, so there is one share: %+v", shares)
 	}
-	if row := s.Models[0]; row.Cost == s.Session || row.Children == "" {
-		t.Fatalf("children are part of the session and not part of the agent, and say what they cost: row %+v, session %q", row, s.Session)
+	if row := shares[0]; shareLabel(row.own) == s.Session || shareLabel(row.children) == "" {
+		t.Fatalf("children are part of the session and not part of the agent, and say what they cost: share %+v, session %q", row, s.Session)
 	}
 }
 
-// The model rows are shares of one bill: every model's row, its own requests
-// and its children's, adds up to the session total under them, all of it the
-// figure priced as it went (docs/interface/surfaces.md#the-inspector-rail).
-func TestInspectorRail_SpendRowsSumToTheSessionTotal(t *testing.T) {
+// The model shares are of one bill: every model's share, its own requests
+// and its children's, adds up to the session total the rail states, all of it
+// the figure priced as it went (docs/interface/surfaces.md#the-inspector-rail).
+func TestInspectorRail_SpendSharesSumToTheSessionTotal(t *testing.T) {
 	m, ledger := spendModel(t)
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 12_000, CompletionTokens: 900, CachedTokens: 8_000})
 	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", provider.Usage{PromptTokens: 3_000, CompletionTokens: 40})
@@ -119,35 +121,35 @@ func TestInspectorRail_SpendRowsSumToTheSessionTotal(t *testing.T) {
 	}
 
 	rail := m.inspectorSpend()
-	main, aux := rail.Models[0], rail.Models[1]
-	if main.Model != "gpt-4o" || strings.Join(main.Sources, " · ") != "main" {
-		t.Fatalf("the session's own model is the first row, its turns called main: %+v", main)
+	main, aux := shares[0], shares[1]
+	if main.model != "gpt-4o" || spendWords(main) != "main" {
+		t.Fatalf("the session's own model is the first share, its turns called main: %+v", main)
 	}
-	if aux.Model != "cheap" || strings.Join(aux.Sources, " · ") != "classifier · summary" {
-		t.Fatalf("the small model's row names both kinds of request it answered: %+v", aux)
+	if aux.model != "cheap" || spendWords(aux) != "classifier · summary" {
+		t.Fatalf("the small model's share names both kinds of request it answered: %+v", aux)
 	}
-	if rail.Session != formatCost(total) || main.Cost != formatCost(shares[0].own.Cost) || aux.Cost != formatCost(shares[1].own.Cost) {
-		t.Fatalf("each row states the cost it was billed: %+v, session %q", rail.Models, rail.Session)
+	if rail.Session != formatCost(total) {
+		t.Fatalf("the rail states the whole bill: session %q, want %q", rail.Session, formatCost(total))
 	}
 }
 
-// A child that ran on a model nothing else did has a row of its own, and a
+// A child that ran on a model nothing else did has a share of its own, and a
 // source that spent nothing is not named.
-func TestInspectorRail_AFanOutOnAnotherModelIsARowOfItsOwn(t *testing.T) {
+func TestSpendShares_AFanOutOnAnotherModelIsAShareOfItsOwn(t *testing.T) {
 	m, ledger := spendModel(t)
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 1_000, CompletionTokens: 100})
 	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "gpt-4o", provider.Usage{})
 	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "cheap", provider.Usage{PromptTokens: 5_000, CompletionTokens: 500})
 
-	rail := m.inspectorSpend()
-	if len(rail.Models) != 2 {
-		t.Fatalf("two models billed: %+v", rail.Models)
+	shares := m.spendShares()
+	if len(shares) != 2 {
+		t.Fatalf("two models billed: %+v", shares)
 	}
-	if got := rail.Models[0].Sources; len(got) != 1 || got[0] != "main" {
+	if got := shares[0].sources; len(got) != 1 || got[0] != meter.SourceAgent {
 		t.Fatalf("a classifier that spent nothing is not named: %v", got)
 	}
-	if child := rail.Models[1]; child.Model != "cheap" || child.Cost != "" || child.Children == "" {
-		t.Fatalf("the child's model carries the child's share after its ◇ and nothing else: %+v", child)
+	if child := shares[1]; child.model != "cheap" || shareLabel(child.own) != "" || shareLabel(child.children) == "" {
+		t.Fatalf("the child's model carries the child's share and nothing else: %+v", child)
 	}
 }
 
@@ -246,5 +248,42 @@ func TestSpend_TheTurnFigureSurvivesTheClose(t *testing.T) {
 	m.vitals.startTurn()
 	if next := m.inspectorSpend(); next == nil || next.Turn != "" {
 		t.Fatalf("the next turn's heading carried the last turn's figure: %+v", next)
+	}
+}
+
+// spendWords is the kinds of request a share names, as the screen words them.
+func spendWords(sh spendShare) string {
+	var words []string
+	for _, src := range sh.sources {
+		words = append(words, spendWord(src))
+	}
+	return strings.Join(words, " · ")
+}
+
+// TestInspectorSpend_SharesAreTheScreens: the rail's SPEND block is its
+// heading and the session total; the per-model shares it once drew are the
+// /stats screen's, and the screen still carries every one of them.
+func TestInspectorSpend_SharesAreTheScreens(t *testing.T) {
+	m, ledger := spendModel(t)
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 12_000, CompletionTokens: 900})
+	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", provider.Usage{PromptTokens: 3_000, CompletionTokens: 40})
+
+	rail := stripANSI(strings.Join(m.inspectorData().Lines(components.InspectorWidth, 0), "\n"))
+	if !strings.Contains(rail, "session total · "+formatCost(ledger.Total().Cost)) {
+		t.Fatalf("the rail keeps the session total:\n%s", rail)
+	}
+	for _, name := range []string{"gpt-4o", "cheap", "classifier"} {
+		if strings.Contains(rail, name) {
+			t.Fatalf("the rail draws no per-model share, found %q:\n%s", name, rail)
+		}
+	}
+	models := 0
+	for _, r := range m.spendScreenData().Rows {
+		if r.Kind == components.SpendModel {
+			models++
+		}
+	}
+	if models != 2 {
+		t.Fatalf("/stats carries both models' shares, got %d", models)
 	}
 }

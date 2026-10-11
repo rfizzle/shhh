@@ -48,9 +48,7 @@ func TestInspectorRail_AgentsMapGivesUpItsRowsInOrder(t *testing.T) {
 			{Name: "runner-3", Detail: "the package tests", State: FanoutRunning},
 			{Name: "reader-4", Detail: "waiting for a slot", State: FanoutQueued},
 		},
-		AgentsHint: railAgentsHint,
 	}
-	everything := stripANSI(r.View(InspectorMaxWidth, 0))
 	full := len(r.Lines(InspectorMaxWidth, 0))
 	// What each successive row of pressure costs, in the order the block can
 	// afford to lose it. The fold marker takes a row of its own the moment
@@ -58,22 +56,9 @@ func TestInspectorRail_AgentsMapGivesUpItsRowsInOrder(t *testing.T) {
 	gone := func(rows int) string {
 		return stripANSI(strings.Join(r.Lines(InspectorMaxWidth, full-rows), "\n"))
 	}
-	// One row of pressure costs the trailer and nothing else. It is checked as
-	// the whole block rather than as a name still being present, because the
-	// failure this is here for takes a session's second line while leaving its
-	// first: the row that says what the session is doing goes, the name stays,
-	// and every containment check still passes.
-	if v, want := gone(1), strings.Join(strings.Split(everything, "\n")[:len(strings.Split(everything, "\n"))-1], "\n"); v != want {
-		t.Fatalf("one row of pressure is the trailer and nothing else:\ngot\n%s\nwant\n%s", v, want)
-	}
-	// And it goes rather than folding: a trailer is not a session, so nothing
-	// is behind a marker yet.
-	if v := gone(1); strings.Contains(v, "… ") {
-		t.Fatalf("the trailer is shed, not folded behind a count:\n%s", v)
-	}
-	// Three rows of pressure: the trailer, then the oldest stopped session,
-	// whose two rows are replaced by the marker counting it.
-	v := gone(3)
+	// Two rows of pressure: the oldest stopped session, whose two rows are
+	// replaced by the marker counting it.
+	v := gone(2)
 	if strings.Contains(v, "writer-1") || !strings.Contains(v, "… 1 more") {
 		t.Fatalf("the oldest settled session goes before the newer one:\n%s", v)
 	}
@@ -83,7 +68,7 @@ func TestInspectorRail_AgentsMapGivesUpItsRowsInOrder(t *testing.T) {
 	// Under enough pressure both settled sessions and the queued one are
 	// gone, and the running one is still there: it is pinned, and a pinned
 	// row is taken only once nothing else on the rail has one to give.
-	v = gone(6)
+	v = gone(5)
 	if strings.Contains(v, "writer-2") || strings.Contains(v, "reader-4") {
 		t.Fatalf("settled and queued go before anything running:\n%s", v)
 	}
@@ -132,37 +117,6 @@ func TestNextToHide_GiveBeatsThePositionOnTheRow(t *testing.T) {
 	}
 	if _, row, _ := nextToHide([]railBlock{ordered}); row != 0 {
 		t.Fatalf("the lowest-numbered row goes first, got %d", row)
-	}
-}
-
-// TestInspectorRail_AgentsTrailerNamesTheKeys: the map ends on how to reach
-// what it draws, and only where there is something to reach.
-func TestInspectorRail_AgentsTrailerNamesTheKeys(t *testing.T) {
-	r := InspectorRail{
-		Agents: []InspectorAgent{
-			{Name: "orchestrator", Detail: "round 3", Self: true, State: FanoutRunning},
-			{Name: "writer-1", Detail: "docs/loop.md", State: FanoutRunning},
-		},
-		AgentsHint: railAgentsHint,
-	}
-	// The trailer is drawn whole at the narrowest rail there is rather than
-	// clipping: it is a row of keys, and a clipped key is one nobody can
-	// press.
-	whole := false
-	for _, line := range r.Lines(InspectorWidth, 0) {
-		if strings.Contains(stripANSI(line), railAgentsHint) {
-			whole = true
-		}
-	}
-	if !whole {
-		t.Fatalf("the trailer is drawn whole at %d columns:\n%s",
-			InspectorWidth, stripANSI(r.View(InspectorWidth, 0)))
-	}
-	// A run with no children is not a map, and a hint over one row would be
-	// naming sessions that do not exist.
-	r.Agents = r.Agents[:1]
-	if view := stripANSI(r.View(InspectorWidth, 0)); strings.Contains(view, railAgentsHint) {
-		t.Fatalf("the trailer needs a session to reach:\n%s", view)
 	}
 }
 

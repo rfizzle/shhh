@@ -47,9 +47,9 @@ func rowsOf(s components.SpendScreen, kind components.SpendKind) []components.Sp
 }
 
 // The screen is the block's own ledger: its total is the rail's session
-// total, and its model rows are the rail's rows — the same model, the same
-// own cost, the same kinds of request and the same children's share — so the
-// screen and the block cannot disagree about one bill.
+// total, and its model rows are the ledger's shares — the same model, the
+// same own cost, the same kinds of request and the same children's share — so
+// the screen and the block cannot disagree about one bill.
 func TestSpendScreen_ReadsTheLedgerTheBlockReads(t *testing.T) {
 	m, ledger := statsModel(t)
 	s := m.spendScreenData()
@@ -63,18 +63,23 @@ func TestSpendScreen_ReadsTheLedgerTheBlockReads(t *testing.T) {
 		t.Fatalf("the screen's total %q is not the rail's %q", totals[0].Cost, block.Session)
 	}
 	models := rowsOf(s, components.SpendModel)
-	if len(models) != len(block.Models) {
-		t.Fatalf("the screen has %d models and the block %d", len(models), len(block.Models))
+	shares := m.spendShares()
+	if len(models) != len(shares) {
+		t.Fatalf("the screen has %d models and the ledger %d", len(models), len(shares))
 	}
 	for i, row := range models {
-		rail := block.Models[i]
+		share := shares[i]
 		var words []string
 		for _, p := range row.Parts {
 			words = append(words, p.Word)
 		}
-		if row.Name != rail.Model || row.Cost != rail.Cost || row.Children != rail.Children ||
-			strings.Join(words, " · ") != strings.Join(rail.Sources, " · ") {
-			t.Errorf("model row %+v is not the rail's %+v", row, rail)
+		var kinds []string
+		for _, src := range share.sources {
+			kinds = append(kinds, spendWord(src))
+		}
+		if row.Name != share.model || row.Cost != shareLabel(share.own) || row.Children != shareLabel(share.children) ||
+			strings.Join(words, " · ") != strings.Join(kinds, " · ") {
+			t.Errorf("model row %+v is not the ledger's share %+v", row, share)
 		}
 	}
 }

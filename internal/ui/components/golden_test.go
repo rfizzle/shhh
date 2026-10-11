@@ -1696,12 +1696,6 @@ func TestGolden_PlannedCard(t *testing.T) {
 // the one block whose rows are not all the same kind of thing: the
 // orchestrator, children in five states, the marked row, and the fold the
 // finished ones go behind.
-// railAgentsHint is the row the host writes under the map from the key
-// register. It is a literal in these tests because the fixture is the
-// component's input: what the register currently binds is the host's own
-// test to make.
-const railAgentsHint = "f12 agents · shift+f8 next · click to attach"
-
 func TestGolden_InspectorRail(t *testing.T) {
 	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth, InspectorMaxWidth}, func(width int) []golden.Panel {
 		full := InspectorRail{
@@ -1718,7 +1712,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 					{Number: 3, Title: "Return it from runRound", State: PlanStepRunning},
 					{Number: 4, Title: "Offer more rounds in the chat model", State: PlanStepQueued},
 				},
-				Done: 2, Drift: "1 off plan", Hint: "/plan for the whole list",
+				Done: 2, Drift: "1 off plan",
 			},
 			Todo: &InspectorTodo{
 				Open: 5, Blocked: 1,
@@ -1730,7 +1724,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 					{Slug: "todo-add-extraction", Priority: "M", Grade: "M", State: TodoReady},
 					{Slug: "headless-todo-run", Priority: "L", Grade: "M", State: TodoBlocked, Note: "blocked"},
 				},
-				More: 2, Hint: "/todo for the whole backlog",
+				More: 2,
 			},
 			Changes: &InspectorChanges{
 				Files: []InspectorFile{
@@ -1754,7 +1748,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "writer-3", Detail: "cancelled", Outcome: "killed", Spend: "$0.03", Tools: 3,
 					State: FanoutFailed, PatchKept: true, Handoff: true},
 			},
-			AgentsHint: railAgentsHint,
 			Context: &InspectorContext{
 				Pct: 62, Tokens: 124000, Window: 200000,
 				Tokens1: "↑41.2k", Tokens2: "↓9.8k",
@@ -1768,10 +1761,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			// The session's bill on two models: its own turns and a child on
 			// the session's, the classifier and the summary on the small one.
 			// The rows add up to the total under them.
-			Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86", Models: []InspectorSpendModel{
-				{Model: "gpt-5.2", Cost: "$1.70", Sources: []string{"main"}, Children: "$0.02"},
-				{Model: "gpt-5-mini", Cost: "$0.14", Sources: []string{"classifier", "summary"}},
-			}},
+			Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86"},
 		}
 		quiet := InspectorRail{
 			Turn:    &InspectorTurn{Tools: 2, Running: true},
@@ -1996,7 +1986,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "reader-7", Detail: "nothing under that path", Spend: "$0.01",
 					Outcome: "done", State: FanoutDone},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// The map with everything a child can be about to want from you: one
 		// waiting on an answer, which is why it is drawn directly under the
@@ -2021,7 +2010,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "reader-5", Detail: "internal/agent/round.go", Spend: "$0.01",
 					Tools: 3, Depth: 2, State: FanoutRunning},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// A writer killed with work in its copy of the checkout: the patch is
 		// kept rather than discarded with the copy, and the line under the
@@ -2036,7 +2024,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "writer-2", Detail: "internal/agent/round.go", Spend: "$0.02",
 					Tools: 3, Depth: 1, State: FanoutRunning},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// The same map with a queued child added and the rail three rows
 		// short of it: the trailer goes first, then the child that never
@@ -2070,7 +2057,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "reader-3", Detail: "survey internal/ui", Spend: "$0.01", Tools: 2,
 					Depth: 1, State: FanoutRunning},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// Two writers' test runs holding the session's two check slots and a
 		// third parked in front of its own: the row says it is waiting, and
@@ -2086,7 +2072,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "writer-3", Detail: "waiting for a check slot (2 running)", Spend: "$0.02", Tools: 5,
 					Outcome: "waiting", SlotWait: 2, Depth: 1, State: FanoutHeld},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// A failed sibling beside a nested pair whose grandchild is waiting on
 		// an answer. The request floats the pair to the top as one subtree,
@@ -2105,7 +2090,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "reader-3a", Detail: "waiting approval: read ../plugins", Spend: "$0.01",
 					Depth: 2, State: FanoutBlocked},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// A writer counting its own plan: the steps in words, where a declared
 		// count draws its bar, and the share of its budget beside them.
@@ -2119,7 +2103,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "writer-2", Detail: "internal/agent/round.go", Spend: "$0.02", Tools: 5,
 					Step: 1, Steps: 4, Depth: 1, State: FanoutRunning},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// A reader that had answered, handed a follow-up: its row is running
 		// again, and the line under it is the question rather than the task.
@@ -2132,7 +2115,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "writer-2", Detail: "wrote the loop's two files", Spend: "$0.06",
 					Outcome: "done", Depth: 1, State: FanoutDone},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// A fan-out of nine writers: the map draws the three newest, which is
 		// the preset, and the marker counts the six older ones and says they
@@ -2151,7 +2133,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				}
 				return writers
 			}()...),
-			AgentsHint: railAgentsHint,
 		}
 		// Three writers working and two reviewers waiting on an answer. The
 		// waiting rows never fold and take their places in the preset first,
@@ -2172,7 +2153,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "reviewer-5", Detail: "waiting approval: delete a file", Spend: "$0.01",
 					Depth: 1, State: FanoutBlocked},
 			},
-			AgentsHint: railAgentsHint,
 		}
 		// The block on its own, at the three shapes it has: one thing broken
 		// and nothing behind it; the cap, with an older live alert and eight
@@ -2213,15 +2193,10 @@ func TestGolden_InspectorRail(t *testing.T) {
 			},
 			Changes: crowded.Changes,
 		}
-		// The machinery ran on the session's own model: one row names every
-		// kind of request that billed it, and at the rail's narrowest the
-		// kinds fold behind the first and the name gives up all but its
-		// family word before any figure is lost.
+		// SPEND alone: the heading and the session total, and nothing between
+		// them; the shares by model are /stats's.
 		oneModel := InspectorRail{
-			Spend: &InspectorSpend{Turn: "$0.41", Session: "$12.36", Models: []InspectorSpendModel{
-				{Model: "claude-opus-5-5", Cost: "$12.34", Sources: []string{"main", "classifier", "summary"},
-					Children: "$0.02"},
-			}},
+			Spend: &InspectorSpend{Turn: "$0.41", Session: "$12.36"},
 		}
 		// A turn that has just closed: THIS TURN at rest on what the turn
 		// did, and SPEND's heading still carrying what the turn cost — the
@@ -2229,13 +2204,11 @@ func TestGolden_InspectorRail(t *testing.T) {
 		closed := InspectorRail{
 			Turn:    &InspectorTurn{Step: 2, Tools: 9, Files: 2, Added: 18, Removed: 6},
 			Context: &InspectorContext{Pct: 38, Tokens: 76000, Window: 200000},
-			Spend: &InspectorSpend{Turn: "$0.0870", Session: "$0.4120", Models: []InspectorSpendModel{
-				{Model: "gpt-5.2", Cost: "$0.4120", Sources: []string{"main"}},
-			}},
+			Spend:   &InspectorSpend{Turn: "$0.0870", Session: "$0.4120"},
 		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
-			{Label: "spend · the machinery on the session's model", View: oneModel.View(width, 0)},
+			{Label: "spend · the heading and the session total", View: oneModel.View(width, 0)},
 			{Label: "a turn just closed · the heading keeps the turn's figure until the next opens",
 				View: closed.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},

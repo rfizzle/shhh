@@ -136,16 +136,9 @@ type InspectorRail struct {
 	Alerts  InspectorAlerts
 	Changes *InspectorChanges
 	Agents  []InspectorAgent
-	// AgentsHint is the trailer under the map: how to reach the sessions it
-	// draws. It is beside the slice rather than on a block struct of its own
-	// because the map's rows are the block — and it is the host's sentence
-	// rather than a constant here, since the letters in it are whatever the
-	// key register currently binds
-	// (docs/interface/surfaces.md#the-inspector-rail).
-	AgentsHint string
-	Tools      *InspectorTools
-	Context    *InspectorContext
-	Spend      *InspectorSpend
+	Tools   *InspectorTools
+	Context *InspectorContext
+	Spend   *InspectorSpend
 	// Doors names the blocks, by their Rail* heading, that have a surface
 	// behind them holding the whole of what the block bounds. Their heading
 	// and fold marker point at the block; every other block's point at
@@ -266,7 +259,7 @@ type railLine struct {
 	give int
 	// shed marks a row truncation removes outright rather than folding behind
 	// the block's marker: chrome standing for nothing a marker could count —
-	// a trailer naming keys is not an item on a list. Folding one would spend
+	// a warning is not an item on a list. Folding one would spend
 	// the row it just saved on the marker, leaving the rail no shorter and
 	// the loop below taking a second row of real content for the same one row
 	// of pressure — and the marker would then report something hidden that is
@@ -328,11 +321,6 @@ func (b *railBlock) moreRow(text string, n int) {
 	b.rows = append(b.rows, railLine{text: text, more: n})
 }
 
-// shedRow appends a row truncation removes outright rather than folding it
-// behind the block's marker (railLine.shed): chrome standing for nothing the
-// marker could count, such as a trailer naming a command.
-func (b *railBlock) shedRow(text string) { b.rows = append(b.rows, railLine{text: text, shed: true}) }
-
 func (b railBlock) height() int {
 	h := 1 + len(b.rows)
 	if len(b.folded()) > 0 {
@@ -373,8 +361,8 @@ func (b *railBlock) collapse() {
 }
 
 // rowClass is the class a row is given up at: the block's, except for chrome
-// a block sheds — a trailer naming keys reads the same from send to send
-// whatever block it ends, so it goes with the static blocks.
+// a block sheds — a warning that is not a step of its list goes with the
+// static blocks.
 func (b railBlock) rowClass(row int) railClass {
 	if b.rows[row].shed {
 		return railStatic

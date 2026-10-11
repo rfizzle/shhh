@@ -72,8 +72,6 @@ type InspectorTodo struct {
 	Rows                    []InspectorTodoRow
 	// More is how many active items Rows left out.
 	More int
-	// Hint is the row under the list naming how to see the whole backlog.
-	Hint string
 }
 
 // todoBlock is the TODO block. It sits under PLAN because it is the same
@@ -124,13 +122,6 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 		// first item the rail folds takes this row with it and the block's
 		// marker states both numbers as one (railLine.more).
 		b.moreRow(indentRow(sty.hint.Render(fmt.Sprintf("… %d more", t.More)), width), t.More)
-	}
-	if t.Hint != "" {
-		// It goes rather than folds, like PLAN's: the hint is not a backlog
-		// item, so the marker counting what the block hid has nothing to
-		// count for it, and would spend the row the fold just saved while
-		// reporting an item hidden that is still on screen (railLine.shed).
-		b.shedRow(indentRow(sty.hint.Render(t.Hint), width))
 	}
 	return b, true
 }
