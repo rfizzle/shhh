@@ -110,6 +110,18 @@ func chatScreens() []screenSpec {
 				keys: (Model).updateRail,
 				door: &surfaceDoor{components.RailWhole, railDoor{Model.openRail, railShowing, Model.closeRailScreen}},
 			}},
+		// What the session left running: its processes and the calls in
+		// flight, each stopped from here without stopping the turn
+		// (manager.go). PROCESSES and CALLS can be on the rail together; both
+		// open the one screen, whichever was clicked.
+		{state: stateManager, command: "/ps", surface: keys.NoSurface, place: placePane, held: true,
+			draw: (Model).managerLines,
+			row: mode{
+				hint:     (Model).renderManagerHint,
+				keys:     (Model).updateManager,
+				door:     &surfaceDoor{components.RailProcesses, railDoor{Model.openManager, managerShowing, Model.closeManager}},
+				doorAlso: []string{components.RailCalls},
+			}},
 		{state: stateFlakes, command: "/gate", commandArgs: []string{"flakes"}, surface: keys.NoSurface, place: placePane, held: true,
 			draw: sizedPane(heldScreens.flakes), row: flakesScreenRow()},
 		// What repeats, each as a proposal. The screen writes nothing; enter

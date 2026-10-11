@@ -29,6 +29,11 @@ type StopConfirm struct {
 	// kill is handed: a kill takes the subtree of each name, a cancel is one
 	// turn at a time.
 	Turns []string
+	// Yes is the word the confirm's yes is drawn as. Empty is the agent
+	// manager's "cancel": the turn stops and the agent stays. The process
+	// manager's yes is "stop", since a process or a call has no turn to
+	// cancel apart from itself.
+	Yes string
 }
 
 // Update resolves on the first decisive key. Only the two answers act.
@@ -47,7 +52,11 @@ func (c *StopConfirm) Update(msg tea.KeyPressMsg) (done bool, answer StopAnswer)
 // answers are the two keys, drawn the way a key row draws them. They are
 // what a narrow pane may never clip, so the prompt gives way to them.
 func (c *StopConfirm) answers() string {
-	return sty.dim.Render("["+keys.Shown(keys.Confirm.Yes)+"] ") + "cancel" +
+	yes := c.Yes
+	if yes == "" {
+		yes = "cancel"
+	}
+	return sty.dim.Render("["+keys.Shown(keys.Confirm.Yes)+"] ") + yes +
 		sty.dim.Render(" · ["+keys.Shown(keys.Agent.Kill)+"] ") + "kill"
 }
 

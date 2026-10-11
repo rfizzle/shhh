@@ -158,9 +158,13 @@ const (
 	RailTodo    = "TODO"
 	RailChanges = "CHANGES"
 	RailAgents  = "AGENTS"
-	RailTools   = "TOOLS"
-	RailContext = "CONTEXT"
-	RailSpend   = "SPEND"
+	// RailProcesses is the processes the session started, and RailCalls
+	// the tool calls running now. Both are doors to the process manager.
+	RailProcesses = "PROCESSES"
+	RailCalls     = "CALLS"
+	RailTools     = "TOOLS"
+	RailContext   = "CONTEXT"
+	RailSpend     = "SPEND"
 	// RailWhole is not a block but the rail itself: what the foot line names
 	// when the rail has dropped blocks, and the door that opens every block
 	// unshed.

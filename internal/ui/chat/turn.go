@@ -473,6 +473,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.classifier.cancel = nil
 		return answered(m.finishClassifierCheck(msg.verdict))
 
+	case managerStoppedMsg:
+		next, cmd := m.finishManagerStop(msg)
+		return next, cmd, true
 	case titleDoneMsg:
 		return m, m.finishTitle(msg), true
 	case accountDoneMsg:

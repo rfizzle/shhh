@@ -308,8 +308,21 @@ type proc struct {
 	done     bool
 	exitCode int
 	ended    time.Time
+	// stopped says the end was asked for — a stop or a kill, by the tool or
+	// by a person — rather than the process ending by itself.
+	stopped bool
 	// evidence maps stream name to the stored full-log id, once stored.
 	evidence map[string]string
+}
+
+// markStopped records that the process's end was asked for.
+// A process that ended by itself before the ask is left as it ended.
+func (p *proc) markStopped() {
+	p.mu.Lock()
+	if !p.done {
+		p.stopped = true
+	}
+	p.mu.Unlock()
 }
 
 func (p *proc) isDone() bool {
@@ -738,6 +751,7 @@ func (s *Supervisor) terminate(p *proc) {
 	if p.isDone() {
 		return
 	}
+	p.markStopped()
 	if p.stopExec != nil {
 		p.stopOnce.Do(func() { terminateAttached(p) })
 		<-p.exited
@@ -936,6 +950,94 @@ func (s *Supervisor) List() string {
 	}
 	b.WriteString("Manage with the process tool; stop everything by ending the session.")
 	return b.String()
+}
+
+// Info is one process as a surface that lists them reads it: the manager a
+// person stops a process from, and the rail's block that counts them. It is a
+// copy taken under the process's lock, so a surface can hold it across a
+// paint without holding the process.
+type Info struct {
+	Name    string
+	Command string
+	// Running is whether the process is still alive; ExitCode and Ended say
+	// how it ended once it is not.
+	Running  bool
+	ExitCode int
+	Started  time.Time
+	Ended    time.Time
+	// Stopped says the end was asked for, by the tool or by a person, so a
+	// list can say stopped rather than read the signal's code as a failure.
+	Stopped bool
+	// Container reports a process whose wrap made it a container engine's
+	// client: it runs in the sandbox's container rather than on this
+	// machine, which is where a person looking for it has to look.
+	Container bool
+}
+
+// Snapshot is every process the session owns, oldest first, as Info.
+func (s *Supervisor) Snapshot() []Info {
+	s.mu.Lock()
+	procs := make([]*proc, 0, len(s.procs))
+	for _, p := range s.procs {
+		procs = append(procs, p)
+	}
+	s.mu.Unlock()
+	sort.Slice(procs, func(i, j int) bool { return procs[i].started.Before(procs[j].started) })
+	out := make([]Info, 0, len(procs))
+	for _, p := range procs {
+		p.mu.Lock()
+		out = append(out, Info{
+			Name: p.name, Command: p.command, Running: !p.done, ExitCode: p.exitCode,
+			Started: p.started, Ended: p.ended, Stopped: p.stopped && p.done, Container: p.stopExec != nil,
+		})
+		p.mu.Unlock()
+	}
+	return out
+}
+
+// Tail is what the process tool's read returns for the end of each stream:
+// the last page of stdout and of stderr, each under the read's own header
+// line, so a person opening a process reads what the model would.
+func (s *Supervisor) Tail(name string) (stdout, stderr string, err error) {
+	if stdout, err = s.read(name, "stdout", -1, DefaultReadBytes); err != nil {
+		return "", "", err
+	}
+	stderr, err = s.read(name, "stderr", -1, DefaultReadBytes)
+	return stdout, stderr, err
+}
+
+// Stop ends a process the way the tool's stop does — the gentle signal, the
+// grace, then the kill, or the two-leg stop for a process in a container —
+// and reports its status after. It blocks until the process is gone.
+func (s *Supervisor) Stop(name string) (string, error) { return s.stop(name) }
+
+// Kill ends a process without the grace: the group is killed at once, and a
+// process in a container gets the second exec first, since a kill of its
+// client alone does not reach the program there. It blocks until the
+// process is gone.
+func (s *Supervisor) Kill(name string) (string, error) {
+	p, err := s.get(name)
+	if err != nil {
+		return "", err
+	}
+	if !p.isDone() {
+		p.markStopped()
+		if p.stopExec != nil {
+			// Not through stopOnce: a stop already sitting out the far
+			// end's grace holds it, and a kill does not wait for a grace.
+			// A second exec beside the stop's own is harmless.
+			runStopExec(p.stopExec, p.stopEnv)
+			select {
+			case <-p.exited:
+			default:
+				signalGroup(p.pid, signalKill)
+			}
+		} else {
+			signalGroup(p.pid, signalKill)
+		}
+		<-p.exited
+	}
+	return s.statusOf(p), nil
 }
 
 // Close terminates every owned process tree. It is how session end, cancel,

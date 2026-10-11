@@ -2403,6 +2403,46 @@ rewritten](../capabilities/subagents.md#an-older-profile-is-moved-into-sections-
 Opening it spends nothing, because moving it spends a request and enter
 elsewhere on the list only opens.
 
+### The process manager
+
+A session leaves two other kinds of thing running besides its children: the
+processes it started — a dev server, a watcher, a long build it will check on
+— and the calls of the round in flight. Both used to be invisible until they
+ended. A process could be listed by typing `/ps` and stopped only by asking
+the model to stop it, and a call that would not return could be ended only by
+stopping the whole turn. The process manager is the agent manager's answer
+for both: `/ps` opens it, and so does the rail's PROCESSES block, which stands
+beside AGENTS whenever a process has been started.
+
+It is one list in two sections. **processes** has a row for each process the
+session started: its name, whether it is running or how it ended — `exited 0`,
+`exited 1`, `stopped` where the end was asked for, `killed` where a signal
+nobody here sent ended it — how long it has been up or ran for, and where it
+runs, `host` or `container`. **tools** has a row for each call running now.
+A section with nothing in it says `nothing running` on its heading, so an empty
+section reads as an answer rather than as a list that did not load. Beside
+the list is the row under the pointer: its command, its age, where it runs and
+the last line it printed.
+
+`enter` opens a row. A process opens onto its output and its errors, each as
+the process tool's read returns them, so a person reads exactly what the model
+would ask for. `esc` goes back to the list, and `esc` on the list goes back to
+the prompt.
+
+`d` stops the row, after asking, with the agent manager's two answers: `y`
+stops it and `k` kills it, and esc keeps it. Stopping a process is the
+process tool's own stop — the gentle signal, the grace, then the kill, or the
+two legs of a stop in a container
+([a cancelled command takes its children with
+it](../capabilities/containment.md#a-cancelled-command-takes-its-children-with-it))
+— and a kill skips the grace. Either waits for the process off the screen's
+own work, and says what it came to in the transcript. Nothing is said to the
+model: it reads the process as exited the next time it asks, because a process
+it started and a person stopped is the same fact as a process that ended. The
+keys are the agent manager's own, `↑↓/jk` to move, `enter`, `d`, `?` and
+`esc`, so the manager spends no letter of its own; `k` is a kill only as the
+answer to the stop's question, where it is in the agent manager too.
+
 ## Cards
 
 ### The approval card
@@ -3269,7 +3309,7 @@ under that the account the session kept of where it left off
 renaming and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Nineteen surfaces take the whole terminal this way — those seven, the reading
+Twenty surfaces take the whole terminal this way — those seven, the reading
 of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
 session's own working list (`/steps`, below), the readings it has taken of its
@@ -3277,7 +3317,8 @@ own run (`/readings`, below), the turns it has run (`/turns`, below), every
 alert it has had (`/alerts`, below), every check that has flaked in the
 checkout (`/gate flakes`, [a flake is counted where it
 happened](../capabilities/testing.md#a-flake-is-counted-where-it-happened)),
-its bill (`/stats`, below), its rail in full (`/rail`, [the inspector
+its bill (`/stats`, below), what it left running (`/ps`, [the process
+manager](#the-process-manager)), its rail in full (`/rail`, [the inspector
 rail](#the-inspector-rail)), where its tools came from (`/mcp`, below), the session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
@@ -3295,7 +3336,7 @@ its one word, `back`, wherever the screen was opened from. The foot ends with th
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-working list, the readings, the turns, the alerts, the flakes, the bill, the tools, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+working list, the readings, the turns, the alerts, the flakes, the bill, the process manager, the tools, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what

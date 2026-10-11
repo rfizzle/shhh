@@ -84,6 +84,11 @@
     /safety        the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what
                    contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —
                    each section naming the command that changes it. It reads and changes nothing
+    /ps            the processes this session started and the tool calls running now, on one screen: each process with its
+                   command, whether it is running or how it exited, how long it has been up and where it runs; each call with its
+                   tool, its arguments in a line, how long it has run and where. [enter] opens a row onto a process's output and
+                   errors, or a call's arguments whole and what it has printed so far. [d] stops the row after asking — [y] stops
+                   it, [k] kills it — and a stopped call is answered as stopped while the rest of its round goes on
     /skills        the skills this session loaded (SKILL.md directories), and why any did not
     /mcp           every place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each
                    server, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it
@@ -182,6 +187,11 @@
     /safety        the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what
                    contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —
                    each section naming the command that changes it. It reads and changes nothing
+    /ps            the processes this session started and the tool calls running now, on one screen: each process with its
+                   command, whether it is running or how it exited, how long it has been up and where it runs; each call with its
+                   tool, its arguments in a line, how long it has run and where. [enter] opens a row onto a process's output and
+                   errors, or a call's arguments whole and what it has printed so far. [d] stops the row after asking — [y] stops
+                   it, [k] kills it — and a stopped call is answered as stopped while the rest of its round goes on
     /skills        the skills this session loaded (SKILL.md directories), and why any did not
     /mcp           every place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each
                    server, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it
@@ -291,6 +301,11 @@
     ␛[38;5;252m/safety␛[m        ␛[38;5;245mthe session's whole boundary on one screen (also /security): the mode and grants, where it may write, what␛[m
                    ␛[38;5;245mcontains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —␛[m
                    ␛[38;5;245meach section naming the command that changes it. It reads and changes nothing␛[m
+    ␛[38;5;252m/ps␛[m            ␛[38;5;245mthe processes this session started and the tool calls running now, on one screen: each process with its␛[m
+                   ␛[38;5;245mcommand, whether it is running or how it exited, how long it has been up and where it runs; each call with its␛[m
+                   ␛[38;5;245mtool, its arguments in a line, how long it has run and where. [enter] opens a row onto a process's output and␛[m
+                   ␛[38;5;245merrors, or a call's arguments whole and what it has printed so far. [d] stops the row after asking — [y] stops␛[m
+                   ␛[38;5;245mit, [k] kills it — and a stopped call is answered as stopped while the rest of its round goes on␛[m
     ␛[38;5;252m/skills␛[m        ␛[38;5;245mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
     ␛[38;5;252m/mcp␛[m           ␛[38;5;245mevery place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each␛[m
                    ␛[38;5;245mserver, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it␛[m
@@ -389,6 +404,11 @@
     ␛[38;5;252m/safety␛[m        ␛[38;5;245mthe session's whole boundary on one screen (also /security): the mode and grants, where it may write, what␛[m
                    ␛[38;5;245mcontains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —␛[m
                    ␛[38;5;245meach section naming the command that changes it. It reads and changes nothing␛[m
+    ␛[38;5;252m/ps␛[m            ␛[38;5;245mthe processes this session started and the tool calls running now, on one screen: each process with its␛[m
+                   ␛[38;5;245mcommand, whether it is running or how it exited, how long it has been up and where it runs; each call with its␛[m
+                   ␛[38;5;245mtool, its arguments in a line, how long it has run and where. [enter] opens a row onto a process's output and␛[m
+                   ␛[38;5;245merrors, or a call's arguments whole and what it has printed so far. [d] stops the row after asking — [y] stops␛[m
+                   ␛[38;5;245mit, [k] kills it — and a stopped call is answered as stopped while the rest of its round goes on␛[m
     ␛[38;5;252m/skills␛[m        ␛[38;5;245mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
     ␛[38;5;252m/mcp␛[m           ␛[38;5;245mevery place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each␛[m
                    ␛[38;5;245mserver, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it␛[m

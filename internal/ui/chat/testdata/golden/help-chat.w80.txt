@@ -124,6 +124,15 @@
                    commands, the hosts it reaches, what the checkout was let
                    load, its servers, secrets and tools — each section naming
                    the command that changes it. It reads and changes nothing
+    /ps            the processes this session started and the tool calls running
+                   now, on one screen: each process with its command, whether it
+                   is running or how it exited, how long it has been up and
+                   where it runs; each call with its tool, its arguments in a
+                   line, how long it has run and where. [enter] opens a row onto
+                   a process's output and errors, or a call's arguments whole
+                   and what it has printed so far. [d] stops the row after
+                   asking — [y] stops it, [k] kills it — and a stopped call is
+                   answered as stopped while the rest of its round goes on
     /skills        the skills this session loaded (SKILL.md directories), and
                    why any did not
     /mcp           every place this session's tools came from on one screen,
@@ -279,6 +288,15 @@
                    commands, the hosts it reaches, what the checkout was let
                    load, its servers, secrets and tools — each section naming
                    the command that changes it. It reads and changes nothing
+    /ps            the processes this session started and the tool calls running
+                   now, on one screen: each process with its command, whether it
+                   is running or how it exited, how long it has been up and
+                   where it runs; each call with its tool, its arguments in a
+                   line, how long it has run and where. [enter] opens a row onto
+                   a process's output and errors, or a call's arguments whole
+                   and what it has printed so far. [d] stops the row after
+                   asking — [y] stops it, [k] kills it — and a stopped call is
+                   answered as stopped while the rest of its round goes on
     /skills        the skills this session loaded (SKILL.md directories), and
                    why any did not
     /mcp           every place this session's tools came from on one screen,
@@ -451,6 +469,15 @@
                    ␛[38;5;245mcommands, the hosts it reaches, what the checkout was let␛[m
                    ␛[38;5;245mload, its servers, secrets and tools — each section naming␛[m
                    ␛[38;5;245mthe command that changes it. It reads and changes nothing␛[m
+    ␛[38;5;252m/ps␛[m            ␛[38;5;245mthe processes this session started and the tool calls running␛[m
+                   ␛[38;5;245mnow, on one screen: each process with its command, whether it␛[m
+                   ␛[38;5;245mis running or how it exited, how long it has been up and␛[m
+                   ␛[38;5;245mwhere it runs; each call with its tool, its arguments in a␛[m
+                   ␛[38;5;245mline, how long it has run and where. [enter] opens a row onto␛[m
+                   ␛[38;5;245ma process's output and errors, or a call's arguments whole␛[m
+                   ␛[38;5;245mand what it has printed so far. [d] stops the row after␛[m
+                   ␛[38;5;245masking — [y] stops it, [k] kills it — and a stopped call is␛[m
+                   ␛[38;5;245manswered as stopped while the rest of its round goes on␛[m
     ␛[38;5;252m/skills␛[m        ␛[38;5;245mthe skills this session loaded (SKILL.md directories), and␛[m
                    ␛[38;5;245mwhy any did not␛[m
     ␛[38;5;252m/mcp␛[m           ␛[38;5;245mevery place this session's tools came from on one screen,␛[m
@@ -606,6 +633,15 @@
                    ␛[38;5;245mcommands, the hosts it reaches, what the checkout was let␛[m
                    ␛[38;5;245mload, its servers, secrets and tools — each section naming␛[m
                    ␛[38;5;245mthe command that changes it. It reads and changes nothing␛[m
+    ␛[38;5;252m/ps␛[m            ␛[38;5;245mthe processes this session started and the tool calls running␛[m
+                   ␛[38;5;245mnow, on one screen: each process with its command, whether it␛[m
+                   ␛[38;5;245mis running or how it exited, how long it has been up and␛[m
+                   ␛[38;5;245mwhere it runs; each call with its tool, its arguments in a␛[m
+                   ␛[38;5;245mline, how long it has run and where. [enter] opens a row onto␛[m
+                   ␛[38;5;245ma process's output and errors, or a call's arguments whole␛[m
+                   ␛[38;5;245mand what it has printed so far. [d] stops the row after␛[m
+                   ␛[38;5;245masking — [y] stops it, [k] kills it — and a stopped call is␛[m
+                   ␛[38;5;245manswered as stopped while the rest of its round goes on␛[m
     ␛[38;5;252m/skills␛[m        ␛[38;5;245mthe skills this session loaded (SKILL.md directories), and␛[m
                    ␛[38;5;245mwhy any did not␛[m
     ␛[38;5;252m/mcp␛[m           ␛[38;5;245mevery place this session's tools came from on one screen,␛[m

@@ -821,11 +821,14 @@ default [level]   show or persist the level new sessions start on (provider.reas
 				help: `quality gate: run [suite] starts the project's checks in the background, result shows the verdict, flakes lists every check that failed and passed on its rerun in this checkout with how many times, on|off runs them as a turn closes`},
 			open:   gateOpen,
 			answer: slashGate},
+		// What the session left running: its processes and the calls in
+		// flight. It is not idleOnly: a call is only ever stopped mid-turn
+		// (manager.go).
 		{name: "/ps",
-			slash: &slashCommand{desc: "list session-owned long-running processes",
-				enabled: func(m *Model) bool { return m.wiring.Processes.Manage != nil },
-				help:    `list the long-running processes this session owns (process tool)`},
-			answer: slashProcesses},
+			slash: &slashCommand{desc: "the processes this session started and the calls running now",
+				help: `the processes this session started and the tool calls running now, on one screen: each process with its command, whether it is running or how it exited, how long it has been up and where it runs; each call with its tool, its arguments in a line, how long it has run and where. [enter] opens a row onto a process's output and errors, or a call's arguments whole and what it has printed so far. [d] stops the row after asking — [y] stops it, [k] kills it — and a stopped call is answered as stopped while the rest of its round goes on`},
+			bare: true,
+			open: bareOpen(Model.openManager)},
 		// Where the session's tools came from, as the rail's TOOLS block
 		// reads it. It is not idleOnly: a server that went mid-turn is
 		// exactly when somebody asks, and its one act records an answer
@@ -1187,13 +1190,6 @@ func slashGate(m *Model, parts []string) string {
 		return note
 	}
 	return m.wiring.Gate.Manage(parts[1:])
-}
-
-func slashProcesses(m *Model, parts []string) string {
-	if m.wiring.Processes.Manage == nil {
-		return "the process supervisor is unavailable in this session"
-	}
-	return m.wiring.Processes.Manage(parts[1:])
 }
 
 func slashMemory(m *Model, parts []string) string {

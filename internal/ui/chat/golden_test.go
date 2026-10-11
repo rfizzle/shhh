@@ -2677,7 +2677,7 @@ func TestGolden_KillConfirm(t *testing.T) {
 // session's, so a screen that declares a command does not move the tally and
 // the marker in eight files. How many commands a session offers is asserted
 // once, in TestPalette_CountsEveryCommandTheRegistryOffers.
-const paletteFixtureCommands = 29
+const paletteFixtureCommands = 30
 
 // pinPaletteReach cuts the gathered candidates to the fixture's commands and
 // keeps every other group whole, then rebuilds the card over them.

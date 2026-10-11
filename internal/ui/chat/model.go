@@ -293,6 +293,11 @@ const (
 	// returns, and it changes nothing. The rail's foot line opens it, and
 	// the same cell closes it.
 	stateRail
+	// stateManager: the process manager is up — the processes the session
+	// started and the calls in flight, each one a key from its output and a
+	// key from its stop (manager.go). A takeover like the tools screen; the
+	// turn goes on underneath it.
+	stateManager
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface

@@ -661,6 +661,10 @@ func (b *screenBuild) wireSurfaces(w *chat.Wiring) {
 		w.Processes = chat.Processes{
 			Manage:    processManager(procSup),
 			Contained: procSup.Contained,
+			Snapshot:  procSup.Snapshot,
+			Tail:      procSup.Tail,
+			Stop:      procSup.Stop,
+			Kill:      procSup.Kill,
 		}
 	}
 	if session.skills != nil {

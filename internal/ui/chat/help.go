@@ -227,7 +227,7 @@ func helpKeyRows() []helpKeyRow {
 // A door missing from the order fails a test rather than the paragraph.
 var railDoorOrder = []string{
 	components.RailSummary, components.RailTurn, components.RailAlerts,
-	components.RailChanges, components.RailAgents, components.RailSteps,
+	components.RailChanges, components.RailAgents, components.RailProcesses, components.RailSteps,
 	components.RailTodo, components.RailContext, components.RailSpend,
 	components.RailTools, components.RailWhole,
 }

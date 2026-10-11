@@ -140,17 +140,3 @@ func TestProcessTool_PlanModeRefusesStart(t *testing.T) {
 		t.Fatalf("plan mode should refuse the start with an explanatory result, got %+v", last)
 	}
 }
-
-func TestSlashPS(t *testing.T) {
-	m := processModel(t, nil)
-	handled, result := m.handleSlashCommand("/ps")
-	if !handled || result != "process list" {
-		t.Fatalf("/ps should report the process list, got handled=%v %q", handled, result)
-	}
-
-	bare := gatedModel(t, nil, nil)
-	handled, result = bare.handleSlashCommand("/ps")
-	if !handled || !strings.Contains(result, "unavailable") {
-		t.Fatalf("/ps without a supervisor should say it is unavailable, got %q", result)
-	}
-}

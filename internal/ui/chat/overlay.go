@@ -297,6 +297,10 @@ func (h heldScreens) rail() *components.RailScreen {
 	return heldAs[components.RailScreen](h, stateRail)
 }
 
+func (h heldScreens) manager() *components.ManagerScreen {
+	return heldAs[components.ManagerScreen](h, stateManager)
+}
+
 func (h heldScreens) keyPopup() *keyPopup {
 	return heldAs[keyPopup](h, stateKeyPopup)
 }
