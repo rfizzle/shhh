@@ -129,11 +129,29 @@ func (m Model) waitForNext() tea.Cmd { return m.backend.Next(m.events) }
 // batch is running is not stamped anywhere for the frame to read: the calls
 // are rows in the feed while they run, and the rail says only that the turn
 // is in its running phase (turnstatus.go).
+//
+// The batch runs under a context of its own whose cancel the model holds, so
+// a stop reaches a call that is still running — a search over a large tree,
+// a query, a page slow to answer — rather than leaving it to run out
+// (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn).
 func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
 	a := m.agent
 	runID := a.RunID()
+	m.endToolRound()
+	ctx, cancel := context.WithCancel(context.Background())
+	m.toolCancel = cancel
 	return func() tea.Msg {
-		return toolResultsMsg{runID: runID, results: a.ExecuteCalls(context.Background(), calls)}
+		return toolResultsMsg{runID: runID, results: a.ExecuteCalls(ctx, calls)}
+	}
+}
+
+// endToolRound stops the round of auto-run calls, if one is running, and
+// lets go of its cancel. A round that finished is ended the same way, which
+// releases what its context holds.
+func (m *Model) endToolRound() {
+	if m.toolCancel != nil {
+		m.toolCancel()
+		m.toolCancel = nil
 	}
 }
 
@@ -214,6 +232,9 @@ func (m *Model) cancelStreaming() {
 	if m.cancel != nil {
 		m.cancel()
 	}
+	// And the calls the round is running, which answer as stopped: the
+	// rows below read so, and so does what the model is told.
+	m.endToolRound()
 	// Before anything else, because this is what stops the close from being
 	// drawn while a suite is still running: the row it leaves is what the
 	// close block reads its verdict off (gate.go).
@@ -228,9 +249,10 @@ func (m *Model) cancelStreaming() {
 	if m.wiring.AbandonFetchWaits != nil {
 		m.wiring.AbandonFetchWaits()
 	}
-	// And a server call, for the same reason and one step further out: the
-	// executor was handed no context, so without this the cancel leaves a
-	// request to a hung server running until its own timeout (mcp.go).
+	// And a server call, for the same reason and one step further out: a
+	// server request runs under the toolset's own context rather than the
+	// call's, so without this the cancel leaves a request to a hung server
+	// running until its own timeout (mcp.go).
 	m.abandonMCPCalls()
 	for _, tc := range m.agent.CancelTurn() {
 		if _, ok := m.approval.classifierAllowed[tc.ID]; ok {

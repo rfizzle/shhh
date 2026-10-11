@@ -1340,3 +1340,13 @@ func TestManager_DStopsAndTheConfirmOffersKill(t *testing.T) {
 		t.Fatal("y answers the confirm")
 	}
 }
+
+// A child's call its stop reached is drawn as the session draws its own:
+// stopped, never as a call that broke.
+func TestConvertChildEntry_AStoppedCallReadsStopped(t *testing.T) {
+	e := convertChildEntry(subagent.TranscriptEntry{Kind: subagent.EntryTool, Tool: tools.SearchName,
+		Args: `{"pattern":"x"}`, Result: agent.CancelledResult})
+	if !refusedCall(e) {
+		t.Fatalf("a stopped child call reads as one that ran: %q", e.toolResult)
+	}
+}

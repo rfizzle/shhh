@@ -439,7 +439,8 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if len(auto) > 0 {
-			return m, m.execToolsCmd(auto)
+			run := m.execToolsCmd(auto)
+			return m, run
 		}
 		return m.advanceApprovalQueue()
 	}

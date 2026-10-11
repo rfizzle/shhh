@@ -384,7 +384,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if len(auto) > 0 {
-			return m, tea.Batch(m.execToolsCmd(auto), summary), true
+			// The command is made before m is returned: it holds the round's
+			// stop on m, and a return list evaluates m in no promised order.
+			run := m.execToolsCmd(auto)
+			return m, tea.Batch(run, summary), true
 		}
 		next, cmd := m.advanceApprovalQueue()
 		return next, tea.Batch(cmd, summary), true
@@ -393,6 +396,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		if msg.runID != m.agent.RunID() || m.turnState() != stateStreaming {
 			return m, nil, true
 		}
+		m.endToolRound()
 		m.agent.RecordAutoResults(msg.results)
 		m.noteDrew()
 		for _, r := range msg.results {

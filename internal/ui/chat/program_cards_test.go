@@ -6,11 +6,13 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -115,6 +117,46 @@ func TestProgram_TheCancelChordStopsARunningCommand(t *testing.T) {
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "stopped")
+}
+
+// The cancel chord while a search runs stops the search itself, not only the
+// turn above it: the call waits on nothing but its context, so it returns
+// only if the stop reached it. Its row reads stopped, and the model is told
+// the person stopped it rather than that it failed.
+func TestProgram_TheCancelChordStopsARunningSearch(t *testing.T) {
+	m, _ := scriptedSession(
+		programTurn{calls: []provider.ToolCall{call("s1", tools.SearchName, `{"pattern":"rounds"}`)}},
+	)
+	started, returned := make(chan struct{}), make(chan struct{})
+	m.agent.SetExecutor(func(ctx context.Context, _ string, _ json.RawMessage) (string, error) {
+		close(started)
+		<-ctx.Done()
+		close(returned)
+		return "", ctx.Err()
+	})
+	tm := runProgram(t, m)
+
+	send(tm, "where are the rounds counted")
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the search never started")
+	}
+	tm.Send(programCancel)
+	select {
+	case <-returned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the stop did not reach the running search")
+	}
+	waitForText(t, tm, "stopped")
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "stopped")
+	msgs := m.agent.Messages()
+	last := msgs[len(msgs)-1]
+	if last.Role != provider.RoleTool || last.Content != agent.CancelledResult {
+		t.Fatalf("the model is told %q, want %q", last.Content, agent.CancelledResult)
+	}
 }
 
 // A long command's row tails what it prints while it runs, and settles when

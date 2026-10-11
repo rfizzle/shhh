@@ -135,6 +135,7 @@ func (m *Model) quitNow() tea.Cmd {
 	if m.cancel != nil {
 		m.cancel()
 	}
+	m.endToolRound()
 	// A suite is a subprocess and minutes of one; a session that is leaving
 	// must not go on spending a build on the way out (gate.go).
 	m.cancelCloseGate()
