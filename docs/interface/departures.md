@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 35 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 36 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -561,6 +561,49 @@ add `#98c379`, which lands on 108 `#87af87`; delBg is next at 29.5, and the
 study's 32 on delBg was for the unlifted del and its own pick). Sixteen colours:
 the dark column. The Machado distance is not held for this table; `colorblind`
 remains the answer for that need.
+
+## The `gruvbox-light` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: https://github.com/morhetz/gruvbox (colors/gruvbox.vim, medium
+contrast, the faded accents the vim theme uses on a light ground). Ground
+`#fbf1c7` (light0), band `#ebdbb2` (light1), selected row `#d5c4a1` (light2);
+a light ground, painted by default. Bright on the selected row reads 8.59:1.
+Unlike `light`, which leaves the terminal's own white, this table paints its
+cream: the cream is the theme's identity, and its band and selected row are
+half of a pair with it.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #928374 | 3.24 / 2.68 | #6c5e50 | 5.52 / 4.56 |
+| status | #7c6f64 | 4.29 / 3.55 | #60554a | 6.39 / 5.29 |
+| add | #79740e | 4.29 / 3.55 | #686300 | 5.49 / 4.54 |
+| hunk | #427b58 | 4.40 / 3.64 | #336c4a | 5.47 / 4.52 |
+| accent | #af3a03 | 5.40 / 4.46 | #ae3902 | 5.47 / 4.52 |
+| code | #b57614 | 3.33 / 2.75 | #895600 | 5.45 / 4.51 |
+
+`LiftToAA` darkens these in their own hue, since on a light ground the lift
+goes away from the ground. Dim, the gray, keeps its lifted value; dimmer,
+status and subtle are then spaced in even quarters from it down to the body
+`#3c3836`, so the status above is the respaced value and not the helper's own
+lift: status `#60554a`, dimmer `#544b43` and subtle `#48423d` keep the ladder
+bright, body, subtle, dimmer, status, dim ascending in lightness toward the
+ground (8.72, 7.51 and 6.39 on the ground; 7.21, 6.21 and 5.29 on the band).
+Subtle (dark2 `#504945`) and dimmer (dark3 `#665c54`) clear on their own and
+move only to keep the ladder's order. Every other ink is as published: del
+(faded red), info (faded blue), spin (faded purple), body (dark1) and bright
+(dark0).
+
+Derived, not published: status, key and the two tints. Status is dark4
+`#7c6f64`, short, and respaced as above. Key `#4b5274` is the mix of the faded
+purple `#8f3f71` and the faded blue `#076678`. On a light ground a tint is the
+ground minus toward the signal: addBg `#d2c98f` and delBg `#e1ae91` are the
+ground with 28% of the lifted add `#686300` and of del `#9d0006`. 256 rungs:
+DistinctRungs, worst error 53.7 (RGB distance, on hunk `#336c4a`, which lands
+on 241 `#626262`; the study's 47 was for the unlifted hunk and its own pick).
+Sixteen colours: the light column. The Machado distance is not held for this
+table; `colorblind` remains the answer for that need.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 

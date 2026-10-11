@@ -523,7 +523,7 @@ func TestProgress_TheRungIsReadableInEveryPalette(t *testing.T) {
 	// The ground a table was chosen against is the thing a ratio is computed
 	// from; painting it is how the test gets to read it, and themeRestore
 	// puts the default back before the next test draws anything.
-	for _, name := range []string{components.ThemeDark, components.ThemeLight, components.ThemeCharm, components.ThemeHighContrast, components.ThemeColorblind, components.ThemeCatppuccinMocha, components.ThemeDracula, components.ThemeTokyoNight, components.ThemeGruvboxDark, components.ThemeNord, components.ThemeOneDark} {
+	for _, name := range []string{components.ThemeDark, components.ThemeLight, components.ThemeCharm, components.ThemeHighContrast, components.ThemeColorblind, components.ThemeCatppuccinMocha, components.ThemeDracula, components.ThemeTokyoNight, components.ThemeGruvboxDark, components.ThemeNord, components.ThemeOneDark, components.ThemeGruvboxLight} {
 		if err := components.SetTheme(name); err != nil {
 			t.Fatal(err)
 		}

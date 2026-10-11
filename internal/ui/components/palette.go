@@ -635,6 +635,50 @@ var oneDarkGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// gruvboxLightPalette is Gruvbox Light, medium contrast
+// (https://github.com/morhetz/gruvbox, colors/gruvbox.vim): the published hex
+// for every token that clears 4.5:1 on its ground #fbf1c7 (light0) and its band
+// #ebdbb2 (light1), the selected row #d5c4a1 (light2). Add (faded green), hunk
+// (faded aqua), accent (faded orange, short on the band only) and code (faded
+// yellow) were short and LiftToAA darkens them in their own hue; dim (gray) is
+// short too and its lift stands. The grey ladder runs the other way from the
+// dark table: dim is the lifted gray, the lightest ink, and status, dimmer and
+// subtle sit in even quarters from it down to body (dark1) so the order holds,
+// dimmer and subtle moving though they clear on their own. addBg and delBg are
+// the ground with 28% of the lifted add and of del. The 256 rungs are
+// DistinctRungs' and the sixteen-colour column is the light table's. The
+// figures are in docs/interface/departures.md.
+var gruvboxLightPalette = ColorTokens{
+	Add:     token("#686300", "58", "2"),
+	Del:     token("#9d0006", "124", "1"),
+	addBg:   token("#d2c98f", "186", "10"),
+	delBg:   token("#e1ae91", "180", "9"),
+	Hunk:    token("#336c4a", "241", "6"),
+	Accent:  token("#ae3902", "130", "3"),
+	Info:    token("#076678", "24", "4"),
+	FocusBg: token("#d5c4a1", "187", "7"),
+	band:    band("#ebdbb2", "223"),
+	Dim:     token("#6c5e50", "59", "8"),
+	Dimmer:  token("#544b43", "239", "8"),
+	Spin:    token("#8f3f71", "95", "5"),
+	Status:  token("#60554a", "240", "8"),
+	Bright:  token("#282828", "235", "0"),
+	Subtle:  token("#48423d", "238", "8"),
+	Body:    token("#3c3836", "237", "0"),
+	Code:    token("#895600", "94", "3"),
+	Key:     token("#4b5274", "60", "4"),
+}
+
+// gruvboxLightGround is Gruvbox Light's light0, #fbf1c7 and 230, painted by
+// default: the cream is the theme's identity and its band is half of a pair on
+// it, where the plain light table leaves the terminal's own white. It has no
+// sixteen-colour rung.
+var gruvboxLightGround = Token{
+	trueColor: lipgloss.Color("#fbf1c7"),
+	ansi256:   lipgloss.Color("230"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -661,6 +705,9 @@ const (
 	ThemeNord = "nord"
 	// ThemeOneDark is One Dark, a brand theme.
 	ThemeOneDark = "one-dark"
+	// ThemeGruvboxLight is Gruvbox Light, medium contrast, a brand theme on
+	// its own cream ground.
+	ThemeGruvboxLight = "gruvbox-light"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -690,6 +737,7 @@ var themes = map[string]theme{
 	ThemeGruvboxDark:     {gruvboxDarkPalette, gruvboxDarkGround},
 	ThemeNord:            {nordPalette, nordGround},
 	ThemeOneDark:         {oneDarkPalette, oneDarkGround},
+	ThemeGruvboxLight:    {gruvboxLightPalette, gruvboxLightGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -718,7 +766,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight}
 }
 
 var (
@@ -833,7 +881,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight:
 		return true
 	}
 	return false

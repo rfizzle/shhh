@@ -4100,6 +4100,13 @@ func TestGolden_OneDarkTable(t *testing.T) {
 		"the One Dark column, on the surfaces that spend it")
 }
 
+// TestGolden_GruvboxLightTable is the same three surfaces through the Gruvbox
+// Light table, at every width the set holds.
+func TestGolden_GruvboxLightTable(t *testing.T) {
+	captureTable(t, ThemeGruvboxLight, "gruvbox-light-table", goldenWidths,
+		"the Gruvbox Light column, on the surfaces that spend it")
+}
+
 // TestGolden_ColorblindTable is the colour-blind table on the three surfaces
 // that spend its signal inks: the diff, where blue and orange tell the added
 // line from the removed one; the approval card; and the step card in the

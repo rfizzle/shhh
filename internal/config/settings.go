@@ -525,7 +525,7 @@ var settings = []Setting{
 
 	{
 		Key: "appearance.theme", Kind: KindEnum, Taken: AtTurn, Default: "auto",
-		Values: []string{"auto", "dark", "light", "charm", "high-contrast", "colorblind", "catppuccin-mocha", "dracula", "tokyo-night", "gruvbox-dark", "nord", "one-dark"},
+		Values: []string{"auto", "dark", "light", "charm", "high-contrast", "colorblind", "catppuccin-mocha", "dracula", "tokyo-night", "gruvbox-dark", "nord", "one-dark", "gruvbox-light"},
 		Desc:   "Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. It lives in its own file, theme.toml beside this one, and a write goes there.",
 	}, {
 		Key: "appearance.verbosity", Kind: KindEnum, Taken: AtTurn, Default: "normal",

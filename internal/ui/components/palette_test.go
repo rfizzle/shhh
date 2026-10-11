@@ -1025,6 +1025,25 @@ func TestPalette_OneDarkPaintsItsGroundByDefault(t *testing.T) {
 	}
 }
 
+// The Gruvbox Light table is a brand theme: the cream is its identity and its
+// band is half of a pair on it, so the background is painted unless the reader
+// turns it off. The plain light table is the one that leaves the terminal's.
+func TestPalette_GruvboxLightPaintsItsGroundByDefault(t *testing.T) {
+	themeRestore(t)
+	withColorProfile(t, colorprofile.ANSI256)
+	paintGround = groundDefault
+	if err := SetTheme(ThemeGruvboxLight); err != nil {
+		t.Fatal(err)
+	}
+	if !GroundPainted() || !sameColor(GroundColor(), lipgloss.Color("230")) {
+		t.Errorf("the ground is %v, want #fbf1c7 (230) painted by default", GroundColor())
+	}
+	PaintGround(false)
+	if GroundColor() != nil {
+		t.Error("ground off still paints")
+	}
+}
+
 // Every text token on the colour-blind table clears the AA floor on the ground
 // and on the band, the signal inks included: they are what the table is for,
 // and an ink that is told apart from its neighbour but cannot be read is no
