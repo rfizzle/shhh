@@ -582,6 +582,16 @@ retain the effective budget, admission floor, and the tokens attributed to
 inherited context, setup, tool results, analysis, and final handoff; this
 separates an insufficient budget from work that was too broad or unproductive.
 
+The figure the default rests on is read from `shhh observe writers`, and from
+the WRITERS block of `shhh observe`, over every child the window ran rather
+than from one measured run. Each child is one row: its new tokens (the five
+attributed fields, summed), the budget it was admitted with, the share it
+used, and how it ended — `done`, `budget`, or `stopped` for anything else that
+ended it. Above them sit the count, the median and worst new tokens, and how
+many ended by spending the budget. The budget is read off the child's own end
+row, so nothing new is recorded; a child recorded before the budget was is left
+out.
+
 The standing context a child is given is the parent's, cut to a smaller budget
 than the session's. A session reads its instruction files once and holds them
 for hours; a child pays for them out of a budget that is the whole of its

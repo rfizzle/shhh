@@ -59,6 +59,9 @@ type observeData struct {
 	// Patterns is what repeated across this checkout's sessions, at the
 	// default threshold; the dashboard names the top of each table.
 	Patterns observePatterns
+	// Writers is every closed child the window ran, set against the budget it
+	// was admitted with.
+	Writers []storage.AgentWriter
 }
 
 // readObserveData runs every aggregate the dashboard draws. Each query is
@@ -89,6 +92,7 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 		{"flakes", func() (err error) { data.Flakes, err = flakesSince(db, projectFingerprintRoot(), since); return }},
 		{"outcomes", func() (err error) { data.Outcomes, err = db.AgentSessionOutcomes(since); return }},
 		{"quiet stretches", func() (err error) { data.Quiet, err = db.AgentQuietStretches(since, 1); return }},
+		{"writers", func() (err error) { data.Writers, err = db.AgentWriters(since); return }},
 		{"patterns", func() (err error) {
 			data.Patterns, err = readObservePatterns(db, window, since,
 				fingerprint(projectFingerprintRoot()), observePatternsMinSessions)
@@ -133,6 +137,7 @@ func observeReport(data observeData) report.Report {
 		{Header: "SIGNALS", Rows: observeSignalRows(data.Signals)},
 		{Header: "INTERVENED", Rows: observeInterventionRows(data.Interventions)},
 		{Header: "GATE", Rows: append(observeGateRows(data.Gates), observeFlakeRows(data.Flakes)...)},
+		{Header: "WRITERS", Rows: observeWritersRows(data.Writers)},
 		{Header: "OUTCOMES", Rows: observeOutcomeRows(data.Outcomes)},
 		{Header: "SESSIONS", Rows: observeSessionRows(data.Sessions)},
 	} {
