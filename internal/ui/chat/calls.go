@@ -13,6 +13,7 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -75,6 +76,17 @@ func (t *callTable) stop(id string) bool {
 		}
 	}
 	return false
+}
+
+// drop lets go of the call with id once it has returned, so the manager stops
+// listing it even where a person had stopped it.
+func (t *callTable) drop(id string) {
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.calls = slices.DeleteFunc(t.calls, func(c *liveCall) bool { return c.call.ID == id })
 }
 
 // end stops whatever of the round is still running and lets go of every

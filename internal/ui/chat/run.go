@@ -8,6 +8,7 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/hook"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -362,11 +364,14 @@ func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// chooses it: a form derived from an assistant's command is still the
 	// assistant's command, and running it outside the containment the
 	// decision is being made about would be reporting on a different machine.
-	run := m.wiring.Runner
+	run, tailFn, ranIn := m.wiring.Runner, m.wiring.TailRunner, ""
 	if m.containment.Run != nil {
-		run = m.containment.Run
+		run, tailFn = m.containment.Run, m.containment.TailRun
+		if m.containment.inContainer() {
+			ranIn = ranInContainer
+		}
 	}
-	if run == nil {
+	if run == nil && tailFn == nil {
 		return m, nil, false
 	}
 	req.dryRunning = true
@@ -375,17 +380,47 @@ func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		limit = dryRunTimeout
 	}
 	command, call, runID := req.dryCommand, req.call.ID, m.agent.RunID()
+	// The run is a call of the table like a card's real run is, so the
+	// process manager lists it and `k` there stops it alone: the same cancel
+	// the ceiling uses, which the runner answers with its stop sequence. Its
+	// id is its own, so the manager never confuses it with the call the card
+	// is still asking about.
+	ctx, cancel := context.WithTimeout(context.Background(), limit)
+	args, _ := json.Marshal(map[string]string{"command": command})
+	if m.calls == nil {
+		m.calls = &callTable{}
+	}
+	tail := &commandTail{}
+	where := "host"
+	if ranIn != "" {
+		where = ranIn
+	}
+	m.calls.put(ctx, provider.ToolCall{ID: dryRunCallPrefix + call, Name: tools.ExecCommandName, Arguments: string(args)}, cancel, tail, where)
 	return m, func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), limit)
 		defer cancel()
 		start := time.Now()
-		result := run(ctx, command)
-		out, code := result.Output, result.ExitCode
+		var result tools.ExecResult
+		if tailFn != nil {
+			result = tailFn(ctx, command, tail.Set)
+		} else {
+			result = run(ctx, command)
+		}
+		end := commandEnding(ctx.Err(), result.ExitCode, limit)
+		switch end.outcome {
+		case components.OutcomeTimedOut:
+			result.Outcome = tools.ExecTimedOut
+		case components.OutcomeStopped:
+			result.Outcome = tools.ExecStopped
+		}
 		return dryRunDoneMsg{runID: runID, call: call, command: command,
-			output: out, exitCode: code, result: result, duration: time.Since(start),
-			end: commandEnding(ctx.Err(), code, limit)}
+			output: result.Output, exitCode: result.ExitCode, result: result,
+			duration: time.Since(start), end: end, ranIn: ranIn}
 	}, true
 }
+
+// dryRunCallPrefix keeps a dry run's entry in the call table apart from the
+// call the card is asking about: both are the same tool call's command.
+const dryRunCallPrefix = "dry-run:"
 
 // dryRunDoneMsg is what the harmless form printed. It carries the call it was
 // asked about so the answer cannot be attached to the next decision in the
@@ -405,14 +440,17 @@ type dryRunDoneMsg struct {
 	// form has a ceiling of its own, and reaching it is the one thing the
 	// reader must not read as the real command failing (activity.go).
 	end commandEnd
+	// ranIn is where the form ran when that is not this machine, the word
+	// the real command's row carries (ranInContainer).
+	ranIn string
 }
 
 // finishDryRun files what the dry run printed and puts it on the screen.
 //
 // The row goes in whatever the reader did while it ran — something ran on
 // this machine and the transcript is the account of what ran — and it is
-// marked local, because a dry run is asked by the person and its output never
-// joins the conversation: the model asked to run the real command and is
+// marked local, and container where it ran in the sandbox, because a dry run
+// is asked by the person and its output never joins the conversation: the model asked to run the real command and is
 // still waiting for the answer to that.
 //
 // The screen only opens if the decision it was asked about is still the one
@@ -427,8 +465,10 @@ func (m Model) finishDryRun(msg dryRunDoneMsg) (tea.Model, tea.Cmd) {
 	}
 	out := strings.TrimRight(msg.output, "\n")
 	row := entry{kind: entryCommand, text: msg.command, toolResult: out,
-		exitCode: msg.exitCode, commandResult: msg.result, localRun: true, duration: msg.duration, end: msg.end}
+		exitCode: msg.exitCode, commandResult: msg.result, localRun: true, ranIn: msg.ranIn, duration: msg.duration, end: msg.end}
 	m.appendEntry(row)
+	// It has returned, so the manager stops listing it, stopped or not.
+	m.calls.drop(dryRunCallPrefix + msg.call)
 	req := m.approval.request
 	// The command as well as the call: the reader can have amended the line
 	// while the form was running, and a screen reporting on a command the
@@ -461,10 +501,15 @@ func (m Model) finishDryRun(msg dryRunDoneMsg) (tea.Model, tea.Cmd) {
 func dryRunView(msg dryRunDoneMsg, out string, row components.ActivityRow) *components.OutputView {
 	title := "dry run — " + firstLine(msg.command)
 	if row.Failed() || row.State == components.ActivityDenied {
-		title += " (" + strings.TrimSuffix(row.Outcome, " · "+components.OutcomeLocal) + ")"
+		outcome := strings.TrimSuffix(row.Outcome, " · "+ranInContainer)
+		title += " (" + strings.TrimSuffix(outcome, " · "+components.OutcomeLocal) + ")"
 	}
 	lines := strings.Split(out, "\n")
-	if strings.TrimSpace(out) == "" {
+	if strings.TrimSpace(out) == "" && msg.end.outcome != "" {
+		// A form that was stopped or reached its ceiling reported nothing
+		// because it was cut short, and the runner has the sentence for that.
+		lines = []string{strings.SplitN(tools.FormatExecResult(msg.result), "\n", 2)[0]}
+	} else if strings.TrimSpace(out) == "" {
 		lines = []string{"It reported nothing — the dry run found no work to do."}
 	}
 	return &components.OutputView{Title: title, Lines: lines}

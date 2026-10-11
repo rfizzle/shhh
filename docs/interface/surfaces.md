@@ -126,6 +126,19 @@ hunks · approved by you`, `ok · 1 line · auto-allowed · classifier 2.1s`. Th
 act comes before the decision about it, and the account is the part the row
 gives up when it runs out of width, so it is already where the row runs out.
 
+A command row the reader asked for says two more things in its outcome, in
+this order and each as its own word: `local` where its output stayed out of
+the conversation — the reader saw it and the model never did, as with a `!!`
+line and a dry run at a command card — and `container` where it ran in the
+sandbox container rather than on this machine. They are two answers to two
+questions, so a row can carry both: `ok · local · container · 2 lines` is a
+dry run in a sandbox session. A command that ran on the host says only what
+it says anywhere else, because the host is the default and a word on every
+row would be noise. The running dry run is a call of the
+[process manager](#the-process-manager) beside the real run's, and a stop
+there ends it alone with the runner's own sentence, `error: command was
+stopped before it finished`, while the card goes on asking.
+
 An act that was refused states that on its own row too, and opens to why.
 What refused it is the field beside the outcome; the sentence behind the
 refusal — the reader's own, or the one the classifier wrote about this call —
