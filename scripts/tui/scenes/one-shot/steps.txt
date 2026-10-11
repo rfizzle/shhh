@@ -31,7 +31,7 @@ setup mkdir -p .tools && printf '#!/bin/sh\nexit 0\n' > .tools/lsof && chmod +x 
 snap 01-piped "lsof -nP -iTCP -sTCP:LISTEN"
 # The result surface. The key row is the register's seven and nothing else; the
 # other commands are behind enter, so the wait is on the row's own words.
-snap 02-result "[enter] show what it would affect" "[y] run it" "[ctrl+s] write" "⛨ no sudo"
+snap 02-result "[enter] show what it would affect" "[y] run it" "[ctrl+s] save as a snippet" "⛨ no sudo"
 # The view enter opens, with the ways it was not taken as rows and the one on
 # screen marked. The wait is on a command only this card carries: a tradeoff is clipped to its column and the
 # column itself goes when the card is narrow, so waiting for one of those
