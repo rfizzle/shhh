@@ -73,6 +73,9 @@ func isDuplicate(path, command, shell string) bool {
 	var last string
 	var lastCmd string
 	scanner := bufio.NewScanner(f)
+	// A pasted line can pass the default 64 KiB token limit; a read that
+	// stops on one has not seen the last entry, so it is not a duplicate.
+	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
 	for scanner.Scan() {
 		line := scanner.Text()
 		switch shell {
@@ -85,6 +88,9 @@ func isDuplicate(path, command, shell string) bool {
 		default:
 			last = line
 		}
+	}
+	if scanner.Err() != nil {
+		return false
 	}
 
 	switch shell {

@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -29,5 +30,24 @@ func TestChat_AToolResultsValueSurvivesAReopen(t *testing.T) {
 	}
 	if got[2].Value != nil {
 		t.Errorf("a result with no value read back %s", got[2].Value)
+	}
+}
+
+// The chat rows are stamped by the store's clock, so a test holds a save at
+// an instant instead of racing the wall.
+func TestSaveChat_IsStampedByTheStoresClock(t *testing.T) {
+	db := openTestDB(t)
+	at := time.Date(2031, 2, 3, 4, 5, 6, 0, time.UTC)
+	db.clock = func() time.Time { return at }
+
+	if err := db.SaveChat("held", []provider.Message{{Role: "user", Content: "hi"}}); err != nil {
+		t.Fatal(err)
+	}
+	var got string
+	if err := db.sql.QueryRow(`SELECT updated_at FROM chat_sessions WHERE name = ?`, "held").Scan(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got != stamp(at) {
+		t.Errorf("updated_at = %q, want %q", got, stamp(at))
 	}
 }

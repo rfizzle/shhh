@@ -99,6 +99,10 @@ func CheckCached(currentVersion string) *Result {
 	return compareVersions(currentVersion, cached.Latest)
 }
 
+// BackgroundCheck refreshes a stale cache without the caller waiting. It is
+// best-effort: the goroutine is never joined, so a one-shot that exits first
+// drops the check and the next process asks again. The cache lands by rename,
+// so an interrupted write costs nothing.
 func BackgroundCheck(currentVersion string) {
 	if currentVersion == "dev" || currentVersion == "" {
 		return
@@ -202,5 +206,23 @@ func writeCache(entry *cacheEntry) {
 	if err != nil {
 		return
 	}
-	_ = os.WriteFile(path, data, 0o644)
+	// Written beside the cache and renamed over it, so a process that exits
+	// while the background check is writing leaves the old entry whole, not
+	// a half-written file that reads as no cache.
+	tmp, err := os.CreateTemp(filepath.Dir(path), cacheFile+".*")
+	if err != nil {
+		return
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return
+	}
+	if err := tmp.Close(); err != nil {
+		return
+	}
+	if err := os.Chmod(tmp.Name(), 0o644); err != nil {
+		return
+	}
+	_ = os.Rename(tmp.Name(), path)
 }

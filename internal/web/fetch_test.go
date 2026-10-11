@@ -207,7 +207,7 @@ func TestFetch_BodyCeiling(t *testing.T) {
 
 func TestFetch_Timeout(t *testing.T) {
 	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(2 * time.Second)
+		<-r.Context().Done()
 	}))
 	defer srv.Close()
 

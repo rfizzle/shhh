@@ -287,7 +287,7 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	}
 
 	if c.AnalysisOnly {
-		a.Behaviour.UnintendedMutations = dirtyPaths(dir)
+		a.Behaviour.UnintendedMutations = dirtyPaths(ctx, dir)
 	}
 	a.Passed, a.CheckOutput = check(ctx, dir, c.Check)
 	a.Elapsed = time.Since(start)
@@ -354,8 +354,8 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 }
 
 // dirtyPaths reports the paths the session left changed in its fresh fixture.
-func dirtyPaths(dir string) int {
-	out, err := hostgit.Command(context.Background(), dir, "status", "--porcelain=v1", "-z").Output()
+func dirtyPaths(ctx context.Context, dir string) int {
+	out, err := hostgit.Command(ctx, dir, "status", "--porcelain=v1", "-z").Output()
 	if err != nil {
 		return 0
 	}

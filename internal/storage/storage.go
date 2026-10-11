@@ -36,6 +36,17 @@ type DB struct {
 	// two saves refused one after the other land in one new slot rather
 	// than leaving the conversation in two.
 	chatMoved map[string]string
+	// clock stamps the chat rows; nil reads the wall clock. A test sets it to
+	// hold a save at a known instant instead of racing the real one.
+	clock func() time.Time
+}
+
+// now is the instant a chat write is stamped with.
+func (db *DB) now() time.Time {
+	if db.clock != nil {
+		return db.clock()
+	}
+	return time.Now()
 }
 
 func Open() (*DB, error) {

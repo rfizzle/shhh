@@ -1,6 +1,7 @@
 package update
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -88,5 +89,25 @@ func TestCheckCached_ADevBuildAsksNothing(t *testing.T) {
 		if r := CheckCached(v); r != nil {
 			t.Errorf("CheckCached(%q) = %+v, want nil", v, r)
 		}
+	}
+}
+
+// The cache lands by rename: it reads back whole and no temp file is left
+// beside it.
+func TestWriteCache_LandsByRename(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	at := time.Now().Truncate(time.Second)
+	writeCache(&cacheEntry{Latest: "v1.2.3", CheckedAt: at})
+
+	got := readCache()
+	if got == nil || got.Latest != "v1.2.3" {
+		t.Fatalf("readCache() = %+v, want latest v1.2.3", got)
+	}
+	entries, err := os.ReadDir(filepath.Dir(cachePath()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != cacheFile {
+		t.Errorf("cache dir holds %v, want only %s", entries, cacheFile)
 	}
 }

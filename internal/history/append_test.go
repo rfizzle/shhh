@@ -154,3 +154,39 @@ func must(t *testing.T, err error) {
 		t.Fatal(err)
 	}
 }
+
+// A line past the scanner's limit stops the read before the last entry; the
+// command is then not known to be a duplicate and is appended.
+func TestAppend_AReadThatFailsIsNotADuplicate(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	path := filepath.Join(tmp, ".bash_history")
+	huge := strings.Repeat("x", 2<<20)
+	if err := os.WriteFile(path, []byte("echo hello\n"+huge+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	mustAppend(t, "bash", "echo hello")
+
+	if got := strings.Count(readFile(t, path), "echo hello"); got != 2 {
+		t.Errorf("echo hello appears %d times, want 2", got)
+	}
+}
+
+// A line under the raised limit is read whole, so the duplicate behind it is
+// still seen.
+func TestAppend_ALongLineStillDeduplicates(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	path := filepath.Join(tmp, ".bash_history")
+	long := strings.Repeat("x", 512<<10)
+	if err := os.WriteFile(path, []byte(long+"\necho hello\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	mustAppend(t, "bash", "echo hello")
+
+	if got := strings.Count(readFile(t, path), "echo hello"); got != 1 {
+		t.Errorf("echo hello appears %d times, want 1", got)
+	}
+}

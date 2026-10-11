@@ -489,7 +489,8 @@ func HostListsRefreshed() bool { return hostRefreshStarted.Load() }
 // maybeRefresh starts the list's download behind the caller when the copy on
 // disk is missing or older than its refresh, at most once per process, and
 // not within an hour of a download that failed. The reading goes on with
-// what is there; the next process reads what lands.
+// what is there; the next process reads what lands. It is best-effort: the
+// download is never joined on exit, so a one-shot that ends first drops it.
 func (r *Reputation) maybeRefresh(l *hostList) {
 	if r.dir == "" {
 		return

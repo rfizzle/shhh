@@ -66,7 +66,7 @@ func (db *DB) ClaimChatSlot(name string) (string, error) {
 
 // claimChatSlot is ClaimChatSlot with chatMu already held.
 func (db *DB) claimChatSlot(name string) (string, error) {
-	now := stamp(time.Now())
+	now := stamp(db.now())
 	for n := 1; n <= chatSlotAttempts; n++ {
 		claimed := name
 		if n > 1 {
@@ -289,7 +289,7 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 	}
 	defer tx.Rollback()
 
-	now := stamp(time.Now())
+	now := stamp(db.now())
 	if _, err := tx.Exec(
 		`INSERT OR IGNORE INTO chat_sessions (name, created_at, updated_at) VALUES (?, ?, ?)`,
 		parentName, now, now,
@@ -378,7 +378,7 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 // whatever is really in the slot. The caller holds chatMu across both.
 func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, error) {
 	var sessionID int64
-	now := stamp(time.Now())
+	now := stamp(db.now())
 	// from is the first message this save has to write. A slot being made
 	// holds nothing, so it is all of them.
 	from := 0
