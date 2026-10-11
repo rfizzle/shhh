@@ -66,6 +66,9 @@ func (m Model) openReview(n int64) (tea.Model, tea.Cmd) {
 		}
 		return m.systemNotice(fmt.Sprintf("turn %d changed no files", n))
 	}
+	// The close row's own call, so a path it counts as ignored reads
+	// `ignored` here and not `untracked`.
+	t = m.wiring.Tracker.MarkIgnored(t)
 	v := &components.ReviewView{
 		Title:        fmt.Sprintf("turn %d", n),
 		Files:        reviewFiles(t),
@@ -100,6 +103,9 @@ func reviewFiles(t changeset.Turn) []components.ReviewFile {
 			Hunks:  r.Hunks,
 			Syntax: diffSyntax(r.Path),
 			Mode:   r.ModeChange(),
+			// Only an ignored record is worded; tracked and untracked are
+			// what the row has always left unsaid.
+			Ignored: r.Track == changeset.TrackIgnored,
 		}
 		// The session's own edits need no attribution; a child's do.
 		if r.Agent != changeset.MainAgent {

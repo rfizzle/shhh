@@ -64,6 +64,9 @@ type ReviewFile struct {
 	// and a file that changed content as well states it after them, because
 	// an undo of that file puts the permissions back too.
 	Mode string
+	// Ignored says the checkout's ignore rules cover the file, so the
+	// handover will not commit it; the row and the header say `ignored`.
+	Ignored bool
 }
 
 // stats is the file's +N −M.
@@ -334,6 +337,9 @@ func (v *ReviewView) fileRows(width int) []string {
 		if f.Agent != "" {
 			tail = " · " + f.Agent
 		}
+		if f.Ignored {
+			tail += " · ignored"
+		}
 		budget := inner - lipgloss.Width(note) - 1 - lipgloss.Width(lead)
 		if budget-lipgloss.Width(tail) < reviewMinStatement {
 			tail = ""
@@ -458,6 +464,9 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 		detail = sty.dim.Render("  " + f.Mode)
 	case f.Mode != "":
 		detail += sty.dim.Render(" · " + f.Mode)
+	}
+	if f.Ignored {
+		detail += sty.dim.Render(" · ignored")
 	}
 	head := brightStyle().Render(f.Path) + detail
 

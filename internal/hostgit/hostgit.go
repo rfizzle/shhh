@@ -186,3 +186,35 @@ type Error struct {
 func (e *Error) Error() string {
 	return "git " + strings.Join(e.Args, " ") + ": " + e.Stderr
 }
+
+// CheckIgnore is which of these paths the checkout at dir's ignore rules
+// cover, from one check-ignore call for the whole list: it answers a list,
+// and asking per path would pay a process for each. The paths are as the
+// caller holds them and come back the same way.
+//
+// The index is consulted, which is the behaviour to want and is stated here
+// once for every caller: a tracked file that also matches a pattern is not
+// ignored, because git is keeping it. Exit status 1 is check-ignore saying
+// none of them, so it is an answer (an empty set) and not a failure; any
+// other failure is returned and the caller reads it as "nothing ignored".
+func CheckIgnore(ctx context.Context, dir string, paths []string) (map[string]bool, error) {
+	set := map[string]bool{}
+	if len(paths) == 0 {
+		return set, nil
+	}
+	cmd := Command(ctx, dir, "check-ignore", "-z", "--stdin")
+	cmd.Stdin = strings.NewReader(strings.Join(paths, "\x00") + "\x00")
+	out, err := cmd.Output()
+	if exit, ok := errors.AsType[*exec.ExitError](err); ok && exit.ExitCode() == 1 {
+		return set, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range strings.Split(strings.TrimRight(string(out), "\x00"), "\x00") {
+		if p != "" {
+			set[p] = true
+		}
+	}
+	return set, nil
+}

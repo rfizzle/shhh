@@ -50,7 +50,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -560,24 +559,17 @@ func ancestors(p string) []string {
 // it per path would pay a process for every entry of the set this exists to
 // throw away.
 //
-// The index is consulted, which is the behaviour to want: a tracked file that
-// also matches a pattern is not ignored — somebody changed a file git is
-// keeping, and that is the notice's whole subject. Exit status 1 is
-// check-ignore saying none of them, so it is an answer rather than a failure.
+// The index is consulted (hostgit.CheckIgnore), so a tracked file that also
+// matches a pattern is not ignored — somebody changed a file git is keeping,
+// and that is the notice's whole subject.
 func (t *treeState) ignoredPaths(paths []string) map[string]bool {
 	if len(paths) == 0 {
 		return nil
 	}
-	out, err := gitIn(t.top, strings.Join(paths, "\x00")+"\x00", "check-ignore", "-z", "--stdin")
+	set, err := hostgit.CheckIgnore(context.Background(), t.top, paths)
 	t.spent("git check-ignore")
 	if err != nil {
 		return nil
-	}
-	set := map[string]bool{}
-	for _, p := range strings.Split(strings.TrimRight(out, "\x00"), "\x00") {
-		if p != "" {
-			set[p] = true
-		}
 	}
 	return set
 }
@@ -951,26 +943,6 @@ func gitOut(dir string, args ...string) (string, error) {
 		if line, _, _ := strings.Cut(strings.TrimSpace(errOut.String()), "\n"); line != "" {
 			return "", errors.New(line)
 		}
-		return "", err
-	}
-	return out.String(), nil
-}
-
-// gitIn is gitOut with a list on standard input, for the query git answers
-// that way. Exit status 1 is a question answered no — check-ignore's way of
-// saying none of these — and comes back as an empty answer rather than an
-// error; anything else is git failing.
-func gitIn(dir, stdin string, args ...string) (string, error) {
-	cmd := hostgit.Command(context.Background(), dir, args...)
-	cmd.Stdin = strings.NewReader(stdin)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	var exit *exec.ExitError
-	if errors.As(err, &exit) && exit.ExitCode() == 1 {
-		err = nil
-	}
-	if err != nil {
 		return "", err
 	}
 	return out.String(), nil

@@ -505,7 +505,9 @@ Review is a reading, as `/diff`'s is. It moves between files and hunks, pages
 and pairs the two sides, and leaves on esc having changed nothing; it stages
 nothing, because what staging selected was an undo, and the undo is `/undo`.
 The standing note says so: nothing is committed, and `/undo` with the turn's
-number is what restores the files it wrote.
+number is what restores the files it wrote. A file the checkout's ignore rules
+cover says `ignored` beside its name, read through the same call the close row
+makes, so the two agree on which paths git would not commit.
 
 Keeping the change is a commit, and the offer stands for as long as the
 changeset is uncommitted. The model can make one when it is asked, through its

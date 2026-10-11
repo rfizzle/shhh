@@ -81,19 +81,10 @@ func (t *Tracker) MarkIgnored(turn Turn) Turn {
 		return turn
 	}
 	t.mu.Lock()
-	cmd := hostgit.Command(context.Background(), t.dir, "check-ignore", "-z", "--stdin")
-	cmd.Stdin = strings.NewReader(strings.Join(paths, "\x00") + "\x00")
-	out, err := cmd.Output()
+	ignored, err := hostgit.CheckIgnore(context.Background(), t.dir, paths)
 	t.mu.Unlock()
-	// Exit status 1 is check-ignore saying none of them.
 	if err != nil {
 		return turn
-	}
-	ignored := map[string]bool{}
-	for _, p := range strings.Split(strings.TrimRight(string(out), "\x00"), "\x00") {
-		if p != "" {
-			ignored[p] = true
-		}
 	}
 	records := append([]Record(nil), turn.Records...)
 	for i, r := range records {

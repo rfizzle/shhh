@@ -2,6 +2,8 @@ package hostgit
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -92,5 +94,40 @@ func TestTheReadingsRunNothingFromAPlantedSubmodule(t *testing.T) {
 		if p.Ran() {
 			t.Fatalf("git %s ran the planted submodule's filter", strings.Join(args, " "))
 		}
+	}
+}
+
+// The index is consulted: a tracked file that matches a pattern is not
+// ignored, an untracked one is, and a list with none of them is an empty
+// answer and not a failure.
+func TestHostGit_CheckIgnoreConsultsTheIndex(t *testing.T) {
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		if out, err := Command(context.Background(), dir, args...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v: %s", args, err, out)
+		}
+	}
+	run("init")
+	for name, body := range map[string]string{".gitignore": "*.log\n", "kept.log": "x\n", "scratch.log": "x\n", "plain.txt": "x\n"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run("add", "-f", "kept.log")
+
+	got, err := CheckIgnore(context.Background(), dir, []string{"kept.log", "scratch.log", "plain.txt"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || !got["scratch.log"] {
+		t.Fatalf("only the untracked match is ignored, got %v", got)
+	}
+	got, err = CheckIgnore(context.Background(), dir, []string{"plain.txt"})
+	if err != nil || len(got) != 0 {
+		t.Fatalf("none ignored is an empty answer, got %v, %v", got, err)
+	}
+	if _, err := CheckIgnore(context.Background(), t.TempDir(), []string{"a.log"}); err == nil {
+		t.Fatal("outside a checkout the call fails")
 	}
 }

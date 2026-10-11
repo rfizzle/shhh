@@ -15,6 +15,27 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
+// The review marks the turn the way the close row does: a path git ignores
+// reads ignored, one it would commit does not.
+func TestReview_AnIgnoredPathReadsIgnored(t *testing.T) {
+	m := ignoredRepo(t, true, map[string]changeset.Tracking{
+		"scratch.log": changeset.TrackUntracked, "notes.md": changeset.TrackUntracked})
+	updated, _ := m.openReview(1)
+	m = updated.(Model)
+	if m.review == nil || len(m.review.Files) != 2 {
+		t.Fatalf("the turn should open in review with both files: %+v", m.review)
+	}
+	for _, f := range m.review.Files {
+		if want := f.Path == "scratch.log"; f.Ignored != want {
+			t.Errorf("%s: Ignored = %v, want %v", f.Path, f.Ignored, want)
+		}
+	}
+	m.review.SetSize(120, 20)
+	if !strings.Contains(ansi.Strip(m.review.View(120)), "scratch.log · ignored") {
+		t.Errorf("the file list should say ignored:\n%s", ansi.Strip(m.review.View(120)))
+	}
+}
+
 // reviewModel is a finished turn that wrote one file, ready to review.
 func reviewModel(t *testing.T) (Model, string) {
 	t.Helper()
