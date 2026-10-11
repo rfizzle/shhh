@@ -19,13 +19,13 @@ const ToolName = "process"
 func Definition() provider.Tool {
 	return provider.Tool{
 		Name: ToolName,
-		Description: "Manage named long-running processes (dev servers, watchers, test runners) owned by this session. " +
+		Description: "Start a named process and read it later: use this for a server, a watcher, a log tail, a long build you will check on, anything you will read more than once or that does not end on its own; a command that ends belongs in execute_command, which refuses a server or a watcher with a redirect here. " +
 			"Action \"start\" launches a command under a name — the user must approve it like any command — with cwd contained to the workspace and an environment of PATH and HOME plus any env vars you pass. " +
 			"\"status\" reports one process (or all, when name is omitted); \"read\" pages a stream's captured output (byte-clamped; use offset from a previous read to continue, omit it for the tail); " +
 			"\"input\" writes text to the process's stdin verbatim (include a trailing newline to submit a line); \"stop\" terminates the whole process tree. " +
 			"Pass pty:true on start only for a command that needs to believe a terminal is attached — an interactive REPL, a prompt for a passphrase, a runner whose progress output goes quiet down a pipe; a terminal has one stream, so such a process captures everything as stdout and nothing as stderr. " +
 			"Recent output lives in a bounded buffer; the full log (bounded) is stored as evidence when the process ends. " +
-			"Every process is terminated when the session ends. Prefer this over execute_command for anything that must keep running while you work (start a server, probe it, read its logs, stop it).",
+			"Every process is terminated when the session ends. It keeps running while you work: start a server, probe it, read its logs, stop it.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {

@@ -215,7 +215,7 @@ func execCommandTool(edits bool) provider.Tool {
 			"Each call is a fresh shell: a cd, a shell variable or a source does not carry to the next one, so chain what depends on it into one command line. " +
 			"A command still running at the session's time limit is moved to the background as a named process rather than killed, and the result says so. " +
 			"Output over 4KB comes back as its head and tail with the whole of it stored as evidence; the evidence tool reads the rest. " +
-			"Anything meant to keep running — a server, a watcher, a log tail — belongs in the process tool instead, which is where its output, its input and its stop live.",
+			"Anything meant to keep running — a server, a watcher, a log tail — belongs in the process tool instead, which is where its output, its input and its stop live; a command of that kind is refused with a redirect there.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {

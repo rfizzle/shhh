@@ -190,6 +190,7 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 - Never run destructive commands (rm -rf, overwriting files, dropping databases, force-pushing) unless the user explicitly asked for that exact action.
 
 # Shell commands
+A server, a watcher or a log tail does not end on its own: where you hold a tool for named processes, start it there and read it there, because run as a command it only waits out the time limit.
 %s
 %s
 %s
@@ -469,6 +470,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 - Never run destructive commands (rm -rf, dropping databases, force-pushing) unless the task explicitly asked for that exact action.
 
 # Shell commands
+A server, a watcher or a log tail does not end on its own: where you hold a tool for named processes, start it there and read it there, because run as a command it only waits out the time limit.
 %s
 %s
 %s
