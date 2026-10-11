@@ -414,6 +414,24 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+        if self.path.startswith("/slow/"):
+            # A page that takes a minute to answer, for a scene that stops a
+            # fetch while it is still waiting. The server is threaded, so the
+            # wait holds this request alone, and a client that has gone by
+            # the time the page is ready is nothing to report.
+            time.sleep(60)
+            page = self.path[len("/slow/"):].replace("-", " ")
+            body = ("<html><head><title>%s</title></head><body><p>%s</p></body></html>"
+                    % (page, page)).encode()
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except OSError:
+                pass
+            return
         if self.path.startswith("/site/"):
             page = self.path[len("/site/"):].replace("-", " ")
             body = ("<html><head><title>%s</title></head><body><p>%s</p></body></html>"

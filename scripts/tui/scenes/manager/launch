@@ -1,0 +1,6 @@
+# The page the session fetches is served by the scripted endpoint on loopback,
+# which the fetcher refuses unless web.allow_private is set, so the setting is
+# appended to this run's own config; and the host lists are written fresh into
+# this run's cache, naming nothing, so the fetch's card reads them without one
+# being downloaded. The scene reaches no network at all.
+h=$XDG_CACHE_HOME/shhh/hosts; mkdir -p $h && s=$(date -u +%Y-%m-%dT%H:%M:%SZ) && for n in urlhaus stevenblack disposable nrd tranco; do printf '#shhh-hosts 1 %s %s\n' $n $s > $h/$n.hosts; done && printf '[web]\nallow_private = true\n' >> $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code
