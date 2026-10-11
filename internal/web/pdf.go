@@ -73,6 +73,7 @@ func pdfToText(ctx context.Context, bin string, body []byte, max int) (text stri
 		return "", false, fmt.Errorf("cannot stage the PDF: %w", err)
 	}
 
+	parent := ctx
 	ctx, cancel := context.WithTimeout(ctx, pdfTimeout)
 	defer cancel()
 	// -q keeps the reader's own chatter out of the text, -enc UTF-8 makes
@@ -88,6 +89,11 @@ func pdfToText(ctx context.Context, bin string, body []byte, max int) (text stri
 	if stdout.overflowed() {
 		// The process was killed for flooding; what was kept is the text.
 		return stdout.buf.String(), true, nil
+	}
+	// The caller's stop, told apart from the ceiling's own kill above and
+	// the timeout below by the parent context.
+	if stopped := parent.Err(); stopped != nil {
+		return "", false, stopped
 	}
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		return "", false, fmt.Errorf("%s timed out after %s", PDFTextBinary, pdfTimeout)

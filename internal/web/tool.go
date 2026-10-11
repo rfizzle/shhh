@@ -358,7 +358,12 @@ func (t *Toolset) executeFetch(ctx context.Context, agent string, args json.RawM
 		Kind: KindFetch, Requested: requested, FinalURL: res.FinalURL,
 		Status: res.Status, Bytes: len(res.Body), Cached: res.FromCache,
 	}
-	out := t.formatFetchResult(res, &row)
+	out := t.formatFetchResult(ctx, res, &row)
+	// A stop that arrived while a PDF was being read ends the call as
+	// stopped: the extraction was cut, and what it left is not the page.
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	t.ledger.Record(agent, row)
 	return out, nil
 }
@@ -373,13 +378,13 @@ func (t *Toolset) executeFetch(ctx context.Context, agent string, args json.RawM
 // leaves an entry the model can read on from.
 // See docs/capabilities/evidence.md#a-page-is-kept-whole.
 func (t *Toolset) FormatFetchResult(res Result) string {
-	return t.formatFetchResult(res, nil)
+	return t.formatFetchResult(context.Background(), res, nil)
 }
 
 // formatFetchResult is FormatFetchResult, filling in what a ledger row can
 // only learn here: the page's title and the evidence entry the cut left. A
 // nil row is a render with nothing to record.
-func (t *Toolset) formatFetchResult(res Result, row *Source) string {
+func (t *Toolset) formatFetchResult(ctx context.Context, res Result, row *Source) string {
 	mediaType := res.ContentType
 	if mt, _, err := mime.ParseMediaType(res.ContentType); err == nil {
 		mediaType = mt
@@ -426,7 +431,7 @@ func (t *Toolset) formatFetchResult(res Result, row *Source) string {
 		}
 		sb.WriteString(t.inline(ex.Text, row))
 	case mediaType == "application/pdf":
-		sb.WriteString(t.inlinePDF(res.Body, res.FinalURL, row))
+		sb.WriteString(t.inlinePDF(ctx, res.Body, res.FinalURL, row))
 	case mediaType == "application/json" || strings.HasPrefix(mediaType, "text/") ||
 		strings.HasSuffix(mediaType, "+json") || strings.HasSuffix(mediaType, "+xml") ||
 		mediaType == "application/xml":
@@ -499,14 +504,14 @@ func (t *Toolset) inline(text string, row *Source) string {
 // no reader the result names the binary that would have read it: a fetch that
 // merely failed invites the same URL again, and the bytes would be just as
 // unreadable the second time.
-func (t *Toolset) inlinePDF(body []byte, url string, row *Source) string {
+func (t *Toolset) inlinePDF(ctx context.Context, body []byte, url string, row *Source) string {
 	size := formatBytes(int64(len(body)))
 	if t.PDFText == "" {
 		return fmt.Sprintf("(PDF, %s — this machine has no %s on PATH, so a PDF cannot be read here. "+
 			"Fetching it again will not change that: look for the same material as a page, or ask the user to install poppler.)",
 			size, PDFTextBinary)
 	}
-	text, truncated, err := pdfToText(context.Background(), t.PDFText, body, t.textCeiling())
+	text, truncated, err := pdfToText(ctx, t.PDFText, body, t.textCeiling())
 	if err != nil {
 		return fmt.Sprintf("(PDF, %s — it could not be read: %v)", size, err)
 	}
