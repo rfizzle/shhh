@@ -50,7 +50,7 @@ func TestLoadFile_ReadsSeveralProvidersFromOneFile(t *testing.T) {
 	if gw.Path != path {
 		t.Fatalf("each provider should name the file it came from, got %q", gw.Path)
 	}
-	if gw.Headers["X-Title"] != "shhh" || gw.API != APIOpenAIChat {
+	if gw.Headers["X-Title"] != "shhh" || gw.API != aPIOpenAIChat {
 		t.Fatalf("unexpected gateway: %+v", gw)
 	}
 	if len(gw.Endpoints) != 1 || gw.Route("claude-opus-5").BaseURL != "https://gw.example/anthropic" {
@@ -206,7 +206,7 @@ func TestPlan_FoldsEveryFileIntoOne(t *testing.T) {
 	if len(after) != 2 || after[0].Name != "gateway" || after[1].Name != "local" {
 		t.Fatalf("the consolidated file should load the same providers, got %+v", after)
 	}
-	if after[0].Route("claude-opus-5").API != APIAnthropicMessage {
+	if after[0].Route("claude-opus-5").API != aPIAnthropicMessage {
 		t.Fatal("routing should survive the migration")
 	}
 
@@ -297,7 +297,7 @@ func TestEncode_KeepsAnUnsetDiscoverySwitchUnset(t *testing.T) {
 	dir := t.TempDir()
 	off := true
 	profiles := []Profile{{
-		Name: "gateway", API: APIOpenAIChat, BaseURL: "https://gw.example/v1",
+		Name: "gateway", API: aPIOpenAIChat, BaseURL: "https://gw.example/v1",
 		DiscoveryDisabled: &off,
 		Endpoints: []Endpoint{
 			{Match: []string{"quiet-*"}, BaseURL: "https://gw.example/quiet"},

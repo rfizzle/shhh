@@ -23,20 +23,20 @@ import (
 
 // Rule directions.
 const (
-	DirectionRequest  = "request"
-	DirectionResponse = "response"
+	directionRequest  = "request"
+	directionResponse = "response"
 )
 
 // Rewrite operations.
 const (
-	OpDelete     = "delete"      // remove the field
-	OpSet        = "set"         // set the field, replacing any value
-	OpSetDefault = "set-default" // set the field only when absent or null
-	OpRename     = "rename"      // move the field to `to` within the same object
-	OpCutAt      = "cut-at"      // truncate a string at the first `value`
-	OpTrimPrefix = "trim-prefix" // remove `value` from the start of a string
-	OpTrimSuffix = "trim-suffix" // remove `value` from the end of a string
-	OpReplace    = "replace"     // replace every `value` in a string with `to`
+	opDelete     = "delete"      // remove the field
+	opSet        = "set"         // set the field, replacing any value
+	opSetDefault = "set-default" // set the field only when absent or null
+	opRename     = "rename"      // move the field to `to` within the same object
+	opCutAt      = "cut-at"      // truncate a string at the first `value`
+	opTrimPrefix = "trim-prefix" // remove `value` from the start of a string
+	opTrimSuffix = "trim-suffix" // remove `value` from the end of a string
+	opReplace    = "replace"     // replace every `value` in a string with `to`
 )
 
 // Rule is one quirk: what to match, where to look, and what to do.
@@ -70,29 +70,29 @@ type Match struct {
 func (r *Rule) validate() error {
 	switch r.Direction {
 	case "":
-		r.Direction = DirectionRequest
-	case DirectionRequest, DirectionResponse:
+		r.Direction = directionRequest
+	case directionRequest, directionResponse:
 	default:
-		return fmt.Errorf("direction %q is not %q or %q", r.Direction, DirectionRequest, DirectionResponse)
+		return fmt.Errorf("direction %q is not %q or %q", r.Direction, directionRequest, directionResponse)
 	}
 	if r.Path == "" {
 		return fmt.Errorf("path is required")
 	}
 	switch r.Op {
-	case OpDelete:
-	case OpSet, OpSetDefault:
+	case opDelete:
+	case opSet, opSetDefault:
 		if r.Value == nil {
 			return fmt.Errorf("op %q needs a value", r.Op)
 		}
-	case OpRename:
+	case opRename:
 		if r.To == "" {
 			return fmt.Errorf("op %q needs `to`", r.Op)
 		}
-	case OpCutAt, OpTrimPrefix, OpTrimSuffix:
+	case opCutAt, opTrimPrefix, opTrimSuffix:
 		if _, ok := r.Value.(string); !ok {
 			return fmt.Errorf("op %q needs a string value", r.Op)
 		}
-	case OpReplace:
+	case opReplace:
 		if _, ok := r.Value.(string); !ok {
 			return fmt.Errorf("op %q needs a string value", r.Op)
 		}
@@ -139,7 +139,7 @@ func (r Rule) apply(body map[string]any) int {
 	if len(segments) == 0 {
 		return 0
 	}
-	create := r.Op == OpSet || r.Op == OpSetDefault
+	create := r.Op == opSet || r.Op == opSetDefault
 	edits := 0
 	walk(body, segments[:len(segments)-1], create, func(obj map[string]any) {
 		edits += r.edit(obj, segments[len(segments)-1].key)
@@ -151,22 +151,22 @@ func (r Rule) apply(body map[string]any) int {
 func (r Rule) edit(obj map[string]any, key string) int {
 	cur, present := obj[key]
 	switch r.Op {
-	case OpDelete:
+	case opDelete:
 		if !present {
 			return 0
 		}
 		delete(obj, key)
 		return 1
-	case OpSet:
+	case opSet:
 		obj[key] = r.Value
 		return 1
-	case OpSetDefault:
+	case opSetDefault:
 		if present && cur != nil {
 			return 0
 		}
 		obj[key] = r.Value
 		return 1
-	case OpRename:
+	case opRename:
 		if !present {
 			return 0
 		}
@@ -183,17 +183,17 @@ func (r Rule) edit(obj map[string]any, key string) int {
 	operand, _ := r.Value.(string)
 	var next string
 	switch r.Op {
-	case OpCutAt:
+	case opCutAt:
 		idx := strings.Index(s, operand)
 		if idx == -1 {
 			return 0
 		}
 		next = s[:idx]
-	case OpTrimPrefix:
+	case opTrimPrefix:
 		next = strings.TrimPrefix(s, operand)
-	case OpTrimSuffix:
+	case opTrimSuffix:
 		next = strings.TrimSuffix(s, operand)
-	case OpReplace:
+	case opReplace:
 		next = strings.ReplaceAll(s, operand, r.To)
 	default:
 		return 0

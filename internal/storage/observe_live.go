@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/observe/record"
 )
 
 // StartAgentSession opens a session row and returns its id. kind is the entry
@@ -170,7 +170,7 @@ func (db *DB) EndAgentSession(id int64, outcome string) error {
 // having never spawned anything must not write four NULLs it would then be
 // read as having answered.
 // See docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason.
-func (db *DB) EndChildAgentSession(id int64, outcome string, e observe.ChildEnd) error {
+func (db *DB) EndChildAgentSession(id int64, outcome string, e record.ChildEnd) error {
 	set := `ended_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'),
 	        end_reason = ?, verdict = ?, steers = ?, attempt = ?,
 	        child_budget = ?, child_admission_floor = ?,

@@ -16,7 +16,7 @@ import (
 // four whose right call is an ordinary command, each with its reason and one
 // label.
 func TestEval_ProcessChoiceTableShape(t *testing.T) {
-	c, err := LoadCase(filepath.Join("..", "..", "evals", "process-choice"))
+	c, err := loadCase(filepath.Join("..", "..", "evals", "process-choice"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -15,7 +15,7 @@ import (
 // never part of it.
 func TestPorcelainPaths(t *testing.T) {
 	status := " M internal/agent/loop.go\n?? new.go\nR  old.go -> moved.go\n M .shhh/todo/a-one.md\n?? .shhh/run/x/evidence/ev-1.dat\n"
-	got := PorcelainPaths(status)
+	got := porcelainPaths(status)
 	if strings.Join(got, ",") != "internal/agent/loop.go,moved.go,new.go" {
 		t.Fatalf("porcelain paths = %v", got)
 	}

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/observe/record"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -1414,9 +1414,9 @@ func TestEndChildAgentSession_ClosesTheRowWithHowTheAttemptEnded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start child session: %v", err)
 	}
-	end := observe.ChildEnd{Reason: observe.ChildBudget, Verdict: "off-target", Steers: 2, Attempt: 2,
+	end := record.ChildEnd{Reason: record.ChildBudget, Verdict: "off-target", Steers: 2, Attempt: 2,
 		Budget: 300000, AdmissionFloor: 200010,
-		Tokens: observe.ChildTokens{Inherited: 4, Setup: 6, Tools: 20, Analysis: 299960, Handoff: 10,
+		Tokens: record.ChildTokens{Inherited: 4, Setup: 6, Tools: 20, Analysis: 299960, Handoff: 10,
 			Fresh: 300000}}
 	if err := db.EndChildAgentSession(child, "completed", end); err != nil {
 		t.Fatalf("end child session: %v", err)
@@ -1668,9 +1668,9 @@ func TestAgentCommandPurposes_SplitsCommandsByTheirWord(t *testing.T) {
 		t.Fatalf("start session: %v", err)
 	}
 	for _, e := range []AgentEvent{
-		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok", Purpose: observe.PurposeRead},
-		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "error", Reason: observe.ClassExitStatus, Purpose: observe.PurposeBuild},
-		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok", Purpose: observe.PurposeRead},
+		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok", Purpose: record.PurposeRead},
+		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "error", Reason: record.ClassExitStatus, Purpose: record.PurposeBuild},
+		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok", Purpose: record.PurposeRead},
 		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok"},
 		{Kind: AgentEventTool, Tool: "read_file", Outcome: "ok"},
 	} {
@@ -1683,7 +1683,7 @@ func TestAgentCommandPurposes_SplitsCommandsByTheirWord(t *testing.T) {
 		t.Fatalf("purposes: %v", err)
 	}
 	want := []AgentCommandPurpose{
-		{Purpose: observe.PurposeRead, Count: 2}, {Purpose: "", Count: 1}, {Purpose: observe.PurposeBuild, Count: 1},
+		{Purpose: record.PurposeRead, Count: 2}, {Purpose: "", Count: 1}, {Purpose: record.PurposeBuild, Count: 1},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("purposes = %+v, want %+v", got, want)
@@ -1701,7 +1701,7 @@ func TestAgentCommandPurposes_SplitsCommandsByTheirWord(t *testing.T) {
 	}
 	set := map[int64]string{}
 	for _, e := range events {
-		set[e.ID] = observe.PurposeOther
+		set[e.ID] = record.PurposeOther
 	}
 	n, err := db.SetAgentCommandPurposes(set)
 	if err != nil || n != 1 {
@@ -1728,14 +1728,14 @@ func TestReadAgentCohort_CommandsAreTheCohortsOwn(t *testing.T) {
 			}
 		}
 	}
-	write("aaa", observe.PurposeRead, observe.PurposeRead, observe.PurposeBuild)
-	write("bbb", observe.PurposeSearch)
+	write("aaa", record.PurposeRead, record.PurposeRead, record.PurposeBuild)
+	write("bbb", record.PurposeSearch)
 
 	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa", "")
 	if err != nil {
 		t.Fatalf("read cohort: %v", err)
 	}
-	want := []AgentCommandPurpose{{Purpose: observe.PurposeRead, Count: 2}, {Purpose: observe.PurposeBuild, Count: 1}}
+	want := []AgentCommandPurpose{{Purpose: record.PurposeRead, Count: 2}, {Purpose: record.PurposeBuild, Count: 1}}
 	if len(reading.Commands) != len(want) {
 		t.Fatalf("cohort commands = %+v, want %+v", reading.Commands, want)
 	}

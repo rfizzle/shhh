@@ -55,9 +55,9 @@ import (
 // API names the wire dialect a profile speaks. Both are backed by providers
 // shhh already has; the profile supplies the endpoint and the quirks.
 const (
-	APIOpenAIChat       = "openai-chat"
-	APIOpenAIResponses  = "openai-responses"
-	APIAnthropicMessage = "anthropic-messages"
+	aPIOpenAIChat       = "openai-chat"
+	aPIOpenAIResponses  = "openai-responses"
+	aPIAnthropicMessage = "anthropic-messages"
 )
 
 // Profile is one gateway: where it is, how to authenticate, what it hosts,
@@ -370,7 +370,7 @@ func (p Profile) Routes() []Endpoint {
 func (p Profile) defaultRoute() Endpoint {
 	api := p.API
 	if api == "" {
-		api = APIOpenAIChat
+		api = aPIOpenAIChat
 	}
 	return Endpoint{
 		Label:             "default",
@@ -396,7 +396,7 @@ func (p Profile) inherit(e Endpoint) Endpoint {
 		out.API = p.API
 	}
 	if out.API == "" {
-		out.API = APIOpenAIChat
+		out.API = aPIOpenAIChat
 	}
 	if out.BaseURL == "" {
 		out.BaseURL = p.BaseURL
@@ -470,7 +470,7 @@ func (p Profile) DeclaresDecisions(model string) bool {
 		return false
 	}
 	route := p.Route(model)
-	if route.API == APIAnthropicMessage {
+	if route.API == aPIAnthropicMessage {
 		return false
 	}
 	for _, m := range route.Models {
@@ -543,7 +543,7 @@ func Load(dirs []string) ([]Profile, []error) {
 		}
 	}
 
-	paths, errs := Sources(dirs)
+	paths, errs := sources(dirs)
 	for _, path := range paths {
 		found, err := LoadFile(path)
 		if err != nil {
@@ -555,11 +555,11 @@ func Load(dirs []string) ([]Profile, []error) {
 	return profiles, errs
 }
 
-// Sources lists every profile file that exists, in load order: for each
+// sources lists every profile file that exists, in load order: for each
 // config directory, the providers.toml first and then providers/*.toml by
 // name. It is what Load reads and what `shhh providers migrate` folds
 // together, so both agree on what is out there.
-func Sources(dirs []string) ([]string, []error) {
+func sources(dirs []string) ([]string, []error) {
 	var paths []string
 	var errs []error
 	for _, dir := range dirs {
@@ -712,7 +712,7 @@ func (p *Profile) Validate() error {
 		// The profile's dialect is the one every endpoint inherits, so it is
 		// settled here. An endpoint's own stays empty until inheritance runs:
 		// defaulting it would override the profile it meant to follow.
-		p.API = APIOpenAIChat
+		p.API = aPIOpenAIChat
 	}
 	if p.APIKey != "" && p.APIKeyEnv != "" {
 		return fmt.Errorf("set api_key or api_key_env, not both")
@@ -803,10 +803,10 @@ func (e *Endpoint) validate() error {
 // leaves it empty and validateAPI is called on the inherited value too.
 func validateAPI(api *string) error {
 	switch *api {
-	case "", APIOpenAIChat, APIOpenAIResponses, APIAnthropicMessage:
+	case "", aPIOpenAIChat, aPIOpenAIResponses, aPIAnthropicMessage:
 		return nil
 	default:
 		return fmt.Errorf("api %q is not supported (want %q, %q, or %q)",
-			*api, APIOpenAIChat, APIOpenAIResponses, APIAnthropicMessage)
+			*api, aPIOpenAIChat, aPIOpenAIResponses, aPIAnthropicMessage)
 	}
 }

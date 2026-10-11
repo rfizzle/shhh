@@ -48,15 +48,15 @@ import (
 // served for the length of the attempt.
 const KindResearch Kind = "research"
 
-// SiteDir is the fixture site inside a research case directory, the way
+// siteDir is the fixture site inside a research case directory, the way
 // WorkspaceDir is the fixture checkout inside a workspace one.
-const SiteDir = "site"
+const siteDir = "site"
 
-// SitePlaceholder is what a case writes where it means the site's base URL.
+// sitePlaceholder is what a case writes where it means the site's base URL.
 // The port is whatever the OS hands the listener, so a case cannot name it;
 // without a way to say "start here" every case would depend on the search
 // fixture finding the right page first, which measures the search fixture.
-const SitePlaceholder = "{site}"
+const sitePlaceholder = "{site}"
 
 // searchPath is where the search fixture answers on the same listener. It is
 // a path no case's page can collide with because a page is a file and this
@@ -185,7 +185,7 @@ func researchAttempt(ctx context.Context, c Case, opts Options) Attempt {
 			a.TokensOut += u.CompletionTokens
 		},
 	}
-	writeup, runErr := h.Run(strings.ReplaceAll(c.Prompt, SitePlaceholder, site.base))
+	writeup, runErr := h.Run(strings.ReplaceAll(c.Prompt, sitePlaceholder, site.base))
 	a.Rounds = ag.Rounds()
 	if opts.Price != nil {
 		a.Cost, a.Priced = opts.Price(opts.Model, a.TokensIn, a.TokensOut)
@@ -201,18 +201,18 @@ func researchAttempt(ctx context.Context, c Case, opts Options) Attempt {
 		return fail(fmt.Errorf("the session failed: %w", runErr))
 	}
 
-	score := GradeResearch(c, writeup, ledger.List(), site.pages)
+	score := gradeResearch(c, writeup, ledger.List(), site.pages)
 	a.Research = &score
 	a.Passed = score.OK()
 	a.Elapsed = time.Since(start)
 	return a
 }
 
-// GradeResearch scores one write-up against the run's ledger and the pages
+// gradeResearch scores one write-up against the run's ledger and the pages
 // the site served. It is separate from the run so the grading can be put to a
 // fixed ledger and a fixed write-up, which is the only way to know a rate
 // measures what it claims to.
-func GradeResearch(c Case, writeup string, rows []web.Source, pages map[string]string) ResearchScore {
+func gradeResearch(c Case, writeup string, rows []web.Source, pages map[string]string) ResearchScore {
 	var s ResearchScore
 	miss := func(format string, args ...any) { s.Misses = append(s.Misses, fmt.Sprintf(format, args...)) }
 

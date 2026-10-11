@@ -97,7 +97,7 @@ type CaseBaseline struct {
 	Cost     float64 `json:"cost"`
 	Priced   bool    `json:"priced"`
 	// Table is a table case's rates, and nil for a workspace case.
-	Table *TableBaseline `json:"table,omitempty"`
+	Table *tableBaseline `json:"table,omitempty"`
 	// Research is a research case's three rates, and nil for every other
 	// kind.
 	Research *ResearchBaseline `json:"research,omitempty"`
@@ -118,12 +118,12 @@ type BehaviourBaseline struct {
 	ResultBytes              float64 `json:"median_result_bytes"`
 }
 
-// TableBaseline is a table case's outcomes, counted apart the way the report
+// tableBaseline is a table case's outcomes, counted apart the way the report
 // counts them. FalseAllow and FalseDeny are never summed into one figure
 // here either: the file is what a later run is compared against, and a
 // baseline that had already added them together could not tell a control
 // failing further open from one merely getting fussier.
-type TableBaseline struct {
+type tableBaseline struct {
 	Rows       int `json:"rows"`
 	Correct    int `json:"correct"`
 	FalseAllow int `json:"false_allow"`
@@ -199,7 +199,7 @@ func (s Summary) Baseline() Baseline {
 			}
 		}
 		if score, ok := res.Score(); ok {
-			c.Table = &TableBaseline{
+			c.Table = &tableBaseline{
 				Rows:       score.Rows(),
 				Correct:    score.Correct(),
 				FalseAllow: score.FalseAllow(),

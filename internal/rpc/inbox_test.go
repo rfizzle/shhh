@@ -49,7 +49,7 @@ func TestInbox_TakesNothingButTheOneVerb(t *testing.T) {
 		MethodAgentKill, "config/set", "command/run",
 	} {
 		resp := askInbox(t, in, `{"jsonrpc":"2.0","id":1,"method":"`+method+`","params":{"text":"y"}}`)
-		if resp.Error == nil || resp.Error.Code != CodeMethodNotFound {
+		if resp.Error == nil || resp.Error.Code != codeMethodNotFound {
 			t.Errorf("%s was answered: %+v", method, resp)
 		}
 	}
@@ -64,8 +64,8 @@ func TestInbox_RefusesWhatIsNotALine(t *testing.T) {
 		"not json":      `send it`,
 		"wrong version": `{"jsonrpc":"1.0","method":"session/send","params":{"text":"x"}}`,
 		"no text":       `{"jsonrpc":"2.0","method":"session/send","params":{"text":"  "}}`,
-		"too long":      `{"jsonrpc":"2.0","method":"session/send","params":{"text":"` + strings.Repeat("x", MaxLineBytes+1) + `"}}`,
-		"far too long":  strings.Repeat("x", MaxLineBytes*2),
+		"too long":      `{"jsonrpc":"2.0","method":"session/send","params":{"text":"` + strings.Repeat("x", maxLineBytes+1) + `"}}`,
+		"far too long":  strings.Repeat("x", maxLineBytes*2),
 	} {
 		if resp := askInbox(t, in, raw); resp.Error == nil {
 			t.Errorf("%s: answered %+v", name, resp)

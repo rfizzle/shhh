@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/observe/record"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -310,7 +310,7 @@ func (db *DB) AgentSessionFirstWrite(id int64) (AgentFirstWrite, bool, error) {
 }
 
 func (db *DB) agentFirstWrites(scope string, args ...any) ([]AgentFirstWrite, error) {
-	writes, searches := observe.WriteToolNames(), observe.SearchToolNames()
+	writes, searches := record.WriteToolNames(), record.SearchToolNames()
 	query := fmt.Sprintf(agentFirstWritesQuery, scope, sqlPlaceholders(len(writes)), sqlPlaceholders(len(searches)))
 	// The order the placeholders are bound in is the order they appear in
 	// the text, which is the scope's, then the writes in the second common

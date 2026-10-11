@@ -28,15 +28,15 @@ func TestRouter_DecisionsFollowTheModelsEndpoint(t *testing.T) {
 
 	yes := true
 	p := Profile{
-		Name: "gateway", API: APIOpenAIChat, BaseURL: def.URL + "/v1", APIKey: "k",
+		Name: "gateway", API: aPIOpenAIChat, BaseURL: def.URL + "/v1", APIKey: "k",
 		DiscoveryDisabled: &yes, StrictModels: true,
 		Models: []Model{{ID: "gpt-6-luna", Decisions: true}, {ID: "gpt-5.6-luna"}},
 		Endpoints: []Endpoint{{
-			API: APIOpenAIResponses, BaseURL: routed.URL + "/responses",
+			API: aPIOpenAIResponses, BaseURL: routed.URL + "/responses",
 			Headers: map[string]string{"X-Tier": "private"},
 			Models:  []Model{{ID: "luna-gw", Decisions: true}},
 		}, {
-			API: APIAnthropicMessage, BaseURL: routed.URL + "/anthropic",
+			API: aPIAnthropicMessage, BaseURL: routed.URL + "/anthropic",
 			Models: []Model{{ID: "claude-opus-5", Decisions: true}},
 		}},
 	}

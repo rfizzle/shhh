@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe/record"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -361,17 +362,17 @@ func TestSessionOutcome_NeverWritesUnknown(t *testing.T) {
 // two won would depend on the order a query happened to test them in.
 func TestToolNames_NothingIsBothLookingAndWriting(t *testing.T) {
 	writes := map[string]bool{}
-	for _, w := range WriteToolNames() {
+	for _, w := range record.WriteToolNames() {
 		writes[w] = true
 	}
-	for _, s := range SearchToolNames() {
+	for _, s := range record.SearchToolNames() {
 		if writes[s] {
 			t.Errorf("%q is counted as looking and as writing", s)
 		}
 	}
 	// The lists are what a query names in SQL, so an empty one would quietly
 	// turn the reading into a count of nothing.
-	if len(writes) == 0 || len(SearchToolNames()) == 0 {
+	if len(writes) == 0 || len(record.SearchToolNames()) == 0 {
 		t.Fatal("a tool list is empty")
 	}
 }
@@ -380,7 +381,7 @@ func TestToolNames_NothingIsBothLookingAndWriting(t *testing.T) {
 // from reading a lockfile whole to querying it has not stopped looking.
 func TestToolNames_TheDataReadersAreLooking(t *testing.T) {
 	looking := map[string]bool{}
-	for _, s := range SearchToolNames() {
+	for _, s := range record.SearchToolNames() {
 		looking[s] = true
 	}
 	for _, name := range []string{"query", "sqlite"} {
@@ -394,13 +395,13 @@ func TestToolNames_TheDataReadersAreLooking(t *testing.T) {
 // one that came back as the package's own slice could be sorted or appended
 // to under it.
 func TestToolNames_AreNotThePackagesOwnSlice(t *testing.T) {
-	got := SearchToolNames()
+	got := record.SearchToolNames()
 	if len(got) == 0 {
 		t.Fatal("no search tools")
 	}
 	first := got[0]
 	got[0] = "clobbered"
-	if SearchToolNames()[0] != first {
+	if record.SearchToolNames()[0] != first {
 		t.Fatal("a caller can rewrite the record's vocabulary")
 	}
 }

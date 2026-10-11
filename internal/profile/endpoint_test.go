@@ -70,15 +70,15 @@ func TestRoute_SendsEachModelToItsEndpoint(t *testing.T) {
 	p := routedProfile(t)
 	tests := []struct{ model, wantURL, wantAPI string }{
 		// A declared id is the strongest claim.
-		{"claude-opus-5", "https://gw.example/anthropic", APIAnthropicMessage},
-		{"o5-pro", "https://gw.example/responses", APIOpenAIResponses},
+		{"claude-opus-5", "https://gw.example/anthropic", aPIAnthropicMessage},
+		{"o5-pro", "https://gw.example/responses", aPIOpenAIResponses},
 		// A glob catches the ones nobody enumerated.
-		{"claude-haiku-4-5", "https://gw.example/anthropic", APIAnthropicMessage},
+		{"claude-haiku-4-5", "https://gw.example/anthropic", aPIAnthropicMessage},
 		// Everything else — declared at the top level or not declared at
 		// all — goes to the default.
-		{"gpt-5.2", "https://gw.example/v1", APIOpenAIChat},
-		{"something-nobody-listed", "https://gw.example/v1", APIOpenAIChat},
-		{"", "https://gw.example/v1", APIOpenAIChat},
+		{"gpt-5.2", "https://gw.example/v1", aPIOpenAIChat},
+		{"something-nobody-listed", "https://gw.example/v1", aPIOpenAIChat},
+		{"", "https://gw.example/v1", aPIOpenAIChat},
 	}
 	for _, tc := range tests {
 		got := p.Route(tc.model)
@@ -164,12 +164,12 @@ func TestNew_RoutesTheRequestToTheRightEndpoint(t *testing.T) {
 	defer routed.Close()
 
 	p := Profile{
-		Name: "gateway", API: APIOpenAIChat, BaseURL: def.URL, APIKey: "k",
-		Rewrite: []Rule{{Op: OpDelete, Path: "top_p", Direction: DirectionRequest}},
+		Name: "gateway", API: aPIOpenAIChat, BaseURL: def.URL, APIKey: "k",
+		Rewrite: []Rule{{Op: opDelete, Path: "top_p", Direction: directionRequest}},
 		Endpoints: []Endpoint{{
 			Match: []string{"claude-*"}, BaseURL: routed.URL,
 			Headers: map[string]string{"X-Tier": "private"},
-			Rewrite: []Rule{{Op: OpSet, Path: "max_tokens", Value: int64(64), Direction: DirectionRequest}},
+			Rewrite: []Rule{{Op: opSet, Path: "max_tokens", Value: int64(64), Direction: directionRequest}},
 		}},
 	}
 	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
@@ -239,7 +239,7 @@ func TestNew_RoutedEndpointBuildsItsOwnDialect(t *testing.T) {
 	p := Profile{
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
 		Endpoints: []Endpoint{{
-			Match: []string{"claude-*"}, API: APIAnthropicMessage,
+			Match: []string{"claude-*"}, API: aPIAnthropicMessage,
 			BaseURL: "https://gw.example/anthropic",
 		}},
 	}
@@ -275,7 +275,7 @@ func TestNew_ExplicitBaseURLCollapsesRouting(t *testing.T) {
 	// answered the question routing exists to answer.
 	p := Profile{
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
-		Endpoints: []Endpoint{{Match: []string{"*"}, API: APIAnthropicMessage, BaseURL: "https://gw.example/anthropic"}},
+		Endpoints: []Endpoint{{Match: []string{"*"}, API: aPIAnthropicMessage, BaseURL: "https://gw.example/anthropic"}},
 	}
 	prov, err := New(p, provider.ResolveOpts{BaseURL: "https://override.example/v1", Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
@@ -320,7 +320,7 @@ func TestRouterListModels_UnionsDeclaredAndDiscovered(t *testing.T) {
 		Name: "gateway", BaseURL: srv.URL, APIKey: "k",
 		Models: []Model{{ID: "gpt-5.2"}},
 		Endpoints: []Endpoint{{
-			API: APIAnthropicMessage, BaseURL: "https://gw.example/anthropic",
+			API: aPIAnthropicMessage, BaseURL: "https://gw.example/anthropic",
 			Models: []Model{{ID: "claude-opus-5"}},
 		}},
 	}
@@ -510,7 +510,7 @@ func TestDiscoveryDisabled_SilentRouterOffersNoQuery(t *testing.T) {
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
 		DiscoveryDisabled: &off,
 		Endpoints: []Endpoint{{
-			Match: []string{"claude-*"}, API: APIAnthropicMessage,
+			Match: []string{"claude-*"}, API: aPIAnthropicMessage,
 			BaseURL: "https://gw.example/anthropic",
 		}},
 	}

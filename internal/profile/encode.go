@@ -174,7 +174,7 @@ func encodeRules(b *strings.Builder, indent, table string, rules []Rule) {
 		if r.When.Model != "" {
 			fmt.Fprintf(b, "%swhen = { model = %s }\n", indent, quote(r.When.Model))
 		}
-		if r.Direction != "" && r.Direction != DirectionRequest {
+		if r.Direction != "" && r.Direction != directionRequest {
 			writeString(b, indent, "direction", r.Direction)
 		}
 		writeString(b, indent, "op", r.Op)

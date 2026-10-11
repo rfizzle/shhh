@@ -44,38 +44,6 @@ const (
 	SpanSession = "shhh.session"
 )
 
-// The attribute keys. They are the record's own columns under a prefix, and
-// they are constants for the same reason the codes are: a key spelled
-// two ways is two columns nothing can add up, and the reader doing the
-// adding is on the other side of the network where nothing here can fix it.
-const (
-	// On the span: what the session was.
-	AttrKind     = "shhh.session.kind"
-	AttrProvider = "shhh.session.provider"
-	AttrModel    = "shhh.session.model"
-	AttrOutcome  = "shhh.session.outcome"
-	// On the span: what it spent, from the last usage report to arrive.
-	AttrTurns     = "shhh.session.turns"
-	AttrTokensIn  = "shhh.tokens.in"
-	AttrTokensOut = "shhh.tokens.out"
-	AttrCost      = "shhh.cost.usd"
-	// On the span of a session another one started: what kind of session
-	// that parent was. The trace already carries the parenthood — a child's
-	// span hangs under its parent's — and this is the half a dashboard
-	// groups by without walking a trace to find out whose child a row is.
-	// The parent's kind and not its identity: an id would be a row number
-	// on one machine's database, which means nothing on the other side of
-	// the network.
-	AttrParent = "shhh.session.parent"
-	// On an event: the row's own four columns and its position.
-	AttrTool       = "shhh.tool"
-	AttrEventCode  = "shhh.outcome"
-	AttrReason     = "shhh.reason"
-	AttrDurationMs = "shhh.duration_ms"
-	AttrTurn       = "shhh.turn"
-	AttrRound      = "shhh.round"
-)
-
 // exportTimeout bounds the one round trip a session's span costs, and it is
 // the whole of what a slow collector can take from a session: the span is
 // sent when the row closes, and a caller that closes a row somewhere a wait

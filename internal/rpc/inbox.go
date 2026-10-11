@@ -33,10 +33,10 @@ const MethodSessionSend = "session/send"
 // CodeRefused: the session takes no lines from other sessions.
 const CodeRefused = -32007
 
-// MaxLineBytes bounds what one message may carry. A line is a sentence for a
+// maxLineBytes bounds what one message may carry. A line is a sentence for a
 // colleague, and a socket that read without limit would let any process on
 // the machine make a session hold whatever it was sent.
-const MaxLineBytes = 16 << 10
+const maxLineBytes = 16 << 10
 
 // inboxDeadline bounds a connection: one message in and one answer out. A
 // client that opens the socket and says nothing would otherwise hold a
@@ -113,32 +113,32 @@ func (in *Inbox) Serve(ctx context.Context, l net.Listener) error {
 func (in *Inbox) ServeConn(r io.Reader, w io.Writer) {
 	id := json.RawMessage("null")
 	answer := func(result any, rerr *Error) {
-		_ = json.NewEncoder(w).Encode(response{JSONRPC: Version, ID: id, Result: result, Error: rerr})
+		_ = json.NewEncoder(w).Encode(response{JSONRPC: version, ID: id, Result: result, Error: rerr})
 	}
 	// The frame is bounded as well as the text: the text is what the limit
 	// is about, and the envelope around it is a few names.
-	line, tooLong, err := readBoundedLine(bufio.NewReader(r), MaxLineBytes+4096)
+	line, tooLong, err := readBoundedLine(bufio.NewReader(r), maxLineBytes+4096)
 	switch {
 	case tooLong:
-		answer(nil, errorf(CodeInvalidParams, "a line is at most %d bytes", MaxLineBytes))
+		answer(nil, errorf(codeInvalidParams, "a line is at most %d bytes", maxLineBytes))
 		return
 	case err != nil && len(line) == 0:
 		return
 	}
 	var req request
 	if err := json.Unmarshal(line, &req); err != nil {
-		answer(nil, errorf(CodeParse, "not a JSON-RPC message: %v", err))
+		answer(nil, errorf(codeParse, "not a JSON-RPC message: %v", err))
 		return
 	}
 	if len(req.ID) > 0 {
 		id = req.ID
 	}
-	if req.JSONRPC != Version {
-		answer(nil, errorf(CodeInvalidRequest, "jsonrpc must be %q", Version))
+	if req.JSONRPC != version {
+		answer(nil, errorf(codeInvalidRequest, "jsonrpc must be %q", version))
 		return
 	}
 	if req.Method != MethodSessionSend {
-		answer(nil, errorf(CodeMethodNotFound, "this socket takes %s and nothing else", MethodSessionSend))
+		answer(nil, errorf(codeMethodNotFound, "this socket takes %s and nothing else", MethodSessionSend))
 		return
 	}
 	p, rerr := decode[SendParams](req.Params)
@@ -147,11 +147,11 @@ func (in *Inbox) ServeConn(r io.Reader, w io.Writer) {
 		return
 	}
 	if strings.TrimSpace(p.Text) == "" {
-		answer(nil, errorf(CodeInvalidParams, "a line needs text"))
+		answer(nil, errorf(codeInvalidParams, "a line needs text"))
 		return
 	}
-	if len(p.Text) > MaxLineBytes {
-		answer(nil, errorf(CodeInvalidParams, "a line is at most %d bytes", MaxLineBytes))
+	if len(p.Text) > maxLineBytes {
+		answer(nil, errorf(codeInvalidParams, "a line is at most %d bytes", maxLineBytes))
 		return
 	}
 	taken, err := in.take(p)
@@ -159,7 +159,7 @@ func (in *Inbox) ServeConn(r io.Reader, w io.Writer) {
 	case errors.Is(err, ErrRefused):
 		answer(nil, errorf(CodeRefused, "%s", ErrRefused.Error()))
 	case err != nil:
-		answer(nil, errorf(CodeInternal, "%s", err.Error()))
+		answer(nil, errorf(codeInternal, "%s", err.Error()))
 	default:
 		answer(SendResult{Taken: taken}, nil)
 	}
@@ -189,7 +189,7 @@ func Send(conn io.ReadWriter, p SendParams) (SendResult, error) {
 	if err != nil {
 		return SendResult{}, err
 	}
-	req := request{JSONRPC: Version, ID: json.RawMessage("1"), Method: MethodSessionSend, Params: params}
+	req := request{JSONRPC: version, ID: json.RawMessage("1"), Method: MethodSessionSend, Params: params}
 	if err := json.NewEncoder(conn).Encode(req); err != nil {
 		return SendResult{}, err
 	}

@@ -25,7 +25,7 @@ const (
 	// CaseFile is the case definition inside a case directory, and
 	// WorkspaceDir the fixture beside it that each attempt gets a copy of.
 	CaseFile     = "case.toml"
-	WorkspaceDir = "workspace"
+	workspaceDir = "workspace"
 	// TableFile is the labelled table beside the case file, for the kinds
 	// that have no workspace. It is its own file because it is content: a
 	// suite grows rows the way a test suite grows cases, and twenty of them
@@ -81,7 +81,7 @@ func Load(root string) ([]Case, error) {
 		if _, statErr := os.Stat(filepath.Join(dir, CaseFile)); statErr != nil {
 			continue
 		}
-		c, loadErr := LoadCase(dir)
+		c, loadErr := loadCase(dir)
 		if loadErr != nil {
 			return nil, loadErr
 		}
@@ -94,9 +94,9 @@ func Load(root string) ([]Case, error) {
 	return cases, nil
 }
 
-// LoadCase reads one case directory. Every validation failure names the file,
+// loadCase reads one case directory. Every validation failure names the file,
 // because the reader is editing it.
-func LoadCase(dir string) (Case, error) {
+func loadCase(dir string) (Case, error) {
 	path := filepath.Join(dir, CaseFile)
 	var f caseFile
 	if _, err := toml.DecodeFile(path, &f); err != nil {
@@ -120,18 +120,18 @@ func LoadCase(dir string) (Case, error) {
 		if len(f.Check) == 0 {
 			return Case{}, fmt.Errorf("%s: check is required — without it nothing decides whether the task was done", path)
 		}
-		ws := filepath.Join(dir, WorkspaceDir)
+		ws := filepath.Join(dir, workspaceDir)
 		if info, err := os.Stat(ws); err != nil || !info.IsDir() {
-			return Case{}, fmt.Errorf("%s: no %s/ directory — a case needs a workspace to work in", dir, WorkspaceDir)
+			return Case{}, fmt.Errorf("%s: no %s/ directory — a case needs a workspace to work in", dir, workspaceDir)
 		}
 		c.Workspace, c.Prompt, c.Check, c.AnalysisOnly = ws, strings.TrimSpace(f.Prompt), f.Check, f.AnalysisOnly
 	case KindResearch:
 		if strings.TrimSpace(f.Prompt) == "" {
 			return Case{}, fmt.Errorf("%s: prompt is required — it is the question", path)
 		}
-		site := filepath.Join(dir, SiteDir)
+		site := filepath.Join(dir, siteDir)
 		if info, err := os.Stat(site); err != nil || !info.IsDir() {
-			return Case{}, fmt.Errorf("%s: no %s/ directory — a research case brings the site it is answered from", dir, SiteDir)
+			return Case{}, fmt.Errorf("%s: no %s/ directory — a research case brings the site it is answered from", dir, siteDir)
 		}
 		if len(f.Facts) == 0 {
 			return Case{}, fmt.Errorf("%s: facts is required — without it nothing decides whether the question was answered", path)

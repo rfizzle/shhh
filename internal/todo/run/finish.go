@@ -104,7 +104,7 @@ func Commit(root string, paths []string, message, without string, hooks bool, se
 		return nil, err
 	}
 	defer func() { _ = os.Remove(f.Name()) }()
-	if _, err := f.WriteString(WithTrailers(message, secrets.Trailers) + "\n"); err != nil {
+	if _, err := f.WriteString(withTrailers(message, secrets.Trailers) + "\n"); err != nil {
 		f.Close()
 		return nil, err
 	}
@@ -119,13 +119,13 @@ func Commit(root string, paths []string, message, without string, hooks bool, se
 	return paths, nil
 }
 
-// WithTrailers is message with the project's commit.trailers on its end: each
+// withTrailers is message with the project's commit.trailers on its end: each
 // line once, after a blank line, or straight after the trailer block the
 // message already ends with. A line the message already ends with is not
 // added again, so a model that wrote one anyway does not get it twice, and
 // the card shows exactly the message the commit will carry.
 // See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
-func WithTrailers(message string, trailers []string) string {
+func withTrailers(message string, trailers []string) string {
 	message = strings.TrimRight(message, " \t\r\n")
 	add := TrailersAdded(message, trailers)
 	if len(add) == 0 {
@@ -302,11 +302,11 @@ func File(root string, s *State, it todo.Item) (string, error) {
 	return to, nil
 }
 
-// NoteWriter puts one write-up in the session's shared notebook and answers
+// noteWriter puts one write-up in the session's shared notebook and answers
 // with how a reader names it there. It is a function rather than the store
 // because a run knows it has somewhere to be read and nothing more; which
 // notebook, and whether there is one at all, is the session's.
-type NoteWriter func(author, title, body string) (string, error)
+type noteWriter func(author, title, body string) (string, error)
 
 // NoteAuthor signs what a run writes in the notebook. Every note carries the
 // agent that wrote it so a reader can weigh it, and a run is not one of the
@@ -322,7 +322,7 @@ const NoteAuthor = "todo run"
 // A notebook that will not take it is not a failure of the work. The report
 // still goes onto the item, which is the record that outlives the session,
 // and the line says what could not be done instead of where to look.
-func FileNote(root string, s *State, it todo.Item, write NoteWriter) (string, error) {
+func FileNote(root string, s *State, it todo.Item, write noteWriter) (string, error) {
 	if write != nil && strings.TrimSpace(s.Report) != "" {
 		ref, err := write(NoteAuthor, s.Slug, s.Report+SourcesSection(s.Sources))
 		if err != nil {

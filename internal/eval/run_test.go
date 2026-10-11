@@ -31,7 +31,7 @@ func suite(t *testing.T, check []string, files map[string]string) []Case {
 	t.Helper()
 	root := t.TempDir()
 	dir := filepath.Join(root, "sample")
-	ws := filepath.Join(dir, WorkspaceDir)
+	ws := filepath.Join(dir, workspaceDir)
 	if err := os.MkdirAll(ws, 0o755); err != nil {
 		t.Fatal(err)
 	}

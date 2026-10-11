@@ -238,12 +238,12 @@ func TestCommit_TrailersAreAppendedOnce(t *testing.T) {
 		{"another trailer above", "feat(a): x\n\nSigned-off-by: T <t@example.com>", "feat(a): x\n\nSigned-off-by: T <t@example.com>\n" + trailer},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := WithTrailers(tc.message, []string{trailer}); got != tc.want {
+			if got := withTrailers(tc.message, []string{trailer}); got != tc.want {
 				t.Errorf("WithTrailers = %q, want %q", got, tc.want)
 			}
 		})
 	}
-	if got := WithTrailers("feat(a): x", nil); got != "feat(a): x" {
+	if got := withTrailers("feat(a): x", nil); got != "feat(a): x" {
 		t.Errorf("no trailers should leave the message, got %q", got)
 	}
 

@@ -43,7 +43,7 @@ func TestTheThreeRatesAreReadSeparately(t *testing.T) {
 		"\"Grebe 1.4 returns rows oldest first when a query names no order.\"\n\n" +
 		"The 2.0 line reversed it (" + unreadURL + ")."
 
-	score := GradeResearch(c, writeup, readLedger(), readPages())
+	score := gradeResearch(c, writeup, readLedger(), readPages())
 	if score.Cited != (Rate{Got: 1, Of: 2}) {
 		t.Errorf("cited = %v, want the unread page counted against it", score.Cited)
 	}
@@ -69,7 +69,7 @@ func TestAQuotationThatIsNotOnThePageItNamesIsAMiss(t *testing.T) {
 	writeup := "Grebe returns rows oldest first. From " + readURL + ": " +
 		"\"Grebe 1.4 has always returned rows oldest first, in every release since 1.0.\""
 
-	score := GradeResearch(c, writeup, readLedger(), readPages())
+	score := gradeResearch(c, writeup, readLedger(), readPages())
 	if !score.Cited.OK() {
 		t.Errorf("the URL was fetched, so the citation is sound: %v", score.Cited)
 	}
@@ -89,7 +89,7 @@ func TestABlockQuoteIsAttributedToTheParagraphAboveIt(t *testing.T) {
 	writeup := "The 1.4 reference (" + readURL + ") says:\n\n" +
 		"> Grebe 1.4 returns rows oldest\n> first when a query names no order.\n"
 
-	score := GradeResearch(c, writeup, readLedger(), readPages())
+	score := gradeResearch(c, writeup, readLedger(), readPages())
 	if score.Quoted != (Rate{Got: 1, Of: 1}) {
 		t.Errorf("quoted = %v, misses %v", score.Quoted, score.Misses)
 	}
@@ -101,7 +101,7 @@ func TestAQuotedValueIsNotAQuotation(t *testing.T) {
 	c := gradingCase(t)
 	writeup := "Pass \"order_by\" to ask for anything else (" + readURL + ")."
 
-	score := GradeResearch(c, writeup, readLedger(), readPages())
+	score := gradeResearch(c, writeup, readLedger(), readPages())
 	if score.Quoted.Of != 0 {
 		t.Errorf("quoted = %v, want nothing taken as a quotation", score.Quoted)
 	}
@@ -117,11 +117,11 @@ func TestTheUnanswerableCaseAcceptsAnAdmissionAndRefusesAnInvention(t *testing.T
 
 	admitted := "I could not confirm the default port from these sources. " +
 		"The pages on the site cover retries and durability and neither names a port."
-	if score := GradeResearch(c, admitted, rows, pages); !score.OK() {
+	if score := gradeResearch(c, admitted, rows, pages); !score.OK() {
 		t.Errorf("an honest admission must pass: %v", score.Misses)
 	}
 	invented := "The Sparrow broker listens on TCP port 5672 by default."
-	if score := GradeResearch(c, invented, rows, pages); score.OK() {
+	if score := gradeResearch(c, invented, rows, pages); score.OK() {
 		t.Error("an invented answer must fail the case it was invented for")
 	}
 }
@@ -130,7 +130,7 @@ func TestTheUnanswerableCaseAcceptsAnAdmissionAndRefusesAnInvention(t *testing.T
 // depends on a case's own wording fails when that wording changes.
 func shippedCase(t *testing.T, name string) Case {
 	t.Helper()
-	c, err := LoadCase(filepath.Join("..", "..", "evals", name))
+	c, err := loadCase(filepath.Join("..", "..", "evals", name))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,14 +164,14 @@ func TestAQuotationKeepsItsOwnTerminalPunctuation(t *testing.T) {
 	}
 	writeup := "From " + readURL + ": \"Grebe 1.4 returns rows oldest first when a query names no order.\""
 
-	score := GradeResearch(c, writeup, readLedger(), pages)
+	score := gradeResearch(c, writeup, readLedger(), pages)
 	if score.Quoted != (Rate{Got: 1, Of: 1}) {
 		t.Errorf("quoted = %v, misses %v", score.Quoted, score.Misses)
 	}
 	// The relaxation is punctuation and nothing else: a word the page does
 	// not have is still an invented quotation.
 	invented := "From " + readURL + ": \"Grebe 1.4 returns rows newest first when a query names no order.\""
-	if score := GradeResearch(c, invented, readLedger(), pages); score.Quoted.Got != 0 {
+	if score := gradeResearch(c, invented, readLedger(), pages); score.Quoted.Got != 0 {
 		t.Errorf("a changed word must still miss: %v", score.Quoted)
 	}
 }

@@ -14,7 +14,7 @@ import (
 func writeCase(t *testing.T, root, name, body string) string {
 	t.Helper()
 	dir := filepath.Join(root, name)
-	if err := os.MkdirAll(filepath.Join(dir, WorkspaceDir), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, workspaceDir), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, CaseFile), []byte(body), 0o644); err != nil {
@@ -30,7 +30,7 @@ check = ["go", "test", "./..."]
 
 func TestLoadCaseNamesItselfAfterItsDirectory(t *testing.T) {
 	dir := writeCase(t, t.TempDir(), "fix-the-thing", goodCase)
-	c, err := LoadCase(dir)
+	c, err := loadCase(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestLoadCaseNamesItselfAfterItsDirectory(t *testing.T) {
 
 func TestLoadCaseMarksAnAnalysisOnlyWorkspace(t *testing.T) {
 	dir := writeCase(t, t.TempDir(), "analysis", goodCase+"\nanalysis_only = true\n")
-	c, err := LoadCase(dir)
+	c, err := loadCase(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestLoadCaseMarksAnAnalysisOnlyWorkspace(t *testing.T) {
 
 func TestLoadCaseRefusesACaseWithNothingToDecideIt(t *testing.T) {
 	dir := writeCase(t, t.TempDir(), "no-check", "prompt = \"do a thing\"\n")
-	_, err := LoadCase(dir)
+	_, err := loadCase(dir)
 	if err == nil {
 		t.Fatal("a case with no check has no verdict and must be refused")
 	}
@@ -69,7 +69,7 @@ func TestLoadCaseRefusesACaseWithNothingToDecideIt(t *testing.T) {
 
 func TestLoadCaseRefusesACaseWithNoTask(t *testing.T) {
 	dir := writeCase(t, t.TempDir(), "no-prompt", "check = [\"true\"]\n")
-	if _, err := LoadCase(dir); err == nil {
+	if _, err := loadCase(dir); err == nil {
 		t.Fatal("a case with no prompt is not a task")
 	}
 }
@@ -83,11 +83,11 @@ func TestLoadCaseRefusesACaseWithNoWorkspace(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, CaseFile), []byte(goodCase), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err := LoadCase(dir)
+	_, err := loadCase(dir)
 	if err == nil {
 		t.Fatal("a case needs somewhere to do the work")
 	}
-	if !strings.Contains(err.Error(), WorkspaceDir) {
+	if !strings.Contains(err.Error(), workspaceDir) {
 		t.Errorf("the error should name what is missing: %v", err)
 	}
 }
@@ -147,7 +147,7 @@ func TestACaseIsSkippedRatherThanFailedWhenTheMachineCannotRunIt(t *testing.T) {
 	t.Cleanup(func() { lookPath = old })
 
 	dir := writeCase(t, t.TempDir(), "rusty", goodCase+"\nrequires = [\"go\", \"cargo\"]\n")
-	c, err := LoadCase(dir)
+	c, err := loadCase(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestACaseWhoseRequirementsAreMetIsNotSkipped(t *testing.T) {
 	t.Cleanup(func() { lookPath = old })
 
 	dir := writeCase(t, t.TempDir(), "fine", goodCase+"\nrequires = [\"go\"]\n")
-	c, err := LoadCase(dir)
+	c, err := loadCase(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +213,7 @@ conversation = ["user: fix the test"]
 
 func TestLoadCaseReadsATableInsteadOfAWorkspace(t *testing.T) {
 	dir := writeTableCase(t, t.TempDir(), "decisions", string(KindClassifier), decisionTable)
-	c, err := LoadCase(dir)
+	c, err := loadCase(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +235,7 @@ func TestLoadCaseReadsATableInsteadOfAWorkspace(t *testing.T) {
 // quoting something it read, and an injection row is written as the latter.
 func TestATableRowsConversationKeepsWhoSaidWhat(t *testing.T) {
 	dir := writeTableCase(t, t.TempDir(), "decisions", string(KindClassifier), decisionTable)
-	c, err := LoadCase(dir)
+	c, err := loadCase(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func TestATableRowsConversationKeepsWhoSaidWhat(t *testing.T) {
 func TestLoadCaseRefusesALabelTheCallCannotGive(t *testing.T) {
 	table := "[[row]]\nname = \"odd\"\nexpect = [\"maybe\"]\ntool = \"read_file\"\n"
 	dir := writeTableCase(t, t.TempDir(), "decisions", string(KindClassifier), table)
-	_, err := LoadCase(dir)
+	_, err := loadCase(dir)
 	if err == nil {
 		t.Fatal("a label the classifier never answers must be refused")
 	}
@@ -268,7 +268,7 @@ func TestLoadCaseRefusesALabelTheCallCannotGive(t *testing.T) {
 func TestLoadCaseRefusesARowThatAcceptsEveryAnswer(t *testing.T) {
 	table := "[[row]]\nname = \"hollow\"\nexpect = [\"allow\", \"deny\"]\ntool = \"read_file\"\n"
 	dir := writeTableCase(t, t.TempDir(), "decisions", string(KindClassifier), table)
-	if _, err := LoadCase(dir); err == nil {
+	if _, err := loadCase(dir); err == nil {
 		t.Fatal("a row nothing can fail measures nothing and must be refused")
 	}
 }
@@ -276,7 +276,7 @@ func TestLoadCaseRefusesARowThatAcceptsEveryAnswer(t *testing.T) {
 func TestLoadCaseRefusesARowWithNoLabel(t *testing.T) {
 	table := "[[row]]\nname = \"unlabelled\"\ntool = \"read_file\"\n"
 	dir := writeTableCase(t, t.TempDir(), "decisions", string(KindClassifier), table)
-	if _, err := LoadCase(dir); err == nil {
+	if _, err := loadCase(dir); err == nil {
 		t.Fatal("a row with nothing to compare against must be refused")
 	}
 }
@@ -290,7 +290,7 @@ func TestLoadCaseRefusesATableCaseWithNoTable(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, CaseFile), []byte("kind = \"summary\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := LoadCase(dir); err == nil {
+	if _, err := loadCase(dir); err == nil {
 		t.Fatal("a table case is its table")
 	}
 }
@@ -304,7 +304,7 @@ func TestLoadCaseRefusesAKindItDoesNotKnow(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, CaseFile), []byte("kind = \"titler\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err := LoadCase(dir)
+	_, err := loadCase(dir)
 	if err == nil {
 		t.Fatal("an unknown kind must be refused rather than treated as a workspace")
 	}
@@ -317,7 +317,7 @@ func TestLoadCaseRefusesAKindItDoesNotKnow(t *testing.T) {
 // case, and must keep meaning that without saying so.
 func TestACaseWithNoKindIsAWorkspaceCase(t *testing.T) {
 	dir := writeCase(t, t.TempDir(), "old", goodCase)
-	c, err := LoadCase(dir)
+	c, err := loadCase(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -421,7 +421,7 @@ func writeResearchCase(t *testing.T, name, body string, withSite bool) string {
 		t.Fatal(err)
 	}
 	if withSite {
-		if err := os.MkdirAll(filepath.Join(dir, SiteDir), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(dir, siteDir), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -439,14 +439,14 @@ facts = ["(?i)oldest first"]
 
 func TestLoadCaseReadsAResearchCase(t *testing.T) {
 	dir := writeResearchCase(t, "research-order", goodResearchCase, true)
-	c, err := LoadCase(dir)
+	c, err := loadCase(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if c.Kind != KindResearch || c.Kind.RunsBinary() {
 		t.Errorf("kind = %q, and it runs no binary", c.Kind)
 	}
-	if c.Site != filepath.Join(dir, SiteDir) {
+	if c.Site != filepath.Join(dir, siteDir) {
 		t.Errorf("site = %q", c.Site)
 	}
 	if len(c.Facts) != 1 || !c.Facts[0].MatchString("rows come back OLDEST FIRST") {
@@ -462,18 +462,18 @@ func TestLoadCaseReadsAResearchCase(t *testing.T) {
 // other than what it says.
 func TestLoadCaseRefusesAResearchCaseWithNoSite(t *testing.T) {
 	dir := writeResearchCase(t, "no-site", goodResearchCase, false)
-	_, err := LoadCase(dir)
+	_, err := loadCase(dir)
 	if err == nil {
 		t.Fatal("a research case without a site has nothing to answer from")
 	}
-	if !strings.Contains(err.Error(), SiteDir) {
+	if !strings.Contains(err.Error(), siteDir) {
 		t.Errorf("the error should name the missing directory: %v", err)
 	}
 }
 
 func TestLoadCaseRefusesAResearchCaseWithNothingToDecideIt(t *testing.T) {
 	dir := writeResearchCase(t, "no-facts", "kind = \"research\"\nprompt = \"what is it?\"\n", true)
-	_, err := LoadCase(dir)
+	_, err := loadCase(dir)
 	if err == nil {
 		t.Fatal("a research case with no facts has no verdict and must be refused")
 	}
@@ -487,7 +487,7 @@ func TestLoadCaseRefusesAResearchCaseWithNothingToDecideIt(t *testing.T) {
 func TestLoadCaseRefusesAFactThatIsNotAnExpression(t *testing.T) {
 	dir := writeResearchCase(t, "bad-fact",
 		"kind = \"research\"\nprompt = \"what is it?\"\nfacts = [\"oldest (first\"]\n", true)
-	_, err := LoadCase(dir)
+	_, err := loadCase(dir)
 	if err == nil {
 		t.Fatal("a fact that cannot compile must be refused where it is written")
 	}

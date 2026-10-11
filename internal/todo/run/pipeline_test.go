@@ -160,7 +160,7 @@ func TestPipeline_StripIsTheStepsWithAPlaceOfTheirOwn(t *testing.T) {
 func TestPipeline_RefusesPerStepAndNotPerSession(t *testing.T) {
 	code := BuiltinCode()
 	ref, refused := code.Refuse(Can{Changeset: false, Supervisor: true, Runner: true, Repo: true})
-	if !refused || ref.Need != NeedChangeset || !strings.Contains(ref.Why, "does not track changes") {
+	if !refused || ref.Need != needChangeset || !strings.Contains(ref.Why, "does not track changes") {
 		t.Fatalf("a writing run in a session with no changeset = %+v %v", ref, refused)
 	}
 	if ref.Step != "implement" {

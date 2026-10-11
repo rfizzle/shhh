@@ -38,11 +38,11 @@ func TestApply_CutAtStripsToolCallIDs(t *testing.T) {
 		]
 	}`)
 	rules := []Rule{
-		{When: Match{Model: "gemini-*"}, Op: OpCutAt, Path: "messages[].tool_calls[].id", Value: "__thought__", Direction: DirectionRequest},
-		{When: Match{Model: "gemini-*"}, Op: OpCutAt, Path: "messages[].tool_call_id", Value: "__thought__", Direction: DirectionRequest},
+		{When: Match{Model: "gemini-*"}, Op: opCutAt, Path: "messages[].tool_calls[].id", Value: "__thought__", Direction: directionRequest},
+		{When: Match{Model: "gemini-*"}, Op: opCutAt, Path: "messages[].tool_call_id", Value: "__thought__", Direction: directionRequest},
 	}
 
-	if edits := Apply(rules, DirectionRequest, "gemini-3.1-pro", body); edits != 2 {
+	if edits := Apply(rules, directionRequest, "gemini-3.1-pro", body); edits != 2 {
 		t.Fatalf("expected 2 edits, got %d", edits)
 	}
 	got := encode(t, body)
@@ -53,10 +53,10 @@ func TestApply_CutAtStripsToolCallIDs(t *testing.T) {
 }
 
 func TestApply_ModelGlobNarrowsTheRule(t *testing.T) {
-	rules := []Rule{{When: Match{Model: "claude-*"}, Op: OpDelete, Path: "top_p", Direction: DirectionRequest}}
+	rules := []Rule{{When: Match{Model: "claude-*"}, Op: opDelete, Path: "top_p", Direction: directionRequest}}
 
 	claude := decode(t, `{"model":"claude-opus-5","top_p":0.9}`)
-	if edits := Apply(rules, DirectionRequest, "claude-opus-5", claude); edits != 1 {
+	if edits := Apply(rules, directionRequest, "claude-opus-5", claude); edits != 1 {
 		t.Fatalf("the rule should match claude, got %d edits", edits)
 	}
 	if _, present := claude["top_p"]; present {
@@ -64,7 +64,7 @@ func TestApply_ModelGlobNarrowsTheRule(t *testing.T) {
 	}
 
 	gpt := decode(t, `{"model":"gpt-4o","top_p":0.9}`)
-	if edits := Apply(rules, DirectionRequest, "gpt-4o", gpt); edits != 0 {
+	if edits := Apply(rules, directionRequest, "gpt-4o", gpt); edits != 0 {
 		t.Fatalf("the rule should not match gpt-4o, got %d edits", edits)
 	}
 	if _, present := gpt["top_p"]; !present {
@@ -73,12 +73,12 @@ func TestApply_ModelGlobNarrowsTheRule(t *testing.T) {
 }
 
 func TestApply_DirectionSeparatesRules(t *testing.T) {
-	rules := []Rule{{Op: OpSet, Path: "stream", Value: false, Direction: DirectionResponse}}
+	rules := []Rule{{Op: opSet, Path: "stream", Value: false, Direction: directionResponse}}
 	body := decode(t, `{"stream":true}`)
-	if edits := Apply(rules, DirectionRequest, "any", body); edits != 0 {
+	if edits := Apply(rules, directionRequest, "any", body); edits != 0 {
 		t.Fatalf("a response rule must not run on a request, got %d edits", edits)
 	}
-	if edits := Apply(rules, DirectionResponse, "any", body); edits != 1 {
+	if edits := Apply(rules, directionResponse, "any", body); edits != 1 {
 		t.Fatalf("expected the response rule to run, got %d edits", edits)
 	}
 }
@@ -92,79 +92,79 @@ func TestApply_Operations(t *testing.T) {
 	}{
 		{
 			name: "set replaces an existing value",
-			rule: Rule{Op: OpSet, Path: "max_tokens", Value: int64(4096)},
+			rule: Rule{Op: opSet, Path: "max_tokens", Value: int64(4096)},
 			body: `{"max_tokens":100}`,
 			want: `{"max_tokens":4096}`,
 		},
 		{
 			name: "set creates a missing field",
-			rule: Rule{Op: OpSet, Path: "max_tokens", Value: int64(4096)},
+			rule: Rule{Op: opSet, Path: "max_tokens", Value: int64(4096)},
 			body: `{}`,
 			want: `{"max_tokens":4096}`,
 		},
 		{
 			name: "set-default leaves an existing value",
-			rule: Rule{Op: OpSetDefault, Path: "max_tokens", Value: int64(4096)},
+			rule: Rule{Op: opSetDefault, Path: "max_tokens", Value: int64(4096)},
 			body: `{"max_tokens":100}`,
 			want: `{"max_tokens":100}`,
 		},
 		{
 			name: "set-default fills a null",
-			rule: Rule{Op: OpSetDefault, Path: "max_tokens", Value: int64(4096)},
+			rule: Rule{Op: opSetDefault, Path: "max_tokens", Value: int64(4096)},
 			body: `{"max_tokens":null}`,
 			want: `{"max_tokens":4096}`,
 		},
 		{
 			name: "nested set reaches into an object",
-			rule: Rule{Op: OpSet, Path: "chat_template_kwargs.enable_thinking", Value: false},
+			rule: Rule{Op: opSet, Path: "chat_template_kwargs.enable_thinking", Value: false},
 			body: `{"chat_template_kwargs":{"enable_thinking":true}}`,
 			want: `{"chat_template_kwargs":{"enable_thinking":false}}`,
 		},
 		{
 			name: "rename moves a field within its object",
-			rule: Rule{Op: OpRename, Path: "max_tokens", To: "max_completion_tokens"},
+			rule: Rule{Op: opRename, Path: "max_tokens", To: "max_completion_tokens"},
 			body: `{"max_tokens":100}`,
 			want: `{"max_completion_tokens":100}`,
 		},
 		{
 			name: "trim-prefix strips a routing prefix",
-			rule: Rule{Op: OpTrimPrefix, Path: "model", Value: "vertex_ai/"},
+			rule: Rule{Op: opTrimPrefix, Path: "model", Value: "vertex_ai/"},
 			body: `{"model":"vertex_ai/gemini-3.1-pro"}`,
 			want: `{"model":"gemini-3.1-pro"}`,
 		},
 		{
 			name: "trim-suffix strips an exact suffix",
-			rule: Rule{Op: OpTrimSuffix, Path: "model", Value: "-maas"},
+			rule: Rule{Op: opTrimSuffix, Path: "model", Value: "-maas"},
 			body: `{"model":"deepseek-r1-0528-maas"}`,
 			want: `{"model":"deepseek-r1-0528"}`,
 		},
 		{
 			name: "replace rewrites every occurrence",
-			rule: Rule{Op: OpReplace, Path: "model", Value: ".", To: "-"},
+			rule: Rule{Op: opReplace, Path: "model", Value: ".", To: "-"},
 			body: `{"model":"gpt-5.6.sol"}`,
 			want: `{"model":"gpt-5-6-sol"}`,
 		},
 		{
 			name: "delete on a missing field is a no-op",
-			rule: Rule{Op: OpDelete, Path: "top_p"},
+			rule: Rule{Op: opDelete, Path: "top_p"},
 			body: `{"model":"m"}`,
 			want: `{"model":"m"}`,
 		},
 		{
 			name: "a path through a missing branch is a no-op",
-			rule: Rule{Op: OpDelete, Path: "messages[].tool_calls[].id"},
+			rule: Rule{Op: opDelete, Path: "messages[].tool_calls[].id"},
 			body: `{"messages":[{"role":"user"}]}`,
 			want: `{"messages":[{"role":"user"}]}`,
 		},
 		{
 			name: "string surgery ignores a non-string value",
-			rule: Rule{Op: OpCutAt, Path: "max_tokens", Value: "x"},
+			rule: Rule{Op: opCutAt, Path: "max_tokens", Value: "x"},
 			body: `{"max_tokens":100}`,
 			want: `{"max_tokens":100}`,
 		},
 		{
 			name: "cut-at without the marker leaves the value",
-			rule: Rule{Op: OpCutAt, Path: "model", Value: "__thought__"},
+			rule: Rule{Op: opCutAt, Path: "model", Value: "__thought__"},
 			body: `{"model":"gemini-3.1-pro"}`,
 			want: `{"model":"gemini-3.1-pro"}`,
 		},
@@ -177,7 +177,7 @@ func TestApply_Operations(t *testing.T) {
 				t.Fatalf("rule should be valid: %v", err)
 			}
 			body := decode(t, tc.body)
-			Apply([]Rule{rule}, DirectionRequest, "any-model", body)
+			Apply([]Rule{rule}, directionRequest, "any-model", body)
 			if got := encode(t, body); got != tc.want {
 				t.Fatalf("got %s, want %s", got, tc.want)
 			}
@@ -187,8 +187,8 @@ func TestApply_Operations(t *testing.T) {
 
 func TestApply_RulesRunInOrder(t *testing.T) {
 	rules := []Rule{
-		{Op: OpRename, Path: "max_tokens", To: "max_completion_tokens"},
-		{Op: OpSet, Path: "max_completion_tokens", Value: int64(1)},
+		{Op: opRename, Path: "max_tokens", To: "max_completion_tokens"},
+		{Op: opSet, Path: "max_completion_tokens", Value: int64(1)},
 	}
 	for i := range rules {
 		if err := rules[i].validate(); err != nil {
@@ -196,7 +196,7 @@ func TestApply_RulesRunInOrder(t *testing.T) {
 		}
 	}
 	body := decode(t, `{"max_tokens":100}`)
-	Apply(rules, DirectionRequest, "m", body)
+	Apply(rules, directionRequest, "m", body)
 	if got := encode(t, body); got != `{"max_completion_tokens":1}` {
 		t.Fatalf("the second rule should see the first rule's edit, got %s", got)
 	}
@@ -206,12 +206,12 @@ func TestRuleValidate_RejectsUnusableRules(t *testing.T) {
 	tests := map[string]Rule{
 		"unknown op":        {Op: "explode", Path: "x"},
 		"missing op":        {Path: "x"},
-		"missing path":      {Op: OpDelete},
-		"set without value": {Op: OpSet, Path: "x"},
-		"rename without to": {Op: OpRename, Path: "x"},
-		"cut-at non-string": {Op: OpCutAt, Path: "x", Value: 3},
-		"bad direction":     {Op: OpDelete, Path: "x", Direction: "sideways"},
-		"bad model glob":    {Op: OpDelete, Path: "x", When: Match{Model: "[bad"}},
+		"missing path":      {Op: opDelete},
+		"set without value": {Op: opSet, Path: "x"},
+		"rename without to": {Op: opRename, Path: "x"},
+		"cut-at non-string": {Op: opCutAt, Path: "x", Value: 3},
+		"bad direction":     {Op: opDelete, Path: "x", Direction: "sideways"},
+		"bad model glob":    {Op: opDelete, Path: "x", When: Match{Model: "[bad"}},
 	}
 	for name, rule := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -224,11 +224,11 @@ func TestRuleValidate_RejectsUnusableRules(t *testing.T) {
 }
 
 func TestRuleValidate_DefaultsToRequestDirection(t *testing.T) {
-	r := Rule{Op: OpDelete, Path: "top_p"}
+	r := Rule{Op: opDelete, Path: "top_p"}
 	if err := r.validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if r.Direction != DirectionRequest {
+	if r.Direction != directionRequest {
 		t.Fatalf("expected the request direction by default, got %q", r.Direction)
 	}
 }
@@ -249,12 +249,12 @@ func TestParsePath(t *testing.T) {
 func TestApply_SetBuildsMissingObjects(t *testing.T) {
 	// A reasoning model's effort setting has nowhere to live in a vanilla
 	// request, so `set` builds the path it needs.
-	rule := Rule{Op: OpSet, Path: "reasoning.effort", Value: "high"}
+	rule := Rule{Op: opSet, Path: "reasoning.effort", Value: "high"}
 	if err := rule.validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	body := decode(t, `{"model":"gpt-5.6-terra"}`)
-	if edits := Apply([]Rule{rule}, DirectionRequest, "gpt-5.6-terra", body); edits != 1 {
+	if edits := Apply([]Rule{rule}, directionRequest, "gpt-5.6-terra", body); edits != 1 {
 		t.Fatalf("expected one edit, got %d", edits)
 	}
 	if got := encode(t, body); got != `{"model":"gpt-5.6-terra","reasoning":{"effort":"high"}}` {
@@ -263,12 +263,12 @@ func TestApply_SetBuildsMissingObjects(t *testing.T) {
 }
 
 func TestApply_SetDoesNotClobberAWrongTypedValue(t *testing.T) {
-	rule := Rule{Op: OpSet, Path: "reasoning.effort", Value: "high"}
+	rule := Rule{Op: opSet, Path: "reasoning.effort", Value: "high"}
 	if err := rule.validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	body := decode(t, `{"reasoning":"none"}`)
-	if edits := Apply([]Rule{rule}, DirectionRequest, "m", body); edits != 0 {
+	if edits := Apply([]Rule{rule}, directionRequest, "m", body); edits != 0 {
 		t.Fatalf("a scalar in the way should stop the rule, got %d edits", edits)
 	}
 	if got := encode(t, body); got != `{"reasoning":"none"}` {
@@ -278,15 +278,15 @@ func TestApply_SetDoesNotClobberAWrongTypedValue(t *testing.T) {
 
 func TestApply_EditingOpsNeverCreate(t *testing.T) {
 	for _, rule := range []Rule{
-		{Op: OpDelete, Path: "reasoning.effort"},
-		{Op: OpCutAt, Path: "reasoning.effort", Value: "x"},
-		{Op: OpRename, Path: "reasoning.effort", To: "level"},
+		{Op: opDelete, Path: "reasoning.effort"},
+		{Op: opCutAt, Path: "reasoning.effort", Value: "x"},
+		{Op: opRename, Path: "reasoning.effort", To: "level"},
 	} {
 		if err := rule.validate(); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		body := decode(t, `{"model":"m"}`)
-		if edits := Apply([]Rule{rule}, DirectionRequest, "m", body); edits != 0 {
+		if edits := Apply([]Rule{rule}, directionRequest, "m", body); edits != 0 {
 			t.Fatalf("%s should not create anything, got %d edits", rule.Op, edits)
 		}
 		if got := encode(t, body); got != `{"model":"m"}` {
@@ -296,12 +296,12 @@ func TestApply_EditingOpsNeverCreate(t *testing.T) {
 }
 
 func TestApply_SetDefaultBuildsMissingObjects(t *testing.T) {
-	rule := Rule{Op: OpSetDefault, Path: "chat_template_kwargs.enable_thinking", Value: false}
+	rule := Rule{Op: opSetDefault, Path: "chat_template_kwargs.enable_thinking", Value: false}
 	if err := rule.validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	body := decode(t, `{}`)
-	Apply([]Rule{rule}, DirectionRequest, "m", body)
+	Apply([]Rule{rule}, directionRequest, "m", body)
 	if got := encode(t, body); got != `{"chat_template_kwargs":{"enable_thinking":false}}` {
 		t.Fatalf("unexpected body: %s", got)
 	}

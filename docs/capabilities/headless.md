@@ -356,7 +356,7 @@ one stream. Each line would carry a document object holding the document's
 path, the subject it is about, a verdict in the record's own words and, for a
 score, the number. They ride the session's event notification like every
 other kind and are never a second notification. A kind is added by editing
-this list and the set in `internal/observe` together.
+this list and the set in `internal/observe/record` together.
 
 ## Everything the session has, unless somebody has to answer
 

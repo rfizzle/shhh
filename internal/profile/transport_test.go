@@ -18,12 +18,12 @@ import (
 func gatewayProfile(baseURL string) Profile {
 	return Profile{
 		Name:    "test-gateway",
-		API:     APIOpenAIChat,
+		API:     aPIOpenAIChat,
 		BaseURL: baseURL,
 		Headers: map[string]string{"X-Title": "shhh"},
 		Rewrite: []Rule{
-			{When: Match{Model: "gemini-*"}, Direction: DirectionRequest, Op: OpCutAt, Path: "messages[].tool_calls[].id", Value: "__thought__"},
-			{When: Match{Model: "gemini-*"}, Direction: DirectionRequest, Op: OpCutAt, Path: "messages[].tool_call_id", Value: "__thought__"},
+			{When: Match{Model: "gemini-*"}, Direction: directionRequest, Op: opCutAt, Path: "messages[].tool_calls[].id", Value: "__thought__"},
+			{When: Match{Model: "gemini-*"}, Direction: directionRequest, Op: opCutAt, Path: "messages[].tool_call_id", Value: "__thought__"},
 		},
 	}
 }
@@ -99,7 +99,7 @@ func TestTransport_IgnoresNonJSONBodies(t *testing.T) {
 	defer srv.Close()
 
 	p := gatewayProfile(srv.URL)
-	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionRequest, Op: OpDelete, Path: "anything"})
+	p.Rewrite = append(p.Rewrite, Rule{Direction: directionRequest, Op: opDelete, Path: "anything"})
 	client := &http.Client{Transport: NewTransport(p.Routes()[0], &profileTestHTTP)}
 	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/upload", strings.NewReader("not json at all"))
 	req.Header.Set("Content-Type", "text/plain")
@@ -128,7 +128,7 @@ func TestTransport_RewritesStreamedEvents(t *testing.T) {
 	p := gatewayProfile(srv.URL)
 	// A gateway that reports a finish reason the client doesn't know: rewrite
 	// it on the way in rather than teaching every caller about the gateway.
-	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionResponse, Op: OpSet, Path: "finish_reason", Value: "stop"})
+	p.Rewrite = append(p.Rewrite, Rule{Direction: directionResponse, Op: opSet, Path: "finish_reason", Value: "stop"})
 
 	client := &http.Client{Transport: NewTransport(p.Routes()[0], &profileTestHTTP)}
 	resp, err := client.Get(srv.URL + "/chat/completions")
@@ -166,7 +166,7 @@ func TestTransport_RewritesAJSONResponse(t *testing.T) {
 	defer srv.Close()
 
 	p := gatewayProfile(srv.URL)
-	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionResponse, Op: OpSetDefault, Path: "usage", Value: map[string]any{"prompt_tokens": 0}})
+	p.Rewrite = append(p.Rewrite, Rule{Direction: directionResponse, Op: opSetDefault, Path: "usage", Value: map[string]any{"prompt_tokens": 0}})
 	client := &http.Client{Transport: NewTransport(p.Routes()[0], &profileTestHTTP)}
 	resp, err := client.Get(srv.URL + "/v1/models")
 	if err != nil {

@@ -14,12 +14,12 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/shhh/internal/ask"
-	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/observe/record"
 )
 
-// Version is the only value the jsonrpc member ever holds, in both
+// version is the only value the jsonrpc member ever holds, in both
 // directions. A message that says anything else is not this protocol.
-const Version = "2.0"
+const version = "2.0"
 
 // The methods a client calls. They are the vocabulary of the surface a script
 // already knows: a session to work in, a turn inside it, and an answer to a
@@ -104,33 +104,33 @@ const (
 // The error codes. The first five are JSON-RPC's own; the rest are this
 // server's, from the range the specification leaves to an implementation.
 const (
-	CodeParse          = -32700
-	CodeInvalidRequest = -32600
-	CodeMethodNotFound = -32601
-	CodeInvalidParams  = -32602
-	CodeInternal       = -32603
+	codeParse          = -32700
+	codeInvalidRequest = -32600
+	codeMethodNotFound = -32601
+	codeInvalidParams  = -32602
+	codeInternal       = -32603
 
-	// CodeUnknownSession: no session answers to that name on this server.
-	CodeUnknownSession = -32001
-	// CodeTurnRunning: the session already has a turn, and a second one
+	// codeUnknownSession: no session answers to that name on this server.
+	codeUnknownSession = -32001
+	// codeTurnRunning: the session already has a turn, and a second one
 	// would be two conversations sharing a message list.
-	CodeTurnRunning = -32002
-	// CodeNoTurn: there is no turn to steer or interrupt.
-	CodeNoTurn = -32003
+	codeTurnRunning = -32002
+	// codeNoTurn: there is no turn to steer or interrupt.
+	codeNoTurn = -32003
 	// CodeUnknownApproval: no approval request is waiting under that id.
 	// It is what an answer to a request nobody was shown gets, which
 	// includes every attempt to approve a call before it is asked for.
 	CodeUnknownApproval = -32004
-	// CodeUnknownQuestion: no question is waiting under that id. Questions
+	// codeUnknownQuestion: no question is waiting under that id. Questions
 	// are named in a series of their own, so an approval's id cannot answer
 	// one and an answer that named the wrong series is told so rather than
 	// resolving the other request.
-	CodeUnknownQuestion = -32005
-	// CodeUnknownAgent: no child of that session answers to that name, or it
+	codeUnknownQuestion = -32005
+	// codeUnknownAgent: no child of that session answers to that name, or it
 	// has already finished and there is nothing left to steer or to end. The
 	// message is the session's own refusal, so a client and shhh's screen are
 	// told the same thing about the same agent.
-	CodeUnknownAgent = -32006
+	codeUnknownAgent = -32006
 )
 
 // The two answers an approval request takes. They are the record's own words
@@ -138,8 +138,8 @@ const (
 // client that has read a decision event on the stream already knows how to
 // spell one back and the two cannot drift apart.
 const (
-	DecisionAllow = observe.DecisionAllow
-	DecisionDeny  = observe.DecisionDeny
+	DecisionAllow = record.DecisionAllow
+	DecisionDeny  = record.DecisionDeny
 )
 
 // request is one call from a client. Params are held raw so a method decodes
@@ -227,16 +227,16 @@ type SteerParams struct {
 	Text    string `json:"text"`
 }
 
-// AgentSteerParams puts a message in front of one of the session's children.
-type AgentSteerParams struct {
+// agentSteerParams puts a message in front of one of the session's children.
+type agentSteerParams struct {
 	Session string `json:"session"`
 	Agent   string `json:"agent"`
 	Text    string `json:"text"`
 }
 
-// AgentParams names one of the session's children, and is what a call that
+// agentParams names one of the session's children, and is what a call that
 // only needs to say which one takes.
-type AgentParams struct {
+type agentParams struct {
 	Session string `json:"session"`
 	Agent   string `json:"agent"`
 }
@@ -318,14 +318,14 @@ type QuestionParams struct {
 	ID       string           `json:"id"`
 	Question string           `json:"question"`
 	Shape    ask.Shape        `json:"shape"`
-	Options  []QuestionOption `json:"options,omitempty"`
+	Options  []questionOption `json:"options,omitempty"`
 	// Note says whether the reader may leave one beside their pick or has to.
 	Note  ask.Note `json:"note"`
 	Turn  int64    `json:"turn"`
 	Round int64    `json:"round"`
 }
 
-// QuestionOption is one answer the model offered, as the card would draw the
+// questionOption is one answer the model offered, as the card would draw the
 // row: the label that comes back, its continuation, its comparable field,
 // whether it leads the list, and why it cannot be taken where it cannot.
 //
@@ -333,7 +333,7 @@ type QuestionParams struct {
 // disappeared would be an answer the reader was never told about, and one
 // that only dimmed would be a refusal stated in a colour
 // (docs/interface/principles.md#colour-never-carries-meaning-alone).
-type QuestionOption struct {
+type questionOption struct {
 	Label       string `json:"label"`
 	Detail      string `json:"detail,omitempty"`
 	Field       string `json:"field,omitempty"`

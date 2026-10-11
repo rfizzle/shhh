@@ -386,7 +386,7 @@ func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State
 		Slug: it.Slug, Session: session, Started: now, Updated: now,
 		Stage: StageResearch, Turn: turn, PrevMode: prevMode,
 		GradeBefore: it.Grade(), Grade: it.Grade(), Profile: it.Profile,
-		Tests: TestCommands(it.Body),
+		Tests: testCommands(it.Body),
 		// A run makes no commit where the person asked for none and where
 		// the pipeline has none to make; both end the same way and the
 		// report says the same thing about where the work is.
@@ -451,8 +451,8 @@ func (s *State) Shape() Pipeline {
 	return s.Pipeline
 }
 
-// Hold is a run that has an item in flight, as its checkpoint states it.
-type Hold struct {
+// hold is a run that has an item in flight, as its checkpoint states it.
+type hold struct {
 	// Session is the run's session, which is what a refusal names: the
 	// person is being told where the other half of the work is, and the
 	// session is the only handle they have on it.
@@ -473,14 +473,14 @@ type Hold struct {
 // Both checkpoints are read. A sprint records the item it has taken before
 // that item's own checkpoint exists, and the gap between the two writes is
 // exactly where a second terminal would find the item unheld.
-func HeldBy(root, slug string) (Hold, bool) {
+func HeldBy(root, slug string) (hold, bool) {
 	if st, err := Load(root, slug); err == nil && !st.Over() {
-		return Hold{Session: st.Session, Stage: st.Stage}, true
+		return hold{Session: st.Session, Stage: st.Stage}, true
 	}
 	if sp, live := Live(root); live && sp.Current == slug {
-		return Hold{Session: sp.Session, Sprint: true}, true
+		return hold{Session: sp.Session, Sprint: true}, true
 	}
-	return Hold{}, false
+	return hold{}, false
 }
 
 // Continue re-enters the step a checkpoint was saved at, for a run picked up
@@ -1318,8 +1318,8 @@ func (s *State) Summary() string {
 	return b.String()
 }
 
-// TestCommands reads an item's Tests section: one command per bullet.
-func TestCommands(body string) []string {
+// testCommands reads an item's Tests section: one command per bullet.
+func testCommands(body string) []string {
 	var out []string
 	in := false
 	for _, line := range strings.Split(body, "\n") {

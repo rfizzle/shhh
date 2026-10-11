@@ -9,41 +9,6 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
-// Purpose words for a command the model ran: what the shell line did, in one
-// word, so the record can say how many commands were reads without holding a
-// single one of them. The command text is content and the record is
-// content-free by construction; the word is a code from this set and nothing
-// else, which is what keeps a tool event exportable with it on
-// (docs/capabilities/sessions-and-memory.md#a-command-is-recorded-by-what-it-was-for).
-//
-// The set is the question the record is asked, not a taxonomy of programs:
-// the built-in tools answer read, search, list, write and edit without a
-// card or a classifier round, so a command that did one of those is a
-// command a tool could have taken, and build, vcs and other are the ones no
-// built-in tool answers.
-const (
-	// PurposeRead: printed a file or a part of one, or a fact about it —
-	// cat, head, tail, wc, sed without -i, jq.
-	PurposeRead = "read"
-	// PurposeSearch: looked for text inside files — grep, rg.
-	PurposeSearch = "search"
-	// PurposeList: named files rather than reading them — ls, find, tree.
-	PurposeList = "list"
-	// PurposeWrite: created, replaced, appended to, moved or removed a file —
-	// a redirection to one, tee, cp, mv, rm, mkdir.
-	PurposeWrite = "write"
-	// PurposeEdit: changed a file where it stood — sed -i, perl -i, patch.
-	PurposeEdit = "edit"
-	// PurposeBuild: ran the project's toolchain — a build, a test run, a
-	// formatter, a package manager.
-	PurposeBuild = "build"
-	// PurposeVCS: asked version control — git, gh.
-	PurposeVCS = "vcs"
-	// PurposeOther: anything this reading does not recognise, a script run by
-	// its path, and a line that could not be read at all.
-	PurposeOther = "other"
-)
-
 // purposeRank orders the words by how much the act they name did, strongest
 // first. A line that ran several commands is filed under the strongest of
 // them: `cat >> notes.md <<EOF` read nothing anyone asked for and appended to

@@ -54,7 +54,7 @@ func Plan(dirs []string) Consolidation {
 	if len(dirs) > 0 {
 		c.Target = dirs[0] + ".toml"
 	}
-	paths, errs := Sources(dirs)
+	paths, errs := sources(dirs)
 	c.Errors = errs
 
 	owner := map[string]string{}

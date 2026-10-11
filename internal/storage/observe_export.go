@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/observe/record"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -53,7 +53,7 @@ type AgentSessionSummary struct {
 	// Child is how a sub-agent's attempt ended, and nil on every row that
 	// is not one. A child that is still running has none either: the row is
 	// closed with it.
-	Child *observe.ChildEnd
+	Child *record.ChildEnd
 }
 
 const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, turns, tokens_in, tokens_out, est_cost,
@@ -119,11 +119,11 @@ func scanAgentSession(rows rowScanner) (AgentSessionSummary, error) {
 		}
 	}
 	if endReason.Valid && endReason.String != "" {
-		s.Child = &observe.ChildEnd{
+		s.Child = &record.ChildEnd{
 			Reason: endReason.String, Verdict: verdict.String,
 			Steers: int(steers.Int64), Attempt: int(attempt.Int64),
 			Budget: budget.Int64, AdmissionFloor: admissionFloor.Int64,
-			Tokens: observe.ChildTokens{Inherited: inherited.Int64, Setup: setup.Int64,
+			Tokens: record.ChildTokens{Inherited: inherited.Int64, Setup: setup.Int64,
 				Tools: tools.Int64, Analysis: analysis.Int64, Handoff: handoff.Int64,
 				Fresh: fresh.Int64},
 		}

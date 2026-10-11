@@ -60,7 +60,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// The model is read from the outgoing body and reused to match response
 	// rules, whose bodies may not name it.
 	model := ""
-	if t.hasRules(DirectionRequest) || t.hasRules(DirectionResponse) {
+	if t.hasRules(directionRequest) || t.hasRules(directionResponse) {
 		var err error
 		model, err = t.rewriteRequest(req)
 		if err != nil {
@@ -69,7 +69,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	resp, err := t.Base.RoundTrip(req)
-	if err != nil || resp == nil || !t.hasRules(DirectionResponse) {
+	if err != nil || resp == nil || !t.hasRules(directionResponse) {
 		return resp, err
 	}
 	return t.rewriteResponse(resp, model)
@@ -93,7 +93,7 @@ func (t *Transport) rewriteRequest(req *http.Request) (string, error) {
 		return "", nil
 	}
 	model, _ := body["model"].(string)
-	if Apply(t.Rules, DirectionRequest, model, body) == 0 {
+	if Apply(t.Rules, directionRequest, model, body) == 0 {
 		restoreBody(req, raw)
 		return model, nil
 	}
@@ -147,7 +147,7 @@ func (t *Transport) rewriteJSON(raw []byte, model string) []byte {
 	if model == "" {
 		model, _ = body["model"].(string)
 	}
-	if Apply(t.Rules, DirectionResponse, model, body) == 0 {
+	if Apply(t.Rules, directionResponse, model, body) == 0 {
 		return raw
 	}
 	edited, err := json.Marshal(body)

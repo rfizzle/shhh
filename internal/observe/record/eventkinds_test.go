@@ -1,4 +1,4 @@
-package observe
+package record
 
 import (
 	"os"
@@ -11,7 +11,7 @@ import (
 // is added by editing the list and the doc together.
 // See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
 func TestEventKinds_AreTheDocumentedSet(t *testing.T) {
-	raw, err := os.ReadFile("../../docs/capabilities/headless.md")
+	raw, err := os.ReadFile("../../../docs/capabilities/headless.md")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestEventKinds_AreTheDocumentedSet(t *testing.T) {
 	}
 	for k := range documented {
 		if !coded[k] {
-			t.Errorf("documented event kind %q is not in observe.EventKinds", k)
+			t.Errorf("documented event kind %q is not in record.EventKinds", k)
 		}
 	}
 }

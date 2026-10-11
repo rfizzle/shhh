@@ -475,22 +475,22 @@ type Can struct {
 	Checks bool
 }
 
-// Need is what a step wanted from the session and did not get.
-type Need string
+// need is what a step wanted from the session and did not get.
+type need string
 
 const (
-	// NeedChangeset is a step that changes the tree in a session with no
+	// needChangeset is a step that changes the tree in a session with no
 	// record of what it changed.
-	NeedChangeset Need = "changeset"
-	// NeedSupervisor is a division into lanes with nowhere to put a writer.
-	NeedSupervisor Need = "supervisor"
-	// NeedRunner is a command step where no command can be run.
-	NeedRunner Need = "runner"
+	needChangeset need = "changeset"
+	// needSupervisor is a division into lanes with nowhere to put a writer.
+	needSupervisor need = "supervisor"
+	// needRunner is a command step where no command can be run.
+	needRunner need = "runner"
 	// NeedRepo is a commit finish outside a repository.
-	NeedRepo Need = "repository"
+	NeedRepo need = "repository"
 	// NeedChecks is a command step that runs whatever the project says
 	// checking means, in a project that has not said.
-	NeedChecks Need = "checks"
+	NeedChecks need = "checks"
 )
 
 // Refusal is a step the session cannot take: which step, what it wanted, and
@@ -499,7 +499,7 @@ const (
 // only the surface knows what to offer.
 type Refusal struct {
 	Step string
-	Need Need
+	Need need
 	Why  string
 }
 
@@ -525,13 +525,13 @@ func (p Pipeline) Refuse(can Can) (Refusal, bool) {
 		writes := (ps.Kind == KindTurn && ps.Access == Write) || ps.Kind == KindFanOut
 		switch {
 		case writes && !can.Changeset:
-			return Refusal{ps.Name, NeedChangeset,
+			return Refusal{ps.Name, needChangeset,
 				fmt.Sprintf("the %s step changes the tree and this session does not track changes, so a run could not know what it did", ps.Name)}, true
 		case ps.Kind == KindFanOut && !can.Supervisor:
-			return Refusal{ps.Name, NeedSupervisor,
+			return Refusal{ps.Name, needSupervisor,
 				fmt.Sprintf("the %s step builds in lanes and this session has no agent supervisor to spawn writers from", ps.Name)}, true
 		case ps.Kind == KindCommand && !can.Runner:
-			return Refusal{ps.Name, NeedRunner,
+			return Refusal{ps.Name, needRunner,
 				fmt.Sprintf("the %s step runs the project's checks and this session cannot run a command", ps.Name)}, true
 		// A command step with no command of its own runs whatever the project
 		// says checking means, and it is the run's one executable definition

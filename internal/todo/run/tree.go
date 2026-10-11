@@ -146,12 +146,12 @@ func DirtyPaths(root string) []string {
 	if code != 0 {
 		return nil
 	}
-	return PorcelainPaths(out)
+	return porcelainPaths(out)
 }
 
-// PorcelainPaths reads `git status --porcelain` into the paths it names,
+// porcelainPaths reads `git status --porcelain` into the paths it names,
 // sorted, with what no run may stage left out.
-func PorcelainPaths(status string) []string {
+func porcelainPaths(status string) []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, line := range strings.Split(status, "\n") {

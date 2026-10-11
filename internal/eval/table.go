@@ -342,7 +342,7 @@ func (s Score) Misses() []Answer {
 // score is only worth writing down if two people who run the suite can
 // compare theirs, and a run that quietly took one reader's overridden prompt
 // or ceiling would produce a number nobody else could reproduce.
-func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row, run CommandRunner, backend string, threshold int) Answer {
+func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row, run commandRunner, backend string, threshold int) Answer {
 	switch {
 	case kind == KindClassifier:
 		return askClassifier(ctx, p, model, row, backend, threshold)

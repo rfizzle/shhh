@@ -250,10 +250,10 @@ func (s *Session) driver() (Loop, *Error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.ended {
-		return nil, errorf(CodeUnknownSession, "session %s has ended", s.id)
+		return nil, errorf(codeUnknownSession, "session %s has ended", s.id)
 	}
 	if s.loop == nil {
-		return nil, errorf(CodeUnknownSession, "session %s is still opening", s.id)
+		return nil, errorf(codeUnknownSession, "session %s is still opening", s.id)
 	}
 	return s.loop, nil
 }
@@ -396,7 +396,7 @@ func (s *Server) newSession() (*Session, *Error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
-		return nil, errorf(CodeInternal, "this server is shutting down")
+		return nil, errorf(codeInternal, "this server is shutting down")
 	}
 	s.next++
 	sess := &Session{
@@ -418,7 +418,7 @@ func (s *Server) session(id string) (*Session, *Error) {
 	defer s.mu.Unlock()
 	sess, ok := s.sessions[id]
 	if !ok {
-		return nil, errorf(CodeUnknownSession, "no session %q on this server", id)
+		return nil, errorf(codeUnknownSession, "no session %q on this server", id)
 	}
 	return sess, nil
 }
@@ -596,7 +596,7 @@ func (s *Session) answer(id, agent, decision string) *Error {
 	switch decision {
 	case DecisionAllow, DecisionDeny:
 	default:
-		return errorf(CodeInvalidParams, "decision %q: one of %s or %s", decision, DecisionAllow, DecisionDeny)
+		return errorf(codeInvalidParams, "decision %q: one of %s or %s", decision, DecisionAllow, DecisionDeny)
 	}
 	s.mu.Lock()
 	w, ok := s.pending[id]
@@ -606,7 +606,7 @@ func (s *Session) answer(id, agent, decision string) *Error {
 	// the right one.
 	if ok && agent != "" && agent != w.agent {
 		s.mu.Unlock()
-		return errorf(CodeInvalidParams,
+		return errorf(codeInvalidParams,
 			"approval request %q on session %s was raised by %s, not by %q",
 			id, s.id, requestRaiser(w.agent), agent)
 	}
@@ -671,13 +671,13 @@ func (s *Session) askQuestion(q Question) ask.Answer {
 }
 
 // questionOptions is the model's own list as the wire carries it.
-func questionOptions(opts []ask.Option) []QuestionOption {
+func questionOptions(opts []ask.Option) []questionOption {
 	if len(opts) == 0 {
 		return nil
 	}
-	rows := make([]QuestionOption, 0, len(opts))
+	rows := make([]questionOption, 0, len(opts))
 	for _, o := range opts {
-		rows = append(rows, QuestionOption{
+		rows = append(rows, questionOption{
 			Label:       o.Label,
 			Detail:      o.Detail,
 			Field:       o.Field,
@@ -701,12 +701,12 @@ func (s *Session) answerQuestion(id string, a ask.Answer) *Error {
 	q, ok := s.questions[id]
 	if !ok {
 		s.mu.Unlock()
-		return errorf(CodeUnknownQuestion,
+		return errorf(codeUnknownQuestion,
 			"no question %q is waiting on session %s: a client answers a question it was shown", id, s.id)
 	}
 	if err := a.Validate(q.q); err != nil {
 		s.mu.Unlock()
-		return errorf(CodeInvalidParams, "%v", err)
+		return errorf(codeInvalidParams, "%v", err)
 	}
 	delete(s.questions, id)
 	s.mu.Unlock()
@@ -722,15 +722,15 @@ func (s *Session) start(prompt string) (int64, *Error) {
 	s.mu.Lock()
 	if s.ended {
 		s.mu.Unlock()
-		return 0, errorf(CodeUnknownSession, "session %s has ended", s.id)
+		return 0, errorf(codeUnknownSession, "session %s has ended", s.id)
 	}
 	if s.loop == nil {
 		s.mu.Unlock()
-		return 0, errorf(CodeUnknownSession, "session %s is still opening", s.id)
+		return 0, errorf(codeUnknownSession, "session %s is still opening", s.id)
 	}
 	if s.running {
 		s.mu.Unlock()
-		return 0, errorf(CodeTurnRunning, "session %s already has a turn running", s.id)
+		return 0, errorf(codeTurnRunning, "session %s already has a turn running", s.id)
 	}
 	s.running = true
 	s.turn++
@@ -864,7 +864,7 @@ func (c *conn) join(s *Session) {
 }
 
 func (c *conn) notify(method string, params any) {
-	c.write(notification{JSONRPC: Version, Method: method, Params: params})
+	c.write(notification{JSONRPC: version, Method: method, Params: params})
 }
 
 // write queues one message. It never blocks: a caller here is either the read
@@ -923,25 +923,25 @@ func (c *conn) read(ctx context.Context, r io.Reader) error {
 func (c *conn) handle(ctx context.Context, line []byte) {
 	var req request
 	if err := json.Unmarshal(line, &req); err != nil {
-		c.write(response{JSONRPC: Version, ID: json.RawMessage("null"),
-			Error: errorf(CodeParse, "not a JSON-RPC message: %v", err)})
+		c.write(response{JSONRPC: version, ID: json.RawMessage("null"),
+			Error: errorf(codeParse, "not a JSON-RPC message: %v", err)})
 		return
 	}
 	id := req.ID
 	if len(id) == 0 {
 		id = json.RawMessage("null")
 	}
-	if req.JSONRPC != Version {
-		c.write(response{JSONRPC: Version, ID: id,
-			Error: errorf(CodeInvalidRequest, "jsonrpc must be %q", Version)})
+	if req.JSONRPC != version {
+		c.write(response{JSONRPC: version, ID: id,
+			Error: errorf(codeInvalidRequest, "jsonrpc must be %q", version)})
 		return
 	}
 	result, rerr := c.dispatch(ctx, req)
 	if rerr != nil {
-		c.write(response{JSONRPC: Version, ID: id, Error: rerr})
+		c.write(response{JSONRPC: version, ID: id, Error: rerr})
 		return
 	}
-	c.write(response{JSONRPC: Version, ID: id, Result: result})
+	c.write(response{JSONRPC: version, ID: id, Result: result})
 }
 
 func (c *conn) dispatch(ctx context.Context, req request) (any, *Error) {
@@ -969,7 +969,7 @@ func (c *conn) dispatch(ctx context.Context, req request) (any, *Error) {
 	case MethodQuestionAnswer:
 		return c.questionAnswer(req.Params)
 	}
-	return nil, errorf(CodeMethodNotFound, "no method %q", req.Method)
+	return nil, errorf(codeMethodNotFound, "no method %q", req.Method)
 }
 
 // decode reads a method's parameters, or says which method could not read
@@ -981,7 +981,7 @@ func decode[T any](raw json.RawMessage) (T, *Error) {
 		return v, nil
 	}
 	if err := json.Unmarshal(raw, &v); err != nil {
-		return v, errorf(CodeInvalidParams, "params: %v", err)
+		return v, errorf(codeInvalidParams, "params: %v", err)
 	}
 	return v, nil
 }
@@ -1005,10 +1005,10 @@ func (c *conn) sessionStart(ctx context.Context, raw json.RawMessage) (any, *Err
 	loop, err := c.srv.open(ctx, p, sess.seams())
 	if err != nil {
 		c.srv.drop(sess)
-		return nil, errorf(CodeInternal, "%v", err)
+		return nil, errorf(codeInternal, "%v", err)
 	}
 	if !sess.setLoop(loop) {
-		return nil, errorf(CodeUnknownSession, "session %s ended while it was opening", sess.id)
+		return nil, errorf(codeUnknownSession, "session %s ended while it was opening", sess.id)
 	}
 	return SessionResult{Session: sess.id, Transcript: loop.Transcript()}, nil
 }
@@ -1051,10 +1051,10 @@ func (c *conn) sessionFork(raw json.RawMessage) (any, *Error) {
 	loop, err := from.Fork(sess.seams())
 	if err != nil {
 		c.srv.drop(sess)
-		return nil, errorf(CodeInternal, "%v", err)
+		return nil, errorf(codeInternal, "%v", err)
 	}
 	if !sess.setLoop(loop) {
-		return nil, errorf(CodeUnknownSession, "session %s ended while it was opening", sess.id)
+		return nil, errorf(codeUnknownSession, "session %s ended while it was opening", sess.id)
 	}
 	return SessionResult{Session: sess.id, Transcript: loop.Transcript()}, nil
 }
@@ -1088,7 +1088,7 @@ func (c *conn) turnStart(raw json.RawMessage) (any, *Error) {
 		return nil, rerr
 	}
 	if strings.TrimSpace(p.Prompt) == "" {
-		return nil, errorf(CodeInvalidParams, "a turn needs a prompt")
+		return nil, errorf(codeInvalidParams, "a turn needs a prompt")
 	}
 	sess, rerr := c.srv.session(p.Session)
 	if rerr != nil {
@@ -1110,7 +1110,7 @@ func (c *conn) turnSteer(raw json.RawMessage) (any, *Error) {
 		return nil, rerr
 	}
 	if strings.TrimSpace(p.Text) == "" {
-		return nil, errorf(CodeInvalidParams, "a steer needs something to say")
+		return nil, errorf(codeInvalidParams, "a steer needs something to say")
 	}
 	sess, rerr := c.srv.session(p.Session)
 	if rerr != nil {
@@ -1121,7 +1121,7 @@ func (c *conn) turnSteer(raw json.RawMessage) (any, *Error) {
 		return nil, rerr
 	}
 	if !sess.turnRunning() {
-		return nil, errorf(CodeNoTurn, "session %s has no turn to steer", sess.id)
+		return nil, errorf(codeNoTurn, "session %s has no turn to steer", sess.id)
 	}
 	loop.Steer(p.Text)
 	return struct{}{}, nil
@@ -1141,7 +1141,7 @@ func (c *conn) turnInterrupt(raw json.RawMessage) (any, *Error) {
 		return nil, rerr
 	}
 	if !sess.turnRunning() {
-		return nil, errorf(CodeNoTurn, "session %s has no turn to interrupt", sess.id)
+		return nil, errorf(codeNoTurn, "session %s has no turn to interrupt", sess.id)
 	}
 	loop.Interrupt()
 	return struct{}{}, nil
@@ -1152,41 +1152,41 @@ func (c *conn) turnInterrupt(raw json.RawMessage) (any, *Error) {
 // an idle one is waiting for exactly this — for an agent between turns, a
 // steer is the next turn's instruction.
 func (c *conn) agentSteer(raw json.RawMessage) (any, *Error) {
-	p, rerr := decode[AgentSteerParams](raw)
+	p, rerr := decode[agentSteerParams](raw)
 	if rerr != nil {
 		return nil, rerr
 	}
 	if strings.TrimSpace(p.Agent) == "" {
-		return nil, errorf(CodeInvalidParams, "a steer needs an agent to reach")
+		return nil, errorf(codeInvalidParams, "a steer needs an agent to reach")
 	}
 	if strings.TrimSpace(p.Text) == "" {
-		return nil, errorf(CodeInvalidParams, "a steer needs something to say")
+		return nil, errorf(codeInvalidParams, "a steer needs something to say")
 	}
 	loop, rerr := c.agentLoop(p.Session)
 	if rerr != nil {
 		return nil, rerr
 	}
 	if err := loop.SteerAgent(p.Agent, p.Text); err != nil {
-		return nil, errorf(CodeUnknownAgent, "%v", err)
+		return nil, errorf(codeUnknownAgent, "%v", err)
 	}
 	return struct{}{}, nil
 }
 
 // agentKill ends one of the session's children and the agents under it.
 func (c *conn) agentKill(raw json.RawMessage) (any, *Error) {
-	p, rerr := decode[AgentParams](raw)
+	p, rerr := decode[agentParams](raw)
 	if rerr != nil {
 		return nil, rerr
 	}
 	if strings.TrimSpace(p.Agent) == "" {
-		return nil, errorf(CodeInvalidParams, "a kill needs an agent to end")
+		return nil, errorf(codeInvalidParams, "a kill needs an agent to end")
 	}
 	loop, rerr := c.agentLoop(p.Session)
 	if rerr != nil {
 		return nil, rerr
 	}
 	if err := loop.KillAgent(p.Agent); err != nil {
-		return nil, errorf(CodeUnknownAgent, "%v", err)
+		return nil, errorf(codeUnknownAgent, "%v", err)
 	}
 	return struct{}{}, nil
 }

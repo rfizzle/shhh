@@ -34,22 +34,22 @@ func largeAtSplit(t *testing.T) (*State, todo.Item) {
 }
 
 func TestParseLanes(t *testing.T) {
-	lanes, err := ParseLanes(lanesText)
+	lanes, err := parseLanes(lanesText)
 	if err != nil || len(lanes) != 2 {
 		t.Fatalf("lanes = %+v, %v", lanes, err)
 	}
 	if lanes[0].Name != "rail" || len(lanes[0].Paths) != 2 || !strings.Contains(lanes[0].Task, "Do not touch") || lanes[1].Paths[0] != "internal/ui/chat/todo.go" {
 		t.Fatalf("lanes = %+v", lanes)
 	}
-	if lanes, err := ParseLanes("I looked.\nlanes: none\n"); err != nil || lanes != nil {
+	if lanes, err := parseLanes("I looked.\nlanes: none\n"); err != nil || lanes != nil {
 		t.Fatalf("none = %+v, %v", lanes, err)
 	}
 	// Quoting the rule and then listing lanes is listing lanes.
-	if lanes, err := ParseLanes("Otherwise I would say\nlanes: none\n" + lanesText); err != nil || len(lanes) != 2 {
+	if lanes, err := parseLanes("Otherwise I would say\nlanes: none\n" + lanesText); err != nil || len(lanes) != 2 {
 		t.Fatalf("none then lanes = %+v, %v", lanes, err)
 	}
 	// A "paths:" line inside a task is prose, not a claim.
-	lanes, err = ParseLanes("LANE: a\npaths: a.go\ntask: do a\npaths: leave cmd/ alone\nLANE: b\npaths: b.go\ntask: do b")
+	lanes, err = parseLanes("LANE: a\npaths: a.go\ntask: do a\npaths: leave cmd/ alone\nLANE: b\npaths: b.go\ntask: do b")
 	if err != nil || len(lanes[0].Paths) != 1 || !strings.Contains(lanes[0].Task, "leave cmd/ alone") {
 		t.Fatalf("paths in task = %+v, %v", lanes, err)
 	}
@@ -63,14 +63,14 @@ func TestParseLanes(t *testing.T) {
 		"absolute":     "LANE: a\npaths: /etc/a\ntask: x\nLANE: b\npaths: b.go\ntask: y",
 		"escapes":      "LANE: a\npaths: ../a\ntask: x\nLANE: b\npaths: b.go\ntask: y",
 		"backlog":      "LANE: a\npaths: .shhh/todo/x.md\ntask: x\nLANE: b\npaths: b.go\ntask: y",
-		"too many":     strings.Repeat("LANE: l\npaths: p\ntask: t\n", MaxLanes+1),
+		"too many":     strings.Repeat("LANE: l\npaths: p\ntask: t\n", maxLanes+1),
 	} {
-		if _, err := ParseLanes(text); err == nil {
+		if _, err := parseLanes(text); err == nil {
 			t.Errorf("%s: should be refused", name)
 		}
 	}
 	// A lane name is a child-name fragment: slugged and clipped.
-	lanes, err = ParseLanes("LANE: The Inspector Rail Block, Really Long\npaths: a.go\ntask: x\nLANE: b\npaths: b.go\ntask: y")
+	lanes, err = parseLanes("LANE: The Inspector Rail Block, Really Long\npaths: a.go\ntask: x\nLANE: b\npaths: b.go\ntask: y")
 	if err != nil || lanes[0].Name != "the-inspector-ra" || len(lanes[0].Name) > maxLaneName {
 		t.Fatalf("name = %q, %v", lanes[0].Name, err)
 	}

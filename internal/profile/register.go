@@ -203,7 +203,7 @@ func (p declaredCatalog) ListModels(context.Context) ([]string, error) {
 // silent reports whether no route can contribute a discovered model.
 func silent(routes []Endpoint) bool {
 	for _, e := range routes {
-		if e.API != APIAnthropicMessage && !e.DiscoveryOff() {
+		if e.API != aPIAnthropicMessage && !e.DiscoveryOff() {
 			return false
 		}
 	}
@@ -301,7 +301,7 @@ func (r *router) ListModels(ctx context.Context) ([]string, error) {
 
 	var lastErr error
 	for i, route := range r.routes {
-		if route.API == APIAnthropicMessage || route.DiscoveryOff() {
+		if route.API == aPIAnthropicMessage || route.DiscoveryOff() {
 			continue
 		}
 		p, err := r.providerAt(i, route)
@@ -366,7 +366,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 	if opts.HTTPClient != nil && opts.HTTPClient.Transport != nil {
 		base = opts.HTTPClient.Transport
 	}
-	if e.API == "" || e.API == APIOpenAIChat {
+	if e.API == "" || e.API == aPIOpenAIChat {
 		base = provider.NewCacheMarkTransport(base, opts.CacheTTL)
 	}
 	httpClient := &http.Client{Transport: NewTransport(e, base)}
@@ -376,11 +376,11 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 	// options the deadline lives in, and a route through a gateway is no less
 	// able to go quiet than the direct path.
 	switch e.API {
-	case APIOpenAIResponses:
+	case aPIOpenAIResponses:
 		inner := provider.NewOpenAIResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
 		return withDiscovery(e, &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient, decides: p.DeclaresDecisions}), nil
-	case APIAnthropicMessage:
+	case aPIAnthropicMessage:
 		inner := provider.NewAnthropicNamed(anthropic.NewClient(
 			option.WithAPIKey(key),
 			option.WithBaseURL(e.BaseURL),

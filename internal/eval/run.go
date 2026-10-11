@@ -81,7 +81,7 @@ type Options struct {
 	// Commands runs a read-only case's inspection commands, contained the way
 	// a child's are. Nil leaves such a case unable to run, which it reports
 	// rather than running a model's command bare.
-	Commands CommandRunner
+	Commands commandRunner
 	// Progress, when set, is called as each attempt finishes, so a run that
 	// takes minutes says something while it does.
 	Progress func(c Case, attempt int, a Attempt)

@@ -298,7 +298,7 @@ func (c *client) call(method string, params any) (json.RawMessage, *Error) {
 		c.t.Fatal(err)
 	}
 	idRaw, _ := json.Marshal(id)
-	if err := c.enc.Encode(request{JSONRPC: Version, ID: idRaw, Method: method, Params: raw}); err != nil {
+	if err := c.enc.Encode(request{JSONRPC: version, ID: idRaw, Method: method, Params: raw}); err != nil {
 		c.t.Fatalf("sending %s: %v", method, err)
 	}
 	select {
@@ -444,7 +444,7 @@ func TestServer_AnAnswerToARequestNobodyWasShownIsRefused(t *testing.T) {
 	}
 	// A word the protocol has no meaning for is not a decision either.
 	_, rerr = c.call(MethodApprovalAnswer, AnswerParams{Session: opened.Session, ID: req.ID, Decision: "maybe"})
-	if rerr == nil || rerr.Code != CodeInvalidParams {
+	if rerr == nil || rerr.Code != codeInvalidParams {
 		t.Fatalf("a decision that is neither answer was answered %v", rerr)
 	}
 
@@ -512,7 +512,7 @@ func TestServer_SteerAndInterruptReachARunningTurn(t *testing.T) {
 	c.mustCall(MethodSessionStart, StartParams{}, &opened)
 
 	_, rerr := c.call(MethodTurnSteer, SteerParams{Session: opened.Session, Text: "over here"})
-	if rerr == nil || rerr.Code != CodeNoTurn {
+	if rerr == nil || rerr.Code != codeNoTurn {
 		t.Fatalf("steering a session with no turn was answered %v", rerr)
 	}
 
@@ -564,10 +564,10 @@ func TestServer_RefusesWhatItDoesNotHave(t *testing.T) {
 	defer srv.Close()
 	c := dial(t, srv)
 
-	if _, rerr := c.call(MethodTurnStart, TurnParams{Session: "s9", Prompt: "hello"}); rerr == nil || rerr.Code != CodeUnknownSession {
+	if _, rerr := c.call(MethodTurnStart, TurnParams{Session: "s9", Prompt: "hello"}); rerr == nil || rerr.Code != codeUnknownSession {
 		t.Errorf("a session nobody opened was answered %v", rerr)
 	}
-	if _, rerr := c.call("turn/rewind", SessionParams{Session: "s1"}); rerr == nil || rerr.Code != CodeMethodNotFound {
+	if _, rerr := c.call("turn/rewind", SessionParams{Session: "s1"}); rerr == nil || rerr.Code != codeMethodNotFound {
 		t.Errorf("a method this server does not have was answered %v", rerr)
 	}
 }
@@ -738,7 +738,7 @@ func TestServer_AClientEndsTheSessionItOpened(t *testing.T) {
 	}
 	// And the name stops answering, so a client cannot go on driving a
 	// session whose toolset has been taken away.
-	if _, rerr := c.call(MethodSessionResume, SessionParams{Session: opened.Session}); rerr == nil || rerr.Code != CodeUnknownSession {
+	if _, rerr := c.call(MethodSessionResume, SessionParams{Session: opened.Session}); rerr == nil || rerr.Code != codeUnknownSession {
 		t.Errorf("resuming an ended session was answered %v", rerr)
 	}
 }
@@ -886,7 +886,7 @@ func TestServer_ALoopThatArrivesAfterItsSessionEndedIsReleased(t *testing.T) {
 	go func() {
 		id, _ := json.Marshal(1)
 		params, _ := json.Marshal(StartParams{})
-		_ = c.enc.Encode(request{JSONRPC: Version, ID: id, Method: MethodSessionStart, Params: params})
+		_ = c.enc.Encode(request{JSONRPC: version, ID: id, Method: MethodSessionStart, Params: params})
 	}()
 	<-assembling
 
@@ -1123,7 +1123,7 @@ func TestServer_AnAnswerToAQuestionNobodyWasShownIsRefused(t *testing.T) {
 	// advance would be.
 	_, rerr := c.call(MethodQuestionAnswer, QuestionAnswerParams{
 		Session: opened.Session, ID: "q1", Answered: ask.AnsweredSkipped})
-	if rerr == nil || rerr.Code != CodeUnknownQuestion {
+	if rerr == nil || rerr.Code != codeUnknownQuestion {
 		t.Fatalf("answering a question nobody had asked was answered %v", rerr)
 	}
 
@@ -1137,26 +1137,26 @@ func TestServer_AnAnswerToAQuestionNobodyWasShownIsRefused(t *testing.T) {
 	// names no question.
 	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
 		Session: opened.Session, ID: approval.ID, Answered: ask.AnsweredSkipped})
-	if rerr == nil || rerr.Code != CodeUnknownQuestion {
+	if rerr == nil || rerr.Code != codeUnknownQuestion {
 		t.Fatalf("an approval's id answered a question: %v", rerr)
 	}
 	// `nobody to ask` is the surface's own answer and not one a client may
 	// give: a client cannot report its own absence.
 	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
 		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredNobody})
-	if rerr == nil || rerr.Code != CodeInvalidParams {
+	if rerr == nil || rerr.Code != codeInvalidParams {
 		t.Fatalf("a client claimed the reader had gone: %v", rerr)
 	}
 	// And the two rules the card enforces as it collects an answer: a pick
 	// is a pick, and a note the model said it needs is not optional.
 	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
 		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredOnCard, Note: "neither"})
-	if rerr == nil || rerr.Code != CodeInvalidParams {
+	if rerr == nil || rerr.Code != codeInvalidParams {
 		t.Fatalf("an on-the-card answer that picked nothing was answered %v", rerr)
 	}
 	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
 		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredOnCard, Picked: []string{"one package"}})
-	if rerr == nil || rerr.Code != CodeInvalidParams {
+	if rerr == nil || rerr.Code != codeInvalidParams {
 		t.Fatalf("a required note was left off and the answer stood: %v", rerr)
 	}
 
@@ -1169,7 +1169,7 @@ func TestServer_AnAnswerToAQuestionNobodyWasShownIsRefused(t *testing.T) {
 	// And the same id again, now that it has been.
 	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
 		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredSkipped})
-	if rerr == nil || rerr.Code != CodeUnknownQuestion {
+	if rerr == nil || rerr.Code != codeUnknownQuestion {
 		t.Fatalf("an answered question was answerable again: %v", rerr)
 	}
 
@@ -1236,7 +1236,7 @@ func TestServer_AnAnswerThatNamesAnotherAgentSpendsNothing(t *testing.T) {
 	req := c.waitApproval()
 	_, rerr := c.call(MethodApprovalAnswer,
 		AnswerParams{Session: opened.Session, ID: req.ID, Agent: "writer-2", Decision: DecisionAllow})
-	if rerr == nil || rerr.Code != CodeInvalidParams {
+	if rerr == nil || rerr.Code != codeInvalidParams {
 		t.Fatalf("answering a child's card under another child's name answered %v", rerr)
 	}
 	if !strings.Contains(rerr.Message, "writer-1") {
@@ -1295,9 +1295,9 @@ func TestServer_AClientSteersAChildAndEndsOne(t *testing.T) {
 	c.mustCall(MethodSessionStart, StartParams{}, &opened)
 
 	c.mustCall(MethodAgentSteer,
-		AgentSteerParams{Session: opened.Session, Agent: "writer-1", Text: "leave the goldens alone"},
+		agentSteerParams{Session: opened.Session, Agent: "writer-1", Text: "leave the goldens alone"},
 		&struct{}{})
-	c.mustCall(MethodAgentKill, AgentParams{Session: opened.Session, Agent: "writer-1"}, &struct{}{})
+	c.mustCall(MethodAgentKill, agentParams{Session: opened.Session, Agent: "writer-1"}, &struct{}{})
 
 	loop.mu.Lock()
 	steered, killed := append([]string(nil), loop.steered...), append([]string(nil), loop.killed...)
@@ -1323,11 +1323,11 @@ func TestServer_AnAgentCallRefusesInTheLoopsOwnWords(t *testing.T) {
 	c.mustCall(MethodSessionStart, StartParams{}, &opened)
 
 	for name, params := range map[string]any{
-		MethodAgentSteer: AgentSteerParams{Session: opened.Session, Agent: "writer-9", Text: "stop"},
-		MethodAgentKill:  AgentParams{Session: opened.Session, Agent: "writer-9"},
+		MethodAgentSteer: agentSteerParams{Session: opened.Session, Agent: "writer-9", Text: "stop"},
+		MethodAgentKill:  agentParams{Session: opened.Session, Agent: "writer-9"},
 	} {
 		_, rerr := c.call(name, params)
-		if rerr == nil || rerr.Code != CodeUnknownAgent {
+		if rerr == nil || rerr.Code != codeUnknownAgent {
 			t.Fatalf("%s on an agent that has finished answered %v", name, rerr)
 		}
 		if !strings.Contains(rerr.Message, "nothing to steer") {
@@ -1337,19 +1337,19 @@ func TestServer_AnAgentCallRefusesInTheLoopsOwnWords(t *testing.T) {
 
 	// And the two things neither call can be spelled without.
 	for name, params := range map[string]any{
-		MethodAgentSteer: AgentSteerParams{Session: opened.Session, Text: "stop"},
-		MethodAgentKill:  AgentParams{Session: opened.Session},
+		MethodAgentSteer: agentSteerParams{Session: opened.Session, Text: "stop"},
+		MethodAgentKill:  agentParams{Session: opened.Session},
 	} {
-		if _, rerr := c.call(name, params); rerr == nil || rerr.Code != CodeInvalidParams {
+		if _, rerr := c.call(name, params); rerr == nil || rerr.Code != codeInvalidParams {
 			t.Errorf("%s with no agent named answered %v", name, rerr)
 		}
 	}
 	if _, rerr := c.call(MethodAgentSteer,
-		AgentSteerParams{Session: opened.Session, Agent: "writer-9"}); rerr == nil || rerr.Code != CodeInvalidParams {
+		agentSteerParams{Session: opened.Session, Agent: "writer-9"}); rerr == nil || rerr.Code != codeInvalidParams {
 		t.Errorf("a steer with nothing to say answered %v", rerr)
 	}
-	if _, rerr := c.call(MethodAgentKill, AgentParams{Session: "s99", Agent: "writer-9"}); rerr == nil ||
-		rerr.Code != CodeUnknownSession {
+	if _, rerr := c.call(MethodAgentKill, agentParams{Session: "s99", Agent: "writer-9"}); rerr == nil ||
+		rerr.Code != codeUnknownSession {
 		t.Errorf("an agent call on a session nobody opened answered %v", rerr)
 	}
 }

@@ -50,14 +50,14 @@ const (
 // is going to.
 const readOnlyRounds = 8
 
-// CommandRunner runs one command line contained in dir, the way a child's
+// commandRunner runs one command line contained in dir, the way a child's
 // commands run in its own workspace. The harness is handed one rather than
 // building it, because what contains a command is the session's
 // configuration and this package reads none of it.
-type CommandRunner func(ctx context.Context, dir, command string) tools.ExecResult
+type commandRunner func(ctx context.Context, dir, command string) tools.ExecResult
 
 // askReadOnly runs one row's instruction in read-only mode.
-func askReadOnly(ctx context.Context, p provider.Provider, model string, row Row, run CommandRunner) Answer {
+func askReadOnly(ctx context.Context, p provider.Provider, model string, row Row, run commandRunner) Answer {
 	if run == nil {
 		return Answer{Row: row, Err: "no command runner: a read-only case runs the commands on the list"}
 	}

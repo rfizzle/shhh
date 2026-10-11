@@ -19,7 +19,7 @@ import (
 // model would see.
 func TestAFixtureSiteAnswersTheFetchItWasOpenedFor(t *testing.T) {
 	dir := writeSite(t, "grebe", map[string]string{"index.html": onePage})
-	site, err := openSite(filepath.Join(dir, SiteDir))
+	site, err := openSite(filepath.Join(dir, siteDir))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,12 +43,12 @@ func TestAFixtureSiteAnswersTheFetchItWasOpenedFor(t *testing.T) {
 // difference between this and setting AllowPrivate for the run.
 func TestAFixtureSiteIsTheOnlyThingTheRunCanReach(t *testing.T) {
 	dir := writeSite(t, "grebe", map[string]string{"index.html": onePage})
-	site, err := openSite(filepath.Join(dir, SiteDir))
+	site, err := openSite(filepath.Join(dir, siteDir))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer site.close()
-	other, err := openSite(filepath.Join(dir, SiteDir))
+	other, err := openSite(filepath.Join(dir, siteDir))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestTheSearchFixtureAnswersEveryQueryWithPages(t *testing.T) {
 		"index.html": onePage,
 		"other.html": `<!doctype html><html><head><title>Heron</title></head><body><p>Heron is unrelated.</p></body></html>`,
 	})
-	site, err := openSite(filepath.Join(dir, SiteDir))
+	site, err := openSite(filepath.Join(dir, siteDir))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestEveryShippedResearchCaseServesItsSiteAndNamesIt(t *testing.T) {
 			continue
 		}
 		found++
-		if !strings.Contains(c.Prompt, SitePlaceholder) {
+		if !strings.Contains(c.Prompt, sitePlaceholder) {
 			t.Errorf("%s: the question never names the site", c.Name)
 		}
 		if len(c.Facts) == 0 {
@@ -147,11 +147,11 @@ func TestEveryShippedResearchCaseServesItsSiteAndNamesIt(t *testing.T) {
 func writeSite(t *testing.T, name string, files map[string]string) string {
 	t.Helper()
 	dir := filepath.Join(t.TempDir(), name)
-	if err := os.MkdirAll(filepath.Join(dir, SiteDir), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, siteDir), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for rel, body := range files {
-		path := filepath.Join(dir, SiteDir, filepath.FromSlash(rel))
+		path := filepath.Join(dir, siteDir, filepath.FromSlash(rel))
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatal(err)
 		}

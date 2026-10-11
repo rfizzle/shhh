@@ -71,7 +71,7 @@ func TestLoadFile_ReadsAGatewayProfile(t *testing.T) {
 		t.Fatalf("want one profile, got %d", len(loaded))
 	}
 	p := loaded[0]
-	if p.Name != "gateway" || p.API != APIOpenAIChat {
+	if p.Name != "gateway" || p.API != aPIOpenAIChat {
 		t.Fatalf("unexpected identity: %+v", p)
 	}
 	if p.Headers["X-Title"] != "shhh" || p.ModelsPath != "/v1/models/simple" {
@@ -89,10 +89,10 @@ func TestLoadFile_ReadsAGatewayProfile(t *testing.T) {
 	if len(p.Rewrite) != 2 {
 		t.Fatalf("expected 2 rules, got %d", len(p.Rewrite))
 	}
-	if p.Rewrite[0].Direction != DirectionRequest {
+	if p.Rewrite[0].Direction != directionRequest {
 		t.Fatalf("an omitted direction should default to request, got %q", p.Rewrite[0].Direction)
 	}
-	if p.Rewrite[1].Direction != DirectionResponse {
+	if p.Rewrite[1].Direction != directionResponse {
 		t.Fatalf("an explicit direction should survive, got %q", p.Rewrite[1].Direction)
 	}
 	if p.Rewrite[0].Note == "" {
@@ -113,7 +113,7 @@ func TestLoadFile_NameDefaultsToTheFilename(t *testing.T) {
 	if p.Name != "corp-gateway" {
 		t.Fatalf("expected the filename as the name, got %q", p.Name)
 	}
-	if p.API != APIOpenAIChat {
+	if p.API != aPIOpenAIChat {
 		t.Fatalf("expected the default dialect, got %q", p.API)
 	}
 }
@@ -224,7 +224,7 @@ func TestRegister_MakesTheProfileResolvable(t *testing.T) {
 
 func TestNew_ReportsAMissingKey(t *testing.T) {
 	t.Setenv("GATEWAY_API_KEY", "")
-	p := Profile{Name: "gateway", API: APIOpenAIChat, BaseURL: "https://gw.example/v1", APIKeyEnv: "GATEWAY_API_KEY"}
+	p := Profile{Name: "gateway", API: aPIOpenAIChat, BaseURL: "https://gw.example/v1", APIKeyEnv: "GATEWAY_API_KEY"}
 	_, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err == nil || !strings.Contains(err.Error(), "GATEWAY_API_KEY") {
 		t.Fatalf("the error should name the variable to export, got %v", err)
@@ -232,7 +232,7 @@ func TestNew_ReportsAMissingKey(t *testing.T) {
 }
 
 func TestNew_AnthropicDialect(t *testing.T) {
-	p := Profile{Name: "gateway-claude", API: APIAnthropicMessage, BaseURL: "https://gw.example/anthropic", APIKey: "k"}
+	p := Profile{Name: "gateway-claude", API: aPIAnthropicMessage, BaseURL: "https://gw.example/anthropic", APIKey: "k"}
 	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -253,7 +253,7 @@ func TestListModels_UsesTheProfilesCatalogPath(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Profile{Name: "gw", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "secret", ModelsPath: "/v1/models/simple"}
+	p := Profile{Name: "gw", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "secret", ModelsPath: "/v1/models/simple"}
 	prov, err := New(p, provider.ResolveOpts{Model: "kimi-k2.6", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
@@ -286,7 +286,7 @@ func TestListModels_FallsBackToTheStandardEndpoint(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Profile{Name: "gw", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
+	p := Profile{Name: "gw", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
 	prov, _ := New(p, provider.ResolveOpts{Model: "llama3", HTTPClient: profileTestHTTP.Client()})
 	names, err := prov.(provider.ModelLister).ListModels(context.Background())
 	if err != nil {
@@ -473,7 +473,7 @@ func TestNew_ResponsesDialect(t *testing.T) {
 
 	p := Profile{
 		Name:    "gateway",
-		API:     APIOpenAIResponses,
+		API:     aPIOpenAIResponses,
 		BaseURL: srv.URL + "/v1",
 		APIKey:  "k",
 		Headers: map[string]string{"X-Title": "shhh"},
@@ -481,8 +481,8 @@ func TestNew_ResponsesDialect(t *testing.T) {
 			// A reasoning model needs an effort setting the vanilla request
 			// has no place for, and rejects the temperature it never asked
 			// for. Both are profile edits, not provider code.
-			{When: Match{Model: "gpt-5*"}, Direction: DirectionRequest, Op: OpSet, Path: "reasoning.effort", Value: "high"},
-			{When: Match{Model: "gpt-5*"}, Direction: DirectionRequest, Op: OpDelete, Path: "temperature"},
+			{When: Match{Model: "gpt-5*"}, Direction: directionRequest, Op: opSet, Path: "reasoning.effort", Value: "high"},
+			{When: Match{Model: "gpt-5*"}, Direction: directionRequest, Op: opDelete, Path: "temperature"},
 		},
 	}
 	prov, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-terra", HTTPClient: profileTestHTTP.Client()})
@@ -529,7 +529,7 @@ func TestValidate_AcceptsTheResponsesDialect(t *testing.T) {
 		t.Fatalf("want one profile, got %d", len(loaded))
 	}
 	p := loaded[0]
-	if p.API != APIOpenAIResponses {
+	if p.API != aPIOpenAIResponses {
 		t.Fatalf("unexpected dialect: %q", p.API)
 	}
 }
@@ -550,19 +550,19 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "openai chat", api: APIOpenAIChat, path: "/v1/chat/completions",
+			name: "openai chat", api: aPIOpenAIChat, path: "/v1/chat/completions",
 			status: http.StatusTooManyRequests,
 			body:   `{"error":{"message":"Rate limit reached for this gateway","type":"rate_limit_error"}}`,
 			want:   provider.ClassRateLimit, wantErr: provider.ErrRateLimited,
 		},
 		{
-			name: "openai responses", api: APIOpenAIResponses, path: "/v1/responses",
+			name: "openai responses", api: aPIOpenAIResponses, path: "/v1/responses",
 			status: http.StatusUnauthorized,
 			body:   `{"error":{"message":"Incorrect API key provided","type":"invalid_request_error"}}`,
 			want:   provider.ClassAuth, wantErr: provider.ErrAuth,
 		},
 		{
-			name: "anthropic messages", api: APIAnthropicMessage, path: "/v1/messages",
+			name: "anthropic messages", api: aPIAnthropicMessage, path: "/v1/messages",
 			status: 529,
 			body:   `{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}`,
 			want:   provider.ClassOverloaded, wantErr: provider.ErrOverloaded,
@@ -698,7 +698,7 @@ func TestNew_ChatRouteCarriesTheCacheBreakpoints(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Profile{Name: "gateway", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
+	p := Profile{Name: "gateway", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
 	prov, err := New(p, provider.ResolveOpts{Model: "anthropic/claude-sonnet-4-6", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
@@ -735,7 +735,7 @@ func TestNew_ChatRouteMarksNothingForAnotherVendor(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Profile{Name: "gateway", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
+	p := Profile{Name: "gateway", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
 	prov, err := New(p, provider.ResolveOpts{Model: "openai/gpt-5.2", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
@@ -768,7 +768,7 @@ func TestNew_AnthropicRouteHonoursTheConfiguredCacheLifetime(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Profile{Name: "gateway-claude", API: APIAnthropicMessage, BaseURL: srv.URL, APIKey: "k"}
+	p := Profile{Name: "gateway-claude", API: aPIAnthropicMessage, BaseURL: srv.URL, APIKey: "k"}
 	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", CacheTTL: "5m", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)

@@ -42,7 +42,7 @@ type Lane struct {
 	Report string `json:"report,omitempty"`
 }
 
-// MaxLanes bounds a fan-out at one more lane than the supervisor runs at
+// maxLanes bounds a fan-out at one more lane than the supervisor runs at
 // once, which is three (subagent.DefaultMaxConcurrent). The odd one out is
 // deliberate rather than an oversight: the fourth lane queues, and a queued
 // lane costs a name in a list and nothing else, because a writer's copy of
@@ -53,7 +53,7 @@ type Lane struct {
 // was planned.
 //
 // More lanes than this is a plan being listed, not divided.
-const MaxLanes = 4
+const maxLanes = 4
 
 // maxLaneName keeps a child's name inside the supervisor's limit with the
 // run's prefix in front.
@@ -68,11 +68,11 @@ var (
 	noLanesPattern = regexp.MustCompile(`(?im)^[ \t]*lanes:[ \t]*none\b`)
 )
 
-// ParseLanes reads the split turn's answer. It returns no lanes and no
+// parseLanes reads the split turn's answer. It returns no lanes and no
 // error for an answer that says `lanes: none` — the orchestrator judging
 // the plan is not divisible — and an error for an answer that is not in
 // the asked shape or that describes lanes the run cannot spawn safely.
-func ParseLanes(text string) ([]Lane, error) {
+func parseLanes(text string) ([]Lane, error) {
 	locs := lanePattern.FindAllStringSubmatchIndex(text, -1)
 	if len(locs) == 0 {
 		// "none" counts only where no lane is offered: an answer that
@@ -130,8 +130,8 @@ func ParseLanes(text string) ([]Lane, error) {
 		}
 		lanes = append(lanes, lane)
 	}
-	if len(lanes) > MaxLanes {
-		return nil, fmt.Errorf("%d lanes; at most %d", len(lanes), MaxLanes)
+	if len(lanes) > maxLanes {
+		return nil, fmt.Errorf("%d lanes; at most %d", len(lanes), maxLanes)
 	}
 	for i := range lanes {
 		for j := 0; j < i; j++ {
@@ -248,7 +248,7 @@ func (s *State) split(it todo.Item, ps PipelineStep) Step {
 // fine, the division is not, and the orchestrator builds it whole, with the
 // record saying why.
 func (s *State) afterSplit(it todo.Item, text string) Step {
-	lanes, err := ParseLanes(text)
+	lanes, err := parseLanes(text)
 	switch {
 	case err != nil:
 		return s.implementWhole(it, "lanes refused: "+err.Error())
@@ -409,7 +409,7 @@ Answer with one LANE block per lane and nothing else that starts a line with LAN
 LANE: <short name, one or two words>
 paths: <path>, <path>
 task: <what this lane builds, which plan steps it covers, and what it must not touch — several lines are fine; the paths line comes before the task, and no line of the task may start with LANE:>
-`, MaxLanes)
+`, maxLanes)
 	return b.String()
 }
 
