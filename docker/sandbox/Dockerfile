@@ -8,7 +8,12 @@
 # from the base's own index rather than being copied out of other images. Its
 # free tier publishes only the latest tag; the release pins the built image by
 # digest, which is what makes a given shhh's sandbox reproducible.
-FROM cgr.dev/chainguard/wolfi-base:latest
+#
+# The digest below is the index digest of latest, refreshed in the same commit
+# as a Go bump (dependabot's docker entry proposes it weekly). Resolve it with
+# `crane digest cgr.dev/chainguard/wolfi-base:latest` or
+# `docker buildx imagetools inspect cgr.dev/chainguard/wolfi-base:latest`.
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299564a1aa95c21973efcc1980a9d1d2e73e
 
 # Links the published package to this repository, which is what keeps the
 # release workflow's token able to push new versions to it.

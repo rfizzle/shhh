@@ -133,3 +133,13 @@ func TestCI_TheImageJobsBuildWhatTheDockerfileCopies(t *testing.T) {
 		t.Errorf("the two jobs build with different commands:\n%s\n%s", commands[0], commands[1])
 	}
 }
+
+// TestSandboxImage_TheBaseIsPinnedByDigest fails unless the sandbox
+// Dockerfile's FROM carries a full sha256 digest, so a given shhh's sandbox
+// is the base it was built and tested on and not whatever latest is today.
+func TestSandboxImage_TheBaseIsPinnedByDigest(t *testing.T) {
+	from := match(t, readRepo(t, "docker/sandbox/Dockerfile"), `(?m)^FROM (\S+)`, "FROM line in the sandbox Dockerfile")
+	if !regexp.MustCompile(`@sha256:[0-9a-f]{64}$`).MatchString(from) {
+		t.Errorf("the sandbox base image %q is not pinned by an @sha256: digest of 64 hex characters", from)
+	}
+}

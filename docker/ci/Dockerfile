@@ -34,7 +34,7 @@ ENV GOTOOLCHAIN=local
 ENV PATH=/usr/local/go/bin:/go/bin:${PATH}
 
 RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}
-RUN go install golang.org/x/tools/cmd/goimports@latest \
+RUN go install golang.org/x/tools/cmd/goimports@v0.52.0 \
  && chmod -R a+rX /go
 
 WORKDIR /src
