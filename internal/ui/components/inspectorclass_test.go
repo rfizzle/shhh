@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"charm.land/lipgloss/v2"
 )
@@ -400,5 +401,137 @@ func TestInspectorRail_PromotionUncollapsesInPlace(t *testing.T) {
 	}
 	if a, b := common(order(collapsedBefore), order(view)), common(order(view), order(collapsedBefore)); a != b {
 		t.Fatalf("the blocks reordered: %s became %s", a, b)
+	}
+
+	// The two S-1057 blocks rise the same way: a call past the long-call
+	// bound, and a process that died since the turn began.
+	base := InspectorRail{
+		Alerts: InspectorAlerts{{Label: "go test", Note: OutcomeExit(1), Turn: 3}},
+		Context: &InspectorContext{Pct: 30, Tokens: 60000, Window: 200000,
+			Tokens1: "↑41.2k", Tokens2: "↓9.8k", Burn: []float64{1, 2, 3, 4}},
+		Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86"},
+	}
+	t.Run("a call past the long-call bound", func(t *testing.T) {
+		short := base
+		short.Calls = []InspectorCall{
+			{Name: "web_fetch", Summary: "fetch example.com", Age: 4 * time.Second},
+			{Name: "grep", Summary: "search the tree", Age: 6 * time.Second},
+			{Name: "read_file", Summary: "read the log", Age: 6 * time.Second},
+		}
+		long := short
+		long.Calls = append([]InspectorCall(nil), short.Calls...)
+		long.Calls[2].Age = longCall + time.Second
+		keepsInPlace(t, short, long, RailCalls, "read the log")
+	})
+	t.Run("a process that died since the turn began", func(t *testing.T) {
+		up := base
+		up.Processes = []InspectorProcess{
+			{Name: "web", Word: "running", Running: true, Age: time.Minute},
+			{Name: "watch", Word: "running", Running: true, Age: time.Minute},
+			{Name: "tests", Word: "running", Running: true, Age: time.Minute},
+		}
+		dead := up
+		dead.Processes = append([]InspectorProcess(nil), up.Processes...)
+		dead.Processes[2] = InspectorProcess{Name: "tests", Word: "exited 1", Failed: true, Fresh: true, Age: time.Minute}
+		keepsInPlace(t, up, dead, RailProcesses, "exited 1")
+	})
+}
+
+// keepsInPlace finds the height where low's block name has folded the row
+// want away and high, whose block has risen, still draws it: the block gives
+// its other rows up and keeps the one the reader may act on, its heading on
+// the same row it was, and nothing reorders.
+func keepsInPlace(t *testing.T, low, high InspectorRail, name, want string) {
+	t.Helper()
+	const width = InspectorWidth
+	height := 0
+	for h := len(low.Lines(width, 0)); h > 0 && height == 0; h-- {
+		if !strings.Contains(stripANSI(low.View(width, h)), want) && strings.Contains(stripANSI(high.View(width, h)), want) {
+			height = h
+		}
+	}
+	if height == 0 {
+		t.Fatalf("no height folds %q away on %s and keeps it once the block rises:\n%s\n---\n%s", want, name,
+			stripANSI(low.View(width, 0)), stripANSI(high.View(width, 0)))
+	}
+	headingAt := func(rail InspectorRail) int {
+		for i, row := range rail.Lines(width, height) {
+			if strings.HasPrefix(stripANSI(row), "  "+name) {
+				return i
+			}
+		}
+		t.Fatalf("no %s heading at height %d:\n%s", name, height, stripANSI(rail.View(width, height)))
+		return -1
+	}
+	before, after := stripANSI(low.View(width, height)), stripANSI(high.View(width, height))
+	if a, b := headingAt(low), headingAt(high); a != b {
+		t.Fatalf("%s moved from row %d to %d when it rose:\n%s\n---\n%s", name, a, b, before, after)
+	}
+	if !strings.Contains(after, want) {
+		t.Fatalf("%s did not take %q back in place:\n%s", name, want, after)
+	}
+}
+
+// TestInspectorRail_ProcessesAndCallsAreAsks: PROCESSES asks while a process
+// runs or has failed since the turn began and stands once every process
+// ended well; CALLS asks while a call runs; and a collapsed heading states
+// the figure the rows would.
+func TestInspectorRail_ProcessesAndCallsAreAsks(t *testing.T) {
+	const width = InspectorWidth
+	class := func(r InspectorRail, name string) railClass {
+		t.Helper()
+		for _, b := range r.blocks(width) {
+			if b.name == name {
+				return b.class
+			}
+		}
+		t.Fatalf("no %s block", name)
+		return 0
+	}
+	for _, c := range []struct {
+		name  string
+		procs []InspectorProcess
+		want  railClass
+	}{
+		{"running", []InspectorProcess{{Name: "web", Word: "running", Running: true}}, railAsks},
+		{"failed this turn", []InspectorProcess{{Name: "web", Word: "exited 1", Failed: true, Fresh: true}}, railAsks},
+		{"failed before this turn", []InspectorProcess{{Name: "web", Word: "exited 1", Failed: true}}, railStanding},
+		{"all ended well", []InspectorProcess{{Name: "web", Word: "exited 0", Ended: true}}, railStanding},
+	} {
+		if got := class(InspectorRail{Processes: c.procs}, RailProcesses); got != c.want {
+			t.Errorf("PROCESSES %s: class %v, want %v", c.name, got, c.want)
+		}
+	}
+	if got := class(InspectorRail{Calls: []InspectorCall{{Name: "grep", Age: time.Second}}}, RailCalls); got != railAsks {
+		t.Errorf("CALLS running: class %v, want asks", got)
+	}
+	if got := class(InspectorRail{Calls: []InspectorCall{{Name: "grep", Stopped: true}}}, RailCalls); got == railAsks {
+		t.Errorf("CALLS all stopped asks")
+	}
+
+	collapsed := func(r InspectorRail, name string) string {
+		t.Helper()
+		for _, b := range r.blocks(width) {
+			if b.name == name {
+				b.collapse()
+				return stripANSI(b.render(width)[0].Text)
+			}
+		}
+		t.Fatalf("no %s block", name)
+		return ""
+	}
+	calls := InspectorRail{Calls: []InspectorCall{
+		{Name: "grep", Age: 3 * time.Second}, {Name: "web_fetch", Age: 41 * time.Second}, {Name: "read_file", Age: time.Second}}}
+	if got := collapsed(calls, RailCalls); !strings.Contains(got, "▸ 3 calls · 41s") {
+		t.Errorf("collapsed CALLS = %q, want ▸ 3 calls · 41s", got)
+	}
+	procs := InspectorRail{Processes: []InspectorProcess{
+		{Name: "web", Word: "running", Running: true}, {Name: "watch", Word: "running", Running: true}}}
+	if got := collapsed(procs, RailProcesses); !strings.Contains(got, "2 running") {
+		t.Errorf("collapsed PROCESSES = %q, want 2 running", got)
+	}
+	procs = InspectorRail{Processes: []InspectorProcess{{Name: "tests", Word: "exited 1", Failed: true, Fresh: true}}}
+	if got := collapsed(procs, RailProcesses); !strings.Contains(got, "1 exited · 1 failed") {
+		t.Errorf("collapsed PROCESSES = %q, want 1 exited · 1 failed", got)
 	}
 }

@@ -50,7 +50,7 @@
     ▎✎ internal/agent/loop.go                        +3 −1  
     ▎✎ internal/agent/round.go                       +1 −1  
                                                             
-  ↓ 3 more · agents · context · spend                       
+  ↓ 5 more · agents · processes · calls · context · spend   
                                                             
   [↑↓/jk] scroll · [esc] back to the prompt                 
   ⚠ researcher-1 · Say where the rou…  waiting approval: r  
@@ -99,7 +99,7 @@
     ␛[38;5;254m▎✎␛[m ␛[38;5;254minternal/agent/loop.go␛[m                        ␛[38;5;254m+3␛[m ␛[38;5;254m−1␛[m  
     ␛[38;5;254m▎✎␛[m ␛[38;5;254minternal/agent/round.go␛[m                       ␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m  
                                                             
-  ␛[38;5;244m↓ 3 more · agents · context · spend␛[m                       
+  ␛[38;5;244m↓ 5 more · agents · processes · calls · context · spend␛[m   
                                                             
   ␛[38;5;254m[↑↓/jk]␛[38;5;244m scroll · ␛[38;5;254m[esc]␛[38;5;244m back to the prompt␛[m                 
   ␛[38;5;254m⚠␛[m researcher-1␛[38;5;244m · Say where the rou…␛[m  ␛[38;5;254mwaiting approval: r␛[m  

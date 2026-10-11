@@ -4878,11 +4878,21 @@ func TestGolden_RailLadder(t *testing.T) {
 // on the foot line naming them, and what asks — the running turn, the alert,
 // the child waiting on you — keeps its rows. The second panel is that line's
 // door, the rail in full over the pane with its own esc, which /rail opens at
-// every width (docs/interface/surfaces.md#the-inspector-rail).
+// every width (docs/interface/surfaces.md#the-inspector-rail). The session
+// has a dev server running and one search in flight past the long-call bound,
+// so PROCESSES and CALLS hold their place as asks do; five asks no longer fit
+// whole in twenty-two rows, and AGENTS, the longest, folds its waiting child
+// behind its marker while the long call keeps its row.
 func TestGolden_RailLadderShort(t *testing.T) {
 	sup := railLadderChild(t)
 	captureGolden(t, "rail-ladder-short", "the rail on a short terminal", goldenWidths, func(width int) []golden.Panel {
+		holdClock(t)
 		m := railLadderModel(t, sup, width, 22)
+		host := newProcessHost()
+		host.infos = host.infos[:1]
+		m = withProcesses(m, host)
+		m.calls = callFixture(t)
+		m.calls.calls = m.calls.calls[:1]
 		opened, _ := m.runCommand("/rail", "/rail")
 		return []golden.Panel{
 			{Label: "twenty-two rows · the static blocks go to the foot line, the asks stay",

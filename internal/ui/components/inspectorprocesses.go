@@ -12,6 +12,12 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
+// longCall is how long a call runs before the rail holds its row through a
+// collapse. A flat 30 s, not a fraction of the command ceiling
+// (command_timeout_seconds): the ceiling is a command's, and the calls on the
+// rail include fetches and searches that have no ceiling of that size.
+const longCall = 30 * time.Second
+
 // InspectorProcess is one process the session started, as the rail draws it.
 type InspectorProcess struct {
 	Name string
@@ -70,7 +76,17 @@ func (r InspectorRail) processesBlock(width int) (railBlock, bool) {
 	if failed > 0 {
 		meta += fmt.Sprintf(" · %d failed", failed)
 	}
-	b := railBlock{heading: railHeading(RailProcesses, meta, sty.dim, width), class: railStanding}
+	// Collapsed it states the one figure its rows would: how many run, or how
+	// many have exited and how many of those failed.
+	collapsed := fmt.Sprintf("%d running", running)
+	if running == 0 {
+		collapsed = fmt.Sprintf("%d exited", len(r.Processes))
+	}
+	if failed > 0 {
+		collapsed += fmt.Sprintf(" · %d failed", failed)
+	}
+	b := railBlock{heading: railHeading(RailProcesses, meta, sty.dim, width), class: railStanding,
+		collapsedHeading: railHeading(RailProcesses, collapsed, sty.dim, width)}
 	if running > 0 || fresh > 0 {
 		b.class = railAsks
 	}
@@ -80,7 +96,14 @@ func (r InspectorRail) processesBlock(width int) (railBlock, bool) {
 		if p.Container {
 			right += sty.dim.Render(" · container")
 		}
-		b.add(railRow(glyph+" "+sty.body.Render(p.Name), right, width, inspectorIndent))
+		row := railRow(glyph+" "+sty.body.Render(p.Name), right, width, inspectorIndent)
+		// A process that died since the turn began is news the rail keeps
+		// through a collapse, as a blocked child's row is kept.
+		if p.Failed && p.Fresh {
+			b.pin(row)
+			continue
+		}
+		b.add(row)
 	}
 	return b, true
 }
@@ -119,6 +142,19 @@ func (r InspectorRail) callsBlock(width int) (railBlock, bool) {
 	b := railBlock{heading: railHeading(RailCalls, meta, sty.dim, width), class: railLive}
 	if running > 0 {
 		b.class = railAsks
+		// Collapsed it states the count and the longest wait: `▸ 3 calls · 41s`.
+		var longest time.Duration
+		for _, c := range r.Calls {
+			if !c.Stopped && c.Age > longest {
+				longest = c.Age
+			}
+		}
+		noun := "calls"
+		if running == 1 {
+			noun = "call"
+		}
+		b.collapsedHeading = railHeading(RailCalls, sty.spinText.Render("▸")+
+			sty.dim.Render(fmt.Sprintf(" %d %s · %s", running, noun, FormatElapsed(longest))), sty.dim, width)
 	}
 	for _, c := range r.Calls {
 		glyph, right := sty.spinText.Render("▸"), sty.dim.Render(FormatElapsed(c.Age))
@@ -131,8 +167,15 @@ func (r InspectorRail) callsBlock(width int) (railBlock, bool) {
 		if what == "" {
 			what = c.Name
 		}
-		left := glyph + " " + sty.body.Render(what)
-		b.add(railRow(left, right, width, inspectorIndent))
+		row := railRow(glyph+" "+sty.body.Render(what), right, width, inspectorIndent)
+		// A call that has run past longCall keeps its row through a collapse,
+		// so the block stays open in place for the call the reader may want
+		// to stop.
+		if !c.Stopped && c.Age >= longCall {
+			b.pin(row)
+			continue
+		}
+		b.add(row)
 	}
 	return b, true
 }

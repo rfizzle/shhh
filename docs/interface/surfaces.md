@@ -1961,11 +1961,17 @@ plan's count and the step in flight (`3 of 5 done · ▸ wire the handler`), the
 working list's count (`2 of 4`), the backlog's open items and the one the
 sprint is on (`project · 12 open · on rail-ladder`), the changeset's files and
 lines (`session · 8 files +96 −11`), the map's agents and its tally (`3 · 1
-running`), the sources up (`2 of 3 up`), the window's occupancy as its heading
+running`), the processes running or exited and how many failed (`2 running ·
+1 failed`, `3 exited`), the calls in flight and the longest wait (`▸ 3 calls ·
+41s`), the sources up (`2 of 3 up`), the window's occupancy as its heading
 already says it, and the bill's turn and session (`$0.14 · session $1.86`).
 What it must keep stays under it — a standing alert, an agent waiting on you,
-what was banked — and anything its heading does not state is still counted by
-its marker.
+what was banked, a process that died since the turn began, a call that has run
+past thirty seconds — and anything its heading does not state is still counted
+by its marker. The thirty seconds is one flat bound for every call on the rail,
+a fetch and a search as much as a command, because the command ceiling is a
+command's alone; a call past it keeps its row through a collapse, so the block
+stays open in place for the call the reader may want to stop.
 
 A dropped block is named on the foot line, `↓ 2 more · context · spend`, in
 the rail's order, on the rail's last row. The line is the rail's own fold
