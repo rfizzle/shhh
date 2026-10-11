@@ -355,6 +355,16 @@ func (a *Agent) ResetRounds() {
 	a.markSpend()
 }
 
+// Steered is what a person's words joining a running turn do to the loop:
+// they count as fresh input, so the round counter starts over, and the
+// verdict about the work before they spoke is not delivered after it. The
+// counter the cooldown is measured in has just gone back to zero as well,
+// which is the other half of what a turn's start does here.
+func (a *Agent) Steered() {
+	a.ResetRounds()
+	a.StartInterveneTurn()
+}
+
 // CapReached reports whether this turn has used up its tool rounds. An
 // uncapped agent never reaches it.
 func (a *Agent) CapReached() bool { return !a.Uncapped() && a.rounds >= a.MaxRounds() }

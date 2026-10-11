@@ -257,7 +257,7 @@ func (h *Headless) Run(prompt string) (string, error) {
 
 	// What moved since the run last looked comes before what is asked of it,
 	// so the instruction is read against the tree as it is.
-	h.deliverTree(true)
+	h.deliverTree()
 	h.Agent.StartTurn(prompt)
 	// A run with a second turn — a child handed another instruction at the
 	// boundary — reuses this runner, and a reading the turn before closed on
@@ -542,106 +542,70 @@ func (h *Headless) runTools(text string, calls []provider.ToolCall) {
 }
 
 // betweenRounds takes the boundary after a tool round's results are
-// recorded: a hold, then steering, then the round cap, then the tree, the
-// reading and the check-ins the next request carries. It reads and changes
-// neither of the loop's carried values, continued and carried. A non-nil
-// error ends the run: ErrInterrupted, with the turn already cancelled, for a
-// hold that was interrupted, or the round cap.
+// recorded, through the round tail every driver shares (tail.go). It reads
+// and changes neither of the loop's carried values, continued and carried. A
+// non-nil error ends the run: ErrInterrupted, with the turn already
+// cancelled, for a hold that was interrupted, or the round cap.
 func (h *Headless) betweenRounds() error {
-	// A hold parks the run here and nowhere else. The round's results
-	// are in the conversation and nothing has been asked of the model
-	// yet, so the wait holds no stream, owes no results and leaves the
-	// conversation exactly as the round left it. An open stream cannot
-	// be paused — a reader that stops reading backs the socket up until
-	// the provider gives up on the request — which is why a hold waits
-	// for the boundary rather than taking effect where it is asked for.
-	//
-	// It comes before the steering below, so that what arrived while the
-	// run was parked — a person's redirect, or what the hold had to say
-	// about a tree it moved — joins the conversation at this boundary
-	// rather than one round after the run is let go.
-	if !h.waitOnHold() {
-		h.Agent.CancelTurn()
-		return ErrInterrupted
-	}
-
-	// Steering messages queued mid-turn join the conversation between tool
-	// rounds; they count as fresh user input, so they also reset the round
-	// counter (matching the TUI's injectSteering).
-	if h.Steer != nil {
-		if msgs := h.Steer(); len(msgs) > 0 {
-			for _, msg := range msgs {
-				h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: msg})
-				// What the person asked for is now part of what the
-				// readings judge the run against. Without this the next
-				// reading calls their own correction a departure and the
-				// steer it earns quotes the task they have moved on from
-				// back at the model. A child is steered here too — what a
-				// person types into an attached lane, or an RPC client
-				// sends into a served turn, arrives through this hook and
-				// nowhere else.
-				h.Summary.Extend(msg)
+	t := h.tail()
+	for {
+		step, release := t.Next()
+		switch step {
+		case StepHeld:
+			if !h.waitOn(release) {
+				h.Agent.CancelTurn()
+				return ErrInterrupted
 			}
-			h.Agent.ResetRounds()
-			// And the verdict about the work before they spoke is not
-			// delivered after it. The counter the cooldown is measured in
-			// has just gone back to zero as well, which is the other half
-			// of what a turn's start does here.
-			h.Agent.StartInterveneTurn()
+			// A hold is asked once per boundary: the re-entry drains what
+			// arrived while the run was parked, and does not ask again.
+			t.Hold = nil
+		case StepCapped:
+			// Headless has no user to hand control back to, so hitting the
+			// cap is a failure — and an uncapped agent (--max-rounds 0)
+			// never reaches it, which is why that spelling is only offered
+			// to a foreground run someone can interrupt.
+			return fmt.Errorf("%w after %d rounds", ErrRoundCap, h.Agent.Rounds())
+		default:
+			return nil
 		}
 	}
+}
 
-	// Mirrors the TUI's resumeToolLoop: the cap is checked after a round's
-	// results are recorded, before the next stream request. Headless has no
-	// user to hand control back to, so hitting the cap is a failure — and
-	// an uncapped agent (--max-rounds 0) never reaches it, which is why
-	// that spelling is only offered to a foreground run someone can
-	// interrupt.
-	if h.Agent.CapReached() {
-		return fmt.Errorf("%w after %d rounds", ErrRoundCap, h.Agent.Rounds())
+// tail is the round tail over this run's seams. The window is not recovered
+// there: a run recovers in front of every request, the turn's first included
+// (Run).
+func (h *Headless) tail() RoundTail {
+	return RoundTail{
+		Agent:       h.Agent,
+		Hold:        h.Hold,
+		Steer:       h.steer,
+		Target:      h.summaryTarget,
+		Summary:     h.Summary,
+		OnTree:      h.OnTree,
+		OnIntervene: h.OnIntervene,
+		OnSummary:   h.OnSummary,
+		OnWithheld:  h.OnWithheld,
 	}
+}
 
-	// The tree first, then the question: a check-in asked against a tree
-	// the run has not been told about is answered against the wrong one.
-	h.deliverTree(false)
-
-	// The same take-stock check-in the TUI injects. A headless run needs
-	// it more, not less: there is nobody here to ask a turn whether it has
-	// enough yet, so the run itself has to ask.
-	// A reading due now goes out in the background; whatever an earlier
-	// one returned is offered to the policy here. The reading never
-	// blocks the round, so a run is never slower for having one.
-	if h.Summary != nil {
-		h.Agent.SetInterveneBounds(h.Summary.Bounds())
-		if v, ok := h.Summary.Tick(h.Agent.Rounds()); ok {
-			if h.OnSummary != nil {
-				h.OnSummary(v)
-			}
-			// The age is judged here, where the reading is collected: a
-			// verdict is parked when it lands and taken off at the next
-			// boundary, so this round is the first one it could have
-			// acted on and the only honest place to ask how old it is.
-			if reason := h.Agent.ConsiderVerdict(v, h.Agent.Rounds(), true); reason != "" && h.OnWithheld != nil {
-				h.OnWithheld(reason)
-			}
-		}
+// steer drains the steering queued mid-turn into the conversation as user
+// messages and reports whether any arrived.
+func (h *Headless) steer() bool {
+	if h.Steer == nil {
+		return false
 	}
-	if prompt, ok := h.Agent.TakeProgressCheckpoint(); ok {
-		h.Agent.AppendProgressRequest(prompt)
+	msgs := h.Steer()
+	for _, msg := range msgs {
+		h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: msg})
+		// What the person asked for is now part of what the readings judge
+		// the run against. Without this the next reading calls their own
+		// correction a departure and the steer it earns quotes the task they
+		// have moved on from back at the model. A child is steered here too —
+		// what a person types into an attached lane, or an RPC client sends
+		// into a served turn, arrives through this hook and nowhere else.
+		h.Summary.Extend(msg)
 	}
-	if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {
-		h.Agent.AppendMachine(iv.Message)
-		// The reading that judges what happens next is told what was
-		// just said, and comes sooner for it. Without that it is handed
-		// the evidence that earned the interruption and the verdict it
-		// earned, and says the same thing again while the cooldown holds
-		// the next one an interval away.
-		h.Summary.Intervened(h.Agent.Rounds(), iv)
-		if h.OnIntervene != nil {
-			h.OnIntervene(iv)
-		}
-	}
-	return nil
+	return len(msgs) > 0
 }
 
 // recoverContext takes the run's window-recovery step and reports what it
@@ -804,10 +768,10 @@ func (h *Headless) closeFeedback(final string) string {
 	return h.OnClose(final)
 }
 
-// deliverTree appends the tree notice this boundary owes, if any, and shows
-// it. Mirrors the TUI's injectTreeNotice.
-func (h *Headless) deliverTree(turnStart bool) {
-	n, ok := h.Agent.NextTreeNotice(turnStart)
+// deliverTree appends the tree notice a turn's start owes, if any, and shows
+// it. The notice between rounds is the round tail's (tail.go).
+func (h *Headless) deliverTree() {
+	n, ok := h.Agent.NextTreeNotice(true)
 	if !ok {
 		return
 	}
@@ -919,18 +883,11 @@ func (h *Headless) notifyResult(r ToolResult) {
 	}
 }
 
-// waitOnHold parks the run while a hold stands and reports whether it may go
+// waitOn parks the run until a hold's release and reports whether it may go
 // on. Like the retry wait it registers its cancel where the stream's goes, so
 // an Interrupt wakes it rather than leaving a killed run parked on a release
 // that is never coming.
-func (h *Headless) waitOnHold() bool {
-	if h.Hold == nil {
-		return true
-	}
-	release := h.Hold()
-	if release == nil {
-		return true
-	}
+func (h *Headless) waitOn(release <-chan struct{}) bool {
 	// A hold is a person's: the run waits on whoever holds the fan-out.
 	h.mark((*TurnClock).Ask)
 	ctx, cancel := context.WithCancel(context.Background())
