@@ -66,6 +66,24 @@ shhh config · project file · .shhh/config.toml                                
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [shift+tab] write global · [esc] leave                   14 settings
 config key provider.api_key is not read from a checkout's file — a credential is yours, not the repository's; [shift+tab] moves t…
 
+· a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it
+shhh config · project file · .shhh/config.toml                                                               [?] keys · [esc] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ↑ 2 more
+    context budget     8000 tokens                                                                                         default
+    safety warnings    on                                                                                                  default
+
+  MODEL
+    provider           openai                                                                                                 user
+    model              gpt-5.2                                                                                  user · 6 available
+  ❯ ⊘ api key          ···4f9c                                                                                         global only
+    The key sent to the provider. A checkout's file does not decide this — a credential in a checkout is a credential in every
+    clone of it.
+  ↓ 7 more
+
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [shift+tab] write global · [esc] leave                   14 settings
+
 · [?] · the switch is in the register
 shhh config · project file · .shhh/config.toml                                                               [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -157,6 +175,24 @@ $  a shell command
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m                   ␛[38;5;245m14 settings␛[m
 ␛[38;5;245mconfig key provider.api_key is not read from a checkout's file — a credential is yours, not the repository's; [shift+tab] moves t…␛[m
+
+· a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it
+␛[1;97mshhh config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m                                                               ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;245m↑ 2 more␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                                                                         ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                                                                  ␛[38;5;252mdefault␛[m
+
+  ␛[1;94mMODEL␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                                                                                 ␛[38;5;252muser␛[m
+    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                                                                  ␛[38;5;252muser · 6 available␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61m⊘ api key          ···4f9c                                                                                         global only␛[m
+    ␛[38;5;245mThe key sent to the provider. A checkout's file does not decide this — a credential in a checkout is a credential in every␛[m
+    ␛[38;5;245mclone of it.␛[m
+  ␛[38;5;245m↓ 7 more␛[m
+
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m                   ␛[38;5;245m14 settings␛[m
 
 · [?] · the switch is in the register
 ␛[1;97mshhh config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m                                                               ␛[38;5;245m[?] keys · [esc] back␛[m

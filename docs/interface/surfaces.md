@@ -3781,6 +3781,19 @@ register lists it under flow control so the keymap file moves the act
 ([the chords the keyboard spends
 anyway](reserved-keys.md#kept-on-purpose)).
 
+Where the screen stands in a checkout, the write has two files, and while it
+targets the checkout's one the rows for the keys a checkout never decides
+([the refused keys](../capabilities/configuration.md#two-files-one-resolution-order))
+are off: dimmed behind a `⊘`, their source column reading `global only`, and,
+while the pointer is on one, a panel under it with the key's own description
+and then the reason. They stay in the list and in the filter, the pointer
+lands on them (`↑↓` never skips one) so the reason can be read, and `[enter]`
+or `[ctrl+r]` on one stages nothing and answers on the foot row with the
+refusal that names `[shift+tab]` and the global file. `[shift+tab]` to the
+global file draws them live again in place, the pointer where it was. A row
+the session already holds reads `session` and is never off. The model is told
+nothing.
+
 One row is listed here and lives somewhere else. The theme is chosen in a file
 of its own, `theme.toml` beside the settings file, so its row reads
 `theme.toml` where the others read `user`, and a write of it goes to that file

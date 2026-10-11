@@ -620,3 +620,37 @@ func TestSettings_CtrlSInsideAFieldStagesThenWrites(t *testing.T) {
 		t.Fatalf("esc in a field stages nothing: %#v", result)
 	}
 }
+
+// A disabled row keeps its place under the pointer and in the filter, says
+// why in a panel under it, and stages nothing: [enter] hands the key back to
+// the host and opens nothing.
+func TestConfigScreen_ADisabledRowStaysUnderThePointerAndStagesNothing(t *testing.T) {
+	rows := []ConfigRow{
+		{Key: "behavior.max_tool_rounds", Label: "round limit", Value: "25", Source: "default"},
+		{Key: "appearance.theme", Label: "theme", Value: "dark", Source: "global only",
+			Disabled: "The palette. A checkout file does not decide this - the colours are yours.",
+			Options:  []SelectOption{{Label: "dark"}, {Label: "light"}}},
+		{Key: "behavior.safety_warnings", Label: "safety warnings", Value: "on", Source: "default"},
+	}
+	c := &ConfigScreen{Path: ".shhh/config.toml", Rows: rows}
+	c.Update(key("j"))
+	if c.Focus != 1 {
+		t.Fatalf("the pointer skipped the disabled row: %d", c.Focus)
+	}
+	view := ansi.Strip(c.View(110))
+	if !strings.Contains(view, "⊘ theme") || !strings.Contains(view, "global only") ||
+		!strings.Contains(view, "the colours are yours") {
+		t.Fatalf("the disabled row did not draw its reason:\n%s", view)
+	}
+	done, res := c.Update(key("enter"))
+	if done || res.Change == nil || res.Change.Key != "appearance.theme" || res.Change.Reset || c.picker != nil {
+		t.Fatalf("enter on a disabled row: done %v result %+v picker %v", done, res.Change, c.picker)
+	}
+	c.Update(key("/"))
+	for _, r := range "theme" {
+		c.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	if got := ansi.Strip(c.View(110)); !strings.Contains(got, "theme") {
+		t.Fatalf("the filter dropped the disabled row:\n%s", got)
+	}
+}

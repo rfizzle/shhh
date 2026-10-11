@@ -3077,6 +3077,18 @@ func TestGolden_ConfigScreenScope(t *testing.T) {
 					"a credential is yours, not the repository's; [shift+tab] moves the write to ~/.config/shhh/config.toml"
 				return c.View(width)
 			}()},
+			{Label: "a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it", View: func() string {
+				c := screen(false)
+				c.maxLines = 16
+				c.Focus = 6
+				c.Rows[6].Source, c.Rows[6].SourceTone = "global only", ToneNeutral
+				c.Rows[6].Disabled = "The key sent to the provider. A checkout's file does not decide this — " +
+					"a credential in a checkout is a credential in every clone of it."
+				c.Rows[9].Source, c.Rows[9].SourceTone = "global only", ToneNeutral
+				c.Rows[9].Disabled = "What a contained command may reach. A checkout's file does not decide this — " +
+					"it decides what a contained command may reach, which is the containment itself."
+				return c.View(width)
+			}()},
 			{Label: "[?] · the switch is in the register", View: func() string {
 				c := screen(false)
 				c.Update(key("?"))

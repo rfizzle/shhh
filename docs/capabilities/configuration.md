@@ -99,7 +99,10 @@ dotfiles is still where the person's own settings are written from — the
 bare command writes the person's file. In a checkout a key from the set
 above is refused before anything is created, with the reason and the
 `--global` that reaches the file the key belongs in; the screen refuses it
-as it is staged and names its own key instead of the flag. Standing in a
+as it is staged and names its own key instead of the flag, and while the
+write targets the checkout's file it draws every row from the set above off,
+reading `global only` with the reason beside it
+([the settings screen](../interface/surfaces.md#the-settings-screen)). Standing in a
 checkout, the screen has both files to write and a key that moves the
 write between them, with the header saying whose file the write reaches:
 `/config` is reached from inside a session, where there is no flag to

@@ -661,20 +661,22 @@ func (m *configModel) apply(change components.ConfigChange) bool {
 	if change.Reset && m.release(change.Key) {
 		return true
 	}
-	if err := checkConfigValue(change.Key, value); err != nil {
-		m.screen.Notice = err.Error()
-		return false
-	}
 	if m.toProject {
 		// Refused as it is staged rather than at [ctrl+s], so the screen never
 		// holds an edit its write would then stop on — and the way to the
-		// person's own file is the screen's key, not the command's flag.
+		// person's own file is the screen's key, not the command's flag. It
+		// is asked before the value is judged: a disabled row's [enter] hands
+		// no value, and the refusal is the answer to it.
 		if reason := config.RefusedInProject(change.Key); reason != "" {
 			m.screen.Notice = fmt.Sprintf("config key %s is not read from a checkout's file — %s; "+
 				"%s moves the write to %s", change.Key, reason, keys.Bracket(keys.Screen.Scope),
 				shortPath(config.WritePath()))
 			return false
 		}
+	}
+	if err := checkConfigValue(change.Key, value); err != nil {
+		m.screen.Notice = err.Error()
+		return false
 	}
 	if err := config.Set(&m.cfg, change.Key, value); err != nil {
 		m.screen.Notice = err.Error()
@@ -906,6 +908,9 @@ func (m *configModel) refresh() {
 			rows[i].Source, rows[i].SourceTone = "session", components.ToneOpen
 		}
 	}
+	if m.toProject {
+		m.disableRefused(rows)
+	}
 	m.screen.Rows = append(m.flowRows(), rows...)
 	changed, held := 0, 0
 	for _, s := range configSettings(m.cfg, m.base) {
@@ -918,6 +923,29 @@ func (m *configModel) refresh() {
 		}
 	}
 	m.screen.Changed, m.screen.Held = changed, held
+}
+
+// disableRefused switches off the rows a checkout's file may not decide, while
+// the write targets it: the source reads `global only`, and the row's panel is
+// the key's own description followed by the reason apply would refuse it with.
+// A row the session already holds keeps its `session` source and stays live,
+// since the session took it before the screen opened.
+func (m *configModel) disableRefused(rows []components.ConfigRow) {
+	desc := map[string]string{}
+	for _, s := range configSettings(m.cfg, m.base) {
+		desc[s.Key] = s.Desc
+	}
+	for i, row := range rows {
+		reason := config.RefusedInProject(row.Key)
+		if reason == "" || row.Source == "session" {
+			continue
+		}
+		why := "A checkout's file does not decide this — " + reason + "."
+		if d := desc[row.Key]; d != "" {
+			why = strings.TrimRight(d, ".") + ". " + why
+		}
+		rows[i].Source, rows[i].SourceTone, rows[i].Disabled = "global only", components.ToneNeutral, why
+	}
 }
 
 // nextSession marks every staged row a running session cannot take: a key

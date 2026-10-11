@@ -25,6 +25,7 @@ package components
 // `⏵⏵ auto` without knowing what a permission mode is.
 
 import (
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -84,6 +85,14 @@ type ConfigRow struct {
 	// Secret marks a value that must never be echoed: `[enter]` opens the masked
 	// entry rather than a field showing what is already there.
 	Secret bool
+	// Disabled is the row switched off: the key's own description and the
+	// reason this write may not decide it, as one passage. A row with it is
+	// drawn dimmed behind the ⊘, keeps its place under the pointer and in the
+	// filter, and says the passage in a panel under it while the pointer is
+	// on it. [enter] on it stages nothing: the key goes back to the host,
+	// which words the refusal, as [ctrl+r] does. A row the session holds is
+	// never disabled, since the session already took it.
+	Disabled string
 }
 
 // ConfigChange is one staged edit, resolved to the host as it is made. Reset
@@ -220,6 +229,10 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	case c.walked(pressed):
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
+		if row := c.current(); row != nil && row.Disabled != "" {
+			// Nothing opens on it; the host's refusal is the answer.
+			return false, ConfigResult{Change: &ConfigChange{Key: row.Key}}
+		}
 		c.open()
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Write):
@@ -554,7 +567,11 @@ func (c *ConfigScreen) inlineRows(width int) []string {
 		lines := strings.Split(c.secret.View(inner), "\n")
 		rows = append(rows, lines[:min(len(lines), 2)]...)
 	default:
-		return nil
+		row := c.current()
+		if row == nil || row.Disabled == "" || !slices.Contains(c.shown, c.Focus) {
+			return nil
+		}
+		rows = wrapDim(row.Disabled, inner)
 	}
 	out := make([]string, 0, len(rows))
 	for _, row := range rows {
@@ -776,6 +793,7 @@ func (c *ConfigScreen) sync() {
 		opts = append(opts, SelectOption{
 			Label: row.Label, Value: row.Value, valueTone: row.ValueTone,
 			Desc: qualifier(row.Detail), Meta: row.Source, metaTone: row.SourceTone,
+			Dim: row.Disabled != "",
 		})
 		c.optRow = append(c.optRow, i)
 	}

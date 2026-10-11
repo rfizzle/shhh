@@ -66,6 +66,24 @@ shhh config · project file · .shhh/config.toml             [?] keys · [esc] b
 [shift+tab] write global · [esc] leave
 config key provider.api_key is not read from a checkout's file — a credential i…
 
+· a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it
+shhh config · project file · .shhh/config.toml             [?] keys · [esc] back
+────────────────────────────────────────────────────────────────────────────────
+
+  ↑ 3 more
+    safety warnings    on                                                default
+
+  MODEL
+    provider           openai                                               user
+    model              gpt-5.2                                user · 6 available
+  ❯ ⊘ api key          ···4f9c                                       global only
+    The key sent to the provider. A checkout's file does not decide this — a
+    credential in a checkout is a credential in every clone of it.
+  ↓ 7 more
+
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset          14 settings
+[shift+tab] write global · [esc] leave
+
 · [?] · the switch is in the register
 shhh config · project file · .shhh/config.toml             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
@@ -158,6 +176,24 @@ $  a shell command
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m          ␛[38;5;244m14 settings␛[m
 ␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
 ␛[38;5;244mconfig key provider.api_key is not read from a checkout's file — a credential i…␛[m
+
+· a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · project file␛[m␛[38;5;244m · .shhh/config.toml␛[m             ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;244m↑ 3 more␛[m
+    ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                ␛[38;5;254mdefault␛[m
+
+  ␛[1;38;5;254mMODEL␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                               ␛[38;5;254muser␛[m
+    ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                ␛[38;5;254muser · 6 available␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⊘ api key          ···4f9c                                       global only␛[m
+    ␛[38;5;244mThe key sent to the provider. A checkout's file does not decide this — a␛[m
+    ␛[38;5;244mcredential in a checkout is a credential in every clone of it.␛[m
+  ␛[38;5;244m↓ 7 more␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m          ␛[38;5;244m14 settings␛[m
+␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
 
 · [?] · the switch is in the register
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · project file␛[m␛[38;5;244m · .shhh/config.toml␛[m             ␛[38;5;244m[?] keys · [esc] back␛[m

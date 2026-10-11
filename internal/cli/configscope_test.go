@@ -218,6 +218,58 @@ func TestConfigScreen_InACheckoutRefusesAKeyItMayNotDecide(t *testing.T) {
 	}
 }
 
+// On the checkout's scope the rows the checkout may not decide are disabled
+// and read `global only`; the global scope draws them live, in place, and a
+// row the session holds is never one of them.
+func TestConfigScreen_TheRowsACheckoutMayNotDecideAreOffOnItsScope(t *testing.T) {
+	scopeFixture(t, scopeCases[0])
+	session, err := configSessionOpener(nil)(nil)
+	must(t, err)
+	screen := session.Screen
+	row := func(key string) components.ConfigRow {
+		for _, r := range screen.Rows {
+			if r.Key == key {
+				return r
+			}
+		}
+		t.Fatalf("no row for %s", key)
+		return components.ConfigRow{}
+	}
+	for _, key := range []string{"appearance.theme", "provider.api_key", "sandbox.profile", "todo.root"} {
+		r := row(key)
+		if r.Disabled == "" || r.Source != "global only" ||
+			!strings.Contains(r.Disabled, config.RefusedInProject(key)) {
+			t.Fatalf("%s on the checkout scope: source %q, panel %q", key, r.Source, r.Disabled)
+		}
+	}
+	if r := row("behavior.default_mode"); r.Disabled != "" || r.Source == "global only" {
+		t.Fatalf("a key the checkout may decide was disabled: %+v", r)
+	}
+	// Enter on one stages nothing and says the existing sentence.
+	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "appearance.theme"}})
+	if screen.Changed != 0 || !strings.Contains(screen.Notice, keys.Bracket(keys.Screen.Scope)) ||
+		!strings.Contains(screen.Notice, "not read from a checkout's file") {
+		t.Fatalf("enter on a disabled row: changed %d, notice %q", screen.Changed, screen.Notice)
+	}
+	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "appearance.theme", Reset: true}})
+	if screen.Changed != 0 || !strings.Contains(screen.Notice, "not read from a checkout's file") {
+		t.Fatalf("reset on a disabled row: changed %d, notice %q", screen.Changed, screen.Notice)
+	}
+	for i, r := range screen.Rows {
+		if r.Key == "appearance.theme" {
+			screen.Focus = i
+		}
+	}
+	at := screen.Focus
+	session.Answer(false, components.ConfigResult{Scope: true})
+	if screen.Focus != at {
+		t.Fatalf("the cursor moved across the scope key: %d to %d", at, screen.Focus)
+	}
+	if r := row("appearance.theme"); r.Disabled != "" || r.Source == "global only" {
+		t.Fatalf("the global scope left the row off: %+v", r)
+	}
+}
+
 // The screen's scope key moves the write between the checkout's file and the
 // person's own, so a key the checkout may not decide can be written from
 // inside a session; `--global` only chooses which file it opens on, and the
