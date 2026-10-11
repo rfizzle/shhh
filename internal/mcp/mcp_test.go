@@ -1256,6 +1256,52 @@ func TestAbandonCallsReachesACallInFlight(t *testing.T) {
 	}
 }
 
+// A stop on the call's own context ends the request it dispatched, with the
+// bookkeeping back down, without the session reaching for AbandonCalls.
+func TestMCP_AStopEndsADispatch(t *testing.T) {
+	def := slowDefinition(t)
+	def.CallTimeout = time.Minute
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
+	defer ts.Close()
+
+	ctx, stop := context.WithCancel(context.Background())
+	defer stop()
+	ended := make(chan error, 1)
+	go func() {
+		_, err := ts.Execute(ctx, "echo__hang", json.RawMessage(`{"text":"x"}`))
+		ended <- err
+	}()
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		ts.mu.Lock()
+		out := len(ts.calls)
+		ts.mu.Unlock()
+		if out == 1 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the call never reached the register")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	stop()
+
+	select {
+	case err := <-ended:
+		if err == nil || !strings.Contains(err.Error(), "was cancelled") {
+			t.Fatalf("the stopped call = %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the stop did not reach the dispatched call")
+	}
+	ts.mu.Lock()
+	inflight, registered := ts.inflight, len(ts.calls)
+	ts.mu.Unlock()
+	if inflight != 0 || registered != 0 {
+		t.Fatalf("after the stop: inflight=%d registered=%d", inflight, registered)
+	}
+}
+
 // The bounds and refusals that had no test. Each is a line the model reads
 // when something did not fit or could not be resolved, and each is cheap to
 // get wrong in a way nothing else notices.

@@ -884,21 +884,21 @@ func ServerReceipt(readOnly bool) calldescribe.Describer {
 
 // Execute runs one registered tool. Unknown names are an error rather than
 // a pass-through: the executor chain asks Has first.
-func (ts *Toolset) Execute(_ context.Context, name string, args json.RawMessage) (string, error) {
-	return ts.execute(web.Orchestrator, name, args)
+func (ts *Toolset) Execute(ctx context.Context, name string, args json.RawMessage) (string, error) {
+	return ts.execute(ctx, web.Orchestrator, name, args)
 }
 
 // execute runs one registered tool for the named agent, which is who a page
 // the result carried is filed under in the ledger.
-func (ts *Toolset) execute(agent, name string, args json.RawMessage) (string, error) {
+func (ts *Toolset) execute(ctx context.Context, agent, name string, args json.RawMessage) (string, error) {
 	if name == ResourceToolName {
-		return ts.readResource(agent, args, false)
+		return ts.readResource(ctx, agent, args, false)
 	}
 	ref, ok := ts.begin(name)
 	if !ok {
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
-	ctx, timeout, end := ts.dispatch(ref.server.Definition)
+	ctx, timeout, end := ts.dispatch(ctx, ref.server.Definition)
 	defer end()
 	out, pages, err := ref.server.call(ctx, ref.tool, args)
 	if err != nil {
@@ -937,13 +937,15 @@ func (ts *Toolset) begin(name string) (toolRef, bool) {
 
 // dispatch opens the context one request runs on, bounded by what the
 // definition allows a call, and puts its cancel where AbandonCalls can
-// reach it. end undoes all three — off the register, the inflight count
+// reach it. It derives from the call's own context, so a stop that reaches
+// the call reaches the request too
+// (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn). end undoes all three — off the register, the inflight count
 // down, the context released — and runs on the abandoned path as much as on
 // the ordinary one, which is what keeps a cancelled call from leaving the
 // toolset permanently mid-round.
-func (ts *Toolset) dispatch(def Definition) (context.Context, time.Duration, func()) {
+func (ts *Toolset) dispatch(parent context.Context, def Definition) (context.Context, time.Duration, func()) {
 	timeout := def.ToolCallTimeout()
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	ts.mu.Lock()
 	if ts.calls == nil {
 		ts.calls = map[int]context.CancelFunc{}
@@ -983,7 +985,7 @@ func givenUp(def Definition, tool string, timeout time.Duration, err error) erro
 // http or https address is the server handing back that page, the same as a
 // tool result that embeds one, so it is filed under agent through the same
 // recordPages a tool call's pages take (docs/capabilities/chat.md#what-was-read).
-func (ts *Toolset) readResource(agent string, args json.RawMessage, readOnlyServers bool) (string, error) {
+func (ts *Toolset) readResource(ctx context.Context, agent string, args json.RawMessage, readOnlyServers bool) (string, error) {
 	var a struct {
 		URI string `json:"uri"`
 	}
@@ -998,7 +1000,7 @@ func (ts *Toolset) readResource(agent string, args json.RawMessage, readOnlyServ
 	if err != nil {
 		return "", err
 	}
-	ctx, timeout, end := ts.dispatch(server.Definition)
+	ctx, timeout, end := ts.dispatch(ctx, server.Definition)
 	defer end()
 	out, pages, err := server.read(ctx, uri)
 	if err != nil {
@@ -1076,7 +1078,7 @@ func bound(out string) string {
 func (ts *Toolset) WrapExecutor(agent string, next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
 	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if ts.Has(name) {
-			return ts.execute(agent, name, args)
+			return ts.execute(ctx, agent, name, args)
 		}
 		return next(ctx, name, args)
 	}
@@ -1092,12 +1094,12 @@ func (ts *Toolset) WrapReadOnlyExecutor(agent string, next func(ctx context.Cont
 	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if ts.Has(name) {
 			if name == ResourceToolName {
-				return ts.readResource(agent, args, true)
+				return ts.readResource(ctx, agent, args, true)
 			}
 			if !ts.ReadOnly(name) {
 				return "", fmt.Errorf("%s is not available to this agent: its server is not marked read-only", name)
 			}
-			return ts.execute(agent, name, args)
+			return ts.execute(ctx, agent, name, args)
 		}
 		return next(ctx, name, args)
 	}
