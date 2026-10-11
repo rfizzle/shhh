@@ -1222,6 +1222,13 @@ of its round goes on has somewhere to reach. A write the person approved is
 the exception: it is carried out whole, because a write cut halfway leaves the
 files in a state nobody asked for.
 
+The stop does not depend on the door a call came through. A call the person
+approved on its card, a call a rule allowed, a call an unattended run's flags
+allowed, a request to a server and a PDF being read out of a fetched page all
+run under the same stop and read the same sentence when it reaches them.
+Where a call was waiting on a decision or a hook in front of it, a stop that
+has arrived never lets it run on an answer nobody gave.
+
 ## A turn can be held between rounds
 
 Stopping a turn used to mean cancelling it, which made "I am about to lose
