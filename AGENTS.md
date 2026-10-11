@@ -145,6 +145,8 @@ internal/
   observe/         the session record's contract and closed vocabularies
   evidence/        store for reduced and elided output
   receipt/         what one call did, in the words the chat screen draws
+  changeset/       what each turn changed, per file, for review and undo
+  approval/        the standing rules every door a gated call comes through asks
   todo/, todo/run/ the project backlog and its runner
   rpc/             the JSON-RPC surface behind `shhh serve`
 ```
@@ -158,7 +160,8 @@ internal/
   ([`docs/architecture.md#tiers-not-permissions`](docs/architecture.md#tiers-not-permissions)).
 - **Nothing fails open.** Auto mode's classifier falls back to asking on any
   error. Deny lists are answered before the mode; a checkout's settings may
-  add a refusal, never remove one.
+  add a refusal, never remove one
+  ([`docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed`](docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed)).
 - **Every way of starting a program takes the containment wrap**
   (`chat.Containment.Run`, `process.Supervisor`), including a new one.
 - **Anything that persists tool output takes the secret scrub before it

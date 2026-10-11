@@ -6,16 +6,9 @@ with the facts.
 
 ## The three tiers
 
-Tools are separated by what they can do, and the separation is structural
-rather than a flag consulted at call time. Reads run without asking, because a
-read changes nothing and asking about it teaches you to stop reading prompts.
-Commands and writes need an answer.
-
-The dispatch paths are different functions rather than one function with a
-branch. A dispatcher with no case for a mutating tool cannot be talked into
-running one, by a bug or by a model that has learned to ask nicely. This is the
-codebase's most important invariant and the easiest to erode, because merging
-the paths always looks like a simplification.
+Tools are read, write or execute, and the separation is structural rather
+than a flag checked at call time: [one classifier names a call's
+tier](#one-classifier-names-a-calls-tier).
 
 ## One classifier names a call's tier
 
@@ -696,7 +689,9 @@ and `sudo -u root` are the two spellings that walk past a reader which stops
 at the first flag, so what follows an escalation is offered at every word:
 shhh cannot tell the value of `-u` from the command behind it without
 knowing sudo's option table, and guessing in the safe direction costs one
-visible refusal. A wrapper that changes only how a command runs — `nice`,
+visible refusal.
+
+A wrapper that changes only how a command runs — `nice`,
 `ionice`, `timeout`, `stdbuf`, `setsid`, `exec` — is read the same way, since
 its options and `timeout`'s duration are as opaque as sudo's. The shell's own
 flow words are read past too: `if x; then rm -rf /; fi`, `while :; do rm -rf

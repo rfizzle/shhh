@@ -213,7 +213,9 @@ generators for those paths run in that copy. What you are shown and what lands
 is the copy's difference from your checkout — the source change and every file
 its generators rewrote — with the card naming the command that wrote them. The
 generator runs contained, the way a check does, with its output kept as
-evidence. One that fails lands nothing on its own: the card comes up with the
+evidence.
+
+One that fails lands nothing on its own: the card comes up with the
 change and without the generated files, saying which generator failed and
 where its output is, and your files have not been touched. A patch kept for
 you to review from the writer's row is kept without its generated files and
@@ -1096,7 +1098,9 @@ whole session. A child's quality gate run takes a slot, a child's command
 takes one when it is one of the checks the project's quality config declares
 or one of a short list of builds and test runs (`go test`, `go build`, `make
 test` and their like), and the session's own gate takes one too, so your
-`/gate run` and a child's never load the machine together. A check that finds
+`/gate run` and a child's never load the machine together.
+
+A check that finds
 every slot held waits its turn in the order it asked; the child is parked in
 front of it, not failed and not polling, and its lane and its row on the rail
 say `waiting for a check slot (2 running)` until a slot comes back. A writer's
