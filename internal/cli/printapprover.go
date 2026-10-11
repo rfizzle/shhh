@@ -221,7 +221,7 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 	foreground := commandAdmission{
 		noun:     "command",
 		denied:   "error: command denied (",
-		parseErr: func(error) string { return "error: invalid command arguments" },
+		parseErr: func(err error) string { return "error: " + err.Error() },
 		exec: func(_ provider.ToolCall, command string) string {
 			// The typed result, not an output/status pair: a command that
 			// never started keeps its category and one whose ending nobody

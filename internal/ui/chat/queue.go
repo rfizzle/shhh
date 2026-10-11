@@ -262,11 +262,25 @@ func (m Model) skippedCallEntry(call provider.ToolCall, err error) entry {
 		e.toolResult = stale.Error()
 		return e
 	}
+	var long tools.LongRunningError
+	if errors.As(err, &long) {
+		// A command answered with the redirect: the row names the line the
+		// model wrote, since that is what the reader would look for.
+		var a struct {
+			Command string `json:"command"`
+		}
+		_ = json.Unmarshal([]byte(call.Arguments), &a)
+		e.text, e.skipped = firstLine(a.Command), longRunningReason
+	}
 	if err != nil {
 		e.toolResult = err.Error()
 	}
 	return e
 }
+
+// longRunningReason is the account beside `skipped` on a command answered
+// with the redirect to the process tool.
+const longRunningReason = "long-running"
 
 // rowPath is a path as a transcript row writes it: relative to the session's
 // workspace when it is inside it, and as it arrived when it is not — that a

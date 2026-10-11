@@ -120,6 +120,12 @@ func classify(name string, args json.RawMessage, has bool,
 		// either way.
 		c.Action.Command = a.Command
 		c.Action.SafetyFlagged = len(safety.Check(a.Command)) > 0
+		// A shape that cannot finish is answered, not run: the same line
+		// started as a process is the call that works. The person's own /run
+		// and ! never come here.
+		if tools.LongRunning(a.Command) {
+			return c, tools.LongRunningError{}
+		}
 		return c, nil
 	case starts != nil && claims(starts, name, args):
 		// A background start's tier is its verb's: a start launches a

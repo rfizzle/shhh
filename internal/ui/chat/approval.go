@@ -280,7 +280,9 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 	call, callErr := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
 	if tc.Name == tools.ExecCommandName {
 		if callErr != nil {
-			return nil, fmt.Errorf("invalid command arguments")
+			// The classifier's own words: "invalid command arguments", or the
+			// redirect a command that cannot finish is answered with.
+			return nil, callErr
 		}
 		return &approvalRequest{
 			call:    tc,

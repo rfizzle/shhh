@@ -1127,6 +1127,17 @@ rather than killing it is that those verbs now apply. It is stopped when the
 session ends, like anything else the session started, and it counts in what
 the session reports as running.
 
+**The commonest of those is answered before it runs.** A dev server, a
+watcher (`--watch` on a build tool, `watch`, `tail -f`, `nodemon`, `air`) and a
+`docker compose up` that is not detached are shapes that cannot finish, and
+waiting out the ceiling to learn that wastes the whole of it. A command the
+model writes in one of those shapes is not run and is not put to the reader:
+the result tells it to start the line with the process tool and read it there.
+The list is short, closed and fails open — a long-running command nobody
+listed runs as it always did and meets the ceiling, which is why the row that
+reports the hand-over says what to do next time. The reader's own `/run` and
+`!` are never answered this way; they chose the command.
+
 **One command's output cannot take the session's memory with it.** Output is
 held to a bound as it arrives, far above the few thousand bytes any reader or
 model is shown, so a build with a verbose flag left on is capped while it runs
