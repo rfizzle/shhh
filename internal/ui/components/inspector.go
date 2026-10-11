@@ -197,6 +197,29 @@ const (
 	railAsks
 )
 
+// askRank is the order the asks give up their pinned rows in once nothing but
+// asks is left on the rail: by what the row asks for, lowest first, and never
+// by how long its block is. It is one list, set on a row by the builder that
+// pins it, so a block that arrives later slots in by naming its place here
+// (docs/interface/surfaces.md#the-inspector-rail). Rows that set none rank
+// lowest and go first.
+type askRank int
+
+const (
+	// The zero rank is a pinned row whose builder ranks nothing.
+	_ askRank = iota
+	// askCall is a call in flight: it is working, and nobody needs to
+	// answer it.
+	askCall
+	// askProcess is a process that failed since the turn began.
+	askProcess
+	// askChildRunning is a child at work, or the session the keyboard is in.
+	askChildRunning
+	// askAnswer is what waits on the person's answer: a child blocked on a
+	// question and a standing alert. It is the last thing the rail gives up.
+	askAnswer
+)
+
 // Empty reports whether every block is omitted, so the host can skip the
 // split rather than draw an empty column.
 func (r InspectorRail) Empty() bool {
@@ -254,6 +277,7 @@ type railTargetRow struct {
 type railLine struct {
 	text           string
 	pinned         bool
+	ask            askRank // a pinned row's place among the asks (askRank)
 	counted        bool
 	added, removed int
 	target         RailTarget
@@ -730,6 +754,9 @@ func (b railBlock) gives(class railClass) bool {
 // that cannot fit what it must keep still has to end somewhere, and what it
 // keeps longest is what is asking for the reader.
 func lastToHide(blocks []railBlock) (block, row int, ok bool) {
+	if block, row, ok = lastAsk(blocks); ok {
+		return block, row, true
+	}
 	longest := -1
 	for i, b := range blocks {
 		if len(b.rows) == 0 {
@@ -744,6 +771,37 @@ func lastToHide(blocks []railBlock) (block, row int, ok bool) {
 		return 0, 0, false
 	}
 	return longest, len(blocks[longest].rows) - 1, true
+}
+
+// lastAsk is lastToHide once nothing but asks has rows left: the bottom-most
+// row of the lowest askRank on the rail, the longer block first among equal
+// ranks and the lower of two the same length, so what waits on the person's
+// answer is the last row to fold whatever its block weighs
+// (docs/interface/surfaces.md#the-inspector-rail). It answers false while a
+// less alive block still has rows, and the caller's order stands.
+func lastAsk(blocks []railBlock) (block, row int, ok bool) {
+	block, row = -1, -1
+	for i, b := range blocks {
+		if len(b.rows) == 0 {
+			continue
+		}
+		if b.class != railAsks {
+			return 0, 0, false
+		}
+		for j := len(b.rows) - 1; j >= 0; j-- {
+			if block >= 0 {
+				best := blocks[block].rows[row].ask
+				if r := b.rows[j].ask; r > best || r == best && len(b.rows) < len(blocks[block].rows) {
+					continue
+				}
+				if b.rows[j].ask == best && i == block {
+					continue
+				}
+			}
+			block, row = i, j
+		}
+	}
+	return block, row, block >= 0
 }
 
 // takeable reports whether truncation may take a row before it starts on the

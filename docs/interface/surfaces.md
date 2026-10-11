@@ -1950,7 +1950,10 @@ static blocks are dropped, the lowest first, and then the standing ones; only
 then does a live reading collapse, and a block that asks last of all. A block
 that asks or reads live is never dropped while anything else could go. When
 even those are down to their headings and what they pin, their pinned rows go
-from the bottom, and a rail too short for its headings drops from its foot —
+by what they ask for, never by the length of their block: a call in flight
+first, then a process that failed this turn, then a child at work, and last
+what waits on your answer, a child blocked on a question or a standing alert, and a rail too short for its
+headings drops from its foot —
 so whatever the height, the rail ends on a line saying what it is not showing,
 never on half a block.
 

@@ -181,6 +181,7 @@ func orderGiving(agents []InspectorAgent, rows [][]railLine) {
 			settled[i] = settled[i] && settled[j]
 			if len(rows[i]) > 0 && len(rows[j]) > 0 && rows[j][0].pinned {
 				rows[i][0].pinned = true
+				rows[i][0].ask = max(rows[i][0].ask, rows[j][0].ask)
 			}
 		}
 	}
@@ -481,15 +482,20 @@ func (a InspectorAgent) railLines(width int) []railLine {
 	// a name with no line saying what it is doing — which is the whole of
 	// what the pin was keeping.
 	pinned := a.Self || a.Focused || a.State == FanoutBlocked || a.State == FanoutRunning
+	ask := askChildRunning
+	if a.State == FanoutBlocked {
+		ask = askAnswer
+	}
 	rows := []railLine{{
 		text:   row,
 		pinned: pinned,
+		ask:    ask,
 		// The fold counts sessions, and this is the row that is one.
 		counted: true,
 		target:  target,
 	}}
 	if detail := a.detailRow(width); detail != "" {
-		rows = append(rows, railLine{text: detail, pinned: pinned, target: target})
+		rows = append(rows, railLine{text: detail, pinned: pinned, ask: ask, target: target})
 	}
 	return rows
 }

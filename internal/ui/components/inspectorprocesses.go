@@ -101,6 +101,7 @@ func (r InspectorRail) processesBlock(width int) (railBlock, bool) {
 		// through a collapse, as a blocked child's row is kept.
 		if p.Failed && p.Fresh {
 			b.pin(row)
+			b.rows[len(b.rows)-1].ask = askProcess
 			continue
 		}
 		b.add(row)
@@ -173,6 +174,7 @@ func (r InspectorRail) callsBlock(width int) (railBlock, bool) {
 		// to stop.
 		if !c.Stopped && c.Age >= longCall {
 			b.pin(row)
+			b.rows[len(b.rows)-1].ask = askCall
 			continue
 		}
 		b.add(row)

@@ -109,7 +109,7 @@ func (r InspectorRail) alertsBlock(width int) (railBlock, bool) {
 	drawFrom := len(live) - inspectorLiveAlerts
 	seen := 0
 	for _, a := range r.Alerts {
-		row := railLine{text: alertRow(a, width), pinned: true}
+		row := railLine{text: alertRow(a, width), pinned: true, ask: askAnswer}
 		if a.Superseded {
 			b.hidden = append(b.hidden, row)
 			continue

@@ -535,3 +535,43 @@ func TestInspectorRail_ProcessesAndCallsAreAsks(t *testing.T) {
 		t.Errorf("collapsed PROCESSES = %q, want 1 exited · 1 failed", got)
 	}
 }
+
+// TestInspectorRail_AWaitingChildIsTheLastAskToFold: a rail of nothing but
+// asks, each holding a pinned row — a call past the long-call bound, a
+// process that failed this turn, a child at work and a child waiting on an
+// answer — is shortened a row at a time, and the rows leave in the order of
+// askRank (call, process, running child, waiting child) whatever the length of
+// the block each one sits in. AGENTS is the longest block here, which is the
+// shape that used to fold its waiting child first
+// (docs/interface/surfaces.md#the-inspector-rail).
+func TestInspectorRail_AWaitingChildIsTheLastAskToFold(t *testing.T) {
+	r := InspectorRail{
+		Calls:     []InspectorCall{{Name: "grep", Summary: "search the-call", Age: 2 * longCall}},
+		Processes: []InspectorProcess{{Name: "the-process", Word: "exited 1", Failed: true, Fresh: true}},
+		Agents: []InspectorAgent{
+			{Name: "orchestrator", Self: true, State: FanoutRunning},
+			{Name: "the-running-child", Detail: "docs/loop.md", State: FanoutRunning},
+			{Name: "the-waiting-child", Detail: "waiting approval: apply patch", State: FanoutBlocked},
+		},
+	}
+	marks := []string{"the-call", "the-process", "the-running-child", "the-waiting-child"}
+	// left is the tallest height each mark is missing at; -1 is never.
+	left := []int{-1, -1, -1, -1}
+	for h := len(r.Lines(InspectorWidth, 0)); h >= 1; h-- {
+		view := stripANSI(strings.Join(r.Lines(InspectorWidth, h), "\n"))
+		for i, m := range marks {
+			if !strings.Contains(view, m) && left[i] < 0 {
+				left[i] = h
+			}
+		}
+	}
+	if left[0] < 0 {
+		t.Fatalf("the call never folded: %v", left)
+	}
+	for i := 1; i < len(marks); i++ {
+		if left[i] > left[i-1] {
+			t.Errorf("%s left at %d rows, before %s (left at %d); heights %v", marks[i], left[i], marks[i-1], left[i-1], left)
+		}
+	}
+	t.Logf("heights each mark left at: %v", left)
+}

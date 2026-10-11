@@ -90,9 +90,9 @@
   … 3 more                                                              
 
   AGENTS                                                   3 · 2 running
-❯ ◇ orchestrator                                                   $0.12
-    ▸ round 3 · streaming…                                              
-  … 3 more · 2 running · 1 failed                                       
+  ⚠ runner-2                                                       $0.01
+    ▰▰▰▱▱ step 2 of 3 · go test ./...                                   
+  … 3 more · 1 running · 1 failed                                       
   ↓ 5 more · todo · changes · tools · context · spend                   
 
 · blocks with nothing to say are omitted
@@ -483,9 +483,9 @@
   ␛[38;5;244m… 3 more␛[m                                                              
 
   ␛[1;38;5;254mAGENTS␛[m                                                   ␛[38;5;244m3␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m
-␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.12␛[m␛[m
-    ␛[38;5;254m▸ round 3 · streaming…␛[m                                              
-  ␛[38;5;244m… 3 more␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 failed␛[m                                       
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mrunner-2␛[m                                                       ␛[38;5;244m$0.01␛[m
+    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;244mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo test ./...␛[m                                   
+  ␛[38;5;244m… 3 more␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 running␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 failed␛[m                                       
   ␛[38;5;244m↓ 5 more · todo · changes · tools · context · spend␛[m                   
 
 · blocks with nothing to say are omitted

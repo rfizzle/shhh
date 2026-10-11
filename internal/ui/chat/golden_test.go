@@ -4881,8 +4881,10 @@ func TestGolden_RailLadder(t *testing.T) {
 // every width (docs/interface/surfaces.md#the-inspector-rail). The session
 // has a dev server running and one search in flight past the long-call bound,
 // so PROCESSES and CALLS hold their place as asks do; five asks no longer fit
-// whole in twenty-two rows, and AGENTS, the longest, folds its waiting child
-// behind its marker while the long call keeps its row.
+// whole in twenty-two rows, so a pinned row goes, and it is the long call's
+// row that folds behind CALLS' marker, with the orchestrator's streaming line:
+// the rail gives up a pinned row by what it asks for, a call before a child,
+// so researcher-1, the child waiting on you, stays on screen.
 func TestGolden_RailLadderShort(t *testing.T) {
 	sup := railLadderChild(t)
 	captureGolden(t, "rail-ladder-short", "the rail on a short terminal", goldenWidths, func(width int) []golden.Panel {
