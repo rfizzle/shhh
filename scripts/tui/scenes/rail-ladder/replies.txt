@@ -1,0 +1,23 @@
+# One queue per agent: the session, and the one writer it sends.
+#
+# The session spawns the writer and then thinks for ninety seconds, so its
+# turn is running — an ask on the rail — for as long as the scene lasts.
+[session]
+One writer on the round accounting.
++tool:spawn_agent:{"role":"writer","task":"Say where the round counter is read.","name":"writer-1"}
+wait:90
++tool:read_file:{"path":"loop.go"}
+The writer has reported.
+
+# writer-1 asks to write a file, and the scene leaves the card standing until
+# its last steps answer it; then it reports and finishes.
+[writer-1]
+tool:read_file:{"path":"loop.go"}
+wait:2
++tool:write_file:{"path":"round.md","content":"The counter is read at the top of the loop.\n"}
+The counter is read at the top of the loop, and nowhere else.
+
+# The session's own readings of its run take a reply of their own rather than
+# one of anybody's rounds.
+[reading]
+The writer is on the round accounting.

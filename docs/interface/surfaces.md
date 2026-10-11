@@ -1858,9 +1858,9 @@ of those before the newest, then one that has not started yet, and an agent
 still working is the last thing taken — only once nothing else on the rail
 has a row to give. The live half of a run is what the block is for; its
 finished half is in the transcript and in the manager, and its outcome has
-already been read once. Between two blocks of the same length the lower one
-gives first, because the rail is read downwards and the block nearer the top
-is nearer the turn it is about.
+already been read once. Between two blocks of the same class and length the
+lower one gives first, because the rail is read downwards and the block nearer
+the top is nearer the turn it is about.
 
 An agent that declared no step count draws a still `▸` in the spin colour
 beside what it is doing, since a bar against a denominator nobody supplied is
@@ -1910,6 +1910,62 @@ thing closes it — the way a changed file's diff always has. A block with no
 surface behind it keeps its heading and marker inert, and so does a meter.
 Nothing on the rail takes the keyboard: the draft keeps every character it
 had, and no door has a key on the rail itself.
+
+When the rail runs short of height it gives up the least alive thing first: a
+block collapses to its heading before a livelier block loses a row, only a
+block nobody is waiting on is dropped, and a dropped block is still counted on
+one foot line that is a door. How alive a block is, is read off what it says
+at that moment rather than fixed to the block, in four classes. A block asks,
+or is in motion: a standing alert, a map with an agent waiting on an answer or
+still working or the keyboard in one, a turn that is running, a reading that
+says the run is off target. A block is a live reading, changing this turn: the
+turn's figures once it has stopped, a reading on target, a window past its
+warning, a plan with a step in flight, a map whose agents are queued or
+parked rather than working. A block is standing, changing between
+turns and read before the next send: an idle plan or working list, the
+backlog, the changeset, a map whose every agent has settled, tool sources with
+one blocked, broken or still starting. And a block is static, the same from
+send to send: the bill, a window under its warning, every tool source up — and
+the trailers naming keys at the foot of a block, whichever block they end. So
+the same map is history while its agents have all finished and the one block
+that must not go the moment one of them asks for you; the marks already say
+which, so the class is never a colour's job.
+
+The static blocks collapse first, then the standing ones, the longest of a
+class before a shorter one and the lower of two the same length. Then the
+static blocks are dropped, the lowest first, and then the standing ones; only
+then does a live reading collapse, and a block that asks last of all. A block
+that asks or reads live is never dropped while anything else could go. When
+even those are down to their headings and what they pin, their pinned rows go
+from the bottom, and a rail too short for its headings drops from its foot —
+so whatever the height, the rail ends on a line saying what it is not showing,
+never on half a block.
+
+A collapsed block is its heading, with the one figure its rows would have
+stated: the reading's verdict and the round it was taken at (`▸ on target ·
+round 7`), the turn's step and files (`step 3 of 4 · 2 files +27 −4`), the
+plan's count and the step in flight (`3 of 5 done · ▸ wire the handler`), the
+working list's count (`2 of 4`), the backlog's open items and the one the
+sprint is on (`project · 12 open · on rail-ladder`), the changeset's files and
+lines (`session · 8 files +96 −11`), the map's agents and its tally (`3 · 1
+running`), the sources up (`2 of 3 up`), the window's occupancy as its heading
+already says it, and the bill's turn and session (`$0.14 · session $1.86`).
+What it must keep stays under it — a standing alert, an agent waiting on you,
+what was banked — and anything its heading does not state is still counted by
+its marker.
+
+A dropped block is named on the foot line, `↓ 2 more · context · spend`, in
+the rail's order, on the rail's last row. The line is the rail's own fold
+marker and a door: a click on it opens the rail in full — every block, nothing
+shed — over the pane, with its own esc, and the same cell closes it; `/rail`
+opens it from the keyboard at any height. It does not take the keyboard to
+expand in place, because nothing on the rail does.
+
+Nothing on the rail moves to make room. When a block's class rises — an agent
+asks, a window crosses its warning — it takes its rows back where it stands on
+the next frame and something less alive pays for them; it never jumps above
+the blocks over it, because the rows under the reader's hand are click
+targets, and a rail that reordered itself would put a different one there.
 
 One block is not about the work at all: where the session's tools came from.
 A server that failed to answer leaves no trace in a transcript — a tool that
@@ -3217,7 +3273,7 @@ under that the account the session kept of where it left off
 renaming and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Eighteen surfaces take the whole terminal this way — those seven, the reading
+Nineteen surfaces take the whole terminal this way — those seven, the reading
 of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
 session's own working list (`/steps`, below), the readings it has taken of its
@@ -3225,10 +3281,11 @@ own run (`/readings`, below), the turns it has run (`/turns`, below), every
 alert it has had (`/alerts`, below), every check that has flaked in the
 checkout (`/gate flakes`, [a flake is counted where it
 happened](../capabilities/testing.md#a-flake-is-counted-where-it-happened)),
-its bill (`/stats`, below), where its tools came from (`/mcp`, below), the session's shared notebook
+its bill (`/stats`, below), its rail in full (`/rail`, [the inspector
+rail](#the-inspector-rail)), where its tools came from (`/mcp`, below), the session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
-profile — and they are one family rather than nineteen screens: the same header, the same
+profile — and they are one family rather than twenty screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of

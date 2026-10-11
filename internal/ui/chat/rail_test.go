@@ -48,12 +48,12 @@ func TestCommand_RailOpensTheWholeRail(t *testing.T) {
 		}
 	}
 
-	empty := frameModel(t, 160, 40)
-	empty.TotalTokensIn, empty.TotalTokensOut = 0, 0
-	if rail := empty.inspectorData(); rail.Empty() {
-		typed, _ := empty.runCommand("/rail", "/rail")
-		if typed.(Model).state == stateRail {
-			t.Fatal("a rail with nothing to say answers in a row, not an empty screen")
-		}
+	empty := New(nil, mockStream, Wiring{})
+	if !empty.inspectorData().Empty() {
+		t.Fatalf("a fresh session's rail should have nothing to say: %+v", empty.inspectorData())
+	}
+	typed, _ := empty.runCommand("/rail", "/rail")
+	if typed.(Model).state == stateRail {
+		t.Fatal("a rail with nothing to say answers in a row, not an empty screen")
 	}
 }

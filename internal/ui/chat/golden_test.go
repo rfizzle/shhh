@@ -4777,6 +4777,84 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 		})
 }
 
+// railLadderModel is one session for the rail's ladder: a turn running, a
+// child parked on an approval, a command still broken, two files changed, the
+// window and the bill — a block of every class, at the height the capture
+// asks for.
+func railLadderModel(t *testing.T, sup *subagent.Supervisor, width, height int) Model {
+	t.Helper()
+	m := frameModel(t, width, height)
+	m.transcript = goldenTranscript()
+	m.turnCount = 1
+	for i := range m.transcript {
+		m.transcript[i].turn = 1
+	}
+	m.changes.Add(1, changeset.Record{
+		Path: "internal/agent/loop.go", BeforeExists: true, AfterExists: true,
+		Before: "count++\n", After: "if n < cap {\n\tcount++\n}\n",
+	})
+	m.changes.Add(1, changeset.Record{
+		Path: "internal/agent/round.go", BeforeExists: true, AfterExists: true,
+		Before: "return nil\n", After: "return ErrRoundLimit\n",
+	})
+	m.wiring.Subagents = sup
+	m.adoptChildren()
+	m.state = stateStreaming
+	m.streaming = ""
+	m.invalidateRenderCache()
+	m.syncViewport()
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m
+}
+
+// railLadderChild is the supervisor behind the ladder: one child parked on an
+// approval for as long as the test runs, so the map asks for the reader.
+func railLadderChild(t *testing.T) *subagent.Supervisor {
+	t.Helper()
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv(),
+		Now: goldenClock})
+	t.Cleanup(sup.Close)
+	spawnInto(t, sup, `{"role":"researcher","task":"Say where the round counter is read."}`)
+	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 1 })
+	return sup
+}
+
+// TestGolden_RailLadder captures the rail at the forty rows every other
+// golden is drawn at, with a block of every class on it: everything fits, so
+// nothing is collapsed or dropped and no foot line is drawn. Below 130 columns
+// there is no rail and the row above the input stands in for it as it always
+// has (docs/interface/surfaces.md#the-inspector-rail).
+func TestGolden_RailLadder(t *testing.T) {
+	sup := railLadderChild(t)
+	captureGolden(t, "rail-ladder", "the rail with room for every block", goldenWidths, func(width int) []golden.Panel {
+		return []golden.Panel{
+			{Label: "a running turn and a child waiting on you · every block whole",
+				View: railLadderModel(t, sup, width, 40).View().Content},
+		}
+	})
+}
+
+// TestGolden_RailLadderShort captures the same session at twenty-two rows:
+// the static blocks collapse to their headings and then leave, the rail ends
+// on the foot line naming them, and what asks — the running turn, the alert,
+// the child waiting on you — keeps its rows. The second panel is that line's
+// door, the rail in full over the pane with its own esc, which /rail opens at
+// every width (docs/interface/surfaces.md#the-inspector-rail).
+func TestGolden_RailLadderShort(t *testing.T) {
+	sup := railLadderChild(t)
+	captureGolden(t, "rail-ladder-short", "the rail on a short terminal", goldenWidths, func(width int) []golden.Panel {
+		m := railLadderModel(t, sup, width, 22)
+		opened, _ := m.runCommand("/rail", "/rail")
+		return []golden.Panel{
+			{Label: "twenty-two rows · the static blocks go to the foot line, the asks stay",
+				View: m.View().Content},
+			{Label: "the foot line's door · the rail in full, nothing shed",
+				View: opened.(Model).View().Content},
+		}
+	})
+}
+
 // goldenRunItem is the item every run-row capture is a run of.
 func goldenRunItem(size string) todo.Item {
 	return todo.Item{
