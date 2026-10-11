@@ -17,6 +17,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
@@ -355,7 +357,7 @@ func trustPromptBlock(t project.Trust, conversation bool) string {
 // the row opens its own, because the row is acted on long after the probe
 // returned and a handle held open across a whole doctor run is a lock this
 // screen has no reason to take.
-func probeTrust(context.Context, config.Config) doctorFinding {
+func probeTrust(context.Context, config.Config) doctor.Finding {
 	db, err := openStore()
 	if db != nil {
 		_ = db.Close()
@@ -367,11 +369,11 @@ func probeTrust(context.Context, config.Config) doctorFinding {
 // nothing are both fine and say so; a checkout waiting on the person is `⊘`
 // with what it is holding back, because withholding is a diagnostic and
 // never a fault — the session started, with less in it.
-func doctorTrust(t project.Trust, offer bool) doctorFinding {
+func doctorTrust(t project.Trust, offer bool) doctor.Finding {
 	names := t.WithheldNames()
 	switch {
 	case t.Root == "":
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "no project here", Detail: "nothing to trust",
 			Outcome: "empty", State: components.DoctorSkipped,
 		}
@@ -380,7 +382,7 @@ func doctorTrust(t project.Trust, offer bool) doctorFinding {
 		if present := kindNames(t.Present); len(present) > 0 {
 			detail = strings.Join(present, " · ")
 		}
-		f := doctorFinding{Subject: "trusted", Detail: detail, Outcome: "ok"}
+		f := doctor.Finding{Subject: "trusted", Detail: detail, Outcome: "ok"}
 		// The standing a session will report, read and never written: the
 		// re-stamp is the session's, so the doctor can be run as often as
 		// anyone likes without swallowing the notice.
@@ -392,12 +394,12 @@ func doctorTrust(t project.Trust, offer bool) doctorFinding {
 		}
 		return f
 	case len(names) == 0:
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "declares nothing that runs", Detail: strings.Join(project.ResourceNames(), " · "),
 			Outcome: "empty", State: components.DoctorSkipped,
 		}
 	}
-	f := doctorFinding{
+	f := doctor.Finding{
 		Subject: countOf(len(names), "kind", "kinds") + " withheld",
 		Detail:  strings.Join(names, " · "),
 		Outcome: "untrusted", State: components.DoctorSkipped,

@@ -506,12 +506,7 @@ func historyAgo(at, now time.Time) string {
 }
 
 // countOf pluralises a count whose plural is not the singular plus an s.
-func countOf(n int, one, many string) string {
-	if n == 1 {
-		return "1 " + one
-	}
-	return fmt.Sprintf("%d %s", n, many)
-}
+func countOf(n int, one, many string) string { return report.Count(n, one, many) }
 
 // oneLineText flattens a prompt typed over several lines onto one.
 func oneLineText(s string) string { return strings.Join(strings.Fields(s), " ") }

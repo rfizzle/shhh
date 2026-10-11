@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/web"
@@ -261,7 +263,7 @@ func TestTheDoctorNamesTheLogTheReaderOpens(t *testing.T) {
 	path, err := logPath()
 	must(t, err)
 
-	got := doctorLogs(path, 2048, nil)
+	got := doctor.LogsOf(path, 2048, nil)
 	if !strings.Contains(got.Subject, filepath.Base(path)) {
 		t.Errorf("the log row names %q, the command opens %q", got.Subject, path)
 	}
@@ -271,10 +273,10 @@ func TestTheDoctorNamesTheLogTheReaderOpens(t *testing.T) {
 
 	// A machine where nothing has gone wrong has no file, and that is not a
 	// fault: the row still names where one would be written.
-	if fresh := doctorLogs(path, 0, nil); fresh.Outcome != "ok" || fresh.Detail != "nothing recorded yet" {
+	if fresh := doctor.LogsOf(path, 0, nil); fresh.Outcome != "ok" || fresh.Detail != "nothing recorded yet" {
 		t.Errorf("an unwritten log reads as %q · %q", fresh.Outcome, fresh.Detail)
 	}
-	if broken := doctorLogs("", 0, os.ErrPermission); broken.Outcome != "nowhere" || broken.Consequence == "" {
+	if broken := doctor.LogsOf("", 0, os.ErrPermission); broken.Outcome != "nowhere" || broken.Consequence == "" {
 		t.Errorf("a log with nowhere to go reads as %q with no consequence", broken.Outcome)
 	}
 }
@@ -288,8 +290,8 @@ func TestTheLogPathIsJoinedHereAndNotInTheLogPackage(t *testing.T) {
 	if filepath.Base(path) != "shhh.log" {
 		t.Errorf("the log is at %q", path)
 	}
-	if filepath.Dir(path) != filepath.Dir(doctorStorePath()) {
-		t.Errorf("the log at %q is not beside the store at %q", path, doctorStorePath())
+	if filepath.Dir(path) != filepath.Dir(doctor.StorePath()) {
+		t.Errorf("the log at %q is not beside the store at %q", path, doctor.StorePath())
 	}
 }
 

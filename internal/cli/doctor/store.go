@@ -1,4 +1,4 @@
-package cli
+package doctor
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/reports"
@@ -14,29 +15,35 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-func probeStore(context.Context, config.Config) doctorFinding {
-	db, err := openStore()
+// Store is the check on the local store. The opener is handed in, so the
+// check opens the store the command layer opens and no other.
+func Store(open func() (*storage.DB, error)) func(context.Context, config.Config) Finding {
+	return func(context.Context, config.Config) Finding { return readStore(open) }
+}
+
+func readStore(open func() (*storage.DB, error)) Finding {
+	db, err := open()
 	if err != nil {
-		return doctorStore("", 0, err)
+		return StoreOf("", 0, err)
 	}
 	// Opening runs the migrations, so a store that opens is a store this
 	// build can read as well as find. Nothing is queried beyond that: the
 	// question here is whether the file works, and the surfaces that read it
 	// count their own rows.
 	defer db.Close()
-	path := doctorStorePath()
+	path := StorePath()
 	var size int64
 	if info, statErr := os.Stat(path); statErr == nil {
 		size = info.Size()
 	}
-	return doctorStore(path, size, nil)
+	return StoreOf(path, size, nil)
 }
 
-// doctorStorePath is where the local store lives, for the row to name. It asks
+// StorePath is where the local store lives, for the row to name. It asks
 // storage rather than deriving it again: this file had its own copy of the
 // rule, and a report that names a different path from the one the store
 // actually opens is worse than no path at all.
-func doctorStorePath() string {
+func StorePath() string {
 	dir, err := storage.Dir()
 	if err != nil {
 		return "shhh.db"
@@ -44,33 +51,33 @@ func doctorStorePath() string {
 	return filepath.Join(dir, "shhh.db")
 }
 
-// doctorStore reads the local store: history, snippets, metrics and chat logs
+// StoreOf reads the local store: history, snippets, metrics and chat logs
 // all live in it, so a store that will not open is the check that explains
 // four other things being empty.
-func doctorStore(path string, size int64, err error) doctorFinding {
+func StoreOf(path string, size int64, err error) Finding {
 	if err != nil {
-		return doctorFinding{
+		return Finding{
 			Subject: "the local store did not open", Detail: err.Error(), Outcome: "unreadable",
 			State:       components.DoctorFailed,
 			Consequence: "history, snippets and metrics will all be empty, and nothing new will be recorded",
 			FixLabel:    "show the two things to check",
 			Fix: []string{
-				"ls -l " + shortPath(doctorStorePath()),
+				"ls -l " + report.ShortPath(StorePath()),
 				"the directory must be writable; delete the file to start a fresh store",
 			},
 		}
 	}
-	return doctorFinding{
-		Subject: shortPath(path),
-		Detail:  "opened · migrations current · " + doctorBytes(size),
+	return Finding{
+		Subject: report.ShortPath(path),
+		Detail:  "opened · migrations current · " + Bytes(size),
 		Outcome: "ok",
 	}
 }
 
-// doctorBytes is a file size in the units a reader thinks in. A store nobody
+// Bytes is a file size in the units a reader thinks in. A store nobody
 // has written to yet is stated as such rather than as `0 B`, which reads like
 // a fault where the truth is a fresh install.
-func doctorBytes(n int64) string {
+func Bytes(n int64) string {
 	switch {
 	case n <= 0:
 		return "nothing recorded yet"
@@ -82,10 +89,16 @@ func doctorBytes(n int64) string {
 	return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
 }
 
-func probeLogs(context.Context, config.Config) doctorFinding {
+// Logs is the check on the diagnostic log, at the path the command layer's
+// `shhh logs` opens.
+func Logs(logPath func() (string, error)) func(context.Context, config.Config) Finding {
+	return func(context.Context, config.Config) Finding { return readLogs(logPath) }
+}
+
+func readLogs(logPath func() (string, error)) Finding {
 	path, err := logPath()
 	if err != nil {
-		return doctorLogs("", 0, err)
+		return LogsOf("", 0, err)
 	}
 	// A log that is not there is the ordinary case on a machine where
 	// nothing has gone wrong, so its absence is a size of zero rather than
@@ -95,10 +108,10 @@ func probeLogs(context.Context, config.Config) doctorFinding {
 	if info, statErr := os.Stat(path); statErr == nil {
 		size = info.Size()
 	}
-	return doctorLogs(path, size, nil)
+	return LogsOf(path, size, nil)
 }
 
-// doctorLogs reads the diagnostic log: where it is, and how much is in it.
+// LogsOf reads the diagnostic log: where it is, and how much is in it.
 // This is the row `shhh logs` is the reader for, so the path it names is the
 // path that command opens — both ask logPath.
 //
@@ -107,11 +120,11 @@ func probeLogs(context.Context, config.Config) doctorFinding {
 // that fails, loudly, when that directory cannot be used. Naming the same
 // fault twice on one screen reads as two faults, and the second one here
 // would have to write a file to find out.
-func doctorLogs(path string, size int64, err error) doctorFinding {
+func LogsOf(path string, size int64, err error) Finding {
 	if err != nil {
 		// There is nowhere for state to go at all: no XDG_DATA_HOME and no
 		// home directory to fall back on.
-		return doctorFinding{
+		return Finding{
 			Subject: "there is nowhere to write the log", Detail: err.Error(), Outcome: "nowhere",
 			State:       components.DoctorWarned,
 			Consequence: "a refused request will be reported on the screen and nowhere else",
@@ -122,58 +135,65 @@ func doctorLogs(path string, size int64, err error) doctorFinding {
 			},
 		}
 	}
-	return doctorFinding{
-		Subject: shortPath(path),
-		Detail:  doctorBytes(size),
+	return Finding{
+		Subject: report.ShortPath(path),
+		Detail:  Bytes(size),
 		Outcome: "ok",
 	}
 }
 
-func probeReports(context.Context, config.Config) doctorFinding {
+// Reports is the check on the report store, at the directory the command
+// layer's `shhh reports` opens.
+func Reports(reportsDir func() (string, error)) func(context.Context, config.Config) Finding {
+	return func(context.Context, config.Config) Finding { return readReports(reportsDir) }
+}
+
+func readReports(reportsDir func() (string, error)) Finding {
 	dir, err := reportsDir()
 	if err != nil {
 		// The store row above already failed loudly on the same missing
 		// state directory; this row states its own consequence and stops.
-		return doctorReports("", 0, 0, err)
+		return ReportsOf("", 0, 0, err)
 	}
 	count, size, err := reports.Census(dir)
-	return doctorReports(dir, count, size, err)
+	return ReportsOf(dir, count, size, err)
 }
 
-// doctorReports reads the report store: where it is, how many pages it
+// ReportsOf reads the report store: where it is, how many pages it
 // holds, and what they cost in disk. This is the row `shhh reports` is the
 // reader for, so the path it names is the one the listing opens — both ask
 // reportsDir, and retention is the answer to a store that grows
 // (docs/capabilities/reports.md#findable-and-prunable).
-func doctorReports(path string, count int, size int64, err error) doctorFinding {
+func ReportsOf(path string, count int, size int64, err error) Finding {
 	if err != nil {
-		return doctorFinding{
+		return Finding{
 			Subject: "the report store is not readable", Detail: err.Error(), Outcome: "unreadable",
 			State:       components.DoctorWarned,
 			Consequence: "the report tool is not offered, and pages already made cannot be reopened",
 			FixLabel:    "show the place to check",
 			Fix: []string{
-				"ls -l " + shortPath(path),
+				"ls -l " + report.ShortPath(path),
 				"the directory must be readable; deleting it starts an empty store",
 			},
 		}
 	}
-	detail := doctorBytes(size)
+	detail := Bytes(size)
 	if count > 0 {
-		detail = countOf(count, "report", "reports") + " · " + doctorBytes(size)
+		detail = report.Count(count, "report", "reports") + " · " + Bytes(size)
 	}
-	return doctorFinding{
-		Subject: shortPath(path),
+	return Finding{
+		Subject: report.ShortPath(path),
 		Detail:  detail,
 		Outcome: "ok",
 	}
 }
 
-func probeOtel(_ context.Context, cfg config.Config) doctorFinding {
-	return doctorOtel(cfg.Otel.Endpoint)
+// Otel is the check on the one setting that sends the record off this machine.
+func Otel(_ context.Context, cfg config.Config) Finding {
+	return OtelOf(cfg.Otel.Endpoint)
 }
 
-// doctorOtel reads the one setting that sends the session record off this
+// OtelOf reads the one setting that sends the session record off this
 // machine, and it reads it rather than reaching it. A collector is somebody
 // else's process on somebody else's network: opening a connection to it
 // would make this the one check in the run that costs a third party a round
@@ -184,9 +204,9 @@ func probeOtel(_ context.Context, cfg config.Config) doctorFinding {
 // The row exists so that "my sessions are leaving this machine" is a fact a
 // reader can see without opening the config file, which is the same reason
 // the store and the log rows name their paths.
-func doctorOtel(endpoint string) doctorFinding {
+func OtelOf(endpoint string) Finding {
 	if strings.TrimSpace(endpoint) == "" {
-		return doctorFinding{
+		return Finding{
 			Subject: "the record stays on this machine",
 			Outcome: "off",
 			State:   components.DoctorSkipped,
@@ -194,7 +214,7 @@ func doctorOtel(endpoint string) doctorFinding {
 	}
 	target, err := observe.ParseEndpoint(endpoint)
 	if err != nil {
-		return doctorFinding{
+		return Finding{
 			Subject: "the collector endpoint is not a URL", Detail: err.Error(), Outcome: "unusable",
 			State:       components.DoctorWarned,
 			Consequence: "sessions are recorded locally and nothing is exported",
@@ -205,7 +225,7 @@ func doctorOtel(endpoint string) doctorFinding {
 			},
 		}
 	}
-	return doctorFinding{
+	return Finding{
 		Subject: target,
 		Detail:  "content-free",
 		Outcome: "ok",

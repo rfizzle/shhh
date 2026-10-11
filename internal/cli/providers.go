@@ -18,6 +18,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -255,7 +257,7 @@ func endpointRow(e profile.Endpoint) report.Row {
 	row.Subject, row.Detail = e.API, e.BaseURL
 	row.Outcome = endpointAuth(e)
 	if len(e.Match) > 0 {
-		row.Detail = joinDetail(row.Detail, "matches "+strings.Join(e.Match, ", "))
+		row.Detail = doctor.JoinDetail(row.Detail, "matches "+strings.Join(e.Match, ", "))
 	}
 	if e.DiscoveryOff() {
 		row.Consequence = "catalog off — the declared models are the whole list"
@@ -332,7 +334,7 @@ func ruleRows(routes []profile.Endpoint) []report.Row {
 			}
 			rows = append(rows, report.Row{
 				State: report.Run, Name: r.Direction,
-				Subject: joinDetail(r.Op, r.Path), Detail: scope,
+				Subject: doctor.JoinDetail(r.Op, r.Path), Detail: scope,
 				Outcome: e.Label, Consequence: r.Note,
 			})
 		}
@@ -362,7 +364,7 @@ func newProvidersMigrateCmd() *cobra.Command {
 			for _, err := range plan.Errors {
 				path, detail := splitProfileError(err)
 				r.Notes = append(r.Notes, report.Note{State: report.Fail,
-					Text: joinDetail(path, detail) + " — left where it is"})
+					Text: doctor.JoinDetail(path, detail) + " — left where it is"})
 			}
 			for _, s := range plan.Shadowed {
 				r.Notes = append(r.Notes, report.Note{State: report.Skip,

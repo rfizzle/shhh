@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -60,7 +62,7 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 	// in force prints none: the provider alone under "model" would read as
 	// the model's name, and a blank as a write that went missing.
 	if s.Model != "" {
-		pairs = append(pairs, report.Pair{Key: "model", Value: joinDetail(s.Provider, s.Model)})
+		pairs = append(pairs, report.Pair{Key: "model", Value: doctor.JoinDetail(s.Provider, s.Model)})
 	}
 	pairs = append(pairs, report.Pair{Key: "turns", Value: strconv.FormatInt(s.Turns, 10)})
 	for _, p := range []report.Pair{
@@ -104,7 +106,7 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 
 	r := report.Report{
 		Title:    "shhh observe session " + strconv.FormatInt(s.ID, 10),
-		Subject:  joinDetail(observeKindOf(s), observeElapsed(s)),
+		Subject:  doctor.JoinDetail(observeKindOf(s), observeElapsed(s)),
 		Sections: []report.Section{{Pairs: pairs}},
 	}
 
@@ -231,7 +233,7 @@ func classifierLine(c *storage.AgentSettings) string {
 	if c.ClassifierModel == "" {
 		return ""
 	}
-	return joinDetail(c.ClassifierModel, c.ClassifierBackend)
+	return doctor.JoinDetail(c.ClassifierModel, c.ClassifierBackend)
 }
 
 // observeSettingsPairs is what the session ran under, beside the provenance
@@ -249,7 +251,7 @@ func observeSettingsPairs(c *storage.AgentSettings) []report.Pair {
 	}
 	summary := "off"
 	if c.SummaryEnabled {
-		summary = joinDetail(c.SummaryModel, fmt.Sprintf("every %d rounds", c.SummaryInterval))
+		summary = doctor.JoinDetail(c.SummaryModel, fmt.Sprintf("every %d rounds", c.SummaryInterval))
 	}
 	var pairs []report.Pair
 	for _, p := range []report.Pair{
@@ -332,7 +334,7 @@ func observeEventRow(e storage.AgentExportEvent, call storage.AgentSessionCall, 
 	switch e.Kind {
 	case storage.AgentEventTool:
 		row.Subject = e.Tool
-		row.Detail = joinDetail(digest.Arg(call.Tool, call.Args), joinDetail(e.Reason, fmtEventMs(e.DurationMs)))
+		row.Detail = doctor.JoinDetail(digest.Arg(call.Tool, call.Args), doctor.JoinDetail(e.Reason, fmtEventMs(e.DurationMs)))
 		if transcript {
 			row.Body = observeResult(call.Result)
 		}
@@ -348,7 +350,7 @@ func observeEventRow(e storage.AgentExportEvent, call storage.AgentSessionCall, 
 		// and the one whose qualifier is a judgement rather than a
 		// description — so its row carries the suite and takes the verdict's
 		// own weight instead of the neutral one every other signal draws at.
-		row.State, row.Subject, row.Detail = report.Queue, e.Outcome, joinDetail(e.Tool, e.Reason)
+		row.State, row.Subject, row.Detail = report.Queue, e.Outcome, doctor.JoinDetail(e.Tool, e.Reason)
 		row.Outcome = "signal"
 		if e.Outcome == "gate" {
 			row.State = observeGateState(e.Reason)
@@ -356,12 +358,12 @@ func observeEventRow(e storage.AgentExportEvent, call storage.AgentSessionCall, 
 	case storage.AgentEventTurn:
 		row.State = observeTurnState(e.Outcome)
 		row.Subject = "turn"
-		row.Detail = joinDetail(fmt.Sprintf("%d rounds", e.Round), fmtEventMs(e.DurationMs))
+		row.Detail = doctor.JoinDetail(fmt.Sprintf("%d rounds", e.Round), fmtEventMs(e.DurationMs))
 	default:
 		row.Subject, row.Detail = e.Kind, e.Reason
 	}
 	if e.Round > 0 && e.Kind != storage.AgentEventTurn {
-		row.Detail = joinDetail(fmt.Sprintf("r%d", e.Round), row.Detail)
+		row.Detail = doctor.JoinDetail(fmt.Sprintf("r%d", e.Round), row.Detail)
 	}
 	return row
 }

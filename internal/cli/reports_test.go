@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -90,14 +92,14 @@ func TestTheDoctorNamesTheStoreTheListingOpens(t *testing.T) {
 	if !strings.HasSuffix(dir, "reports") {
 		t.Fatalf("reportsDir = %q, want the reports directory under the state dir", dir)
 	}
-	f := doctorReports(dir, 2, 19464, nil)
+	f := doctor.ReportsOf(dir, 2, 19464, nil)
 	if !strings.Contains(f.Subject, shortPath(dir)) {
 		t.Fatalf("the doctor names %q, the listing opens %q", f.Subject, dir)
 	}
 }
 
 func TestDoctorReports(t *testing.T) {
-	ok := doctorReports("/home/u/.local/share/shhh/reports", 2, 19464, nil)
+	ok := doctor.ReportsOf("/home/u/.local/share/shhh/reports", 2, 19464, nil)
 	if ok.State != components.DoctorPassed {
 		t.Fatalf("a readable store did not pass: %+v", ok)
 	}
@@ -107,12 +109,12 @@ func TestDoctorReports(t *testing.T) {
 		}
 	}
 
-	fresh := doctorReports("/home/u/.local/share/shhh/reports", 0, 0, nil)
+	fresh := doctor.ReportsOf("/home/u/.local/share/shhh/reports", 0, 0, nil)
 	if fresh.State != components.DoctorPassed || fresh.Detail != "nothing recorded yet" {
 		t.Fatalf("a fresh install reads as a fault: %+v", fresh)
 	}
 
-	broken := doctorReports("/home/u/.local/share/shhh/reports", 0, 0, errors.New("index unreadable"))
+	broken := doctor.ReportsOf("/home/u/.local/share/shhh/reports", 0, 0, errors.New("index unreadable"))
 	if broken.State != components.DoctorWarned {
 		t.Fatalf("an unreadable store did not warn: %+v", broken)
 	}

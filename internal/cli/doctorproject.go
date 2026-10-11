@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/hostgit"
@@ -20,7 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-func probeGit(ctx context.Context, _ config.Config) doctorFinding {
+func probeGit(ctx context.Context, _ config.Config) doctor.Finding {
 	dir, err := os.Getwd()
 	if err != nil {
 		return doctorGit(doctorGitState{Err: err})
@@ -94,10 +95,10 @@ func readGitState(ctx context.Context, dir string) doctorGitState {
 // missing repository costs — a command's writes are, because only git could
 // put those back. A directory that is not a work tree is a warning rather
 // than a pass, and it says which of the two is affected.
-func doctorGit(state doctorGitState) doctorFinding {
+func doctorGit(state doctorGitState) doctor.Finding {
 	switch {
 	case state.Err != nil && !state.Repo:
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "git did not answer", Detail: state.Err.Error(),
 			Outcome: "unknown", State: components.DoctorWarned,
 			Consequence: "shhh cannot tell a tracked file from an untracked one, so a command's writes cannot be called recoverable; /undo still puts back an edit from shhh's own records",
@@ -105,7 +106,7 @@ func doctorGit(state doctorGitState) doctorFinding {
 			Fix:         []string{"install git and re-run: shhh doctor"},
 		}
 	case !state.Repo:
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: shortPath(state.Dir), Detail: "not a git work tree",
 			Outcome: "no repo", State: components.DoctorWarned,
 			Consequence: "git cannot restore a file here, but /undo still puts back an edit from shhh's own records; a command's effects are not recorded",
@@ -117,7 +118,7 @@ func doctorGit(state doctorGitState) doctorFinding {
 	if root == "" {
 		root = state.Dir
 	}
-	f := doctorFinding{Subject: shortPath(root), Outcome: "ok"}
+	f := doctor.Finding{Subject: shortPath(root), Outcome: "ok"}
 	switch {
 	case state.Changed == 0:
 		f.Detail = "clean"
@@ -133,9 +134,9 @@ func doctorGit(state doctorGitState) doctorFinding {
 // probeHooks is the doctor's reading of the person's own commands at the
 // session's seams. It reads the same two files a session reads and through
 // the same loader, so a hook the doctor lists is a hook a session fires.
-func probeHooks(_ context.Context, cfg config.Config) doctorFinding {
+func probeHooks(_ context.Context, cfg config.Config) doctor.Finding {
 	if cfg.Hooks.Disabled {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "hooks are off", Detail: "hooks.disabled",
 			Outcome: "off", State: components.DoctorSkipped,
 		}
@@ -147,15 +148,15 @@ func probeHooks(_ context.Context, cfg config.Config) doctorFinding {
 // nothing here is a fault: a checkout with none is not missing anything, and
 // an entry that would not load is a warning naming it rather than a failure,
 // because the session started and started without it.
-func doctorHooks(set *hook.Set, ceiling time.Duration) doctorFinding {
+func doctorHooks(set *hook.Set, ceiling time.Duration) doctor.Finding {
 	notes := set.Notes()
 	if set.Len() == 0 && len(notes) == 0 {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "no hooks", Detail: strings.Join(hook.Events(), " · "),
 			Outcome: "empty", State: components.DoctorSkipped,
 		}
 	}
-	f := doctorFinding{
+	f := doctor.Finding{
 		Subject: countOf(set.Len(), "hook", "hooks"),
 		Detail:  strings.Join(set.Events(), " · "),
 		Outcome: "ok",
@@ -179,7 +180,7 @@ func doctorHooks(set *hook.Set, ceiling time.Duration) doctorFinding {
 // It is a check of its own because an unreadable wording is the one config
 // failure that stops a session from starting at all, and a reader who has
 // just written the path is exactly who is looking here.
-func probePrompts(_ context.Context, cfg config.Config) doctorFinding {
+func probePrompts(_ context.Context, cfg config.Config) doctor.Finding {
 	return doctorPrompts(readWordings(cfg.Prompts, projectPrompts()), backlogProfileIs())
 }
 
@@ -192,10 +193,10 @@ func probePrompts(_ context.Context, cfg config.Config) doctorFinding {
 // force, so "which file am I actually running" is the question this row is
 // opened with — and a wording that has gone missing is found here rather
 // than at the next session that refuses to start.
-func doctorPrompts(rows []wordingRow, profile backlogProfile) doctorFinding {
+func doctorPrompts(rows []wordingRow, profile backlogProfile) doctor.Finding {
 	under := profileLines(profile)
 	if len(rows) == 0 {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "no wordings replaced", Detail: "the built-in prose",
 			Outcome: "empty", State: components.DoctorSkipped,
 			Fix: under, FixLabel: "show the profile this backlog runs under",
@@ -218,7 +219,7 @@ func doctorPrompts(rows []wordingRow, profile backlogProfile) doctorFinding {
 		}
 		lines = append(lines, r.key+" — "+r.from)
 	}
-	f := doctorFinding{
+	f := doctor.Finding{
 		Subject:  countOf(len(rows), "wording", "wordings"),
 		Detail:   strings.Join(names, " · "),
 		Outcome:  "ok",
@@ -270,7 +271,7 @@ func profileLines(p backlogProfile) []string {
 	return append(lines, "steps: "+strings.Join(names, " · "), wordings)
 }
 
-func probeTools(context.Context, config.Config) doctorFinding {
+func probeTools(context.Context, config.Config) doctor.Finding {
 	var found, missing []string
 	for _, tool := range structural.ToolBinaries() {
 		if _, err := exec.LookPath(tool); err != nil {
@@ -291,8 +292,8 @@ func probeTools(context.Context, config.Config) doctorFinding {
 // a clean no-op without a server — so this check never fails. It states what
 // is there and what is not, because "why did it not use ast-grep" is a
 // question with an answer.
-func doctorTools(found, missing, servers []string) doctorFinding {
-	f := doctorFinding{Outcome: "ok"}
+func doctorTools(found, missing, servers []string) doctor.Finding {
+	f := doctor.Finding{Outcome: "ok"}
 	switch {
 	case len(found) == 0:
 		f.Subject = "no structural tools"
@@ -314,7 +315,7 @@ func doctorTools(found, missing, servers []string) doctorFinding {
 	return f
 }
 
-func probeProject(context.Context, config.Config) doctorFinding {
+func probeProject(context.Context, config.Config) doctor.Finding {
 	dir, err := os.Getwd()
 	if err != nil {
 		dir = ""
@@ -328,9 +329,9 @@ func probeProject(context.Context, config.Config) doctorFinding {
 // fault, so it is `⊘` with the names it would have read, which is also the
 // only place those names are written down for someone who has not read the
 // manual.
-func doctorProject(files []project.Instruction) doctorFinding {
+func doctorProject(files []project.Instruction) doctor.Finding {
 	if len(files) == 0 {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "nothing read", Detail: "no " + project.InstructionNames(),
 			Outcome: "empty", State: components.DoctorSkipped,
 		}
@@ -339,13 +340,13 @@ func doctorProject(files []project.Instruction) doctorFinding {
 	for _, f := range files {
 		paths = append(paths, shortPath(f.Path))
 	}
-	return doctorFinding{
+	return doctor.Finding{
 		Subject: countOf(len(files), "instruction file", "instruction files"),
 		Detail:  strings.Join(paths, " · "), Outcome: "ok",
 	}
 }
 
-func probeMemory(context.Context, config.Config) doctorFinding {
+func probeMemory(context.Context, config.Config) doctor.Finding {
 	dir, err := os.Getwd()
 	if err != nil {
 		return doctorMemory("", 0, 0, err)
@@ -370,16 +371,16 @@ func probeMemory(context.Context, config.Config) doctorFinding {
 // doctorMemory reads durable memory for this project. An empty store
 // is the ordinary state of a new project rather than a fault, so it is `⊘`
 // with the words for it, not a warning.
-func doctorMemory(scope string, forProject, global int, err error) doctorFinding {
+func doctorMemory(scope string, forProject, global int, err error) doctor.Finding {
 	if err != nil {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "memory did not load", Detail: err.Error(),
 			Outcome: "unreadable", State: components.DoctorWarned,
 			Consequence: "sessions in this project will start with nothing remembered",
 		}
 	}
 	if forProject+global == 0 {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "nothing remembered yet", Detail: shortPath(scope),
 			Outcome: "empty", State: components.DoctorSkipped,
 		}
@@ -388,5 +389,5 @@ func doctorMemory(scope string, forProject, global int, err error) doctorFinding
 	if global > 0 {
 		detail += " · " + strconv.Itoa(global) + " global"
 	}
-	return doctorFinding{Subject: shortPath(scope), Detail: detail, Outcome: "ok"}
+	return doctor.Finding{Subject: shortPath(scope), Detail: detail, Outcome: "ok"}
 }

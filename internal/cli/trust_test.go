@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -405,12 +407,12 @@ func TestTrustCommandTakesOffAndNothingElse(t *testing.T) {
 func TestDoctorTrustRowGolden(t *testing.T) {
 	present := []project.Kind{project.KindSkills, project.KindGate}
 	checks := []components.DoctorCheck{
-		doctorCheck("trust", doctorTrust(project.Trust{Root: "/repo", Granted: true, Present: present}, true), 0),
-		doctorCheck("trust", doctorTrust(project.Trust{Root: "/repo", Granted: true, Present: present,
+		doctor.Check("trust", doctorTrust(project.Trust{Root: "/repo", Granted: true, Present: present}, true), 0),
+		doctor.Check("trust", doctorTrust(project.Trust{Root: "/repo", Granted: true, Present: present,
 			Changed: []project.Kind{project.KindGate}}, true), 0),
-		doctorCheck("trust", doctorTrust(project.Trust{Root: "/repo", Present: present}, true), 0),
+		doctor.Check("trust", doctorTrust(project.Trust{Root: "/repo", Present: present}, true), 0),
 	}
-	assertReportGolden(t, "doctor.trust", doctorReportOf("shhh doctor", "check", "checks", checks).Render(80))
+	assertReportGolden(t, "doctor.trust", doctor.ReportOf("shhh doctor", "check", "checks", checks).Render(80))
 }
 
 // The model is told what the checkout declared and this session held back,

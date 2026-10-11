@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -187,7 +189,7 @@ func memoryDecliner(db *storage.DB, root string) func(text string) error {
 func declinedReport(root string, declined []storage.DeclinedProposal, now time.Time) report.Report {
 	r := report.Report{
 		Title:   "shhh memory declined",
-		Subject: joinDetail(countOf(len(declined), "proposal", "proposals"), root),
+		Subject: doctor.JoinDetail(countOf(len(declined), "proposal", "proposals"), root),
 	}
 	if len(declined) == 0 {
 		return emptyInto(r, "nothing declined", "a proposal declined in a session is listed here")
@@ -237,7 +239,7 @@ func memoryListing(store *memory.Store, wayOut string) string {
 func memoryReport(store *memory.Store, entries []memory.Entry, wayOut string, now time.Time) report.Report {
 	r := report.Report{
 		Title:   "shhh memory",
-		Subject: joinDetail(countOf(len(entries), "memory", "memories"), store.Project()),
+		Subject: doctor.JoinDetail(countOf(len(entries), "memory", "memories"), store.Project()),
 	}
 	if len(entries) == 0 {
 		return emptyInto(r, "nothing remembered yet", wayOut)
@@ -249,7 +251,7 @@ func memoryReport(store *memory.Store, entries []memory.Entry, wayOut string, no
 			State:   report.Pass,
 			Name:    memoryID(e.ID),
 			Subject: e.Kind,
-			Detail:  joinDetail(e.Provenance, historyAgo(e.UpdatedAt, now)),
+			Detail:  doctor.JoinDetail(e.Provenance, historyAgo(e.UpdatedAt, now)),
 			Body:    []string{e.Text},
 		}
 		if e.Scope == memory.GlobalScope {

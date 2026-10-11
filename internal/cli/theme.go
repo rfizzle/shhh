@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -87,7 +89,7 @@ func applyThemeOverrides() {
 
 // probeTheme reads the file again rather than what the process held, because
 // the doctor is the command that runs when the load failed, and is cheap.
-func probeTheme(_ context.Context, cfg config.Config) doctorFinding {
+func probeTheme(_ context.Context, cfg config.Config) doctor.Finding {
 	state := readThemeFor(cfg)
 	var low []components.Shortfall
 	if state.Err == nil {
@@ -102,13 +104,13 @@ func probeTheme(_ context.Context, cfg config.Config) doctorFinding {
 // file changes are counted on the row, and any text token of them under the
 // contrast floor is named as a warning that says it was applied: the person
 // asked for it.
-func doctorTheme(state config.ThemeState, asked, table string, low []components.Shortfall) doctorFinding {
+func doctorTheme(state config.ThemeState, asked, table string, low []components.Shortfall) doctor.Finding {
 	in := table
 	if asked == config.ThemeAuto {
 		in = "auto → " + table
 	}
 	if state.Err != nil {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: shortPath(state.Path), Outcome: "refused", State: components.DoctorWarned,
 			Detail:      in,
 			Consequence: "the default theme runs instead of this file",
@@ -119,15 +121,15 @@ func doctorTheme(state config.ThemeState, asked, table string, low []components.
 			},
 		}
 	}
-	f := doctorFinding{Subject: "no theme.toml", Detail: in, Outcome: "ok"}
+	f := doctor.Finding{Subject: "no theme.toml", Detail: in, Outcome: "ok"}
 	if state.Path != "" {
 		f.Subject = shortPath(state.Path)
 	}
 	if state.Migrate {
-		f.Detail = joinDetail(in, "set in config.toml, move it")
+		f.Detail = doctor.JoinDetail(in, "set in config.toml, move it")
 	}
 	if n := len(state.Overrides); n > 0 {
-		f.Detail = joinDetail(f.Detail, fmt.Sprintf("%d over it", n))
+		f.Detail = doctor.JoinDetail(f.Detail, fmt.Sprintf("%d over it", n))
 	}
 	if len(low) > 0 {
 		f.Outcome, f.State = "low contrast", components.DoctorWarned

@@ -32,6 +32,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -332,7 +334,7 @@ func boundReminder(s string) string {
 // because it is the handle — `shhh chats show <name>` is where a reader who
 // wants more than the reminder goes.
 func sessionTarget(s storage.UnratedSession) string {
-	return joinDetail(s.Chat, joinDetail(joinDetail(s.Kind, s.Model),
+	return doctor.JoinDetail(s.Chat, doctor.JoinDetail(doctor.JoinDetail(s.Kind, s.Model),
 		countOf(int(s.Turns), "turn", "turns")))
 }
 

@@ -1,4 +1,4 @@
-package cli
+package doctor
 
 // The keys row (docs/interface/reserved-keys.md#what-is-left). The reading
 // is a pure function of what the export said, so every outcome is checked

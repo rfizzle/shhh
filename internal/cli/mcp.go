@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/charmbracelet/x/term"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
@@ -503,7 +505,7 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 		return r
 	}
 
-	servers := report.Section{Header: "SERVERS", NameWidth: doctorNameWidth}
+	servers := report.Section{Header: "SERVERS", NameWidth: doctor.NameWidth}
 	tools := report.Section{Header: "TOOLS"}
 	// Prompts and resources are sections of their own rather than more rows
 	// under TOOLS: they are reached differently — one is typed, one is read
@@ -640,7 +642,7 @@ func mcpManager(ts *mcp.Toolset, cat *mcp.Catalog) func(args []string) string {
 // every dial is started when the probes are built and each probe waits for
 // its own: five unreachable servers cost one timeout, not five. A re-run
 // dials again.
-func mcpProbes(ctx context.Context, cat *mcp.Catalog, db *storage.DB, cfg config.Config) []doctorProbe {
+func mcpProbes(ctx context.Context, cat *mcp.Catalog, db *storage.DB, cfg config.Config) []doctor.Probe {
 	root := mcpRoot()
 	dial := func(def mcp.Definition) <-chan mcp.Report {
 		ch := make(chan mcp.Report, 1)
@@ -651,14 +653,14 @@ func mcpProbes(ctx context.Context, cat *mcp.Catalog, db *storage.DB, cfg config
 		}()
 		return ch
 	}
-	probes := make([]doctorProbe, 0, cat.Len())
+	probes := make([]doctor.Probe, 0, cat.Len())
 	for _, def := range cat.Servers {
 		def := def
 		pending := dial(def)
-		probes = append(probes, doctorProbe{
-			name:   string(def.Transport),
-			queued: def.Name + " · " + def.Target(),
-			run: func(context.Context, config.Config) doctorFinding {
+		probes = append(probes, doctor.Probe{
+			Name:   string(def.Transport),
+			Queued: def.Name + " · " + def.Target(),
+			Run: func(context.Context, config.Config) doctor.Finding {
 				if pending == nil {
 					pending = dial(def)
 				}
@@ -673,9 +675,9 @@ func mcpProbes(ctx context.Context, cat *mcp.Catalog, db *storage.DB, cfg config
 
 // mcpFinding is the reading of one report: the row, its consequence, its
 // fix, and — for a project server waiting on the person — the offer.
-func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
+func mcpFinding(r mcp.Report, root string, db *storage.DB) doctor.Finding {
 	d := r.Definition
-	f := doctorFinding{
+	f := doctor.Finding{
 		Subject: d.Name, Detail: mcpDetail(d),
 		Outcome: mcpOutcome(r), State: mcpState(r.Status),
 		Consequence: mcpConsequence(r),
@@ -789,8 +791,8 @@ func newMCPCmd() *cobra.Command {
 			}
 			probes := mcpProbes(cmd.Context(), cat, db, cfg)
 			if table || !term.IsTerminal(os.Stdout.Fd()) {
-				checks := runDoctorChecks(cmd.Context(), cfg, probes)
-				r := doctorReportOf("shhh mcp", "server", "servers", checks)
+				checks := doctor.RunChecks(cmd.Context(), cfg, probes)
+				r := doctor.ReportOf("shhh mcp", "server", "servers", checks)
 				// A definition that would not load is a note on the report
 				// rather than a line printed after it: the same voice as the
 				// rows, which is the whole point of there being one shape.
@@ -904,7 +906,7 @@ func mcpShow(r mcp.Report, root string) string {
 	s := r.Server
 	if s.Info.Name != "" || s.Protocol != "" {
 		out.Sections[0].Pairs = append(out.Sections[0].Pairs,
-			report.Pair{Key: "server", Value: joinDetail(strings.TrimSpace(s.Info.Name+" "+s.Info.Version), s.Protocol)})
+			report.Pair{Key: "server", Value: doctor.JoinDetail(strings.TrimSpace(s.Info.Name+" "+s.Info.Version), s.Protocol)})
 	}
 	if s.Instructions != "" {
 		out.Sections = append(out.Sections, report.Section{

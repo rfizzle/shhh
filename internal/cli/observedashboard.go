@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -123,7 +125,7 @@ func observeReport(data observeData) report.Report {
 	for _, s := range data.Sessions {
 		spend += s.Cost
 	}
-	r.Subject = joinDetail(fmt.Sprintf("%s · last %s",
+	r.Subject = doctor.JoinDetail(fmt.Sprintf("%s · last %s",
 		countOf(len(data.Sessions), "session", "sessions"), data.Window), observeCost(spend))
 
 	for _, section := range []report.Section{
@@ -157,7 +159,7 @@ func observeDayRows(days []storage.AgentDayUsage) []report.Row {
 	for _, u := range days {
 		rows = append(rows, report.Row{State: report.Pass, Name: u.Day,
 			Subject: countOf(u.Sessions, "session", "sessions"),
-			Detail:  joinDetail(observeTokens(u.TokensIn, u.TokensOut), observeCost(u.Cost))})
+			Detail:  doctor.JoinDetail(observeTokens(u.TokensIn, u.TokensOut), observeCost(u.Cost))})
 	}
 	return rows
 }
@@ -167,7 +169,7 @@ func observeModelRows(models []storage.AgentModelUsage) []report.Row {
 	for _, u := range models {
 		rows = append(rows, report.Row{State: report.Pass, Name: u.Model,
 			Subject: countOf(u.Sessions, "session", "sessions"),
-			Detail:  joinDetail(observeTokens(u.TokensIn, u.TokensOut), observeCost(u.Cost)),
+			Detail:  doctor.JoinDetail(observeTokens(u.TokensIn, u.TokensOut), observeCost(u.Cost)),
 			Outcome: u.Provider})
 	}
 	return rows
@@ -366,7 +368,7 @@ func observeTurnRows(turns []storage.AgentTurnOutcome) []report.Row {
 			State:   observeTurnState(t.Outcome),
 			Name:    t.Outcome,
 			Subject: countOf(t.Count, "turn", "turns"),
-			Detail: joinDetail(fmt.Sprintf("%.1f rounds avg · %d max", t.AvgRounds, t.MaxRounds),
+			Detail: doctor.JoinDetail(fmt.Sprintf("%.1f rounds avg · %d max", t.AvgRounds, t.MaxRounds),
 				latencyText(t.AvgDurationMs)),
 		})
 	}
@@ -597,10 +599,10 @@ func observeSessionRows(sessions []storage.AgentSessionSummary) []report.Row {
 		row := report.Row{
 			State:   report.Pass,
 			Name:    strconv.FormatInt(s.ID, 10),
-			Subject: joinDetail(observeKindOf(s), s.Model),
-			Detail: joinDetail(s.StartedAt.Local().Format("Jan 2 15:04"),
-				joinDetail(countOf(int(s.Turns), "turn", "turns"),
-					joinDetail(observeTokens(s.TokensIn, s.TokensOut), observeCost(s.Cost)))),
+			Subject: doctor.JoinDetail(observeKindOf(s), s.Model),
+			Detail: doctor.JoinDetail(s.StartedAt.Local().Format("Jan 2 15:04"),
+				doctor.JoinDetail(countOf(int(s.Turns), "turn", "turns"),
+					doctor.JoinDetail(observeTokens(s.TokensIn, s.TokensOut), observeCost(s.Cost)))),
 			Outcome: observeElapsed(s),
 		}
 		if s.EndedAt == nil {
@@ -615,7 +617,7 @@ func observeSessionRows(sessions []storage.AgentSessionSummary) []report.Row {
 // beside it where the row is a child's: three writers of one fan-out are
 // otherwise one word three times, told apart only by their row ids.
 func observeKindOf(s storage.AgentSessionSummary) string {
-	return joinDetail(s.Kind, s.Name)
+	return doctor.JoinDetail(s.Kind, s.Name)
 }
 
 // observeElapsed is how long a session took, or `active` for one that is

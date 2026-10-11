@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/cli/doctor"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -16,7 +17,7 @@ import (
 // than a blank terminal that resolves all at once.
 type doctorModel struct {
 	cfg    config.Config
-	probes []doctorProbe
+	probes []doctor.Probe
 	// ctx is the command's context, handed to every probe, because it
 	// carries what the checkout's own settings file contributed — which the
 	// model row needs to name the file that set a key. Nil is a background
@@ -28,7 +29,7 @@ type doctorModel struct {
 	// findings are the answers behind the rows the screen is drawing. The
 	// screen is handed only what it renders, and an action is not renderable
 	// — so the function `[a]` invokes stays here, indexed the same way.
-	findings []doctorFinding
+	findings []doctor.Finding
 	// nouns are what the header and the text report count, singular and
 	// plural, when the screen is not doctor's own.
 	nouns [2]string
@@ -39,7 +40,7 @@ type doctorModel struct {
 // doctorDoneMsg carries one probe's answer back to the model.
 type doctorDoneMsg struct {
 	at      int
-	finding doctorFinding
+	finding doctor.Finding
 	took    time.Duration
 }
 
@@ -54,17 +55,17 @@ type doctorAppliedMsg struct {
 	err   error
 }
 
-func newDoctorModel(cfg config.Config, probes []doctorProbe) *doctorModel {
+func newDoctorModel(cfg config.Config, probes []doctor.Probe) *doctorModel {
 	m := &doctorModel{cfg: cfg, probes: probes}
-	m.findings = make([]doctorFinding, len(m.probes))
+	m.findings = make([]doctor.Finding, len(m.probes))
 	m.screen.Checks = make([]components.DoctorCheck, len(m.probes))
 	for i, probe := range m.probes {
-		subject := probe.queued
+		subject := probe.Queued
 		if subject == "" {
-			subject = doctorQueuedSubject(probe.name)
+			subject = doctorQueuedSubject(probe.Name)
 		}
 		m.screen.Checks[i] = components.DoctorCheck{
-			Name: probe.name, Subject: subject,
+			Name: probe.Name, Subject: subject,
 			Outcome: components.OutcomeQueued, Duration: components.NoDuration,
 			State: components.DoctorQueued,
 		}
@@ -150,7 +151,7 @@ func (m *doctorModel) runNext() tea.Cmd {
 	}
 	return func() tea.Msg {
 		started := time.Now()
-		finding := probe.run(ctx, cfg)
+		finding := probe.Run(ctx, cfg)
 		return doctorDoneMsg{at: at, finding: finding, took: time.Since(started)}
 	}
 }
@@ -196,7 +197,7 @@ func (m *doctorModel) other(msg tea.Msg) tea.Cmd {
 
 	case doctorDoneMsg:
 		m.findings[msg.at] = msg.finding
-		m.screen.Checks[msg.at] = doctorCheck(m.probes[msg.at].name, msg.finding, msg.took)
+		m.screen.Checks[msg.at] = doctor.Check(m.probes[msg.at].Name, msg.finding, msg.took)
 		m.at = msg.at + 1
 		m.screen.Elapsed = doctorElapsed(time.Since(m.started))
 		if m.at >= len(m.probes) {
@@ -288,7 +289,7 @@ func (m *doctorModel) report() string {
 	if m.screen.Title != "" {
 		title, one, many = m.screen.Title, m.nouns[0], m.nouns[1]
 	}
-	return doctorReportOf(title, one, many, m.screen.Checks).String()
+	return doctor.ReportOf(title, one, many, m.screen.Checks).String()
 }
 
 // doctorElapsed is the header's running clock: tenths while a run is short
@@ -300,18 +301,18 @@ func doctorElapsed(d time.Duration) string {
 	return fmt.Sprintf("%ds", int(d.Seconds()))
 }
 
-func runDoctorScreen(ctx context.Context, cfg config.Config, probes []doctorProbe) error {
+func runDoctorScreen(ctx context.Context, cfg config.Config, probes []doctor.Probe) error {
 	return runDoctorScreenIn(ctx, cfg, probes, "", [2]string{})
 }
 
 // runDoctorScreenTitled is the screen under another command's name, with
 // the nouns its header and report count in. Empty means doctor's own.
-func runDoctorScreenTitled(cfg config.Config, probes []doctorProbe, title string, nouns [2]string) error {
+func runDoctorScreenTitled(cfg config.Config, probes []doctor.Probe, title string, nouns [2]string) error {
 	return runDoctorScreenIn(context.Background(), cfg, probes, title, nouns)
 }
 
 // runDoctorScreenIn is the screen with the context its probes are handed.
-func runDoctorScreenIn(ctx context.Context, cfg config.Config, probes []doctorProbe, title string, nouns [2]string) error {
+func runDoctorScreenIn(ctx context.Context, cfg config.Config, probes []doctor.Probe, title string, nouns [2]string) error {
 	m := newDoctorModel(cfg, probes)
 	m.ctx, m.screen.Title, m.nouns = ctx, title, nouns
 	m.started = time.Now()

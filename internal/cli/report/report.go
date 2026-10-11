@@ -572,3 +572,22 @@ func painted() theme {
 		tally:       dim,
 	}
 }
+
+// Count states a count with the noun that fits it, for a plural that is not
+// the singular plus an s.
+func Count(n int, one, many string) string {
+	if n == 1 {
+		return "1 " + one
+	}
+	return fmt.Sprintf("%d %s", n, many)
+}
+
+// ShortPath writes a path under the home directory as ~/…, which is how every
+// other surface in the product states one.
+func ShortPath(path string) string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" || !strings.HasPrefix(path, home) {
+		return path
+	}
+	return "~" + path[len(home):]
+}

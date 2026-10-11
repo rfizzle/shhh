@@ -9,6 +9,8 @@ package cli
 import (
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -175,7 +177,7 @@ func webScreenSources(ts *web.Toolset, cfg config.Config) []components.ToolsSour
 			Tools:  []string{web.SearchToolName},
 		})
 	}
-	var f doctorFinding
+	var f doctor.Finding
 	switch backend := cfg.Web.SearchProvider; backend {
 	case "", web.ProviderBrave:
 		f = doctorSearchBrave(false)

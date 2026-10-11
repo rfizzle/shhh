@@ -17,6 +17,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -258,7 +260,7 @@ func installEnv(r toolchainReading) []string {
 }
 
 // probeToolchain is the doctor's reading of the declaration.
-func probeToolchain(context.Context, config.Config) doctorFinding {
+func probeToolchain(context.Context, config.Config) doctor.Finding {
 	t := projectTrust()
 	return doctorToolchain(openToolchain(), slices.Contains(t.Withheld(), project.KindToolchain))
 }
@@ -266,22 +268,22 @@ func probeToolchain(context.Context, config.Config) doctorFinding {
 // doctorToolchain is that reading: nothing declared is nothing to check, a
 // withheld declaration is the trust row's to explain, a broken one fails, and
 // a missing tool is a warning naming the one way it is installed.
-func doctorToolchain(r toolchainReading, withheld bool) doctorFinding {
+func doctorToolchain(r toolchainReading, withheld bool) doctor.Finding {
 	switch {
 	case withheld:
-		return doctorFinding{Subject: "withheld", Detail: project.ToolchainFile,
+		return doctor.Finding{Subject: "withheld", Detail: project.ToolchainFile,
 			Outcome: "untrusted", State: components.DoctorSkipped}
 	case r.err != nil:
-		return doctorFinding{Subject: "unreadable", Detail: project.ToolchainFile, Outcome: "broken",
+		return doctor.Finding{Subject: "unreadable", Detail: project.ToolchainFile, Outcome: "broken",
 			State: components.DoctorFailed, Consequence: r.err.Error()}
 	case !r.declared:
-		return doctorFinding{Subject: "no toolchain declared", Detail: project.ToolchainFile,
+		return doctor.Finding{Subject: "no toolchain declared", Detail: project.ToolchainFile,
 			Outcome: "empty", State: components.DoctorSkipped}
 	case len(r.missing) == 0:
-		return doctorFinding{Subject: countOf(len(r.tc.Check), "tool", "tools") + " on PATH",
+		return doctor.Finding{Subject: countOf(len(r.tc.Check), "tool", "tools") + " on PATH",
 			Detail: strings.Join(r.tc.Check, " · "), Outcome: "ok"}
 	}
-	f := doctorFinding{
+	f := doctor.Finding{
 		Subject: countOf(len(r.missing), "tool", "tools") + " missing",
 		Detail:  strings.Join(r.missing, " · "),
 		Outcome: "missing", State: components.DoctorWarned,

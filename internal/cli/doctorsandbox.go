@@ -5,16 +5,17 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
+func probeSandbox(_ context.Context, cfg config.Config) doctor.Finding {
 	policy, err := sandboxPolicy(cfg)
 	if err != nil {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "the containment policy is not readable", Detail: err.Error(),
 			Outcome: "misconfigured", State: components.DoctorFailed,
 			Consequence: "every contained command will fail until the policy is fixed; none of them runs bare",
@@ -34,15 +35,15 @@ func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 // reader on a host with a mechanism is told the rule too, since it is what
 // stands between them and a refusal the day the mechanism goes.
 // See docs/capabilities/containment.md#containment-can-be-required.
-func withModeRequirement(f doctorFinding, cfg config.Config, avail sandbox.Availability) doctorFinding {
+func withModeRequirement(f doctor.Finding, cfg config.Config, avail sandbox.Availability) doctor.Finding {
 	if avail.OK {
 		switch {
 		case cfg.SandboxRequired():
-			f.Detail = joinDetail(f.Detail, "required in every mode (sandbox.require on)")
+			f.Detail = doctor.JoinDetail(f.Detail, "required in every mode (sandbox.require on)")
 		case !cfg.SandboxRequiredIn(true):
-			f.Detail = joinDetail(f.Detail, "not required in any mode (sandbox.require off)")
+			f.Detail = doctor.JoinDetail(f.Detail, "not required in any mode (sandbox.require off)")
 		default:
-			f.Detail = joinDetail(f.Detail, "required in plan and ask, not elsewhere")
+			f.Detail = doctor.JoinDetail(f.Detail, "required in plan and ask, not elsewhere")
 		}
 		return f
 	}
@@ -63,14 +64,14 @@ func withModeRequirement(f doctorFinding, cfg config.Config, avail sandbox.Avail
 // writer's is refused. It is added here rather than in doctorSandbox, whose
 // fix lines are the refusal's own.
 // See docs/capabilities/containment.md#containment-can-be-required.
-func withWriterDefault(f doctorFinding, w writerCommands) doctorFinding {
+func withWriterDefault(f doctor.Finding, w writerCommands) doctor.Finding {
 	switch w.state {
 	case writerContained:
 		words := "writers must be contained"
 		if !w.required {
 			words = "writers contained, not required (agents.require_sandbox off)"
 		}
-		f.Detail = joinDetail(f.Detail, words)
+		f.Detail = doctor.JoinDetail(f.Detail, words)
 	case writerRefused:
 		f.Consequence = joinConsequence(f.Consequence, "a writer's commands are refused until one is")
 	case writerUncontained:
@@ -98,20 +99,20 @@ func joinConsequence(head, tail string) string {
 // the private one is, and what a grant of the host's would change, is
 // docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own
 // and `/sandbox doctor`, which resolves the whole policy.
-func doctorSandbox(avail sandbox.Availability, policy sandbox.Policy, goos string) doctorFinding {
+func doctorSandbox(avail sandbox.Availability, policy sandbox.Policy, goos string) doctor.Finding {
 	if avail.OK {
-		detail := joinDetail(joinDetail(joinDetail(avail.Detail, string(policy.Profile)+" profile"), sandbox.NetworkWords(avail, policy)), "private tmpdir")
+		detail := doctor.JoinDetail(doctor.JoinDetail(doctor.JoinDetail(avail.Detail, string(policy.Profile)+" profile"), sandbox.NetworkWords(avail, policy)), "private tmpdir")
 		// The repository's hooks and config, said where they are read-only
 		// and not claimed where they are not (GitStoreWords is "" then): git
 		// runs them on the host, and this row's reader would not know.
 		// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: avail.Mechanism,
-			Detail:  joinDetail(detail, sandbox.GitStoreWords(avail, policy)),
+			Detail:  doctor.JoinDetail(detail, sandbox.GitStoreWords(avail, policy)),
 			Outcome: "contained",
 		}
 	}
-	f := doctorFinding{
+	f := doctor.Finding{
 		Subject: "no containment mechanism", Detail: avail.Detail,
 		Outcome: "uncontained", State: components.DoctorFailed,
 		Consequence: "every approval will show ⚠ UNCONTAINED, and an approved command runs as you",
@@ -146,20 +147,20 @@ func doctorSandbox(avail sandbox.Availability, policy sandbox.Policy, goos strin
 	return f
 }
 
-func probeEngine(_ context.Context, cfg config.Config) doctorFinding {
+func probeEngine(_ context.Context, cfg config.Config) doctor.Finding {
 	eng := sandbox.DetectEngine(cfg.Sandbox.ContainerEngine)
 	image := sandboxImageFor(cfg)
 	imageErr := sandbox.ValidateImage(image, cfg.Sandbox.ImageAllowlist)
 	f := doctorEngine(eng, image, imageErr, ownedSandboxCount())
 	if imageFromVersionTag(cfg.Sandbox.ContainerImage) {
-		f.Detail = joinDetail(f.Detail, "image named by this build's version tag, not a digest")
+		f.Detail = doctor.JoinDetail(f.Detail, "image named by this build's version tag, not a digest")
 	}
 	if eng.OK && len(cfg.Sandbox.AllowHosts) > 0 {
 		// A container's network is a switch, so the list is not what a
 		// --sandbox run's commands are held to, and the row is where that
 		// is said rather than left for the reader to assume.
 		// See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
-		f.Detail = joinDetail(f.Detail, "sandbox.allow_hosts not held; a container's network is the profile's switch")
+		f.Detail = doctor.JoinDetail(f.Detail, "sandbox.allow_hosts not held; a container's network is the profile's switch")
 	}
 	return f
 }
@@ -167,7 +168,7 @@ func probeEngine(_ context.Context, cfg config.Config) doctorFinding {
 // probeImage is the doctor's reading of the image a --sandbox run would start
 // from. It asks the engine and prepares nothing: a diagnostic looks and does
 // not touch, and a preparation is minutes of installs.
-func probeImage(ctx context.Context, cfg config.Config) doctorFinding {
+func probeImage(ctx context.Context, cfg config.Config) doctor.Finding {
 	tc, declared, err := project.LoadToolchain(projectTrust())
 	r := preparedReading{declared: declared && sandbox.NeedsPreparing(tc), broken: err != nil}
 	eng := sandbox.DetectEngine(cfg.Sandbox.ContainerEngine)
@@ -214,7 +215,7 @@ type preparedReading struct {
 // rather than leaving the wait to surprise the reader. A declaration that
 // does not load is the needs row's to explain, since one fault is not two.
 // See docs/capabilities/containment.md#a-sandbox-starts-from-an-image-prepared-from-it.
-func doctorImage(r preparedReading) doctorFinding {
+func doctorImage(r preparedReading) doctor.Finding {
 	return withHelper(preparedImageFinding(r), r.helper)
 }
 
@@ -222,14 +223,14 @@ func doctorImage(r preparedReading) doctorFinding {
 // helper. One that lacks it is the one reading that warns: a sandbox session
 // refuses such an image rather than running commands its cancel cannot reach.
 // See docs/capabilities/containment.md#a-session-can-run-in-the-sandbox.
-func withHelper(f doctorFinding, helper string) doctorFinding {
+func withHelper(f doctor.Finding, helper string) doctor.Finding {
 	switch helper {
 	case sandbox.HelperCarried:
-		f.Detail = joinDetail(f.Detail, "carries the command helper")
+		f.Detail = doctor.JoinDetail(f.Detail, "carries the command helper")
 	case sandbox.HelperUnpulled:
-		f.Detail = joinDetail(f.Detail, "not pulled yet; a sandbox session checks the helper when it starts")
+		f.Detail = doctor.JoinDetail(f.Detail, "not pulled yet; a sandbox session checks the helper when it starts")
 	case sandbox.HelperLacking:
-		f.Detail = joinDetail(f.Detail, "no command helper")
+		f.Detail = doctor.JoinDetail(f.Detail, "no command helper")
 		f.Outcome, f.State = "no helper", components.DoctorWarned
 		f.Consequence = joinConsequence(f.Consequence, "a sandbox session refuses this image: a command in it could not be stopped from here")
 		f.FixLabel = "show what to use instead"
@@ -239,26 +240,26 @@ func withHelper(f doctorFinding, helper string) doctorFinding {
 }
 
 // preparedImageFinding is the image row's reading of the preparation.
-func preparedImageFinding(r preparedReading) doctorFinding {
+func preparedImageFinding(r preparedReading) doctor.Finding {
 	switch {
 	case r.broken:
-		return doctorFinding{Subject: "unreadable", Detail: project.ToolchainFile + " · --sandbox refuses until it loads",
+		return doctor.Finding{Subject: "unreadable", Detail: project.ToolchainFile + " · --sandbox refuses until it loads",
 			Outcome: "not checked", State: components.DoctorSkipped}
 	case !r.declared:
-		return doctorFinding{Subject: "nothing to prepare", Detail: "the base image runs as it is",
+		return doctor.Finding{Subject: "nothing to prepare", Detail: "the base image runs as it is",
 			Outcome: "empty", State: components.DoctorSkipped}
 	case !r.sandbox:
-		return doctorFinding{Subject: project.ToolchainFile, Detail: "no container sandbox to prepare it for",
+		return doctor.Finding{Subject: project.ToolchainFile, Detail: "no container sandbox to prepare it for",
 			Outcome: "not checked", State: components.DoctorSkipped}
 	case r.err != nil:
-		return doctorFinding{Subject: project.ToolchainFile, Detail: r.err.Error(),
+		return doctor.Finding{Subject: project.ToolchainFile, Detail: r.err.Error(),
 			Outcome: "unknown", State: components.DoctorWarned,
 			Consequence: "the engine could not say whether an image was prepared from it"}
 	case r.id == "":
-		return doctorFinding{Subject: project.ToolchainFile, Detail: "the next --sandbox run prepares it, once",
+		return doctor.Finding{Subject: project.ToolchainFile, Detail: "the next --sandbox run prepares it, once",
 			Outcome: "not prepared", State: components.DoctorSkipped}
 	}
-	return doctorFinding{Subject: project.ToolchainFile, Detail: "prepared as " + shortPrepared(r.id), Outcome: "current"}
+	return doctor.Finding{Subject: project.ToolchainFile, Detail: "prepared as " + shortPrepared(r.id), Outcome: "current"}
 }
 
 // ownedSandboxCount is how many sandbox containers this machine still owns.
@@ -280,9 +281,9 @@ func ownedSandboxCount() int {
 // --sandbox` asks for one, with or without -p, and nothing else does. So a machine with no
 // engine is `⊘ not checked` rather than a failure — the row states what is
 // not available instead of claiming something is broken (invariant 4).
-func doctorEngine(eng sandbox.Engine, image string, imageErr error, owned int) doctorFinding {
+func doctorEngine(eng sandbox.Engine, image string, imageErr error, owned int) doctor.Finding {
 	if !eng.OK {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "no container engine", Detail: eng.Detail,
 			Outcome: "not available", State: components.DoctorSkipped,
 			Consequence: "shhh code --sandbox will refuse to start, with or without -p; nothing else needs one",
@@ -293,9 +294,9 @@ func doctorEngine(eng sandbox.Engine, image string, imageErr error, owned int) d
 			},
 		}
 	}
-	f := doctorFinding{Subject: eng.Name, Detail: eng.Detail, Outcome: "ok"}
+	f := doctor.Finding{Subject: eng.Name, Detail: eng.Detail, Outcome: "ok"}
 	if owned > 0 {
-		f.Detail = joinDetail(f.Detail, countOf(owned, "container owned", "containers owned"))
+		f.Detail = doctor.JoinDetail(f.Detail, countOf(owned, "container owned", "containers owned"))
 	}
 	if imageErr != nil {
 		f.Detail = imageErr.Error()
@@ -306,7 +307,7 @@ func doctorEngine(eng sandbox.Engine, image string, imageErr error, owned int) d
 		f.Fix = []string{"shhh config set --global sandbox.container_image <name>@sha256:<digest>"}
 		return f
 	}
-	f.Detail = joinDetail(f.Detail, "image "+shortImage(image))
+	f.Detail = doctor.JoinDetail(f.Detail, "image "+shortImage(image))
 	return f
 }
 

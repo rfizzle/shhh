@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
@@ -451,7 +453,7 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 		GitStore:  c.GitStoreWords(),
 		Engine:    eng.Name,
 		Image:     imageDigestWords(spec.Image),
-		Detail:    joinDetail(eng.Detail, "image "+shortImage(spec.Image)),
+		Detail:    doctor.JoinDetail(eng.Detail, "image "+shortImage(spec.Image)),
 		Manage:    sandboxManage(cfg, sc, sup),
 		Writers:   writers.words.line(),
 		Toolchain: sandboxToolchain(ctx, c),
@@ -851,7 +853,7 @@ func sandboxList(ctx context.Context) string {
 		}
 		rows = append(rows, report.Row{
 			State: live, Name: rec.ID, Subject: rec.Engine,
-			Detail: joinDetail(rec.Workspace, expiry), Outcome: state,
+			Detail: doctor.JoinDetail(rec.Workspace, expiry), Outcome: state,
 			Body: []string{rec.Image},
 		})
 	}

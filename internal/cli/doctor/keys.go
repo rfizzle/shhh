@@ -1,4 +1,4 @@
-package cli
+package doctor
 
 // The keys row: whether the terminal delivers the alt chords the keyboard
 // offers.
@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -96,10 +97,10 @@ func (s optionKeyState) terminalName() string {
 // in milliseconds and has no business taking longer.
 const doctorPrefsTimeout = 3 * time.Second
 
-// readPrefs exports one preference domain. A variable so the suite can run
+// ReadPrefs exports one preference domain. A variable so the suite can run
 // every probe without asking the developer's own terminal for its profile:
 // a test reads its scratch directory, not the machine.
-var readPrefs = func(ctx context.Context, domain string) (any, error) {
+var ReadPrefs = func(ctx context.Context, domain string) (any, error) {
 	ctx, cancel := context.WithTimeout(ctx, doctorPrefsTimeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, "defaults", "export", domain, "-").Output()
@@ -118,11 +119,12 @@ var readPrefs = func(ctx context.Context, domain string) (any, error) {
 	return root, nil
 }
 
-func probeOptionKey(ctx context.Context, _ config.Config) doctorFinding {
+// OptionKey is the check on whether the terminal sends Option as Alt.
+func OptionKey(ctx context.Context, _ config.Config) Finding {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return doctorOptionKey(readOptionKey(ctx, runtime.GOOS, os.Getenv, readPrefs))
+	return doctorOptionKey(readOptionKey(ctx, runtime.GOOS, os.Getenv, ReadPrefs))
 }
 
 // readOptionKey finds the terminal and reads its profile's Option setting.
@@ -261,7 +263,7 @@ func optionFix(terminal, profile string) []string {
 // only the two stock terminals have a setting shhh knows where to read; a
 // profile where Option types a character is a warning rather than a failure
 // — the keyboard works, and four of its chords do not.
-func doctorOptionKey(s optionKeyState) doctorFinding {
+func doctorOptionKey(s optionKeyState) Finding {
 	alt := altChords()
 	// The row counts the chords rather than listing them. It listed them
 	// while there were four; a transcript row's offers put eleven more on
@@ -271,7 +273,7 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 	// chords themselves are written down.
 	// On a Mac every one of them is the reader's own, and one is a count
 	// that happens: a file that put the agent manager back on alt.
-	chords := countOf(len(alt), "alt chord", "alt chords")
+	chords := report.Count(len(alt), "alt chord", "alt chords")
 	they := func(one, many string) string {
 		if len(alt) == 1 {
 			return one
@@ -279,7 +281,7 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 		return many
 	}
 	if s.GOOS != "darwin" {
-		return doctorFinding{
+		return Finding{
 			Subject: "no Option key on " + s.GOOS, Detail: s.terminalName(),
 			Outcome: "not a question here", State: components.DoctorSkipped,
 		}
@@ -289,13 +291,13 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 		// alt: there is no chord for the setting to be about, and reading a
 		// preference to warn about keys nobody can press would be a warning
 		// with nothing behind it.
-		return doctorFinding{
+		return Finding{
 			Subject: "no alt chord is bound", Detail: s.terminalName(),
 			Outcome: "not a question here", State: components.DoctorSkipped,
 		}
 	}
 	if s.Err != nil {
-		return doctorFinding{
+		return Finding{
 			Subject: "the Option setting of " + s.terminalName() + " could not be read", Detail: s.Err.Error(),
 			Outcome: "unread", State: components.DoctorWarned,
 			// The probe is one of the chords, so the run behind it names the
@@ -303,7 +305,7 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 			// to press it does not need it repeated, and the row clips
 			// rather than wraps.
 			Consequence: fmt.Sprintf("if %s types a character, %s never reach%s shhh",
-				alt[0], they("it", countOf(len(alt)-1, "more alt chord", "more alt chords")), they("es", "")),
+				alt[0], they("it", report.Count(len(alt)-1, "more alt chord", "more alt chords")), they("es", "")),
 			FixLabel: "show the setting to turn on",
 			Fix:      optionFix(s.Terminal, s.Profile),
 		}
@@ -316,17 +318,17 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 	}
 	switch s.Sends {
 	case optionEscape:
-		detail := joinDetail(s.terminalName(), profile)
+		detail := JoinDetail(s.terminalName(), profile)
 		if s.RightOnly {
-			detail = joinDetail(detail, "the right Option key")
+			detail = JoinDetail(detail, "the right Option key")
 		}
-		return doctorFinding{
+		return Finding{
 			Subject: "Option sends the escape prefix", Detail: detail,
 			Outcome: "delivered",
 		}
 	case optionCharacter:
-		return doctorFinding{
-			Subject: "Option types a character", Detail: joinDetail(s.terminalName(), profile),
+		return Finding{
+			Subject: "Option types a character", Detail: JoinDetail(s.terminalName(), profile),
 			Outcome: "chords dead", State: components.DoctorWarned,
 			Consequence: chords + they(" types a character and never reaches shhh; ", " type a character and never reach shhh; ") +
 				keys.Shown(keys.Draft.KeyList) + " lists them",
@@ -334,15 +336,15 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 			Fix:      optionFix(s.Terminal, s.Profile),
 		}
 	case optionHighBit:
-		return doctorFinding{
-			Subject: "Option sets the eighth bit", Detail: joinDetail(s.terminalName(), profile),
+		return Finding{
+			Subject: "Option sets the eighth bit", Detail: JoinDetail(s.terminalName(), profile),
 			Outcome: "not a chord", State: components.DoctorWarned,
 			Consequence: chords + they(" arrives as bytes, not a chord; pick Esc+", " arrive as bytes, not chords; pick Esc+"),
 			FixLabel:    "show the setting to change",
 			Fix:         optionFix(s.Terminal, s.Profile),
 		}
 	}
-	f := doctorFinding{
+	f := Finding{
 		Subject: "the Option setting of " + s.terminalName() + " is not one shhh reads",
 		Detail:  "if " + alt[0] + " types a character, its option-as-alt setting is off",
 		Outcome: "not read", State: components.DoctorSkipped,

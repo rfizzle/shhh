@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/cli/doctor"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -18,7 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/web"
 )
 
-func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
+func probeModel(ctx context.Context, cfg config.Config) doctor.Finding {
 	resolved := resolve.Resolve(resolve.Opts{
 		ConfigProvider:  cfg.Provider.Default,
 		ConfigModel:     cfg.Provider.Model,
@@ -57,17 +58,17 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 	over := resolve.ModelOutranks(resolve.Opts{ConfigModel: cfg.Provider.Model})
 	switch {
 	case over != "" && len(set)+len(surfaces) > 0:
-		f.Detail = joinDetail(f.Detail, over+", overruling "+strings.Join(append(set, surfaces...), ", "))
+		f.Detail = doctor.JoinDetail(f.Detail, over+", overruling "+strings.Join(append(set, surfaces...), ", "))
 	case len(surfaces) > 0:
-		f.Detail = joinDetail(f.Detail, strings.Join(surfaces, ", ")+" ahead of provider.model")
+		f.Detail = doctor.JoinDetail(f.Detail, strings.Join(surfaces, ", ")+" ahead of provider.model")
 	}
 	// A reasoning level is the other half of what a request asks for,
 	// and an unreadable one is a session that will fail to start rather than
 	// quietly reason less than it was told to.
 	if effort, err := provider.ParseEffort(resolved.Reasoning); err != nil {
-		f.Detail = joinDetail(f.Detail, err.Error())
+		f.Detail = doctor.JoinDetail(f.Detail, err.Error())
 	} else if effort.On() {
-		f.Detail = joinDetail(f.Detail, "reasoning "+effort.String())
+		f.Detail = doctor.JoinDetail(f.Detail, "reasoning "+effort.String())
 	}
 	// And whether the model's prompt cache has been seen to work where it
 	// resolves to, from what earlier sessions' responses said — a gateway
@@ -85,7 +86,7 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 // doing nothing and the person who turned it on should hear that now rather
 // than never.
 // See docs/capabilities/coding-agent.md#the-session-can-compact-while-you-are-away.
-func withIdleCompactWarning(f doctorFinding, cfg config.Config, readings []storage.CacheReading, providerName, model string) doctorFinding {
+func withIdleCompactWarning(f doctor.Finding, cfg config.Config, readings []storage.CacheReading, providerName, model string) doctor.Finding {
 	if !cfg.Behavior.CompactWhenIdle || model == "" || f.State == components.DoctorFailed {
 		return f
 	}
@@ -115,9 +116,9 @@ func withIdleCompactWarning(f doctorFinding, cfg config.Config, readings []stora
 }
 
 // withCacheNote is the model row with the cache's reading appended.
-func withCacheNote(f doctorFinding, readings []storage.CacheReading, providerName, model string) doctorFinding {
+func withCacheNote(f doctor.Finding, readings []storage.CacheReading, providerName, model string) doctor.Finding {
 	if note := cacheNote(readings, providerName, model); note != "" {
-		f.Detail = joinDetail(f.Detail, note)
+		f.Detail = doctor.JoinDetail(f.Detail, note)
 	}
 	return f
 }
@@ -125,7 +126,7 @@ func withCacheNote(f doctorFinding, readings []storage.CacheReading, providerNam
 // probeFlows reads where every bounded call lands for a session started now:
 // the provider and model the row above resolved, put through the same chain
 // the calls themselves are sent with.
-func probeFlows(_ context.Context, cfg config.Config) doctorFinding {
+func probeFlows(_ context.Context, cfg config.Config) doctor.Finding {
 	resolved := resolve.Resolve(resolve.Opts{
 		ConfigProvider: cfg.Provider.Default,
 		ConfigModel:    cfg.Provider.Model,
@@ -137,7 +138,7 @@ func probeFlows(_ context.Context, cfg config.Config) doctorFinding {
 
 // flowsFinding is the row with each line's notes: the classifier's backend,
 // then on any flow what a declaration narrowed.
-func flowsFinding(cfg config.Config, provName string, answers []flowModel, replaced bool) doctorFinding {
+func flowsFinding(cfg config.Config, provName string, answers []flowModel, replaced bool) doctor.Finding {
 	f := doctorFlows(answers)
 	for i, a := range answers {
 		if a.flow.flow == provider.FlowClassifier {
@@ -206,7 +207,7 @@ func classifierBackendNote(cfg config.Config, provName, model string, replaced b
 // and a provider with no small model (a gateway profile, a local endpoint)
 // reads as flows on the session's own rather than as nothing.
 // See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
-func doctorFlows(answers []flowModel) doctorFinding {
+func doctorFlows(answers []flowModel) doctor.Finding {
 	var models []string
 	steps := map[flowStep]int{}
 	lines := make([]string, 0, len(answers))
@@ -238,7 +239,7 @@ func doctorFlows(answers []flowModel) doctorFinding {
 			tally = append(tally, fmt.Sprintf("%d %s", n, s))
 		}
 	}
-	return doctorFinding{
+	return doctor.Finding{
 		Subject:  subject,
 		Detail:   strings.Join(tally, " · "),
 		Outcome:  "ok",
@@ -253,7 +254,7 @@ func doctorFlows(answers []flowModel) doctorFinding {
 // above already reports a key as found rather than as accepted, for the same
 // reason. A SearXNG instance is the person's own host, and whether it will
 // answer in JSON is not something this side can know without asking.
-func probeSearch(ctx context.Context, cfg config.Config) doctorFinding {
+func probeSearch(ctx context.Context, cfg config.Config) doctor.Finding {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -277,7 +278,7 @@ func probeSearch(ctx context.Context, cfg config.Config) doctorFinding {
 // probeHosts reads the host lists a fetch is judged beside: where they are
 // cached, and how old each one is. It opens the reading the session would
 // and downloads nothing — the row reports what a fetch would find.
-func probeHosts(_ context.Context, cfg config.Config) doctorFinding {
+func probeHosts(_ context.Context, cfg config.Config) doctor.Finding {
 	return doctorHosts(hostListsDir(), openReputation(cfg).Lists())
 }
 
@@ -287,7 +288,7 @@ func probeHosts(_ context.Context, cfg config.Config) doctorFinding {
 // list that cannot answer reads every host as unknown, which is the reading
 // that changes nothing
 // (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
-func doctorHosts(dir string, lists []web.ListState) doctorFinding {
+func doctorHosts(dir string, lists []web.ListState) doctor.Finding {
 	parts := make([]string, 0, len(lists))
 	var quiet []string
 	for _, st := range lists {
@@ -319,7 +320,7 @@ func doctorHosts(dir string, lists []web.ListState) doctorFinding {
 	if dir != "" {
 		subject = shortPath(dir)
 	}
-	f := doctorFinding{Subject: subject, Detail: strings.Join(parts, " · "), Outcome: "ok"}
+	f := doctor.Finding{Subject: subject, Detail: strings.Join(parts, " · "), Outcome: "ok"}
 	if len(quiet) > 0 {
 		f.Outcome, f.State = "stale", components.DoctorWarned
 		f.Consequence = strings.Join(quiet, ", ") + " cannot answer; a host only it would have named reads as unknown"
@@ -349,12 +350,12 @@ func hostListAge(d time.Duration) string {
 // override takes.
 var searxngCheck = web.CheckSearXNG
 
-func doctorSearchBrave(haveKey bool) doctorFinding {
+func doctorSearchBrave(haveKey bool) doctor.Finding {
 	if !haveKey {
 		// A machine with no key is not broken: it has no search. The row
 		// states what is not there rather than claiming a fault, the way the
 		// container-engine row does for a sandbox nothing asked for.
-		return doctorFinding{
+		return doctor.Finding{
 			Subject:     "no web search",
 			Outcome:     "off",
 			State:       components.DoctorSkipped,
@@ -366,11 +367,11 @@ func doctorSearchBrave(haveKey bool) doctorFinding {
 			},
 		}
 	}
-	return doctorFinding{Subject: web.ProviderBrave, Detail: "key found", Outcome: "ok"}
+	return doctor.Finding{Subject: web.ProviderBrave, Detail: "key found", Outcome: "ok"}
 }
 
-func doctorSearchNoInstance() doctorFinding {
-	return doctorFinding{
+func doctorSearchNoInstance() doctor.Finding {
+	return doctor.Finding{
 		Subject: "searxng names no instance", Outcome: "unconfigured",
 		State:       components.DoctorWarned,
 		Consequence: "web_search is not registered, and the session reads only URLs it is given",
@@ -384,12 +385,12 @@ func doctorSearchNoInstance() doctorFinding {
 // for: the search itself would come back holding nothing, which reads as a
 // web with no answer on it rather than as a setting one line away
 // (docs/capabilities/evidence.md#search-has-more-than-one-backend).
-func doctorSearchInstance(endpoint string, err error) doctorFinding {
+func doctorSearchInstance(endpoint string, err error) doctor.Finding {
 	switch {
 	case err == nil:
-		return doctorFinding{Subject: shortURL(endpoint), Detail: "answers JSON", Outcome: "ok"}
+		return doctor.Finding{Subject: shortURL(endpoint), Detail: "answers JSON", Outcome: "ok"}
 	case errors.Is(err, web.ErrSearXNGFormat):
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: shortURL(endpoint), Detail: "answers HTML, not JSON", Outcome: "wrong format",
 			State:       components.DoctorWarned,
 			Consequence: "every search comes back empty, as though the web held nothing",
@@ -402,7 +403,7 @@ func doctorSearchInstance(endpoint string, err error) doctorFinding {
 			},
 		}
 	}
-	return doctorFinding{
+	return doctor.Finding{
 		Subject: shortURL(endpoint), Detail: err.Error(), Outcome: "unreachable",
 		State:       components.DoctorWarned,
 		Consequence: "every search fails until the instance answers",
@@ -411,8 +412,8 @@ func doctorSearchInstance(endpoint string, err error) doctorFinding {
 	}
 }
 
-func doctorSearchUnknown(name string) doctorFinding {
-	return doctorFinding{
+func doctorSearchUnknown(name string) doctor.Finding {
+	return doctor.Finding{
 		Subject: "unknown search backend", Detail: name, Outcome: "unusable",
 		State:       components.DoctorWarned,
 		Consequence: "web_search is not registered at all",
@@ -444,8 +445,8 @@ func shortURL(raw string) string {
 // eight columns and `provider` fills all eight, leaving the target beside it
 // with no gap; `model` is the verb a failure row already gives a provider
 // failure, so the two rows line up.
-func doctorModelFinding(providerName, model string, survey resolve.Survey) doctorFinding {
-	f := doctorFinding{Subject: providerName}
+func doctorModelFinding(providerName, model string, survey resolve.Survey) doctor.Finding {
+	f := doctor.Finding{Subject: providerName}
 	if model != "" {
 		f.Detail = model
 	}
@@ -455,20 +456,20 @@ func doctorModelFinding(providerName, model string, survey resolve.Survey) docto
 		}
 		switch place.Kind {
 		case resolve.PlaceEnv, resolve.PlaceConfig:
-			f.Detail = joinDetail(f.Detail, "key "+doctorMasked(place.Finding)+" found")
+			f.Detail = doctor.JoinDetail(f.Detail, "key "+doctorMasked(place.Finding)+" found")
 			f.Outcome = "ok"
 			return f
 		case resolve.PlaceProfiles:
-			f.Detail = joinDetail(f.Detail, "gateway profile "+place.Finding+" is ready")
+			f.Detail = doctor.JoinDetail(f.Detail, "gateway profile "+place.Finding+" is ready")
 			f.Outcome = "ok"
 			return f
 		case resolve.PlaceLocal:
-			f.Detail = joinDetail(f.Detail, "a local runtime is answering on "+place.Finding)
+			f.Detail = doctor.JoinDetail(f.Detail, "a local runtime is answering on "+place.Finding)
 			f.Outcome = "ok"
 			return f
 		}
 	}
-	f.Detail = joinDetail(f.Detail, "no key in any of the four places")
+	f.Detail = doctor.JoinDetail(f.Detail, "no key in any of the four places")
 	f.Outcome = "no key"
 	f.State = components.DoctorFailed
 	f.Consequence = "no session will start until a key is found — every one exits on \"no provider\""

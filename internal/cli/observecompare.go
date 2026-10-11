@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -868,7 +870,7 @@ func observeOutcomeChanges(earlier, later *observeCohortData) []observeChange {
 func observeCompareReport(data observeCompareData) report.Report {
 	r := report.Report{
 		Title: "shhh observe compare",
-		Subject: joinDetail(data.Split, joinDetail(
+		Subject: doctor.JoinDetail(data.Split, doctor.JoinDetail(
 			countOf(data.Sessions, "session", "sessions"), "last "+data.Window)),
 	}
 	if len(data.Backends) > 0 {
@@ -911,7 +913,7 @@ func observeCompareReport(data observeCompareData) report.Report {
 		}
 		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{{
 			State: report.Skip, Subject: "too few sessions to compare",
-			Outcome: joinDetail(side, countOf(short.Sessions, "session", "sessions")),
+			Outcome: doctor.JoinDetail(side, countOf(short.Sessions, "session", "sessions")),
 			Consequence: strconv.Itoa(data.MinSessions) +
 				" is the fewest a rate is read from: under that, one unusual sitting moves a rate " +
 				"further than the change being measured would",
@@ -971,7 +973,7 @@ func observeBackendBlock(r report.Report, b observeBackendCompare) report.Report
 // nobody can weigh.
 func observeCohortRow(side string, c *observeCohortData) report.Row {
 	return report.Row{State: report.Queue, Name: side, Subject: c.Value,
-		Detail: joinDetail(
+		Detail: doctor.JoinDetail(
 			c.First.Local().Format("Jan 2")+" – "+c.Last.Local().Format("Jan 2"),
 			countOf(int(c.turns()), "turn", "turns")),
 		Outcome: countOf(c.Sessions, "session", "sessions")}
@@ -980,7 +982,7 @@ func observeCohortRow(side string, c *observeCohortData) report.Row {
 func observeChangeRow(c observeChange) report.Row {
 	detail := c.Qualifier
 	if c.Beside != nil {
-		detail = joinDetail(detail, c.Beside.figures()+" ("+c.Beside.direction()+")")
+		detail = doctor.JoinDetail(detail, c.Beside.figures()+" ("+c.Beside.direction()+")")
 	}
 	return report.Row{State: report.Queue, Name: c.Name,
 		Subject: c.figures(), Detail: detail, Outcome: c.direction()}

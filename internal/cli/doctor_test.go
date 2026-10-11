@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/migrate"
@@ -34,9 +36,9 @@ import (
 // guard on the vocabulary rather than on any one row.
 func TestDoctorProbes_NamesFitTheVerbField(t *testing.T) {
 	for _, probe := range doctorProbes() {
-		if len(probe.name) > 7 {
+		if len(probe.Name) > 7 {
 			t.Fatalf("check %q is %d columns; the verb field is 8 and needs a gap",
-				probe.name, len(probe.name))
+				probe.Name, len(probe.Name))
 		}
 	}
 }
@@ -48,11 +50,11 @@ func TestDoctorProbes_NamesFitTheVerbField(t *testing.T) {
 func TestContainmentProbes_AreASliceOfTheWholeRun(t *testing.T) {
 	all := map[string]bool{}
 	for _, probe := range doctorProbes() {
-		all[probe.name] = true
+		all[probe.Name] = true
 	}
 	for _, probe := range containmentProbes() {
-		if !all[probe.name] {
-			t.Fatalf("shhh code doctor runs %q, which shhh doctor does not", probe.name)
+		if !all[probe.Name] {
+			t.Fatalf("shhh code doctor runs %q, which shhh doctor does not", probe.Name)
 		}
 	}
 	if len(containmentProbes()) >= len(doctorProbes()) {
@@ -267,40 +269,6 @@ func TestDoctorModelFinding_TheFixCarriesTheLikelyWayIn(t *testing.T) {
 	f := doctorModelFinding("openai", "", survey)
 	if last := f.Fix[len(f.Fix)-1]; !strings.Contains(last, "gateway profile is ready") {
 		t.Fatalf("the fix does not end with the likely way in: %q", last)
-	}
-}
-
-// A store that will not open is the check that explains four other surfaces
-// being empty, so it says so.
-func TestDoctorStore(t *testing.T) {
-	ok := doctorStore("/home/u/.local/share/shhh/shhh.db", 57344, nil)
-	if ok.State != components.DoctorPassed || !strings.Contains(ok.Detail, "56 kB") {
-		t.Fatalf("an open store does not report itself: %+v", ok)
-	}
-
-	broken := doctorStore("", 0, errors.New("disk is read-only"))
-	if broken.State != components.DoctorFailed {
-		t.Fatalf("an unreadable store did not fail: %+v", broken)
-	}
-	for _, want := range []string{"history", "metrics"} {
-		if !strings.Contains(broken.Consequence, want) {
-			t.Fatalf("the consequence does not name %s: %q", want, broken.Consequence)
-		}
-	}
-}
-
-// A store nobody has written to yet is stated as such: `0 B` there reads like
-// a fault where the truth is a fresh install.
-func TestDoctorBytes(t *testing.T) {
-	for _, tc := range []struct {
-		n    int64
-		want string
-	}{
-		{0, "nothing recorded yet"}, {512, "512 B"}, {57344, "56 kB"}, {3 << 20, "3.0 MB"},
-	} {
-		if got := doctorBytes(tc.n); got != tc.want {
-			t.Fatalf("%d bytes reads as %q, not %q", tc.n, got, tc.want)
-		}
 	}
 }
 
@@ -628,32 +596,16 @@ func TestDoctorUpdate(t *testing.T) {
 	}
 }
 
-// The duration field is blank under half a second, the same rule every
-// activity row in the product follows. Most checks are a stat, so most
-// of this column is deliberately empty.
-func TestDoctorDuration(t *testing.T) {
-	for _, tc := range []struct {
-		d    time.Duration
-		want string
-	}{
-		{40 * time.Millisecond, ""}, {900 * time.Millisecond, "0.9s"}, {14 * time.Second, "14s"},
-	} {
-		if got := doctorDuration(tc.d); got != tc.want {
-			t.Fatalf("%s reads as %q, not %q", tc.d, got, tc.want)
-		}
-	}
-}
-
 // The text report carries the consequences and the fixes as well as the rows,
 // because those are the half of the run somebody else needs in order to help.
 func TestDoctorReport_CarriesTheWholeRun(t *testing.T) {
 	checks := []components.DoctorCheck{
-		doctorCheck("binary", doctorBinary("0.9.4", "linux", "amd64", ""), 0),
-		doctorCheck("sandbox", doctorSandbox(sandbox.Availability{Detail: "bwrap not found"},
+		doctor.Check("binary", doctorBinary("0.9.4", "linux", "amd64", ""), 0),
+		doctor.Check("sandbox", doctorSandbox(sandbox.Availability{Detail: "bwrap not found"},
 			sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "linux"), 120*time.Millisecond),
-		doctorCheck("engine", doctorEngine(sandbox.Engine{Detail: "none"}, "", nil, 0), 0),
+		doctor.Check("engine", doctorEngine(sandbox.Engine{Detail: "none"}, "", nil, 0), 0),
 	}
-	report := doctorReportOf("shhh doctor", "check", "checks", checks).String()
+	report := doctor.ReportOf("shhh doctor", "check", "checks", checks).String()
 	for _, want := range []string{
 		"shhh doctor — 3 checks",
 		"✓ binary", "✗ sandbox", "⊘ engine",
@@ -696,32 +648,17 @@ func TestNewDoctorModel_QueuesEveryCheckWithSomethingToSay(t *testing.T) {
 	}
 }
 
-// The summary the surface states and the summary the text report states are
-// the same count.
-func TestDoctorSummaryLine(t *testing.T) {
-	checks := []components.DoctorCheck{
-		{State: components.DoctorFailed}, {State: components.DoctorWarned},
-		{State: components.DoctorPassed}, {State: components.DoctorSkipped},
-	}
-	if got := doctorSummaryLine(checks); got != "1 failed · 1 warning · 1 passed · 1 not checked" {
-		t.Fatalf("the summary reads %q", got)
-	}
-	if got := doctorSummaryLine(nil); got != "no checks to run" {
-		t.Fatalf("an empty run summarises as %q", got)
-	}
-}
-
 // A whole run answers without a provider key, a container engine or a git
 // repository, and every check comes back with something to say.
 func TestRunDoctorChecks_EveryCheckAnswers(t *testing.T) {
 	was := updateCheck
 	updateCheck = func(string) string { return "" }
 	t.Cleanup(func() { updateCheck = was })
-	wasPrefs := readPrefs
-	readPrefs = func(context.Context, string) (any, error) { return map[string]any{}, nil }
-	t.Cleanup(func() { readPrefs = wasPrefs })
+	wasPrefs := doctor.ReadPrefs
+	doctor.ReadPrefs = func(context.Context, string) (any, error) { return map[string]any{}, nil }
+	t.Cleanup(func() { doctor.ReadPrefs = wasPrefs })
 
-	checks := runDoctorChecks(t.Context(), config.Config{}, doctorProbes())
+	checks := doctor.RunChecks(t.Context(), config.Config{}, doctorProbes())
 	if len(checks) != len(doctorProbes()) {
 		t.Fatalf("%d checks answered out of %d", len(checks), len(doctorProbes()))
 	}
@@ -884,7 +821,7 @@ func TestApplyMigrations_KeepsWhatItDidBeforeFailing(t *testing.T) {
 // from these two fields, so a check that dropped them would report a pending
 // migration and offer no way to make it.
 func TestDoctorCheck_CarriesTheActionToTheScreen(t *testing.T) {
-	check := doctorCheck("migrate", doctorFinding{
+	check := doctor.Check("migrate", doctor.Finding{
 		Subject: "1 migration pending", Action: "make the change",
 		ActionPrompt: "Make the change now?",
 	}, 0)
@@ -896,7 +833,7 @@ func TestDoctorCheck_CarriesTheActionToTheScreen(t *testing.T) {
 // What an applied action did is said once, at the foot, and the run behind it
 // is started again — the answer to "did that work" is the report itself.
 func TestDoctorModel_AppliedSaysWhatChangedAndRerunsTheChecks(t *testing.T) {
-	m := newDoctorModel(config.Config{}, []doctorProbe{{name: "binary", run: probeBinary}})
+	m := newDoctorModel(config.Config{}, []doctor.Probe{{Name: "binary", Run: probeBinary}})
 	m.screen.Checks[0].State = components.DoctorPassed
 
 	cmd := m.applied(doctorAppliedMsg{lines: []string{"moved a to b", "moved c to d"}})
@@ -970,49 +907,6 @@ func TestDoctorConfig_TwoHeldKeysAreOneRowThatReads(t *testing.T) {
 	fix := strings.Join(both.Fix, "\n")
 	if !strings.Contains(fix, "shhh config set --global web.search_api_key_env ") {
 		t.Fatalf("the fix does not name the second key's companion: %+v", both)
-	}
-}
-
-// The row a reader looks at to answer "are my sessions leaving this
-// machine". Off is not a fault — it is what almost every machine is — and an
-// endpoint that cannot be sent to is a warning rather than a failure,
-// because nothing about the session stops working.
-func TestDoctorOtel(t *testing.T) {
-	off := doctorOtel("  ")
-	if off.State != components.DoctorSkipped {
-		t.Fatalf("no endpoint should not be a fault: %+v", off)
-	}
-	if !strings.Contains(off.Subject, "stays on this machine") {
-		t.Fatalf("the row does not say where the record is: %q", off.Subject)
-	}
-
-	on := doctorOtel("http://localhost:4318")
-	if on.State != components.DoctorPassed {
-		t.Fatalf("a usable endpoint did not pass: %+v", on)
-	}
-	if !strings.Contains(on.Subject, "http://localhost:4318") {
-		t.Fatalf("the row does not name the endpoint: %q", on.Subject)
-	}
-
-	bad := doctorOtel("localhost:4318")
-	if bad.State != components.DoctorWarned {
-		t.Fatalf("an endpoint with no scheme did not warn: %+v", bad)
-	}
-	if !strings.Contains(bad.Consequence, "recorded locally") {
-		t.Fatalf("the consequence does not say what still works: %q", bad.Consequence)
-	}
-}
-
-// The probe reads the config and nothing else, so the row is the same on a
-// machine with a collector and on one without.
-func TestProbeOtel_ReadsTheConfiguredEndpoint(t *testing.T) {
-	var cfg config.Config
-	if f := probeOtel(t.Context(), cfg); f.State != components.DoctorSkipped {
-		t.Fatalf("an empty config is export off: %+v", f)
-	}
-	cfg.Otel.Endpoint = "https://otel.example:4318"
-	if f := probeOtel(t.Context(), cfg); !strings.Contains(f.Subject, "otel.example") {
-		t.Fatalf("the probe did not read the endpoint: %+v", f)
 	}
 }
 
@@ -1265,15 +1159,15 @@ func TestDoctor_NamesTheModeRequirement(t *testing.T) {
 		name    string
 		require *bool
 		avail   sandbox.Availability
-		field   func(doctorFinding) string
+		field   func(doctor.Finding) string
 		want    string
 	}{
-		{"unset, none", nil, none, func(f doctorFinding) string { return f.Consequence }, "plan and ask refuse the assistant's commands"},
-		{"false, none", new(false), none, func(f doctorFinding) string { return f.Consequence }, "plan and ask run commands as you too (sandbox.require off)"},
-		{"true, none", new(true), none, func(f doctorFinding) string { return f.Consequence }, "every mode refuses"},
-		{"unset, have", nil, have, func(f doctorFinding) string { return f.Detail }, "required in plan and ask, not elsewhere"},
-		{"false, have", new(false), have, func(f doctorFinding) string { return f.Detail }, "not required in any mode"},
-		{"true, have", new(true), have, func(f doctorFinding) string { return f.Detail }, "required in every mode"},
+		{"unset, none", nil, none, func(f doctor.Finding) string { return f.Consequence }, "plan and ask refuse the assistant's commands"},
+		{"false, none", new(false), none, func(f doctor.Finding) string { return f.Consequence }, "plan and ask run commands as you too (sandbox.require off)"},
+		{"true, none", new(true), none, func(f doctor.Finding) string { return f.Consequence }, "every mode refuses"},
+		{"unset, have", nil, have, func(f doctor.Finding) string { return f.Detail }, "required in plan and ask, not elsewhere"},
+		{"false, have", new(false), have, func(f doctor.Finding) string { return f.Detail }, "not required in any mode"},
+		{"true, have", new(true), have, func(f doctor.Finding) string { return f.Detail }, "required in every mode"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := config.Config{Sandbox: config.SandboxConfig{Require: tc.require}}

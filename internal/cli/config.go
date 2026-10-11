@@ -1556,13 +1556,7 @@ func configSettings(cfgs ...config.Config) []configSetting {
 
 // shortPath writes a path under the home directory as ~/… , which is how
 // every other surface in the product states one.
-func shortPath(path string) string {
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" || !strings.HasPrefix(path, home) {
-		return path
-	}
-	return "~" + path[len(home):]
-}
+func shortPath(path string) string { return report.ShortPath(path) }
 
 // configWriter persists one config key from an interactive session (/model
 // default, /model agents, /reasoning, the /ui toggles). It edits the file's

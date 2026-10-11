@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -86,7 +88,7 @@ func sandboxWriterCommands(cfg config.Config, profile sandbox.Profile, network b
 	if network {
 		reach = "network open"
 	}
-	detail = joinDetail(joinDetail(joinDetail(detail, "its own container over its worktree"), string(profile)), reach)
+	detail = doctor.JoinDetail(doctor.JoinDetail(doctor.JoinDetail(detail, "its own container over its worktree"), string(profile)), reach)
 	return writerCommands{state: writerContained, mechanism: sandboxMechanism, detail: detail, required: required}
 }
 

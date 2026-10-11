@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/profile"
@@ -81,7 +83,7 @@ func TestDoctorModel_NamesTheCacheReading(t *testing.T) {
 		{"vllm-local", "qwen3", "anthropic · cache not seen in 14 requests"},
 		{"openai", "gpt-5", "anthropic"},
 	} {
-		f := withCacheNote(doctorFinding{Detail: "anthropic"}, readings, tc.prov, tc.model)
+		f := withCacheNote(doctor.Finding{Detail: "anthropic"}, readings, tc.prov, tc.model)
 		if f.Detail != tc.want {
 			t.Errorf("%s/%s: %q, want %q", tc.prov, tc.model, f.Detail, tc.want)
 		}
@@ -91,7 +93,7 @@ func TestDoctorModel_NamesTheCacheReading(t *testing.T) {
 		"claude-sonnet-5-5": {Model: map[string]any{provider.KeyPromptCache: false}},
 	})
 	t.Cleanup(func() { provider.RegisterDeclarations("agoda", nil) })
-	if f := withCacheNote(doctorFinding{}, readings, "agoda", "claude-sonnet-5-5"); f.Detail != "cache off (profile agoda)" {
+	if f := withCacheNote(doctor.Finding{}, readings, "agoda", "claude-sonnet-5-5"); f.Detail != "cache off (profile agoda)" {
 		t.Errorf("a declared off: %q", f.Detail)
 	}
 }
@@ -120,19 +122,19 @@ func TestDoctorModel_WarnsWhenIdleCompactionCannotFire(t *testing.T) {
 	}
 	var on config.Config
 	on.Behavior.CompactWhenIdle = true
-	ok := withIdleCompactWarning(doctorFinding{Outcome: "ok"}, on, readings, "agoda", "claude-sonnet-5-5")
+	ok := withIdleCompactWarning(doctor.Finding{Outcome: "ok"}, on, readings, "agoda", "claude-sonnet-5-5")
 	if ok.State != components.DoctorPassed || ok.Outcome != "ok" {
 		t.Errorf("a cache that works needs no warning: %+v", ok)
 	}
-	warned := withIdleCompactWarning(doctorFinding{Outcome: "ok"}, on, readings, "vllm-local", "qwen3")
+	warned := withIdleCompactWarning(doctor.Finding{Outcome: "ok"}, on, readings, "vllm-local", "qwen3")
 	if warned.State != components.DoctorWarned ||
 		warned.Consequence != "compact_when_idle is on but the cache has not been seen on vllm-local; it will not fire" {
 		t.Errorf("a cache not seen should warn: %+v", warned)
 	}
-	if none := withIdleCompactWarning(doctorFinding{}, on, nil, "openai", "gpt-5"); none.State != components.DoctorWarned {
+	if none := withIdleCompactWarning(doctor.Finding{}, on, nil, "openai", "gpt-5"); none.State != components.DoctorWarned {
 		t.Errorf("no reading at all should warn too: %+v", none)
 	}
-	if off := withIdleCompactWarning(doctorFinding{}, config.Config{}, readings, "vllm-local", "qwen3"); off.State != components.DoctorPassed {
+	if off := withIdleCompactWarning(doctor.Finding{}, config.Config{}, readings, "vllm-local", "qwen3"); off.State != components.DoctorPassed {
 		t.Errorf("the switch off should say nothing: %+v", off)
 	}
 }

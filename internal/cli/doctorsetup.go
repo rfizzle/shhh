@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/migrate"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -20,7 +21,7 @@ import (
 // reading is where the judgement lives, and it is a pure function so the
 // whole report can be tested on a machine that has none of this.
 
-func probeBinary(context.Context, config.Config) doctorFinding {
+func probeBinary(context.Context, config.Config) doctor.Finding {
 	path, err := os.Executable()
 	if err != nil {
 		path = ""
@@ -31,8 +32,8 @@ func probeBinary(context.Context, config.Config) doctorFinding {
 // doctorBinary states what is running. It is the one check that cannot fail:
 // a report that could not say which binary produced it would be a report
 // nobody could act on, so it leads.
-func doctorBinary(version, goos, goarch, path string) doctorFinding {
-	f := doctorFinding{Subject: "shhh " + version, Detail: goos + "/" + goarch, Outcome: "ok"}
+func doctorBinary(version, goos, goarch, path string) doctor.Finding {
+	f := doctor.Finding{Subject: "shhh " + version, Detail: goos + "/" + goarch, Outcome: "ok"}
 	if path != "" {
 		f.Detail += " · " + shortPath(path)
 	}
@@ -54,7 +55,7 @@ func doctorBinary(version, goos, goarch, path string) doctorFinding {
 // handed: this is the one command that runs when the load failed (root.go
 // lets it through on ownsConfigError), and the config in hand is then the
 // zero value with the reason left behind in the startup path.
-func probeConfig(_ context.Context, _ config.Config) doctorFinding {
+func probeConfig(_ context.Context, _ config.Config) doctor.Finding {
 	paths := config.Paths()
 	read := ""
 	for _, p := range paths {
@@ -107,7 +108,7 @@ func probeConfig(_ context.Context, _ config.Config) doctorFinding {
 // is already warned for something else keeps that warning's outcome and
 // consequence, since a credential in the file matters more than a row it
 // lacks.
-func withBehind(f doctorFinding, b configBehind, plan initPlan) doctorFinding {
+func withBehind(f doctor.Finding, b configBehind, plan initPlan) doctor.Finding {
 	if !b.due() {
 		return f
 	}
@@ -135,7 +136,7 @@ func withBehind(f doctorFinding, b configBehind, plan initPlan) doctorFinding {
 	}
 	// The counts lead the detail: they are what the row is warning about,
 	// and the detail clips from its end.
-	f.Detail = joinDetail(b.phrase(), f.Detail)
+	f.Detail = doctor.JoinDetail(b.phrase(), f.Detail)
 	if f.State != components.DoctorWarned {
 		f.State, f.Outcome = components.DoctorWarned, "behind"
 		f.Consequence = behindConsequence(b)
@@ -173,9 +174,9 @@ func behindConsequence(b configBehind) string {
 // setup check gets asked. A file that would not load is the row's failure,
 // worded as the refusal every other command gave, so the doctor is where the
 // person who was just refused reads why.
-func doctorConfig(read string, paths []string, cfg config.Config, proj config.Project, err error) doctorFinding {
+func doctorConfig(read string, paths []string, cfg config.Config, proj config.Project, err error) doctor.Finding {
 	if err != nil {
-		f := doctorFinding{
+		f := doctor.Finding{
 			Subject: shortPath(read), Detail: err.Error(),
 			Outcome: "refused", State: components.DoctorFailed,
 			Consequence: "no command starts until the file loads",
@@ -210,7 +211,7 @@ func doctorConfig(read string, paths []string, cfg config.Config, proj config.Pr
 		return f
 	}
 	if read == "" {
-		f := doctorFinding{
+		f := doctor.Finding{
 			Subject: "no config file", Detail: "every setting is on its default",
 			Outcome: "defaults", State: components.DoctorSkipped,
 		}
@@ -223,7 +224,7 @@ func doctorConfig(read string, paths []string, cfg config.Config, proj config.Pr
 		}
 		return f
 	}
-	f := doctorFinding{
+	f := doctor.Finding{
 		Subject: shortPath(read),
 		Detail:  countOf(configSettingsSet(cfg), "setting set", "settings set"),
 		Outcome: "ok",
@@ -236,11 +237,11 @@ func doctorConfig(read string, paths []string, cfg config.Config, proj config.Pr
 // from either, and a row naming one of two files is a row that sends the
 // reader to edit the wrong one; the keys go on the fix lines rather than in
 // the detail, which clips at its column's width.
-func withProjectFile(f doctorFinding, proj config.Project) doctorFinding {
+func withProjectFile(f doctor.Finding, proj config.Project) doctor.Finding {
 	if !proj.Loaded() {
 		return f
 	}
-	f.Detail = joinDetail(f.Detail, proj.Display+" sets "+countOf(len(proj.Keys), "key", "keys"))
+	f.Detail = doctor.JoinDetail(f.Detail, proj.Display+" sets "+countOf(len(proj.Keys), "key", "keys"))
 	if len(proj.Keys) == 0 {
 		return f
 	}
@@ -266,14 +267,14 @@ func withProjectFile(f doctorFinding, proj config.Project) doctorFinding {
 // over a file that has been fine for a year would be shhh deciding a security
 // posture on someone's behalf.
 // See docs/capabilities/secrets.md#where-a-value-comes-from.
-func withLiteralKeyWarning(f doctorFinding, cfg config.Config) doctorFinding {
+func withLiteralKeyWarning(f doctor.Finding, cfg config.Config) doctor.Finding {
 	held := literalKeys(cfg)
 	if len(held) == 0 {
 		return f
 	}
 	f.Outcome = "key in the file"
 	f.State = components.DoctorWarned
-	f.Detail = joinDetail(f.Detail, heldPhrase(held))
+	f.Detail = doctor.JoinDetail(f.Detail, heldPhrase(held))
 	f.Consequence = "this file is a copy of your key — so is every backup and every clone of it"
 	f.FixLabel = "name the variable instead"
 	for _, k := range held {
@@ -369,7 +370,7 @@ func configSettingsSet(cfg config.Config) int {
 	return n
 }
 
-func probeMigrate(context.Context, config.Config) doctorFinding {
+func probeMigrate(context.Context, config.Config) doctor.Finding {
 	return doctorMigrate(migrate.Plan(migrationDir()))
 }
 
@@ -395,14 +396,14 @@ func migrationDir() string {
 // It reads as a warning and never as a failure. Nothing is broken — shhh
 // starts, runs, and records — it is just doing so without whatever is in the
 // old place, and the consequence line is where that is said plainly.
-func doctorMigrate(pending []migrate.Pending) doctorFinding {
+func doctorMigrate(pending []migrate.Pending) doctor.Finding {
 	if len(pending) == 0 {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "nothing to migrate", Detail: "this machine is on the current layout",
 			Outcome: "ok",
 		}
 	}
-	f := doctorFinding{
+	f := doctor.Finding{
 		Subject:     countOf(len(pending), "migration pending", "migrations pending"),
 		Detail:      migrateDetail(pending),
 		Outcome:     "pending",
@@ -498,7 +499,7 @@ func applyMigrations(auto []migrate.Pending) ([]string, error) {
 // (cmd/shhh/main.go) rather than reading the file again: the doctor draws
 // its screen from the register while it probes, and applying a file under
 // it would be a screen offering keys for as long as the check took.
-func probeKeymap(context.Context, config.Config) doctorFinding {
+func probeKeymap(context.Context, config.Config) doctor.Finding {
 	path, err := keys.Applied()
 	moved := 0
 	for _, g := range keys.Keyboard() {
@@ -542,10 +543,10 @@ func probeKeymap(context.Context, config.Config) doctorFinding {
 // file was read without them rather than refused, so this row is where
 // somebody tidying it learns which lines do nothing now
 // (docs/capabilities/configuration.md#the-keymap-file).
-func doctorKeymap(path string, moved, behind int, dead []string, err error) doctorFinding {
+func doctorKeymap(path string, moved, behind int, dead []string, err error) doctor.Finding {
 	switch {
 	case err != nil:
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: shortPath(path), Outcome: "refused", State: components.DoctorWarned,
 			Consequence: "the keyboard shhh ships runs instead of this file",
 			FixLabel:    "fix the file",
@@ -555,11 +556,11 @@ func doctorKeymap(path string, moved, behind int, dead []string, err error) doct
 			},
 		}
 	case path == "":
-		return doctorFinding{Subject: "no keybindings.toml", Detail: "the keyboard shhh ships", Outcome: "ok"}
+		return doctor.Finding{Subject: "no keybindings.toml", Detail: "the keyboard shhh ships", Outcome: "ok"}
 	}
-	f := doctorFinding{Subject: shortPath(path), Detail: countOf(moved, "key", "keys") + " moved", Outcome: "ok"}
+	f := doctor.Finding{Subject: shortPath(path), Detail: countOf(moved, "key", "keys") + " moved", Outcome: "ok"}
 	if behind > 0 {
-		f.Detail = joinDetail("behind by "+countOf(behind, "key", "keys"), f.Detail)
+		f.Detail = doctor.JoinDetail("behind by "+countOf(behind, "key", "keys"), f.Detail)
 		f.State, f.Outcome = components.DoctorWarned, "behind"
 		f.Consequence = "what arrived since the file was written is not in it to find"
 		f.FixLabel = "bring it up to date"
@@ -575,7 +576,7 @@ func doctorKeymap(path string, moved, behind int, dead []string, err error) doct
 		}
 	}
 	if len(dead) > 0 {
-		f.Detail = joinDetail(countOf(len(dead), "line", "lines")+" doing nothing", f.Detail)
+		f.Detail = doctor.JoinDetail(countOf(len(dead), "line", "lines")+" doing nothing", f.Detail)
 		note := strings.Join(dead, ", ") + " name keys shhh no longer has; those lines do nothing"
 		if f.Outcome == "behind" {
 			f.Fix = append(f.Fix, note)
@@ -589,7 +590,7 @@ func doctorKeymap(path string, moved, behind int, dead []string, err error) doct
 	return f
 }
 
-func probeUpdate(context.Context, config.Config) doctorFinding {
+func probeUpdate(context.Context, config.Config) doctor.Finding {
 	return doctorUpdate(version, updateCheck(version))
 }
 
@@ -607,23 +608,23 @@ var updateCheck = func(current string) string {
 // doctorUpdate says whether a newer shhh exists. A dev build has no version
 // to compare, and an unreachable release feed is not a fault of this machine
 // — both are `⊘`, and both say which.
-func doctorUpdate(current string, latest string) doctorFinding {
+func doctorUpdate(current string, latest string) doctor.Finding {
 	if current == "dev" || current == "" {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "not checked", Detail: "a dev build has no released version to compare",
 			Outcome: "unversioned", State: components.DoctorSkipped,
 		}
 	}
 	if latest == "" {
-		return doctorFinding{
+		return doctor.Finding{
 			Subject: "no answer from the release feed", Detail: "this says nothing about your install",
 			Outcome: "unknown", State: components.DoctorSkipped,
 		}
 	}
 	if latest == current {
-		return doctorFinding{Subject: "shhh " + current, Detail: "the latest release", Outcome: "ok"}
+		return doctor.Finding{Subject: "shhh " + current, Detail: "the latest release", Outcome: "ok"}
 	}
-	return doctorFinding{
+	return doctor.Finding{
 		Subject: "shhh " + latest + " is out", Detail: "this machine is on " + current,
 		Outcome: "out of date", State: components.DoctorWarned,
 		FixLabel: "show how to upgrade",

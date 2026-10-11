@@ -27,18 +27,14 @@ package cli
 // a doctor run is that it gets pasted into an issue.
 
 import (
-	"context"
-	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/x/term"
+	"github.com/rfizzle/shhh/internal/cli/doctor"
 	"github.com/rfizzle/shhh/internal/cli/report"
-	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/migrate"
-	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
 
@@ -131,7 +127,7 @@ func runMigrations(out io.Writer) error {
 // doctorCommand builds a run over some set of the checks. `shhh doctor` takes
 // all of them; `shhh code doctor` takes the containment pair, which is the
 // scope that command has always had.
-func doctorCommand(use, short, long string, probes []doctorProbe) *cobra.Command {
+func doctorCommand(use, short, long string, probes []doctor.Probe) *cobra.Command {
 	var table bool
 
 	cmd := &cobra.Command{
@@ -143,8 +139,8 @@ func doctorCommand(use, short, long string, probes []doctorProbe) *cobra.Command
 			cfg := ConfigFrom(cmd.Context())
 			if table || !term.IsTerminal(os.Stdout.Fd()) {
 				return report.Fprint(cmd.OutOrStdout(),
-					doctorReportOf("shhh doctor", "check", "checks",
-						runDoctorChecks(cmd.Context(), cfg, probes)))
+					doctor.ReportOf("shhh doctor", "check", "checks",
+						doctor.RunChecks(cmd.Context(), cfg, probes)))
 			}
 			return runDoctorScreen(cmd.Context(), cfg, probes)
 		},
@@ -158,197 +154,45 @@ func doctorCommand(use, short, long string, probes []doctorProbe) *cobra.Command
 // containmentProbes are the checks `shhh code doctor` is over: what wraps an
 // approved command, what could run one in a container instead, and the image
 // that container starts from.
-func containmentProbes() []doctorProbe {
-	return []doctorProbe{
-		{name: "sandbox", run: probeSandbox},
-		{name: "engine", run: probeEngine},
-		{name: "image", run: probeImage},
+func containmentProbes() []doctor.Probe {
+	return []doctor.Probe{
+		{Name: "sandbox", Run: probeSandbox},
+		{Name: "engine", Run: probeEngine},
+		{Name: "image", Run: probeImage},
 	}
-}
-
-// doctorFinding is one check's answer, before the runner stamps how long it
-// took. Every field is a sentence the host wrote: the screen formats none of
-// them.
-type doctorFinding struct {
-	Subject     string
-	Detail      string
-	Outcome     string
-	Consequence string
-	FixLabel    string
-	Fix         []string
-	State       components.DoctorState
-	// Action, ActionPrompt and Apply are the one thing a check can offer
-	// beyond reading the machine. Almost every check leaves them empty: a
-	// diagnostic looks and does not touch. A migration is the exception the
-	// product makes on purpose — the change is one shhh can make correctly and
-	// the reader cannot make quickly — and it is still asked about first
-	// (docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
-	Action       string
-	ActionPrompt string
-	Apply        func() ([]string, error)
-}
-
-// doctorProbe is one check: the name it wears in the grid's verb field, and
-// the walk that answers it. Names are seven columns or fewer so the target
-// beside them keeps its gap — the field is the vocabulary's own eight and
-// nothing here widens it.
-type doctorProbe struct {
-	name string
-	run  func(context.Context, config.Config) doctorFinding
-	// queued is what the row says before the probe has run, for a probe
-	// whose name is not in doctorQueuedSubject's vocabulary — the servers
-	// `shhh mcp` lists are named by the user, not by this file.
-	queued string
 }
 
 // doctorProbes is every check, in the order they run and the order they read:
 // what shhh is and the terminal it is drawn in, what it was configured with,
 // what it can talk to, then what it can do to this machine, and last what it
 // might become.
-func doctorProbes() []doctorProbe {
-	return []doctorProbe{
-		{name: "binary", run: probeBinary},
-		{name: "keys", run: probeOptionKey},
-		{name: "keymap", run: probeKeymap},
-		{name: "theme", run: probeTheme},
-		{name: "config", run: probeConfig},
-		{name: "migrate", run: probeMigrate},
-		{name: "model", run: probeModel},
-		{name: "flows", run: probeFlows},
-		{name: "search", run: probeSearch},
-		{name: "hosts", run: probeHosts},
-		{name: "store", run: probeStore},
-		{name: "logs", run: probeLogs},
-		{name: "reports", run: probeReports},
-		{name: "otel", run: probeOtel},
-		{name: "sandbox", run: probeSandbox},
-		{name: "engine", run: probeEngine},
-		{name: "image", run: probeImage},
-		{name: "git", run: probeGit},
-		{name: "project", run: probeProject},
-		{name: "trust", run: probeTrust},
-		{name: "needs", run: probeToolchain},
-		{name: "hooks", run: probeHooks},
-		{name: "prompts", run: probePrompts},
-		{name: "tools", run: probeTools},
-		{name: "memory", run: probeMemory},
-		{name: "update", run: probeUpdate},
+func doctorProbes() []doctor.Probe {
+	return []doctor.Probe{
+		{Name: "binary", Run: probeBinary},
+		{Name: "keys", Run: doctor.OptionKey},
+		{Name: "keymap", Run: probeKeymap},
+		{Name: "theme", Run: probeTheme},
+		{Name: "config", Run: probeConfig},
+		{Name: "migrate", Run: probeMigrate},
+		{Name: "model", Run: probeModel},
+		{Name: "flows", Run: probeFlows},
+		{Name: "search", Run: probeSearch},
+		{Name: "hosts", Run: probeHosts},
+		{Name: "store", Run: doctor.Store(openStore)},
+		{Name: "logs", Run: doctor.Logs(logPath)},
+		{Name: "reports", Run: doctor.Reports(reportsDir)},
+		{Name: "otel", Run: doctor.Otel},
+		{Name: "sandbox", Run: probeSandbox},
+		{Name: "engine", Run: probeEngine},
+		{Name: "image", Run: probeImage},
+		{Name: "git", Run: probeGit},
+		{Name: "project", Run: probeProject},
+		{Name: "trust", Run: probeTrust},
+		{Name: "needs", Run: probeToolchain},
+		{Name: "hooks", Run: probeHooks},
+		{Name: "prompts", Run: probePrompts},
+		{Name: "tools", Run: probeTools},
+		{Name: "memory", Run: probeMemory},
+		{Name: "update", Run: probeUpdate},
 	}
-}
-
-// runDoctorChecks runs every check to completion, for the text report. The
-// surface runs the same probes one message at a time instead, so that a run
-// in progress is something the reader can watch.
-func runDoctorChecks(ctx context.Context, cfg config.Config, probes []doctorProbe) []components.DoctorCheck {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	checks := make([]components.DoctorCheck, 0, len(probes))
-	for _, probe := range probes {
-		started := time.Now()
-		checks = append(checks, doctorCheck(probe.name, probe.run(ctx, cfg), time.Since(started)))
-	}
-	return checks
-}
-
-// doctorCheck stamps a finding with the name it ran under and what it cost.
-func doctorCheck(name string, f doctorFinding, took time.Duration) components.DoctorCheck {
-	return components.DoctorCheck{
-		Name: name, Subject: f.Subject, Detail: f.Detail, Outcome: f.Outcome,
-		Consequence: f.Consequence, Fix: f.Fix, FixLabel: f.FixLabel,
-		Action: f.Action, ActionPrompt: f.ActionPrompt,
-		State: f.State, Duration: doctorDuration(took),
-	}
-}
-
-// doctorDuration is the 6-column field: blank under half a second, the same
-// rule every activity row in the product follows. Most checks are a
-// stat and a string comparison, so most of this column is deliberately empty.
-func doctorDuration(d time.Duration) string {
-	if d < 500*time.Millisecond {
-		return ""
-	}
-	if d < 10*time.Second {
-		return fmt.Sprintf("%.1fs", d.Seconds())
-	}
-	return fmt.Sprintf("%ds", int(d.Seconds()))
-}
-
-// doctorReportOf is the run as a report: the same rows the surface draws,
-// without the grid. It is what `--table` prints and what `[c]` copies, so a
-// report pasted into an issue carries the consequences and the fixes too —
-// those are the half of the run somebody else needs in order to help. `shhh
-// mcp` prints the same rows over servers rather than checks, which is what
-// the title and the nouns are for.
-//
-// The name column is pinned to eight rather than sized to the run, because
-// eight is the discipline: a check named wider than the verb field is the
-// signal that the vocabulary has drifted, and a column that grew to fit it
-// would hide exactly that (docs/interface/principles.md#one-grid).
-func doctorReportOf(title, one, many string, checks []components.DoctorCheck) report.Report {
-	rows := make([]report.Row, 0, len(checks))
-	for _, check := range checks {
-		rows = append(rows, report.Row{
-			State:       report.StateOf(check.State),
-			Name:        check.Name,
-			Subject:     check.Subject,
-			Detail:      check.Detail,
-			Outcome:     check.Outcome,
-			Consequence: check.Consequence,
-			Fix:         check.Fix,
-		})
-	}
-	return report.Report{
-		Title:    title,
-		Subject:  countOf(len(checks), one, many),
-		Sections: []report.Section{{Rows: rows, NameWidth: doctorNameWidth}},
-		Tally:    doctorSummaryLine(checks),
-	}
-}
-
-// doctorNameWidth is the verb field the doctor and mcp reports pin their name
-// column to — the same eight columns the transcript's grid gives a verb.
-const doctorNameWidth = 8
-
-// doctorSummaryLine counts every outcome, the same tally the surface's foot
-// row states.
-func doctorSummaryLine(checks []components.DoctorCheck) string {
-	counts := map[components.DoctorState]int{}
-	for _, check := range checks {
-		counts[check.State]++
-	}
-	var parts []string
-	for _, tally := range []struct {
-		state components.DoctorState
-		word  string
-	}{
-		{components.DoctorFailed, "failed"},
-		{components.DoctorWarned, "warnings"},
-		{components.DoctorPassed, "passed"},
-		{components.DoctorSkipped, "not checked"},
-	} {
-		if n := counts[tally.state]; n > 0 {
-			word := tally.word
-			if n == 1 && tally.state == components.DoctorWarned {
-				word = "warning"
-			}
-			parts = append(parts, fmt.Sprintf("%d %s", n, word))
-		}
-	}
-	if len(parts) == 0 {
-		return "no checks to run"
-	}
-	return strings.Join(parts, " · ")
-}
-
-// joinDetail joins two halves of a target field with the product's own
-// separator, and stands the one that exists alone where the other does not.
-func joinDetail(head, tail string) string {
-	switch {
-	case head == "":
-		return tail
-	case tail == "":
-		return head
-	}
-	return head + " · " + tail
 }

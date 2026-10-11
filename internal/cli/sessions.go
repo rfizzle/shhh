@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/spf13/cobra"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -127,7 +129,7 @@ func sessionsReport(sessions []runningSession, now time.Time) report.Report {
 		}
 		where := "checkout unknown until it saves"
 		if s.Root != "" {
-			where = joinDetail(project.Abbreviate(s.Root), s.Branch)
+			where = doctor.JoinDetail(project.Abbreviate(s.Root), s.Branch)
 		}
 		row.Body = append(row.Body, where)
 		for _, c := range s.Children {

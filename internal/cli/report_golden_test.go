@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/memory"
@@ -82,7 +84,7 @@ func TestReportGoldens(t *testing.T) {
 		name string
 		body string
 	}{
-		{"doctor", doctorReportOf("shhh doctor", "check", "checks", goldenChecks()).Render(80)},
+		{"doctor", doctor.ReportOf("shhh doctor", "check", "checks", goldenChecks()).Render(80)},
 		{"history", historyReport(goldenHistory(), "", goldenNow).Render(80)},
 		{"history.w60", historyReport(goldenHistory(), "", goldenNow).Render(60)},
 		{"history.empty", historyReport(nil, "", goldenNow).Render(80)},
@@ -163,35 +165,35 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 func goldenChecks() []components.DoctorCheck {
 	return []components.DoctorCheck{
 		{Name: "binary", Subject: "shhh 0.9.4", Detail: "linux/amd64", Outcome: "ok"},
-		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 0, 0, nil,
+		doctor.Check("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 0, 0, nil,
 			errors.New(`/home/dev/.config/shhh/keybindings.toml: "p" is a letter while the draft can take text, so it cannot also be "the command palette" on the input; a key live at the input is a chord`)), 0),
 		// The same file read once it loads, written before three keys
 		// arrived: counted the way the config row counts settings.
-		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 2, 3, nil, nil), 0),
+		doctor.Check("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 2, 3, nil, nil), 0),
 		// And once more, naming two keys shhh has since given up: read, not
 		// refused, with the lines that do nothing named.
-		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 1, 0,
+		doctor.Check("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 1, 0,
 			[]string{"row.commit", "rowchord.undo"}, nil), 0),
 		// The theme file: refused whole, then read, then absent with the
 		// setting still in config.toml waiting to move.
-		doctorCheck("theme", doctorTheme(config.ThemeState{
+		doctor.Check("theme", doctorTheme(config.ThemeState{
 			Path: "/home/dev/.config/shhh/theme.toml", Name: "auto",
 			Err: errors.New(`/home/dev/.config/shhh/theme.toml: name "solarized" is not a theme (auto, dark, light, charm)`),
 		}, "auto", "dark", nil), 0),
-		doctorCheck("theme", doctorTheme(config.ThemeState{
+		doctor.Check("theme", doctorTheme(config.ThemeState{
 			Path: "/home/dev/.config/shhh/theme.toml", Name: "auto",
 		}, "auto", "dark", nil), 0),
-		doctorCheck("theme", doctorTheme(config.ThemeState{
+		doctor.Check("theme", doctorTheme(config.ThemeState{
 			Name: "light", Source: config.ThemeFromConfig, Migrate: true,
 		}, "light", "light", nil), 0),
 		// Built from the check itself, so the fixture carries one of the
 		// `shhh config set --global` fix lines word for word: each names a
 		// key about this machine, and the flag is what keeps it out of a
 		// checkout's file when the line is pasted in one.
-		doctorCheck("otel", doctorOtel("localhost:4318"), 0),
+		doctor.Check("otel", doctor.OtelOf("localhost:4318"), 0),
 		// The settings file behind the table, built from the reading itself:
 		// the three counts are what the row is opened for.
-		doctorCheck("config", withBehind(
+		doctor.Check("config", withBehind(
 			doctorConfig("~/.config/shhh/config.toml", nil, config.Config{}, config.Project{}, nil),
 			configBehind{
 				Behind: config.Behind{
@@ -209,7 +211,7 @@ func goldenChecks() []components.DoctorCheck {
 			State: components.DoctorSkipped},
 		// The declared tools the PATH lacks, built from the reading itself so
 		// the fix line is the one the row prints.
-		doctorCheck("needs", doctorToolchain(toolchainReading{
+		doctor.Check("needs", doctorToolchain(toolchainReading{
 			declared: true, bin: "/home/dev/.cache/shhh/toolchain/bin",
 			missing: []string{"golangci-lint", "gosec"},
 			tc: project.Toolchain{
@@ -221,7 +223,7 @@ func goldenChecks() []components.DoctorCheck {
 		// out: which of the three directories won is what the row is opened
 		// with, so the fixture has to be able to go wrong the way the row
 		// can.
-		doctorCheck("prompts", doctorPrompts([]wordingRow{
+		doctor.Check("prompts", doctorPrompts([]wordingRow{
 			{key: "steer", from: ".shhh/prompts/steer.md"},
 			{key: "summary", from: "config prompts.summary"},
 			{key: "todo_commit", from: "~/.config/shhh/prompts/todo_commit.md"},

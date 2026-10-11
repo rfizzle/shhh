@@ -1,4 +1,4 @@
-package cli
+package doctor
 
 // A reader for the XML property lists `defaults export` writes, enough to
 // walk to one key in a terminal's preferences.

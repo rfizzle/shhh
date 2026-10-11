@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -256,8 +258,8 @@ func observeQuietRows(stretches []storage.AgentQuietStretch) []report.Row {
 			state = report.Warn
 		}
 		rows = append(rows, report.Row{State: state, Name: q.Outcome, Subject: observeSpan(q.DurationMs),
-			Detail: joinDetail(fmt.Sprintf("session %d · turn %d", q.SessionID, q.Turn),
-				joinDetail("waited on "+observeWaitWords(q.Wait), observeStretchDelivered(q.Delivered)))})
+			Detail: doctor.JoinDetail(fmt.Sprintf("session %d · turn %d", q.SessionID, q.Turn),
+				doctor.JoinDetail("waited on "+observeWaitWords(q.Wait), observeStretchDelivered(q.Delivered)))})
 	}
 	return rows
 }

@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -275,7 +277,7 @@ func chatsReport(entries []storage.ChatListEntry, now time.Time) report.Report {
 			State:   report.Pass,
 			Name:    e.Name,
 			Subject: e.Title,
-			Detail:  joinDetail(countOf(e.Turns, "turn", "turns"), historyAgo(e.UpdatedAt, now)),
+			Detail:  doctor.JoinDetail(countOf(e.Turns, "turn", "turns"), historyAgo(e.UpdatedAt, now)),
 		}
 		if e.Summary != "" {
 			row.Body = []string{e.Summary}

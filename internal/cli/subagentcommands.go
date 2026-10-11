@@ -3,6 +3,8 @@ package cli
 import (
 	"context"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -113,7 +115,7 @@ func writerContainment(cfg config.Config, avail sandbox.Availability) writerComm
 			detail = "required"
 		}
 		if p, err := sandboxPolicy(cfg); err == nil {
-			detail = joinDetail(joinDetail(detail, string(p.Profile)+" profile"), sandbox.NetworkWords(avail, p))
+			detail = doctor.JoinDetail(doctor.JoinDetail(detail, string(p.Profile)+" profile"), sandbox.NetworkWords(avail, p))
 		}
 		return writerCommands{state: writerContained, mechanism: avail.Mechanism, detail: detail, required: required}
 	case required:
@@ -125,7 +127,7 @@ func writerContainment(cfg config.Config, avail sandbox.Availability) writerComm
 // value is the state with the mechanism beside it, which is the part of the
 // answer a narrow card must not shed.
 func (w writerCommands) value() string {
-	return joinDetail(w.state, w.mechanism)
+	return doctor.JoinDetail(w.state, w.mechanism)
 }
 
 // line is the state as one line of `/status`.

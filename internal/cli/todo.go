@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -157,7 +159,7 @@ func todoRow(s *todo.Store, it todo.Item) report.Row {
 		State:   todoRowState(s, it),
 		Name:    it.Slug,
 		Subject: clipRunes(it.Title, 72),
-		Detail:  joinDetail(todoFieldDetail(it), joinDetail(string(it.Priority), it.Grade())),
+		Detail:  doctor.JoinDetail(todoFieldDetail(it), doctor.JoinDetail(string(it.Priority), it.Grade())),
 		Outcome: todoState(s, it),
 	}
 }
@@ -229,7 +231,7 @@ func todoFieldDetail(it todo.Item) string {
 		if f.Orders() || f.Name == it.Profile.Grade {
 			continue
 		}
-		detail = joinDetail(detail, it.Fields[f.Name])
+		detail = doctor.JoinDetail(detail, it.Fields[f.Name])
 	}
 	return detail
 }
@@ -271,7 +273,7 @@ func todoSprintReport(s *todo.Store) report.Report {
 			State:   todoSprintRowState(e),
 			Name:    e.Slug,
 			Subject: clipRunes(e.Item.Title, 72),
-			Detail:  joinDetail(string(e.Item.Priority), e.Item.Grade()),
+			Detail:  doctor.JoinDetail(string(e.Item.Priority), e.Item.Grade()),
 			Outcome: todoSprintOutcome(e),
 		})
 	}
@@ -726,7 +728,7 @@ func todoVerb(root string, args []string) (string, error) {
 			return "", err
 		}
 		return report.Report{Sections: []report.Section{{Rows: []report.Row{
-			report.Done("added", it.Slug+" · "+joinDetail(todoFieldDetail(it), string(it.Priority))),
+			report.Done("added", it.Slug+" · "+doctor.JoinDetail(todoFieldDetail(it), string(it.Priority))),
 			{State: report.Run, Subject: "fill in the criteria", Detail: "/todo edit " + it.Slug, Body: []string{path}},
 		}}}}.String(), nil
 	case "block":

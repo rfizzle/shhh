@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/doctor"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -543,13 +545,13 @@ func metricsFigures(m storage.ProviderMetrics, prices *pricing.Table) []report.P
 			pairs = append(pairs, report.Pair{Key: key, Value: value})
 		}
 	}
-	add("requests", joinDetail(countOf(m.Count, "request", "requests"),
+	add("requests", doctor.JoinDetail(countOf(m.Count, "request", "requests"),
 		fmt.Sprintf("%d%% answered", int(m.SuccessRate*100+0.5))))
 	if m.ExecCount > 0 {
-		add("ran", joinDetail(countOf(m.ExecCount, "run", "runs"), metricsShare(m.ExecSuccessRate, "exited 0")))
+		add("ran", doctor.JoinDetail(countOf(m.ExecCount, "run", "runs"), metricsShare(m.ExecSuccessRate, "exited 0")))
 	}
 	if m.RatedCount > 0 {
-		add("rated", joinDetail(countOf(m.RatedCount, "rating", "ratings"), metricsShare(m.RatingRate, "liked")))
+		add("rated", doctor.JoinDetail(countOf(m.RatedCount, "rating", "ratings"), metricsShare(m.RatingRate, "liked")))
 	}
 	add("first token", metricsPair(m.AvgTTFT, m.P95TTFT))
 	add("total", metricsPair(m.AvgDuration, m.P95Duration))
@@ -573,7 +575,7 @@ func metricsShare(rate *float64, word string) string {
 func metricsPair(avg, p95 *float64) string {
 	value := latencyText(avg)
 	if tail := latencyText(p95); tail != "" {
-		value = joinDetail(value, "p95 "+tail)
+		value = doctor.JoinDetail(value, "p95 "+tail)
 	}
 	return value
 }
