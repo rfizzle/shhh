@@ -36,14 +36,14 @@ const scaffoldHeader = `# shhh settings.
 # the MCP servers and the hooks.
 `
 
-// scaffoldProjectHeader is what the checkout's own file says beyond that:
-// which keys are missing from it and why, so nobody reads the gap as a key
-// that has gone away.
+// scaffoldProjectHeader is what the project file says beyond that: which
+// keys are missing from it and why, so nobody reads the gap as a key that
+// has gone away.
 const scaffoldProjectHeader = `#
-# This is the checkout's own file, so the keys a checkout may not decide are
-# not here: a credential, the containment, the variables a session may spend,
-# and the wordings — which travel as files under prompts/ instead. Those stay
-# in your own settings, and this file layers over that one key by key.
+# This is the project file, so the keys a checkout may not decide are not
+# here: a credential, the containment, the variables a session may spend, and
+# the wordings — which travel as files under prompts/ instead. Those stay in
+# the global file, and this file layers over that one key by key.
 `
 
 // scaffoldWidth is where a comment line wraps. It is the width the code
