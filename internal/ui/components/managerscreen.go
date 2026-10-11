@@ -81,6 +81,8 @@ type ManagerRow struct {
 	// Age is how long the thing has run: a process's uptime, or how long it
 	// ran once it has ended, and a call's elapsed.
 	Age time.Duration
+	// Ended is when a process ended, zero while it runs.
+	Ended time.Time
 	// Where is where it runs: the host, or the container.
 	Where string
 	// Whole is what opening a call shows first: its arguments whole.

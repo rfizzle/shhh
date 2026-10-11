@@ -139,9 +139,12 @@ func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
 	runID := a.RunID()
 	m.endToolRound()
 	ctx, cancel := context.WithCancel(context.Background())
-	m.toolCancel = cancel
+	// Each call registers itself as it starts, with the stop that ends it
+	// alone, so the process manager can stop one and leave the round.
+	table := &callTable{cancel: cancel}
+	m.calls = table
 	return func() tea.Msg {
-		return toolResultsMsg{runID: runID, results: a.ExecuteCalls(ctx, calls)}
+		return toolResultsMsg{runID: runID, results: a.ExecuteCallsWith(ctx, calls, table.add)}
 	}
 }
 
@@ -149,9 +152,9 @@ func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
 // lets go of its cancel. A round that finished is ended the same way, which
 // releases what its context holds.
 func (m *Model) endToolRound() {
-	if m.toolCancel != nil {
-		m.toolCancel()
-		m.toolCancel = nil
+	if m.calls != nil {
+		m.calls.end()
+		m.calls = nil
 	}
 }
 

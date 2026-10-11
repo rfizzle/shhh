@@ -161,7 +161,7 @@ func TestExecuteCalls_EachCallHasItsOwnCancel(t *testing.T) {
 		<-release
 		return "ran", nil
 	})
-	a.SetCallCancel(func(tc provider.ToolCall, cancel context.CancelFunc) {
+	a.SetCallCancel(func(_ context.Context, tc provider.ToolCall, cancel context.CancelFunc) {
 		if tc.Name == "stop" {
 			cancel()
 		} else {

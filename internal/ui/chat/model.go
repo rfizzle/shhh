@@ -947,10 +947,12 @@ type Model struct {
 	// /run, and its output stays out of the conversation.
 	pendingRunLocal bool
 	runCancel       context.CancelFunc
-	// toolCancel stops the round of auto-run calls in flight, if any: a
-	// stop reaches a running search or query rather than waiting for it
-	// (stream.go).
-	toolCancel context.CancelFunc
+	// calls are the calls in flight, if any — a round of auto-run calls, an
+	// approved call or an assistant command — each with the stop that ends
+	// it alone, and the round's own stop that ends them all: a stop reaches
+	// a running search or query rather than waiting for it (stream.go,
+	// calls.go).
+	calls *callTable
 	// approval is the approval card's own state: the call it asks about,
 	// the queue behind it and what is open under it (approvalstate.go).
 	approval approvalState

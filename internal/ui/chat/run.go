@@ -209,6 +209,20 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		ctx, cancel = context.WithCancel(context.Background())
 	}
 	m.runCancel = cancel
+	// An assistant command is a call of the round like any other, and the
+	// process manager lists it and stops it alone: the stop is the same
+	// cancel the turn's own stop uses, so the runner's stop sequence ends it
+	// and the round goes on with its result. A command the reader typed is
+	// not a call, and their own stop is the cancel key.
+	if assistant {
+		m.endToolRound()
+		where := "host"
+		if m.containment.inContainer() {
+			where = "container"
+		}
+		m.calls = &callTable{}
+		m.calls.put(ctx, m.approval.request.call, cancel, tail, where)
+	}
 	runID := m.agent.RunID()
 	runFn := m.wiring.Runner
 	tailFn := m.wiring.TailRunner

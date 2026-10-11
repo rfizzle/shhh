@@ -28,7 +28,7 @@ type managerStoppedMsg struct{ said string }
 // row being read — the one opened, or under the pointer — carries its
 // output: the others' would be read and thrown away on every frame.
 func (m Model) managerRows(reading string) []components.ManagerRow {
-	return m.processRows(reading)
+	return append(m.processRows(reading), m.callRows()...)
 }
 
 // processRows is every process the session started, as the manager and the
@@ -51,9 +51,9 @@ func (m Model) processRows(reading string) []components.ManagerRow {
 		case info.Running:
 			row.Age = clock().Sub(info.Started)
 		case info.Stopped:
-			row.State, row.Age = components.ManagerStopped, info.Ended.Sub(info.Started)
+			row.State, row.Age, row.Ended = components.ManagerStopped, info.Ended.Sub(info.Started), info.Ended
 		default:
-			row.State, row.Code, row.Age = components.ManagerExited, info.ExitCode, info.Ended.Sub(info.Started)
+			row.State, row.Code, row.Age, row.Ended = components.ManagerExited, info.ExitCode, info.Ended.Sub(info.Started), info.Ended
 		}
 		if p.Tail != nil && info.Name == reading {
 			row.Output, row.Errors, _ = p.Tail(info.Name)
@@ -101,7 +101,16 @@ func (m Model) updateManager(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if done {
 		return m.closeManager()
 	}
-	if result.Act == components.ManagerNothing {
+	switch {
+	case result.Act == components.ManagerNothing:
+		return m, nil
+	case result.Row.Section == components.ManagerCalls:
+		// A call has one stop: its context, which the runner answers with
+		// its own stop sequence for a command, and a read answers by
+		// returning. Stop and kill are the same act on it. Its row says so
+		// until the round is over, and the model is answered for it as for
+		// any call a stop caught.
+		m.calls.stop(result.Row.Key)
 		return m, nil
 	}
 	return m, m.stopProcess(result)

@@ -1095,8 +1095,11 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn).
 	m.endToolRound()
 	ctx, cancel := context.WithCancel(context.Background())
-	m.toolCancel = cancel
+	m.calls = &callTable{}
+	m.calls.put(ctx, call, cancel, nil, "host")
 	return m, func() tea.Msg {
+		// Ended once it has returned, so the manager stops listing it.
+		defer cancel()
 		var result string
 		before := record.before()
 		start := time.Now()

@@ -1,6 +1,8 @@
 package chat
 
 import (
+	"context"
+	"encoding/json"
 	"strings"
 	"sync"
 	"testing"
@@ -8,9 +10,141 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
+
+// callsModel is a session whose round is running two calls: a search, and a
+// command printing as it goes, each registered as the round registers them.
+func callsModel(t *testing.T, width int) (Model, *callTable) {
+	t.Helper()
+	m, _ := managerModel(t, width)
+	m.wiring.Processes = Processes{}
+	m.calls = callFixture(t)
+	return m, m.calls
+}
+
+// callFixture is the round's two calls, started at fixed moments.
+func callFixture(t *testing.T) *callTable {
+	t.Helper()
+	table := &callTable{}
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	table.add(ctx, call("s1", tools.SearchName, `{"pattern":"round limit","path":"internal/agent"}`), cancel)
+	tail := &commandTail{}
+	tail.Set("ok  	internal/agent	3.2s")
+	cmdCtx, cmdCancel := context.WithCancel(context.Background())
+	t.Cleanup(cmdCancel)
+	table.put(cmdCtx, call("c1", tools.ExecCommandName, `{"command":"go test ./..."}`), cmdCancel, tail, "container")
+	table.calls[0].started = goldenNow.Add(-41 * time.Second)
+	table.calls[1].started = goldenNow.Add(-8 * time.Second)
+	return table
+}
+
+// A call opens onto its arguments whole and, for a command, what it has
+// printed so far; esc backs out to the list.
+func TestManager_OpensACall(t *testing.T) {
+	m, _ := callsModel(t, 120)
+	m = sendText(t, m, "/ps")
+	list := managerView(m)
+	for _, want := range []string{"processes · nothing running", "tools", "41s", "execute_command", "container", "2 calls running"} {
+		if !strings.Contains(list, want) {
+			t.Errorf("the manager lacks %q:\n%s", want, list)
+		}
+	}
+	m, _ = onManager(t, m, keyEnter)
+	opened := managerView(m)
+	for _, want := range []string{"arguments", `"pattern": "round limit"`, "output so far", "this tool shows nothing until it returns"} {
+		if !strings.Contains(opened, want) {
+			t.Errorf("the opened search lacks %q:\n%s", want, opened)
+		}
+	}
+	m, _ = onManager(t, m, keyEsc, keyDown, keyEnter)
+	if opened := managerView(m); !strings.Contains(opened, `"command": "go test ./..."`) || !strings.Contains(opened, "internal/agent") {
+		t.Errorf("the opened command lacks its arguments or its output:\n%s", opened)
+	}
+	m, _ = onManager(t, m, keyEsc)
+	if m.screens.manager() == nil || m.screens.manager().Opened != "" {
+		t.Fatal("esc over an opened call should go back to the list")
+	}
+}
+
+// One call of a round stopped from the manager returns as stopped while the
+// other runs on: the model is answered for the stopped one as for any call a
+// stop caught, the other's result stands, and the round goes on to the next
+// request.
+func TestManager_StopsOneCallAndTheRoundGoesOn(t *testing.T) {
+	m, _ := scriptedSession(
+		programTurn{calls: []provider.ToolCall{
+			call("s1", tools.SearchName, `{"pattern":"rounds"}`),
+			call("s2", tools.SearchName, `{"pattern":"limits"}`),
+		}},
+		programTurn{text: "The round went on."},
+	)
+	// Which of the two the pointer opens on is the order they registered in,
+	// which is theirs to race for; each answers with its own words where it
+	// runs to the end, and says which it was where it was stopped.
+	started, stopped, release := make(chan struct{}, 2), make(chan string, 2), make(chan struct{})
+	m.agent.SetExecutor(func(ctx context.Context, _ string, args json.RawMessage) (string, error) {
+		started <- struct{}{}
+		select {
+		case <-release:
+			return "found " + string(args), nil
+		case <-ctx.Done():
+			stopped <- string(args)
+			return "", ctx.Err()
+		}
+	})
+	tm := runProgram(t, m)
+
+	send(tm, "where are the rounds counted")
+	for range 2 {
+		select {
+		case <-started:
+		case <-time.After(factBound):
+			t.Fatal("the round's calls never started")
+		}
+	}
+	send(tm, "/ps")
+	waitForText(t, tm, "2 calls running")
+	tm.Send(letter('d'))
+	waitForText(t, tm, "stop the call")
+	tm.Send(letter('y'))
+	var which string
+	select {
+	case which = <-stopped:
+	case <-time.After(factBound):
+		t.Fatal("the stop did not reach the one call")
+	}
+	waitForText(t, tm, "stopped by you")
+	close(release)
+	tm.Send(keyEsc)
+	waitForText(t, tm, "The round went on.")
+	frameHas(t, finalFrame(t, tm), "The round went on.")
+
+	results := map[string]string{}
+	for _, msg := range m.agent.Messages() {
+		if msg.Role == provider.RoleTool {
+			results[msg.ToolCallID] = msg.Content
+		}
+	}
+	stoppedID, ranID := "s1", "s2"
+	if strings.Contains(which, "limits") {
+		stoppedID, ranID = "s2", "s1"
+	}
+	if results[stoppedID] != agent.CancelledResult {
+		t.Errorf("the stopped call answers %q, want %q", results[stoppedID], agent.CancelledResult)
+	}
+	if !strings.HasPrefix(results[ranID], "found ") {
+		t.Errorf("the other call answers %q, want its own result", results[ranID])
+	}
+	if len(stopped) != 0 {
+		t.Error("the stop reached both calls")
+	}
+}
 
 // processHost stands in for the supervisor: three processes started at fixed
 // moments — a dev server on the host, a watcher in the container and a test
@@ -184,10 +318,19 @@ func TestGolden_Manager(t *testing.T) {
 		asked := lines(m)
 		m, _ = onManager(t, m, keyEsc, keyEnter)
 		opened := lines(m)
+		m, _ = onManager(t, m, keyEsc)
+		m.calls = callFixture(t)
+		m.calls.stop("s1")
+		m, _ = onManager(t, m, keyDown, keyDown, keyDown)
+		calls := lines(m)
+		m, _ = onManager(t, m, keyDown, keyEnter)
+		command := lines(m)
 		return []golden.Panel{
 			{Label: "as it opens · the pointer on the first process running", View: list},
 			{Label: "d · the stop's question", View: asked},
 			{Label: "esc, then enter · the process opened onto its output and its errors", View: opened},
+			{Label: "a round's two calls · the search stopped by you, the command running", View: calls},
+			{Label: "the command opened · its arguments whole and its output so far", View: command},
 			{Label: "the panel it leaves · the way out, on one row", View: m.takeoverPanel(m.contentWidth())},
 		}
 	})

@@ -191,7 +191,10 @@ func (a *Agent) SetExecutor(executor ToolExecutor) { a.executor = executor }
 // one that stops one, for a surface that lets a person stop a single call
 // while the rest of its round goes on. It is called from the call's own
 // goroutine, and calling the cancel after the call has returned does nothing.
-type CallCancel func(tc provider.ToolCall, cancel context.CancelFunc)
+// ctx is the call's own context, which ends when the call returns as well as
+// when it is stopped, so a surface listing the calls can tell which are
+// still running.
+type CallCancel func(ctx context.Context, tc provider.ToolCall, cancel context.CancelFunc)
 
 // SetCallCancel installs the per-call cancel seam. Nil, the default, hands
 // the cancels to nobody, and only the round's context stops a call.
@@ -500,6 +503,15 @@ const MaxParallelToolCalls = 8
 // and the result they belong to are both in hand: an executor returns a
 // string, and every wrapper on the chain in between passes one.
 func (a *Agent) ExecuteCalls(ctx context.Context, calls []provider.ToolCall) []ToolResult {
+	return a.ExecuteCallsWith(ctx, calls, a.callCancel)
+}
+
+// ExecuteCallsWith is ExecuteCalls handing each call's cancel to seam rather
+// than to the one installed with SetCallCancel. A front end that keeps one
+// table of calls per round passes that round's here: an installed seam is one
+// field read by a round's goroutines while the next round may already be
+// replacing it.
+func (a *Agent) ExecuteCallsWith(ctx context.Context, calls []provider.ToolCall, seam CallCancel) []ToolResult {
 	results := make([]ToolResult, len(calls))
 	sem := make(chan struct{}, MaxParallelToolCalls)
 	var wg sync.WaitGroup
@@ -509,8 +521,8 @@ func (a *Agent) ExecuteCalls(ctx context.Context, calls []provider.ToolCall) []T
 			defer wg.Done()
 			callCtx, cancel := context.WithCancel(ctx)
 			defer cancel()
-			if a.callCancel != nil {
-				a.callCancel(tc, cancel)
+			if seam != nil {
+				seam(callCtx, tc, cancel)
 			}
 			// A call still waiting for a slot when it is stopped never
 			// runs: it is answered as stopped rather than started late.

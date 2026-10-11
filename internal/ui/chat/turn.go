@@ -692,6 +692,7 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.runCancel = nil
+	m.endToolRound()
 	m.runningCommand = ""
 	m.runTail = nil
 	m.runStart = time.Time{}
