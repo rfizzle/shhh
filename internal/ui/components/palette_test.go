@@ -721,12 +721,6 @@ func contrast(t *testing.T, a, b Token) float64 {
 	return (hi + 0.05) / (lo + 0.05)
 }
 
-// aaFloor is WCAG's 4.5:1 for running text. The hints, key legend, counts and
-// status line are instructions the interface gives, so every grey in a table is
-// held to it on the table's ground and on its band
-// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
-const aaFloor = 4.5
-
 // charmShort is the shortfall charm records instead of fixing: its inks are
 // CharmTone's published tones, and the greys it takes for chrome (Iron,
 // Oyster, Squid) are the published set's own faint ones, so lifting them
@@ -743,7 +737,11 @@ var charmShort = map[string]bool{
 	"del:band": true, "info:band": true, "code:band": true, "key:band": true,
 }
 
-func TestPalette_EveryTextTokenClearsAA(t *testing.T) {
+// TestPalette_EveryThemeClearsAA is the one test a new table meets for the floor: every ink clears 4.5:1
+// on the ground and on the band, the eighteen hexes are eighteen colours and
+// the eighteen 256 rungs are eighteen rungs. charmShort is the only pinned
+// exception; a table that comes up short is lifted (LiftToAA) and not pinned.
+func TestPalette_EveryThemeClearsAA(t *testing.T) {
 	// The grey ladder (the words, hints, counts and status line) and the
 	// signal inks (add, del, hunk, accent, info, spin, code, key): the inks
 	// are text too, a diff line or a name in prose, and are held to the same
@@ -767,6 +765,25 @@ func TestPalette_EveryTextTokenClearsAA(t *testing.T) {
 					case got >= aaFloor && short:
 						t.Errorf("charm %s on its %s is %.2f:1 and clears the bar; take it off charmShort", ink, gname, got)
 					}
+				}
+			}
+			for _, field := range []struct {
+				what string
+				of   func(Token) string
+			}{
+				{"truecolor", func(c Token) string { return sgr(c.trueColor) }},
+				{"256", func(c Token) string { return sgr(c.ansi256) }},
+			} {
+				seen := map[string]string{}
+				for _, c := range paletteTable {
+					v := field.of(tokenNamed(th.tokens, c.name))
+					if prev, dup := seen[v]; dup {
+						t.Errorf("%s theme, %s: %s and %s are both %s", name, field.what, prev, c.name, v)
+					}
+					seen[v] = c.name
+				}
+				if len(seen) != PaletteSize {
+					t.Errorf("%s theme has %d distinct %s values, want %d", name, len(seen), field.what, PaletteSize)
 				}
 			}
 		})

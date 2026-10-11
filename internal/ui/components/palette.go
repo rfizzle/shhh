@@ -193,7 +193,7 @@ var fullPalette = ColorTokens{
 // Dim stands off white by 6.10:1 and off the band by 4.80:1, and the dark
 // table's stands off its ground by 5.47:1 and its band by 4.94:1. Both clear
 // the 4.5:1 floor on both of their grounds, which is what
-// TestPalette_EveryTextTokenClearsAA holds, and the body is equally readable.
+// TestPalette_EveryThemeClearsAA holds, and the body is equally readable.
 // The signal inks are held to the same floor: add (#005f00), del (#af0000),
 // hunk (#005f5f) and accent (#8f4f00) are the darker end of their own hue,
 // so a diff still tells green from red at a glance and none of them is the
