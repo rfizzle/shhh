@@ -1044,6 +1044,24 @@ func TestPalette_GruvboxLightPaintsItsGroundByDefault(t *testing.T) {
 	}
 }
 
+// The Everforest table is a brand theme: its band is half of a pair on its
+// background, so the background is painted unless the reader turns it off.
+func TestPalette_EverforestPaintsItsGroundByDefault(t *testing.T) {
+	themeRestore(t)
+	withColorProfile(t, colorprofile.ANSI256)
+	paintGround = groundDefault
+	if err := SetTheme(ThemeEverforest); err != nil {
+		t.Fatal(err)
+	}
+	if !GroundPainted() || !sameColor(GroundColor(), lipgloss.Color("236")) {
+		t.Errorf("the ground is %v, want #2d353b (236) painted by default", GroundColor())
+	}
+	PaintGround(false)
+	if GroundColor() != nil {
+		t.Error("ground off still paints")
+	}
+}
+
 // Every text token on the colour-blind table clears the AA floor on the ground
 // and on the band, the signal inks included: they are what the table is for,
 // and an ink that is told apart from its neighbour but cannot be read is no

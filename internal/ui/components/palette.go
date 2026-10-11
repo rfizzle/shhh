@@ -679,6 +679,50 @@ var gruvboxLightGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// everforestPalette is Everforest Dark, medium contrast (as
+// https://github.com/sainnhe/everforest carries it in palette.md): the
+// published hex for every token that clears 4.5:1 on its ground #2d353b (bg0)
+// and its band #343f44 (bg1), the selected row #475258 (bg3). Two inks were
+// short and are lifted: dim (grey0) and del (red) by LiftToAA in their own
+// hue; the lifted del is brighter than Everforest's red as published. The grey
+// ladder is respaced: status, dimmer and subtle sit in even quarters from the
+// lifted dim up to body (fg), so the order holds, all three moving though
+// subtle clears on the ground by itself. Bright is derived, the foreground
+// moved a fifth of the way to white, since Everforest has no neutral brighter
+// than its foreground, and key is the mix of purple and blue. addBg and delBg
+// are the ground with 28% of add (green) and of the lifted del. The 256 rungs
+// are DistinctRungs' and the sixteen-colour column is the dark table's. The
+// figures are in docs/interface/departures.md.
+var everforestPalette = ColorTokens{
+	Add:     token("#a7c080", "144", "10"),
+	Del:     token("#f38a8b", "210", "9"),
+	addBg:   token("#4f5c4e", "240", "2"),
+	delBg:   token("#644d51", "59", "1"),
+	Hunk:    token("#83c092", "108", "14"),
+	Accent:  token("#e69875", "174", "11"),
+	Info:    token("#7fbbb3", "109", "12"),
+	FocusBg: token("#475258", "239", "12"),
+	band:    band("#343f44", "237"),
+	Dim:     token("#a0aa9e", "247", "8"),
+	Dimmer:  token("#bab8a4", "249", "8"),
+	Spin:    token("#d699b6", "175", "13"),
+	Status:  token("#adb1a1", "248", "8"),
+	Bright:  token("#dcd1bb", "187", "15"),
+	Subtle:  token("#c6bfa7", "250", "7"),
+	Body:    token("#d3c6aa", "181", "7"),
+	Code:    token("#dbbc7f", "180", "3"),
+	Key:     token("#aaaab4", "145", "12"),
+}
+
+// everforestGround is Everforest's bg0, #2d353b and 236, painted by default
+// like the dark ground and for the same reason: its band is half of a pair. It
+// has no sixteen-colour rung.
+var everforestGround = Token{
+	trueColor: lipgloss.Color("#2d353b"),
+	ansi256:   lipgloss.Color("236"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -708,6 +752,8 @@ const (
 	// ThemeGruvboxLight is Gruvbox Light, medium contrast, a brand theme on
 	// its own cream ground.
 	ThemeGruvboxLight = "gruvbox-light"
+	// ThemeEverforest is Everforest Dark, medium contrast, a brand theme.
+	ThemeEverforest = "everforest"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -738,6 +784,7 @@ var themes = map[string]theme{
 	ThemeNord:            {nordPalette, nordGround},
 	ThemeOneDark:         {oneDarkPalette, oneDarkGround},
 	ThemeGruvboxLight:    {gruvboxLightPalette, gruvboxLightGround},
+	ThemeEverforest:      {everforestPalette, everforestGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -766,7 +813,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight, ThemeEverforest}
 }
 
 var (
@@ -881,7 +928,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight, ThemeEverforest:
 		return true
 	}
 	return false

@@ -665,6 +665,7 @@ revoke [commands|edits|hosts|agents]   take the grants back`},
 						{components.ThemeNord, "Nord, on its own dark ground"},
 						{components.ThemeOneDark, "One Dark, on its own dark ground"},
 						{components.ThemeGruvboxLight, "Gruvbox Light, on its own cream ground"},
+						{components.ThemeEverforest, "Everforest, on its own dark ground"},
 					}},
 					{after: []string{"ground"}, options: []argOption{
 						{"on", "paint the background the theme was drawn against"},

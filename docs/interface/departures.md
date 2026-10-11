@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 36 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 37 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -604,6 +604,49 @@ DistinctRungs, worst error 53.7 (RGB distance, on hunk `#336c4a`, which lands
 on 241 `#626262`; the study's 47 was for the unlifted hunk and its own pick).
 Sixteen colours: the light column. The Machado distance is not held for this
 table; `colorblind` remains the answer for that need.
+
+## The `everforest` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: https://github.com/sainnhe/everforest (palette.md, Everforest Dark,
+medium contrast). Ground `#2d353b` (bg0), band `#343f44` (bg1), selected row
+`#475258` (bg3); painted by default. Bright on the selected row reads 5.31:1.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #7a8478 | 3.21 / 2.78 | #a0aa9e | 5.19 / 4.50 |
+| status | #859289 | 3.84 / 3.33 | #adb1a1 | 5.69 / 4.94 |
+| dimmer | #919e94 | 4.47 / 3.88 | #bab8a4 | 6.22 / 5.40 |
+| subtle | #9da9a0 | 5.12 / 4.44 | #c6bfa7 | 6.78 / 5.88 |
+| del | #e67e80 | 4.55 / 3.95 | #f38a8b | 5.24 / 4.54 |
+
+`LiftToAA` lifts dim (grey0) and del (red) in their own hue. Dim keeps its
+lifted value; status, dimmer and subtle are then spaced in even quarters from
+it up to the body `#d3c6aa`, so the three above are the respaced values and not
+the helper's own lifts, and keep the ladder bright, body, subtle, dimmer,
+status, dim descending (6.78, 6.22 and 5.69 on the ground; 5.88, 5.40 and 4.94
+on the band). Subtle (grey2) clears on the ground by itself and fails only on
+the band, 4.44; it moves with the others. Every other ink is as published: add
+(green), hunk (aqua), accent (orange), info (blue), spin (purple), code (yellow)
+and body (the foreground).
+
+The lifted del is brighter than Everforest's red as published: it gains 13, 12
+and 11 in red, green and blue (`#e67e80` to `#f38a8b`), and its contrast on the
+band rises from 3.95 to 4.54. The hue is kept; the colour is paler than the one
+Everforest ships. The lifted greys are paler too and sit nearer the foreground
+than the palette's own greys do.
+
+Derived, not published: bright, dimmer, status, subtle, key and the two tints.
+Everforest has no neutral brighter than its foreground, so bright `#dcd1bb` is
+the foreground `#d3c6aa` moved a fifth of the way to white (8.24 / 7.15); key
+`#aaaab4` is the mix of purple `#d699b6` and blue `#7fbbb3`. addBg `#4f5c4e` and
+delBg `#644d51` are the ground with 28% of add `#a7c080` and of the lifted del
+`#f38a8b`; add reads 3.53:1 on addBg and del 3.24:1 on delBg. 256 rungs:
+DistinctRungs, worst error 28.9 (RGB distance, on accent `#e69875`, which lands
+on 174 `#d78787`; delBg is next at 23.3, and the study's 32 on accent was for
+its own pick). Sixteen colours: the dark column. The Machado distance is not
+held for this table; `colorblind` remains the answer for that need.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 
