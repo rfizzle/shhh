@@ -10,10 +10,55 @@ permissions:
   packages: write
 
 jobs:
+  # A release is cut only from a commit whose CI run finished green. The job
+  # matches runs of the workflow named "CI" (test.yml) by head sha, not by
+  # branch, waits up to an hour for one to finish, and fails naming the run.
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      actions: read
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      SHA: ${{ github.sha }}
+    steps:
+      - name: Wait for the commit's CI run
+        run: |
+          deadline=$((SECONDS + 3600))
+          grace=$((SECONDS + 300))
+          while true; do
+            runs=$(gh run list -R "$REPO" --commit "$SHA" --workflow CI --limit 20 \
+              --json status,conclusion,url,databaseId)
+            total=$(jq length <<<"$runs")
+            if [ "$total" -eq 0 ]; then
+              if [ "$SECONDS" -ge "$grace" ]; then
+                echo "::error::no CI run exists for commit $SHA; tag a commit that CI has run on"
+                exit 1
+              fi
+            else
+              if [ "$(jq '[.[] | select(.status == "completed" and .conclusion == "success")] | length' <<<"$runs")" -gt 0 ]; then
+                echo "CI is green for $SHA"
+                exit 0
+              fi
+              if [ "$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")" -eq 0 ]; then
+                jq -r '.[0] | "::error::CI did not pass for '"$SHA"': \(.conclusion) \(.url)"' <<<"$runs"
+                exit 1
+              fi
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              jq -r '.[0] | "::error::CI was still \(.status) after an hour for '"$SHA"': \(.url)"' <<<"$runs"
+              exit 1
+            fi
+            sleep 60
+          done
+
   # The image is built first because the binary carries its digest: the
   # digest exists only once the push has finished, and goreleaser links it in.
   # See docs/capabilities/containment.md#the-sandbox-image-ships-with-the-binary.
   image:
+    needs: ci
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.ref.outputs.ref }}
@@ -56,7 +101,7 @@ jobs:
         run: echo "ref=ghcr.io/${{ github.repository_owner }}/shhh-sandbox@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
 
   release:
-    needs: image
+    needs: [ci, image]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
