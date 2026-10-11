@@ -85,6 +85,9 @@ func TestACommandStillPrintingAtItsCeilingIsMovedNotKilled(t *testing.T) {
 	if !strings.Contains(out, "moved to the background") || !strings.Contains(out, `"echo"`) {
 		t.Errorf("the result has to name the process it became: %q", out)
 	}
+	if !strings.Contains(out, "Next time start it with the process tool") {
+		t.Errorf("the hand-over has to teach the next attempt where a server belongs: %q", out)
+	}
 	if !strings.Contains(out, "has not finished") {
 		t.Errorf("a backgrounded command has neither failed nor finished, and must say so: %q", out)
 	}

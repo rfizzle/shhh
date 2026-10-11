@@ -386,6 +386,7 @@ func backgroundedNotice(name string, limit time.Duration) string {
 		"… command reached the %s time limit and was still running, so it was moved to the background instead of being stopped: "+
 			"it is the process %q from now on, and everything it prints is captured there. It did not fail and it has not finished. "+
 			"Read it with the process tool (status, read), end it with stop, and expect the session's end to stop it either way. "+
+			"Next time start it with the process tool (action start) and not as a command. "+
 			"Raise behavior.command_timeout_seconds to give a command like this longer in the foreground.",
 		limit, name)
 }
