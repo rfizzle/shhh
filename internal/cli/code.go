@@ -149,7 +149,7 @@ func newCodeCmd() *cobra.Command {
 	addOutputSchemaFlag(cmd, &schemaPath)
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
-	cmd.Flags().StringVar(&mode, "mode", "", "with --print, the permission mode: `auto` puts a call --yes and --allow do not answer to the permission classifier, which refuses whatever it cannot approve (the only mode a run with no terminal takes)")
+	cmd.Flags().StringVar(&mode, "mode", "", "with --print, `auto` puts a call --yes and --allow do not answer to the permission classifier, which refuses whatever it cannot approve; auto is the only value, since a run with no terminal cannot ask (in a session, Shift+Tab and /permissions choose the mode)")
 	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "contain the session's commands in a disposable container sandbox (the agent and its key stay on this machine); needs a container engine and the released image, or one built from it")
 	cmd.Flags().BoolVar(&requireSandbox, "require-sandbox", false, "refuse the assistant's commands outright where no containment mechanism is in force, rather than running them unconfined")
 	cmd.Flags().IntVar(&popts.maxRounds, "max-rounds", 0, "cap consecutive tool-call rounds per turn (0 removes the cap, for a run left unattended; default: behavior.max_tool_rounds)")

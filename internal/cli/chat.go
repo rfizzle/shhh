@@ -115,7 +115,7 @@ func newChatCmd() *cobra.Command {
 	// See docs/capabilities/headless.md#everything-the-session-has-unless-somebody-has-to-answer.
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, not needed: a conversation's reads run unasked (a fetch unless its host is on web.deny_hosts); accepted so scripts that pass it still run")
 	addDirFlag(cmd, &addDirs)
-	addSecretFlag(cmd, &secretFlags)
+	addConversationSecretFlag(cmd, &secretFlags)
 	// Registered only to be refused in a sentence, and hidden so the help
 	// does not offer what the command will not take.
 	cmd.Flags().StringVar(&mode, "mode", "", "refused: a conversation has one mode")
@@ -164,4 +164,13 @@ func conversationSession(cmd *cobra.Command, flags *resolve.Opts, continueLast, 
 func addSecretFlag(cmd *cobra.Command, specs *[]string) {
 	cmd.Flags().StringArrayVar(specs, "secret", nil,
 		"declare a secret for commands to use as $NAME and the model never to see: NAME reads it from the environment, NAME=value gives it (repeatable; extends secrets.env)")
+}
+
+// addConversationSecretFlag is --secret on a surface that runs no command: a
+// conversation is read-only, so there is no $NAME to hand a command and the
+// declaration does only its other half, keeping the value out of what the
+// model reads and out of the copies the session saves.
+func addConversationSecretFlag(cmd *cobra.Command, specs *[]string) {
+	addSecretFlag(cmd, specs)
+	cmd.Flags().Lookup("secret").Usage = "declare a secret to keep out of what the model reads and what is saved; no command runs in a conversation, so none can use it as $NAME (NAME reads it from the environment, NAME=value gives it; repeatable; extends secrets.env)"
 }

@@ -209,6 +209,36 @@ func TestHelpDoesNotListTheHelpCommand(t *testing.T) {
 // about the shape, which only a whole render can regress on. It shares the
 // report fixtures because it is the same question — what the CLI leaves in
 // the scrollback.
+// TestHelp_ThreeFlagsSayWhatTheyDo pins the three flags whose help once
+// promised more than they do: --mode takes auto and nothing else, --secret on
+// a conversation has no command to hand a value to, and --yes on a
+// conversation is accepted for the scripts that pass it and decides nothing.
+func TestHelp_ThreeFlagsSayWhatTheyDo(t *testing.T) {
+	code, chat := newCodeCmd(), newChatCmd()
+	for _, c := range []struct {
+		cmd        *cobra.Command
+		flag, want string
+	}{
+		{code, "mode", "auto is the only value"},
+		{code, "mode", "Shift+Tab and /permissions"},
+		{chat, "secret", "no command runs in a conversation"},
+		{newChatsCmd(), "secret", "no command runs in a conversation"},
+		{chat, "yes", "accepted so scripts that pass it still run"},
+		{code, "secret", "$NAME"},
+	} {
+		f := c.cmd.Flags().Lookup(c.flag)
+		if f == nil {
+			t.Fatalf("shhh %s has no --%s", c.cmd.Name(), c.flag)
+		}
+		if !strings.Contains(f.Usage, c.want) {
+			t.Errorf("shhh %s --%s help = %q, want it to say %q", c.cmd.Name(), c.flag, f.Usage, c.want)
+		}
+	}
+	if f := chat.Flags().Lookup("mode"); f == nil || !f.Hidden {
+		t.Error("shhh chat offers --mode in its help, which a conversation refuses")
+	}
+}
+
 func TestRootHelpGolden(t *testing.T) {
 	assertReportGolden(t, "help.w80", strings.TrimRight(renderHelp(t), "\n"))
 }

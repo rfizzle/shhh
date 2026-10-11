@@ -291,7 +291,9 @@ reading it from the environment; unlike config, a name the environment
 lacks is an error, because the user asked for it here and now. `--secret
 NAME=value` gives the value on the command line, which the shell's history
 and every process listing will remember — the form to prefer is the bare
-name.
+name. On `shhh chat`, which runs no command, there is no `$NAME` to hand a
+value to, so the declaration only keeps the value out of what the model reads
+and what the session saves, and its help says so.
 
 `/secret set NAME` in a session does the same mid-conversation, and it is
 the form that matters most: the model has just asked for a key it does not

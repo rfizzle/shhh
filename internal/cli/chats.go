@@ -65,7 +65,7 @@ func newChatsCmd() *cobra.Command {
 	}
 	addModelFlags(cmd, &flags)
 	addDirFlag(cmd, &addDirs)
-	addSecretFlag(cmd, &secretFlags)
+	addConversationSecretFlag(cmd, &secretFlags)
 
 	var listJSON bool
 	list := &cobra.Command{
