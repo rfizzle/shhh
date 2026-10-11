@@ -66,7 +66,12 @@ func openInbox(ctx context.Context, policy string) (<-chan chat.InboundLine, fun
 		// pid before and did not close its socket: only one process holds a
 		// pid at a time, so it cannot be anybody's live inbox.
 		_ = os.Remove(path)
+		// Private from the moment it exists, the way the serve socket is:
+		// the chmod below is the belt for a platform whose umask does not
+		// reach a socket.
+		restore := tightenUmask()
 		l, err = net.Listen("unix", path)
+		restore()
 	}
 	if err != nil {
 		note := "this session takes no lines from other sessions: its socket could not be opened (" + err.Error() + ")"
