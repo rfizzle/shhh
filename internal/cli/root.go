@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"charm.land/fang/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
@@ -86,7 +88,24 @@ func ExitCode(err error) int {
 // so a test can render a page exactly as the binary prints it rather than
 // against cobra's undressed template.
 func execute(ctx context.Context, cmd *cobra.Command) error {
-	return fang.Execute(ctx, cmd, fang.WithVersion(version), fang.WithColorSchemeFunc(helpColors))
+	return fang.Execute(ctx, cmd, fang.WithVersion(version), fang.WithColorSchemeFunc(helpColors), fang.WithErrorHandler(errorLine))
+}
+
+// errorLine is how a failed command's error is printed. On a terminal it is
+// fang's boxed header; anywhere else it is the one `shhh: …` line the rest of
+// the binary prints, because a script reading stderr is reading a line and
+// not a card. A stream that is not a file (a test's buffer) gets the card.
+func errorLine(w io.Writer, styles fang.Styles, err error) {
+	// fang hands the handler its own colour-downsampling writer over the
+	// stream, so the file is under that.
+	if cw, ok := w.(*colorprofile.Writer); ok {
+		w = cw.Forward
+	}
+	if f, ok := w.(*os.File); ok && !isTerminal(f) {
+		fmt.Fprintln(f, "shhh: "+err.Error())
+		return
+	}
+	fang.DefaultErrorHandler(w, styles, err)
 }
 
 // helpColors is the dressing in the product's own palette rather than fang's.

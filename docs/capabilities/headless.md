@@ -63,6 +63,16 @@ way turns end — and it is not a failing suite or a refusal either. It is the
 runner's own terminal state, which is the one fact none of the codes above
 can carry.
 
+`shhh cmd` is outside this set. It is a one-shot and not a turn of the loop,
+so its status is `0` when it finished, `1` for any failure (no prompt, a flag
+refused, a provider that would not answer, a stalled or refused request alike),
+and, when a key ran the command it proposed, that command's own status. Off a
+terminal its error is the one `shhh: …` line on stderr and never the boxed
+header. `cmd` does not tell `4` from `8`: joining the split would mean
+classifying its provider failures into the codes above, so a script could tell
+a retry from a typo, at the price of `4` and `8` no longer being free for a
+command that exits with its child's status.
+
 **The code is a projection, not a second table.** The record already keeps how
 every turn ended, from its own closed set, and the exit status is read off
 that one value rather than decided again beside it. Two closed sets that have

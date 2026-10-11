@@ -493,3 +493,31 @@ func TestCmd_ReadsAHundredKiBFromStdin(t *testing.T) {
 		t.Fatalf("read %d bytes of %d", len(got), len(want))
 	}
 }
+
+// A script reads `shhh cmd`'s stderr, so off a terminal a failure is the one
+// `shhh: …` line every other path prints and not the boxed header the
+// terminal gets. The stream is a pipe, as it is under a script.
+func TestCmd_ErrorOffATerminalIsOneLine(t *testing.T) {
+	t.Setenv("__FANG_TEST_WIDTH", "80")
+	t.Setenv("NO_COLOR", "1")
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	cmd := NewRootCmd()
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(w)
+	// `go test` hands the process an empty stdin, so the one-shot has no
+	// prompt on either side and fails before it reaches a provider.
+	cmd.SetArgs([]string{"cmd"})
+	if err := execute(context.Background(), cmd); err == nil {
+		t.Fatal("a one-shot with no prompt should fail")
+	}
+	w.Close()
+	got, _ := io.ReadAll(r)
+	want := "shhh: no prompt provided on stdin\n"
+	if string(got) != want {
+		t.Errorf("stderr off a terminal = %q, want exactly %q", got, want)
+	}
+}
