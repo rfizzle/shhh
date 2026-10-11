@@ -12,6 +12,7 @@ package chat
 import (
 	"image/color"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -258,5 +260,48 @@ func TestUICommand_GroundIsOfferedAndSessionOnly(t *testing.T) {
 	}
 	if _, result := m.handleSlashCommand("/ui ground sepia"); !strings.Contains(result, "unknown ground setting") {
 		t.Fatalf("an unknown setting should be an error, got %q", result)
+	}
+}
+
+// themeOptions are the words /ui theme offers, in the order it offers them.
+func themeOptions(t *testing.T) []string {
+	t.Helper()
+	for _, c := range slashCommands() {
+		if c.name != "/ui" {
+			continue
+		}
+		for _, s := range c.argSpecs {
+			if len(s.after) == 1 && s.after[0] == "theme" {
+				var out []string
+				for _, o := range s.options {
+					out = append(out, o.value)
+				}
+				return out
+			}
+		}
+	}
+	t.Fatal("/ui has no theme argument")
+	return nil
+}
+
+// A theme is named in four places a reader meets: the tables that ship
+// (ThemeNames), the words /ui theme offers, the words appearance.theme
+// takes, and the settings page, which is written from the enum
+// (make docs, held by docs-check). The first is the source and the other
+// two must say what it says, in its order, so adding a table cannot leave a
+// word out of a list.
+func TestThemes_EveryListNamesEveryTheme(t *testing.T) {
+	want := components.ThemeNames()
+	if got := themeOptions(t); !slices.Equal(got, want) {
+		t.Errorf("/ui theme offers %v, ThemeNames() is %v", got, want)
+	}
+	var enum []string
+	for _, s := range config.Settings() {
+		if s.Key == "appearance.theme" {
+			enum = s.Values
+		}
+	}
+	if !slices.Equal(enum, want) {
+		t.Errorf("appearance.theme takes %v, ThemeNames() is %v", enum, want)
 	}
 }

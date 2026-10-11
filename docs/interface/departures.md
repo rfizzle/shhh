@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 28 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 29 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -274,6 +274,65 @@ beside each state carry the meaning here as they do everywhere, and the table
 only makes the second cue real for a reader who has to lean on it. The places
 where a colour still stands alone are filed as their own stories, not
 repaired here.
+
+## A published palette is lifted to the floor, and the lift is written down
+
+_Filed 2026-10-11 · closes by the binary_
+
+The named themes people run in their terminals (Catppuccin Mocha, Dracula,
+Tokyo Night, Gruvbox, Nord, One Dark, Everforest) are not drawn by any
+artboard, and none of them as published clears the floor on its own ground:
+each has between three and six text tokens under 4.5:1. The rule every one of
+them is added under is the colour-blind table's, not CharmTone's. A short
+token is lifted in its own hue to the nearest lighter value (darker, on a
+light ground) that clears 4.5:1 on the ground and on the band, so every table
+that ships keeps the floor and `charmShort` stays the one pinned exception.
+CharmTone is pinned because lifting its greys would stop it being CharmTone;
+a terminal theme is a preference about the look, not the whole of what the
+name stands for, so the lift is a departure from the published palette and
+is recorded per theme, with the figures, rather than hidden behind the name. Solarized (both variants),
+Catppuccin Latte, Tokyo Night Day and Rosé Pine are not added: most of
+their text is short, so a lifted version would be a different palette under a
+famous name. A light variant is a separate name (`gruvbox-light`), never one
+name holding a pair, because a named theme does not follow the terminal's
+ground.
+
+The recipe is code: `components.LiftToAA` lifts a hex (stepping lightness in
+OKLCH, keeping hue and chroma, and returning the first value that clears the
+floor on both surfaces) and `components.DistinctRungs` gives each token a
+256-colour rung of its own, greedily, because a plain nearest pick puts the
+neighbouring greys on one rung. The sixteen-colour column is the dark
+table's, or the light table's, verbatim: at sixteen colours the terminal
+paints its own palette whatever the table says. Every table is held to the
+same test, `TestPalette_EveryThemeClearsAA`, and the lists a reader chooses
+from (`ThemeNames()`, `/ui theme`, `appearance.theme`) are held together by
+`TestThemes_EveryListNamesEveryTheme`.
+
+A theme's own section is written in this shape, one section for each theme,
+headed by the theme's name and opened on the filed line:
+
+```
+(a level-two heading) The `<name>` table
+
+_Filed <date> · closes by the binary_
+
+Source: <URL of the published palette, and the file or table the hexes were
+read from>. Ground `<hex>`, band `<hex>`, selected row `<hex>`; painted by
+default / not painted.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #6c7086 | 3.36 / 2.57 | #989bac | 5.9 / 4.5 |
+
+(one row for every token the lift changed, and none for a token that is as
+published)
+
+Derived, not published: addBg and delBg (the ground with 28% of add and of
+del), and any other token the palette has no colour for, each with the colour
+it was mixed from. 256 rungs: DistinctRungs, worst error <n> on <token>.
+Sixteen colours: the dark (or light) column. The Machado distance is not
+held for this table; `colorblind` remains the answer for that need.
+```
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 
