@@ -590,6 +590,51 @@ var nordGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// oneDarkPalette is One Dark (the Atom One Dark values as
+// https://github.com/joshdick/onedark.vim carries them in autoload/onedark.vim):
+// the published hex for every token that clears 4.5:1 on its ground #282c34 and
+// its band #2c323c (cursor_grey), the selected row #3e4452 (visual_grey). Five
+// inks were short: dim (comment_grey), del (red) and spin (purple) are lifted
+// by LiftToAA in their own hue, and the derived dimmer and status are respaced
+// with the ladder. The lifted del and spin are brighter than One Dark's red and
+// purple as published. The grey ladder is respaced: status, dimmer and subtle
+// sit in even quarters from the lifted dim up to body (foreground), so the
+// order holds, subtle moving though it clears on its own. Bright is derived,
+// the mix of the foreground and white, since One Dark has no neutral brighter
+// than its foreground. addBg and delBg are the ground with 28% of add (green)
+// and of the lifted del. The 256 rungs are DistinctRungs' and the
+// sixteen-colour column is the dark table's. The figures are in
+// docs/interface/departures.md.
+var oneDarkPalette = ColorTokens{
+	Add:     token("#98c379", "108", "10"),
+	Del:     token("#ea757d", "174", "9"),
+	addBg:   token("#475647", "239", "2"),
+	delBg:   token("#5e4048", "240", "1"),
+	Hunk:    token("#56b6c2", "73", "14"),
+	Accent:  token("#d19a66", "173", "11"),
+	Info:    token("#61afef", "75", "12"),
+	FocusBg: token("#3e4452", "238", "12"),
+	band:    band("#2c323c", "236"),
+	Dim:     token("#929aa8", "246", "8"),
+	Dimmer:  token("#9fa6b4", "248", "8"),
+	Spin:    token("#c97be0", "176", "13"),
+	Status:  token("#98a0ae", "247", "8"),
+	Bright:  token("#c8cdd5", "252", "15"),
+	Subtle:  token("#a5acb9", "145", "7"),
+	Body:    token("#abb2bf", "249", "7"),
+	Code:    token("#e5c07b", "180", "3"),
+	Key:     token("#9494e6", "104", "12"),
+}
+
+// oneDarkGround is One Dark's background, #282c34 and 235, painted by default
+// like the dark ground and for the same reason: its band is half of a pair. It
+// has no sixteen-colour rung.
+var oneDarkGround = Token{
+	trueColor: lipgloss.Color("#282c34"),
+	ansi256:   lipgloss.Color("235"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -614,6 +659,8 @@ const (
 	ThemeGruvboxDark = "gruvbox-dark"
 	// ThemeNord is Nord, a brand theme.
 	ThemeNord = "nord"
+	// ThemeOneDark is One Dark, a brand theme.
+	ThemeOneDark = "one-dark"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -642,6 +689,7 @@ var themes = map[string]theme{
 	ThemeTokyoNight:      {tokyoNightPalette, tokyoNightGround},
 	ThemeGruvboxDark:     {gruvboxDarkPalette, gruvboxDarkGround},
 	ThemeNord:            {nordPalette, nordGround},
+	ThemeOneDark:         {oneDarkPalette, oneDarkGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -670,7 +718,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark}
 }
 
 var (
@@ -785,7 +833,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark:
 		return true
 	}
 	return false

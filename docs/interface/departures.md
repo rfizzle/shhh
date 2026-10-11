@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 34 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 35 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -514,6 +514,53 @@ the lifted del `#f59199`; add reads 3.48:1 on addBg and del 3.36:1 on delBg.
 which lands on 181 `#d7afaf`; the study's 35 on delBg was for the unlifted del
 and its own pick). Sixteen colours: the dark column. The Machado distance is not
 held for this table; `colorblind` remains the answer for that need.
+
+## The `one-dark` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: https://github.com/joshdick/onedark.vim (the palette in
+autoload/onedark.vim, the Atom One Dark values). Ground `#282c34` (background),
+band `#2c323c` (cursor_grey), selected row `#3e4452` (visual_grey); painted by
+default. Bright on the selected row reads 6.11:1.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #5c6370 | 2.32 / 2.13 | #929aa8 | 4.94 / 4.55 |
+| status | #7c8390 | 3.67 / 3.38 | #98a0ae | 5.32 / 4.90 |
+| dimmer | #878e9b | 4.25 / 3.91 | #9fa6b4 | 5.72 / 5.27 |
+| del | #e06c75 | 4.38 / 4.04 | #ea757d | 4.89 / 4.51 |
+| spin | #c678dd | 4.75 / 4.38 | #c97be0 | 4.93 / 4.54 |
+
+`LiftToAA` lifts these in their own hue. Dim, the gray, keeps its lifted value;
+dimmer, status and subtle are then spaced in even quarters from it up to the
+body `#abb2bf`, so the status and dimmer above are the respaced values and not
+the helper's own lifts: status `#98a0ae`, dimmer `#9fa6b4` and subtle `#a5acb9`
+keep the ladder bright, body, subtle, dimmer, status, dim descending (6.13, 5.72
+and 5.32 on the ground; 5.65, 5.27 and 4.90 on the band). Subtle (the mix of the
+foreground and comment_grey, `#979eab`, 5.20 / 4.79) clears on its own and moves
+only to keep the ladder's order. Every other ink is as published: add (green),
+hunk (cyan), code (yellow), info (blue), accent (dark_yellow), key and body (the
+foreground).
+
+The lifted del and spin are brighter than One Dark's red and purple as
+published. Del gains 10, 9 and 8 in red, green and blue (`#e06c75` to `#ea757d`)
+and spin 3, 3 and 3 (`#c678dd` to `#c97be0`), and their contrast on the ground
+rises from 4.38 and 4.75 to 4.89 and 4.93, spin's band ratio from 4.38 to 4.54.
+The hues are kept; the colours are paler than the ones One Dark ships.
+
+Derived, not published: bright, dimmer, status, subtle and key. One Dark has no
+neutral brighter than its foreground, so bright `#c8cdd5` is the mix of the
+foreground `#abb2bf` and white (8.77 / 8.07); dimmer, status and subtle are the
+mix of the foreground and comment_grey `#5c6370` (`#878e9b`, `#7c8390`,
+`#979eab`), respaced as above; key `#9494e6` is the mix of purple `#c678dd` and
+blue `#61afef`. addBg `#475647` and delBg `#5e4048` are the ground with 28% of
+add `#98c379` and of the lifted del `#ea757d`; add reads 3.87:1 on addBg and del
+3.19:1 on delBg. 256 rungs: DistinctRungs, worst error 29.7 (RGB distance, on
+add `#98c379`, which lands on 108 `#87af87`; delBg is next at 29.5, and the
+study's 32 on delBg was for the unlifted del and its own pick). Sixteen colours:
+the dark column. The Machado distance is not held for this table; `colorblind`
+remains the answer for that need.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 

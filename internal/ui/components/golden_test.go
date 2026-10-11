@@ -4093,6 +4093,13 @@ func TestGolden_NordTable(t *testing.T) {
 		"the Nord column, on the surfaces that spend it")
 }
 
+// TestGolden_OneDarkTable is the same three surfaces through the One Dark
+// table, at every width the set holds.
+func TestGolden_OneDarkTable(t *testing.T) {
+	captureTable(t, ThemeOneDark, "one-dark-table", goldenWidths,
+		"the One Dark column, on the surfaces that spend it")
+}
+
 // TestGolden_ColorblindTable is the colour-blind table on the three surfaces
 // that spend its signal inks: the diff, where blue and orange tell the added
 // line from the removed one; the approval card; and the step card in the
