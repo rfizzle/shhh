@@ -10,11 +10,12 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 )
 
-// An empty config directory gets the whole file and the whole directory of
-// wordings, and what it wrote loads.
-func TestConfigInit_WritesTheSettingsAndTheWordings(t *testing.T) {
+// An empty config directory gets the whole settings file and no wording: a
+// file under a prompts directory is the override, so a copy of a built-in
+// would be a stale override waiting for the built-in to move.
+func TestConfigInit_WritesTheSettingsAndNoWordings(t *testing.T) {
 	path := pointConfigAt(t, "")
-	runRoot(t, "config", "init")
+	out := runRoot(t, "config", "init")
 
 	text, err := os.ReadFile(path)
 	must(t, err)
@@ -35,22 +36,19 @@ func TestConfigInit_WritesTheSettingsAndTheWordings(t *testing.T) {
 		}
 	}
 
-	dir := filepath.Join(filepath.Dir(path), "prompts")
-	for _, w := range wordingKeys() {
-		body, err := os.ReadFile(filepath.Join(dir, w.key+".md"))
-		if err != nil {
-			t.Fatalf("%s: %v", w.key, err)
-		}
-		if strings.TrimSpace(string(body)) != strings.TrimSpace(w.builtin()) {
-			t.Errorf("%s does not hold the built-in wording", w.key)
-		}
+	if exists(filepath.Join(filepath.Dir(path), "prompts")) {
+		t.Fatal("init made a prompts directory, which exists only when an override does")
+	}
+	// The receipt says where an override goes and what a file there does.
+	flat := strings.Join(strings.Fields(out), " ")
+	if !strings.Contains(flat, "a file at <key>.md here replaces that built-in wording whole") {
+		t.Errorf("the receipt does not say where an override goes:\n%s", out)
 	}
 }
 
-// The whole point of a scaffold of the built-in wordings is that running one
-// changes nothing. A session started after it must land in the same cohort
-// as one started before, or the command divides the record on a change
-// nobody made.
+// A session after the command hashes as one before it: nothing was written
+// that a session reads. An edit to a wording does divide it, which is what
+// the override is for.
 func TestConfigInit_ASessionAfterItHashesAsOneBefore(t *testing.T) {
 	path := pointConfigAt(t, "")
 	const sys = "the system prompt"
@@ -60,16 +58,12 @@ func TestConfigInit_ASessionAfterItHashesAsOneBefore(t *testing.T) {
 	runRoot(t, "config", "init")
 	after, err := loadPrompts(config.PromptsConfig{}, "")
 	must(t, err)
-
-	// The wordings are read, so the session is running the files.
-	if after.steer == "" || after.todo["commit"] == "" {
-		t.Fatalf("the scaffolded wordings were not read back: %+v", after)
-	}
 	if fingerprint(after.fingerprintOf(sys)) != fingerprint(before.fingerprintOf(sys)) {
-		t.Fatal("a scaffold of the built-in wordings divided the record")
+		t.Fatal("init divided the record")
 	}
-	// An edit to one of them does divide it, which is what the files are for.
-	must(t, os.WriteFile(filepath.Join(filepath.Dir(path), "prompts", "steer.md"), []byte("steer as edited"), 0o600))
+	dir := filepath.Join(filepath.Dir(path), "prompts")
+	must(t, os.MkdirAll(dir, 0o700))
+	must(t, os.WriteFile(filepath.Join(dir, "steer.md"), []byte("steer as edited"), 0o600))
 	edited, err := loadPrompts(config.PromptsConfig{}, "")
 	must(t, err)
 	if fingerprint(edited.fingerprintOf(sys)) == fingerprint(before.fingerprintOf(sys)) {
@@ -97,25 +91,22 @@ func TestConfigInit_RefusesWhatIsAlreadyThere(t *testing.T) {
 	}
 }
 
-// One wording in the way is enough to stop it, so a directory half full of
-// somebody's own prose never gains files they did not ask for.
-func TestConfigInit_RefusesAWordingThatIsAlreadyThere(t *testing.T) {
+// A wording somebody wrote is an override and not a thing in the way: init
+// writes the settings beside it and leaves the file alone.
+func TestConfigInit_LeavesAWrittenWordingAlone(t *testing.T) {
 	path := pointConfigAt(t, "")
 	dir := filepath.Join(filepath.Dir(path), "prompts")
 	must(t, os.MkdirAll(dir, 0o700))
 	must(t, os.WriteFile(filepath.Join(dir, "steer.md"), []byte("mine"), 0o600))
 
-	got := runRootErr(t, "config", "init").Error()
-	// Named, not counted: the reader's next act is to look at that file and
-	// decide whether to keep it.
-	if !strings.Contains(got, "steer") || !strings.Contains(got, shortPath(dir)) {
-		t.Fatalf("the refusal does not name the wording in the way: %s", got)
+	runRoot(t, "config", "init")
+	if !exists(path) {
+		t.Fatal("the settings file was not written")
 	}
-	if strings.Contains(got, "check_in") {
-		t.Fatalf("the refusal names a wording that was not in the way: %s", got)
-	}
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Fatal("the settings file was written past a wording that was in the way")
+	body, err := os.ReadFile(filepath.Join(dir, "steer.md"))
+	must(t, err)
+	if string(body) != "mine" {
+		t.Fatalf("the override was rewritten: %q", body)
 	}
 }
 
@@ -144,9 +135,8 @@ func TestConfigInit_StdoutFillsInTheValuesTheFileHolds(t *testing.T) {
 }
 
 // A checkout's pair is the same scaffold with the keys a checkout may not
-// decide left out, and its wordings under the directory a trusted checkout
-// hands the session.
-func TestConfigInit_ProjectWritesTheCheckoutsPair(t *testing.T) {
+// decide left out, and no wording.
+func TestConfigInit_ProjectWritesTheCheckoutsSettings(t *testing.T) {
 	pointConfigAt(t, "")
 	root := t.TempDir()
 	must(t, os.MkdirAll(filepath.Join(root, ".git"), 0o755))
@@ -165,10 +155,8 @@ func TestConfigInit_ProjectWritesTheCheckoutsPair(t *testing.T) {
 	if !strings.Contains(string(text), "#default_mode") {
 		t.Errorf("the checkout's scaffold is missing the keys it may decide:\n%s", text)
 	}
-	// The wordings go under the directory a checkout's files live in, which
-	// is what makes them the checkout's wordings rather than a path in it.
-	if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(project.PromptsDir), "steer.md")); err != nil {
-		t.Fatalf("the checkout's wordings were not written: %v", err)
+	if exists(filepath.Join(root, filepath.FromSlash(project.PromptsDir))) {
+		t.Fatal("the checkout's prompts directory was made with no override in it")
 	}
 }
 

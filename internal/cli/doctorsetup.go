@@ -94,8 +94,8 @@ func probeConfig(_ context.Context, _ config.Config) doctorFinding {
 }
 
 // withBehind warns on the config row when the file is behind the table —
-// keys added since it was written, a key that has moved, a wording with no
-// file — and offers to bring it up to date the way the migrate row offers
+// keys added since it was written, a key that has moved —
+// and offers to bring it up to date the way the migrate row offers
 // its move: asked first, and made by the same code `config init --update`
 // runs. The offer is the row's own rather than a migration's, because what
 // it updates is the file this row names, and the migrate row is about the

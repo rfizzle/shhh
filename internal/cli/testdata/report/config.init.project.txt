@@ -2,9 +2,9 @@
 
   ✓ wrote /home/dev/src/app/.shhh/config.toml · 116 settings, each c…  [project]
         uncomment a line to change one; above each key is what it decides
-  ✓ wrote /home/dev/src/app/.shhh/prompts/ · 14 wordings, each the b…  [project]
-        edit one and it is what a session is told; delete it and the built-in
-        words are back
+  ⊘ /home/dev/src/app/.shhh/prompts/ · no wordings written  [project]
+        a file at <key>.md here replaces that built-in wording whole; delete it
+        and the built-in words are back
         this checkout is not trusted, so its settings do not load here — `shhh
         trust` loads them
   ⊘ no keybindings.toml · a keymap is yours alone; --global writes it

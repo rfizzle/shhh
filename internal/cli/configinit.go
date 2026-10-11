@@ -1,15 +1,14 @@
 package cli
 
-// `shhh config init`: the settings file and the wordings, written out.
+// `shhh config init`: the settings file, written out.
 //
-// Two things were only reachable by reading Go. Most of the keys are in no
-// surface but the file, so the way to find one was to open the reference and
-// copy a key across; and every wording the machinery sends was a string in a
-// package, so replacing one meant finding the built-in text, pasting it into
-// a file of your own and pointing a key at it. This writes both: every key
-// commented out at its default under the sentence that says what it decides,
-// and every wording as a file already holding the built-in words, in the
-// directory whose files are the override
+// Most of the keys are in no surface but the file, so the way to find one was
+// to open the reference and copy a key across. This writes them all: every
+// key commented out at its default under the sentence that says what it
+// decides. It writes no wording. A file under a prompts directory is the
+// override by convention, so a copy of a built-in would be an override that
+// goes stale the day the built-in moves; the directory is made when somebody
+// writes an override by hand
 // (docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration).
 //
 // Your own pair also gets the keyboard: `keybindings.toml` beside the
@@ -26,10 +25,10 @@ package cli
 //
 // `--update` is the other answer for a file that is already there: the keys
 // that have arrived since it was written are added as commented rows, a key
-// that has moved is written under its new name, a wording with no file
-// gets one, and your keymap gets a commented row for each key it lacks —
-// every value and binding the files set kept as they are, and nothing
-// already there written over
+// that has moved is written under its new name, a wording file that only
+// repeats its built-in is deleted, and your keymap gets a commented row for
+// each key it lacks — every value and binding the files set kept as they
+// are, and nothing already there written over
 // (docs/capabilities/configuration.md#an-older-file-is-brought-up-to-date).
 
 import (
@@ -38,7 +37,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -52,19 +50,20 @@ func newConfigInitCmd() *cobra.Command {
 	var global, toStdout, update bool
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Write the settings file and the wordings at their defaults",
+		Short: "Write the settings file at its defaults",
 		Long: "Write a settings file holding every key, commented out at its default with the sentence " +
-			"that says what it decides, and a prompts directory holding every wording the machinery " +
-			"sends, each the built-in text ready to edit — and, for the global pair, a keybindings.toml " +
-			"holding every key at its shipped keystrokes, commented out.\n" +
-			"Run in a checkout, it writes the project pair — " + project.ConfigFile + " and " +
-			project.PromptsDir + "/ — with the keys a checkout may not decide left out; run anywhere else, " +
+			"that says what it decides — and, for the global pair, a keybindings.toml " +
+			"holding every key at its shipped keystrokes, commented out. No wording is written: " +
+			"a file at <key>.md under the prompts directory replaces that built-in whole, so you add one " +
+			"only for a wording you change.\n" +
+			"Run in a checkout, it writes the project pair — " + project.ConfigFile +
+			" — with the keys a checkout may not decide left out; run anywhere else, " +
 			"or in your home directory, it writes the global pair. `--global` writes the global pair wherever it is run. " +
 			"`--stdout` prints the settings file instead of writing it, with the values that file already " +
 			"holds filled in; `shhh keys defaults` prints the keymap. " +
 			"`--update` brings files that are already there up to date instead of refusing them: the keys " +
 			"added since the settings were written are added commented out, a renamed key is written under " +
-			"its new name with its value, a wording with no file gets one, your keybindings.toml gets the " +
+			"its new name with its value, a wording file that equals its built-in is deleted, your keybindings.toml gets the " +
 			"keys added since it was written, commented out, and every value and binding is " +
 			"kept; with `--stdout` it prints the settings file it would write.",
 		Args: cobra.NoArgs,
@@ -105,11 +104,11 @@ func newConfigInitCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&global, "global", false,
-		"write the global settings file and wordings, even in a checkout")
+		"write the global settings file, even in a checkout")
 	cmd.Flags().BoolVar(&toStdout, "stdout", false,
 		"print the settings file instead of writing it, with the values that file already holds filled in")
 	cmd.Flags().BoolVar(&update, "update", false,
-		"bring the files already there up to date: add the keys and wordings they lack, move renamed keys, keep every value")
+		"bring the files already there up to date: add the keys they lack, move renamed keys, delete wording files that equal their built-in, keep every value")
 	return cmd
 }
 
@@ -121,13 +120,12 @@ func newConfigInitCmd() *cobra.Command {
 type initPlan struct {
 	project bool
 	// settings is the file the scaffold goes to and prompts the directory
-	// the wordings go under, both stated whether or not they exist.
+	// an override is written under, both stated whether or not they exist.
 	settings string
 	prompts  string
 	// keymap is the keybindings file beside the settings, and "" for a
 	// checkout's pair, which has none.
 	keymap string
-	files  []initFile
 	// held is what the settings file already holds, which is what `--stdout`
 	// fills in. It is the zero Config where there is no file, which is a
 	// scaffold with every line commented. heldErr is why the file would not
@@ -135,24 +133,11 @@ type initPlan struct {
 	// holding a renamed key is made to load again.
 	held    config.Config
 	heldErr error
-	// settingsHeld says the settings file is already there, and wordingsHeld
-	// names the wordings that are. They are named rather than counted
-	// because the reader's next act is to look at one of these files and
-	// decide whether to keep it; they are named by key rather than by path,
-	// so eleven of them are a clause and not a screen of directory.
+	// settingsHeld and keymapHeld say those files are already there. A file
+	// under the prompts directory is an override somebody wrote, never a
+	// thing in the way.
 	settingsHeld bool
 	keymapHeld   bool
-	wordingsHeld []string
-}
-
-// initFile is one wording to write: the key it is named for, the file, and
-// the text it holds. The key rides along because a refusal names the
-// wordings in the way it does and reading it back off the path would be a
-// second place to decide what a wording is called.
-type initFile struct {
-	key  string
-	path string
-	text string
 }
 
 // configInit works out that plan. dir is where a checkout is looked for
@@ -172,11 +157,6 @@ func configInit(global bool, dir string) (initPlan, error) {
 		// (config.KeymapPaths).
 		plan.keymap = filepath.Join(filepath.Dir(plan.settings), "keybindings.toml")
 	}
-	// The wordings are written in the order the settings state them, so the
-	// directory listing and the `[prompts]` table read the same way down.
-	for _, w := range wordingKeys() {
-		plan.files = append(plan.files, initFile{w.key, filepath.Join(plan.prompts, w.key+".md"), w.builtin()})
-	}
 	if _, err := os.Stat(plan.settings); err == nil {
 		plan.settingsHeld = true
 		held, err := config.LoadFrom(plan.settings)
@@ -187,11 +167,6 @@ func configInit(global bool, dir string) (initPlan, error) {
 			unknown.Update = config.UpdateProject
 		}
 		plan.held, plan.heldErr = held, err
-	}
-	for _, f := range plan.files {
-		if _, err := os.Stat(f.path); err == nil {
-			plan.wordingsHeld = append(plan.wordingsHeld, f.key)
-		}
 	}
 	if plan.keymap != "" {
 		if _, err := os.Stat(plan.keymap); err == nil {
@@ -206,18 +181,14 @@ func configInit(global bool, dir string) (initPlan, error) {
 //
 // Nothing is written when anything is in the way, rather than the missing
 // half being filled in around what is there. A person who ran this expecting
-// a file of defaults and got a directory of wordings beside the settings
-// they had already tuned would have no way to tell which of the two the
-// command decided for them; and the file they have is the one thing here
-// that cannot be got back.
+// a file of defaults and got a keymap beside the settings they had already
+// tuned would have no way to tell which of the two the command decided for
+// them; and the file they have is the one thing here that cannot be got
+// back.
 func (p initPlan) refusal() error {
 	var held []string
 	if p.settingsHeld {
 		held = append(held, shortPath(p.settings))
-	}
-	if len(p.wordingsHeld) > 0 {
-		held = append(held, fmt.Sprintf("%s under %s%c",
-			strings.Join(p.wordingsHeld, ", "), shortPath(p.prompts), filepath.Separator))
 	}
 	if p.keymapHeld {
 		held = append(held, shortPath(p.keymap))
@@ -236,9 +207,10 @@ func (p initPlan) refusal() error {
 		strings.Join(held, ", "), scope)
 }
 
-// write creates the two directories and the files under them. The settings
-// go last: a run that fails part-way leaves no settings file, so running it
-// again is the same command rather than one that now refuses itself.
+// write creates the settings directory and the files in it. The settings go
+// last: a run that fails part-way leaves no settings file, so running it
+// again is the same command rather than one that now refuses itself. The
+// prompts directory is not made: it exists when an override does.
 func (p initPlan) write() error {
 	mode, dirMode := os.FileMode(0o600), os.FileMode(0o700)
 	if p.project {
@@ -247,17 +219,6 @@ func (p initPlan) write() error {
 		// the checkout has rather than the private ones a home directory
 		// wants.
 		mode, dirMode = 0o644, 0o755
-	}
-	if err := os.MkdirAll(p.prompts, dirMode); err != nil {
-		return err
-	}
-	for _, f := range p.files {
-		// Every wording ends in a newline it did not have as a Go string: it
-		// is a text file now, and one without a final newline is one every
-		// editor and every diff will add one to.
-		if err := config.ReplaceFile(f.path, f.text+"\n", mode); err != nil {
-			return err
-		}
 	}
 	if err := os.MkdirAll(filepath.Dir(p.settings), dirMode); err != nil {
 		return err
@@ -270,10 +231,10 @@ func (p initPlan) write() error {
 	return config.ReplaceFile(p.settings, config.Scaffold(config.Config{}, p.project), mode)
 }
 
-// wrote is the confirmation: the two things written and what each holds, and
-// under them what to do with them. A person who has just been given a
-// hundred commented keys and eleven files of prose needs the sentence that
-// says which of them is the override.
+// wrote is the confirmation: the settings written and what they hold, and
+// under them where an override goes. A person who has just been given a
+// hundred commented keys needs the sentence that says a wording is not among
+// them and how to change one.
 func (p initPlan) wrote() report.Report {
 	// Which pair was written is said on the rows in the word the config
 	// listing's source column uses for the same file, because the bare
@@ -286,11 +247,10 @@ func (p initPlan) wrote() report.Report {
 	settings.Outcome = pair
 	settings.Fix = []string{"uncomment a line to change one; above each key is what it decides"}
 	settings.Detail = countOf(config.ScaffoldKeys(p.project), "setting", "settings") + ", each commented out"
-	wordings := report.Done("wrote", shortPath(p.prompts)+string(filepath.Separator))
-	wordings.Outcome = pair
-	wordings.Detail = countOf(len(p.files), "wording", "wordings") + ", each the built-in text"
+	wordings := report.Row{State: report.Skip, Subject: shortPath(p.prompts) + string(filepath.Separator),
+		Outcome: pair, Detail: "no wordings written"}
 	wordings.Fix = []string{
-		"edit one and it is what a session is told; delete it and the built-in words are back",
+		"a file at <key>.md here replaces that built-in wording whole; delete it and the built-in words are back",
 	}
 	if p.project {
 		// Whether what was just written is read at all is the checkout's
@@ -332,12 +292,13 @@ func keymapKeys() int {
 
 // initUpdate is what `--update` did: how the settings file was written —
 // brought up to date, written new where there was none, or left alone as
-// already current — the wordings it wrote, and how many keys it added to
-// the keymap, zero where the keymap was current or not there.
+// already current — the wording files it deleted for equalling their
+// built-in, and how many keys it added to the keymap, zero where the keymap
+// was current or not there.
 type initUpdate struct {
 	behind   config.Behind
 	settings string
-	wordings []string
+	removed  []string
 	keys     int
 }
 
@@ -346,9 +307,10 @@ type initUpdate struct {
 // either way, and the wordings the settings name are read off the file only
 // once it loads.
 //
-// A wording file already there is never written, and nor is one the person's
-// settings point somewhere else — a file of the built-in words beside a key
-// naming another would be a file nothing reads. The keymap is brought up to
+// No wording file is written. One whose text equals its built-in is deleted,
+// because it changes nothing today and goes stale the day the built-in does;
+// one that differs is the person's and stays, and so does a file for a
+// wording the settings point somewhere else. The keymap is brought up to
 // date the same way the settings are, where there is one: the keys that
 // arrived since are added as commented rows and every binding stays. One
 // that is not there is not written — the keyboard shhh ships is what no file
@@ -388,20 +350,18 @@ func (p initPlan) update() (initUpdate, error) {
 		}
 		named = held.Prompts
 	}
-	missing, _ := wordingsBehind(p.prompts, p.project, named)
-	if len(missing) > 0 {
-		if err := os.MkdirAll(p.prompts, dirMode); err != nil {
-			return done, err
-		}
-	}
-	for _, f := range p.files {
-		if !slices.Contains(missing, f.key) {
+	for _, w := range wordingKeys() {
+		if !p.project && w.named(named) != "" {
 			continue
 		}
-		if err := config.ReplaceFile(f.path, f.text+"\n", mode); err != nil {
+		path := filepath.Join(p.prompts, w.key+".md")
+		if !copiesBuiltin(path, w) {
+			continue
+		}
+		if err := os.Remove(path); err != nil {
 			return done, err
 		}
-		done.wordings = append(done.wordings, f.key)
+		done.removed = append(done.removed, w.key)
 	}
 	if p.keymapHeld {
 		n, err := updateKeymap(p.keymap)
@@ -434,12 +394,12 @@ func (u initUpdate) lines(p initPlan) []string {
 	var out []string
 	switch u.settings {
 	case "updated":
-		out = append(out, "updated "+shortPath(p.settings)+": "+behindPhrase(u.behind, 0, false))
+		out = append(out, "updated "+shortPath(p.settings)+": "+behindPhrase(u.behind, false))
 	case "wrote":
 		out = append(out, "wrote "+shortPath(p.settings))
 	}
-	if n := len(u.wordings); n > 0 {
-		out = append(out, "wrote "+countOf(n, "wording", "wordings")+" under "+shortPath(p.prompts)+string(filepath.Separator))
+	for _, key := range u.removed {
+		out = append(out, "deleted "+shortPath(filepath.Join(p.prompts, key+".md"))+": same as the built-in")
 	}
 	if u.keys > 0 {
 		out = append(out, "updated "+shortPath(p.keymap)+": added "+countOf(u.keys, "key", "keys"))
@@ -459,7 +419,7 @@ func (u initUpdate) report(p initPlan) report.Report {
 	switch u.settings {
 	case "updated":
 		settings = report.Done("updated", shortPath(p.settings))
-		settings.Detail = behindPhrase(u.behind, 0, false)
+		settings.Detail = behindPhrase(u.behind, false)
 		settings.Fix = []string{"every value the file set is kept; a moved key says so on the line above it"}
 	case "wrote":
 		settings = report.Done("wrote", shortPath(p.settings))
@@ -469,11 +429,15 @@ func (u initUpdate) report(p initPlan) report.Report {
 	}
 	settings.Outcome = pair
 	wordings := report.Row{State: report.Skip, Subject: shortPath(p.prompts) + string(filepath.Separator),
-		Detail: "every wording already has a file", Outcome: pair}
-	if n := len(u.wordings); n > 0 {
-		wordings = report.Done("wrote", shortPath(p.prompts)+string(filepath.Separator))
-		wordings.Detail = countOf(n, "wording", "wordings") + ", each the built-in text"
+		Detail: "no wording file equals its built-in", Outcome: pair}
+	if n := len(u.removed); n > 0 {
+		wordings = report.Done("deleted", shortPath(p.prompts)+string(filepath.Separator))
+		wordings.Detail = countOf(n, "wording", "wordings") + ", each the same as the built-in"
 		wordings.Outcome = pair
+		for _, key := range u.removed {
+			wordings.Fix = append(wordings.Fix, "deleted "+key+".md: same as the built-in, no effect")
+		}
+		wordings.Fix = append(wordings.Fix, "a file there replaces its built-in whole; write one only for a wording you change")
 	}
 	rows := []report.Row{settings, wordings}
 	if p.keymap != "" {
@@ -496,39 +460,26 @@ func (u initUpdate) report(p initPlan) report.Report {
 	}
 }
 
-// wordingsBehind is the wordings with no file under dir, in the order the
-// settings state them, and whether dir holds a file for any wording at all.
-// A wording the person's settings point at a file of their own is not
-// missing from the directory: the key outranks the directory, so a file
-// there would be one nothing reads.
-func wordingsBehind(dir string, project bool, named config.PromptsConfig) ([]string, bool) {
-	var missing []string
-	listed := false
-	for _, w := range wordingKeys() {
-		if !project && w.named(named) != "" {
-			continue
-		}
-		if _, err := os.Stat(filepath.Join(dir, w.key+".md")); err == nil {
-			listed = true
-			continue
-		}
-		missing = append(missing, w.key)
-	}
-	return missing, listed
+// copiesBuiltin says the file at path is there and says what the wording's
+// built-in says, trailing whitespace aside. Such a file changes nothing now
+// and falls behind the built-in the day that moves.
+func copiesBuiltin(path string, w wording) bool {
+	data, err := os.ReadFile(path)
+	return err == nil && sameAsBuiltin(string(data), w)
+}
+
+// sameAsBuiltin compares after trimming trailing whitespace, since a file
+// ends in a newline the Go string does not.
+func sameAsBuiltin(text string, w wording) bool {
+	return strings.TrimRight(text, " \t\r\n") == strings.TrimRight(w.builtin(), " \t\r\n")
 }
 
 // configBehind is how far one pair is behind: the settings file against the
-// table, and the prompts directory against the wordings. It is what the
-// doctor row and the config screen's header both read, so the two cannot
-// disagree about whether a file is behind.
+// table. It is what the doctor row and the config screen's header both
+// read, so the two cannot disagree about whether a file is behind. A
+// wording is never behind: no file is the built-in, which is current.
 type configBehind struct {
 	config.Behind
-	wordings []string
-	// wordingsListed says the directory holds a file for at least one
-	// wording — `config init` wrote it — which is what makes a missing one
-	// missing rather than never wanted: the rule the settings file's own
-	// commented rows follow.
-	wordingsListed bool
 }
 
 // behindOf reads the pair a plan names.
@@ -537,33 +488,23 @@ func behindOf(p initPlan) (configBehind, error) {
 	if err != nil {
 		return configBehind{}, err
 	}
-	out := configBehind{Behind: b}
-	out.wordings, out.wordingsListed = wordingsBehind(p.prompts, p.project, p.held.Prompts)
-	return out, nil
-}
-
-// wordingsBehindBy is how many missing wordings count against the pair.
-func (b configBehind) wordingsBehindBy() int {
-	if !b.wordingsListed {
-		return 0
-	}
-	return len(b.wordings)
+	return configBehind{Behind: b}, nil
 }
 
 // due says the pair is behind in a way worth a warning.
-func (b configBehind) due() bool { return b.Due() || b.wordingsBehindBy() > 0 }
+func (b configBehind) due() bool { return b.Due() }
 
-// phrase is the row's words for it: `behind by 4 keys · 1 renamed · 2
-// wordings`, each count left out where it is zero.
+// phrase is the row's words for it: `behind by 4 keys · 1 renamed`, each
+// count left out where it is zero.
 func (b configBehind) phrase() string {
-	return behindPhrase(b.Behind, b.wordingsBehindBy(), true)
+	return behindPhrase(b.Behind, true)
 }
 
 // behindPhrase names the counts. counted says the keys are the ones that
 // count against the file — the doctor's reading, in which a file listing no
 // commented row is behind by none — rather than every key the update added,
 // which is what the update's own confirmation says.
-func behindPhrase(b config.Behind, wordings int, counted bool) string {
+func behindPhrase(b config.Behind, counted bool) string {
 	keys := len(b.New)
 	if counted {
 		keys = b.KeysBehind()
@@ -574,9 +515,6 @@ func behindPhrase(b config.Behind, wordings int, counted bool) string {
 	}
 	if n := len(b.Renamed); n > 0 {
 		parts = append(parts, fmt.Sprintf("%d renamed", n))
-	}
-	if wordings > 0 {
-		parts = append(parts, countOf(wordings, "wording", "wordings"))
 	}
 	if !counted {
 		if len(parts) == 0 {

@@ -12,6 +12,18 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
+// wordingNamed is the wording a key names.
+func wordingNamed(t *testing.T, key string) wording {
+	t.Helper()
+	for _, w := range wordingKeys() {
+		if w.key == key {
+			return w
+		}
+	}
+	t.Fatalf("no wording %q", key)
+	return wording{}
+}
+
 // dropKey takes one key's block out of a scaffold — the blank line, the
 // sentence above the key and the commented row — which is the file as a
 // scaffold wrote it before that key arrived.
@@ -27,9 +39,10 @@ func dropKey(t *testing.T, text, row string) string {
 }
 
 // An older file — two keys it predates, a value set with a note beside it,
-// a key that has since moved, a wording with no file — is refused by every
-// command but the update, and the update brings it level: every value kept,
-// the moved one under its new name, every key present, the wording written.
+// a key that has since moved, a wording file that only repeats its built-in
+// — is refused by every command but the update, and the update brings it
+// level: every value kept, the moved one under its new name, every key
+// present, the copy deleted and named.
 func TestConfigInitUpdate_BringsAnOlderPairUpToDate(t *testing.T) {
 	path := pointConfigAt(t, "")
 	runRoot(t, "config", "init")
@@ -39,8 +52,12 @@ func TestConfigInitUpdate_BringsAnOlderPairUpToDate(t *testing.T) {
 	older = strings.Replace(older, `#model = ""`, `model = "claude-sonnet-5" # the one the team pays for`, 1)
 	older = strings.Replace(older, "[agents]\n", "[agents]\nwriter_model = \"tiny\"\n", 1)
 	must(t, os.WriteFile(path, []byte(older), 0o600))
-	steer := filepath.Join(filepath.Dir(path), "prompts", "steer.md")
-	must(t, os.Remove(steer))
+	dir := filepath.Join(filepath.Dir(path), "prompts")
+	must(t, os.MkdirAll(dir, 0o700))
+	steer := filepath.Join(dir, "steer.md")
+	must(t, os.WriteFile(steer, []byte(wordingNamed(t, "steer").builtin()+"\n"), 0o600))
+	mine := filepath.Join(dir, "summary.md")
+	must(t, os.WriteFile(mine, []byte("my own summary"), 0o600))
 
 	err := runRootErr(t, "config", "list")
 	if err == nil || !strings.Contains(err.Error(), "agents.profiles.writer.model") ||
@@ -49,7 +66,7 @@ func TestConfigInitUpdate_BringsAnOlderPairUpToDate(t *testing.T) {
 	}
 
 	out := runRoot(t, "config", "init", "--update")
-	for _, want := range []string{"updated", "added 2 keys · 1 renamed", "wrote", "1 wording"} {
+	for _, want := range []string{"updated", "added 2 keys · 1 renamed", "deleted", "1 wording, each the same as the built-in", "deleted steer.md: same as the built-in"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("the confirmation does not say %q:\n%s", want, out)
 		}
@@ -67,8 +84,11 @@ func TestConfigInitUpdate_BringsAnOlderPairUpToDate(t *testing.T) {
 	if b, err := config.Outdated(path, false); err != nil || len(b.New) > 0 || len(b.Renamed) > 0 {
 		t.Errorf("still behind: %+v %v", b, err)
 	}
-	if !exists(steer) {
-		t.Error("the missing wording was not written")
+	if exists(steer) {
+		t.Error("the copy of the built-in was not deleted")
+	}
+	if !exists(mine) {
+		t.Error("a wording that differs from the built-in was deleted")
 	}
 }
 
@@ -185,8 +205,8 @@ func TestConfigInitUpdate_TheCheckoutsPairLeavesTheRefusedKeysOut(t *testing.T) 
 	if strings.Contains(string(raw), "api_key") {
 		t.Errorf("the checkout's file lists a credential:\n%s", raw)
 	}
-	if !exists(filepath.Join(checkout, filepath.FromSlash(project.PromptsDir), "steer.md")) {
-		t.Error("the checkout's wordings were not written")
+	if exists(filepath.Join(checkout, filepath.FromSlash(project.PromptsDir))) {
+		t.Error("the update made a prompts directory with no override in it")
 	}
 }
 
@@ -227,21 +247,20 @@ func TestDoctorConfig_SaysWhenTheFileIsBehind(t *testing.T) {
 			Renamed: config.Renames()[:1],
 			Listed:  true,
 		},
-		wordings: []string{"steer", "summary"}, wordingsListed: true,
 	}
 	f := withBehind(ok, b, plan)
 	if f.State != components.DoctorWarned || f.Outcome != "behind" {
 		t.Fatalf("state=%v outcome=%q", f.State, f.Outcome)
 	}
-	if !strings.HasPrefix(f.Detail, "behind by 4 keys · 1 renamed · 2 wordings") {
+	if !strings.HasPrefix(f.Detail, "behind by 4 keys · 1 renamed") {
 		t.Errorf("detail = %q", f.Detail)
 	}
 	if f.Action == "" || f.Apply == nil {
 		t.Error("the row does not offer the update")
 	}
-	// A hand-written file and a directory nobody filled count no absent key
+	// A hand-written file counts no absent key
 	// and no absent wording against themselves.
-	b.Listed, b.wordingsListed = false, false
+	b.Listed = false
 	if got := withBehind(ok, b, plan).Detail; !strings.HasPrefix(got, "behind by 1 renamed ·") {
 		t.Errorf("unlisted detail = %q", got)
 	}

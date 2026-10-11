@@ -197,7 +197,6 @@ func goldenChecks() []components.DoctorCheck {
 					Renamed: config.Renames()[:1],
 					Listed:  true,
 				},
-				wordings: []string{"steer", "summary"}, wordingsListed: true,
 			},
 			initPlan{settings: "/nonexistent/shhh/config.toml"}), 0),
 		{Name: "sandbox", Subject: "bwrap not found", Outcome: "UNCONTAINED",
@@ -573,7 +572,6 @@ func goldenConfigInit() report.Report {
 		settings: "/home/dev/.config/shhh/config.toml",
 		prompts:  "/home/dev/.config/shhh/prompts",
 		keymap:   "/home/dev/.config/shhh/keybindings.toml",
-		files:    make([]initFile, len(wordingKeys())),
 	}.wrote()
 }
 
@@ -585,7 +583,6 @@ func goldenConfigInitProject() report.Report {
 		project:  true,
 		settings: "/home/dev/src/app/.shhh/config.toml",
 		prompts:  "/home/dev/src/app/.shhh/prompts",
-		files:    make([]initFile, len(wordingKeys())),
 	}.wrote()
 }
 
@@ -596,7 +593,7 @@ func goldenConfigUpdate() report.Report {
 	return initUpdate{
 		settings: "updated",
 		behind:   config.Behind{New: []string{"a.b", "a.c", "a.d", "a.e"}, Renamed: config.Renames()[:1], Listed: true},
-		wordings: []string{"steer", "summary"},
+		removed:  []string{"steer", "summary"},
 		keys:     3,
 	}.report(initPlan{
 		settings:   "/home/dev/.config/shhh/config.toml",

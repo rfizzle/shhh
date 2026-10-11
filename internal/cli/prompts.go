@@ -12,9 +12,9 @@ package cli
 // prompts directory is that wording: the trusted checkout's own directory
 // first, then a `[prompts]` key where one names a path, then the person's
 // own directory beside their settings. A file that is there is the
-// override, and nothing has to point at it — which is what lets `shhh
-// config init` write a directory somebody edits without also editing
-// config.toml. The keys stay for the case they were built for: one wording,
+// override, and nothing has to point at it — which is why `shhh config
+// init` writes no copy of a built-in: a copy would be an override that goes
+// stale when the built-in moves, and the doctor names one. The keys stay for the case they were built for: one wording,
 // somewhere else.
 //
 // A checkout gets no key at all, only the convention: a path named in a
@@ -218,6 +218,11 @@ type wordingRow struct {
 	key  string
 	from string
 	err  error
+	// same says the file read equals the built-in it replaces, so it
+	// changes nothing today and falls behind the built-in the day that
+	// moves. It is set only for a file found by convention, which deleting
+	// puts nothing out of order; a key's file is pointed at on purpose.
+	same bool
 }
 
 // readWordings reads every wording in force and keeps going past a failure,
@@ -231,8 +236,9 @@ func readWordings(c config.PromptsConfig, projectDir string) []wordingRow {
 		if from.path == "" {
 			continue
 		}
-		_, err := readWording(from, w.validate)
-		rows = append(rows, wordingRow{key: w.key, from: from.named, err: err})
+		text, err := readWording(from, w.validate)
+		same := err == nil && from.undo == "delete it" && sameAsBuiltin(text, w)
+		rows = append(rows, wordingRow{key: w.key, from: from.named, err: err, same: same})
 	}
 	return rows
 }

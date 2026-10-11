@@ -1073,6 +1073,45 @@ func TestDoctorPrompts(t *testing.T) {
 	}
 }
 
+// A file that says what its built-in says changes nothing now and falls
+// behind the built-in the day that moves, so the row names it and warns.
+func TestDoctorPrompts_NamesACopyOfTheBuiltIn(t *testing.T) {
+	code := builtinBacklogProfile()
+	under := profileLines(code)
+	f := doctorPrompts([]wordingRow{
+		{key: "steer", from: ".shhh/prompts/steer.md", same: true},
+		{key: "summary", from: ".shhh/prompts/summary.md"},
+	}, code)
+	if f.State != components.DoctorWarned || f.Outcome != "no effect" {
+		t.Fatalf("a copy of a built-in is not a warning: %+v", f)
+	}
+	if f.Fix[len(under)] != "steer — same as the built-in, no effect" ||
+		f.Fix[len(under)+1] != "summary — .shhh/prompts/summary.md" {
+		t.Fatalf("the rows are not as asked: %+v", f.Fix)
+	}
+	if got := f.Fix[len(f.Fix)-1]; got != "delete it, or it will fall behind the built-in" {
+		t.Fatalf("the fix = %q", got)
+	}
+}
+
+// The reading marks a file in a prompts directory whose text equals the
+// built-in after trailing whitespace, and not one that differs or one a key
+// names.
+func TestReadWordings_MarksACopyOfTheBuiltIn(t *testing.T) {
+	dir := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(dir, "steer.md"), []byte(wordingNamed(t, "steer").builtin()+"\n\n"), 0o600))
+	must(t, os.WriteFile(filepath.Join(dir, "summary.md"), []byte("my summary"), 0o600))
+	named := writeWording(t, "classifier.md", wordingNamed(t, "classifier").builtin())
+	rows := readWordings(config.PromptsConfig{Classifier: named}, dir)
+	got := map[string]bool{}
+	for _, r := range rows {
+		got[r.key] = r.same
+	}
+	if len(rows) != 3 || !got["steer"] || got["summary"] || got["classifier"] {
+		t.Fatalf("rows = %+v", rows)
+	}
+}
+
 // The reading behind that row reads each file and keeps going past a
 // failure, so a person fixing their files is told about all of them at once.
 func TestReadWordings_NamesEveryFileItCouldNotRead(t *testing.T) {

@@ -203,12 +203,17 @@ func doctorPrompts(rows []wordingRow, profile backlogProfile) doctorFinding {
 	}
 	names := make([]string, 0, len(rows))
 	lines := append([]string{}, under...)
-	unreadable := 0
+	unreadable, same := 0, 0
 	for _, r := range rows {
 		names = append(names, r.key)
 		if r.err != nil {
 			unreadable++
 			lines = append(lines, r.err.Error())
+			continue
+		}
+		if r.same {
+			same++
+			lines = append(lines, r.key+" — same as the built-in, no effect")
 			continue
 		}
 		lines = append(lines, r.key+" — "+r.from)
@@ -219,6 +224,13 @@ func doctorPrompts(rows []wordingRow, profile backlogProfile) doctorFinding {
 		Outcome:  "ok",
 		Fix:      lines,
 		FixLabel: "show which file each came from",
+	}
+	if same > 0 && unreadable == 0 {
+		f.Outcome = "no effect"
+		f.State = components.DoctorWarned
+		f.Consequence = countOf(same, "file", "files") + " only repeat the built-in words, and will fall behind them when they change"
+		f.Fix = append(f.Fix, "delete it, or it will fall behind the built-in")
+		f.FixLabel = "show the files, and what to do with them"
 	}
 	if unreadable > 0 {
 		f.Outcome = "unreadable"

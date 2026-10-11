@@ -176,7 +176,7 @@ Settings live in `~/.config/shhh/config.toml` (or under `$XDG_CONFIG_HOME`),
 and a trusted checkout may layer its own `.shhh/config.toml` over them.
 
 ```sh
-$ shhh config init --global     # write your settings file and wordings at their defaults
+$ shhh config init --global     # write your settings file at its defaults
 $ shhh config init --update     # add the keys a file lacks, move renamed ones, keep every value
 $ shhh config set behavior.default_mode accept-edits
 $ shhh config                   # the editor, with where each value came from

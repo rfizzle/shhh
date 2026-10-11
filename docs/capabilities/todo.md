@@ -822,8 +822,12 @@ presence is the override is the whole convention: the checkout's own
 `.shhh/prompts/` first, then a `[prompts]` key where one names a path, then a
 `prompts/` directory beside your settings
 ([where](configuration.md#the-mechanism-is-code-its-wording-is-configuration)).
-`shhh config init` writes that last directory with the built-in words already
-in it, which is where editing one starts.
+`shhh config init` writes no wording, because a copy of a built-in would be an
+override that goes stale when the built-in changes: a prompts directory holds
+the wordings you changed and nothing else, so start a file by writing it. A
+file that only repeats its built-in is reported by `shhh doctor` as having no
+effect, and `shhh config init --update` deletes it
+([how](configuration.md#the-mechanism-is-code-its-wording-is-configuration)).
 
 A wording nothing replaced keeps the built-in words, and a file that cannot
 be read stops the session with the path and the reason, exactly as the

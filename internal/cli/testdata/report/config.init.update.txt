@@ -3,6 +3,10 @@
   ✓ updated /home/dev/.config/shhh/config.toml · added 4 keys · 1 ren…  [global]
         every value the file set is kept; a moved key says so on the line above
         it
-  ✓ wrote /home/dev/.config/shhh/prompts/ · 2 wordings, each the buil…  [global]
+  ✓ deleted /home/dev/.config/shhh/prompts/ · 2 wordings, each the sa…  [global]
+        deleted steer.md: same as the built-in, no effect
+        deleted summary.md: same as the built-in, no effect
+        a file there replaces its built-in whole; write one only for a wording
+        you change
   ✓ updated /home/dev/.config/shhh/keybindings.toml · added 3 keys, e…  [global]
         every key the file binds is kept

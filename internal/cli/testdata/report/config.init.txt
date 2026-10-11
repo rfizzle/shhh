@@ -2,9 +2,9 @@
 
   ✓ wrote /home/dev/.config/shhh/config.toml · 155 settings, each com…  [global]
         uncomment a line to change one; above each key is what it decides
-  ✓ wrote /home/dev/.config/shhh/prompts/ · 14 wordings, each the bui…  [global]
-        edit one and it is what a session is told; delete it and the built-in
-        words are back
+  ⊘ /home/dev/.config/shhh/prompts/ · no wordings written  [global]
+        a file at <key>.md here replaces that built-in wording whole; delete it
+        and the built-in words are back
   ✓ wrote /home/dev/.config/shhh/keybindings.toml · 235 keys, each co…  [global]
         uncomment a line to move a key; shhh keys check reads it the way a
         session will

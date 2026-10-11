@@ -327,21 +327,19 @@ person is told, and the write is theirs to make once the file reads.
 ## An older file is brought up to date
 
 There is no version number in the settings file. The settings table is the
-version, and a file is *behind* it in three ways, read off the file's own
+version, and a file is *behind* it in two ways, read off the file's own
 text:
 
 - **a key it neither sets nor lists** — one that arrived after the file was
-  written, which the file therefore has no commented row for to find;
+  written, which the file therefore has no commented row for to find, and
 - **a key it holds under an old name** — the one kind of change the table
-  alone cannot describe, since the old spelling is no longer a key at all;
-- **a wording with no file** in the pair's prompts directory, for the pair
-  `config init` wrote (a wording your settings point at a file of your own is
-  not missing: the key outranks the directory).
+  alone cannot describe, since the old spelling is no longer a key at all.
+
+A wording is never behind: no file is the built-in, which is always current.
 
 A file that lists no key as a commented row was never a list of every key —
-it is three lines somebody wrote on purpose — so no key counts as new to it,
-and a prompts directory holding none of the wordings is read the same way. A
-key that moved counts whatever the file looks like.
+it is three lines somebody wrote on purpose — so no key counts as new to it.
+A key that moved counts whatever the file looks like.
 
 `shhh config init --update` brings the pair up to date instead of refusing
 the files that are already there. It follows the same scope as the bare
@@ -356,8 +354,10 @@ way every other write does, one line at a time:
 - a key that moved is written under its new name, with its value and any
   comment trailing it on the line carried byte for byte, and a comment above
   it saying where it came from and when it moved;
-- a wording with no file gets one, holding the built-in text; a file already
-  there is never written over;
+- a wording file whose text equals its built-in, trailing whitespace aside,
+  is deleted and named, since it changes nothing now and falls behind the
+  built-in the day that moves; a file that differs is yours and is never
+  touched;
 - for the global pair, a `keybindings.toml` that is there gets a commented row
   for every key it neither binds nor lists, as the scaffold writes it — under
   the table it belongs to where the file has that table, and as a table of
@@ -563,18 +563,30 @@ screen names the ones it handed over.
 
 **One command writes the file you would have written.** `shhh config init`
 creates a settings file holding every key, commented out at its default with
-the sentence that says what it decides above it, and a `prompts/` directory
-holding every wording as a file already carrying the built-in text. Editing a
-prompt is then opening a file, rather than finding the built-in prose in the
-program and a key to point at it. Run in a checkout it writes the
-project pair — `.shhh/config.toml` and `.shhh/prompts/` — with the keys a
-checkout may not decide left out, and says on each row which pair it wrote;
-outside one, in the home directory, or with `--global`, it writes the global pair.
+the sentence that says what it decides above it. Run in a checkout it writes
+the project pair — `.shhh/config.toml` — with the keys a checkout may not
+decide left out, and says on each row which pair it wrote; outside one, in the
+home directory, or with `--global`, it writes the global pair.
+
+**A prompts directory holds overrides only.** `config init` writes no
+wording. A file that is there is the override, so a copy of a built-in would
+be an override that goes stale the day the built-in changes; the directory
+does not exist until you write a file into it. To change a wording, write
+`<key>.md` under `.shhh/prompts/` (a checkout's) or `prompts/` beside your
+settings file (yours), holding the whole of the text you want sent: a file
+there replaces the built-in whole, and deleting it puts the built-in back. The
+built-in text is in the program, not in the docs, and `config init --stdout`
+prints the settings, not a wording; the keys are the ones the `[prompts]`
+table lists and the steps of the run, and the comment above each says what its
+placeholders are. A file that says exactly what its built-in says is reported:
+`shhh doctor` names it `<key> — same as the built-in, no effect` as a warning
+whose fix is to delete it, and `shhh config init --update` deletes it and says
+which.
 
 It is the one deliberate write-everything act, and it is not the flattening
 the targeted rewrite exists to prevent: a commented default is not a value in
 the file. It also never writes over anything. A file already there — the
-settings, or one wording — stops the whole command, which names what is in
+settings or the keymap — stops the whole command, which names what is in
 the way and offers `--stdout`: the same scaffold printed with your own values
 filled in uncommented, so expanding a three-line file is a print and a paste
 and never a rewrite behind you. `--stdout` prints the pair the bare command
