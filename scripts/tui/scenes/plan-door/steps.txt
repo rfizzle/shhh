@@ -46,11 +46,11 @@ narrow 130 snap 04-executing "read at the top of the loop" "✓ plan · 1 of 6 �
 wide 130 keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
 wide 130 snap 05-heading-opens "/plan" "1 step off the plan"
 wide 130 keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
-wide 130 snap 06-cell-closes "PLAN" "/plan for the whole list"
+wide 130 snap 06-cell-closes "PLAN" "of 6 done"
 keys "/plan" Enter
 snap 07-key-twin "/plan" "1 step off the plan"
 keys Escape
-wide 130 snap 08-back "PLAN" "/plan for the whole list"
+wide 130 snap 08-back "PLAN" "of 6 done"
 # The plan's card, scrolled to: its header, its body, a row per step with the
 # first ticked and what each will write.
 narrow 130 snap 08-back "✓ plan · 1 of 6"

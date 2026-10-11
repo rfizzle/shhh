@@ -12,8 +12,8 @@
 # second turn, the SPEND heading is on row 10. The rail is not drawn below 130
 # columns, which is why the scene is driven there.
 #
-# What the capture is for: at 04 the rail's SPEND block has a row per model
-# and the session total; at 05 a click on the heading has put the screen over
+# What the capture is for: at 04 the rail's SPEND block is its heading and
+# the session total, the shares per model being the screen's; at 05 a click on the heading has put the screen over
 # the pane and the rail, the total first with the whole bill by kind of
 # request beside it, both models under `by model` and both turns under `by
 # turn`; at 06 a click on the same cell has put the rail back, and the
@@ -31,7 +31,7 @@ snap 03-auto "⏵⏵ auto"
 keys "write the spend notes" Enter
 # The cheap model answers the classifier and the suggestion, so its row folds
 # to one source and its name shortens to the family word the rail keeps.
-snap 04-two-models "The notes file is there" "mini · " "2 more" "session total · "
+snap 04-two-models "The notes file is there" "session total · "
 keys "wait"
 keys -l "$(printf '\033[<0;85;10M\033[<0;85;10m')"
 snap 05-heading-opens "/stats · 2 models · 2 turns" "by kind of request" "by turn"

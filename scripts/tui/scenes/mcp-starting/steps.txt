@@ -13,8 +13,8 @@
 # What the capture is for: at 02 the first turn has run and the rail reads
 # 1 of 3 up with both servers starting and their seconds; at 03 bare /mcp
 # opens on docs, still starting, with what it costs and how long it has; at
-# 04 docs has answered and its row reads up with its one tool while tracker
-# still starts; at 05 tracker's bound has run out and its row reads error ·
+# 04 docs has answered and, up, has left the rows for the heading's count
+# while tracker still starts; at 05 tracker's bound has run out and its row reads error ·
 # timeout, with no line sent since 04; at 06 the next line has the two
 # transcript lines — docs up from this turn, tracker did not start — ahead of
 # the message that started the turn.
@@ -25,7 +25,7 @@ snap 02-starting "The servers are still starting" "TOOLS" "1 of 3 up" "▸ docs"
 keys "/mcp" Enter
 snap 03-mcp-starting "nothing yet: it has until" "/mcp · 2 servers" "its tools are not in this session yet"
 keys Escape
-snap 04-docs-up "✓ docs" "▸ tracker" "2 of 3 up" "up · 1 tool"
+snap 04-docs-up "2 of 3 up" "▸ tracker" "starting · "
 snap 05-tracker-error "error · timeout" "2 of 3 up"
 keys "now search them" Enter
 snap 06-joined "The docs server joined at this turn" "mcp: docs: up — 1 tool, from this turn" "mcp: tracker: did not start (no answer within 12s — timeout_seconds)"

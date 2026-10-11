@@ -5,15 +5,15 @@
 # stays in the prompt frame through a real session.
 #
 # Then the rail's SPEND block past a classifier decision: in auto the judge
-# answers on the small model the launch line names, so the block grows a
-# second row for it, and the two rows are the shares the session total under
-# them adds up to (docs/interface/surfaces.md#the-inspector-rail). Drive it at
-# 130 columns or wider, where the rail is on screen.
+# answers on the small model the launch line names, and the block is its
+# heading and the session total, which now carries both models; the shares
+# per model are /stats's (docs/interface/surfaces.md#the-inspector-rail).
+# Drive it at 130 columns or wider, where the rail is on screen.
 snap 01-start "Some things worth doing first"
 keys "how is cockpit spend reported" Enter
 snap 02-reply "The cockpit uses the session's billed total" "· ↑"
 snap 03-idle "[enter] send" "· ↑"
-# One model has answered, so SPEND is that one row and the total.
+# One model has answered, so SPEND is the heading and the total.
 snap 04-one-model "scripted-model · " "session total · "
 # The mode comes first, because the classifier only judges in auto: two
 # presses of the cycle key from the mode a session opens in.
@@ -25,4 +25,4 @@ keys "write the spend notes" Enter
 # session model's, naming what it was spent on.
 # The cheap model answers the classifier and the suggestion, so its row folds
 # to one source and its name shortens to the family word the rail keeps.
-snap 06-two-models "The notes file is there" "mini · " "2 more" "classifier" "session total · "
+snap 06-two-models "The notes file is there" "classifier" "session total · "

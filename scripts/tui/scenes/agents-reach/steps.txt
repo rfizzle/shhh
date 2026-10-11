@@ -12,14 +12,14 @@
 # content splits, so the AGENTS block is on screen beside the transcript
 # (docs/interface/surfaces.md#the-inspector-rail).
 #
-# What the capture is for: the map is somewhere to go from. The trailer under
-# the block names the manager, the chord and the pointer; a child waiting on
+# What the capture is for: the map is somewhere to go from. The block's
+# heading is the manager's door and the key list names the chord and the
+# pointer (the rail carries no key hints); a child waiting on
 # an answer is drawn directly under the orchestrator whatever order it was
 # spawned in; a child a child spawned is drawn a column in behind the corner;
-# and a child that failed says so on its own line. Both doors the trailer
-# names are driven here — the chord that walks the map, and the key that opens
-# the manager — so the row is proof of the keys rather than a sentence about
-# them.
+# and a child that failed says so on its own line. Both doors are driven
+# here — the chord that walks the map, and the key that opens the manager —
+# so the capture is proof of the keys rather than a sentence about them.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 # Accept edits, so a writer's edit inside its own copy of the checkout goes
@@ -75,7 +75,7 @@ sleep 1
 keys n
 sleep 3
 snap 06-blocked "waiting approval"
-# The manager is the door the trailer names for acting rather than reading:
+# The manager is the door for acting rather than reading:
 # one child is killed here, which is the failure the map then carries. It had
 # written something in its copy of the checkout, so the confirm says the patch
 # outlives the copy, and the row it leaves offers the patch back.
@@ -101,8 +101,7 @@ sleep 1
 snap 09-killed "patch kept · [enter] review"
 # Attaching to a session that is not the one asking is what puts the rail back
 # with the map whole: the block floated to the top, the failure under it, the
-# grandchild indented under its own parent, and the trailer naming the way
-# out. The session attached to here is the grandchild itself, so the frame's
+# grandchild indented under its own parent, and the heading the way out. The session attached to here is the grandchild itself, so the frame's
 # breadcrumb is the lineage as well — walked to with the chord rather than
 # down the manager's list, whose rows the kill has just moved. The chord walks
 # the tree, which a kill does not move: from the session, the three writers
@@ -124,14 +123,14 @@ keys S-F8
 sleep 1
 keys S-F8
 sleep 1
-wide 130 snap 10-map "f12 agents" "shift+f8 next" "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
+wide 130 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
 narrow 130 wide 110 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a"
 narrow 110 snap 10-map "… ▸ writer-3 ▸ reader-3a"
 # The chord itself, twice: it walks spawn order rather than the order the map
 # is drawn in. From the grandchild — the last thing spawned, and the deepest —
 # it wraps to the session itself, and then to the first writer spawned, which
 # the map draws at the bottom because it failed. Where it ended up is the
-# map's own pointer, which is what the trailer promised the key would move,
+# map's own pointer, which is what the key list says the chord moves,
 # and the breadcrumb, which is what says so where there is no map.
 keys S-F8
 sleep 1
