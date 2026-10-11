@@ -420,6 +420,49 @@ var catppuccinMochaGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// draculaPalette is the Dracula palette
+// (https://github.com/dracula/dracula-theme, the README colour table): the
+// published hex for every token that clears 4.5:1 on its ground #282a36 and
+// its band #363848, the selected row #44475a (current line). Three inks were
+// short and LiftToAA lifts them in their own hue: dim (the comment grey), del
+// and key. Dracula publishes no blue, so info is its purple and key is
+// derived, the purple shaded toward the comment grey and then lifted. The
+// foreground #f8f8f2 is bright; body, subtle, dimmer and status are derived
+// between it and the comment grey, then status, dimmer and subtle are spaced
+// in even quarters from the lifted dim up to body so the ladder keeps its
+// order. addBg and delBg are the ground with 28% of add and of del. The 256
+// rungs are DistinctRungs' and the sixteen-colour column is the dark table's.
+// The figures are in docs/interface/departures.md.
+var draculaPalette = ColorTokens{
+	Add:     token("#50fa7b", "84", "10"),
+	Del:     token("#ff7872", "209", "9"),
+	addBg:   token("#336449", "238", "2"),
+	delBg:   token("#64363f", "240", "1"),
+	Hunk:    token("#8be9fd", "117", "14"),
+	Accent:  token("#ffb86c", "215", "11"),
+	Info:    token("#bd93f9", "141", "12"),
+	FocusBg: token("#44475a", "239", "12"),
+	band:    band("#363848", "237"),
+	Dim:     token("#8fa1d6", "104", "8"),
+	Dimmer:  token("#b8c3de", "146", "8"),
+	Spin:    token("#ff79c6", "212", "13"),
+	Status:  token("#a4b2da", "110", "8"),
+	Bright:  token("#f8f8f2", "255", "15"),
+	Subtle:  token("#cdd3e2", "188", "7"),
+	Body:    token("#e1e4e6", "254", "7"),
+	Code:    token("#f1fa8c", "228", "3"),
+	Key:     token("#ad94eb", "140", "12"),
+}
+
+// draculaGround is Dracula's background, #282a36 and 236, painted by default
+// like the dark ground and for the same reason: its band is half of a pair.
+// It has no sixteen-colour rung.
+var draculaGround = Token{
+	trueColor: lipgloss.Color("#282a36"),
+	ansi256:   lipgloss.Color("236"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -436,6 +479,8 @@ const (
 	ThemeColorblind   = "colorblind"
 	// ThemeCatppuccinMocha is Catppuccin's Mocha flavour, a brand theme.
 	ThemeCatppuccinMocha = "catppuccin-mocha"
+	// ThemeDracula is the Dracula palette, a brand theme.
+	ThemeDracula = "dracula"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -460,6 +505,7 @@ var themes = map[string]theme{
 	ThemeColorblind:   {colorblindPalette, darkGround},
 
 	ThemeCatppuccinMocha: {catppuccinMochaPalette, catppuccinMochaGround},
+	ThemeDracula:         {draculaPalette, draculaGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -488,7 +534,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula}
 }
 
 var (
@@ -603,7 +649,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula:
 		return true
 	}
 	return false

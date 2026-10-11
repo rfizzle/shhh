@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 30 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 31 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -361,6 +361,41 @@ Derived, not published: addBg `#44554e` and delBg `#5a3d50` (the ground with
 error 28.2 (RGB distance, on the delBg tint). Sixteen colours: the dark
 column. The Machado distance is not held for this table; `colorblind`
 remains the answer for that need.
+
+## The `dracula` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: https://github.com/dracula/dracula-theme (README palette). Ground
+`#282a36` (background), band `#363848` (derived: the ground mixed halfway with
+the current line), selected row `#44475a` (current line); painted by default.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #6272a4 | 3.03 / 2.46 | #8fa1d6 | 5.59 / 4.54 |
+| del | #ff5555 | 4.53 / 3.68 | #ff7872 | 5.55 / 4.51 |
+| key | #a289df | 4.87 / 3.95 | #ad94eb | 5.57 / 4.52 |
+
+`LiftToAA` lifts these three in their own hue. Dim, the comment grey, keeps its
+lifted value; status `#a4b2da`, dimmer `#b8c3de` and subtle `#cdd3e2` are
+spaced in even quarters from it up to the body `#e1e4e6`, which keeps the
+ladder bright, body, subtle, dimmer, status, dim descending (6.75, 8.07 and
+9.50 on the ground; 5.48, 6.55 and 7.72 on the band). Every other ink is as
+published: add, hunk, accent, info (purple), spin (pink), code and the
+foreground as bright.
+
+Derived, not published: Dracula has no blue and a single foreground and a
+single comment grey. Body, subtle, dimmer and status are mixes of the
+foreground `#f8f8f2` and the comment grey (body is `#e1e4e6`; the other three
+are respaced as above). Info is the purple `#bd93f9`, since there is no blue
+for it to be. Key is the purple shaded toward the comment grey (`#a289df`,
+below the floor on the band) and lifted to `#ad94eb`, so it reads quieter than
+info without a second hue. The band is derived as above. addBg `#336449` and
+delBg `#64363f` are the ground with 28% of add `#50fa7b` and of the published del
+`#ff5555`. 256 rungs: DistinctRungs, worst error 43.9 (RGB distance,
+on the delBg tint, which lands on 240 `#585858`). Sixteen colours: the dark
+column. The Machado distance is not held for this table; `colorblind` remains
+the answer for that need.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 
