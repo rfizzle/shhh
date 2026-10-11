@@ -243,8 +243,9 @@ func TestPatchClashesAnswersAnIntegrationsHandedFilesAsReconciled(t *testing.T) 
 
 // An integration writer that cannot reconcile the two lands nothing: its
 // patch still carries a conflict marker, so no card is raised, nothing is
-// written with markers, and both patches stay kept with the file named.
-func TestAnIntegrationThatDoesNotReconcileKeepsBothPatches(t *testing.T) {
+// written with markers, and the source's patch stays kept with the file
+// named. The writer's own patch carries the marker, so it is not kept.
+func TestAnIntegrationThatDoesNotReconcileKeepsOnlyTheSourcesPatch(t *testing.T) {
 	repo := mergeRepo(t)
 	marked := strings.Replace(mergeBase, "var y = 0", "<<<<<<< the workspace\nvar y = 1\n=======\nvar y = 2\n>>>>>>> writer-2", 1)
 	w := conflictingWriters(repo, func(root string) { put(root, "main.go", marked) })
@@ -256,10 +257,10 @@ func TestAnIntegrationThatDoesNotReconcileKeepsBothPatches(t *testing.T) {
 		t.Fatalf("an unreconciled patch should not be put on a card: %s", card.Title)
 	default:
 	}
-	if !statusOf(t, sup, "writer-2").PatchKept || !statusOf(t, sup, "integrator-1").PatchKept {
-		t.Fatal("both patches should stay kept for the person")
+	if !statusOf(t, sup, "writer-2").PatchKept || statusOf(t, sup, "integrator-1").PatchKept {
+		t.Fatal("the source's patch should stay kept and the marked one should not")
 	}
-	if !transcriptHas(sup.Transcript("integrator-1"), EntrySystem, "integrator-1 did not reconcile main.go with the workspace; no files were changed, and both patches are kept") {
+	if !transcriptHas(sup.Transcript("integrator-1"), EntrySystem, "integrator-1 did not reconcile main.go with the workspace; no files were changed, and writer-2's patch is kept for the user; this one carries conflict marks, so it is not kept") {
 		t.Fatalf("the integration writer's note should say so: %v", sup.Transcript("integrator-1"))
 	}
 	if !transcriptHas(sup.Transcript("writer-2"), EntrySystem, "integrator-1 did not reconcile main.go") {
@@ -315,6 +316,50 @@ func integrationLeaving(t *testing.T, left func(root string)) {
 	}
 	if got := take(repo, "main.go"); got != yIsOne {
 		t.Fatalf("the checkout should be as writer-1 left it:\n%s", got)
+	}
+}
+
+// An integration writer that touches nothing leaves its copy as the marked
+// merge it was seeded with, so its patch carries the markers: it is not kept
+// (approving it from its row would land them), and the note says why. The
+// same holds where it reconciles one file and marks another: no partial keep.
+func TestAnIntegrationPatchWithConflictMarksIsNotKept(t *testing.T) {
+	marks := "<<<<<<< the workspace\na\n=======\nb\n>>>>>>> writer-2\n"
+	for name, c := range map[string]struct {
+		integrate func(root string)
+		file      string
+	}{
+		"untouched": {func(root string) {}, "main.go"},
+		"one reconciled, one marked": {func(root string) {
+			put(root, "main.go", yIsBoth)
+			put(root, "notes.txt", marks)
+		}, "notes.txt"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			repo := mergeRepo(t)
+			w := conflictingWriters(repo, c.integrate)
+			sup, cards, _ := startConflict(t, repo, w)
+
+			waitState(t, sup, "integrator-1", StateDone)
+			select {
+			case card := <-cards:
+				t.Fatalf("a patch with conflict marks should not be put on a card: %s", card.Title)
+			default:
+			}
+			if statusOf(t, sup, "integrator-1").PatchKept {
+				t.Fatal("a patch that carries conflict marks should not be kept")
+			}
+			if !statusOf(t, sup, "writer-2").PatchKept {
+				t.Fatal("the source's patch should stay kept")
+			}
+			want := "integrator-1 did not reconcile " + c.file + " with the workspace; no files were changed, and writer-2's patch is kept for the user; this one carries conflict marks, so it is not kept"
+			if !transcriptHas(sup.Transcript("integrator-1"), EntrySystem, want) {
+				t.Fatalf("the note should say why nothing is kept: %v", sup.Transcript("integrator-1"))
+			}
+			if got := take(repo, "main.go"); got != yIsOne {
+				t.Fatalf("the checkout should be as writer-1 left it:\n%s", got)
+			}
+		})
 	}
 }
 

@@ -411,22 +411,31 @@ func (in *integration) unreconciled(worktree, patch string) []string {
 }
 
 // unreconciledNote is what an integration writer that did not reconcile
-// comes to: nothing lands, its own patch is kept beside the source's, and
-// the source's row is told. Neither kept patch starts another integration
+// comes to: nothing lands, its own patch is kept beside the source's unless
+// it carries a conflict marker, and the source's row is told. A patch with a
+// marker is not kept at all, not even its clean files: approving it from its
+// row would land the marker. Neither kept patch starts another integration
 // from its row; the person is who is asked now.
 func (s *Supervisor) unreconciledNote(c *child, files []string, patch string) string {
 	in := c.integrates
-	kept := "; this one changed nothing"
-	if strings.TrimSpace(patch) != "" {
-		kept = c.keepWriterPatch(patch, s.opts.Generators)
+	var note string
+	switch {
+	case len(wtree.MarkedFiles(patch)) > 0:
+		note = fmt.Sprintf("%s did not reconcile %s with the workspace; no files were changed, and %s's patch is kept for the user; this one carries conflict marks, so it is not kept",
+			c.name, wtree.PatchPaths(files), in.source)
+	case strings.TrimSpace(patch) == "":
+		note = fmt.Sprintf("%s did not reconcile %s with the workspace; no files were changed, and both patches are kept for the user: %s's, and this one; this one changed nothing",
+			c.name, wtree.PatchPaths(files), in.source)
+	default:
+		note = fmt.Sprintf("%s did not reconcile %s with the workspace; no files were changed, and both patches are kept for the user: %s's, and this one%s",
+			c.name, wtree.PatchPaths(files), in.source, c.keepWriterPatch(patch, s.opts.Generators))
 	}
 	if src, err := s.lookup(in.source); err == nil {
 		src.appendEntry(TranscriptEntry{Kind: EntrySystem,
-			Text: c.name + " did not reconcile " + wtree.PatchPaths(files) + "; this patch is still kept for the user to review"})
+			Text: c.name + " did not reconcile " + wtree.PatchPaths(files) + "; " + in.source + "'s patch is still kept for the user to review"})
 		s.emitUpdate(src)
 	}
-	return fmt.Sprintf("%s did not reconcile %s with the workspace; no files were changed, and both patches are kept for the user: %s's, and this one%s",
-		c.name, wtree.PatchPaths(files), in.source, kept)
+	return note
 }
 
 // integrationLanded spends the kept patch an integration writer reconciled,

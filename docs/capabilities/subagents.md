@@ -270,9 +270,11 @@ nothing. Its patch is read, not trusted: a conflicting file still as its
 copy was given it or as your checkout had it, one carrying a conflict marker,
 or one deleted, is not a reconciliation, whatever the report says. A
 deletion keeps neither change; it stands only where one of the two changes
-was itself the file's deletion. Both patches then stay kept — the writer's
-and the integration's — each on its own row with the files named, and
-nothing is written with markers. That is where you come in, and only there:
+was itself the file's deletion. The source's patch then stays kept on its row
+with the files named, and so does the writer's own unless it carries a
+conflict marker: a patch with a marker is never kept, whole, since approving
+it from its row would land the marker, and the note says so. Nothing is
+written with markers. That is where you come in, and only there:
 the person is the last resort, asked with both patches in hand, never the
 first. A kept
 patch's row starts at most one integration writer; after that, reviewing it

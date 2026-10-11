@@ -54,14 +54,25 @@ func Unreconciled(dir, patch string, conflicts []string, seeded map[string]Seede
 			add(p)
 		}
 	}
+	for _, p := range MarkedFiles(patch) {
+		add(p)
+	}
+	return out
+}
+
+// MarkedFiles is the files a patch adds a conflict marker to, in the order
+// the patch has them. It is the one test for a patch that must not land or be
+// kept: a marker written into a file is never a reconciliation.
+func MarkedFiles(patch string) []string {
+	var out []string
 	file := ""
 	for _, line := range strings.Split(patch, "\n") {
 		switch {
 		case strings.HasPrefix(line, "diff --git "):
 			file = ParseGitDiffPath(line)
 		case strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++"):
-			if conflictMark(line[1:]) {
-				add(file)
+			if conflictMark(line[1:]) && !slices.Contains(out, file) {
+				out = append(out, file)
 			}
 		}
 	}
