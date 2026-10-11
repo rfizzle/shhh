@@ -30,40 +30,38 @@ keys "survey the round accounting" Enter
 snap 02-spawn-card "Start 3 writers"
 sleep 1
 keys y
-sleep 3
+snap 02b-asked "DECISION 1/4"
 # Everything then asks to run a command at once. The session's own card is set
 # aside so the children's routed requests can be let through one at a time; an
 # agent parked at a card asks for nothing, so the order the reader lets them
 # through is the order they get anywhere.
 keys Escape
-sleep 2
 snap 03-blocked "blocked · "
 # writer-1 runs its command and then asks the model again, and its queue keeps
 # it waiting: that child is the one still working, for the rest of the scene.
+# The first handover answers the session's own card, set aside above; the
+# next card in the queue is writer-1's, and it is the wait.
 keys C-Space
-sleep 2
 keys y
-sleep 5
+snap 03b-first "writer-1 ▸ Approve command"
+keys C-Space
+keys y
+# The card after it is writer-2's, and it is the wait.
+snap 03c-second "writer-2 ▸ Approve command"
 # writer-2 is answered at once and says its piece — until it asks to run
 # something again, which is the request read from the manager further down.
-keys C-Space
-sleep 2
-keys y
-sleep 5
 # writer-3's request is never answered: that child is the one waiting on you,
 # from here to the end. Whatever is standing is set aside, which puts the
 # keyboard back at the draft — the manager is a takeover and does not open
 # over a card.
 keys Escape
-sleep 3
-snap 04-three-states "blocked · "
+snap 04-three-states "writer-2 ▸ Approve command" "blocked · " "writing · "
 # The manager, with the pointer where it opens: on the orchestrator, which can
 # neither be answered nor retried. Both list-wide offers are on the row
 # anyway, which is the whole of what this scene is for. Under the three
 # children are the rows that are not agents: the roles this session can spawn,
 # each saying where it lives, and the offer to draft another under them.
 keys F12
-sleep 2
 snap 05-manager "[d] stop every agent" "[a] answer without attaching" "[esc] back to the turn"
 # The pointer on the blocked child. The offers do not change, because they
 # were never the pointer's.
@@ -72,7 +70,6 @@ snap 06-blocked-row "answer without attaching" "[d] stop"
 # And the way out leaves what it says it leaves: the turn, with the decision
 # that was standing over it still standing.
 keys Escape
-sleep 1
 snap 07-back "writer-2 ▸ Approve command"
 # And the state the mid-sentence rule is about: that same routed card standing
 # over a sentence somebody is still typing. Every letter goes into the draft,
@@ -80,30 +77,28 @@ snap 07-back "writer-2 ▸ Approve command"
 # own — no [y], no [n], nothing a word could press by accident
 # (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 keys "and check the exit condition too"
-sleep 1
 snap 08-mid-sentence "and check the exit condition too"
 # The blocked child answered from the manager, twice: once with esc and once
 # with the answer esc is not. The card over the list claims every key it has —
 # the list is a takeover and there is no draft under it — so its own run is
 # live and its esc row says what leaving does here.
 keys F12
-sleep 1
 keys j
 keys a
-sleep 1
 snap 09-answer-in-place "back to the agents"
 # Esc leaves the decision waiting: the list comes back and the row it comes
 # back to still says the child needs somebody
 # (docs/interface/principles.md#esc-is-always-the-safe-answer).
 keys Escape
-sleep 1
 snap 10-still-waiting "needs you" "❯ ⚠ writer-2 · Say where the round limit is set."
 # And the answer that is one. [n] declines the request and hands the list
 # back, which is where the reader was.
 keys a
+# The answer card lands a key after `a`, so it opens a grace window, and a
+# decision key inside it is thrown away: nothing on the card marks the window
+# shut, so this is the one sleep the scene keeps.
 sleep 1
 keys n
-sleep 2
 snap 11-declined "writer-2  declined"
 # The redirect, typed on the row it is aimed at. The manager is a takeover, so
 # the letter is live here the way every other letter on this surface is; the
@@ -121,16 +116,12 @@ keys j
 keys j
 snap 11c-on-writer-1 "❯ ◇ writer-1"
 keys s
-sleep 1
 keys "read the exit condition too"
-sleep 1
 snap 12-steer-field "steer writer-1"
 # Sent from the row. It is the same message typing at the child's own lane
 # sends, so the lane says where it came from.
 keys Enter
-sleep 2
 keys Escape
-sleep 3
 snap 13-steered "steered from lane"
 # writer-2 has answered, and a finished child can still be asked: over its row
 # the steer key is a follow-up, and what is typed is the next question on the
@@ -139,18 +130,14 @@ snap 13-steered "steered from lane"
 # The manager opens on the orchestrator; writer-2 is the fourth row, under the
 # child waiting on you and the one still working.
 keys F12
-sleep 1
 keys j
 keys j
 keys j
 snap 14-done-row "[s] follow up"
 keys s
-sleep 1
 keys "and where is the limit read"
-sleep 1
 snap 15-follow-up-field "follow up writer-2"
 # Sent, the row's state word moves from done back to running, and the line
 # under it is the question rather than the report it answered before.
 keys Enter
-sleep 2
 snap 16-following "follow-up · and where is the limit read" "[s] steer"

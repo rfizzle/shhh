@@ -60,7 +60,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check third-party-licenses tui-shot tui-check tui-longpath design help
+.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check third-party-licenses tui-shot tui-check tui-longpath design golden-summary help
 
 all: help
 
@@ -168,6 +168,11 @@ docs-check: ## Verify every docs/ citation resolves and every generated section 
 design: ## Build the design book under docs/design from the goldens and the scenes
 	@echo "${MAGENTA}Building the design book...${RESET}"
 	@python3 -I scripts/design/book.py
+
+# A golden change is up to eight files per case; this reads it as one line per
+# case. ARGS goes to git diff (default: the working tree against HEAD).
+golden-summary: ## One line per changed golden case (ARGS=<git diff args>)
+	@python3 -I scripts/golden-summary.py $(ARGS)
 
 ## Pipeline:
 # The platforms goreleaser ships. A Unix-only syscall compiles perfectly on the

@@ -12,20 +12,14 @@ keys "entries never expire; survey how the cache reads, stores and evicts them" 
 snap 02-spawn-card "Start 3 writers"
 sleep 1
 keys y
-sleep 4
 snap 03-lanes "spawned 3 agents"
-sleep 4
+snap 03-asked "writer-1 ▸ Approve command"
 keys Escape
-sleep 2
 snap 04-blocked "blocked · " "[f12] agents"
 keys C-Space
-sleep 2
 keys y
-sleep 5
-keys C-Space
-sleep 2
+snap 04-second "writer-2 ▸ Approve command"
 keys y
-sleep 5
+snap 04-third "writer-3 ▸ Approve command"
 keys Escape
-sleep 2
 snap 05-three-states "✓ done" "blocked · " "1 of 3 steps ·" "· Run gofmt"

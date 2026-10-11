@@ -38,34 +38,33 @@ keys y
 # because the frame's status is the one thing on screen that animates
 # (docs/interface/surfaces.md#the-agent-manager).
 snap 03-writing "writing · " "spawned 3 agents"
-sleep 4
 # Three rows as the card opens, before anything has been asked of the
 # reader: the spawn's receipt as the header, the sentence that titled it as
 # the body, and the kind glyph on every row with the state on the right.
 snap 03-lanes "spawned 3 agents" "Fanning three writers over the round accounting."
-sleep 4
+# The first routed request is the wait: it stands in front of the draft, on
+# the card's own title, once the children have read and asked.
+snap 03-asked "writer-1 ▸ Approve command"
 # Every child then asks to run a command. Each request is routed to this
 # session to be answered, and a routed request nobody has answered is what
 # the card draws as blocked, on the child's own row with the manager's key.
 keys Escape
-sleep 2
 snap 04-blocked "blocked · " "[f12] agents"
 # The first child let through runs its command and then asks the model again,
 # and the model keeps it waiting: that lane is the one still working.
 keys C-Space
-sleep 2
 keys y
-sleep 5
+# The next card in the queue is the second child's, and it is the wait.
+snap 04-second "writer-2 ▸ Approve command"
 # The second child let through is answered at once, so its lane is the one
 # that has finished.
-keys C-Space
-sleep 2
+# A card promoted by an answer is no new arrival to the grace window (it
+# opens none within half a second of a decision leaving), so `y` is live.
 keys y
-sleep 5
+snap 04-third "writer-3 ▸ Approve command"
 # The third is never answered, and the card standing over the draft is left
 # standing: that lane is the one waiting on you.
 keys Escape
-sleep 2
 # Waited for by the finished lane, the last of the three to arrive: `blocked`
 # has been on the screen since the step before. The lane still going counts
 # the plan its writer opened with — the step it marked of the steps it named
@@ -92,11 +91,9 @@ snap 06-report-fold "report ·" "▸ report · 6 lines" "· 2 assump"
 # the spawn is its body and no stop of its own — whatever else the turn has
 # landed by then.
 keys C-o
-sleep 2
+snap 06-reading "[esc] back to the prompt"
 keys k k k k k k k k k k
-sleep 1
 keys Enter
-sleep 2
 snap 07-report-open "▾ report · 6 lines" "## Assumptions"
 # The card has a step card's two depths and no fold: enter again closes it to
 # the card with each report counted, and a click on its header, found on the
@@ -105,7 +102,7 @@ snap 07-report-open "▾ report · 6 lines" "## Assumptions"
 keys Enter
 snap 08-enter-closes "▸ report · 6 lines" "❯ ◇ spawned 3 agents" "◇ writer-2"
 keys Escape
-sleep 1
+snap 08-back "[ctrl+space/ctrl+y] answer it"
 keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'spawned 3 agents' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
 snap 09-header-opens "## Assumptions" "▾ report · 6 lines" "◇ writer-2"
 keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'spawned 3 agents' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"

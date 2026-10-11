@@ -25,7 +25,7 @@ The loop now stops when it is stopped.
 [writer-2]
 tool:read_file:{"path":"loop.go"}
 tool:write_file:{"path":"loop.go","content":"package agent\n\nfunc loop() {\n    for round := 0; round <= limit; round++ {\n        step()\n    }\n}\n"}
-wait:25
+wait:18
 +The loop now runs the last round too.
 
 # The integration writer's copy is the checkout with writer-1's change in it,

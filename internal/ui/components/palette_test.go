@@ -188,24 +188,47 @@ func TestPalette_NoTwoTokensCollapse(t *testing.T) {
 // The grey ladder is an ordering, not six unrelated greys: bright reads over
 // body, body over subtle, and so on down to the chrome. A theme that
 // scrambles it would still pass every other check here and be unreadable.
+//
+// It runs over every table ThemeNames lists, in the sense each declares by its
+// ground: on a dark ground the ladder falls in luminance from bright to dim,
+// and on a light ground it rises, because the ink with more contrast is the
+// darker one. A theme's sense is its ground's luminance, so a table added to
+// themes is held to the order without a line here.
 func TestPalette_GreyLadderDescends(t *testing.T) {
-	ladder := []struct {
-		name  string
-		token Token
-	}{
-		{"bright", fullPalette.Bright},
-		{"body", fullPalette.Body},
-		{"subtle", fullPalette.Subtle},
-		{"dimmer", fullPalette.Dimmer},
-		{"status", fullPalette.Status},
-		{"dim", fullPalette.Dim},
-	}
-	for i := 1; i < len(ladder); i++ {
-		hi, lo := luminance(t, ladder[i-1].token), luminance(t, ladder[i].token)
-		if hi <= lo {
-			t.Errorf("%s (%d) does not read over %s (%d)",
-				ladder[i-1].name, hi, ladder[i].name, lo)
+	for _, name := range ThemeNames() {
+		if name == ThemeAuto {
+			continue // not a table: it resolves to dark or light, both listed
 		}
+		th, ok := themes[name]
+		if !ok {
+			t.Errorf("ThemeNames lists %q and themes has no table for it", name)
+			continue
+		}
+		t.Run(name, func(t *testing.T) {
+			onLight := luminance(t, th.ground) > 127 // a light ground: the ladder rises
+			ladder := []struct {
+				name  string
+				token Token
+			}{
+				{"bright", th.tokens.Bright},
+				{"body", th.tokens.Body},
+				{"subtle", th.tokens.Subtle},
+				{"dimmer", th.tokens.Dimmer},
+				{"status", th.tokens.Status},
+				{"dim", th.tokens.Dim},
+			}
+			for i := 1; i < len(ladder); i++ {
+				hi, lo := luminance(t, ladder[i-1].token), luminance(t, ladder[i].token)
+				if onLight {
+					hi, lo = lo, hi
+				}
+				if hi <= lo {
+					t.Errorf("%s (%d) does not read over %s (%d) on a %s ground",
+						ladder[i-1].name, luminance(t, ladder[i-1].token),
+						ladder[i].name, luminance(t, ladder[i].token), map[bool]string{true: "light", false: "dark"}[onLight])
+				}
+			}
+		})
 	}
 }
 
