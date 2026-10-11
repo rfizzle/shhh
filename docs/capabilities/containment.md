@@ -359,10 +359,29 @@ says, in a container of the writer's own, and the spawn card says so in the
 session indicator's words
 ([a sandbox writer works in a container of its own](#a-sandbox-writer-works-in-a-container-of-its-own)).
 
+**The rule is three sentences.** The OS process sandbox, bubblewrap on Linux
+and seatbelt on macOS, is used whenever the host has one, in every mode.
+It is required in the two read-only modes, plan and ask: there, on a host
+with no mechanism, the assistant's command is refused with the sentence above,
+because "nothing writes" is what those modes promise and a command running as
+you does not keep it. The container sandbox (`--sandbox`) is opt-in and is
+not touched by any of this. The decision is yours, of 2026-10-11.
+
+**`sandbox.require` is the one setting, and the file can say no.** Unset, it
+requires containment in plan and ask and nowhere else, which is the default:
+a machine with no bubblewrap is still a machine somebody has to work on in
+the modes that write. `sandbox.require = true` extends the requirement to
+every mode. `sandbox.require = false`, written in the file, turns the
+read-only modes' requirement off too, so plan and ask run commands as you
+on such a host, as the other modes do. The refusal follows the session's mode
+as it changes, and the doctor's containment row says per mode which are
+refused where nothing contains them, and which the rule would refuse the day
+the mechanism went; `/status` says it too. A sub-agent's commands follow
+`sandbox.require = true` and the writer's rule above, not the mode.
+
 **A command you typed is never refused by it.** `/run` and `!` are yours, they
 are never contained, and a requirement about the assistant's commands has
-nothing to say about them. The requirement is off by default: a machine with
-no bubblewrap is still a machine somebody has to work on.
+nothing to say about them, in a read-only mode as in any other.
 
 **In a sandbox session they run where the work is.** The one place a command
 you typed is not run on this machine is a session whose commands run in a

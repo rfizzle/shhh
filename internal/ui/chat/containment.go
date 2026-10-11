@@ -83,6 +83,13 @@ type Containment struct {
 	// something that cannot happen.
 	// See docs/capabilities/containment.md#containment-can-be-required.
 	Refusal string
+	// ReadOnlyRefusal is the same refusal for the two read-only modes alone,
+	// which require containment unless the config file says
+	// sandbox.require = false: "nothing writes" is their promise, and a
+	// command on a host with no mechanism would break it. It is answered
+	// where Refusal is not, and only while the session is in one of them.
+	// See docs/capabilities/containment.md#containment-can-be-required.
+	ReadOnlyRefusal string
 	// Writers is what a writer's commands run under on this host, as one
 	// line: contained, refused because a writer must be contained and
 	// nothing here can, or uncontained because the person turned that off.
@@ -163,7 +170,11 @@ func (m Model) sessionContainmentStatus() string {
 			return "Containment\nrequired, and none is in force — the assistant's commands are refused\n" +
 				uncontainedDetail(m.containment.Detail)
 		}
-		return "Containment\nunconfined — " + uncontainedDetail(m.containment.Detail)
+		line := "Containment\nunconfined — " + uncontainedDetail(m.containment.Detail)
+		if m.containment.ReadOnlyRefusal != "" {
+			line += "\nplan and ask refuse the assistant's commands: containment is required there (sandbox.require = false turns that off)"
+		}
+		return line
 	}
 	words := m.containmentWords(m.containment.Mechanism)
 	if m.inSandbox() {

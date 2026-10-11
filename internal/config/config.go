@@ -503,12 +503,14 @@ type WebConfig struct {
 // so a person can deliberately develop them.
 type SandboxConfig struct {
 	// Require refuses an assistant command outright on a host where no
-	// mechanism is in force, instead of running it unconfined. It is off by
-	// default because a machine with no bubblewrap is still a machine
-	// somebody has to work on; turning it on is how running bare stops being
-	// the answer nobody chose.
+	// mechanism is in force, instead of running it unconfined. Unset it is
+	// off for the modes that write, because a machine with no bubblewrap is
+	// still a machine somebody has to work on, and on for the two read-only
+	// modes, where "nothing writes" is the promise; true makes it on
+	// everywhere and false off everywhere. A pointer because the file
+	// saying false is a different answer from the file saying nothing.
 	// See docs/capabilities/containment.md#containment-can-be-required.
-	Require bool `toml:"require"`
+	Require *bool `toml:"require"`
 	// Profile is "workspace" (network preserved, the default) or
 	// "workspace-netless".
 	Profile string `toml:"profile"`
@@ -1188,6 +1190,24 @@ func (c *Config) SecretsEnvMaskEnabled() bool {
 // See docs/capabilities/mcp.md#a-server-sees-the-masked-environment.
 func (c *Config) MCPEnvMaskEnabled() bool {
 	return c.MCP.EnvMask == nil || *c.MCP.EnvMask
+}
+
+// SandboxRequired reports whether the assistant's commands are refused on a
+// host with no containment mechanism in every mode: sandbox.require = true.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func (c *Config) SandboxRequired() bool {
+	return c.Sandbox.Require != nil && *c.Sandbox.Require
+}
+
+// SandboxRequiredIn reports whether a mode's commands are refused on a host
+// with no mechanism: everywhere where sandbox.require is true, nowhere where
+// the file says false, and — unset — in the read-only modes alone.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func (c *Config) SandboxRequiredIn(readOnly bool) bool {
+	if c.Sandbox.Require == nil {
+		return readOnly
+	}
+	return *c.Sandbox.Require
 }
 
 // AgentsRequireSandboxEnabled reports whether a writer's commands must run

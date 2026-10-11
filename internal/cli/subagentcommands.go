@@ -45,7 +45,7 @@ func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope, writer b
 // commands are the ones nobody watches as they happen.
 // See docs/capabilities/containment.md#containment-can-be-required.
 func childRequiresContainment(cfg config.Config, writer bool) bool {
-	return cfg.Sandbox.Require || (writer && cfg.AgentsRequireSandboxEnabled())
+	return cfg.SandboxRequired() || (writer && cfg.AgentsRequireSandboxEnabled())
 }
 
 // childCommandsRefused reports a child whose every command will be refused:
@@ -74,7 +74,7 @@ func childCommandRefusal(cfg config.Config, writer bool, avail sandbox.Availabil
 // session requires containment, and the writer's where only the writer
 // default does. Both carry the doctor's fix.
 func childRefusal(cfg config.Config, avail sandbox.Availability) string {
-	if cfg.Sandbox.Require {
+	if cfg.SandboxRequired() {
 		return uncontainedRefusal(avail)
 	}
 	return writerUncontainedRefusal(avail)

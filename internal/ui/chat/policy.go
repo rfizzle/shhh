@@ -58,12 +58,16 @@ func (m Model) modePolicy() agent.ModePolicy {
 // what this screen was handed.
 // See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
 func (m Model) rules() approval.Router {
+	refusal := m.containment.Refusal
+	if refusal == "" && m.policy.mode.ReadOnly() {
+		refusal = m.containment.ReadOnlyRefusal
+	}
 	return approval.Router{
 		Denylist:    m.policy.denylist,
 		DenyHosts:   m.policy.denyHosts,
 		Scope:       m.wiring.Scope,
 		Workspace:   m.wiring.Workspace,
-		Containment: m.containment.Refusal,
+		Containment: refusal,
 	}
 }
 

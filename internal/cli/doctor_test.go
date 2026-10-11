@@ -1214,3 +1214,34 @@ func TestDoctorFlows_NamesEachFlowAndTheLinkThatAnswered(t *testing.T) {
 		}
 	}
 }
+
+// The containment row says which modes the requirement reaches: the read-only
+// ones by default, none where the file says false, every one where it says
+// true — on a host with nothing to contain, where it is a refusal, and on one
+// with a mechanism, where it is the rule that stands.
+func TestDoctor_NamesTheModeRequirement(t *testing.T) {
+	none := sandbox.Availability{Detail: "bubblewrap (bwrap) not found on PATH"}
+	have := sandbox.Availability{OK: true, Mechanism: "bwrap", Detail: "bwrap"}
+	for _, tc := range []struct {
+		name    string
+		require *bool
+		avail   sandbox.Availability
+		field   func(doctorFinding) string
+		want    string
+	}{
+		{"unset, none", nil, none, func(f doctorFinding) string { return f.Consequence }, "plan and ask refuse the assistant's commands"},
+		{"false, none", new(false), none, func(f doctorFinding) string { return f.Consequence }, "plan and ask run commands as you too (sandbox.require off)"},
+		{"true, none", new(true), none, func(f doctorFinding) string { return f.Consequence }, "every mode refuses"},
+		{"unset, have", nil, have, func(f doctorFinding) string { return f.Detail }, "required in plan and ask, not elsewhere"},
+		{"false, have", new(false), have, func(f doctorFinding) string { return f.Detail }, "not required in any mode"},
+		{"true, have", new(true), have, func(f doctorFinding) string { return f.Detail }, "required in every mode"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := config.Config{Sandbox: config.SandboxConfig{Require: tc.require}}
+			f := withModeRequirement(doctorSandbox(tc.avail, sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "linux"), cfg, tc.avail)
+			if got := tc.field(f); !strings.Contains(got, tc.want) {
+				t.Fatalf("the row should say %q, got %q", tc.want, got)
+			}
+		})
+	}
+}

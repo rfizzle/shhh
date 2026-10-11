@@ -23,7 +23,38 @@ func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 		}
 	}
 	avail := sandbox.Detect()
-	return withWriterDefault(doctorSandbox(avail, policy, runtime.GOOS), writerContainment(cfg, avail))
+	f := withWriterDefault(doctorSandbox(avail, policy, runtime.GOOS), writerContainment(cfg, avail))
+	return withModeRequirement(f, cfg, avail)
+}
+
+// withModeRequirement names on the sandbox row which modes refuse the
+// assistant's commands where nothing contains them. The rule is per mode
+// because the read-only modes require containment unless the file says
+// sandbox.require = false, and the other modes only where it says true; a
+// reader on a host with a mechanism is told the rule too, since it is what
+// stands between them and a refusal the day the mechanism goes.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func withModeRequirement(f doctorFinding, cfg config.Config, avail sandbox.Availability) doctorFinding {
+	if avail.OK {
+		switch {
+		case cfg.SandboxRequired():
+			f.Detail = joinDetail(f.Detail, "required in every mode (sandbox.require on)")
+		case !cfg.SandboxRequiredIn(true):
+			f.Detail = joinDetail(f.Detail, "not required in any mode (sandbox.require off)")
+		default:
+			f.Detail = joinDetail(f.Detail, "required in plan and ask, not elsewhere")
+		}
+		return f
+	}
+	switch {
+	case cfg.SandboxRequired():
+		f.Consequence = joinConsequence(f.Consequence, "every mode refuses the assistant's commands until one is (sandbox.require on)")
+	case !cfg.SandboxRequiredIn(true):
+		f.Consequence = joinConsequence(f.Consequence, "plan and ask run commands as you too (sandbox.require off)")
+	default:
+		f.Consequence = joinConsequence(f.Consequence, "plan and ask refuse the assistant's commands until one is; other modes run them as you")
+	}
+	return f
 }
 
 // withWriterDefault names on the sandbox row what a writer's commands run

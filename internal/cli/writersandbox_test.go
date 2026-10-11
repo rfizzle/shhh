@@ -48,9 +48,9 @@ func requireSandboxOff() config.Config {
 // See docs/capabilities/containment.md#containment-can-be-required.
 func TestAWritersCommandsAreContainedByDefault(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
-	required := config.Config{Sandbox: config.SandboxConfig{Require: true}}
+	required := config.Config{Sandbox: config.SandboxConfig{Require: new(true)}}
 	requiredOptedOut := requireSandboxOff()
-	requiredOptedOut.Sandbox.Require = true
+	requiredOptedOut.Sandbox.Require = new(true)
 	fix := doctorSandbox(noMechanism, sandbox.Policy{}, runtime.GOOS).Fix[0]
 
 	for _, tc := range []struct {
@@ -135,7 +135,7 @@ func TestWriterContainmentIsOneAnswer(t *testing.T) {
 	if open.state != writerUncontained || !open.field().Open {
 		t.Errorf("an opted-out writer on a host with none reads %+v, want an open row", open)
 	}
-	if session := writerContainment(config.Config{Sandbox: config.SandboxConfig{Require: true, Profile: "workspace"}, Agents: config.AgentsConfig{RequireSandbox: new(bool)}}, noMechanism); session.state != writerRefused {
+	if session := writerContainment(config.Config{Sandbox: config.SandboxConfig{Require: new(true), Profile: "workspace"}, Agents: config.AgentsConfig{RequireSandbox: new(bool)}}, noMechanism); session.state != writerRefused {
 		t.Errorf("sandbox.require on the session should still refuse a writer, got %+v", session)
 	}
 }
@@ -236,7 +236,7 @@ func TestOnlyAWriterThatRunsCommandsIsToldAboutThem(t *testing.T) {
 // See docs/capabilities/containment.md#containment-can-be-required.
 func TestEveryContainmentRefusalIsFiledAsContainment(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
-	required := config.Config{Sandbox: config.SandboxConfig{Require: true}}
+	required := config.Config{Sandbox: config.SandboxConfig{Require: new(true)}}
 	for _, detail := range []string{
 		"bubblewrap (bwrap) not found on PATH",
 		"sandbox-exec not found at /usr/bin/sandbox-exec",
@@ -266,7 +266,7 @@ func TestEveryContainmentRefusalIsFiledAsContainment(t *testing.T) {
 // See docs/capabilities/containment.md#containment-can-be-required.
 func TestAChildIsGivenNoRunnerWhereItsGateRefuses(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
-	required := config.Config{Sandbox: config.SandboxConfig{Require: true}}
+	required := config.Config{Sandbox: config.SandboxConfig{Require: new(true)}}
 	for _, tc := range []struct {
 		name    string
 		cfg     config.Config

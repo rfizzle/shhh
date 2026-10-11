@@ -1273,7 +1273,7 @@ own file could hold.
 
 | Key | Takes | Default | A session takes it | What it decides |
 |---|---|---|---|---|
-| `require` | true/false | `off` | next session | Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined. `--require-sandbox` is read ahead of the file. |
+| `require` | true/false | `off` | next session | Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined. Unset, plan and ask require it and the other modes do not; `true` requires it in every mode and `false` in none. `--require-sandbox` is read ahead of the file. |
 | `profile` | word: `workspace`, `workspace-netless` | `workspace` | next session | What a contained command may reach: the workspace with the network untouched, or the same with the network closed. |
 | `allow_hosts` | list | (empty — the profile's own answer) | next session | The only hosts a contained command reaches under the `workspace` profile, through a proxy on loopback; an exact host, never a suffix. The netless profile does not read it. |
 | `deny_extra` | list | (the built-in deny mask alone) | next session | Paths added to the built-in deny mask; a contained command sees them as empty. |

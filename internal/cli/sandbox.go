@@ -88,7 +88,10 @@ func logUnconfined(profile sandbox.Profile) {
 // takes containment away, because a machine where nothing wraps a command is
 // not a decision a command line should be able to make quietly.
 func withRequiredContainment(cfg config.Config, flag bool) config.Config {
-	cfg.Sandbox.Require = cfg.Sandbox.Require || flag
+	if flag {
+		on := true
+		cfg.Sandbox.Require = &on
+	}
 	return cfg
 }
 
@@ -168,15 +171,21 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 		// the approval card says so rather than reporting the profile's
 		// answer, which is not in force.
 		c.Network = true
-		if cfg.Sandbox.Require {
+		if cfg.SandboxRequired() {
 			c.Refusal = uncontainedRefusal(avail)
+		}
+		// The read-only modes require it unless the file says false, and a
+		// session changes mode, so this is held beside Refusal and chosen by
+		// the mode at the time of the call.
+		if cfg.SandboxRequiredIn(true) {
+			c.ReadOnlyRefusal = uncontainedRefusal(avail)
 		}
 		logUnconfined(policy.Profile)
 		c.Toolchain = toolchainCard(openToolchain(), cfg, avail, c.Refusal)
 		return c, nil
 	}
 	c.Status = fmt.Sprintf("contained: %s (%s profile)", avail.Mechanism, policy.Profile)
-	c.Mechanism, c.Profile, c.Required = avail.Mechanism, string(policy.Profile), cfg.Sandbox.Require
+	c.Mechanism, c.Profile, c.Required = avail.Mechanism, string(policy.Profile), cfg.SandboxRequired()
 	c.Network = policy.Profile != sandbox.ProfileWorkspaceNetless
 	c.GitStore = sandbox.GitStoreWords(avail, policy)
 	if c.Network && sandbox.HoldsHosts(avail.Mechanism) {
@@ -438,7 +447,7 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 		Mechanism: sandboxMechanism,
 		Profile:   string(profile),
 		Network:   spec.Network,
-		Required:  cfg.Sandbox.Require,
+		Required:  cfg.SandboxRequired(),
 		GitStore:  c.GitStoreWords(),
 		Engine:    eng.Name,
 		Image:     imageDigestWords(spec.Image),

@@ -143,7 +143,7 @@ func TestBuildContainment_RequireRefusesWhereNothingContains(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatalf("scope: %v", errs)
 	}
-	cfg := config.Config{Sandbox: config.SandboxConfig{Require: true}}
+	cfg := config.Config{Sandbox: config.SandboxConfig{Require: new(true)}}
 	c, err := buildContainment(cfg, sc, nil)
 	if err != nil {
 		t.Fatalf("build containment: %v", err)
@@ -236,7 +236,7 @@ func TestChildCommandRunner_RequiredContainmentRefusesToo(t *testing.T) {
 
 	// The refusal is the gate's, answered ahead of every seam, so the child
 	// is given no runner to fall back to at all.
-	required := config.Config{Sandbox: config.SandboxConfig{Require: true}}
+	required := config.Config{Sandbox: config.SandboxConfig{Require: new(true)}}
 	if run = childCommandRunnerUnbounded(required, dir, sc, true); run != nil {
 		t.Fatal("a required session must give a child no runner to fall back to")
 	}
@@ -558,6 +558,52 @@ func TestSandboxImageFor_ConfiguredThenReleased(t *testing.T) {
 			cfg.Sandbox.ContainerImage = tc.set
 			if got := sandboxImageFor(cfg); got != tc.want {
 				t.Fatalf("sandboxImageFor = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// The read-only modes require containment unless the file says otherwise:
+// unset, a host with no mechanism holds a refusal for plan and ask and none
+// for the session at large; sandbox.require = false in the file takes it
+// away; true makes it everyone's. Emptying PATH takes bubblewrap away, and a
+// host that contains anyway asserts the other half.
+func TestContainment_ReadOnlyModesRequireIt(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		require       *bool
+		wantReadOnly  bool
+		wantEverymode bool
+	}{
+		{"unset", nil, true, false},
+		{"false", new(false), false, false},
+		{"true", new(true), true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("XDG_DATA_HOME", t.TempDir())
+			t.Setenv("PATH", "")
+			sc, errs := scope.New(t.TempDir())
+			if len(errs) > 0 {
+				t.Fatalf("scope: %v", errs)
+			}
+			c, err := buildContainment(config.Config{Sandbox: config.SandboxConfig{Require: tc.require}}, sc, nil)
+			if err != nil {
+				t.Fatalf("build containment: %v", err)
+			}
+			if c.Mechanism != "" {
+				if c.Refusal != "" || c.ReadOnlyRefusal != "" {
+					t.Errorf("a contained session refuses nothing, got %q / %q", c.Refusal, c.ReadOnlyRefusal)
+				}
+				return
+			}
+			if got := c.ReadOnlyRefusal != ""; got != tc.wantReadOnly {
+				t.Errorf("read-only refusal = %q, want present=%v", c.ReadOnlyRefusal, tc.wantReadOnly)
+			}
+			if tc.wantReadOnly && !strings.Contains(c.ReadOnlyRefusal, "requires containment") {
+				t.Errorf("the refusal should be the requirement sentence, got %q", c.ReadOnlyRefusal)
+			}
+			if got := c.Refusal != ""; got != tc.wantEverymode {
+				t.Errorf("session refusal = %q, want present=%v", c.Refusal, tc.wantEverymode)
 			}
 		})
 	}

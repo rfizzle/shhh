@@ -504,3 +504,58 @@ func TestContainmentStatusNamesTheWriterRule(t *testing.T) {
 		t.Fatalf("/status should name the writer rule under the session's:\n%s", text)
 	}
 }
+
+// The read-only modes require containment where the config file does not say
+// otherwise, and the session changes mode: the same command is refused in plan
+// and ask, and put to its card in the mode that writes, on one host with no
+// mechanism.
+func TestContainment_ReadOnlyModesRequireIt(t *testing.T) {
+	const refusal = "error: this session requires containment and no mechanism is in force: bubblewrap (bwrap) not found on PATH"
+	for _, tc := range []struct {
+		mode    agent.Mode
+		refused bool
+	}{
+		{agent.ModeReadOnly, true},
+		{agent.ModePlan, true},
+		{agent.ModeManual, false},
+		{agent.ModeAcceptEdits, false},
+	} {
+		t.Run(tc.mode.String(), func(t *testing.T) {
+			m := New([]provider.Message{
+				{Role: provider.RoleSystem, Content: "sys"},
+				{Role: provider.RoleUser, Content: "run it"},
+			}, mockStream, Wiring{
+				Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "bare", 0 }),
+				Containment: Containment{
+					Status:          "unconfined — bubblewrap (bwrap) not found on PATH",
+					Detail:          "bubblewrap (bwrap) not found on PATH",
+					Network:         true,
+					ReadOnlyRefusal: refusal,
+				},
+			})
+			m.policy.mode = tc.mode
+			updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+			m = updated.(Model)
+			m.state = stateStreaming
+			updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+				{ID: "call_x", Name: "execute_command", Arguments: `{"command":"touch note"}`},
+			}})
+			m = updated.(Model)
+			var result string
+			for _, msg := range m.Messages() {
+				if msg.Role == provider.RoleTool {
+					result = msg.Content
+				}
+			}
+			if tc.refused {
+				if m.state == stateConfirmRun || result != refusal {
+					t.Fatalf("mode %s should refuse with the requirement sentence and no card, got %q", tc.mode, result)
+				}
+				return
+			}
+			if m.state != stateConfirmRun {
+				t.Fatalf("mode %s should put the command to its card, got state %v result %q", tc.mode, m.state, result)
+			}
+		})
+	}
+}

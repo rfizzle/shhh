@@ -430,7 +430,7 @@ var settings = []Setting{
 	{
 		Key: "sandbox.require", Kind: KindBool, Taken: AtStart, Default: "off",
 		Flag: "--require-sandbox",
-		Desc: "Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined.",
+		Desc: "Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined. Unset, plan and ask require it and the other modes do not; `true` requires it in every mode and `false` in none.",
 	}, {
 		Key: "sandbox.profile", Kind: KindEnum, Taken: AtStart, Default: "workspace",
 		Values: []string{"workspace", "workspace-netless"},
