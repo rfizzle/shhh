@@ -37,6 +37,7 @@ package components
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -167,6 +168,10 @@ const (
 	RailTools   = "TOOLS"
 	RailContext = "CONTEXT"
 	RailSpend   = "SPEND"
+	// RailWhole is not a block but the rail itself: what the foot line names
+	// when the rail has dropped blocks, and the door that opens every block
+	// unshed.
+	RailWhole = "RAIL"
 )
 
 // railClass is how alive a block is, which is what decides the order the
@@ -443,13 +448,17 @@ func (r InspectorRail) Lines(width, height int) []string {
 // answers a pointer asks for these and indexes the row the pointer is on: the
 // rail is laid out from the top of its rectangle, so the row is the offset
 // and nothing has to be measured or re-read.
+//
+// A rail that had to drop blocks to fit ends on the foot line, on its last
+// row, naming them: the rail never ends silently.
 func (r InspectorRail) Rows(width, height int) []railTargetRow {
 	blocks := r.blocks(width)
 	if len(blocks) == 0 {
 		return nil
 	}
+	var dropped []railBlock
 	if height > 0 {
-		blocks = fitBlocks(blocks, height)
+		blocks, dropped = fitBlocks(blocks, height)
 	}
 	var out []railTargetRow
 	for i, b := range blocks {
@@ -458,10 +467,41 @@ func (r InspectorRail) Rows(width, height int) []railTargetRow {
 		}
 		out = append(out, b.render(width)...)
 	}
-	if height > 0 && len(out) > height {
-		out = out[:height]
+	if len(dropped) > 0 {
+		for len(out) < height-1 {
+			out = append(out, railTargetRow{})
+		}
+		foot := railTargetRow{Text: footRow(dropped, width)}
+		if r.Doors[RailWhole] {
+			foot.Target = RailTarget{Kind: RailTargetBlock, Name: RailWhole}
+		}
+		out = append(out, foot)
 	}
 	return out
+}
+
+// footRow is the rail's last row once it has dropped blocks: how many, and
+// their names in rail order as far as they fit. It is the rail's own fold
+// marker, so a dropped block is counted rather than gone
+// (docs/interface/principles.md#fold-never-hide).
+func footRow(dropped []railBlock, width int) string {
+	room := railRoom(width, "", inspectorIndent)
+	text := fmt.Sprintf("↓ %d more", len(dropped))
+	for i, b := range dropped {
+		next := text + " · " + strings.ToLower(b.name)
+		rest := ""
+		if i < len(dropped)-1 {
+			rest = " · …"
+		}
+		if lipgloss.Width(next+rest) > room {
+			if lipgloss.Width(text+" · …") <= room {
+				text += " · …"
+			}
+			break
+		}
+		text = next
+	}
+	return indentRow(sty.hint.Render(text), width)
 }
 
 // blocks assembles the present blocks in their fixed order, each carrying
@@ -489,17 +529,24 @@ func (r InspectorRail) blocks(width int) []railBlock {
 }
 
 // fitBlocks truncates the rail into height rows, giving up the least alive
-// thing first: a block collapses to its heading before a livelier block
-// loses a row (docs/interface/surfaces.md#the-inspector-rail).
+// thing first: a block collapses to its heading before a livelier block loses
+// a row, only a block nobody is waiting on is dropped, and a dropped block is
+// still counted on the foot line (docs/interface/surfaces.md#the-inspector-rail).
 //
 // Each pass asks its questions in order, the way the title row sheds its
 // facts, and takes the first that has an answer: collapse a block below the
-// class of the next row that would go, else take that row. Once no block has
-// a row to give, pinned rows go bottom-up, the least alive block's first.
-// Nothing reorders: a block keeps its place, which is what lets a block whose
-// class rises take its rows back where it stands.
-func fitBlocks(blocks []railBlock, height int) []railBlock {
-	for total(blocks) > height {
+// class of the next row that would go; take that row while it is a static or
+// standing one; drop a block — static before standing, the lowest first,
+// never one that asks or reads live — before a live block loses a row; else
+// take the row. So the static and standing blocks collapse, then leave, and
+// only then do the live blocks and the asks collapse. Once nothing has a row
+// to give, pinned rows go bottom-up, and once every block is down to its
+// heading the lowest goes to the foot line, so a rail too short for what it
+// must keep still says what it left out. Nothing reorders: a block that stays
+// keeps its place, which is what lets a block whose class rises take its rows
+// back where it stands.
+func fitBlocks(blocks []railBlock, height int) (kept, dropped []railBlock) {
+	for railHeight(blocks, len(dropped) > 0) > height {
 		block, row, ok := nextToHide(blocks)
 		next := railAsks + 1
 		if ok {
@@ -509,16 +556,48 @@ func fitBlocks(blocks []railBlock, height int) []railBlock {
 			blocks[i].collapse()
 			continue
 		}
-		if !ok {
-			block, row, ok = lastToHide(blocks)
+		if ok && next <= railStanding {
+			take(&blocks[block], row)
+			continue
 		}
-		if !ok {
-			// Every block is down to its heading: nothing left to give.
+		if i := toDrop(blocks); i >= 0 {
+			dropped = append(dropped, blocks[i])
+			blocks = append(blocks[:i:i], blocks[i+1:]...)
+			continue
+		}
+		if ok {
+			take(&blocks[block], row)
+			continue
+		}
+		if block, row, ok = lastToHide(blocks); ok {
+			take(&blocks[block], row)
+			continue
+		}
+		last := len(blocks) - 1
+		if last < 0 {
 			break
 		}
-		take(&blocks[block], row)
+		dropped = append(dropped, blocks[last])
+		blocks = blocks[:last]
 	}
-	return blocks
+	sortByRail(dropped)
+	return blocks, dropped
+}
+
+// railHeight is the rows the blocks take with a blank between each, and the
+// foot line when there is one. The foot line costs its own row and no more:
+// it stands on the rail's last row, so whatever the blocks leave between it
+// and them is blank, and where they leave nothing it is marked apart by its
+// arrow.
+func railHeight(blocks []railBlock, foot bool) int {
+	n := 0
+	if len(blocks) > 0 {
+		n = total(blocks)
+	}
+	if foot {
+		n++
+	}
+	return n
 }
 
 // take moves one row of the block behind its marker, or off the rail where it
@@ -561,6 +640,34 @@ func toCollapse(blocks []railBlock, next railClass) int {
 		}
 	}
 	return -1
+}
+
+// toDrop is the block the rail drops once every block has collapsed: the
+// lowest static block, then the lowest standing one, and never a block that
+// asks or reads live. -1 is none.
+func toDrop(blocks []railBlock) int {
+	for class := railStatic; class <= railStanding; class++ {
+		for i := len(blocks) - 1; i >= 0; i-- {
+			if blocks[i].class == class {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// railOrder is every block's name in the order the rail draws them.
+var railOrder = []string{RailSummary, RailTurn, RailAlerts, RailPlan, RailSteps, RailTodo,
+	RailChanges, RailAgents, RailTools, RailContext, RailSpend}
+
+// sortByRail puts the dropped blocks back in the rail's own order, the order
+// the foot line names them in.
+func sortByRail(blocks []railBlock) {
+	at := make(map[string]int, len(railOrder))
+	for i, name := range railOrder {
+		at[name] = i
+	}
+	sort.SliceStable(blocks, func(a, b int) bool { return at[blocks[a].name] < at[blocks[b].name] })
 }
 
 // nextToHide is the row truncation takes next among the rows a block may

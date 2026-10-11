@@ -93,16 +93,16 @@
   THIS TURN                                 step 3 of 4 · 3 files +30 −4
 
   ALERTS                                                      1 standing
-  … 1 more                                                              
+   ✗ go test  exit 1 · 2 runs                                     turn 7
 
   PLAN                           2 of 4 done · ▸ Return it from runRound
   … 3 more                                                              
 
-  TODO                             project · 5 open · on rail-todo-block
-  … 7 more                                                              
-
-  CHANGES                                       session · 2 files +27 −4
-  … 2 more                                                        +27 −4
+  AGENTS                                                   3 · 2 running
+❯ ◇ orchestrator                                                   $0.12
+    ▸ round 3 · streaming…                                              
+  … 3 more · 2 running · 1 failed                                       
+  ↓ 5 more · todo · changes · tools · context · spend                   
 
 · blocks with nothing to say are omitted
   THIS TURN                                                             
@@ -411,16 +411,16 @@
   ▎✎ internal/agent/round.go                                       +6 −2
 
 · the same session with the rail shorter than it (height 10)
-  THIS TURN                                                      0 files
+  THIS TURN                                                             
+  0 files this turn · 31 tools                                          
 
   ALERTS                                                      3 standing
    ✗ gofmt  exit 2 · 3 runs                                      turn 10
    ✗ go build  exit 2                                            turn 11
   … 1 more                                                  8 superseded
 
-  CHANGES                                       session · 2 files +27 −6
-  ▎✎ internal/agent/loop.go                                       +21 −4
-  … 1 more                                                         +6 −2
+
+  ↓ 1 more · changes                                                    
 
 · every alert answered · the block goes and the files stay
   THIS TURN                                                             
@@ -514,16 +514,16 @@
   ␛[1;38;5;254mTHIS TURN␛[m                                 ␛[38;5;244mstep 3 of 4 · 3 files␛[m ␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m
 
   ␛[1;38;5;254mALERTS␛[m                                                      ␛[38;5;254m1 standing␛[m
-  ␛[38;5;244m… 1 more␛[m                                                              
+   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test␛[m  ␛[38;5;244mexit 1 · 2 runs␛[m                                     ␛[38;5;244mturn 7␛[m
 
   ␛[1;38;5;254mPLAN␛[m                           ␛[38;5;244m2 of 4 done · ␛[m␛[38;5;254m▸␛[m ␛[1;38;5;254mReturn it from runRound␛[m
   ␛[38;5;244m… 3 more␛[m                                                              
 
-  ␛[1;38;5;254mTODO␛[m                             ␛[38;5;244mproject · 5 open · on ␛[m␛[38;5;254mrail-todo-block␛[m
-  ␛[38;5;244m… 7 more␛[m                                                              
-
-  ␛[1;38;5;254mCHANGES␛[m                                       ␛[38;5;244msession · 2 files␛[m ␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m
-  ␛[38;5;244m… 2 more␛[m                                                        ␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m
+  ␛[1;38;5;254mAGENTS␛[m                                                   ␛[38;5;244m3␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.12␛[m␛[m
+    ␛[38;5;254m▸ round 3 · streaming…␛[m                                              
+  ␛[38;5;244m… 3 more␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 failed␛[m                                       
+  ␛[38;5;244m↓ 5 more · todo · changes · tools · context · spend␛[m                   
 
 · blocks with nothing to say are omitted
   ␛[1;38;5;254mTHIS TURN␛[m                                                             
@@ -832,16 +832,16 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/agent/round.go␛[m                                       ␛[38;5;254m+6␛[m ␛[38;5;254m−2␛[m
 
 · the same session with the rail shorter than it (height 10)
-  ␛[1;38;5;254mTHIS TURN␛[m                                                      ␛[38;5;244m0 files␛[m
+  ␛[1;38;5;254mTHIS TURN␛[m                                                             
+  ␛[38;5;244m0 files this turn␛[m␛[38;5;244m · ␛[m␛[38;5;244m31 tools␛[m                                          
 
   ␛[1;38;5;254mALERTS␛[m                                                      ␛[38;5;254m3 standing␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgofmt␛[m  ␛[38;5;244mexit 2 · 3 runs␛[m                                      ␛[38;5;244mturn 10␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo build␛[m  ␛[38;5;244mexit 2␛[m                                            ␛[38;5;244mturn 11␛[m
   ␛[38;5;244m… 1 more␛[m                                                  ␛[38;5;244m8 superseded␛[m
 
-  ␛[1;38;5;254mCHANGES␛[m                                       ␛[38;5;244msession · 2 files␛[m ␛[38;5;254m+27␛[m ␛[38;5;254m−6␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/agent/loop.go␛[m                                       ␛[38;5;254m+21␛[m ␛[38;5;254m−4␛[m
-  ␛[38;5;244m… 1 more␛[m                                                         ␛[38;5;254m+6␛[m ␛[38;5;254m−2␛[m
+
+  ␛[38;5;244m↓ 1 more · changes␛[m                                                    
 
 · every alert answered · the block goes and the files stay
   ␛[1;38;5;254mTHIS TURN␛[m                                                             
