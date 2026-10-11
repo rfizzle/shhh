@@ -91,6 +91,40 @@ func TestInspection_EveryAllowlistedInvocationIsReadOnly(t *testing.T) {
 	}
 }
 
+// The Go read verbs are closed by list: a flag nobody listed is refused, so a
+// flag Go adds later that runs a program or writes fails closed.
+func TestInspection_GoVerbsRefuseAnUnlistedFlag(t *testing.T) {
+	if !posixShell {
+		t.Skip("commands run through a shell that does not quote the POSIX way")
+	}
+	for _, c := range []string{
+		"go list -m all", "go list -json ./...", "go list -deps -test -e ./...", "go list -f '{{.Dir}}' ./...",
+		"go list -f '{{range .Imports}}{{.}} {{end}}' ./...", "go list --json=Dir ./...",
+		"go doc -all fmt", "go doc -src -u fmt.Println", "go mod graph", "go mod why -m x",
+	} {
+		if !ReadOnlyAllowed(c, nil) {
+			t.Errorf("%q is a read on the safe list and the list refuses it", c)
+		}
+	}
+	for _, c := range []string{
+		"go list -toolexec=/tmp/x ./...",
+		"go list -modfile=x ./...",
+		"go list -brand-new-flag ./...",
+		"go doc -made-up fmt",
+		"go mod graph -x",
+		"go list -mjson ./...",
+		"go list -f '{{call .X}}' ./...",
+		"go list -f '{{template \"x\"}}' .",
+		"go list -f '{{.Dir' ./...",
+		"go list -f",
+		"go list -- -toolexec=x",
+	} {
+		if ReadOnlyAllowed(c, nil) {
+			t.Errorf("%q is not on a verb's safe list and the list allows it", c)
+		}
+	}
+}
+
 // The program name is not the invocation: the same program that is allowed to
 // read is refused when its arguments write, however the arguments are quoted,
 // and the reads beside them still run.

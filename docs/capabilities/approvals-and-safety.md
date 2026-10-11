@@ -216,7 +216,10 @@ refuses the line, and so does an operand that names a file to write (`uniq in
 out`), a name to set (`hostname name`) or a clock to set (`date -s`). The
 version entries (`node --version`) and `env` take nothing after them. A short
 flag is found inside a cluster (`rg -uz`), and a git long flag is found
-abbreviated, as git reads it. Nothing on the list writes, runs a program or
+abbreviated, as git reads it. The Go read verbs (`go list`, `go doc`, `go mod
+graph`, `go mod why`) are closed by list instead: a flag not on the verb's short
+safe list is refused, and so is a `-f` template that does more than print
+fields, so a flag Go adds later fails closed. Nothing on the list writes, runs a program or
 reaches a shell in any mode, plan and read-only included. What a person wants
 beyond that is their own allowlist entry, which skips these guards and is theirs
 to answer for.

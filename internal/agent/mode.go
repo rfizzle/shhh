@@ -683,13 +683,8 @@ var readOnlyGuards = map[string][]string{
 	// would hand go vet the very flags it is guarded against.
 	"go env":   {"-w", "--w", "-u", "--u"},
 	"gofmt -l": {"-w", "--w", "-cpuprofile", "--cpuprofile"},
-	// go list builds with -compiled and -export, takes a tool to run, and
-	// -mod=mod rewrites go.mod.
-	"go list": goFlags("toolexec", "exec", "mod", "modfile", "compiled", "export", "o", "pkgdir", "work", "overlay",
-		"debug-actiongraph", "debug-trace", "debug-runtime-trace"),
-	"go doc":       goFlags("http"),
-	"go mod graph": goFlags("modfile"),
-	"go mod why":   goFlags("modfile"),
+	// The Go read verbs (go list, go doc, go mod graph|why) are closed by
+	// list instead: see goSafeFlags.
 	// A vet tool, a toolexec or an exec wrapper is a program run by name; the
 	// module flags can rewrite go.mod; -fix writes the vet's fixes back; the
 	// tool flags and the debug traces each name a file to write.
@@ -717,13 +712,16 @@ var readOnlyGuards = map[string][]string{
 // gitOutput are the flags that make a git read write a file or run a program.
 var gitOutput = []string{"--output", "--ext-diff"}
 
-// goFlags is each name as the go command reads it with one dash or two.
-func goFlags(names ...string) []string {
-	out := make([]string, 0, 2*len(names))
-	for _, n := range names {
-		out = append(out, "-"+n, "--"+n)
-	}
-	return out
+// goSafeFlags is the closed list for the Go read verbs: the flags a read
+// needs, each as the go command reads it (one dash or two). A flag not on a
+// verb's list is refused, so a flag Go adds later that runs a program or
+// writes fails closed. A package path is an operand and needs no entry. -f
+// takes a template, which goTemplateReads checks; -modfile is not here.
+var goSafeFlags = map[string][]string{
+	"go list":      {"m", "json", "f", "deps", "test", "e"},
+	"go doc":       {"u", "all", "src", "c", "cmd"},
+	"go mod graph": {},
+	"go mod why":   {"m", "vendor"},
 }
 
 // guardedReadOnly reports whether a command is a built-in entry in a form

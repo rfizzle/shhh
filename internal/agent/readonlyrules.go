@@ -1,6 +1,9 @@
 package agent
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 // readOnlyRules are the entries of the built-in inspection list whose
 // operands, not only their flags, decide whether they write. Each reads the
@@ -10,6 +13,11 @@ var readOnlyRules = map[string]func(rest []string) bool{
 	"uniq":       uniqReads,
 	"date":       dateReads,
 	"hostname":   noOperands,
+
+	"go list":      goVerbReads("go list"),
+	"go doc":       goVerbReads("go doc"),
+	"go mod graph": goVerbReads("go mod graph"),
+	"go mod why":   goVerbReads("go mod why"),
 }
 
 // gitBranchFlags are the flags of `git branch` that list. Everything else
@@ -104,6 +112,65 @@ func dateReads(rest []string) bool {
 		}
 	}
 	return true
+}
+
+// goVerbReads closes a Go read verb by list: a word that is a flag must be
+// on the verb's goSafeFlags, as -name or --name, with an =value attached or
+// (for -f) the template as the next word. Anything else is a package path.
+func goVerbReads(verb string) func(rest []string) bool {
+	return func(rest []string) bool {
+		safe := map[string]bool{}
+		for _, f := range goSafeFlags[verb] {
+			safe[f] = true
+		}
+		for i := 0; i < len(rest); i++ {
+			w := rest[i]
+			if !strings.HasPrefix(w, "-") || w == "-" {
+				continue
+			}
+			name, value, attached := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(w, "-"), "-"), "=")
+			if !safe[name] {
+				return false
+			}
+			if name != "f" {
+				continue
+			}
+			if !attached {
+				i++
+				if i >= len(rest) {
+					return false
+				}
+				value = rest[i]
+			}
+			if !goTemplateReads(value) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+// goTemplateAction is the actions a go list template may hold: a field path,
+// a range, if or with over one, else, end, and join of one with a literal.
+// Every other action (call, template, a function, a pipeline) is refused.
+var goTemplateAction = regexp.MustCompile(`^(\.([A-Za-z]\w*(\.[A-Za-z]\w*)*)?|(range|if|with) \.[A-Za-z]\w*(\.[A-Za-z]\w*)*|else|end|join \.[A-Za-z]\w*(\.[A-Za-z]\w*)* "[^"\\]*")$`)
+
+// goTemplateReads reports whether a -f template only prints fields.
+func goTemplateReads(tmpl string) bool {
+	for {
+		_, after, found := strings.Cut(tmpl, "{{")
+		if !found {
+			return !strings.Contains(tmpl, "}}")
+		}
+		action, rest, closed := strings.Cut(after, "}}")
+		if !closed {
+			return false
+		}
+		if !goTemplateAction.MatchString(strings.TrimSpace(action)) {
+			return false
+		}
+		tmpl = rest
+	}
 }
 
 // noOperands: hostname with a name sets it.
