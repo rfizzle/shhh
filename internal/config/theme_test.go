@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var testThemes = []string{"auto", "dark", "light", "charm", "high-contrast", "colorblind", "catppuccin-mocha", "dracula", "tokyo-night", "gruvbox-dark", "nord", "one-dark", "gruvbox-light", "everforest"}
+var testThemes = []string{"auto", "dark", "light", "charm", "high-contrast", "colorblind", "catppuccin-mocha", "dracula", "tokyo-night", "gruvbox-dark", "nord", "one-dark", "gruvbox-light", "everforest", "soft"}
 
 var testTokens = []string{"add", "del", "add_bg", "del_bg", "hunk", "accent", "info", "focus_bg", "band", "dim", "dimmer", "spin", "status", "bright", "subtle", "body", "code", "key", "ground"}
 

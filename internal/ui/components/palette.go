@@ -723,6 +723,49 @@ var everforestGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// softPalette is shhh's own lower-glare table, not a published one: the dark
+// table's jobs on a warm ground (#15130f, band #211e19), with the greys
+// shifted toward amber (OKLCH hue 75, chroma 0.018) and brought down so body
+// is 9.05:1 on the ground and bright 12.02:1, against the dark table's 12.2
+// and 15.6. Every ink still clears 4.5:1 on the ground and on the band. The
+// signal inks are the dark table's, lowered by 6% in lightness, 15% in chroma
+// and nudged 6 degrees toward amber, then lifted (LiftToAA) where that left
+// one short. The grey ladder is body and bright from those two ratios, dim at
+// about 5.2:1, and status, dimmer and subtle in even quarters between dim and
+// body. addBg and delBg are the ground with 28% of add and del. The 256 rungs
+// are DistinctRungs' and the sixteen-colour column is the dark table's. It is
+// a preference for a reader who finds the dark table's whites harsh. The
+// figures are in docs/interface/departures.md.
+var softPalette = ColorTokens{
+	Add:     token("#74c153", "107", "10"),
+	Del:     token("#e36150", "167", "9"),
+	addBg:   token("#304422", "236", "2"),
+	delBg:   token("#4f2921", "237", "1"),
+	Hunk:    token("#66c5be", "79", "14"),
+	Accent:  token("#e7a332", "179", "11"),
+	Info:    token("#6b7ee5", "68", "12"),
+	FocusBg: token("#4b4660", "239", "12"),
+	band:    band("#211e19", "234"),
+	Dim:     token("#8f877c", "102", "8"),
+	Dimmer:  token("#a69e93", "247", "8"),
+	Spin:    token("#e85f94", "168", "13"),
+	Status:  token("#9a9287", "246", "8"),
+	Bright:  token("#d7cfc3", "252", "15"),
+	Subtle:  token("#b1a99e", "248", "7"),
+	Body:    token("#bcb4a9", "249", "7"),
+	Code:    token("#c1a37f", "144", "3"),
+	Key:     token("#8782a4", "103", "12"),
+}
+
+// softGround is the soft table's warm near-black, #15130f and 233, painted by
+// default like the dark ground: a warm ground of its own is the point. It has
+// no sixteen-colour rung.
+var softGround = Token{
+	trueColor: lipgloss.Color("#15130f"),
+	ansi256:   lipgloss.Color("233"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -754,6 +797,10 @@ const (
 	ThemeGruvboxLight = "gruvbox-light"
 	// ThemeEverforest is Everforest Dark, medium contrast, a brand theme.
 	ThemeEverforest = "everforest"
+	// ThemeSoft is shhh's own lower-glare table: the dark table's jobs on a
+	// warm ground, with body and bright brought down. A preference, not an
+	// accessibility fix.
+	ThemeSoft = "soft"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -785,6 +832,7 @@ var themes = map[string]theme{
 	ThemeOneDark:         {oneDarkPalette, oneDarkGround},
 	ThemeGruvboxLight:    {gruvboxLightPalette, gruvboxLightGround},
 	ThemeEverforest:      {everforestPalette, everforestGround},
+	ThemeSoft:            {softPalette, softGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -813,7 +861,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight, ThemeEverforest}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight, ThemeEverforest, ThemeSoft}
 }
 
 var (
@@ -928,7 +976,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight, ThemeEverforest:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord, ThemeOneDark, ThemeGruvboxLight, ThemeEverforest, ThemeSoft:
 		return true
 	}
 	return false

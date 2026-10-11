@@ -1215,3 +1215,69 @@ func TestPalette_ColorblindPairsStayApart(t *testing.T) {
 			len(darkShort), darkShortfalls, strings.Join(darkShort, "\n  "))
 	}
 }
+
+// The soft table is shhh's own and a preference, not an accessibility fix: it
+// exists so that a reader who finds the dark table's whites harsh can read
+// for hours without turning the display down. The test pins the design brief
+// from both sides, so a later edit can neither make it glare again nor take
+// it under the floor: body no brighter than about 9:1 and bright no brighter
+// than about 12:1 on the ground, every ink at least 4.5:1 on the ground and
+// the band, the greys warm (red over blue), and the ladder still descending.
+func TestPalette_SoftStaysAboveAA(t *testing.T) {
+	const (
+		bodyCeiling   = 9.1
+		brightCeiling = 12.1
+	)
+	th := themes[ThemeSoft]
+	if got := contrast(t, th.tokens.Body, th.ground); got > bodyCeiling {
+		t.Errorf("body is %.2f:1 on the ground, over the %.1f:1 ceiling; the table glares again", got, bodyCeiling)
+	}
+	if got := contrast(t, th.tokens.Bright, th.ground); got > brightCeiling {
+		t.Errorf("bright is %.2f:1 on the ground, over the %.1f:1 ceiling; the table glares again", got, brightCeiling)
+	}
+	inks := []string{"dim", "dimmer", "status", "subtle", "body", "bright",
+		"add", "del", "hunk", "accent", "info", "spin", "code", "key"}
+	for _, ink := range inks {
+		for gname, g := range map[string]Token{"ground": th.ground, "band": th.tokens.band} {
+			if got := contrast(t, tokenNamed(th.tokens, ink), g); got < aaFloor {
+				t.Errorf("soft %s on its %s is %.2f:1, under %.1f:1", ink, gname, got, aaFloor)
+			}
+		}
+	}
+	for _, ink := range []string{"dim", "dimmer", "status", "subtle", "body", "bright"} {
+		r, _, b, _ := tokenNamed(th.tokens, ink).trueColor.RGBA()
+		if r <= b {
+			t.Errorf("soft %s is not warm: red does not exceed blue", ink)
+		}
+	}
+	if r, _, b, _ := th.ground.trueColor.RGBA(); r <= b {
+		t.Error("soft ground is not warm: red does not exceed blue")
+	}
+	ladder := []string{"bright", "body", "subtle", "dimmer", "status", "dim"}
+	for i := 1; i < len(ladder); i++ {
+		hi, lo := luminance(t, tokenNamed(th.tokens, ladder[i-1])), luminance(t, tokenNamed(th.tokens, ladder[i]))
+		if hi <= lo {
+			t.Errorf("soft %s (%d) does not read over %s (%d)", ladder[i-1], hi, ladder[i], lo)
+		}
+	}
+	if got := contrast(t, th.tokens.Bright, th.tokens.FocusBg); got < aaFloor {
+		t.Errorf("soft bright on the selected row is %.2f:1, under %.1f:1", got, aaFloor)
+	}
+}
+
+// The soft table paints its warm ground by default: the ground is the point.
+func TestPalette_SoftPaintsItsGroundByDefault(t *testing.T) {
+	themeRestore(t)
+	withColorProfile(t, colorprofile.ANSI256)
+	paintGround = groundDefault
+	if err := SetTheme(ThemeSoft); err != nil {
+		t.Fatal(err)
+	}
+	if !GroundPainted() || !sameColor(GroundColor(), lipgloss.Color("233")) {
+		t.Errorf("the ground is %v, want #15130f (233) painted by default", GroundColor())
+	}
+	PaintGround(false)
+	if GroundColor() != nil {
+		t.Error("ground off still paints")
+	}
+}

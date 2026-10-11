@@ -4107,6 +4107,13 @@ func TestGolden_GruvboxLightTable(t *testing.T) {
 		"the Gruvbox Light column, on the surfaces that spend it")
 }
 
+// TestGolden_SoftTable is the same three surfaces through the soft table, at
+// every width the set holds.
+func TestGolden_SoftTable(t *testing.T) {
+	captureTable(t, ThemeSoft, "soft-table", goldenWidths,
+		"the soft column, on the surfaces that spend it")
+}
+
 // TestGolden_EverforestDarkTable is the same three surfaces through the
 // Everforest Dark table, at every width the set holds.
 func TestGolden_EverforestDarkTable(t *testing.T) {

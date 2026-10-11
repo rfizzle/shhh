@@ -156,6 +156,12 @@ func TestGolden_HighContrastScreen(t *testing.T) {
 	captureScreen(t, components.ThemeHighContrast, "screen-high-contrast", "the whole surface on the high-contrast table")
 }
 
+// TestGolden_SoftScreen is the same state through the soft table, on its warm
+// ground: the start screen and the transcript, with the whites brought down.
+func TestGolden_SoftScreen(t *testing.T) {
+	captureScreen(t, components.ThemeSoft, "screen-soft", "the whole surface on the soft table")
+}
+
 func captureScreen(t *testing.T, theme, name, surface string) {
 	t.Helper()
 	holdClock(t)

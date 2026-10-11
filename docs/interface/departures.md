@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 38 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 39 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -647,6 +647,71 @@ DistinctRungs, worst error 28.9 (RGB distance, on accent `#e69875`, which lands
 on 174 `#d78787`; delBg is next at 23.3, and the study's 32 on accent was for
 its own pick). Sixteen colours: the dark column. The Machado distance is not
 held for this table; `colorblind` remains the answer for that need.
+
+## The `soft` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: none. This table is shhh's own, not a published palette, so there is no
+published hex to lift: it is the shipped `dark` table redesigned for less glare.
+It is a preference, not an accessibility fix. It is for a reader who finds the
+dark table's whites harsh (photophobia, long nights) and wants to read for hours
+without turning the display down; a reader who cannot read the dark table is
+served by `high-contrast`, not by this, and lower glare is not lower legibility
+(every ink still clears 4.5:1). Ground `#15130f` (256 index 233), band
+`#211e19` (234), selected row `#4b4660` (239); painted by default, because a
+warm dark ground of its own is the point. Bright on the selected row reads
+5.80:1.
+
+The brief, held by `TestPalette_SoftStaysAboveAA`: body no brighter than about
+9:1 and bright no brighter than about 12:1 on the ground (the dark table's are
+12.23 and 15.69), a warm tint to the greys, and every ink at least 4.5:1 on the
+ground and on the band. The test asserts the two ceilings (9.1 and 12.1), the
+floor, that the greys and the ground are warm, and that the ladder descends.
+
+| token | hex | ratio (ground / band) |
+|---|---|---|
+| bright | #d7cfc3 | 12.02 / 10.76 |
+| body | #bcb4a9 | 9.05 / 8.10 |
+| subtle | #b1a99e | 7.98 / 7.15 |
+| dimmer | #a69e93 | 7.01 / 6.27 |
+| status | #9a9287 | 6.04 / 5.41 |
+| dim | #8f877c | 5.23 / 4.69 |
+| add | #74c153 | 8.39 / 7.51 |
+| del | #e36150 | 5.38 / 4.82 |
+| hunk | #66c5be | 9.10 / 8.14 |
+| accent | #e7a332 | 8.55 / 7.66 |
+| info | #6b7ee5 | 5.07 / 4.54 |
+| spin | #e85f94 | 5.74 / 5.14 |
+| code | #c1a37f | 7.79 / 6.97 |
+| key | #8782a4 | 5.09 / 4.55 |
+
+How the values were made. The greys are one hue, a slight shift toward amber
+(OKLCH hue 75) at chroma 0.018: body and bright are the lightnesses that give
+9.05 and 12.02 on the ground, dim is the lightness that gives about 5.2, and
+status, dimmer and subtle sit in even quarters from dim up to body, rounded per
+channel, so the order bright, body, subtle, dimmer, status, dim descends. The
+signal inks are the dark table's, each lowered 6% in OKLCH lightness, reduced
+15% in chroma and turned up to 6 degrees toward amber. Two came out short on
+the band and were lifted by `LiftToAA`: info (`#687ae1` to `#6b7ee5`, 4.32 to
+4.54 on the band) and key (`#807b9d` to `#8782a4`, 4.14 to 4.55). The ground and
+band are the dark table's pair (`#0f1117`, `#1c1c1c`) warmed and raised a step;
+the selected row is a muted violet. addBg `#304422` and delBg `#4f2921` are the
+ground with 28% of add and of del; add reads 4.81:1 on addBg and del 3.64:1 on
+delBg. 256 rungs: DistinctRungs, worst error 49.2 (RGB distance, on accent
+`#e7a332`, which lands on 179 `#af875f`; add is next at 28.8). Sixteen colours:
+the dark column.
+
+How it differs from `everforest`, the softest shipped table until now. Everforest
+is a published look: a cool, green-grey ground (`#2d353b`, a luminance five times
+the soft ground's) with body at 7.38:1 and bright at 8.24:1, chosen by its
+authors for a brand; it is for a reader who wants that palette. `soft` keeps the
+near-black ground and the dark table's assignments (a diff, a card and a key are
+where they are in `dark`) and takes only the glare out of the whites and the
+signals, so the signals keep 5 to 9:1 and the page stays dark. It is for a
+reader who wants the dark table's look with less of the white in it; Everforest
+is lower in contrast overall and different in hue, `soft` is the dark table
+turned down.
 
 ## A theme file override keeps the other rungs
 
