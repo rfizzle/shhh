@@ -99,8 +99,8 @@ func TestTheme_OverridesAreReappliedOnEverySwap(t *testing.T) {
 
 func TestTheme_LowContrastOverrideIsNamed(t *testing.T) {
 	low := LowContrast(ThemeDark, []TokenOverride{
-		{Token: "dim", Hex: "#303030"},   // under the floor on both surfaces
-		{Token: "body", Hex: "#ffffff"},  // clears
+		{Token: "dim", Hex: "#303030"},      // under the floor on both surfaces
+		{Token: "body", Hex: "#ffffff"},     // clears
 		{Token: "focus_bg", Hex: "#000000"}, // not text; never measured
 	})
 	if len(low) != 2 || low[0].Token != "dim" || low[0].Surface != "ground" || low[1].Surface != "band" {
