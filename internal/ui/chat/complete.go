@@ -129,7 +129,7 @@ func slashCommands() []slashCommand {
 // the only thing this list says about it.
 var slashOrder = []string{
 	"/help", "/clear", "/paste", "/copy", "/run", "/model", "/permissions",
-	"/reasoning", "/context", "/stats", "/readings", "/turns", "/alerts",
+	"/reasoning", "/context", "/stats", "/readings", "/turns", "/alerts", "/rail",
 	"/step", "/steps", "/status", "/sessions", "/trust", "/ui", "/config",
 	"/add-dir", "/sandbox", "/safety", "/sources", "/evidence", "/gate",
 	"/ps", scaffoldCommandName, setupCommandName, toolchainCommandName,

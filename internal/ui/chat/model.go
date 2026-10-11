@@ -288,6 +288,11 @@ const (
 	// (handoff.go). A takeover like the toolchain draft card, because the
 	// reader asked for it.
 	stateHandoff
+	// stateRail: the rail in full is up — every block, nothing shed, over the
+	// pane (rail.go). A takeover like the readings screen: full width, esc
+	// returns, and it changes nothing. The rail's foot line opens it, and
+	// the same cell closes it.
+	stateRail
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface

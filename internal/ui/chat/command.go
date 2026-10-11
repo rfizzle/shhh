@@ -877,6 +877,15 @@ default [level]   show or persist the level new sessions start on (provider.reas
 				help: `the session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of request that make it up, each model's share with its own kinds and what the children on it cost, each child's share by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen. What the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It reads and changes nothing`},
 			bare: true,
 			open: bareOpen(Model.openStats)},
+		// The rail in full: every block, nothing shed — what the rail's foot
+		// line opens once a short terminal has dropped blocks from it. It
+		// reads and changes nothing, so it is not idleOnly. `/ui rail` is
+		// the rail's width, and stays (rail.go).
+		{name: "/rail",
+			slash: &slashCommand{desc: "the inspector rail in full: every block, nothing shed",
+				help: `the inspector rail in full on one screen: every block it has, none collapsed and none dropped, at any terminal size — what the rail's foot line opens when a short terminal has had to drop blocks from it, and the way to read the rail where the terminal is too narrow to draw one. The width the rail takes is /ui rail. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openRail)},
 		// Every reading the session has taken of its own run. It reads and
 		// changes nothing, so it is not idleOnly: mid-turn is when somebody
 		// asks what the run has been saying about itself (readings.go).

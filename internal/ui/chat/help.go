@@ -229,16 +229,21 @@ var railDoorOrder = []string{
 	components.RailSummary, components.RailTurn, components.RailAlerts,
 	components.RailChanges, components.RailAgents, components.RailSteps,
 	components.RailTodo, components.RailContext, components.RailSpend,
-	components.RailTools,
+	components.RailTools, components.RailWhole,
 }
 
 // railDoorList is the rail click's door list: each block beside the command
-// its heading runs.
+// its heading runs, and last the rail's own foot line, which is no block's
+// heading and is named by what it reads.
 func railDoorList() string {
 	commands := railDoorCommands()
 	doors := make([]string, 0, len(railDoorOrder))
 	for _, block := range railDoorOrder {
-		doors = append(doors, block+" is "+commands[block])
+		label := block
+		if block == components.RailWhole {
+			label = "the rail's ↓ N more"
+		}
+		doors = append(doors, label+" is "+commands[block])
 	}
 	return strings.Join(doors, ", ")
 }

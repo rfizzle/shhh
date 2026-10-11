@@ -293,6 +293,10 @@ func (h heldScreens) tools() *components.ToolsScreen {
 	return heldAs[components.ToolsScreen](h, stateTools)
 }
 
+func (h heldScreens) rail() *components.RailScreen {
+	return heldAs[components.RailScreen](h, stateRail)
+}
+
 func (h heldScreens) keyPopup() *keyPopup {
 	return heldAs[keyPopup](h, stateKeyPopup)
 }

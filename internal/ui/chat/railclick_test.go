@@ -226,3 +226,53 @@ func TestRailDoors_TheCellClosesOnlyWhatItOpened(t *testing.T) {
 		t.Fatal("a review /diff opened is not the one the cell remembered")
 	}
 }
+
+// TestRailClick_FootLineOpensTheRail: on a terminal too short for its blocks,
+// the rail ends on a line counting what it dropped, and that line is a door —
+// a click opens the rail in full over the pane, the same cell closes it, its
+// own esc leaves it, and nothing about it takes the draft.
+func TestRailClick_FootLineOpensTheRail(t *testing.T) {
+	m := railDoorModel(t)
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 160, Height: 20})
+	m = next.(Model)
+	m.input.SetValue("half a sentence")
+	area := m.railArea()
+	rows := m.inspectorData().Rows(area.Dx(), area.Dy())
+	if len(rows) == 0 {
+		t.Fatalf("no rail at 160x20:\n%s", stripANSI(m.View().Content))
+	}
+	foot := rows[len(rows)-1]
+	if foot.Target != (components.RailTarget{Kind: components.RailTargetBlock, Name: components.RailWhole}) ||
+		!strings.Contains(stripANSI(foot.Text), "↓ ") {
+		t.Fatalf("a short rail should end on the foot line's door, got %q %+v:\n%s",
+			stripANSI(foot.Text), foot.Target, stripANSI(m.View().Content))
+	}
+	x, y := area.Min.X, area.Min.Y+len(rows)-1
+
+	opened := click(t, m, x, y)
+	if opened.state != stateRail || opened.screens.rail() == nil {
+		t.Fatalf("a click on the foot line should open the rail in full, got state %d", opened.state)
+	}
+	if !opened.inspectorHidden() {
+		t.Fatal("the rail in full stands over the rail")
+	}
+	if got := opened.input.Value(); got != "half a sentence" {
+		t.Fatalf("the door must not take the draft, got %q", got)
+	}
+	view := stripANSI(opened.View().Content)
+	for _, block := range []string{"/rail", "the rail in full", "THIS TURN"} {
+		if !strings.Contains(view, block) {
+			t.Fatalf("the rail in full should hold %s:\n%s", block, view)
+		}
+	}
+
+	closed := click(t, opened, x, y)
+	if closed.state == stateRail || closed.inspectorHidden() || closed.pointer.railOpened.live {
+		t.Fatalf("the cell that opened the rail should close it, got state %d", closed.state)
+	}
+
+	left, _ := opened.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if left.(Model).state == stateRail {
+		t.Fatal("esc should leave the rail in full")
+	}
+}

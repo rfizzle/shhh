@@ -6,7 +6,7 @@ package chat
 // until now that was all it could do with them. A row that names a thing and
 // cannot be gone to is a lookup the reader still has to type out.
 //
-// Three kinds of row are targets, and they pass the same test the
+// Four kinds of row are targets, and they pass the same test the
 // transcript's do: the pointer names exactly one thing, and the thing it
 // names already has a key.
 //
@@ -21,6 +21,9 @@ package chat
 //     /agents, STEPS is /steps, PLAN is bare /plan — the same screen, over
 //     the approved plan — TODO is /todo, CONTEXT is /context, SPEND is
 //     /stats, TOOLS is bare /mcp (railDoors).
+//   - The rail's foot line. A rail too short for its blocks drops the
+//     static and standing ones to one line counting them, and that line
+//     names the rail itself: it opens the rail in full, which is /rail.
 //
 // A heading or a marker opens that surface, and the remembered cell closes
 // it: the surface takes the rail's columns, so the row is not there for a

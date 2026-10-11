@@ -59,6 +59,10 @@
                    its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate
                    passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id
                    its output was kept under where it was cut. It reads the rail's own alerts and changes nothing
+    /rail          the inspector rail in full on one screen: every block it has, none collapsed and none dropped, at any terminal
+                   size — what the rail's foot line opens when a short terminal has had to drop blocks from it, and the way to
+                   read the rail where the terminal is too narrow to draw one. The width the rail takes is /ui rail. It reads and
+                   changes nothing
     /step          open the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close
                    (/ui verbosity high is the same thing for every card at once)
     /status        where this session is: what it is working on, what it has spent, and whether the last few turns are still on
@@ -149,6 +153,10 @@
                    its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate
                    passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id
                    its output was kept under where it was cut. It reads the rail's own alerts and changes nothing
+    /rail          the inspector rail in full on one screen: every block it has, none collapsed and none dropped, at any terminal
+                   size — what the rail's foot line opens when a short terminal has had to drop blocks from it, and the way to
+                   read the rail where the terminal is too narrow to draw one. The width the rail takes is /ui rail. It reads and
+                   changes nothing
     /step          open the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close
                    (/ui verbosity high is the same thing for every card at once)
     /steps         the session's own working list on one screen: every step it declared, the paths each said it would touch, which
@@ -258,6 +266,10 @@
                    ␛[38;5;244mits last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate␛[m
                    ␛[38;5;244mpassing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id␛[m
                    ␛[38;5;244mits output was kept under where it was cut. It reads the rail's own alerts and changes nothing␛[m
+    ␛[38;5;254m/rail␛[m          ␛[38;5;244mthe inspector rail in full on one screen: every block it has, none collapsed and none dropped, at any terminal␛[m
+                   ␛[38;5;244msize — what the rail's foot line opens when a short terminal has had to drop blocks from it, and the way to␛[m
+                   ␛[38;5;244mread the rail where the terminal is too narrow to draw one. The width the rail takes is /ui rail. It reads and␛[m
+                   ␛[38;5;244mchanges nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close␛[m
                    ␛[38;5;244m(/ui verbosity high is the same thing for every card at once)␛[m
     ␛[38;5;254m/status␛[m        ␛[38;5;244mwhere this session is: what it is working on, what it has spent, and whether the last few turns are still on␛[m
@@ -348,6 +360,10 @@
                    ␛[38;5;244mits last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate␛[m
                    ␛[38;5;244mpassing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id␛[m
                    ␛[38;5;244mits output was kept under where it was cut. It reads the rail's own alerts and changes nothing␛[m
+    ␛[38;5;254m/rail␛[m          ␛[38;5;244mthe inspector rail in full on one screen: every block it has, none collapsed and none dropped, at any terminal␛[m
+                   ␛[38;5;244msize — what the rail's foot line opens when a short terminal has had to drop blocks from it, and the way to␛[m
+                   ␛[38;5;244mread the rail where the terminal is too narrow to draw one. The width the rail takes is /ui rail. It reads and␛[m
+                   ␛[38;5;244mchanges nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close␛[m
                    ␛[38;5;244m(/ui verbosity high is the same thing for every card at once)␛[m
     ␛[38;5;254m/steps␛[m         ␛[38;5;244mthe session's own working list on one screen: every step it declared, the paths each said it would touch, which␛[m

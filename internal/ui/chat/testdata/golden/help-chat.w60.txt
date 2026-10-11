@@ -128,6 +128,15 @@
                    and the evidence id its output was kept
                    under where it was cut. It reads the
                    rail's own alerts and changes nothing
+    /rail          the inspector rail in full on one screen:
+                   every block it has, none collapsed and
+                   none dropped, at any terminal size — what
+                   the rail's foot line opens when a short
+                   terminal has had to drop blocks from it,
+                   and the way to read the rail where the
+                   terminal is too narrow to draw one. The
+                   width the rail takes is /ui rail. It
+                   reads and changes nothing
     /step          open the in-flight step's card onto its
                    calls, every call with its output body,
                    bounded; run it again to close (/ui
@@ -342,6 +351,15 @@
                    and the evidence id its output was kept
                    under where it was cut. It reads the
                    rail's own alerts and changes nothing
+    /rail          the inspector rail in full on one screen:
+                   every block it has, none collapsed and
+                   none dropped, at any terminal size — what
+                   the rail's foot line opens when a short
+                   terminal has had to drop blocks from it,
+                   and the way to read the rail where the
+                   terminal is too narrow to draw one. The
+                   width the rail takes is /ui rail. It
+                   reads and changes nothing
     /step          open the in-flight step's card onto its
                    calls, every call with its output body,
                    bounded; run it again to close (/ui
@@ -600,6 +618,15 @@
                    ␛[38;5;245mand the evidence id its output was kept␛[m
                    ␛[38;5;245munder where it was cut. It reads the␛[m
                    ␛[38;5;245mrail's own alerts and changes nothing␛[m
+    ␛[38;5;252m/rail␛[m          ␛[38;5;245mthe inspector rail in full on one screen:␛[m
+                   ␛[38;5;245mevery block it has, none collapsed and␛[m
+                   ␛[38;5;245mnone dropped, at any terminal size — what␛[m
+                   ␛[38;5;245mthe rail's foot line opens when a short␛[m
+                   ␛[38;5;245mterminal has had to drop blocks from it,␛[m
+                   ␛[38;5;245mand the way to read the rail where the␛[m
+                   ␛[38;5;245mterminal is too narrow to draw one. The␛[m
+                   ␛[38;5;245mwidth the rail takes is /ui rail. It␛[m
+                   ␛[38;5;245mreads and changes nothing␛[m
     ␛[38;5;252m/step␛[m          ␛[38;5;245mopen the in-flight step's card onto its␛[m
                    ␛[38;5;245mcalls, every call with its output body,␛[m
                    ␛[38;5;245mbounded; run it again to close (/ui␛[m
@@ -814,6 +841,15 @@
                    ␛[38;5;245mand the evidence id its output was kept␛[m
                    ␛[38;5;245munder where it was cut. It reads the␛[m
                    ␛[38;5;245mrail's own alerts and changes nothing␛[m
+    ␛[38;5;252m/rail␛[m          ␛[38;5;245mthe inspector rail in full on one screen:␛[m
+                   ␛[38;5;245mevery block it has, none collapsed and␛[m
+                   ␛[38;5;245mnone dropped, at any terminal size — what␛[m
+                   ␛[38;5;245mthe rail's foot line opens when a short␛[m
+                   ␛[38;5;245mterminal has had to drop blocks from it,␛[m
+                   ␛[38;5;245mand the way to read the rail where the␛[m
+                   ␛[38;5;245mterminal is too narrow to draw one. The␛[m
+                   ␛[38;5;245mwidth the rail takes is /ui rail. It␛[m
+                   ␛[38;5;245mreads and changes nothing␛[m
     ␛[38;5;252m/step␛[m          ␛[38;5;245mopen the in-flight step's card onto its␛[m
                    ␛[38;5;245mcalls, every call with its output body,␛[m
                    ␛[38;5;245mbounded; run it again to close (/ui␛[m

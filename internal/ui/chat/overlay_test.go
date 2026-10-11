@@ -69,6 +69,7 @@ func TestOverlayPlacements(t *testing.T) {
 		stateFlakes:     placePane,
 		stateProposals:  placePane,
 		stateSafety:     placePane,
+		stateRail:       placePane,
 		stateNotes:      placePane,
 		stateBacklog:    placePane,
 		statePersona:    placePane,
@@ -291,13 +292,14 @@ func TestOverlayPaneScreensKeepTheirRows(t *testing.T) {
 		{stateNotes, "/notes", ""},
 		{stateTools, "/mcp", components.RailTools},
 		{stateSafety, "/safety", ""},
+		{stateRail, "/rail", components.RailWhole},
 		{stateBacklog, "/todo", components.RailTodo},
 		{stateConfig, "/config", ""},
 		{stateEditor, "/edit", ""},
 	}
 	overlays()
-	if len(overlayTable) != 49 {
-		t.Errorf("the register has %d rows, want 49", len(overlayTable))
+	if len(overlayTable) != 50 {
+		t.Errorf("the register has %d rows, want 50", len(overlayTable))
 	}
 	for _, w := range want {
 		o := overlayFor(w.s)

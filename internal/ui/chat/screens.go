@@ -101,6 +101,15 @@ func chatScreens() []screenSpec {
 			draw: sizedPane(heldScreens.alerts), row: alertsScreenRow()},
 		{state: stateSpend, command: "/stats", surface: keys.NoSurface, place: placePane, held: true,
 			draw: sizedPane(heldScreens.spend), row: spendScreenRow()},
+		// The rail in full: the door on the rail's foot line, drawn over the
+		// rail as it reads at each paint (rail.go).
+		{state: stateRail, command: "/rail", surface: keys.NoSurface, place: placePane, held: true,
+			draw: (Model).railLines,
+			row: mode{
+				hint: (Model).renderRailHint,
+				keys: (Model).updateRail,
+				door: &surfaceDoor{components.RailWhole, railDoor{Model.openRail, railShowing, Model.closeRailScreen}},
+			}},
 		{state: stateFlakes, command: "/gate", commandArgs: []string{"flakes"}, surface: keys.NoSurface, place: placePane, held: true,
 			draw: sizedPane(heldScreens.flakes), row: flakesScreenRow()},
 		// What repeats, each as a proposal. The screen writes nothing; enter
