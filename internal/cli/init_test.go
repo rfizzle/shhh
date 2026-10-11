@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -217,5 +218,69 @@ func TestInitProject_AlreadyExists(t *testing.T) {
 
 	if err := initProject(dir); err == nil {
 		t.Fatal("expected error when .shhh already exists")
+	}
+}
+
+// An empty completion is not silence: each script keeps the error shhh cmd
+// printed and shows it the shell's own way.
+func TestInit_EmptyCompletionShowsTheError(t *testing.T) {
+	for _, tc := range []struct{ shell, capture, show string }{
+		{"zsh", `2>"$errf"`, `zle -M "shhh: ${err}"`},
+		{"bash", `2>"$errf"`, `printf '\nshhh: %s\n' "$err" >&2`},
+		{"fish", `2>$errf`, `echo "shhh: $err" >&2`},
+	} {
+		t.Run(tc.shell, func(t *testing.T) {
+			cmd := NewRootCmd()
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			cmd.SetArgs([]string{"init", tc.shell})
+			must(t, cmd.Execute())
+			for _, want := range []string{tc.capture, tc.show, "kill-to-end-of-line"} {
+				if !strings.Contains(out.String(), want) {
+					t.Errorf("%s script lacks %q", tc.shell, want)
+				}
+			}
+			if strings.Contains(out.String(), "2>/dev/null") {
+				t.Errorf("%s script still discards stderr", tc.shell)
+			}
+		})
+	}
+}
+
+// Where bash is here, run the empty-result path against a fake shhh that
+// fails: the message reaches stderr and the line is left alone. zsh and fish
+// need their widget machinery (zle, commandline), so they are asserted on the
+// script text above and skipped here when absent.
+func TestInit_EmptyCompletionShowsTheError_Executed(t *testing.T) {
+	for _, shell := range []string{"zsh", "fish"} {
+		if _, err := exec.LookPath(shell); err != nil {
+			t.Logf("%s is absent on this host; its script is asserted by text only", shell)
+		}
+	}
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skip("bash is absent on this host")
+	}
+	dir := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(dir, "shhh"), []byte("#!/bin/sh\necho 'no key set' >&2\nexit 1\n"), 0o755))
+
+	var snippet bytes.Buffer
+	cmd := NewRootCmd()
+	cmd.SetOut(&snippet)
+	cmd.SetArgs([]string{"init", "bash"})
+	must(t, cmd.Execute())
+	script := filepath.Join(dir, "snippet.sh")
+	must(t, os.WriteFile(script, snippet.Bytes(), 0o644))
+
+	run := exec.Command(bash, "-c", `source "$1" 2>/dev/null; READLINE_LINE="list files"; _shhh_raw; echo "line=[$READLINE_LINE]"`, "bash", script)
+	run.Env = append(os.Environ(), "PATH="+dir+string(os.PathListSeparator)+os.Getenv("PATH"), "TMPDIR="+dir)
+	var stdout, stderr bytes.Buffer
+	run.Stdout, run.Stderr = &stdout, &stderr
+	must(t, run.Run())
+	if !strings.Contains(stderr.String(), "shhh: no key set") {
+		t.Errorf("stderr = %q, want the error shown", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "line=[list files]") {
+		t.Errorf("stdout = %q, want the line untouched", stdout.String())
 	}
 }

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/spf13/cobra"
@@ -10,13 +11,21 @@ import (
 const zshSnippet = `# shhh shell integration
 # Add to ~/.zshrc: eval "$(shhh init zsh)"
 # For completions: shhh completion zsh > "${fpath[1]}/_shhh"
+# ^K overrides kill-to-end-of-line here. The reserved list keeps ctrl+k with the
+# line editor inside shhh (docs/interface/reserved-keys.md#what-is-left), so
+# the chord means "work on this line" in both places.
 
 _shhh_raw() {
-  local result
-  result=$(shhh cmd --raw "$BUFFER" 2>/dev/null)
+  local result err errf
+  errf=$(mktemp) || return
+  result=$(shhh cmd --raw "$BUFFER" 2>"$errf")
+  err=$(<"$errf")
+  rm -f "$errf"
   if [[ -n "$result" ]]; then
     BUFFER="$result"
     CURSOR=${#BUFFER}
+  elif [[ -n "$err" ]]; then
+    zle -M "shhh: ${err}"
   fi
   zle redisplay
 }
@@ -27,13 +36,21 @@ bindkey '^K' _shhh_raw
 const bashSnippet = `# shhh shell integration
 # Add to ~/.bashrc: eval "$(shhh init bash)"
 # For completions: source <(shhh completion bash)
+# ^K overrides kill-to-end-of-line here. The reserved list keeps ctrl+k with the
+# line editor inside shhh (docs/interface/reserved-keys.md#what-is-left), so
+# the chord means "work on this line" in both places.
 
 _shhh_raw() {
-  local result
-  result=$(shhh cmd --raw "$READLINE_LINE" 2>/dev/null)
+  local result err errf
+  errf=$(mktemp) || return
+  result=$(shhh cmd --raw "$READLINE_LINE" 2>"$errf")
+  err=$(<"$errf")
+  rm -f "$errf"
   if [[ -n "$result" ]]; then
     READLINE_LINE="$result"
     READLINE_POINT=${#READLINE_LINE}
+  elif [[ -n "$err" ]]; then
+    printf '\nshhh: %s\n' "$err" >&2
   fi
 }
 bind -x '"\C-k": _shhh_raw'
@@ -42,14 +59,23 @@ bind -x '"\C-k": _shhh_raw'
 const fishSnippet = `# shhh shell integration
 # Add to ~/.config/fish/config.fish: shhh init fish | source
 # For completions: shhh completion fish > ~/.config/fish/completions/shhh.fish
+# ^K overrides kill-to-end-of-line here. The reserved list keeps ctrl+k with the
+# line editor inside shhh (docs/interface/reserved-keys.md#what-is-left), so
+# the chord means "work on this line" in both places.
 
 function _shhh_raw
   set -l buf (commandline)
   if test -n "$buf"
-    set -l result (shhh cmd --raw "$buf" 2>/dev/null)
+    set -l errf (mktemp)
+    set -l result (shhh cmd --raw "$buf" 2>$errf)
+    set -l err (string collect < $errf)
+    rm -f $errf
     if test -n "$result"
       commandline -r -- "$result"
       commandline -f end-of-line
+    else if test -n "$err"
+      echo "shhh: $err" >&2
+      commandline -f repaint
     end
   end
 end
@@ -73,14 +99,11 @@ func newInitCmd() *cobra.Command {
 			}
 			switch args[0] {
 			case "zsh":
-				fmt.Fprint(cmd.OutOrStdout(), zshSnippet)
-				return nil
+				return writeSnippet(cmd, zshSnippet)
 			case "bash":
-				fmt.Fprint(cmd.OutOrStdout(), bashSnippet)
-				return nil
+				return writeSnippet(cmd, bashSnippet)
 			case "fish":
-				fmt.Fprint(cmd.OutOrStdout(), fishSnippet)
-				return nil
+				return writeSnippet(cmd, fishSnippet)
 			default:
 				return fmt.Errorf("unsupported shell: %q (supported: zsh, bash, fish)", args[0])
 			}
@@ -96,5 +119,12 @@ func newInitCmd() *cobra.Command {
 // command hands it "." rather than a resolved root.
 func initProject(dir string) error {
 	_, err := project.Scaffold(dir)
+	return err
+}
+
+// writeSnippet prints a script verbatim. The scripts hold `%s`, so they go
+// through a plain write rather than a formatter.
+func writeSnippet(cmd *cobra.Command, script string) error {
+	_, err := io.WriteString(cmd.OutOrStdout(), script)
 	return err
 }
