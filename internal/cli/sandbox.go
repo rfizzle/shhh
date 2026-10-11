@@ -285,7 +285,13 @@ func sandboxImageFor(cfg config.Config) string {
 	if cfg.Sandbox.ContainerImage != "" {
 		return cfg.Sandbox.ContainerImage
 	}
-	return sandboxImage
+	if sandboxImage != "" {
+		return sandboxImage
+	}
+	// A go install build has no linked digest; its version tag names the
+	// image the release pushed. A tag is not digest-pinned, so the image
+	// policy still refuses it and the doctor says so.
+	return fallbackImage()
 }
 
 // containerSpec builds the sandbox-container spec from config over

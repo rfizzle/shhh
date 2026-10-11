@@ -588,7 +588,12 @@ image rather than making an exception for shhh's own.
 **A build that did not come from a release has no image.** The digest exists
 only once the release has pushed the image, so a `make build` carries none and
 container sandboxes stay unavailable until the setting names one, which
-`shhh doctor` says.
+`shhh doctor` says. A `go install …@v0.19.0` build knows its version from the
+module and, with the setting empty, names
+`ghcr.io/rfizzle/shhh-sandbox:v0.19.0`. A tag is not digest-pinned, so the
+image policy still refuses it: the doctor's engine row shows the tag, says it
+came from the build's version, and the fix is to pin that image's digest in
+`sandbox.container_image`.
 
 **An image prepared from a checkout's declaration is allowed because its base
 was.** Where a checkout declares a toolchain, a sandbox's container starts

@@ -120,6 +120,9 @@ func probeEngine(_ context.Context, cfg config.Config) doctorFinding {
 	image := sandboxImageFor(cfg)
 	imageErr := sandbox.ValidateImage(image, cfg.Sandbox.ImageAllowlist)
 	f := doctorEngine(eng, image, imageErr, ownedSandboxCount())
+	if imageFromVersionTag(cfg.Sandbox.ContainerImage) {
+		f.Detail = joinDetail(f.Detail, "image named by this build's version tag, not a digest")
+	}
 	if eng.OK && len(cfg.Sandbox.AllowHosts) > 0 {
 		// A container's network is a switch, so the list is not what a
 		// --sandbox run's commands are held to, and the row is where that

@@ -145,6 +145,11 @@ $ brew install rfizzle/tap/shhh
 $ go install github.com/rfizzle/shhh/cmd/shhh@latest
 ```
 
+A `go install …@vX.Y.Z` build reads its version from the module, so update
+checks work; its sandbox image is then named by that tag
+(`ghcr.io/rfizzle/shhh-sandbox:vX.Y.Z`), which is not digest-pinned, so
+`shhh doctor` shows it and `sandbox.container_image` needs the digest.
+
 On Windows, download the release archive for your architecture from
 [GitHub Releases](https://github.com/rfizzle/shhh/releases) and put
 `shhh.exe` on `PATH`. From source, `make build` in a clone.
