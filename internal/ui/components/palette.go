@@ -547,6 +547,49 @@ var gruvboxDarkGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// nordPalette is Nord (https://www.nordtheme.com/docs/colors-and-palettes, the
+// values of src/nord.css): the published hex for every token that clears 4.5:1
+// on its ground #2e3440 (nord0) and its band #3b4252 (nord1), the selected row
+// #434c5e (nord2). Six inks were short and LiftToAA lifts them in their own
+// hue: dim (derived from nord4 and nord3), del (nord11), accent (nord12), info
+// (nord9), spin (nord15) and the derived status. The lifted del, accent, info
+// and spin are brighter than Nord's frost and aurora as published. The grey
+// ladder is respaced: status, dimmer and subtle sit in even quarters from the
+// lifted dim up to body (nord5) so the order holds, subtle moving though it
+// clears on its own. addBg and delBg are the ground with 28% of add (nord14)
+// and of the lifted del. The 256 rungs are DistinctRungs' and the
+// sixteen-colour column is the dark table's. The figures are in
+// docs/interface/departures.md.
+var nordPalette = ColorTokens{
+	Add:     token("#a3be8c", "144", "10"),
+	Del:     token("#f59199", "210", "9"),
+	addBg:   token("#4f5b55", "240", "2"),
+	delBg:   token("#664e59", "59", "1"),
+	Hunk:    token("#8fbcbb", "109", "14"),
+	Accent:  token("#e79c84", "180", "11"),
+	Info:    token("#90b1d1", "110", "12"),
+	FocusBg: token("#434c5e", "239", "12"),
+	band:    band("#3b4252", "238"),
+	Dim:     token("#a5aebf", "249", "8"),
+	Dimmer:  token("#c5ccd8", "252", "8"),
+	Spin:    token("#c9a2c2", "181", "13"),
+	Status:  token("#b5bdcb", "250", "8"),
+	Bright:  token("#eceff4", "255", "15"),
+	Subtle:  token("#d5dae4", "253", "7"),
+	Body:    token("#e5e9f0", "254", "7"),
+	Code:    token("#ebcb8b", "186", "3"),
+	Key:     token("#88c0d0", "116", "12"),
+}
+
+// nordGround is Nord's nord0, #2e3440 and 237, painted by default like the
+// dark ground and for the same reason: its band is half of a pair. It has no
+// sixteen-colour rung.
+var nordGround = Token{
+	trueColor: lipgloss.Color("#2e3440"),
+	ansi256:   lipgloss.Color("237"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -569,6 +612,8 @@ const (
 	ThemeTokyoNight = "tokyo-night"
 	// ThemeGruvboxDark is Gruvbox Dark, medium contrast, a brand theme.
 	ThemeGruvboxDark = "gruvbox-dark"
+	// ThemeNord is Nord, a brand theme.
+	ThemeNord = "nord"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -596,6 +641,7 @@ var themes = map[string]theme{
 	ThemeDracula:         {draculaPalette, draculaGround},
 	ThemeTokyoNight:      {tokyoNightPalette, tokyoNightGround},
 	ThemeGruvboxDark:     {gruvboxDarkPalette, gruvboxDarkGround},
+	ThemeNord:            {nordPalette, nordGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -624,7 +670,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord}
 }
 
 var (
@@ -739,7 +785,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight, ThemeGruvboxDark, ThemeNord:
 		return true
 	}
 	return false

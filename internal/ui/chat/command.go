@@ -662,6 +662,7 @@ revoke [commands|edits|hosts|agents]   take the grants back`},
 						{components.ThemeDracula, "Dracula, on its own dark ground"},
 						{components.ThemeTokyoNight, "Tokyo Night, on its own dark ground"},
 						{components.ThemeGruvboxDark, "Gruvbox Dark, on its own dark ground"},
+						{components.ThemeNord, "Nord, on its own dark ground"},
 					}},
 					{after: []string{"ground"}, options: []argOption{
 						{"on", "paint the background the theme was drawn against"},

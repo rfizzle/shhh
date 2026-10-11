@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 33 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 34 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -470,6 +470,50 @@ not published: key, the mix of the bright purple `#d3869b` and the bright blue
 unlifted del and its own pick). Sixteen colours: the dark column. The Machado
 distance is not held for this table; `colorblind` remains the answer for that
 need.
+
+## The `nord` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: https://www.nordtheme.com/docs/colors-and-palettes (the values of
+src/nord.css in https://github.com/nordtheme/nord). Ground `#2e3440` (nord0),
+band `#3b4252` (nord1), selected row `#434c5e` (nord2); painted by default.
+Bright on the selected row reads 7.49:1.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #818a9a | 3.59 / 2.89 | #a5aebf | 5.59 / 4.51 |
+| status | #929aaa | 4.42 / 3.56 | #b5bdcb | 6.61 / 5.32 |
+| del | #bf616a | 3.05 / 2.46 | #f59199 | 5.59 / 4.50 |
+| accent | #d08770 | 4.39 / 3.54 | #e79c84 | 5.64 / 4.55 |
+| info | #81a1c1 | 4.64 / 3.74 | #90b1d1 | 5.59 / 4.50 |
+| spin | #b48ead | 4.41 / 3.55 | #c9a2c2 | 5.61 / 4.52 |
+
+`LiftToAA` lifts these in their own hue. Dim, the gray, keeps its lifted value;
+dimmer, status and subtle are then spaced in even quarters from it up to the
+body `#e5e9f0`, so the status above is the respaced value and not the helper's
+own lift: status `#b5bdcb`, dimmer `#c5ccd8` and subtle `#d5dae4` keep the
+ladder bright, body, subtle, dimmer, status, dim descending (8.91, 7.73 and
+6.61 on the ground; 7.18, 6.23 and 5.32 on the band). Subtle (nord4 `#d8dee9`)
+and dimmer (the mix of nord4 and nord3, `#a7aebd`) clear on their own and move
+only to keep the ladder's order. Every other ink is as published: add (nord14),
+hunk (nord7), code (nord13), key (nord8), body (nord5) and bright (nord6).
+
+The lifted del, accent, info and spin are brighter than Nord's frost and aurora
+as published. Del gains 54, 48 and 47 in red, green and blue (`#bf616a` to
+`#f59199`), accent 23, 21 and 20, info 15, 16 and 16 and spin 21, 20 and 21,
+and their contrast on the ground rises from 3.05, 4.39, 4.64 and 4.41 to 5.59,
+5.64, 5.59 and 5.61. The hues are kept; the colours are paler than the ones
+Nord ships.
+
+Derived, not published: dim, dimmer and status, the mix of nord4 `#d8dee9` and
+nord3 `#4c566a` (`#818a9a`, `#a7aebd`, `#929aaa`), respaced as above. addBg
+`#4f5b55` and delBg `#664e59` are the ground with 28% of add `#a3be8c` and of
+the lifted del `#f59199`; add reads 3.48:1 on addBg and del 3.36:1 on delBg.
+256 rungs: DistinctRungs, worst error 26.9 (RGB distance, on spin `#c9a2c2`,
+which lands on 181 `#d7afaf`; the study's 35 on delBg was for the unlifted del
+and its own pick). Sixteen colours: the dark column. The Machado distance is not
+held for this table; `colorblind` remains the answer for that need.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 

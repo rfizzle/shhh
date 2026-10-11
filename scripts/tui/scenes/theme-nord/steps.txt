@@ -1,0 +1,24 @@
+# program test: none — the table is held by TestPalette_EveryThemeClearsAA and
+#   TestPalette_NordPaintsItsGroundByDefault, and drawn in the nord-table
+#   goldens
+#
+# The Nord theme under a live session. The launch line writes a theme.toml
+# naming the table, so the session opens on Nord's nord0 (#2e3440, 256 index
+# 237) with its palette on every surface. A gated edit gives the approval card,
+# then the applied edit's row, and the transcript around them.
+# What the capture is for: the .txt is read against the goldens' layout blocks,
+# and the .ansi for the colours: the ground painted 237, the added line in
+# green (256 index 144) and the removed line in red (210), the card's border
+# and keys in Nord's frost blue and teal (110 and 116).
+# Driven at 110 by `make tui-shot SCENE=theme-nord COLS=110`;
+# written here, not driven.
+setup printf 'package agent\n\nconst limit = 25\n\nfunc round(a *Agent) error {\n    if a.round >= limit {\n        return ErrRoundLimit\n    }\n    a.round++\n    return nil\n}\n' > loop.go
+setup printf 'The cap is read from one place.\n' > notes.md
+snap 01-start "Some things worth doing first"
+keys "raise the round cap" Enter
+snap 02-card "RoundsExhausted" "apply the change"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 03-applied "The cap is where the file says it is" "+1 −1"
