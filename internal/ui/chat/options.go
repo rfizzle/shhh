@@ -370,15 +370,6 @@ func (m Model) WithUpdateNotice(notice string) Model {
 	return m
 }
 
-// effectiveMaxToolRounds is this turn's tool-round ceiling: the configured
-// cap plus whatever [+50] has granted the turn in front of it. The ceiling is
-// the loop's, so that every driver asks one check of it.
-func (m Model) effectiveMaxToolRounds() int { return m.agent.Ceiling() }
-
-// roundsUnbounded reports that this turn will not stop at a ceiling: either
-// [!] lifted it for the turn, or the session was started without one.
-func (m Model) roundsUnbounded() bool { return m.agent.Unbounded() }
-
 // WithResumedMessages replaces the conversation with a previously saved one
 // and rebuilds the transcript from it. name is the slot it came from, which
 // is the slot the session keeps autosaving to: a resumed conversation grows

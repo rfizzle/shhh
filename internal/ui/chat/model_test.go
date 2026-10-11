@@ -2281,15 +2281,15 @@ func TestSlashModel_EdgeCases(t *testing.T) {
 func TestMaxToolRounds_Default(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
-	if got := m.effectiveMaxToolRounds(); got != DefaultMaxToolRounds {
+	if got := m.agent.Ceiling(); got != DefaultMaxToolRounds {
 		t.Fatalf("default cap should be %d, got %d", DefaultMaxToolRounds, got)
 	}
 	m.agent.SetMaxRounds(0)
-	if got := m.effectiveMaxToolRounds(); got != DefaultMaxToolRounds {
+	if got := m.agent.Ceiling(); got != DefaultMaxToolRounds {
 		t.Fatalf("zero should keep the default cap, got %d", got)
 	}
 	m.agent.SetMaxRounds(5)
-	if got := m.effectiveMaxToolRounds(); got != 5 {
+	if got := m.agent.Ceiling(); got != 5 {
 		t.Fatalf("configured cap should win, got %d", got)
 	}
 }

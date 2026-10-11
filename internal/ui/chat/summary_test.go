@@ -499,7 +499,7 @@ func TestSummary_TurnCloseTakesAReading(t *testing.T) {
 	// off-target one the steer was the answer to.
 	steered := verdictModel(t, "off_target")
 	steered = applyReading(t, steered)
-	steered.injectInterventions()
+	steered.roundTail().Next()
 	if steered.agent.Rounds() != steered.summary.schedule.LastRound() {
 		t.Fatalf("setup: the turn should end at the round it was read at, %d and %d",
 			steered.agent.Rounds(), steered.summary.schedule.LastRound())

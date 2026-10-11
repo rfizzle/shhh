@@ -2120,7 +2120,7 @@ func (m *Model) openTurn(shown string) {
 	// What moved since the last boundary is said before the message it
 	// would otherwise be read against — and before the checkpoint, so the
 	// checkpoint still points at the person's own words.
-	m.injectTreeNotice(true)
+	m.injectTreeNotice()
 }
 
 // streamOpenedTurn sends the first request of a turn openTurn began.

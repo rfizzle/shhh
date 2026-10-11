@@ -88,7 +88,7 @@ func (m Model) pauseAtRoundLimit() (tea.Model, tea.Cmd) {
 	p := &roundPause{
 		turn:    m.turnCount,
 		used:    m.agent.Rounds(),
-		limit:   m.effectiveMaxToolRounds(),
+		limit:   m.agent.Ceiling(),
 		granted: m.agent.RoundGrant(),
 		stale:   checksStale(m.turnEntries()),
 		// Taken before the state change below closes the turn's books: the
@@ -157,10 +157,10 @@ func (m Model) roundCounter() string {
 // cannot say so in words between its separators
 // (docs/interface/departures.md#a-turn-with-no-round-limit-still-draws-a-bound).
 func (m Model) roundLabel() string {
-	if m.roundsUnbounded() {
+	if m.agent.Unbounded() {
 		return fmt.Sprintf("round %d of ∞", m.agent.Rounds())
 	}
-	return fmt.Sprintf("round %d of %d", m.agent.Rounds(), m.effectiveMaxToolRounds())
+	return fmt.Sprintf("round %d of %d", m.agent.Rounds(), m.agent.Ceiling())
 }
 
 // roundPauseRow renders the pause on the column grid, under the `rounds` verb

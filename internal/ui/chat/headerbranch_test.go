@@ -56,10 +56,10 @@ func TestHeader_TheBranchFollowsAGitSwitch(t *testing.T) {
 func TestHeader_TheBranchFollowsTheTreeReading(t *testing.T) {
 	ws := treeRepo(t)
 	m := headedBy(t, gatedModelWith(t, nil, nil, Wiring{TreeCheck: &agent.TreeCheck{Dir: ws}}), ws)
-	m.injectTreeNotice(true) // the baseline
+	m.injectTreeNotice() // the baseline
 
 	gitIn(t, ws, "switch", "-q", "-c", "feature/y")
-	m.injectTreeNotice(false)
+	m.roundTail().Next()
 
 	if got := stripANSI(m.headerRow(200)); !strings.Contains(got, "~/ws · feature/y") {
 		t.Fatalf("the header should name the branch the tree reading saw, got %q", got)

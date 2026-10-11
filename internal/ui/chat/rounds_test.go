@@ -125,7 +125,7 @@ func TestRoundLimit_GrantContinuesTheSameTurn(t *testing.T) {
 	if next.agent.Rounds() != rounds {
 		t.Errorf("rounds = %d, want the counter kept at %d", next.agent.Rounds(), rounds)
 	}
-	if got, want := next.effectiveMaxToolRounds(), 1+roundGrantBlock; got != want {
+	if got, want := next.agent.Ceiling(), 1+roundGrantBlock; got != want {
 		t.Errorf("ceiling = %d, want %d", got, want)
 	}
 	if !next.turnOpen {
@@ -193,7 +193,7 @@ func TestRoundLimit_ANewTurnGetsTheConfiguredCeilingBack(t *testing.T) {
 	m = finishTurn(t, updated.(Model))
 
 	m = sendText(t, m, "now do the other one")
-	if got := m.effectiveMaxToolRounds(); got != 1 {
+	if got := m.agent.Ceiling(); got != 1 {
 		t.Errorf("ceiling = %d, want the configured 1 back", got)
 	}
 	if m.pausedAtRoundLimit() {
@@ -353,7 +353,7 @@ func TestRoundLimit_FocusModeLandsOnThePauseAndTakesTheGrant(t *testing.T) {
 	if cmd == nil || next.turnState() != stateStreaming {
 		t.Fatalf("the grant in focus mode should continue the turn, state %v", next.turnState())
 	}
-	if got, want := next.effectiveMaxToolRounds(), 1+roundGrantBlock; got != want {
+	if got, want := next.agent.Ceiling(), 1+roundGrantBlock; got != want {
 		t.Errorf("ceiling = %d, want %d", got, want)
 	}
 }
@@ -441,7 +441,7 @@ func TestRoundLimit_LetItRunClearsTheCeilingForTheTurn(t *testing.T) {
 		t.Fatal("[!] should be claimed by the focused pause row and continue the turn")
 	}
 	next := updated.(Model)
-	if !next.roundsUnbounded() {
+	if !next.agent.Unbounded() {
 		t.Error("the rest of the turn runs against no ceiling")
 	}
 	if next.turnState() != stateStreaming {
@@ -457,7 +457,7 @@ func TestRoundLimit_LetItRunClearsTheCeilingForTheTurn(t *testing.T) {
 	// It expires with the turn, exactly as the grant does: a session that
 	// should never stop says so at the command line, not by a key.
 	done := sendText(t, finishTurn(t, next), "now do the other one")
-	if done.roundsUnbounded() {
+	if done.agent.Unbounded() {
 		t.Error("a new turn gets the configured ceiling back")
 	}
 }

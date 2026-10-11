@@ -55,7 +55,7 @@ func TestProgress_TheRequestJoinsTheConversationAtARoundBoundary(t *testing.T) {
 	m = advanceRounds(m, 2)
 
 	rounds, entries := m.agent.Rounds(), len(m.transcript)
-	m.injectProgressCheckpoint()
+	m.roundTail().Next()
 
 	if got := lastUserMessage(m); got != agent.ProgressPrompt {
 		t.Errorf("the conversation should carry the public-status request, got:\n%s", got)
@@ -81,7 +81,7 @@ func TestProgress_ASurfaceDefersTheRequest(t *testing.T) {
 	m = advanceRounds(m, 2)
 	m.state = statePick
 
-	m.injectProgressCheckpoint()
+	m.roundTail().Next()
 
 	if lastUserMessage(m) == agent.ProgressPrompt {
 		t.Error("the request reached the conversation from behind a surface")
@@ -105,7 +105,7 @@ func runProgressRound(t *testing.T, pending bool) (roundOutcome, entry) {
 	}))
 	m = advanceRounds(m, 2)
 	if pending {
-		m.injectProgressCheckpoint()
+		m.roundTail().Next()
 		if !m.agent.ProgressPending() {
 			t.Fatal("the round was set up with a checkpoint owed and none is")
 		}
@@ -177,7 +177,7 @@ func TestProgress_AnsweredStatusCostsNoRequestAndNoRound(t *testing.T) {
 func TestProgress_AConcludingReplyIsTheAnswerAndNotANote(t *testing.T) {
 	m := progressModel(t, mockStream)
 	m = advanceRounds(m, 2)
-	m.injectProgressCheckpoint()
+	m.roundTail().Next()
 	if !m.agent.ProgressPending() {
 		t.Fatal("the turn was set up with a checkpoint owed and none is")
 	}
@@ -220,7 +220,7 @@ func TestProgress_AConcludingReplyIsTheAnswerAndNotANote(t *testing.T) {
 func TestProgress_TheMarkSurvivesAReopenedConversation(t *testing.T) {
 	m := progressModel(t, mockStream)
 	m = advanceRounds(m, 2)
-	m.injectProgressCheckpoint()
+	m.roundTail().Next()
 	m.streaming = checkpointNote
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call-1", Name: "read_file", Arguments: `{"path":"internal/agent/round.go"}`},
@@ -399,7 +399,7 @@ func TestProgress_AReopenedUnmarkedRequestFallsBackToItsWords(t *testing.T) {
 func TestProgress_ContinuingADroppedNoteKeepsItsMark(t *testing.T) {
 	m := progressModel(t, mockStream)
 	m = advanceRounds(m, 2)
-	m.injectProgressCheckpoint()
+	m.roundTail().Next()
 
 	// The stream broke after the note and the call it was leading were both
 	// written, which is what the drop row offers to continue from.

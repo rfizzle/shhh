@@ -61,12 +61,12 @@ func writtenPaths(store *changeset.Store) []string {
 	return paths
 }
 
-// injectTreeNotice delivers what this boundary owes about the tree, and
-// shows it. turnStart is the boundary before the user's message joins; the
-// other is between tool rounds. The notice never touches the round counter:
-// it is a fact, not a message from the person.
-func (m *Model) injectTreeNotice(turnStart bool) {
-	n, ok := m.agent.NextTreeNotice(turnStart)
+// injectTreeNotice delivers what the turn's start owes about the tree, and
+// shows it: the boundary before the user's message joins. The one between
+// tool rounds is the round tail's (agent.RoundTail). The notice never touches
+// the round counter: it is a fact, not a message from the person.
+func (m *Model) injectTreeNotice() {
+	n, ok := m.agent.NextTreeNotice(true)
 	if !ok {
 		return
 	}

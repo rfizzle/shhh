@@ -16,20 +16,6 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// injectProgressCheckpoint asks for public status only between complete tool
-// rounds. An overlay belongs to the reader, so it defers the request rather
-// than sending an unseen update behind a card or supporting screen.
-func (m *Model) injectProgressCheckpoint() {
-	if m.state.isSurface() {
-		return
-	}
-	prompt, ok := m.agent.TakeProgressCheckpoint()
-	if !ok {
-		return
-	}
-	m.agent.AppendProgressRequest(prompt)
-}
-
 // noteProgressProse records the assistant prose that a tool round led with,
 // and reports whether it was the public status the session had asked for. A
 // checkpoint response is ordinary assistant text and stays one — its existing

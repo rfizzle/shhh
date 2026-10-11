@@ -53,7 +53,7 @@ func TestIntervene_DriftReachesTheConversationAtTheBoundary(t *testing.T) {
 	}
 
 	before := m.agent.Rounds()
-	m.injectInterventions()
+	m.roundTail().Next()
 
 	if got := lastUserMessage(m); !strings.Contains(got, "moved away") ||
 		!strings.Contains(got, "make the round limit a checkpoint") {
@@ -71,7 +71,7 @@ func TestIntervene_DriftReachesTheConversationAtTheBoundary(t *testing.T) {
 func TestIntervene_SufficiencyDeliversTheOrdinaryCheckIn(t *testing.T) {
 	m := verdictModel(t, "sufficient")
 	m = applyReading(t, m)
-	m.injectInterventions()
+	m.roundTail().Next()
 
 	got := lastUserMessage(m)
 	if !strings.Contains(got, "routine check-in") {
@@ -90,7 +90,7 @@ func TestIntervene_AnOnTargetReadingDeliversNothing(t *testing.T) {
 	m := verdictModel(t, "on_target")
 	before := len(m.transcript)
 	m = applyReading(t, m)
-	m.injectInterventions()
+	m.roundTail().Next()
 	// Neither the notice that says the turn was steered nor, for a reading
 	// the rail draws whole, a row of its own (summary.go).
 	if len(m.transcript) != before {
@@ -116,7 +116,7 @@ func TestIntervene_AReadingAnIntervalOldStillLandsAndSteersNothing(t *testing.T)
 	// The rounds the session took while the reading was out.
 	m = advanceRounds(m, m.summaryInterval())
 	m.finishSummary(msg)
-	m.injectInterventions()
+	m.roundTail().Next()
 
 	if got := lastUserMessage(m); strings.Contains(got, "moved away") {
 		t.Errorf("a reading a whole interval old steered the session:\n%s", got)
@@ -140,7 +140,7 @@ func TestIntervene_AReadingARoundYoungerStillSteers(t *testing.T) {
 	msg := driveSummaryDone(t, m.forceSummaryCmd())
 	m = advanceRounds(m, m.summaryInterval()-1)
 	m.finishSummary(msg)
-	m.injectInterventions()
+	m.roundTail().Next()
 
 	if got := lastUserMessage(m); !strings.Contains(got, "moved away") {
 		t.Errorf("a reading inside the interval should still steer, got:\n%s", got)
@@ -156,7 +156,7 @@ func TestIntervene_ClockStillFiresWithNoSummarizer(t *testing.T) {
 	}
 	m.setTurnState(stateStreaming)
 	m = advanceRounds(m, agent.DefaultCheckInInterval)
-	m.injectInterventions()
+	m.roundTail().Next()
 	if !strings.Contains(lastUserMessage(m), "routine check-in") {
 		t.Fatal("with no reading to go on the interval is what asks")
 	}
@@ -175,7 +175,7 @@ func TestIntervene_ToolOutputCannotReachTheDeliveredSteer(t *testing.T) {
 		toolResult: attack,
 	})
 	m = applyReading(t, m)
-	m.injectInterventions()
+	m.roundTail().Next()
 
 	steer := lastUserMessage(m)
 	if !strings.Contains(steer, "moved away") {
@@ -204,7 +204,7 @@ func TestIntervene_TheNextReadingIsToldAndComesSooner(t *testing.T) {
 	m.setTurnState(stateStreaming)
 	m = advanceRounds(m, 4)
 	m = applyReading(t, m)
-	m.injectInterventions()
+	m.roundTail().Next()
 
 	steered := m.agent.Rounds()
 	want := fmt.Sprintf("round %d · steered · %s", steered, reason)
@@ -235,7 +235,7 @@ func TestIntervene_ConfiguredWordingReachesTheConversation(t *testing.T) {
 	m.agent.SetSteering(agent.Steering{Steer: "off track: " + agent.PlaceholderTarget})
 	m.summaryTarget = "build the exporter"
 	m.considerVerdict(agent.SummaryVerdict{State: agent.SummaryOffTarget, Round: 4})
-	m.injectInterventions()
+	m.roundTail().Next()
 	if got := lastUserMessage(m); got != "off track: build the exporter" {
 		t.Fatalf("the steer the session sent was %q", got)
 	}
@@ -254,7 +254,7 @@ func TestIntervene_AReadersSteerRetiresTheQueuedVerdict(t *testing.T) {
 		t.Fatal("the steer should have been injected")
 	}
 	before := len(m.agent.Messages())
-	m.injectInterventions()
+	m.roundTail().Next()
 	if len(m.agent.Messages()) != before {
 		t.Fatalf("the boundary delivered something after the reader steered:\n%s", lastUserMessage(m))
 	}
@@ -284,7 +284,7 @@ func steeredModel(t *testing.T) Model {
 	m := verdictModel(t, "off_target")
 	m.turnOpen = true
 	m = applyReading(t, m)
-	m.injectInterventions()
+	m.roundTail().Next()
 	if !strings.Contains(lastUserMessage(m), "moved away") {
 		t.Fatal("the turn should have been steered")
 	}
@@ -352,7 +352,7 @@ func TestWithdrawSteer_NoFurtherReadingSteersTheTurn(t *testing.T) {
 	m = advanceRounds(m, 4*m.summaryInterval())
 	m = applyReading(t, m)
 	before := lastUserMessage(m)
-	m.injectInterventions()
+	m.roundTail().Next()
 	if got := lastUserMessage(m); got != before && strings.Contains(got, "moved away") {
 		t.Errorf("a withdrawn turn was steered again:\n%s", got)
 	}
@@ -385,7 +385,7 @@ func TestWithdrawSteer_ACheckInIsNotWithdrawable(t *testing.T) {
 	m := verdictModel(t, "sufficient")
 	m.turnOpen = true
 	m = applyReading(t, m)
-	m.injectInterventions()
+	m.roundTail().Next()
 	idx := steerNoticeIndex(t, m)
 	m.focusIdx = idx
 

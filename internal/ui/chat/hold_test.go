@@ -269,6 +269,44 @@ func TestHold_TheCeilingAnswersAHoldAskedOnTheWayToIt(t *testing.T) {
 	}
 }
 
+// A hold and a steer that meet at one boundary below the ceiling: the hold
+// wins and the steer joins when the turn is let go. A person who asked the
+// turn to stop is answered by its stopping, and what they typed on the way is
+// what the next round carries — the order a child's hold keeps too, so the
+// session and its fan-out park the same way.
+func TestHold_ASteerMeetingAHoldParksAndJoinsOnRelease(t *testing.T) {
+	m := turnModel(t)
+	m = sendText(t, m, "rewrite the loop")
+	m, _ = pressKey(t, m, ctrlP)
+	m = sendText(t, m, "keep the old signature")
+	if len(m.steering) != 1 {
+		t.Fatalf("text typed into a working turn is steering: %+v", m.steering)
+	}
+	turn := m.turnCount
+
+	m = applyWrite(t, m, filepath.Join(t.TempDir(), "loop.go"), "package agent\n", "y")
+	if !m.heldAtBoundary() {
+		t.Fatalf("the hold should park the turn at the boundary, state %v", m.turnState())
+	}
+	if len(m.steering) != 1 || strings.Contains(lastUserMessage(m), "keep the old signature") {
+		t.Fatalf("the steer waits for the release: %d queued, last message %q", len(m.steering), lastUserMessage(m))
+	}
+	if m.turnCount != turn {
+		t.Fatalf("a parked steer has not moved the turn: %d, was %d", m.turnCount, turn)
+	}
+
+	before := len(m.agent.Messages())
+	m, _ = pressKey(t, m, ctrlP)
+	if m.heldAtBoundary() || m.turnState() != stateStreaming {
+		t.Fatalf("the release should ask for the next round, state %v", m.turnState())
+	}
+	if len(m.steering) != 0 || len(m.agent.Messages()) != before+1 ||
+		!strings.Contains(lastUserMessage(m), "keep the old signature") {
+		t.Fatalf("the steer joins on release: %d queued, %d messages, was %d",
+			len(m.steering), len(m.agent.Messages()), before)
+	}
+}
+
 // A fan-out held to the last child has nothing moving to animate, so the
 // spinner stops: a child parked at its round boundary is still `running` as a
 // lifecycle, and a screen that reads only that would claim progress the

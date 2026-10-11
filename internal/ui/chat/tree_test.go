@@ -60,7 +60,7 @@ func TestTree_ANoticeReachesTheConversationAndTheTranscript(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(ws, "theirs.txt"), []byte("x\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	m.injectTreeNotice(false)
+	m.roundTail().Next()
 
 	if got := lastUserMessage(m); !strings.Contains(got, "[tree: 1 path changed outside this session: theirs.txt]") {
 		t.Errorf("the notice should be the last user message, got:\n%s", got)
@@ -90,7 +90,7 @@ func TestTree_TheChangesetIsTheSubtrahend(t *testing.T) {
 		t.Fatal(err)
 	}
 	store.Add(1, changeset.Record{Path: mine, After: "x\n", AfterExists: true})
-	m.injectTreeNotice(false)
+	m.roundTail().Next()
 	if got := lastUserMessage(m); strings.Contains(got, "[tree:") {
 		t.Errorf("a path the changeset recorded is the session's own, got:\n%s", got)
 	}
@@ -118,7 +118,7 @@ func TestTree_TheInstructionFilesAreFoundWithoutBeingNamed(t *testing.T) {
 	if err := os.WriteFile(agents, []byte("the new rule\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	m.injectTreeNotice(false)
+	m.roundTail().Next()
 
 	if got := lastUserMessage(m); !strings.Contains(got, "The project instructions changed (AGENTS.md)") {
 		t.Errorf("the notice should say the prompt block is the older reading, got:\n%s", got)

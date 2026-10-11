@@ -42,7 +42,11 @@ like the protocol — requests go out, one channel of events comes back, in
 the stream's own words — whose first implementation is the loop in this
 process, wrapped exactly. The stream is the first through it, and a test on
 what the screen may import fails when a later edit reaches around a
-capability that has moved. One at a time, because a screen moved whole is
+capability that has moved. The boundary between two rounds — the hold,
+the steer, the ceiling, and what the next request carries — is written
+once, beside the loop, and the screen and the unattended run both ask it
+what comes next: a served session then drives the same boundary rather
+than spelling it a third time. One at a time, because a screen moved whole is
 every surface rewritten on the day it lands with nothing to hold it
 against, where a capability moved alone is a step whose result can be held
 byte for byte against what it replaced. The protocol's shape rather than the

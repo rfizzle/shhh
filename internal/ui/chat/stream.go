@@ -20,53 +20,73 @@ import (
 )
 
 // resumeToolLoop requests the next model response after a round of tool
-// results — unless this turn has hit the tool-round cap, in which case it
-// pauses on the checkpoint that says what it managed and offers the ways on
-// (a fresh message still continues the conversation and resets the
-// counter).
+// results, through the round tail every driver of the loop shares
+// (agent.RoundTail) — unless the turn has hit the tool-round cap, in which
+// case it pauses on the checkpoint that says what it managed and offers the
+// ways on (a fresh message still continues the conversation and resets the
+// counter), or a hold asked mid-turn parks it, or the window wants a summary
+// first.
 func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
-	// Steering messages queued mid-turn join the conversation here, between
-	// tool rounds, so the model sees them on its next request. They
-	// count as fresh user input, so they also lift a hit round cap.
-	if m.deliverSteering() {
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
-	}
-	// The ceiling is the session's, not the Agent's, because [+50] raises it
-	// for this turn alone.
-	if !m.roundsUnbounded() && m.agent.Rounds() >= m.effectiveMaxToolRounds() {
-		return m.pauseAtRoundLimit()
-	}
-	// And a hold asked mid-turn is honoured beside it, for the same reason
-	// the ceiling is checked here: this is the one moment the turn is between
-	// rounds, with the round's results already in the conversation and
-	// nothing yet asked of the model, so parking costs nothing and owes
-	// nothing (hold.go).
-	if m.holdAsked {
+	switch step, _ := m.roundTail().Next(); step {
+	case agent.StepHeld:
 		return m.holdTurn()
-	}
-	// A long turn is asked what it has got, long before the cap — by a drift
-	// verdict where there is one, by the clock otherwise (steer.go). Steering
-	// injected above answers the same question and resets the counter both
-	// are measured against, so a turn the reader has just steered is not
-	// asked it twice.
-	// The tree first, then the question: a check-in asked against a tree the
-	// turn has not been told about is answered against the wrong one.
-	m.injectTreeNotice(false)
-	m.injectInterventions()
-	m.injectProgressCheckpoint()
-	// The round tail is where a turn recovers its window: the boundary in
-	// front of a request rather than behind a round, which is the only one
-	// that can keep a request from being the one that does not fit. Where
-	// eliding could not clear the line the summary goes first and this
-	// request follows it (context.go).
-	if m.recoverForRound() {
+	case agent.StepCapped:
+		return m.pauseAtRoundLimit()
+	case agent.StepCompact:
+		// Where eliding could not clear the line the summary goes first and
+		// this request follows it (context.go).
 		return m.startCompact()
 	}
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.syncViewport()
 	return m, m.requestStream()
+}
+
+// parked is the release a screen's hold hands the round tail. The screen
+// parks by returning to its own loop rather than by waiting, so nothing
+// waits on it and nothing closes it: the release is the key (hold.go).
+var parked = make(chan struct{})
+
+// roundTail is the round tail over the screen's seams. It is built where it
+// is used, on the copy of the Model the caller is about to return, because
+// the seams write that copy: built once and stored, a steer's turn number
+// would land on a Model nobody keeps.
+func (m *Model) roundTail() agent.RoundTail {
+	return agent.RoundTail{
+		Agent: m.agent,
+		// A hold asked mid-turn is honoured here: this is the one moment the
+		// turn is between rounds, with the round's results already in the
+		// conversation and nothing yet asked of the model, so parking costs
+		// nothing and owes nothing (hold.go). A turn at its ceiling is
+		// stopped by the checkpoint instead, and that stop answers the hold
+		// (rounds.go).
+		Hold: func() <-chan struct{} {
+			if !m.holdAsked || m.agent.CapReached() {
+				return nil
+			}
+			return parked
+		},
+		// Steering messages queued mid-turn join the conversation here,
+		// between tool rounds, so the model sees them on its next request.
+		// They count as fresh user input, so they also lift a hit round cap.
+		Steer: func() bool {
+			queued, fresh := m.injectSteering()
+			if queued {
+				m.viewport.SetLines(m.renderHistoryLines())
+				m.viewport.GotoBottom()
+			}
+			return fresh
+		},
+		Target:  func() string { return m.summaryTarget },
+		Recover: m.recoverForRound,
+		// An overlay belongs to the reader, so the status request waits for
+		// a boundary with nothing on the screen rather than going out
+		// unseen behind a card or a supporting screen (progress.go).
+		HoldProgress: func() bool { return m.state.isSurface() },
+		OnTree:       m.showTreeNotice,
+		OnIntervene:  m.showIntervention,
+	}
 }
 
 func (m Model) requestStream() tea.Cmd {
