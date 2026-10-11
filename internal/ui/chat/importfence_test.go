@@ -285,3 +285,102 @@ func TestScreenImportFence(t *testing.T) {
 		t.Fatal("the fence read no files")
 	}
 }
+
+// cliPrintFiles are the files of the cli package that stand in for the screen
+// when nobody is in front of the run: the observer and streams, and the
+// approver that answers for a person. They ask the receipt what a call was
+// rather than compare its name with a tool package's constant.
+var cliPrintFiles = []string{"printstream.go", "printapprover.go"}
+
+// cliMayImport is what those files may reach in the two packages this fence
+// is about, by name: the chat package for the one hook type the approver
+// carries, the receipt package for the three questions it answers about a
+// call's name. Anything else is a decision to make here, not drift.
+var cliMayImport = map[string][]string{
+	"ui/chat": {"MutationHook"},
+	"receipt": {"IsFetch", "IsGitWrite", "IsProcess"},
+}
+
+// cliReaches lists what a file reaches that the fence refuses: a fenced
+// package's tool-name constant, and a name in the chat or receipt package
+// that cliMayImport does not list.
+func cliReaches(t *testing.T, f *ast.File) []string {
+	t.Helper()
+	locals := map[string]string{} // local name -> package path under internal/
+	for _, imp := range f.Imports {
+		path, err := strconv.Unquote(imp.Path.Value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pkg, ok := strings.CutPrefix(path, screenModule)
+		if !ok || (!fenced(pkg) && cliMayImport[pkg] == nil) {
+			continue
+		}
+		local := filepath.Base(pkg)
+		if imp.Name != nil {
+			local = imp.Name.Name
+		}
+		locals[local] = pkg
+	}
+	var bad []string
+	seen := map[string]bool{}
+	ast.Inspect(f, func(n ast.Node) bool {
+		sel, ok := n.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		x, ok := sel.X.(*ast.Ident)
+		if !ok {
+			return true
+		}
+		pkg, ok := locals[x.Name]
+		if !ok {
+			return true
+		}
+		what := pkg + "." + sel.Sel.Name
+		if allowed, listed := cliMayImport[pkg]; listed {
+			if slices.Contains(allowed, sel.Sel.Name) || seen[what] {
+				return true
+			}
+		} else if !isToolName(sel.Sel.Name) || seen[what] {
+			return true
+		}
+		seen[what] = true
+		bad = append(bad, what)
+		return true
+	})
+	sort.Strings(bad)
+	return bad
+}
+
+// TestImportFence_Cli holds the unattended paths to the same seam as the
+// screen: a call is asked about through the receipt, and the files that print
+// and approve for a run with nobody in front of it name no fenced package's
+// tool and reach into the chat and receipt packages only for what is listed.
+func TestImportFence_Cli(t *testing.T) {
+	probes := []struct{ name, src, want string }{
+		{"a fenced tool name", `package p; import "github.com/rfizzle/shhh/internal/web"; var _ = web.FetchToolName`, "web.FetchToolName"},
+		{"a fenced package's real use", `package p; import "github.com/rfizzle/shhh/internal/web"; var _ = web.Ledger{}`, ""},
+		{"a listed receipt question", `package p; import "github.com/rfizzle/shhh/internal/receipt"; var _ = receipt.IsFetch`, ""},
+		{"an unlisted receipt name", `package p; import "github.com/rfizzle/shhh/internal/receipt"; var _ = receipt.Build`, "receipt.Build"},
+		{"an unlisted chat name", `package p; import "github.com/rfizzle/shhh/internal/ui/chat"; var _ = chat.Model{}`, "ui/chat.Model"},
+	}
+	for _, p := range probes {
+		f, err := parser.ParseFile(token.NewFileSet(), p.name+".go", p.src, parser.SkipObjectResolution)
+		if err != nil {
+			t.Fatalf("%s: %v", p.name, err)
+		}
+		if got := strings.Join(cliReaches(t, f), ","); got != p.want {
+			t.Errorf("%s: flagged %q, want %q", p.name, got, p.want)
+		}
+	}
+	for _, name := range cliPrintFiles {
+		f, err := parser.ParseFile(token.NewFileSet(), filepath.Join("..", "..", "cli", name), nil, parser.SkipObjectResolution)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, what := range cliReaches(t, f) {
+			t.Errorf("%s reaches %s; ask the receipt instead, or list it in cliMayImport", name, what)
+		}
+	}
+}

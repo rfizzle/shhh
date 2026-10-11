@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -135,7 +136,7 @@ func (w *writtenByCalls) changed() (files, added, removed int) {
 // answer for: the command, the two file tools and git's writing half. Which
 // calls are put to a decision, and at which tier, is the classifier's.
 func headlessGate(name string) bool {
-	return name == tools.ExecCommandName || tools.IsMutating(name) || name == structural.GitWriteToolName
+	return name == tools.ExecCommandName || tools.IsMutating(name) || receipt.IsGitWrite(name)
 }
 
 // headlessWrites is what a run with nobody in front of it hands the git
@@ -252,11 +253,11 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 		// A process start is approved like a command: safety-flagged
 		// commands are always denied headless; --yes or an allowlist match
 		// opts in.
-		case call.Action.Kind == agent.ActionCommand && tc.Name == process.ToolName:
+		case call.Action.Kind == agent.ActionCommand && receipt.IsProcess(tc.Name):
 			return r.admitCommand(tc, call, callErr, start)
 		case call.Action.Kind == agent.ActionCommand:
 			return r.admitCommand(tc, call, callErr, foreground)
-		case call.Tier == agent.TierWrite && tc.Name == structural.GitWriteToolName:
+		case call.Tier == agent.TierWrite && receipt.IsGitWrite(tc.Name):
 			return r.approveGitWrite(ctx, tc, call)
 		case call.Tier == agent.TierWrite:
 			return r.approveWrite(ctx, tc, call)
@@ -350,9 +351,9 @@ func (r headlessApproval) answers(name string) bool {
 	switch {
 	case r.un.sup != nil && name == subagent.SpawnToolName,
 		r.mcpTools != nil && r.mcpTools.Has(name),
-		r.webTools != nil && name == web.FetchToolName,
-		r.procSup != nil && name == process.ToolName,
-		r.structTools != nil && name == structural.GitWriteToolName,
+		r.webTools != nil && receipt.IsFetch(name),
+		r.procSup != nil && receipt.IsProcess(name),
+		r.structTools != nil && receipt.IsGitWrite(name),
 		name == tools.ExecCommandName,
 		tools.IsMutating(name):
 		return true
