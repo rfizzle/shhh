@@ -24,8 +24,10 @@
 # that line has put the rail in full over the pane, every block with nothing
 # shed; at 06 a click on the same cell has put the short rail back as it was;
 # at 07 /rail, the key twin, opens the same screen and at 08 its own esc
-# leaves it; at 09 the writer has been answered and finished, the map is
-# history, and the rail has its rows back in the same order. Below 130 there
+# leaves it; at 09 the writer, let through, has written and asks to land its
+# patch on a card of its own; at 10 that is answered too, the writer has
+# finished, the map is history, and the rail has its rows back in the same
+# order. Below 130 there
 # is no rail: 04 waits on the writer's row in the fan-out, the clicks are not
 # sent, and /rail still opens the rail in full, which is how a narrow terminal
 # reads it.
@@ -63,11 +65,20 @@ narrow 130 snap 08-rail-left "writer-1"
 keys C-Space
 sleep 1
 keys y
-wide 130 snap 09-answered "AGENTS" "THIS TURN"
-narrow 130 snap 09-answered "writer-1"
+# The writer writes and then asks to land its patch: the second card is a
+# decision of its own, drawn full width with the rail put away, and [y]
+# answers it from where the keyboard already is.
+snap 09-patch-card "writer-1 ▸ Apply patch"
+keys y
+sleep 2
+wide 130 snap 10-answered "AGENTS" "THIS TURN"
+narrow 130 snap 10-answered "writer-1"
 keys C-c
 sleep 0.6
 keys C-c
 sleep 0.6
 keys C-c
-snap 10-exit "that is everything the screen was holding"
+# The quit offers a handoff over the writer's uncommitted file; n declines.
+snap 11-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
+snap 12-exit "that is everything the screen was holding"
