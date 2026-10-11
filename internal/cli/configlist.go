@@ -38,7 +38,7 @@ type configReading struct {
 	// none.
 	Env  string `json:"env,omitempty"`
 	Flag string `json:"flag,omitempty"`
-	// Project is the checkout's own settings file where that file decided
+	// Project is the project settings file where that file decided
 	// this key, and empty everywhere else. It rides on the reading so the
 	// JSON names the file too: a script reading `project` and no path could
 	// not say which checkout.
@@ -169,7 +169,7 @@ func configReadingOf(cfg config.Config, proj config.Project, s config.Setting) c
 		reading.Value, reading.Source, reading.Set = stored, "project", true
 		reading.Project = proj.Display
 	case set:
-		reading.Value, reading.Source, reading.Set = stored, "user", true
+		reading.Value, reading.Source, reading.Set = stored, "global", true
 	default:
 		reading.Value, reading.Source = s.Default, "default"
 	}
@@ -255,9 +255,9 @@ func configGetReport(reading configReading) report.Report {
 		row.Body = append(row.Body, "Unset it and "+reading.Default+" stands.")
 	}
 	if reading.Project != "" {
-		said := "This checkout's " + reading.Project + " sets it, which outranks your own file here."
+		said := "The project file, " + reading.Project + ", sets it, which outranks the global file here."
 		if config.UnionsInProject(reading.Key) {
-			said += " It adds to your list rather than replacing it, because a checkout cannot know what is already on yours."
+			said += " It adds to the global file's list rather than replacing it, because the project file cannot know what is already on it."
 		}
 		row.Body = append(row.Body, said)
 	}

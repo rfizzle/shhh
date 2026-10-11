@@ -55,11 +55,11 @@ func newConfigInitCmd() *cobra.Command {
 		Short: "Write the settings file and the wordings at their defaults",
 		Long: "Write a settings file holding every key, commented out at its default with the sentence " +
 			"that says what it decides, and a prompts directory holding every wording the machinery " +
-			"sends, each the built-in text ready to edit — and, for your own pair, a keybindings.toml " +
+			"sends, each the built-in text ready to edit — and, for the global pair, a keybindings.toml " +
 			"holding every key at its shipped keystrokes, commented out.\n" +
-			"Run in a checkout, it writes the checkout's own pair — " + project.ConfigFile + " and " +
+			"Run in a checkout, it writes the project pair — " + project.ConfigFile + " and " +
 			project.PromptsDir + "/ — with the keys a checkout may not decide left out; run anywhere else, " +
-			"or in your home directory, it writes yours. `--global` writes yours wherever it is run. " +
+			"or in your home directory, it writes the global pair. `--global` writes the global pair wherever it is run. " +
 			"`--stdout` prints the settings file instead of writing it, with the values that file already " +
 			"holds filled in; `shhh keys defaults` prints the keymap. " +
 			"`--update` brings files that are already there up to date instead of refusing them: the keys " +
@@ -105,7 +105,7 @@ func newConfigInitCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&global, "global", false,
-		"write your own settings file and wordings, even in a checkout")
+		"write the global settings file and wordings, even in a checkout")
 	cmd.Flags().BoolVar(&toStdout, "stdout", false,
 		"print the settings file instead of writing it, with the values that file already holds filled in")
 	cmd.Flags().BoolVar(&update, "update", false,
@@ -182,7 +182,7 @@ func configInit(global bool, dir string) (initPlan, error) {
 		held, err := config.LoadFrom(plan.settings)
 		var unknown *config.UnknownKeyError
 		if errors.As(err, &unknown) && toProject {
-			// The load names the person's own update; this file is the
+			// The load names the global file's update; this file is the
 			// checkout's, which the bare command reaches.
 			unknown.Update = config.UpdateProject
 		}
@@ -278,7 +278,7 @@ func (p initPlan) wrote() report.Report {
 	// Which pair was written is said on the rows in the word the config
 	// listing's source column uses for the same file, because the bare
 	// command decides it from where it was run and the reader may not have.
-	pair := "user"
+	pair := "global"
 	if p.project {
 		pair = "project"
 	}
@@ -448,10 +448,10 @@ func (u initUpdate) lines(p initPlan) []string {
 }
 
 // report is the confirmation `--update` prints: a row for the settings and
-// a row for the wordings, and for your own pair a row for the keymap, each
+// a row for the wordings, and for the global pair a row for the keymap, each
 // saying what changed or that nothing had to.
 func (u initUpdate) report(p initPlan) report.Report {
-	pair := "user"
+	pair := "global"
 	if p.project {
 		pair = "project"
 	}

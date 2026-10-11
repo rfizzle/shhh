@@ -1448,7 +1448,7 @@ func TestConfig_ATrailerMustBeAKeyAndAValue(t *testing.T) {
 			t.Errorf("%q should be refused by name at load, got %v", bad, err)
 		}
 		if _, _, err := LayerProject(Config{}, path); err == nil || !strings.Contains(err.Error(), bad) {
-			t.Errorf("%q should be refused by name from a checkout's file, got %v", bad, err)
+			t.Errorf("%q should be refused by name from the project file, got %v", bad, err)
 		}
 	}
 }

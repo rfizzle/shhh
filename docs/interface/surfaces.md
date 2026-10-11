@@ -3782,7 +3782,7 @@ register lists it under flow control so the keymap file moves the act
 anyway](reserved-keys.md#kept-on-purpose)).
 
 Where the screen stands in a checkout, the write has two files, and while it
-targets the checkout's one the rows for the keys a checkout never decides
+targets the project file the rows for the keys a checkout never decides
 ([the refused keys](../capabilities/configuration.md#two-files-one-resolution-order))
 are off: dimmed behind a `⊘`, their source column reading `global only`, and,
 while the pointer is on one, a panel under it with the key's own description
@@ -3796,7 +3796,7 @@ nothing.
 
 One row is listed here and lives somewhere else. The theme is chosen in a file
 of its own, `theme.toml` beside the settings file, so its row reads
-`theme.toml` where the others read `user`, and a write of it goes to that file
+`theme.toml` where the others read `global`, and a write of it goes to that file
 and leaves the settings file as it was. The screen stands in a checkout and
 still shows the row, but a checkout never decides it
 ([the theme file](../capabilities/configuration.md#the-theme-file)).

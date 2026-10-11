@@ -25,7 +25,7 @@ func TestConfigList_StatesWhereEachValueCameFrom(t *testing.T) {
 
 	out := runRoot(t, "config", "list", "provider")
 	for _, want := range []string{
-		"model", "gpt-4o", "[user]",
+		"model", "gpt-4o", "[global]",
 		"reasoning", "high", "[SHHH_REASONING]",
 		"cache_ttl", "[default]",
 	} {
@@ -64,7 +64,7 @@ func TestConfigList_JSONCarriesTheSameFigures(t *testing.T) {
 		t.Fatalf("the history table has one key, got %d", len(readings))
 	}
 	got := readings[0]
-	if got.Key != "history.retention_days" || got.Value != "7" || got.Source != "user" || !got.Set {
+	if got.Key != "history.retention_days" || got.Value != "7" || got.Source != "global" || !got.Set {
 		t.Fatalf("reading = %+v", got)
 	}
 	if got.Default == "" || got.Desc == "" {
@@ -246,7 +246,7 @@ func TestConfigReading_AVariableCarriesItsStateIntoTheListing(t *testing.T) {
 		t.Fatal("provider.api_key_env is not a setting")
 	}
 	reading := configReadingOf(cfg, config.Project{}, s)
-	if reading.Value != "SHHH_TEST_LIST_VAR" || reading.Source != "user" {
+	if reading.Value != "SHHH_TEST_LIST_VAR" || reading.Source != "global" {
 		t.Fatalf("the reading does not name the variable the file set: %+v", reading)
 	}
 	if reading.EnvSet == nil || !*reading.EnvSet {

@@ -104,7 +104,7 @@ func TestConfigReading_NamesTheCheckoutAsASource(t *testing.T) {
 		t.Errorf("the checkout's key does not name the checkout: %+v", fromProject)
 	}
 	own := configReadingOf(cfg, proj, mustLookup(t, "provider.default"))
-	if own.Source != "user" {
+	if own.Source != "global" {
 		t.Errorf("the person's own key says %q", own.Source)
 	}
 	if got := configListSubject("~/.config/shhh/config.toml", proj); !strings.Contains(got, ".shhh/config.toml") {
@@ -128,9 +128,9 @@ func TestConfigGet_SaysTheCheckoutSetItAndHowListsMerge(t *testing.T) {
 		configReadingOf(cfg, proj, mustLookup(t, "behavior.command_allowlist"))).
 		Sections[0].Rows[0].Body, "\n")
 	if !strings.Contains(body, ".shhh/config.toml") {
-		t.Errorf("the reading does not name the checkout's file:\n%s", body)
+		t.Errorf("the reading does not name the project file:\n%s", body)
 	}
-	if !strings.Contains(body, "adds to your list") {
+	if !strings.Contains(body, "adds to the global file") {
 		t.Errorf("the reading does not say the checkout extended it:\n%s", body)
 	}
 }
@@ -319,7 +319,7 @@ func TestConfigScreen_ARowTheCheckoutSetSaysProject(t *testing.T) {
 	if row := rowFor(configRows(cfg, cfg, proj), "behavior.default_mode"); row.Source != "project" {
 		t.Errorf("a row the checkout decided says %q", row.Source)
 	}
-	if own := rowFor(configRows(cfg, cfg, config.Project{}), "behavior.default_mode"); own.Source != "user" {
+	if own := rowFor(configRows(cfg, cfg, config.Project{}), "behavior.default_mode"); own.Source != "global" {
 		t.Errorf("without a checkout file the row says %q", own.Source)
 	}
 	// A staged edit to a key the checkout claims says both: the write goes
@@ -341,7 +341,7 @@ func TestDoctorConfig_NamesBothFilesAndWhatTheCheckoutSet(t *testing.T) {
 		t.Errorf("the row does not name the person's file: %+v", f)
 	}
 	if !strings.Contains(f.Detail, ".shhh/config.toml sets 2 keys") {
-		t.Errorf("the row does not name the checkout's file and its count: %+v", f)
+		t.Errorf("the row does not name the project file and its count: %+v", f)
 	}
 	if fix := strings.Join(f.Fix, "\n"); !strings.Contains(fix, "behavior.default_mode, provider.model") {
 		t.Errorf("the row does not list which keys the checkout set: %+v", f)

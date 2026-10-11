@@ -4,8 +4,9 @@
 
 Settings live in a TOML file in the platform's conventional configuration
 directory, and a checkout may keep a second one of its own at
-`.shhh/config.toml`. Every value resolves most-specific-first: an explicit
-flag, then the environment, then the checkout's file, then yours, then a
+`.shhh/config.toml`. The first is called the global file and the second
+the project file. Every value resolves most-specific-first: an explicit
+flag, then the environment, then the project file, then the global file, then a
 default.
 
 Four keys have the top two ranks, and they are the ones a single run is most
@@ -26,7 +27,7 @@ included, for the same reason.
 The two files merge key by key rather than one replacing the other. What is
 true of a repository — which commands run without asking, which mode a
 session starts in, which model reviews here — travels with the repository;
-what is true of the person stays in their own file, and a key the checkout
+what is true of the person stays in the global file, and a key the project file
 does not name is left exactly as they wrote it. A whole-file project config
 would make everyone who clones the repository restate their provider and
 their key in it, which is why nobody in the field does that either.
@@ -49,7 +50,7 @@ the checkout is trusted before its file is read, and the resulting scope grant
 is shown as sensitive. Every other list is a complete answer and overrides
 like a scalar.
 
-A short set of keys is refused in the checkout's file, whatever the answer
+A short set of keys is refused in the project file, whatever the answer
 to trust was. Each is a key whose value in a checkout is a value in every
 clone of it, or one that reaches past the tree onto the machine:
 
@@ -81,38 +82,38 @@ one answer given once, months before the commit that adds a key to that
 file. A refused key stops the load with the reason and the file the key
 belongs in, the way an unknown key does.
 
-The checkout's file is read only where the checkout is trusted. Until then
+The project file is read only where the checkout is trusted. Until then
 it is withheld with the rest of what the checkout declares and named on the
 start screen, in `/status` and in the doctor's trust row, and the session
-runs on the user's file alone. A write shhh makes to it — `config set` or
+runs on the global file alone. A write shhh makes to it — `config set` or
 `config init` run in the checkout — leaves a trusted checkout trusted and
 says the value is in force from the next session; in an untrusted one it
 says the file is not read here and that `shhh trust` loads it.
 
 A write lands in the file of where it is run. `config set`, `config init`
 and the config screen's `[ctrl+s]` — `shhh config` and `/config` alike — write
-the checkout's file when run in one, because standing in a repository and
-setting something up is the common case, and the person's own file is the
-one they name: `--global` writes theirs from anywhere. Run outside a
+the project file when run in one, because standing in a repository and
+setting something up is the common case, and the global file is the
+one they name: `--global` writes it from anywhere. Run outside a
 checkout, or in the home directory itself — a home that is a repository of
-dotfiles is still where the person's own settings are written from — the
-bare command writes the person's file. In a checkout a key from the set
+dotfiles is still where the global settings are written from — the
+bare command writes the global file. In a checkout a key from the set
 above is refused before anything is created, with the reason and the
 `--global` that reaches the file the key belongs in; the screen refuses it
 as it is staged and names its own key instead of the flag, and while the
-write targets the checkout's file it draws every row from the set above off,
+write targets the project file it draws every row from the set above off,
 reading `global only` with the reason beside it
 ([the settings screen](../interface/surfaces.md#the-settings-screen)). Standing in a
 checkout, the screen has both files to write and a key that moves the
-write between them, with the header saying whose file the write reaches:
+write between them, with the header saying which file the write reaches:
 `/config` is reached from inside a session, where there is no flag to
-pass, and a key only the person's file may hold — a credential, a
+pass, and a key only the global file may hold — a credential, a
 requirement for containment — would otherwise be one nobody could write
 without leaving the session. `--global` on `shhh config` only chooses
 which file the screen opens on. The slash commands that save their answer — `/model
-default`, `/reasoning`, the `/ui` toggles — write the person's file, because
+default`, `/reasoning`, the `/ui` toggles — write the global file, because
 what they save is a preference about the session rather than about the tree.
-A write to the person's file for a key the checkout overrides is made and
+A write to the global file for a key the project file overrides is made and
 says so: that file is read in every other checkout, so refusing it would
 punish them for where they were standing, and a confirmation that let them
 believe the value took effect here is the one thing it must not do.
@@ -165,9 +166,9 @@ Which key chose the model is said wherever the model is: `/model` states it
 beside the current model, in its answer and on its picker alike,
 `/model default` says when the surface's key outranks what it writes, and
 the doctor's model row names each surface key that is set. A key the
-checkout's own file set is named with that file —
+project file set is named with that file —
 `provider.code_model in .shhh/config.toml` — because a project's choice read
-as the person's own sends them to a file that did not decide it. The bounded mechanisms keep a key each, for the same reason —
+as the global file's sends them to a file that did not decide it. The bounded mechanisms keep a key each, for the same reason —
 the classifier, the card's explanation, the readings, a snippet's
 description, the backlog's readings and the profile drafter — and each one
 left unset uses the model it used before it had one.
@@ -306,7 +307,7 @@ except a flow's model, which the session took when it was staged.
 The allowlist line `/patterns` proposes is one of these writers. Where you
 were asked about the same command and allowed it every time in session after
 session, the record offers to add it to `behavior.command_allowlist` in the
-checkout's own `.shhh/config.toml`, and the card shows the change to that
+project file, `.shhh/config.toml`, and the card shows the change to that
 file before anything is written — the one line the list is on, with the new
 entry in it — so what you agree to is the line the file will hold
 ([`sessions-and-memory.md`](sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project)).
@@ -344,8 +345,8 @@ key that moved counts whatever the file looks like.
 
 `shhh config init --update` brings the pair up to date instead of refusing
 the files that are already there. It follows the same scope as the bare
-command: in a checkout it updates the checkout's pair, without the keys a
-checkout may not decide, and `--global` updates yours. It edits the file the
+command: in a checkout it updates the project pair, without the keys a
+checkout may not decide, and `--global` updates the global pair. It edits the file the
 way every other write does, one line at a time:
 
 - every key the file does not mention is added as a commented row at its
@@ -357,7 +358,7 @@ way every other write does, one line at a time:
   it saying where it came from and when it moved;
 - a wording with no file gets one, holding the built-in text; a file already
   there is never written over;
-- for your own pair, a `keybindings.toml` that is there gets a commented row
+- for the global pair, a `keybindings.toml` that is there gets a commented row
   for every key it neither binds nor lists, as the scaffold writes it — under
   the table it belongs to where the file has that table, and as a table of
   its own at the end where it does not — with every binding it holds kept
@@ -555,8 +556,8 @@ the few tables a repository's own settings may not set — it points at a file
 anywhere on the machine, and a path in a checkout is a path in every clone of
 it. What a repository does instead is put the wording where the wording
 belongs, in its own `.shhh/prompts/`, and inside that checkout those files
-beat the person's own, per key, so a project that replaces one leaves the
-rest of the person's answers standing. They are behind the checkout's trust
+beat the global ones, per key, so a project that replaces one leaves the
+rest of the global answers standing. They are behind the checkout's trust
 answer, like everything else a clone asks a session to load, and the start
 screen names the ones it handed over.
 
@@ -566,9 +567,9 @@ the sentence that says what it decides above it, and a `prompts/` directory
 holding every wording as a file already carrying the built-in text. Editing a
 prompt is then opening a file, rather than finding the built-in prose in the
 program and a key to point at it. Run in a checkout it writes the
-checkout's pair — `.shhh/config.toml` and `.shhh/prompts/` — with the keys a
+project pair — `.shhh/config.toml` and `.shhh/prompts/` — with the keys a
 checkout may not decide left out, and says on each row which pair it wrote;
-outside one, in the home directory, or with `--global`, it writes yours.
+outside one, in the home directory, or with `--global`, it writes the global pair.
 
 It is the one deliberate write-everything act, and it is not the flattening
 the targeted rewrite exists to prevent: a commented default is not a value in
@@ -578,7 +579,7 @@ the way and offers `--stdout`: the same scaffold printed with your own values
 filled in uncommented, so expanding a three-line file is a print and a paste
 and never a rewrite behind you. `--stdout` prints the pair the bare command
 would write, and the refusal offers it with the same scope — `shhh config
-init --global --stdout` where the file in the way is yours.
+init --global --stdout` where the file in the way is the global one.
 
 The placeholders a wording takes are named in the comment above its key in
 the settings file and never in the wording's own file, because that file is
@@ -809,7 +810,7 @@ move = ["shift+up", "shift+down"]
 ```
 
 **The shipped keyboard is a file to start from.** `shhh config init`, when it
-writes your own pair, writes `keybindings.toml` beside them: every key below
+writes the global pair, writes `keybindings.toml` beside them: every key below
 at the keystrokes it ships with, one table per group, each line commented out
 so the file changes nothing until one is uncommented. A checkout's pair gets
 none, since a checkout does not layer one, and its confirmation says so.

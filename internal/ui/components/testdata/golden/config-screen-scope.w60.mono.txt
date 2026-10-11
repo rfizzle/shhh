@@ -15,7 +15,7 @@ shhh config · project file             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allow…  global
     round limit        25                            default
     context budget     8000 tokens                   default
     safety warnings    on                            default
@@ -29,7 +29,7 @@ shhh config · global file              [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allow…  global
     round limit        25                            default
     context budget     8000 tokens                   default
     safety warnings    on                            default
@@ -43,7 +43,7 @@ shhh config · global file · outdated   [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allow…  global
     round limit        25                            default
     context budget     8000 tokens                   default
     safety warnings    on                            default
@@ -57,14 +57,14 @@ shhh config · project file             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allow…  global
     round limit        25                            default
     context budget     8000 tokens                   default
   ↓ 11 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
 [shift+tab] write global · [esc] leave
-config key provider.api_key is not read from a checkout's f…
+config key provider.api_key is not read from the project fi…
 
 · a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it
 shhh config · project file             [?] keys · [esc] back
@@ -73,10 +73,10 @@ shhh config · project file             [?] keys · [esc] back
   ↑ 4 more
 
   MODEL
-    provider           openai                           user
+    provider           openai                         global
     model              gpt-5.2            user · 6 available
   ❯ ⊘ api key          ···4f9c                   global only
-    The key sent to the provider. A checkout's file does not
+    The key sent to the provider. The project file does not
     decide this — a credential in a checkout is a credential
     in every clone of it.
   ↓ 7 more
@@ -89,7 +89,7 @@ shhh config · project file             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   …
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allow…  global
   ↓ 13 more
 
 [↑↓/jk] move between settings
@@ -130,7 +130,7 @@ $  a shell command
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allow…  global␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                            ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                   ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                            ␛[38;5;254mdefault␛[m
@@ -144,7 +144,7 @@ $  a shell command
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allow…  global␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                            ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                   ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                            ␛[38;5;254mdefault␛[m
@@ -158,7 +158,7 @@ $  a shell command
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allow…  global␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                            ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                   ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                            ␛[38;5;254mdefault␛[m
@@ -172,14 +172,14 @@ $  a shell command
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allow…  global␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                            ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                   ␛[38;5;254mdefault␛[m
   ␛[38;5;244m↓ 11 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m
 ␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
-␛[38;5;244mconfig key provider.api_key is not read from a checkout's f…␛[m
+␛[38;5;244mconfig key provider.api_key is not read from the project fi…␛[m
 
 · a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · project file␛[m             ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -188,10 +188,10 @@ $  a shell command
   ␛[38;5;244m↑ 4 more␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                           ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                         ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m            ␛[38;5;254muser · 6 available␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⊘ api key          ···4f9c                   global only␛[m
-    ␛[38;5;244mThe key sent to the provider. A checkout's file does not␛[m
+    ␛[38;5;244mThe key sent to the provider. The project file does not␛[m
     ␛[38;5;244mdecide this — a credential in a checkout is a credential␛[m
     ␛[38;5;244min every clone of it.␛[m
   ␛[38;5;244m↓ 7 more␛[m
@@ -204,7 +204,7 @@ $  a shell command
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m…␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allow…  global␛[m
   ␛[38;5;244m↓ 13 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move between settings␛[m

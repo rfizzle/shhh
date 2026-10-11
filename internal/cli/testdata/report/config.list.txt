@@ -3,7 +3,7 @@
   PROVIDER
 
   ✓ default              anthropic  [project]
-  ✓ model                gpt-4o  [user]
+  ✓ model                gpt-4o  [global]
   · cmd_model            (provider.model)  [default]
   · chat_model           (provider.model)  [default]
   · code_model           (provider.model)  [default]

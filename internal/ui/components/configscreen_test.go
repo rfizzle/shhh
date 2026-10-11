@@ -21,14 +21,14 @@ func configFixture() *ConfigScreen {
 		maxLines: 24,
 		Rows: []ConfigRow{
 			{Group: "SESSION", Key: "behavior.default_mode", Label: "permission mode",
-				Value: "⏵⏵ auto", ValueTone: ToneSafe, Detail: "edits apply", Source: "user",
+				Value: "⏵⏵ auto", ValueTone: ToneSafe, Detail: "edits apply", Source: "global",
 				Options: []SelectOption{{Label: "manual"}, {Label: "auto"}, {Label: "plan"}}},
 			{Group: "SESSION", Key: "behavior.max_tool_rounds", Label: "round limit",
 				Value: "25", Source: "default"},
 			{Group: "MODEL", Key: "provider.api_key", Label: "api key",
-				Value: "···4f9c", Source: "user", Secret: true},
+				Value: "···4f9c", Source: "global", Secret: true},
 			{Group: "MODEL", Key: "provider.model", Label: "model",
-				Value: "gpt-5.2", Source: "user",
+				Value: "gpt-5.2", Source: "global",
 				Options: []SelectOption{{Label: "gpt-5.2"}, {Label: "claude-sonnet-4.6"}}},
 		},
 	}
@@ -489,7 +489,7 @@ func TestConfigScreen_SourceStatesWhereTheValueCameFrom(t *testing.T) {
 		Value: "⛨ workspace", Source: "unavailable on this host", SourceTone: ToneRisk,
 	})
 	view := c.View(110)
-	for _, want := range []string{"user", "default", "unavailable on this host"} {
+	for _, want := range []string{"global", "default", "unavailable on this host"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("every row states where its value came from — missing %q:\n%s", want, view)
 		}

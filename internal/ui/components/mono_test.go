@@ -117,7 +117,7 @@ func monoFixtures() []monoSurface {
 	configValue := func(value string, tone FieldTone) string {
 		return configScreen(ConfigRow{
 			Group: "SESSION", Key: "behavior.default_mode", Label: "setting",
-			Value: value, ValueTone: tone, Source: "user",
+			Value: value, ValueTone: tone, Source: "global",
 		})
 	}
 	configSourced := func(source string, tone FieldTone) string {
@@ -704,7 +704,7 @@ func monoFixtures() []monoSurface {
 		}},
 		{"config source", []monoState{
 			{"nothing set", configSourced("default", ToneNeutral)},
-			{"the file set it", configSourced("user", ToneNeutral)},
+			{"the file set it", configSourced("global", ToneNeutral)},
 			{"staged, not written", configSourced("unwritten", ToneOpen)},
 			{"the host cannot honour it", configSourced("unavailable on this host", ToneRisk)},
 		}},

@@ -69,7 +69,7 @@ type ConfigRow struct {
 	// never toned.
 	Detail string
 	// Source is the right-hand field: where the answer came from (`default`,
-	// `user`, `project` for a value the checkout's own file set, `user ·
+	// `global`, `project` for a value the project file set, `global ·
 	// ~/.config/shhh/config.toml`), or the reason the host cannot honour the
 	// setting at all: "why is this on" is the only question a config screen is
 	// ever asked, and a setting the machine cannot keep says so rather than
@@ -112,7 +112,7 @@ type ConfigResult struct {
 	Write    bool
 	Canceled bool
 	Change   *ConfigChange
-	// Scope is the toggle between the checkout's file and the person's own:
+	// Scope is the toggle between the project file and the global file:
 	// the host moves the write, and hands back the Path, Yours and Rows that
 	// describe the file it moved it to.
 	Scope bool
@@ -130,7 +130,7 @@ type ConfigScreen struct {
 	// are (docs/capabilities/configuration.md#an-older-file-is-brought-up-to-date).
 	Behind bool
 	// Scoped is a screen standing in a checkout, where a write has two files
-	// it could reach: the checkout's own and the person's. It is what offers
+	// it could reach: the project file and the global file. It is what offers
 	// the key that switches between them, and what makes the header say
 	// whose file Path is — outside a checkout there is only the one, and
 	// naming its owner would answer a question nobody asked. Yours is which

@@ -184,12 +184,12 @@ func TestLayerProject_ARefusedTableIsNamedOnceWithTheKeysUnderIt(t *testing.T) {
 func TestRefusedInProject_MatchesAKeyOrTheTableAboveIt(t *testing.T) {
 	for _, key := range []string{"provider.api_key", "provider.api_key_env", "sandbox.profile", "prompts.steer", "mcp.servers.x.command", "behavior.classifier_threshold", "behavior.classifier_backend"} {
 		if RefusedInProject(key) == "" {
-			t.Errorf("%s is not refused in a checkout's file", key)
+			t.Errorf("%s is not refused in the project file", key)
 		}
 	}
 	for _, key := range []string{"provider.model", "provider.base_url", "mcp.disabled", "behavior.default_mode", "web.search_provider", "behavior.classifier_model"} {
 		if reason := RefusedInProject(key); reason != "" {
-			t.Errorf("%s is refused in a checkout's file: %s", key, reason)
+			t.Errorf("%s is refused in the project file: %s", key, reason)
 		}
 	}
 }
@@ -201,7 +201,7 @@ func TestLayerProject_AnUnknownKeyIsRefusedTheSameWay(t *testing.T) {
 	_, _, err := LayerProject(Config{}, path)
 	var unknown *UnknownKeyError
 	if !errors.As(err, &unknown) {
-		t.Fatalf("a misspelled table in a checkout's file loaded: %v", err)
+		t.Fatalf("a misspelled table in the project file loaded: %v", err)
 	}
 }
 

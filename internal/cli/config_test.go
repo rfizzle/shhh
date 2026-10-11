@@ -33,7 +33,7 @@ func TestConfigRows_SourceStatesWhereTheValueCameFrom(t *testing.T) {
 	base.Provider.Default = "openai"
 
 	rows := configRows(base, base, config.Project{})
-	if got := rowFor(rows, "provider.default").Source; got != "user" {
+	if got := rowFor(rows, "provider.default").Source; got != "global" {
 		t.Fatalf("a value the file set reads as user, got %q", got)
 	}
 	if got := rowFor(rows, "behavior.shell").Source; got != "default" {

@@ -3,13 +3,13 @@
 #   by TestConfigScreen_AnOutdatedFileSaysSo and drawn in the config-screen-scope
 #   golden's third panel
 #
-# /config in a session standing in a checkout, over a person's own settings
+# /config in a session standing in a checkout, over a global settings
 # file that is older than the table. The harness's config.toml lists no
 # commented row, and a file that lists none is never outdated (KeysBehind
 # counts nothing for it), so the setup below appends one commented row to the
 # file under the scene's home, which lists that one key and leaves every
-# other out. The checkout's own file has no such row and says nothing; moving
-# the write to the person's own file (shift+tab) draws the header
+# other out. The project file has no such row and says nothing; moving
+# the write to the global file (shift+tab) draws the header
 # `/config · global file · ~/.config/shhh/config.toml · outdated`, the word in
 # the warn colour after the path.
 setup printf '# max_tool_rounds = 150\n' >> "$home/config/shhh/config.toml"

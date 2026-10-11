@@ -15,21 +15,21 @@ shhh config · ~/.config/shhh/config.toml                                       
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
     base url           (the provider's own)                                                                                default
     sub-agent model    inherit                                                                                             default
 
   WORKSPACE
     sandbox            ⛨ workspace-write                                                                  unavailable on this host
-    network            private hosts reachable — intranet and localhost fetches are allowed                                   user
+    network            private hosts reachable — intranet and localhost fetches are allowed                                 global
   ↓ 3 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [esc] leave                                              14 settings
@@ -39,13 +39,13 @@ shhh config · ~/.config/shhh/config.toml                                       
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
   ❯ model              gpt-5.2                                                                                  user · 6 available
     ❯ gpt-5.2            current default                                                                               $1.25 / $10
       gpt-5.2-mini       ⅕ the price                                                                                    $0.25 / $2
@@ -53,7 +53,7 @@ shhh config · ~/.config/shhh/config.toml                                       
       claude-sonnet-4.6  better diffs · 200k ctx                                                                          $3 / $15
       gemini-3-flash     1M ctx                                                                                      $0.30 / $2.50
       ⊘ deepseek-r2      local via ollama                                                                          not usable here
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
   ↓ 7 more
 
 [↑↓] move · [/] filter · [enter] set it · [esc] keep gpt-5.2
@@ -63,18 +63,18 @@ shhh config · ~/.config/shhh/config.toml                                       
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
   ❯ model              gpt-5.2                                                                                  user · 6 available
     ▸ claude█                                                                                                         2 of 6 match
     ❯ claude-opus-4.6    deepest reasoning                                                                               $15 / $75
       claude-sonnet-4.6  better diffs · 200k ctx                                                                          $3 / $15
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
     base url           (the provider's own)                                                                                default
     sub-agent model    inherit                                                                                             default
 
@@ -87,16 +87,16 @@ shhh config · ~/.config/shhh/config.toml                                       
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
   ❯ round limit        25                                                                                                  default
     ▸ 2540█
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
     base url           (the provider's own)                                                                                default
     sub-agent model    inherit                                                                                             default
 
@@ -111,15 +111,15 @@ shhh config · ~/.config/shhh/config.toml                                       
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
-  ❯ api key            ···4f9c                                                                                                user
+  ❯ api key            ···4f9c                                                                                              global
     Paste a value for api key · replacing ···4f9c
     ▸ ●●●●●●●●●●●● 
     base url           (the provider's own)                                                                                default
@@ -135,15 +135,15 @@ shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        40                                                                                                unwritten
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
   ❯ model              claude-sonnet-4.6                                                                                 unwritten
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
     base url           (the provider's own)                                                                                default
     sub-agent model    inherit                                                                                             default
 
@@ -162,15 +162,15 @@ nothing is written until [ctrl+s]
     compaction         gpt-5.2                                                                                       session model
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        40                                                                                                unwritten
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
   ❯ base url           https://gateway.internal/v1                                                        unwritten · next session
   ↓ 6 more
 
@@ -183,15 +183,15 @@ shhh config · ~/.config/shhh/config.toml                                       
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
     base url           (the provider's own)                                                                                default
     sub-agent model    inherit                                                                                             default
 
@@ -207,15 +207,15 @@ shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        40                                                                                                unwritten
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
   ❯ model              claude-sonnet-4.6                                                                                 unwritten
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
     base url           (the provider's own)                                                                                default
     sub-agent model    inherit                                                                                             default
 
@@ -231,21 +231,21 @@ shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
-    api key            ···4f9c                                                                                                user
+    api key            ···4f9c                                                                                              global
     base url           (the provider's own)                                                                                default
     sub-agent model    inherit                                                                                             default
 
   WORKSPACE
     sandbox            ⛨ workspace-write                                                                  unavailable on this host
-    network            private hosts reachable — intranet and localhost fetches are allowed                                   user
+    network            private hosts reachable — intranet and localhost fetches are allowed                                 global
   ↓ 3 more
 
 Discard 2 changes?  [y/N]
@@ -262,7 +262,7 @@ Discard 2 changes?  [y/N]
     compaction         gpt-5.2                                                                                       session model
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
   ❯ round limit        40                                                                                                  session
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
@@ -286,13 +286,13 @@ nothing is written until [ctrl+s]
     compaction         gpt-5.2                                                                                       session model
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
   ↓ 8 more
 
@@ -310,13 +310,13 @@ Leave 2 changes on this session only?  [y] this session only  [ctrl+s] write fir
     compaction         gpt-5.2                                                                                       session model
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
   ↓ 8 more
 
@@ -328,7 +328,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 
   ▸ mo█                                                                                                              4 of 14 match
   SESSION
-  ❯ permission mode  ⏵⏵ auto — edits apply; allowlisted commands run                                                          user
+  ❯ permission mode  ⏵⏵ auto — edits apply; allowlisted commands run                                                        global
 
   MODEL
     model            gpt-5.2                                                                                    user · 6 available
@@ -344,7 +344,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   …
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
   ↓ 13 more
 
 [↑↓/jk] move between settings
@@ -395,13 +395,13 @@ shhh config · ~/.config/shhh/config.toml                                       
     compaction         gpt-5.2                                                                                       session model
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
     safety warnings    on                                                                                                  default
 
   MODEL
-    provider           openai                                                                                                 user
+    provider           openai                                                                                               global
     model              gpt-5.2                                                                                  user · 6 available
   ↓ 8 more
 
@@ -424,7 +424,7 @@ shhh config · ~/.config/shhh/config.toml                                       
     compaction         gpt-5.2                                                                                       session model
 
   SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global
     round limit        25                                                                                                  default
     context budget     8000 tokens                                                                                         default
   ↓ 11 more
@@ -437,21 +437,21 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                             ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mWORKSPACE␛[m
     ␛[38;5;254msandbox␛[m            ␛[38;5;254m⛨ workspace-write␛[m                                                                  ␛[38;5;254munavailable on this host␛[m
-    ␛[38;5;254mnetwork␛[m            ␛[38;5;254mprivate hosts reachable␛[m ␛[38;5;244m— intranet and localhost fetches are allowed␛[m                                   ␛[38;5;254muser␛[m
+    ␛[38;5;254mnetwork␛[m            ␛[38;5;254mprivate hosts reachable␛[m ␛[38;5;244m— intranet and localhost fetches are allowed␛[m                                 ␛[38;5;254mglobal␛[m
   ␛[38;5;244m↓ 3 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m                                              ␛[38;5;244m14 settings␛[m
@@ -461,13 +461,13 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mmodel              gpt-5.2                                                                                  user · 6 available␛[m
     ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mgpt-5.2            current default                                                                               $1.25 / $10␛[m
       ␛[38;5;254mgpt-5.2-mini␛[m       ␛[38;5;244m⅕ the price␛[m                                                                                    ␛[38;5;254m$0.25 / $2␛[m
@@ -475,7 +475,7 @@ shhh config · ~/.config/shhh/config.toml                                       
       ␛[38;5;254mclaude-sonnet-4.6␛[m  ␛[38;5;244mbetter diffs · 200k ctx␛[m                                                                          ␛[38;5;254m$3 / $15␛[m
       ␛[38;5;254mgemini-3-flash␛[m     ␛[38;5;244m1M ctx␛[m                                                                                      ␛[38;5;254m$0.30 / $2.50␛[m
       ␛[38;5;244m⊘ deepseek-r2␛[m      ␛[38;5;244mlocal via ollama␛[m                                                                          ␛[38;5;244mnot usable here␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
   ␛[38;5;244m↓ 7 more␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep gpt-5.2␛[m
@@ -485,18 +485,18 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mmodel              gpt-5.2                                                                                  user · 6 available␛[m
     ␛[38;5;254m▸ ␛[m␛[38;5;254mclaude█␛[m                                                                                                         ␛[38;5;244m2 of 6 match␛[m
     ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mclaude-opus-4.6    deepest reasoning                                                                               $15 / $75␛[m
       ␛[1;38;5;254mclaude␛[m␛[38;5;254m-sonnet-4.6␛[m  ␛[38;5;244mbetter diffs · 200k ctx␛[m                                                                          ␛[38;5;254m$3 / $15␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                             ␛[38;5;254mdefault␛[m
 
@@ -509,16 +509,16 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mround limit        25                                                                                                  default␛[m
     ␛[38;5;254m▸ ␛[m␛[38;5;254m2540█␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                             ␛[38;5;254mdefault␛[m
 
@@ -533,15 +533,15 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mapi key            ···4f9c                                                                                                user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mapi key            ···4f9c                                                                                              global␛[m
     ␛[38;5;254mPaste a value for api key␛[m␛[38;5;244m · replacing ···4f9c␛[m
     ␛[38;5;244m▸ ␛[m␛[38;5;254m●●●●●●●●●●●●␛[m␛[1;38;5;254;48;5;237m ␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                ␛[38;5;254mdefault␛[m
@@ -557,15 +557,15 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m40␛[m                                                                                                ␛[38;5;254munwritten␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mmodel              claude-sonnet-4.6                                                                                 unwritten␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                             ␛[38;5;254mdefault␛[m
 
@@ -584,15 +584,15 @@ shhh config · ~/.config/shhh/config.toml                                       
     ␛[38;5;254mcompaction␛[m         ␛[38;5;254mgpt-5.2␛[m                                                                                       ␛[38;5;254msession model␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m40␛[m                                                                                                ␛[38;5;254munwritten␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mbase url           https://gateway.internal/v1                                                        unwritten · next session␛[m
   ␛[38;5;244m↓ 6 more␛[m
 
@@ -605,15 +605,15 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                             ␛[38;5;254mdefault␛[m
 
@@ -629,15 +629,15 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m40␛[m                                                                                                ␛[38;5;254munwritten␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mmodel              claude-sonnet-4.6                                                                                 unwritten␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                             ␛[38;5;254mdefault␛[m
 
@@ -653,21 +653,21 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
-    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254muser␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                              ␛[38;5;254mglobal␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                             ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mWORKSPACE␛[m
     ␛[38;5;254msandbox␛[m            ␛[38;5;254m⛨ workspace-write␛[m                                                                  ␛[38;5;254munavailable on this host␛[m
-    ␛[38;5;254mnetwork␛[m            ␛[38;5;254mprivate hosts reachable␛[m ␛[38;5;244m— intranet and localhost fetches are allowed␛[m                                   ␛[38;5;254muser␛[m
+    ␛[38;5;254mnetwork␛[m            ␛[38;5;254mprivate hosts reachable␛[m ␛[38;5;244m— intranet and localhost fetches are allowed␛[m                                 ␛[38;5;254mglobal␛[m
   ␛[38;5;244m↓ 3 more␛[m
 
 ␛[38;5;254m␛[38;5;254mDiscard 2 changes?␛[m␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
@@ -684,7 +684,7 @@ shhh config · ~/.config/shhh/config.toml                                       
     ␛[38;5;254mcompaction␛[m         ␛[38;5;254mgpt-5.2␛[m                                                                                       ␛[38;5;254msession model␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mround limit        40                                                                                                  session␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
@@ -708,13 +708,13 @@ shhh config · ~/.config/shhh/config.toml                                       
     ␛[38;5;254mcompaction␛[m         ␛[38;5;254mgpt-5.2␛[m                                                                                       ␛[38;5;254msession model␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
   ␛[38;5;244m↓ 8 more␛[m
 
@@ -732,13 +732,13 @@ shhh config · ~/.config/shhh/config.toml                                       
     ␛[38;5;254mcompaction␛[m         ␛[38;5;254mgpt-5.2␛[m                                                                                       ␛[38;5;254msession model␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
   ␛[38;5;244m↓ 8 more␛[m
 
@@ -750,7 +750,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 
   ␛[38;5;254m▸ ␛[m␛[38;5;254mmo█␛[m                                                                                                              ␛[38;5;244m4 of 14 match␛[m
   ␛[1;38;5;254mSESSION␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode  ⏵⏵ auto — edits apply; allowlisted commands run                                                          user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode  ⏵⏵ auto — edits apply; allowlisted commands run                                                        global␛[m
 
   ␛[1;38;5;254mMODEL␛[m
     ␛[1;38;5;254mmo␛[m␛[38;5;254mdel␛[m            ␛[38;5;254mgpt-5.2␛[m                                                                                    ␛[38;5;254muser · 6 available␛[m
@@ -766,7 +766,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m…␛[m
-  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                      global␛[m
   ␛[38;5;244m↓ 13 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move between settings␛[m
@@ -817,13 +817,13 @@ shhh config · ~/.config/shhh/config.toml                                       
     ␛[38;5;254mcompaction␛[m         ␛[38;5;254mgpt-5.2␛[m                                                                                       ␛[38;5;254msession model␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mMODEL␛[m
-    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                                 ␛[38;5;254muser␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                                               ␛[38;5;254mglobal␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
   ␛[38;5;244m↓ 8 more␛[m
 
@@ -846,7 +846,7 @@ shhh config · ~/.config/shhh/config.toml                                       
     ␛[38;5;254mcompaction␛[m         ␛[38;5;254mgpt-5.2␛[m                                                                                       ␛[38;5;254msession model␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                        ␛[38;5;254muser␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                                      ␛[38;5;254mglobal␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
   ␛[38;5;244m↓ 11 more␛[m

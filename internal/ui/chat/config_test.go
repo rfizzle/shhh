@@ -41,7 +41,7 @@ func newFakeConfigHost() *fakeConfigHost {
 			{Group: "BEHAVIOR", Key: "behavior.check_in_rounds", Label: "Check in every",
 				Value: "8", Source: "default"},
 			{Group: "BEHAVIOR", Key: "behavior.default_mode", Label: "Permission mode",
-				Value: "auto", Source: "user",
+				Value: "auto", Source: "global",
 				Options: []components.SelectOption{{Label: "manual"}, {Label: "auto"}}},
 		},
 	}

@@ -147,7 +147,7 @@ func TestProject_RefusesAppearanceTheme(t *testing.T) {
 		t.Fatalf("the refusal does not name the theme: %+v", refused.Keys)
 	}
 	msg := refused.Error()
-	if !strings.Contains(msg, "is not read from a checkout's file — ") || !strings.Contains(msg, "theme.toml") {
+	if !strings.Contains(msg, "is not read from the project file — ") || !strings.Contains(msg, "theme.toml") {
 		t.Errorf("not the allow-list's note, or not pointing at the theme file: %s", msg)
 	}
 	if RefusedInProject("appearance.theme") == "" {

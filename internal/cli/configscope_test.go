@@ -13,7 +13,7 @@ import (
 )
 
 // scopeCase is one place a bare write can be run from, and whether it lands
-// in the checkout's file. The four are the whole rule: a checkout, not a
+// in the project file. The four are the whole rule: a checkout, not a
 // checkout, the home directory — here a home that is itself a repository,
 // the case the rule is for — and a checkout with `--global`.
 type scopeCase struct {
@@ -80,7 +80,7 @@ func TestConfigInit_WritesThePairOfWhereItIsRun(t *testing.T) {
 
 			projectPath := filepath.Join(checkout, filepath.FromSlash(project.ConfigFile))
 			wantHere, wantAbsent := userPath, projectPath
-			pair := "[user]"
+			pair := "[global]"
 			if c.toProject {
 				wantHere, wantAbsent, pair = projectPath, userPath, "[project]"
 			}
@@ -248,11 +248,11 @@ func TestConfigScreen_TheRowsACheckoutMayNotDecideAreOffOnItsScope(t *testing.T)
 	// Enter on one stages nothing and says the existing sentence.
 	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "appearance.theme"}})
 	if screen.Changed != 0 || !strings.Contains(screen.Notice, keys.Bracket(keys.Screen.Scope)) ||
-		!strings.Contains(screen.Notice, "not read from a checkout's file") {
+		!strings.Contains(screen.Notice, "not read from the project file") {
 		t.Fatalf("enter on a disabled row: changed %d, notice %q", screen.Changed, screen.Notice)
 	}
 	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "appearance.theme", Reset: true}})
-	if screen.Changed != 0 || !strings.Contains(screen.Notice, "not read from a checkout's file") {
+	if screen.Changed != 0 || !strings.Contains(screen.Notice, "not read from the project file") {
 		t.Fatalf("reset on a disabled row: changed %d, notice %q", screen.Changed, screen.Notice)
 	}
 	for i, r := range screen.Rows {
@@ -270,7 +270,7 @@ func TestConfigScreen_TheRowsACheckoutMayNotDecideAreOffOnItsScope(t *testing.T)
 	}
 }
 
-// The screen's scope key moves the write between the checkout's file and the
+// The screen's scope key moves the write between the project file and the
 // person's own, so a key the checkout may not decide can be written from
 // inside a session; `--global` only chooses which file it opens on, and the
 // write cannot be moved back to the checkout over an edit it would refuse.
@@ -280,7 +280,7 @@ func TestConfigScreen_TheScopeKeyMovesTheWrite(t *testing.T) {
 	must(t, err)
 	screen := session.Screen
 	if !screen.Scoped || screen.Yours {
-		t.Fatalf("in a checkout the screen should open on the checkout's file with the switch offered: scoped %v yours %v",
+		t.Fatalf("in a checkout the screen should open on the project file with the switch offered: scoped %v yours %v",
 			screen.Scoped, screen.Yours)
 	}
 	session.Answer(false, components.ConfigResult{Scope: true})

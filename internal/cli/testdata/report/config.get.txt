@@ -1,6 +1,6 @@
   shhh config get — provider.model
 
-  ✓ gpt-4o  [user]
+  ✓ gpt-4o  [global]
       The model every surface runs on where its own key — `cmd_model`,
       `chat_model` or `code_model` — names none.
       Unset it and (the provider's own default) stands.

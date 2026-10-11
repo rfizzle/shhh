@@ -2868,7 +2868,7 @@ func goldenConfigRows() []ConfigRow {
 	return []ConfigRow{
 		{Group: "SESSION", Key: "behavior.default_mode", Label: "permission mode",
 			Value: "⏵⏵ auto", ValueTone: ToneSafe,
-			Detail: "edits apply; allowlisted commands run", Source: "user",
+			Detail: "edits apply; allowlisted commands run", Source: "global",
 			Options: []SelectOption{
 				{Label: "manual", Desc: "every consequential tool call asks"},
 				{Label: "accept-edits", Desc: "file edits apply without prompts"},
@@ -2883,11 +2883,11 @@ func goldenConfigRows() []ConfigRow {
 			Value: "on", ValueTone: ToneSafe, Source: "default",
 			Options: []SelectOption{{Label: "true"}, {Label: "false"}}},
 		{Group: "MODEL", Key: "provider.default", Label: "provider",
-			Value: "openai", Source: "user"},
+			Value: "openai", Source: "global"},
 		{Group: "MODEL", Key: "provider.model", Label: "model",
 			Value: "gpt-5.2", Source: "user · 6 available", Options: models},
 		{Group: "MODEL", Key: "provider.api_key", Label: "api key",
-			Value: "···4f9c", Source: "user", Secret: true},
+			Value: "···4f9c", Source: "global", Secret: true},
 		{Group: "MODEL", Key: "provider.base_url", Label: "base url",
 			Value: "(the provider's own)", Source: "default"},
 		{Group: "MODEL", Key: "agents.model", Label: "sub-agent model",
@@ -2897,7 +2897,7 @@ func goldenConfigRows() []ConfigRow {
 			Options: []SelectOption{{Label: "workspace"}, {Label: "workspace-netless"}}},
 		{Group: "WORKSPACE", Key: "web.allow_private", Label: "network",
 			Value: "private hosts reachable", ValueTone: ToneOpen,
-			Detail: "intranet and localhost fetches are allowed", Source: "user",
+			Detail: "intranet and localhost fetches are allowed", Source: "global",
 			Options: []SelectOption{{Label: "true"}, {Label: "false"}}},
 		{Group: "WORKSPACE", Key: "behavior.memory_disabled", Label: "memory",
 			Value: "on", Source: "default", Detail: "4 entries · .shhh/memory.md"},
@@ -3073,7 +3073,7 @@ func TestGolden_ConfigScreenScope(t *testing.T) {
 			}()},
 			{Label: "a key the checkout may not decide · refused naming [shift+tab]", View: func() string {
 				c := screen(false)
-				c.Notice = "config key provider.api_key is not read from a checkout's file — " +
+				c.Notice = "config key provider.api_key is not read from the project file — " +
 					"a credential is yours, not the repository's; [shift+tab] moves the write to ~/.config/shhh/config.toml"
 				return c.View(width)
 			}()},
@@ -3082,10 +3082,10 @@ func TestGolden_ConfigScreenScope(t *testing.T) {
 				c.maxLines = 16
 				c.Focus = 6
 				c.Rows[6].Source, c.Rows[6].SourceTone = "global only", ToneNeutral
-				c.Rows[6].Disabled = "The key sent to the provider. A checkout's file does not decide this — " +
+				c.Rows[6].Disabled = "The key sent to the provider. The project file does not decide this — " +
 					"a credential in a checkout is a credential in every clone of it."
 				c.Rows[9].Source, c.Rows[9].SourceTone = "global only", ToneNeutral
-				c.Rows[9].Disabled = "What a contained command may reach. A checkout's file does not decide this — " +
+				c.Rows[9].Disabled = "What a contained command may reach. The project file does not decide this — " +
 					"it decides what a contained command may reach, which is the containment itself."
 				return c.View(width)
 			}()},

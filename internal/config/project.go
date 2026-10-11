@@ -1,6 +1,6 @@
 package config
 
-// A checkout's own settings, layered over the user's key by key. What is
+// The project file's settings, layered over the global file's key by key. What is
 // true of a repository — which commands run without asking, which mode a
 // session starts in, which model reviews here — travels with the
 // repository; what is true of the person stays in their file, and nobody
@@ -46,8 +46,8 @@ func ProjectFileAt(dir string) string {
 	return path
 }
 
-// Project is what a checkout's file contributed to the settings in force.
-// The zero value is a session running on the user's file alone, which is
+// Project is what the project file contributed to the settings in force.
+// The zero value is a session running on the global file alone, which is
 // what an untrusted checkout, a checkout with no file, and a directory that
 // is not a project all come to.
 type Project struct {
@@ -62,10 +62,10 @@ type Project struct {
 	Keys []string
 }
 
-// Loaded reports whether a checkout's file is in force.
+// Loaded reports whether the project file is in force.
 func (p Project) Loaded() bool { return p.Path != "" }
 
-// Sets reports whether the checkout's file decided a key.
+// Sets reports whether the project file decided a key.
 func (p Project) Sets(key string) bool { return slices.Contains(p.Keys, key) }
 
 // unionKeys are the keys a project extends rather than replaces. A checkout
@@ -95,7 +95,7 @@ var unionKeys = []string{
 func UnionsInProject(key string) bool { return slices.Contains(unionKeys, key) }
 
 // projectRefusal is one key a checkout may not set and the reason, phrased
-// to follow "is not read from a checkout's file — ".
+// to follow "is not read from the project file — ".
 type projectRefusal struct {
 	Key    string
 	Reason string
@@ -148,9 +148,9 @@ func refusalFor(key string) (string, string) {
 	return "", ""
 }
 
-// ProjectKeyError is a checkout's file naming a key it may not set. It
+// ProjectKeyError is the project file naming a key it may not set. It
 // refuses the load the way an unknown key does, rather than dropping the key
-// and starting: a person reading their checkout's file and a session running
+// and starting: a person reading their project file and a session running
 // without what it says is the failure the whole arrangement exists to
 // prevent.
 type ProjectKeyError struct {
@@ -174,7 +174,7 @@ func (e *ProjectKeyError) Error() string {
 		if i > 0 {
 			b.WriteString(";")
 		}
-		fmt.Fprintf(&b, " %s is not read from a checkout's file — %s", k.Key, k.Reason)
+		fmt.Fprintf(&b, " %s is not read from the project file — %s", k.Key, k.Reason)
 	}
 	if e.User != "" {
 		verb := " set it in "
@@ -186,15 +186,15 @@ func (e *ProjectKeyError) Error() string {
 	return b.String()
 }
 
-// LayerProject reads the checkout's file at path over cfg, key by key, and
-// reports what it set. A key the file names replaces the user's; a key it
+// LayerProject reads the project file at path over cfg, key by key, and
+// reports what it set. A key the file names replaces the global file's; a key it
 // does not name is untouched, which is what lets a repository state the two
 // things that are true of it without restating the provider and the key for
 // everyone who clones it.
 //
 // The merge is driven by the keys the file actually wrote rather than by
 // which of them are non-zero, so a checkout that turns something off — a
-// `silent_mode = false` over a user's true — is honoured. Reading zero as
+// `silent_mode = false` over a global true — is honoured. Reading zero as
 // unset would make "off" the one answer a project could not give.
 func LayerProject(cfg Config, path string) (Config, Project, error) {
 	var over Config
@@ -262,8 +262,8 @@ func refusedKeys(path string, meta toml.MetaData) error {
 	return &ProjectKeyError{Path: path, Keys: keys, User: user}
 }
 
-// layerKey copies one key's value out of the checkout's config and into the
-// user's, unioning where the key is one of the three that extend. root is
+// layerKey copies one key's value out of the project file's config and into the
+// global file's, unioning where the key is one of the three that extend. root is
 // the checkout's, so a relative scope directory the file names is the
 // directory beside it rather than one beside whoever ran the command.
 func layerKey(dst *Config, src Config, key, root string) error {
@@ -289,8 +289,8 @@ func layerKey(dst *Config, src Config, key, root string) error {
 	})
 }
 
-// union is the user's entries with the checkout's added, keeping the order
-// each was written in and dropping a repeat. The user's come first because
+// union is the global file's entries with the project file's added, keeping the order
+// each was written in and dropping a repeat. The global file's come first because
 // theirs is the list that was there before this checkout was cloned.
 func union(held, add []string) []string {
 	out := slices.Clone(held)
@@ -327,13 +327,13 @@ func relativeToRoot(root, path string) string {
 	return filepath.ToSlash(rel)
 }
 
-// OverriddenNote is what a write to the user's file has to say when the
-// checkout's file sets the same key: the value was written and is not what
+// OverriddenNote is what a write to the global file has to say when the
+// project file sets the same key: the value was written and is not what
 // this directory will use. It is empty when nothing the write touched is
 // overridden.
 //
 // The write still happens, the way it does under a flag or an environment
-// variable that outranks the file. The user's file is read in every other
+// variable that outranks the file. The global file is read in every other
 // checkout, so refusing the write would punish them for where they were
 // standing; what must not happen is a confirmation that reads as though the
 // value took effect here.

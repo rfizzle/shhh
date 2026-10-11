@@ -32,8 +32,8 @@ func newConfigCmd() *cobra.Command {
 		Short: "View and edit configuration",
 		Long: "Interactive configuration screen. `config list` prints every setting with the value in force " +
 			"and where it came from, `config get <key>` prints one, and `config set <key> <value>` changes one " +
-			"without opening the screen. In a checkout the screen and `config set` write the checkout's own " +
-			project.ConfigFile + "; `--global` writes yours.",
+			"without opening the screen. In a checkout the screen and `config set` write the project file, " +
+			project.ConfigFile + "; `--global` writes the global file.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
 			m := newConfigModel(cfg, ProjectConfigFrom(cmd.Context()))
@@ -57,7 +57,7 @@ func newConfigCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&global, "global", false,
-		"write your own settings file rather than the checkout's")
+		"write the global settings file rather than the project file")
 	cmd.AddCommand(newConfigSetCmd(), newConfigListCmd(), newConfigGetCmd(), newConfigInitCmd())
 	return cmd
 }
@@ -68,9 +68,9 @@ func newConfigSetCmd() *cobra.Command {
 		Use:   "set <key> <value>",
 		Short: "Set a config value",
 		Long: "Set a configuration key. Example: shhh config set provider.default openai\n" +
-			"Run in a checkout, it writes the checkout's own " + project.ConfigFile + ", for what is true of " +
-			"the repository rather than of you; run anywhere else, or in your home directory, it writes yours. " +
-			"`--global` writes yours wherever it is run.",
+			"Run in a checkout, it writes the project file, " + project.ConfigFile + ", for what is true of " +
+			"the repository rather than of you; run anywhere else, or in your home directory, it writes the global file. " +
+			"`--global` writes the global file wherever it is run.",
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			edit := config.Edit{Key: args[0], Value: args[1]}
@@ -101,11 +101,11 @@ func newConfigSetCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&global, "global", false,
-		"write your own settings file rather than the checkout's")
+		"write the global settings file rather than the project file")
 	return cmd
 }
 
-// projectTrustNote is what a write to the checkout's file has to add about
+// projectTrustNote is what a write to the project file has to add about
 // whether that file is being read at all. A trusted checkout keeps its answer
 // through the write, so what is left to say is when the value takes hold; an
 // untrusted one does not read the file at all, and a confirmation that did not
@@ -124,7 +124,7 @@ func projectTrustNote() string {
 // writes a file that then stops every command in the repository.
 func projectWritePath(key, dir string) (string, error) {
 	if reason := config.RefusedInProject(key); reason != "" {
-		return "", fmt.Errorf("config key %s is not read from a checkout's file — %s; `--global` sets it in %s",
+		return "", fmt.Errorf("config key %s is not read from the project file — %s; `--global` sets it in %s",
 			key, reason, shortPath(config.WritePath()))
 	}
 	if dir == "" {
@@ -135,9 +135,9 @@ func projectWritePath(key, dir string) (string, error) {
 
 // writesCheckout is which of the two settings files a write lands in when
 // the command is not told: the checkout's, where dir stands in one, and the
-// person's own where it does not, where global asks for theirs, or where dir
+// the global file where it does not, where global asks for it, or where dir
 // or the checkout it found is the home directory itself — a home that is a
-// repository of dotfiles is still where the person's own settings are
+// repository of dotfiles is still where the global settings are
 // written from. `config init`, `config set` and the config screen all ask
 // it, so the command and the screen's source column agree on the file
 // (docs/capabilities/configuration.md#two-files-one-resolution-order).
@@ -189,8 +189,8 @@ var workingDir = func() string {
 // to fail on
 // (docs/capabilities/configuration.md#a-value-is-refused-before-it-is-written).
 //
-// The note it answers with is what the checkout's file has to say about the
-// keys just written to the user's: a value that was saved and is not what
+// The note it answers with is what the project file has to say about the
+// keys just written to the global file: a value that was saved and is not what
 // this directory will use is the one outcome a confirmation must not report
 // as plain success.
 func writeConfigEdits(proj config.Project, path string, edits ...config.Edit) (string, error) {
@@ -208,7 +208,7 @@ func writeConfigEdits(proj config.Project, path string, edits ...config.Edit) (s
 }
 
 // loadLayeredConfig is how every command reads the settings in force: the
-// user's file, then the file of the checkout dir stands in over it, where
+// global file, then the project file of the checkout dir stands in over it, where
 // there is one and the person has trusted the checkout to be read at all.
 func loadLayeredConfig(dir string) (config.Config, config.Project, error) {
 	cfg, err := config.Load()
@@ -351,8 +351,8 @@ func wordFromTheTable(s config.Setting) func(string) error {
 type configModel struct {
 	base config.Config
 	cfg  config.Config
-	// proj is what the checkout's own file set, which decides a row's source
-	// field and what a write to the user's file has to say for itself.
+	// proj is what the project file set, which decides a row's source
+	// field and what a write to the global file has to say for itself.
 	proj config.Project
 	// path is the file [ctrl+s] writes, and toProject says it is the checkout's
 	// rather than the person's — standIn's answer, which is writesCheckout's.
@@ -362,7 +362,7 @@ type configModel struct {
 	toProject bool
 	dir       string
 	saved     bool
-	// note is what the checkout's file had to say about the keys just
+	// note is what the project file had to say about the keys just
 	// written, kept until the screen has closed: the screen quits on the
 	// write, so there is no row left to put it on.
 	note string
@@ -435,7 +435,7 @@ func (m *configModel) standIn(global bool, dir string) {
 	m.writeTo(!global)
 }
 
-// writeTo moves the write to the checkout's file or to the person's own, and
+// writeTo moves the write to the project file or to the global file, and
 // says so in the header and in every row's source.
 func (m *configModel) writeTo(checkout bool) {
 	m.toProject = checkout
@@ -476,7 +476,7 @@ func (m *configModel) switchScope() {
 	if !m.toProject {
 		for _, e := range m.edits() {
 			if config.RefusedInProject(e.Key) != "" {
-				m.screen.Notice = fmt.Sprintf("%s is staged, and a checkout's file may not decide it — "+
+				m.screen.Notice = fmt.Sprintf("%s is staged, and the project file may not decide it — "+
 					"write it to %s first", e.Key, m.screen.Path)
 				return
 			}
@@ -526,7 +526,7 @@ func (m *configModel) write() (receipt, note string) {
 	}
 	var err error
 	if m.toProject {
-		// The checkout's own file overrides nothing of itself, so what is
+		// The project file overrides nothing of itself, so what is
 		// left to say is whether it is read at all.
 		if _, err = writeConfigEdits(config.Project{}, m.path, edits...); err == nil {
 			note = projectTrustNote()
@@ -664,11 +664,11 @@ func (m *configModel) apply(change components.ConfigChange) bool {
 	if m.toProject {
 		// Refused as it is staged rather than at [ctrl+s], so the screen never
 		// holds an edit its write would then stop on — and the way to the
-		// person's own file is the screen's key, not the command's flag. It
+		// global file is the screen's key, not the command's flag. It
 		// is asked before the value is judged: a disabled row's [enter] hands
 		// no value, and the refusal is the answer to it.
 		if reason := config.RefusedInProject(change.Key); reason != "" {
-			m.screen.Notice = fmt.Sprintf("config key %s is not read from a checkout's file — %s; "+
+			m.screen.Notice = fmt.Sprintf("config key %s is not read from the project file — %s; "+
 				"%s moves the write to %s", change.Key, reason, keys.Bracket(keys.Screen.Scope),
 				shortPath(config.WritePath()))
 			return false
@@ -925,7 +925,7 @@ func (m *configModel) refresh() {
 	m.screen.Changed, m.screen.Held = changed, held
 }
 
-// disableRefused switches off the rows a checkout's file may not decide, while
+// disableRefused switches off the rows the project file may not decide, while
 // the write targets it: the source reads `global only`, and the row's panel is
 // the key's own description followed by the reason apply would refuse it with.
 // A row the session already holds keeps its `session` source and stays live,
@@ -940,7 +940,7 @@ func (m *configModel) disableRefused(rows []components.ConfigRow) {
 		if reason == "" || row.Source == "session" {
 			continue
 		}
-		why := "A checkout's file does not decide this — " + reason + "."
+		why := "The project file does not decide this — " + reason + "."
 		if d := desc[row.Key]; d != "" {
 			why = strings.TrimRight(d, ".") + ". " + why
 		}
@@ -1017,7 +1017,7 @@ func configRowsTo(cfg, base config.Config, proj config.Project, toProject bool) 
 		}
 		loaded, _ := config.Value(base, s.Key)
 		row.Source, row.SourceTone = configSource(raw, loaded, proj.Sets(s.Key), toProject)
-		if s.Key == config.ThemeKey && row.Source == "user" {
+		if s.Key == config.ThemeKey && row.Source == "global" {
 			// Its value is the theme file's, and a write goes there.
 			row.Source = "theme.toml"
 		}
@@ -1041,7 +1041,7 @@ func configRowsTo(cfg, base config.Config, proj config.Project, toProject bool) 
 // is about a key the file is holding and there is no variable to name for it:
 // a row that borrowed the name from the key beside it would say the value
 // came from somewhere it did not, while the source field went on reading
-// `user`. The name and its state belong to the row that has them.
+// `global`. The name and its state belong to the row that has them.
 // See docs/capabilities/secrets.md#where-a-value-comes-from.
 func (s configSetting) credential(raw string) (string, components.FieldTone, string) {
 	if raw == "" {
@@ -1096,8 +1096,8 @@ func (s configSetting) answers(cfg config.Config) []components.SelectOption {
 }
 
 // configSource is the right-hand field: where this answer came from.
-// Nothing is set and the built-in default stands; the checkout's own file
-// decided it; the user's file decided it; or this session has staged
+// Nothing is set and the built-in default stands; the project file
+// decided it; the global file decided it; or this session has staged
 // something no file holds yet.
 //
 // The checkout is read ahead of the default because a key it sets to a value
@@ -1119,7 +1119,7 @@ func configSource(staged, loaded string, fromProject, toProject bool) (string, c
 	case staged == "":
 		return "default", components.ToneNeutral
 	}
-	return "user", components.ToneNeutral
+	return "global", components.ToneNeutral
 }
 
 // boolOptions is the answer pair a flag offers. They are words rather than
@@ -1575,5 +1575,5 @@ func configWriter(proj config.Project) func(key, value string) error {
 	}
 }
 
-// writeFileName is the user's settings file as a receipt names it.
+// writeFileName is the global settings file as a receipt names it.
 func writeFileName() string { return shortPath(config.WritePath()) }
