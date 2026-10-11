@@ -1,0 +1,28 @@
+# program test: none — the doctor's host is the command package's screen
+#   model; the row's words are held by TestDoctorTheme_NamesALowContrastOverrideAndSaysItWasApplied
+#   and TestApplyThemeOverrides_NamesTheShortfallOnStderr, the override by
+#   TestTheme_LowContrastOverrideIsNamed, and the row is drawn in the
+#   doctor-theme-override golden
+#
+# A theme file that overrides tokens. The launch line writes a theme.toml with
+# base = "dark" and dim = "#404040", a grey the dark ground cannot carry, and
+# opens the doctor: the theme row is a warning, `low contrast`, whose
+# consequence says the colour was applied as written. Opening its fix lists the
+# token with its ratio on the ground and on the band (1.82:1 and 1.64:1), and
+# the chrome greys on the screen behind it are the override, drawn dark.
+# Leaving the doctor rewrites the file with dim = "#9a9a9a" and an accent given
+# its own 256 and sixteen-colour values, and opens it again: the row is ok and
+# counts two tokens over the table, and the chrome is legible again.
+# What the capture is for: the .txt is read against the golden's layout block
+# for the row, the .ansi for dim (the override's truecolor value where
+# the terminal reports it, and the table's own 245 at 256 colours, which the
+# file gave no rung for) and the picture for the warning against the ok.
+# Driven at 110 by `make tui-shot SCENE=theme-override COLS=110`; written here,
+# not driven.
+snap 01-warned "theme" "low contrast"
+keys Enter
+snap 02-fix "dim #404040 is" "on the band"
+keys Enter
+keys Escape
+snap 03-clear "theme" "2 over it"
+keys Escape

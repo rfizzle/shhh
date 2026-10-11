@@ -175,13 +175,13 @@ func goldenChecks() []components.DoctorCheck {
 		doctorCheck("theme", doctorTheme(config.ThemeState{
 			Path: "/home/dev/.config/shhh/theme.toml", Name: "auto",
 			Err: errors.New(`/home/dev/.config/shhh/theme.toml: name "solarized" is not a theme (auto, dark, light, charm)`),
-		}, "auto", "dark"), 0),
+		}, "auto", "dark", nil), 0),
 		doctorCheck("theme", doctorTheme(config.ThemeState{
 			Path: "/home/dev/.config/shhh/theme.toml", Name: "auto",
-		}, "auto", "dark"), 0),
+		}, "auto", "dark", nil), 0),
 		doctorCheck("theme", doctorTheme(config.ThemeState{
 			Name: "light", Source: config.ThemeFromConfig, Migrate: true,
-		}, "light", "light"), 0),
+		}, "light", "light", nil), 0),
 		// Built from the check itself, so the fixture carries one of the
 		// `shhh config set --global` fix lines word for word: each names a
 		// key about this machine, and the flag is what keeps it out of a

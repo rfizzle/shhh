@@ -60,17 +60,64 @@ func TestTheme_TheRowReadsThemeTomlAndTheFileDecidesTheLoad(t *testing.T) {
 func TestDoctorTheme_NamesTheFileTheTableAndTheRefusal(t *testing.T) {
 	refused := doctorTheme(config.ThemeState{
 		Path: "/h/shhh/theme.toml", Err: os.ErrInvalid,
-	}, "auto", "dark")
+	}, "auto", "dark", nil)
 	if refused.Outcome != "refused" || refused.State != components.DoctorWarned ||
 		!strings.Contains(refused.Detail, "auto → dark") || !strings.Contains(refused.Consequence, "default") {
 		t.Errorf("refused: %+v", refused)
 	}
-	ok := doctorTheme(config.ThemeState{Path: "/h/shhh/theme.toml", Name: "charm"}, "charm", "charm")
+	ok := doctorTheme(config.ThemeState{Path: "/h/shhh/theme.toml", Name: "charm"}, "charm", "charm", nil)
 	if ok.Outcome != "ok" || ok.Detail != "charm" {
 		t.Errorf("ok: %+v", ok)
 	}
-	moved := doctorTheme(config.ThemeState{Name: "light", Migrate: true}, "light", "light")
+	moved := doctorTheme(config.ThemeState{Name: "light", Migrate: true}, "light", "light", nil)
 	if !strings.Contains(moved.Detail, "set in config.toml") {
 		t.Errorf("no migration note: %+v", moved)
+	}
+}
+
+func TestDoctorTheme_NamesALowContrastOverrideAndSaysItWasApplied(t *testing.T) {
+	over := []config.ThemeOverride{{Token: "dim", Hex: "#404040"}}
+	low := components.LowContrast("dark", []components.TokenOverride{{Token: "dim", Hex: "#404040"}})
+	row := doctorTheme(config.ThemeState{Path: "/h/shhh/theme.toml", Name: "dark", Overrides: over}, "dark", "dark", low)
+	if row.State != components.DoctorWarned || row.Outcome != "low contrast" ||
+		!strings.Contains(row.Consequence, "applied") || !strings.Contains(row.Detail, "1 over it") ||
+		len(row.Fix) != 2 || !strings.Contains(row.Fix[0], "dim #404040 is ") {
+		t.Errorf("row: %+v", row)
+	}
+	clear := doctorTheme(config.ThemeState{Path: "/h/shhh/theme.toml", Name: "dark", Overrides: over}, "dark", "dark", nil)
+	if clear.Outcome != "ok" || clear.State == components.DoctorWarned {
+		t.Errorf("an override with nothing short warned: %+v", clear)
+	}
+}
+
+// At start the file's tokens are laid over the table and the ones under the
+// floor are named once on stderr, applied all the same.
+func TestApplyThemeOverrides_NamesTheShortfallOnStderr(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wasErr, wasTheme := os.Stderr, components.ThemeName()
+	os.Stderr = w
+	t.Cleanup(func() {
+		os.Stderr = wasErr
+		_ = components.SetOverrides(nil)
+		_ = components.SetTheme(wasTheme)
+		themeHeld.Store(nil)
+	})
+	if err := components.SetTheme("dark"); err != nil {
+		t.Fatal(err)
+	}
+	themeHeld.Store(&config.ThemeState{Name: "dark", Overrides: []config.ThemeOverride{
+		{Token: "dim", Hex: "#404040"}, {Token: "body", Hex: "#ffffff"},
+	}})
+	applyThemeOverrides()
+	_ = w.Close()
+	os.Stderr = wasErr
+	out := make([]byte, 4096)
+	n, _ := r.Read(out)
+	got := string(out[:n])
+	if !strings.Contains(got, "theme.toml: dim #404040 is ") || !strings.Contains(got, "applied as written") || strings.Contains(got, "body") {
+		t.Errorf("stderr: %q", got)
 	}
 }

@@ -1073,31 +1073,64 @@ rules above are what refuse a move, not a list of keys held back from it.
 ## The theme file
 
 Which colour table every surface draws with is chosen in a file of its own,
-`theme.toml`, beside `config.toml` and `keybindings.toml`. It has one key to
-begin with, `name`: `auto`, which takes the table chosen for the background
-the terminal reports, or one of the tables shhh ships by name. A file with no
-`name`, and a machine with no file, is `auto`.
+`theme.toml`, beside `config.toml` and `keybindings.toml`. Its first key is
+`name`: `auto`, which takes the table chosen for the background the terminal
+reports, or one of the tables shhh ships by name. A file with no `name`, and a
+machine with no file, is `auto`.
 
 ```toml
 name = "charm"
 ```
 
+**A file can change single tokens over a table.** `base` is `name` under
+another word, for a file that reads better saying what its tokens are over (a
+file with both is refused), and a `[tokens]` table gives each token to change
+as a `"#rrggbb"`. The names are the palette's own: `add`, `del`, `hunk`,
+`accent`, `info`, `focus_bg`, `dim`, `dimmer`, `spin`, `status`, `bright`,
+`subtle`, `body`, `code`, `key`, the two intraline tints `add_bg` and `del_bg`,
+the card's `band`, and the `ground`.
+
+```toml
+base = "dark"
+
+[tokens]
+dim = "#9a9a9a"
+accent = { hex = "#d78700", ansi256 = 172, ansi16 = 3 }
+```
+
+A hex is the truecolor value only. The 256-colour and sixteen-colour values of
+that token stay the shipped table's own, unless the file gives `ansi256` (0 to
+255) or `ansi16` (0 to 15) beside the hex, because the palette derives nothing
+from a hex ([why](../interface/departures.md#a-theme-file-override-keeps-the-other-rungs)).
+The tokens are laid over whichever table is in effect, so `/ui theme`, the
+terminal's answer about its background and turning mono off all keep them; mono
+outranks every table and every override. The shipped tables are never changed.
+
+A text token whose override is under 4.5:1 against the table's ground or band
+is **applied and named**: on stderr as the process starts, and on the doctor's
+`theme` row, which turns to a warning that says the colour was applied as
+written and lists each token with its ratio. It is a warning and not a refusal
+because the file is the person's, and a refusal would punish the one who needs
+an unusual pair.
+
 It is a file of its own for the keymap's reason and one more. It is read once,
 as the process starts, because every surface draws from the table and a table
 swapped under a screen is a screen half in one set of colours. And the colours
-are a thing that can grow — a table a person defines, a second key beside the
-name — without the settings growing a nested section nobody scrolls to.
+are a thing that can grow — a second key beside the name, a table of tokens —
+without the settings growing a nested section nobody scrolls to.
 
-It is the user's file and a checkout does not layer one. A repository that
-could choose the colours would be a repository deciding what is under
-someone's eyes, which for a reader who picked a table because they can see it
-is not a matter of taste. So a checkout's `.shhh/theme.toml` is never read,
-and a checkout's settings that set `appearance.theme` are refused, named in
-the same note as the other keys a checkout may not decide.
+It is the user's file and a checkout does not layer one, and that holds for
+the overrides most of all: a repository that could change a single token could
+make its own text unreadable on the reader's screen, or its deletions the
+colour of its additions, and for a reader who picked a table because they can
+see it that is not a matter of taste. So a checkout's `.shhh/theme.toml` is
+never read, and a checkout's settings that set `appearance.theme` are refused,
+named in the same note as the other keys a checkout may not decide.
 
 **The file is applied whole or refused whole**, as the keymap file is. A parse
-error, a key a theme file does not have, or a name no table answers to refuses
-all of it: the refusal is said on stderr as the process starts and on the
+error, a key a theme file does not have, a name no table answers to, a token
+that is not one of the names above, or a value that is not a `#rrggbb` or a
+rung out of range refuses all of it: the refusal is said on stderr as the process starts and on the
 doctor's `theme` row, and `auto` runs. A typo does not become a line that does
 nothing.
 

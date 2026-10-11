@@ -1,0 +1,2 @@
+# The doctor over a theme file that overrides tokens: first one text token under the floor, then a file whose overrides clear it.
+mkdir -p "$XDG_CONFIG_HOME/shhh"; printf 'base = "dark"\n\n[tokens]\ndim = "#404040"\n' > "$XDG_CONFIG_HOME/shhh/theme.toml"; "$SHHH_BIN" doctor; printf 'base = "dark"\n\n[tokens]\ndim = "#9a9a9a"\naccent = { hex = "#d78700", ansi256 = 172, ansi16 = 3 }\n' > "$XDG_CONFIG_HOME/shhh/theme.toml"; "$SHHH_BIN" doctor

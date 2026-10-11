@@ -10,6 +10,8 @@ import (
 
 var testThemes = []string{"auto", "dark", "light", "charm", "high-contrast", "colorblind", "catppuccin-mocha", "dracula", "tokyo-night", "gruvbox-dark", "nord", "one-dark", "gruvbox-light", "everforest"}
 
+var testTokens = []string{"add", "del", "add_bg", "del_bg", "hunk", "accent", "info", "focus_bg", "band", "dim", "dimmer", "spin", "status", "bright", "subtle", "body", "code", "key", "ground"}
+
 // themeDir is a global config directory holding a config.toml and, where text
 // is not empty, a theme.toml beside it. It answers with the config path.
 func themeDir(t *testing.T, config, theme string) string {
@@ -31,7 +33,7 @@ func TestTheme_AbsentFileAndAbsentKeyAreAuto(t *testing.T) {
 	for name, text := range map[string]string{"no file": "", "no key": "# nothing yet\n"} {
 		t.Run(name, func(t *testing.T) {
 			path := themeDir(t, "", text)
-			state := ReadTheme([]string{themeFileBeside(path)}, "", testThemes)
+			state := ReadTheme([]string{themeFileBeside(path)}, "", testThemes, testTokens)
 			if state.Err != nil || state.Name != "auto" || state.Source != ThemeFromDefault {
 				t.Fatalf("got %+v, want auto from the default", state)
 			}
@@ -41,7 +43,7 @@ func TestTheme_AbsentFileAndAbsentKeyAreAuto(t *testing.T) {
 
 func TestTheme_TheFileNamesTheTableAndWinsOverTheConfig(t *testing.T) {
 	path := themeDir(t, "", "name = \"charm\"\n")
-	state := ReadTheme([]string{themeFileBeside(path)}, "light", testThemes)
+	state := ReadTheme([]string{themeFileBeside(path)}, "light", testThemes, testTokens)
 	if state.Name != "charm" || state.Source != ThemeFromFile || state.Migrate || state.Err != nil {
 		t.Fatalf("got %+v, want charm from the file", state)
 	}
@@ -51,11 +53,11 @@ func TestTheme_TheFileNamesTheTableAndWinsOverTheConfig(t *testing.T) {
 // no name, and says it is waiting to move.
 func TestTheme_TheConfigIsTheFallbackForAFileWithNoName(t *testing.T) {
 	path := themeDir(t, "", "# empty\n")
-	state := ReadTheme([]string{themeFileBeside(path)}, "light", testThemes)
+	state := ReadTheme([]string{themeFileBeside(path)}, "light", testThemes, testTokens)
 	if state.Name != "light" || state.Source != ThemeFromConfig || !state.Migrate {
 		t.Fatalf("got %+v, want light from the config, to migrate", state)
 	}
-	none := ReadTheme([]string{filepath.Join(t.TempDir(), "theme.toml")}, "light", testThemes)
+	none := ReadTheme([]string{filepath.Join(t.TempDir(), "theme.toml")}, "light", testThemes, testTokens)
 	if none.Name != "light" || !none.Migrate {
 		t.Fatalf("with no file at all: %+v", none)
 	}
@@ -63,7 +65,7 @@ func TestTheme_TheConfigIsTheFallbackForAFileWithNoName(t *testing.T) {
 
 func TestTheme_UnknownNameRefused(t *testing.T) {
 	path := themeDir(t, "", "name = \"solarized\"\n")
-	state := ReadTheme([]string{themeFileBeside(path)}, "light", testThemes)
+	state := ReadTheme([]string{themeFileBeside(path)}, "light", testThemes, testTokens)
 	if state.Err == nil {
 		t.Fatal("a name no table answers to was taken")
 	}
@@ -87,7 +89,7 @@ func TestTheme_FileIsAppliedWholeOrRefusedWhole(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			path := themeDir(t, "", tc.text)
-			state := ReadTheme([]string{themeFileBeside(path)}, "light", testThemes)
+			state := ReadTheme([]string{themeFileBeside(path)}, "light", testThemes, testTokens)
 			if state.Err == nil {
 				t.Fatalf("the file was taken: %+v", state)
 			}
@@ -123,7 +125,7 @@ func TestTheme_ACheckoutDoesNotLayerOne(t *testing.T) {
 			t.Fatalf("the search reaches the checkout: %s", p)
 		}
 	}
-	state := ReadTheme(ThemePaths(), "", testThemes)
+	state := ReadTheme(ThemePaths(), "", testThemes, testTokens)
 	if state.Name != "auto" || state.Path != "" {
 		t.Fatalf("the checkout's theme.toml was read: %+v", state)
 	}
@@ -195,5 +197,79 @@ func TestSettings_ThemeIsWrittenToThemeToml(t *testing.T) {
 	}
 	if got, _ := os.ReadFile(themeFileBeside(fresh)); string(got) != "name = \"light\"\n" {
 		t.Errorf("a new theme.toml:\n%s", got)
+	}
+}
+
+func TestTheme_BaseAndTokensAreRead(t *testing.T) {
+	path := themeDir(t, "", `base = "light"
+
+[tokens]
+dim = "#777777"
+accent = { hex = "#AA5500", ansi256 = 130, ansi16 = 3 }
+`)
+	state := ReadTheme([]string{themeFileBeside(path)}, "", testThemes, testTokens)
+	if state.Err != nil || state.Name != "light" || state.Source != ThemeFromFile {
+		t.Fatalf("got %+v, want light from the file", state)
+	}
+	want := []ThemeOverride{
+		{Token: "accent", Hex: "#aa5500", ANSI256: "130", ANSI16: "3"},
+		{Token: "dim", Hex: "#777777"},
+	}
+	if len(state.Overrides) != 2 || state.Overrides[0] != want[0] || state.Overrides[1] != want[1] {
+		t.Errorf("overrides %+v, want %+v", state.Overrides, want)
+	}
+}
+
+// Tokens with no name beside them override whichever table is chosen.
+func TestTheme_TokensWithNoBaseKeepTheFallbackName(t *testing.T) {
+	path := themeDir(t, "", "[tokens]\ndim = \"#777777\"\n")
+	state := ReadTheme([]string{themeFileBeside(path)}, "charm", testThemes, testTokens)
+	if state.Err != nil || state.Name != "charm" || !state.Migrate || len(state.Overrides) != 1 {
+		t.Fatalf("got %+v", state)
+	}
+}
+
+func TestTheme_UnknownTokenRefused(t *testing.T) {
+	for name, text := range map[string]string{
+		"unknown token":      "[tokens]\nmagenta = \"#ff00ff\"\n",
+		"unknown rung key":   "[tokens]\ndim = { hex = \"#777777\", ansi8 = 1 }\n",
+		"short hex":          "[tokens]\ndim = \"#777\"\n",
+		"no hex":             "[tokens]\ndim = { ansi256 = 240 }\n",
+		"256 out of range":   "[tokens]\ndim = { hex = \"#777777\", ansi256 = 256 }\n",
+		"16 out of range":    "[tokens]\ndim = { hex = \"#777777\", ansi16 = 16 }\n",
+		"a number":           "[tokens]\ndim = 7\n",
+		"both name and base": "name = \"dark\"\nbase = \"light\"\n",
+		"unknown base":       "base = \"solarized\"\n",
+		"a stray key":        "tint = \"#777777\"\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			path := themeDir(t, "", text+"\n")
+			state := ReadTheme([]string{themeFileBeside(path)}, "", testThemes, testTokens)
+			if state.Err == nil || state.Name != "auto" || len(state.Overrides) != 0 {
+				t.Fatalf("got %+v, want the whole file refused", state)
+			}
+		})
+	}
+}
+
+// A write of the theme keeps the tokens, and lands above them.
+func TestSettings_ThemeWriteKeepsTheTokensTable(t *testing.T) {
+	path := themeDir(t, "", "[tokens]\ndim = \"#777777\"\n")
+	if err := Write(path, Edit{Key: "appearance.theme", Value: "charm"}); err != nil {
+		t.Fatal(err)
+	}
+	state := ReadTheme([]string{themeFileBeside(path)}, "", testThemes, testTokens)
+	if state.Err != nil || state.Name != "charm" || len(state.Overrides) != 1 {
+		t.Fatalf("after a write: %+v", state)
+	}
+	// A file that says base keeps saying it.
+	path = themeDir(t, "", "base = \"dark\"\n[tokens]\ndim = \"#777777\"\n")
+	if err := Write(path, Edit{Key: "appearance.theme", Value: "light"}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(themeFileBeside(path))
+	state = ReadTheme([]string{themeFileBeside(path)}, "", testThemes, testTokens)
+	if state.Err != nil || state.Name != "light" || strings.Contains(string(got), "name") {
+		t.Fatalf("after a write over base: %+v\n%s", state, got)
 	}
 }

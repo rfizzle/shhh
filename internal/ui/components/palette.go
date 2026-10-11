@@ -958,7 +958,7 @@ func GroundColor() color.Color {
 	if !GroundPainted() || mono {
 		return nil
 	}
-	c := themes[resolveTheme(themeName)].ground.Color()
+	c := groundWithOverrides(themes[resolveTheme(themeName)].ground, overrides).Color()
 	if c == nil || c == (lipgloss.NoColor{}) {
 		return nil
 	}
@@ -977,8 +977,12 @@ func resolveTheme(name string) string {
 }
 
 // activeTokens is the token set the current theme resolves to, ignoring mono
-// — SetMono owns that question and asks this one on the way back out.
-func activeTokens() ColorTokens { return themes[resolveTheme(themeName)].tokens }
+// — SetMono owns that question and asks this one on the way back out. The
+// theme file's overrides (override.go) are laid on it here, so every door that
+// chooses a table keeps them, and mono, which never asks, outranks them.
+func activeTokens() ColorTokens {
+	return withOverrides(themes[resolveTheme(themeName)].tokens, overrides)
+}
 
 // swapPalette installs a token set and rebuilds every derived style, here and
 // in every host that registered with OnPaletteChange. It is the one door:

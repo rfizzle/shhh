@@ -214,6 +214,7 @@ func NewRootCmd() *cobra.Command {
 			if err := components.SetTheme(cfg.Appearance.Theme); err != nil && cmd.Annotations[ownsConfigError] == "" {
 				return err
 			}
+			applyThemeOverrides()
 
 			// How much of what a session writes down is kept, refused on the
 			// same terms and for the same reason: a level nobody honoured

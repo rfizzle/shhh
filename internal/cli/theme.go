@@ -25,7 +25,7 @@ var themeHeld atomic.Pointer[config.ThemeState]
 // readThemeFor reads the theme file beside the settings, with the settings'
 // own appearance.theme as the fallback for a file that names nothing.
 func readThemeFor(cfg config.Config) config.ThemeState {
-	return config.ReadTheme(config.ThemePaths(), cfg.Appearance.Theme, components.ThemeNames())
+	return config.ReadTheme(config.ThemePaths(), cfg.Appearance.Theme, components.ThemeNames(), components.OverrideTokenNames())
 }
 
 // withThemeFile puts the theme the file chose where the rest of the product
@@ -53,16 +53,56 @@ func sayThemeRefusal() {
 	}
 }
 
+// themeOverrides is the file's tokens as the palette reads them.
+func themeOverrides(state config.ThemeState) []components.TokenOverride {
+	out := make([]components.TokenOverride, len(state.Overrides))
+	for i, o := range state.Overrides {
+		out[i] = components.TokenOverride{Token: o.Token, Hex: o.Hex, ANSI256: o.ANSI256, ANSI16: o.ANSI16}
+	}
+	return out
+}
+
+// applyThemeOverrides lays the file's tokens over the table now in effect,
+// and says once on stderr which of them fall under the contrast floor: a
+// warning and not a refusal, because the file is the person's and a pair they
+// need may be an unusual one. Call it after the theme is set.
+func applyThemeOverrides() {
+	state := themeHeld.Load()
+	if state == nil || state.Err != nil || len(state.Overrides) == 0 {
+		return
+	}
+	o := themeOverrides(*state)
+	if err := components.SetOverrides(o); err != nil {
+		fmt.Fprintln(os.Stderr, "shhh: theme overrides not applied:", err)
+		return
+	}
+	if low := components.LowContrast(components.ResolvedTheme(), o); len(low) > 0 {
+		words := make([]string, len(low))
+		for i, s := range low {
+			words[i] = s.String()
+		}
+		fmt.Fprintln(os.Stderr, "shhh: theme.toml:", strings.Join(words, "; "), "- applied as written")
+	}
+}
+
 // probeTheme reads the file again rather than what the process held, because
 // the doctor is the command that runs when the load failed, and is cheap.
 func probeTheme(_ context.Context, cfg config.Config) doctorFinding {
-	return doctorTheme(readThemeFor(cfg), components.ThemeName(), components.ResolvedTheme())
+	state := readThemeFor(cfg)
+	var low []components.Shortfall
+	if state.Err == nil {
+		low = components.LowContrast(components.ResolvedTheme(), themeOverrides(state))
+	}
+	return doctorTheme(state, components.ThemeName(), components.ResolvedTheme(), low)
 }
 
 // doctorTheme is the theme row: the file, the table in effect, whether auto
 // chose it, and any refusal. A refused file is a warning whose consequence is
-// that the default runs, since the person asked for something else.
-func doctorTheme(state config.ThemeState, asked, table string) doctorFinding {
+// that the default runs, since the person asked for something else. Tokens the
+// file changes are counted on the row, and any text token of them under the
+// contrast floor is named as a warning that says it was applied: the person
+// asked for it.
+func doctorTheme(state config.ThemeState, asked, table string, low []components.Shortfall) doctorFinding {
 	in := table
 	if asked == config.ThemeAuto {
 		in = "auto → " + table
@@ -85,6 +125,17 @@ func doctorTheme(state config.ThemeState, asked, table string) doctorFinding {
 	}
 	if state.Migrate {
 		f.Detail = joinDetail(in, "set in config.toml, move it")
+	}
+	if n := len(state.Overrides); n > 0 {
+		f.Detail = joinDetail(f.Detail, fmt.Sprintf("%d over it", n))
+	}
+	if len(low) > 0 {
+		f.Outcome, f.State = "low contrast", components.DoctorWarned
+		f.Consequence = "applied as written; under 4.5:1 is hard to read"
+		f.FixLabel = "lift the colour"
+		for _, s := range low {
+			f.Fix = append(f.Fix, s.String())
+		}
 	}
 	return f
 }

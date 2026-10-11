@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 37 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 38 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -647,6 +647,32 @@ DistinctRungs, worst error 28.9 (RGB distance, on accent `#e69875`, which lands
 on 174 `#d78787`; delBg is next at 23.3, and the study's 32 on accent was for
 its own pick). Sixteen colours: the dark column. The Machado distance is not
 held for this table; `colorblind` remains the answer for that need.
+
+## A theme file override keeps the other rungs
+
+_Filed 2026-10-11 · closes by a decision_
+
+The palette writes every token three times, once for each colour profile, and
+derives nothing: the reasons are in the token's own comment, and they are why a
+downsampler's nearest match to the accent is the deletion's red. A person who
+overrides a token in `theme.toml` writes `"#rrggbb"`, which is one of the three
+values. The other two stay the shipped table's own for that token unless the
+file gives `ansi256` and `ansi16` beside the hex.
+
+This is the one place the rule is kept by the file's author and not by the
+table. It was chosen over deriving the two rungs from the hex because a derived
+rung is the loss the rule exists to refuse: the override of `accent` would
+arrive at sixteen colours as whichever of the terminal's colours is nearest,
+and the nearest is `del`. A person who needs the override at 256 or sixteen
+colours says the index; one who does not, keeps the table's.
+
+The contrast floor is the shipped tables' own, 4.5:1, measured with the same
+formula on the table's ground and band with the overrides laid on them. An
+override of a text token under it is applied and named, on stderr as the process
+starts and on the doctor's `theme` row, and not refused: the file is the
+person's, and a person who needs an unusual pair is the one a refusal would
+punish. Only the tokens the file overrides are named; a ground or band that the
+file moves does not re-measure the inks it left alone.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 
