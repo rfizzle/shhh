@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -72,11 +73,40 @@ func TestManager_OpensACall(t *testing.T) {
 	}
 }
 
+// The route through the runtime to a process's stop: /ps typed into the draft
+// puts the manager up, enter opens the process onto its output and esc backs
+// out, d asks, y stops it off the screen's goroutine, and the row reads
+// stopped on the frame that follows.
+func TestProgram_TheManagerStopsAProcess(t *testing.T) {
+	holdClock(t)
+	m, _ := scriptedSession()
+	h := newProcessHost()
+	m = withProcesses(m, h)
+	tm := runProgram(t, m)
+
+	send(tm, "/ps")
+	waitForText(t, tm, "2 processes running")
+	tm.Send(keyEnter)
+	waitForText(t, tm, "listening on :3000")
+	tm.Send(keyEsc)
+	waitForText(t, tm, "tools · nothing running")
+	tm.Send(letter('d'))
+	waitForText(t, tm, "stop the process web?")
+	tm.Send(letter('y'))
+	waitForText(t, tm, "1 process running")
+	frameHas(t, finalFrame(t, tm), "stopped")
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if len(h.stopped) != 1 || h.stopped[0] != "web" {
+		t.Fatalf("the stop reached %v, want web", h.stopped)
+	}
+}
+
 // One call of a round stopped from the manager returns as stopped while the
 // other runs on: the model is answered for the stopped one as for any call a
 // stop caught, the other's result stands, and the round goes on to the next
 // request.
-func TestManager_StopsOneCallAndTheRoundGoesOn(t *testing.T) {
+func TestProgram_TheManagerStopsOneCallAndTheRoundGoesOn(t *testing.T) {
 	m, _ := scriptedSession(
 		programTurn{calls: []provider.ToolCall{
 			call("s1", tools.SearchName, `{"pattern":"rounds"}`),
@@ -332,6 +362,29 @@ func TestGolden_Manager(t *testing.T) {
 			{Label: "a round's two calls · the search stopped by you, the command running", View: calls},
 			{Label: "the command opened · its arguments whole and its output so far", View: command},
 			{Label: "the panel it leaves · the way out, on one row", View: m.takeoverPanel(m.contentWidth())},
+		}
+	})
+}
+
+// TestGolden_RailProcessesBlock captures the rail's PROCESSES and CALLS
+// blocks beside AGENTS' place: a dev server and a watcher running, a test run
+// that failed, and a round of two calls, one stopped by you; the same rail
+// short of height, where the static blocks go to the foot line before either
+// of these loses a row; and a session with no process and no call in flight,
+// which draws neither.
+func TestGolden_RailProcessesBlock(t *testing.T) {
+	captureGolden(t, "rail-processes", "the rail's PROCESSES and CALLS blocks", goldenWidths, func(width int) []golden.Panel {
+		m, _ := managerModel(t, width)
+		m.turnStarted = goldenNow.Add(-6 * time.Minute)
+		m.calls = callFixture(t)
+		m.calls.stop("s1")
+		railWidth := components.InspectorWidthFor(width)
+		rail := m.inspectorData()
+		bare := frameModel(t, width, 40)
+		return []golden.Panel{
+			{Label: "three processes and a round of two calls", View: rail.View(railWidth, 0)},
+			{Label: "the same rail in 11 rows · what is static goes first", View: rail.View(railWidth, 11)},
+			{Label: "no process started and no call running · neither block", View: bare.inspectorData().View(railWidth, 0)},
 		}
 	})
 }

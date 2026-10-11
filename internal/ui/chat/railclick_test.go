@@ -85,6 +85,8 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 		{components.RailSpend, false, railDoorModel, "/stats"},
 		{components.RailTools, false, railToolsModel, "/mcp"},
 		{components.RailTools, true, railToolsModel, "/mcp"},
+		{components.RailProcesses, false, railProcessesModel, "/ps"},
+		{components.RailCalls, false, railProcessesModel, "/ps"},
 	} {
 		name := c.block
 		if c.marker {
@@ -124,6 +126,16 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 			}
 		})
 	}
+}
+
+// railProcessesModel is a session with processes started and a round of
+// calls in flight, so the rail draws PROCESSES and CALLS.
+func railProcessesModel(t *testing.T) Model {
+	t.Helper()
+	m := withProcesses(inspectorModel(t, 160, 60), newProcessHost())
+	m.pointer.mouseOn = true
+	m.calls = callFixture(t)
+	return m
 }
 
 // railStepsModel is railDoorModel with the session's own working list

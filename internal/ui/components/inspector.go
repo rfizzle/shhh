@@ -11,8 +11,8 @@ package components
 // The rail is passive, like Cockpit: the host feeds it the session's numbers
 // and renders View every frame. It owns no keys, no state and no goroutines,
 // and the block order is fixed — SUMMARY, THIS TURN, ALERTS, PLAN, STEPS,
-// TODO, CHANGES, AGENTS, TOOLS, CONTEXT, SPEND. A block with nothing to say is
-// omitted rather than rendered empty.
+// TODO, CHANGES, AGENTS, PROCESSES, CALLS, TOOLS, CONTEXT, SPEND. A block
+// with nothing to say is omitted rather than rendered empty.
 //
 // A rail that does not fit its height gives up the least alive thing first.
 // Each block states its class from its own state every frame — asks and
@@ -136,9 +136,13 @@ type InspectorRail struct {
 	Alerts  InspectorAlerts
 	Changes *InspectorChanges
 	Agents  []InspectorAgent
-	Tools   *InspectorTools
-	Context *InspectorContext
-	Spend   *InspectorSpend
+	// Processes are the processes the session started, and Calls the calls
+	// of the round in flight; empty draws no block.
+	Processes []InspectorProcess
+	Calls     []InspectorCall
+	Tools     *InspectorTools
+	Context   *InspectorContext
+	Spend     *InspectorSpend
 	// Doors names the blocks, by their Rail* heading, that have a surface
 	// behind them holding the whole of what the block bounds. Their heading
 	// and fold marker point at the block; every other block's point at
@@ -198,7 +202,7 @@ const (
 func (r InspectorRail) Empty() bool {
 	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Steps == nil && r.Todo == nil &&
 		len(r.Alerts.Live()) == 0 && r.Changes == nil &&
-		len(r.Agents) == 0 && r.Tools == nil && r.Context == nil && r.Spend == nil
+		len(r.Agents) == 0 && len(r.Processes) == 0 && len(r.Calls) == 0 && r.Tools == nil && r.Context == nil && r.Spend == nil
 }
 
 // railTargetKind says what a row on the rail points at. Most of the rail
@@ -506,7 +510,8 @@ func (r InspectorRail) blocks(width int) []railBlock {
 	}{
 		{RailSummary, r.summaryBlock}, {RailTurn, r.turnBlock}, {RailAlerts, r.alertsBlock},
 		{RailPlan, r.planBlock}, {RailSteps, r.stepsBlock}, {RailTodo, r.todoBlock},
-		{RailChanges, r.changesBlock}, {RailAgents, r.agentsBlock}, {RailTools, r.toolsBlock},
+		{RailChanges, r.changesBlock}, {RailAgents, r.agentsBlock},
+		{RailProcesses, r.processesBlock}, {RailCalls, r.callsBlock}, {RailTools, r.toolsBlock},
 		{RailContext, r.contextBlock}, {RailSpend, r.spendBlock},
 	} {
 		if blk, ok := b.build(width); ok {

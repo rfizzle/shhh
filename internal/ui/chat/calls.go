@@ -108,17 +108,6 @@ func (t *callTable) liveCalls() []liveCall {
 	return out
 }
 
-// running counts the calls still running.
-func (t *callTable) running() int {
-	n := 0
-	for _, c := range t.liveCalls() {
-		if !c.stopped {
-			n++
-		}
-	}
-	return n
-}
-
 // callRows is the calls running now as the manager lists them: the tool, its
 // arguments in the receipt's words, how long it has run and where.
 func (m Model) callRows() []components.ManagerRow {

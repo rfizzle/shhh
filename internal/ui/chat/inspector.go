@@ -216,18 +216,20 @@ func (m Model) transcriptReading() transcriptReading {
 func (m Model) resolveInspector() components.InspectorRail {
 	steps := m.planChecklist()
 	return components.InspectorRail{
-		Summary: m.inspectorSummary(),
-		Turn:    m.inspectorTurn(steps),
-		Plan:    m.inspectorPlan(steps),
-		Steps:   m.inspectorSteps(),
-		Todo:    m.inspectorTodo(),
-		Alerts:  m.inspectorAlerts(),
-		Changes: m.inspectorChanges(),
-		Agents:  m.inspectorAgents(),
-		Tools:   m.inspectorTools(),
-		Context: m.inspectorContext(),
-		Spend:   m.inspectorSpend(),
-		Doors:   railDoorSet(),
+		Summary:   m.inspectorSummary(),
+		Turn:      m.inspectorTurn(steps),
+		Plan:      m.inspectorPlan(steps),
+		Steps:     m.inspectorSteps(),
+		Todo:      m.inspectorTodo(),
+		Alerts:    m.inspectorAlerts(),
+		Changes:   m.inspectorChanges(),
+		Agents:    m.inspectorAgents(),
+		Processes: m.inspectorProcesses(),
+		Calls:     m.inspectorCalls(),
+		Tools:     m.inspectorTools(),
+		Context:   m.inspectorContext(),
+		Spend:     m.inspectorSpend(),
+		Doors:     railDoorSet(),
 	}
 }
 
