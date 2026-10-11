@@ -141,9 +141,13 @@ wrote.
 ## Install
 
 ```sh
-$ brew install rfizzle/tap/shhh
+$ brew install --cask rfizzle/tap/shhh
 $ go install github.com/rfizzle/shhh/cmd/shhh@latest
 ```
+
+The cask is macOS only, signed and notarized; on Linux use `go install` or
+the release archive. A copy installed from the old formula is replaced with
+`brew uninstall shhh` and then the cask.
 
 A `go install …@vX.Y.Z` build reads its version from the module, so update
 checks work; its sandbox image is then named by that tag
