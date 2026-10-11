@@ -738,6 +738,12 @@ takes everywhere. It is never the fallback for a run that asked for a commit
 and could not have one: becoming a no-commit run on its own would change what
 done means without being asked, and leave an item marked done that did not
 land.
+A parallel sprint's lane without a commit ends the way a committing lane
+does, less the commit: it carries what landed since its last boundary,
+verifies again if anything carried, and lands plain, so a tree nobody ran the
+checks over never lands. The run is over by then, so a verify that fails
+blocks the item with the copy kept, where a committing lane would spend a
+fix round.
 
 A run that stops — a question, spent rounds, a commit that cannot be made
 — leaves the item blocked with the evidence written on it and the work so
@@ -1172,15 +1178,16 @@ batch this replaces landed by fast-forward of a hash its gate had passed and
 nothing else. Holding the lock for one verify serialises landings, which
 landing them one at a time already did. A checkout that moved by a hand
 outside the sprint blocks the lane with the files named and its copy kept.
-A sprint asked for without commits lands the same way at the end and leaves
-the change uncommitted. Two endings still differ from the session's: a
-landing that will not carry into a lane's copy at all, because the copy's
-base will not take it, blocks that lane's item with the refusal as the
-evidence, and a merge at that uncommitted landing that leaves a conflict
-blocks it with both patches kept — the one that landed first on the
-checkout, the lane's in its copy — and the files named, never a commit with
-conflict markers in it. Either way the lane is freed and its copy is kept
-for whoever reads the block. A declaration that turned out to be wrong is
+A sprint asked for without commits carries, verifies again and lands the
+same way at the end and leaves the change uncommitted. Two endings still
+differ from the session's: a landing that will not carry into a lane's copy
+at all, because the copy's base will not take it, blocks that lane's item
+with the refusal as the evidence, and a carry at the end of a run without
+commits that meets the lane's work in regions no rule settles, or a verify
+there that fails, blocks it with the copy kept — a run that is over has no
+turn left to reconcile or fix with — and the files named, never a commit
+with conflict markers in it. Either way the lane is freed and its copy is
+kept for whoever reads the block. A declaration that turned out to be wrong is
 caught there, not trusted.
 
 **A blocked lane does not stop the sprint.** The other lanes' items were

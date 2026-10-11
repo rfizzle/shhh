@@ -13,10 +13,13 @@ package cli
 // (run.Sprint.TakeLane).
 //
 // The landing is serial and in finish order, and it is the session's own: a
-// lane is a writer, so its patch lands through Worktree.Land — merged three
-// ways where the checkout moved under it — and every other lane carries what
-// landed into its copy at its next stage boundary (Worktree.Reseed), the way
-// a writer child carries it at its next round. What differs is who answers a
+// lane is a writer, so its patch lands through Worktree.LandPlain — only
+// where the checkout holds what the copy's base holds — after the lane has
+// carried everything landed since its last boundary and verified again, and
+// every other lane carries what landed into its copy at its next stage
+// boundary (Worktree.Reseed), the way a writer child carries it at its next
+// round. A run without a commit takes the same carry and verify and skips
+// the commit. What differs is who answers a
 // collision: where a carried landing meets the lane's work on lines no rule
 // settles, the lane's own run reconciles it in a turn of its remediation
 // step, judged, verified and reviewed with the item (todoDriver.reconcile),
@@ -884,6 +887,33 @@ func (l *todoLane) landCommit(ctx context.Context, d *todoDriver, st *run.State)
 	return committed, nil
 }
 
+// landUncommitted is the end of a run whose definition of done is a run
+// without a commit: the commit's own carry and verify, with the commit
+// skipped, and a plain landing. The lane takes up what landed since its last
+// boundary and verifies again in its copy if anything carried, so the tree
+// that lands is one a gate ran over. Nothing is left to fix or reconcile once
+// the run is done, so a verify that fails, a verify that cannot run and a
+// carry that meets the lane's work in regions no rule settles each keep the
+// copy and block the item, naming why. The caller holds the land lock.
+func (l *todoLane) landUncommitted(ctx context.Context, d *todoDriver, st *run.State, it todo.Item) ([]string, error) {
+	why, carried, r := l.catchUpLocked()
+	if why != "" {
+		return nil, errors.New(why)
+	}
+	if r != nil {
+		l.reconciling = r
+		return nil, errors.New(l.putBack("a landing met this lane's work in regions no rule settles after the run was over, so no turn is left to reconcile it, and the copy is put back to the lane's own work: " + r.findings))
+	}
+	if step, redirected := d.verifyAfterCarry(ctx, st, it, carried, true); redirected {
+		if step.Action == run.ActionBlocked {
+			return nil, errors.New(st.Blocked)
+		}
+		return nil, fmt.Errorf("the lane's tree no longer verifies after %s landed on the checkout, and the run is over, so nothing was landed:\n%s",
+			strings.Join(carried, ", "), st.Findings)
+	}
+	return l.land(true)
+}
+
 // fromTop is a patch's repository-relative paths as the checkout names them.
 func (s *todoLanes) fromTop(files []string) []string {
 	root := s.root
@@ -955,7 +985,7 @@ func (l *todoLane) end(ctx context.Context, d *todoDriver, st *run.State, it tod
 	}
 	if st.Stage == run.StageDone && !l.landed {
 		l.set.land.Lock()
-		files, err := l.land(false)
+		files, err := l.landUncommitted(ctx, d, st, it)
 		if err == nil {
 			l.set.checkpoint(ctx)
 		}
