@@ -55,7 +55,7 @@
 │   [e]                  edit                                              │
 │   [r]                  retry with a note                                 │
 │   [c]                  copy                                              │
-│   [ctrl+s]             write                                             │
+│   [ctrl+s]             save as a snippet                                 │
 │   [esc]                back                                              │
 │ SETUP                                                                    │
 │   [enter]              setup wizard                                      │
@@ -120,7 +120,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254m[e]␛[m                  ␛[38;5;244medit␛[m                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[r]␛[m                  ␛[38;5;244mretry with a note␛[m                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[c]␛[m                  ␛[38;5;244mcopy␛[m                                              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m[ctrl+s]␛[m             ␛[38;5;244mwrite␛[m                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m[ctrl+s]␛[m             ␛[38;5;244msave as a snippet␛[m                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[esc]␛[m                ␛[38;5;244mback␛[m                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mSETUP␛[m                                                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[enter]␛[m              ␛[38;5;244msetup wizard␛[m                                      ␛[38;5;244m│␛[m

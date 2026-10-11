@@ -122,7 +122,7 @@ func TestActionBar_ViewIsOneRowOfBracketedKeys(t *testing.T) {
 	view := NewActionBarModel().View(barWidth)
 	for _, want := range []string{
 		"[enter] show what it would affect", "[y] run it", "[e] edit", "[r] retry with a note",
-		"[c] copy", "[ctrl+s] write", "[esc] back",
+		"[c] copy", "[ctrl+s] save as a snippet", "[esc] back",
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("bar is missing %q:\n%s", want, view)
@@ -141,7 +141,7 @@ func TestActionBar_NarrowRowBreaksBetweenKeysAndKeepsThemAll(t *testing.T) {
 	view := NewActionBarModel().SetDanger(true).View(width)
 	for _, want := range []string{
 		"[enter] show what it would affect", "[y] run it",
-		"[e] edit", "[r] retry with a note", "[c] copy", "[ctrl+s] write",
+		"[e] edit", "[r] retry with a note", "[c] copy", "[ctrl+s] save as a snippet",
 		"[esc] back",
 	} {
 		if !strings.Contains(view, want) {

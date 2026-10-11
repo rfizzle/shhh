@@ -903,7 +903,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `context.back` | `esc` | back | yes |
 | `row.withdraw` | `u` | take the steer back | yes |
 | `row.retry` | `r` | try again | yes |
-| `row.continue` | `c` | continue from here | yes |
+| `row.continue` | `c` | compact now | yes |
 | `row.resume` | `g` | continue from here | yes |
 | `row.key` | `e` | enter a new key | yes |
 | `row.provider` | `p` | switch provider | yes |
@@ -1062,7 +1062,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `oneshot.edit` | `e` | edit | yes |
 | `oneshot.revise` | `r` | retry with a note | yes |
 | `oneshot.copy` | `c` | copy | yes |
-| `oneshot.save` | `ctrl+s` | write | yes |
+| `oneshot.save` | `ctrl+s` | save as a snippet | yes |
 | `oneshot.quit` | `esc` | back | yes |
 | `setup.wizard` | `enter` | setup wizard | yes |
 | `setup.paste` | `p` | paste a key | yes |

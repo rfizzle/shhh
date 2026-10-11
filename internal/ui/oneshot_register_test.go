@@ -24,7 +24,7 @@ func TestOneShot_TheRegisterIsSevenKeys(t *testing.T) {
 		{"e", ActionEdit, "[e] edit"},
 		{"r", ActionRevise, "[r] retry with a note"},
 		{"c", ActionCopy, "[c] copy"},
-		{"ctrl+s", ActionSave, "[ctrl+s] write"},
+		{"ctrl+s", ActionSave, "[ctrl+s] save as a snippet"},
 		{"esc", ActionCancel, "[esc] back"},
 	}
 	m := NewActionBarModel().SetRevision(1)

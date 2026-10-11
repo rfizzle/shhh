@@ -100,7 +100,7 @@
 
   · withdraw  u · take the steer back  [shipped]
   · retry     r · try again  [shipped]
-  · continue  c · continue from here  [shipped]
+  · continue  c · compact now  [shipped]
   · resume    g · continue from here  [shipped]
   · key       e · enter a new key  [shipped]
   · provider  p · switch provider  [shipped]
@@ -325,7 +325,7 @@
   · edit     e · edit  [shipped]
   · revise   r · retry with a note  [shipped]
   · copy     c · copy  [shipped]
-  · save     ctrl+s · write  [shipped]
+  · save     ctrl+s · save as a snippet  [shipped]
   · quit     esc · back  [shipped]
 
   SETUP

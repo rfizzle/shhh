@@ -886,7 +886,7 @@ var Row = RowKeys{
 	Withdraw: bind("u", "take the steer back", "u"),
 
 	Retry:    bind("r", "try again", "r"),
-	Continue: bind("c", "continue from here", "c"),
+	Continue: bind("c", "compact now", "c"),
 	Resume:   bind("g", "continue from here", "g"),
 	Key:      bind("e", "enter a new key", "e"),
 	Provider: bind("p", "switch provider", "p"),
@@ -1575,7 +1575,7 @@ var OneShot = OneShotKeys{
 	Edit:    bind("e", "edit", "e"),
 	Revise:  bind("r", "retry with a note", "r"),
 	Copy:    bind("c", "copy", "c"),
-	Save:    Save("write"),
+	Save:    Save("save as a snippet"),
 	Quit:    bind("esc", "back", "esc"),
 }
 
