@@ -160,6 +160,18 @@ refusal the session would give. The label is what the model ran, over up to
 eight rounds: `listed` (every command on the inspection list, or none) or
 `off-list` (one or more the mode refused).
 
+`kind = "process-choice"` is a table whose call is the coding prompt with both
+the command tool and the process tool in front of the model: each row puts its
+`instruction` to the run's model with the read-only tools, those two and the
+toolbox the session would write, for one round, and nothing is run. The label
+is the first tool call the model asked for: `process` (a process start),
+`command` (the command tool) or `other` (anything else, a process read
+included, or no call). Write the request so the command or the program is
+named, so that a read of the tree first is not the likeliest answer. The table
+measures the descriptions and the prompt sentence that steer a server or a
+watcher to the process tool; the redirect in the command tool is exercised by
+its unit tests, not here. `shhh eval --case process-choice` is the run.
+
 ## Writing a scripted case
 
 A scripted case is a table too, and its kind names the mechanism:

@@ -61,7 +61,7 @@ const (
 // table of rows put to a call, and the only thing that differs is that the
 // call is the harness's own and no model is asked.
 func (k Kind) IsTable() bool {
-	return k == KindClassifier || k == KindSummary || k == KindInherit || k == KindDelegation || k == KindReadOnly || k.Scripted()
+	return k == KindClassifier || k == KindSummary || k == KindInherit || k == KindDelegation || k == KindReadOnly || k == KindProcessChoice || k.Scripted()
 }
 
 // Labels is the closed set this kind's answers come from. A row expecting
@@ -79,6 +79,8 @@ func (k Kind) Labels() []string {
 		return []string{LabelAlone, LabelSpawned, LabelDivided}
 	case KindReadOnly:
 		return []string{LabelListed, LabelOffList}
+	case KindProcessChoice:
+		return []string{LabelProcess, LabelCommand, LabelOtherCall}
 	}
 	return scriptedLabels(k)
 }
@@ -352,6 +354,8 @@ func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, r
 		return askDelegation(ctx, p, model, row)
 	case kind == KindReadOnly:
 		return askReadOnly(ctx, p, model, row, run)
+	case kind == KindProcessChoice:
+		return askProcessChoice(ctx, p, model, row)
 	case kind.Scripted():
 		return askScripted(ctx, kind, row)
 	}

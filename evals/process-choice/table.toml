@@ -1,0 +1,71 @@
+[[row]]
+name = "a dev server to try is a process"
+why = "a server the person will open in a browser never exits; run as a command it sits until the ceiling, so its first call is a process start"
+expect = ["process"]
+instruction = "Start the dev server for this Vite app with `npm run dev` so I can try the page at localhost:5173 while you make the next change."
+
+[[row]]
+name = "a Go API to curl is a process"
+why = "a server the model will probe while it works on the handlers is a process it reads and stops, not a command that returns"
+expect = ["process"]
+instruction = "Run the API server with `go run ./cmd/server` and keep it up: I want you to curl it after each change to the handlers."
+
+[[row]]
+name = "a type-check watcher to keep is a process"
+why = "a watcher is read more than once and does not end on its own, which is what the process tool is for"
+expect = ["process"]
+instruction = "Keep `npx tsc --watch` running in the background so type errors show up as I edit, and read it whenever I ask how the types are doing."
+
+[[row]]
+name = "a log to tail is a process"
+why = "tail -f never returns; the model reads the log in pieces over several turns, which the process tool pages and the command tool cannot"
+expect = ["process"]
+instruction = "Follow the application log with `tail -f logs/app.log` and tell me when the next ERROR line shows up."
+
+[[row]]
+name = "a long build to read later is a process"
+why = "a build that runs for twenty minutes is one the model checks on while it does other work, not one it waits out"
+expect = ["process"]
+instruction = "Start the full release build with `make release` (about twenty minutes) and carry on with the changelog; I want you to check its output as it goes."
+
+[[row]]
+name = "a static file server is a process"
+why = "python -m http.server serves until it is stopped, and the model needs to stop it when the person is done"
+expect = ["process"]
+instruction = "Serve the docs folder over http with `python3 -m http.server 8000` so I can read it in the browser, and stop it when I say so."
+
+[[row]]
+name = "an attached compose stack is a process"
+why = "docker compose up without -d stays attached and prints for as long as the stack is up"
+expect = ["process"]
+instruction = "Bring the stack up with `docker compose up` and watch its logs while I test the login flow."
+
+[[row]]
+name = "a test watcher to keep is a process"
+why = "jest --watch reruns on save and never exits; the person asked for it to be kept going and read on request"
+expect = ["process"]
+instruction = "Run the tests in watch mode with `npx jest --watch` so they rerun as I save files; keep it going and read it when I ask."
+
+[[row]]
+name = "a test run is a command"
+why = "a test suite ends and its result is the answer; a process would add a start, a read and a stop for nothing"
+expect = ["command"]
+instruction = "Run the unit tests with `go test ./...` and tell me which ones fail."
+
+[[row]]
+name = "a build that ends is a command"
+why = "a build that finishes in seconds returns its verdict at once, so the command tool is the right and cheaper call"
+expect = ["command"]
+instruction = "Build the binary with `go build -o /tmp/shhh ./cmd/shhh` and tell me whether it compiles."
+
+[[row]]
+name = "a count from a grep is a command"
+why = "a search piped to a count ends at once; nothing about it is read twice"
+expect = ["command"]
+instruction = "Run `git grep -n TODO -- '*.go' | wc -l` and tell me how many TODOs the Go files hold."
+
+[[row]]
+name = "a script that prints and exits is a command"
+why = "a script that prints its report and exits is a command even when it is slow to start; a process would be a ceremony"
+expect = ["command"]
+instruction = "Run `./scripts/check-versions.sh` and tell me what it prints."

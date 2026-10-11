@@ -141,7 +141,7 @@ func LoadCase(dir string) (Case, error) {
 			return Case{}, err
 		}
 		c.Site, c.Prompt, c.Facts = site, strings.TrimSpace(f.Prompt), facts
-	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate, KindInherit, KindDelegation, KindReadOnly:
+	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate, KindInherit, KindDelegation, KindReadOnly, KindProcessChoice:
 		rows, err := loadTable(filepath.Join(dir, TableFile), kind)
 		if err != nil {
 			return Case{}, err
@@ -162,7 +162,7 @@ func LoadCase(dir string) (Case, error) {
 func kindNames() []string {
 	return []string{string(KindWorkspace), string(KindResearch), string(KindClassifier),
 		string(KindSummary), string(KindSteer), string(KindCompaction), string(KindSpawn), string(KindGate),
-		string(KindInherit), string(KindDelegation), string(KindReadOnly)}
+		string(KindInherit), string(KindDelegation), string(KindReadOnly), string(KindProcessChoice)}
 }
 
 // tableFile is a table on disk: nothing but rows, and no top-level key beside
@@ -361,6 +361,10 @@ func checkScriptedRow(path string, kind Kind, row Row) error {
 		policies := []string{config.DelegationOff, config.DelegationExplicit, config.DelegationProactive}
 		if !slices.Contains(policies, row.Delegation) {
 			return fmt.Errorf("%s: %s: delegation %q is not a policy — %s", path, row.Name, row.Delegation, strings.Join(policies, ", "))
+		}
+	case KindProcessChoice:
+		if row.Instruction == "" {
+			return fmt.Errorf("%s: %s: instruction is required — it is the request whose first tool call is read", path, row.Name)
 		}
 	case KindReadOnly:
 		if row.Instruction == "" || len(row.Files) == 0 {
