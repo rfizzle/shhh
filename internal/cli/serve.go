@@ -169,16 +169,20 @@ func serveOnSocket(ctx context.Context, srv *rpc.Server, path string) error {
 			return err
 		}
 	}
+	// Anyone who can open this socket can run commands as this user in this
+	// checkout, so nobody else may open it. The socket is created under a
+	// tight umask so it never exists with a wider mode, and the chmod below
+	// is the belt for a platform that ignores the umask for sockets. The
+	// umask is process-wide, so it is held for the one listen and put back at
+	// once: leaving it tightened would change the mode of every file the
+	// session creates afterwards.
+	restore := tightenUmask()
 	l, err := net.Listen("unix", path)
+	restore()
 	if err != nil {
 		return err
 	}
 	defer func() { _ = os.Remove(path) }()
-	// Anyone who can open this socket can run commands as this user in this
-	// checkout, so nobody else may open it. The mode is set after the listen
-	// because there is no way to ask for one before it, which leaves a
-	// window; the directory above is created private for the same reason,
-	// and is what closes it for a socket the caller puts somewhere new.
 	if err := os.Chmod(path, 0o600); err != nil {
 		_ = l.Close()
 		return err

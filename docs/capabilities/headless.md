@@ -521,6 +521,10 @@ events it receives while all that happens are the ones above, unchanged: the
 same lines, the same words, forwarded rather than rewritten, so a client that
 can read a run's output can read a session it is driving with the same code.
 
+The socket is created mode 0600, so only the user who started the server can
+connect. Another user can still see the path if its directory is readable, so
+put it in a private directory; a directory `shhh` creates for it is 0700.
+
 A terminal session listens too, on a socket of its own, and takes exactly one
 of these calls there: a line of text from another session, which it reads as
 a steer and which can do nothing else
