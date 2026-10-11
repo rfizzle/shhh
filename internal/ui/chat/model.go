@@ -1078,13 +1078,12 @@ type Model struct {
 	// todo is the project's backlog on this session: what the host wired,
 	// the store as last read, the run in progress, and the cards and the
 	// readings that work on it (todostate.go).
-	todo      todoState
-	memoryAsk *components.NoteSelect
-	// question is the card the model's own question is being asked on, and
-	// nil whenever none is outstanding (question.go). It rides beside
-	// approval.request rather than inside it because the request is what the
-	// call is and the card is what the reader is looking at.
-	question *questionCard
+	todo todoState
+	// decision is the two prompts a turn can be held on beside the approval
+	// card: the memory confirm and the model's own question. Its fields are
+	// promoted, so m.question and m.memoryAsk read as they always did, and a
+	// cancel drops them with the card in one call (decision.go).
+	decision
 	// questionsAsked is how many questions this turn has put on the screen,
 	// against the budget one turn has (question.go). It is the turn's and
 	// resets when a turn opens rather than when one closes, so a question

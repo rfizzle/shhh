@@ -264,21 +264,9 @@ func (m *Model) cancelStreaming() {
 		}
 		m.appendCallRow(tc.ID, entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: agent.CancelledResult})
 	}
-	m.approval.request = nil
-	m.memoryAsk = nil
-	// And the question, which the cancel answered with the turn's synthetic
-	// result. A card left behind here is not merely a stale pointer: the
-	// grace window reads it to decide which keys a burst may not answer
-	// (interrupt.go), so the next decision to arrive would be protected by
-	// the wrong card's keys. A question the reader had handed to the draft
-	// goes with it too — it is the request above and this card together, so
-	// clearing both is what makes the next message an ordinary message again
-	// (question.go).
-	m.question = nil
-	// The queue the strip described is gone with the turn, and so is every
-	// answer the list gave against it.
-	m.clearQueueStrip()
-	m.approval.batchAnswered, m.approval.total = nil, 0
+	// The cancel answered the card, the memory confirm and the question with
+	// the synthetic results, so none of them outlives the turn.
+	m.clearDecisions()
 	// Ctrl+C is a cancellation, and the close rows say so.
 	m.turnOutcome = components.TurnCancelled
 	m.finishStreaming()
