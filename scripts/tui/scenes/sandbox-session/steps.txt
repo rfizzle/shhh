@@ -31,7 +31,7 @@ setup mkdir -p ../engine && cp "$scene/docker" ../engine/docker && chmod +x ../e
 # (the last word the rail sheds, so it is there at COLS=60 too), and the start
 # screen's `sandbox` row sits between `gate` and `tools`, reading the container,
 # its profile, the closed network, the engine and the image's short digest.
-snap 01-start "Some things worth doing first" "⛨ sandbox" "sandbox  container · workspace-netless · no network"
+snap 01-start "Some things worth doing first" "⛨ sandbox" "sandbox  container · workspace"
 keys "/status" Enter
 snap 02-status "container sandbox ·" "Containment" "a writer's commands: contained · container sandbox"
 keys "count to three" Enter
