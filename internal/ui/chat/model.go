@@ -1856,6 +1856,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if call := mm.notifyCmd(m); call != nil {
 		cmd = tea.Batch(cmd, call)
 	}
+	// The record's one notice rides the tail as well: a write fails on the
+	// recorder's side of the observer, between messages, and the first time
+	// the screen next turns over it is told (recordNotice).
+	mm = mm.recordNotice()
 	// And the tab's progress light, for the same reason again: a turn
 	// breaking is a transition, and the paths that break one are the same
 	// dozen (terminal.go).

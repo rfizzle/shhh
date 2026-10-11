@@ -108,6 +108,13 @@ type Observer struct {
 	// Session names the saved conversation this session is writing, so
 	// metadata and transcript can be joined by someone who asks to.
 	Session func(name string)
+	// WriteFailed reports the first write the record could not make, once:
+	// it returns the error the first time it is asked after a failure and
+	// nil every time after, so a surface that asks on each pass of its loop
+	// raises one notice and then falls silent. The record never interrupts
+	// the session; this is how the person learns it has stopped, and it is
+	// never shown to the model.
+	WriteFailed func() error
 }
 
 // Decided reports one verdict: through DecisionTimed where the observer takes

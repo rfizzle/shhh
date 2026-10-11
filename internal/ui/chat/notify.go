@@ -235,3 +235,24 @@ func (m *Model) notifyCommand(parts []string) string {
 	}
 	return m.setNotify(on)
 }
+
+// recordNotice raises the one notice for a session record that stopped
+// writing. The recorder hands the first failed write back once and nil
+// afterwards, so asking on every pass of Update draws the notice a single
+// time without a flag on the model. It is a line in the history and not an
+// interruption: the session goes on, the record is what stopped.
+func (m Model) recordNotice() Model {
+	failed := m.wiring.Observer.WriteFailed
+	if failed == nil {
+		return m
+	}
+	err := failed()
+	if err == nil {
+		return m
+	}
+	next, _ := m.systemNotice("the session record stopped writing: " + err.Error())
+	if mm, ok := next.(Model); ok {
+		return mm
+	}
+	return m
+}

@@ -272,6 +272,12 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 // written on the connection this closes.
 func (d *todoDriver) close() {
 	d.rec.end()
+	// The run's summary has been said by now, so the record's failure gets a
+	// line of its own: a sprint whose row stopped writing is not one whose
+	// result is in question, but `shhh observe` will show less than ran.
+	if n := d.rec.failedWrites(); n > 0 {
+		fmt.Fprintln(d.out, todoRecordLine(n, d.rec.writeFailed()))
+	}
 	if d.db != nil {
 		d.db.Close()
 	}
@@ -314,4 +320,14 @@ func (d *todoDriver) steps() run.Pipeline {
 // to asks for nothing up front either way (Pipeline.Refuse).
 func (d *todoDriver) can() run.Can {
 	return run.Can{Changeset: true, Supervisor: d.repo, Runner: true, Repo: d.repo, Checks: d.checks}
+}
+
+// todoRecordLine is the run's record failure said on the runner's own
+// summary line: how many writes the store refused, and the first reason.
+func todoRecordLine(n int, first error) string {
+	why := "the store refused a write"
+	if first != nil {
+		why = first.Error()
+	}
+	return fmt.Sprintf("the run's record stopped writing: %s (%s)", why, countOf(n, "write failed", "writes failed"))
 }

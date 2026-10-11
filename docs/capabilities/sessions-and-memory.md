@@ -732,6 +732,15 @@ makes recording every session unconditionally the right default: there is
 nothing in it to leak, so there is nothing to opt out of. It is also what
 makes the record safe to export and share.
 
+**The record never interrupts the session, and it says once when it has
+stopped.** A write the store refuses is dropped and counted, never retried and
+never allowed to fail the work. A record that stopped is not the same as one
+that is empty because nothing happened, though, so the first failed write
+raises one line in the chat — `the session record stopped writing: <error>` —
+and the sprint runner closes its output with the same news on its own line
+when its row failed to write. Failures after the first are counted and silent.
+The model is told nothing.
+
 **A base rate is recorded before a guard is built on it.** Every summarizer
 reading is recorded, not only the ones that say the work drifted; every turn
 end, not only the ones that hit the cap. A threshold chosen without the

@@ -55,6 +55,56 @@ type observeRecorder struct {
 	// writes to the store is written to it as well, from the same arguments,
 	// so the two records cannot disagree about what happened.
 	span *observe.SessionSpan
+	// failures counts the writes the store refused and failed is the first
+	// refusal, kept so the one notice can say what it was. The record never
+	// interrupts the session — a write that fails is dropped and the work
+	// goes on — but a record that stopped is not the same as a record that
+	// is empty because nothing happened, so the first failure is told once
+	// (observe.Observer.WriteFailed) and every later one is only counted.
+	// A mutex because the callbacks arrive from the session's goroutines.
+	mu       sync.Mutex
+	failures int
+	failed   error
+	told     bool
+}
+
+// wrote counts a failed write. It is the whole of the recorder's answer to a
+// store that will not take a row: no retry, no interruption.
+func (r *observeRecorder) wrote(err error) {
+	if err == nil {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.failures++
+	if r.failed == nil {
+		r.failed = err
+	}
+}
+
+// writeFailed hands back the first failed write the first time it is asked
+// after one, and nil every time after: a failure is noticed once per session.
+func (r *observeRecorder) writeFailed() error {
+	if r == nil {
+		return nil
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.told || r.failed == nil {
+		return nil
+	}
+	r.told = true
+	return r.failed
+}
+
+// failedWrites is how many writes the store refused this session.
+func (r *observeRecorder) failedWrites() int {
+	if r == nil {
+		return 0
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.failures
 }
 
 // observeExport is the collector every session opened in this process
@@ -290,13 +340,13 @@ func (r *observeRecorder) stamp(sysPrompt string, skills int, root string, setti
 	if r == nil {
 		return
 	}
-	_ = r.db.StampAgentSession(r.id, storage.AgentProvenance{
+	r.wrote(r.db.StampAgentSession(r.id, storage.AgentProvenance{
 		Version:    version,
 		PromptHash: fingerprint(sysPrompt),
 		Skills:     skills,
 		Project:    fingerprint(root),
 		Settings:   settings,
-	})
+	}))
 }
 
 // runSettings are the values a surface resolved for itself before it opened
@@ -494,6 +544,7 @@ func (r *observeRecorder) observer() observe.Observer {
 		Signal:        r.signal,
 		Gate:          r.gate,
 		Session:       r.link,
+		WriteFailed:   r.writeFailed,
 	}
 }
 
@@ -516,7 +567,7 @@ func (r *observeRecorder) usage(turns, tokensIn, tokensOut int64) {
 		}
 	}
 	r.span.Usage(turns, tokensIn, tokensOut, cost)
-	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
+	r.wrote(r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost))
 }
 
 // classifierSpend records what the classifier has spent so far this session.
@@ -524,7 +575,7 @@ func (r *observeRecorder) classifierSpend(cost float64) {
 	if r == nil {
 		return
 	}
-	_ = r.db.SetAgentClassifierCost(r.id, cost)
+	r.wrote(r.db.SetAgentClassifierCost(r.id, cost))
 }
 
 // usagePriced records totals that arrive already priced, which is what both a
@@ -545,7 +596,7 @@ func (r *observeRecorder) usagePriced(turns, tokensIn, tokensOut int64, cost flo
 		return
 	}
 	r.span.Usage(turns, tokensIn, tokensOut, cost)
-	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
+	r.wrote(r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost))
 }
 
 // toolCallAt records one call. The purpose goes to the table and not to the
@@ -557,10 +608,10 @@ func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.
 	}
 	r.span.ToolCall(at, tool, duration, outcome, class)
 	ms := duration.Milliseconds()
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+	r.wrote(r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventTool, Tool: tool, DurationMs: &ms, Outcome: outcome, Reason: class,
 		Turn: at.Turn, Round: at.Round, Purpose: purpose,
-	})
+	}))
 }
 
 // decisionAt records one verdict. took is how long the classifier took to
@@ -580,7 +631,7 @@ func (r *observeRecorder) decisionAt(at observe.Pos, decision, reason string, to
 		ms := took.Milliseconds()
 		e.DurationMs = &ms
 	}
-	_ = r.db.RecordAgentEvent(r.id, e)
+	r.wrote(r.db.RecordAgentEvent(r.id, e))
 }
 
 // turn records a turn closing: the rounds it took ride in the event's
@@ -652,9 +703,9 @@ func (r *observeRecorder) startupRow(row observe.StartupRow) {
 		return
 	}
 	ms := row.Took.Milliseconds()
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+	r.wrote(r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventStartup, Tool: row.Name, Outcome: row.Outcome, Reason: row.Phase, DurationMs: &ms,
-	})
+	}))
 }
 
 func (r *observeRecorder) closeTurn(turn, rounds int64, duration time.Duration, outcome string, split *agent.TurnSplit) {
@@ -667,7 +718,7 @@ func (r *observeRecorder) closeTurn(turn, rounds int64, duration time.Duration, 
 	// already reports a finished turn through, so there is one site to keep
 	// pointing at the row the recorder holds now — which a new conversation
 	// inside the same process replaces.
-	_ = r.db.BeatAgentSession(r.id)
+	r.wrote(r.db.BeatAgentSession(r.id))
 	ms := duration.Milliseconds()
 	ev := storage.AgentEvent{
 		Kind: storage.AgentEventTurn, Outcome: outcome, DurationMs: &ms, Turn: turn, Round: rounds,
@@ -676,7 +727,7 @@ func (r *observeRecorder) closeTurn(turn, rounds int64, duration time.Duration, 
 		parts := observe.TurnMillis(duration, *split)
 		ev.ModelFirstMs, ev.ModelStreamMs, ev.ToolMs, ev.PersonMs = &parts[0], &parts[1], &parts[2], &parts[3]
 	}
-	_ = r.db.RecordAgentEvent(r.id, ev)
+	r.wrote(r.db.RecordAgentEvent(r.id, ev))
 	// The stretch is written at a pause as well as at the close, because a
 	// paused turn the person never grants more rounds to has no close. A
 	// turn that is granted them reports its whole span again at its end, so
@@ -686,13 +737,15 @@ func (r *observeRecorder) closeTurn(turn, rounds int64, duration time.Duration, 
 		q := split.Quiet
 		r.quietTurn, r.quietTook = turn, q.Took
 		took, delivered := q.Took.Milliseconds(), int64(q.Delivered)
-		_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+		r.wrote(r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 			Kind: storage.AgentEventQuiet, Outcome: observe.StretchWord(q), Reason: observe.WaitWord(q.On),
 			DurationMs: &took, Delivered: &delivered, Turn: turn, Round: rounds,
-		})
+		}))
 	}
 	if o := observe.SessionOutcome(outcome); o != "" {
-		if err := r.db.SetAgentSessionOutcome(r.id, o); err == nil {
+		err := r.db.SetAgentSessionOutcome(r.id, o)
+		r.wrote(err)
+		if err == nil {
 			r.outcome = o
 		}
 	}
@@ -703,9 +756,9 @@ func (r *observeRecorder) signal(at observe.Pos, code, reason string) {
 		return
 	}
 	r.span.Signal(at, code, reason)
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+	r.wrote(r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventSignal, Outcome: code, Reason: reason, Turn: at.Turn, Round: at.Round,
-	})
+	}))
 }
 
 // gate records one quality-gate run. The suite rides in the event's tool
@@ -722,9 +775,9 @@ func (r *observeRecorder) gate(suite, verdict string) {
 		return
 	}
 	r.span.Gate(suite, verdict)
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+	r.wrote(r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventSignal, Tool: suite, Outcome: observe.SignalGate, Reason: verdict,
-	})
+	}))
 }
 
 // link names the saved conversation the session is writing. It is the one
@@ -762,7 +815,7 @@ func (r *observeRecorder) end() {
 	if r.outcome == "" {
 		outcome = observe.SessionAbandoned
 	}
-	_ = r.db.EndAgentSession(r.id, outcome)
+	r.wrote(r.db.EndAgentSession(r.id, outcome))
 	// Cleared after the send because a span is sent when it ends, so there
 	// is nothing left to say through this one.
 	r.span.End(r.closingOutcome())
@@ -782,7 +835,7 @@ func (r *observeRecorder) endChild(e observe.ChildEnd) {
 	if r.outcome == "" {
 		outcome = observe.SessionAbandoned
 	}
-	_ = r.db.EndChildAgentSession(r.id, outcome, e)
+	r.wrote(r.db.EndChildAgentSession(r.id, outcome, e))
 	r.span.End(r.closingOutcome())
 	r.span = nil
 }
@@ -807,7 +860,7 @@ func (r *observeRecorder) endWith(outcome string) {
 		return
 	}
 	r.outcome = outcome
-	_ = r.db.EndAgentSession(r.id, outcome)
+	r.wrote(r.db.EndAgentSession(r.id, outcome))
 	r.span.End(outcome)
 	r.span = nil
 }
@@ -853,6 +906,7 @@ func (r *observeRecorder) restart() bool {
 		id, err = r.db.StartAgentSession(r.kind, r.provider, r.model)
 	}
 	if err != nil {
+		r.wrote(err)
 		return false
 	}
 	r.id, r.linked, r.outcome = id, "", ""
