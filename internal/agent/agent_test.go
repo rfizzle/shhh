@@ -264,6 +264,34 @@ func TestMaxRounds_DefaultAndOverride(t *testing.T) {
 	}
 }
 
+// A grant and a lift are the turn's: they move the one ceiling CapReached
+// checks, and the turn's expiry takes them back.
+func TestRoundGrant_RaisesTheCeilingForTheTurn(t *testing.T) {
+	a := newTestAgent()
+	a.SetMaxRounds(1)
+	a.BeginToolRound("", nil, nil)
+	if !a.CapReached() {
+		t.Fatal("one round of one should reach the cap")
+	}
+	a.GrantRounds(2)
+	if a.CapReached() || a.Ceiling() != 3 || a.RoundGrant() != 2 {
+		t.Fatalf("a grant raises the ceiling: capped %v, ceiling %d, grant %d", a.CapReached(), a.Ceiling(), a.RoundGrant())
+	}
+	a.BeginToolRound("", nil, nil)
+	a.BeginToolRound("", nil, nil)
+	if !a.CapReached() {
+		t.Fatal("the granted rounds run out like the configured ones")
+	}
+	a.LiftCap()
+	if a.CapReached() || !a.Unbounded() {
+		t.Fatal("a lifted turn never reaches the cap")
+	}
+	a.ResetRounds()
+	if a.Unbounded() || a.RoundGrant() != 0 || a.Ceiling() != 1 {
+		t.Fatalf("the turn's expiry gives the configured ceiling back: unbounded %v, grant %d, ceiling %d", a.Unbounded(), a.RoundGrant(), a.Ceiling())
+	}
+}
+
 func TestTrimOldToolResults_ProtectsCurrentTurn(t *testing.T) {
 	big := strings.Repeat("x", 40000)
 	a := New([]provider.Message{

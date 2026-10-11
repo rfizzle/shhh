@@ -104,7 +104,7 @@ func (m Model) toggleHold() (tea.Model, tea.Cmd) {
 // session's own record disagreeing with the chip beside it.
 func (m Model) holdTurn() (tea.Model, tea.Cmd) {
 	m.holdAsked = false
-	m.hold = &turnHold{turn: m.turnCount, rounds: m.agent.Rounds(), granted: m.roundGrant}
+	m.hold = &turnHold{turn: m.turnCount, rounds: m.agent.Rounds(), granted: m.agent.RoundGrant()}
 	m.setTurnState(stateInput)
 	m.invalidateRenderCache()
 	m.syncViewport()

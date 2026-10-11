@@ -433,7 +433,7 @@ func TestRoundLimit_LetItRunClearsTheCeilingForTheTurn(t *testing.T) {
 	// Stand the row up as a second stop, which is the only one that offers
 	// the key: one grant already taken.
 	pauseEntry(t, m).pause.granted = roundGrantBlock
-	m.roundGrant = roundGrantBlock
+	m.agent.GrantRounds(roundGrantBlock)
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
 
 	updated, cmd, claimed := m.roundPauseKey(keys.Shown(keys.Row.Uncap))

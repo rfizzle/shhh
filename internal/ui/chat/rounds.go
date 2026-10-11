@@ -89,7 +89,7 @@ func (m Model) pauseAtRoundLimit() (tea.Model, tea.Cmd) {
 		turn:    m.turnCount,
 		used:    m.agent.Rounds(),
 		limit:   m.effectiveMaxToolRounds(),
-		granted: m.roundGrant,
+		granted: m.agent.RoundGrant(),
 		stale:   checksStale(m.turnEntries()),
 		// Taken before the state change below closes the turn's books: the
 		// running figure is the turn's whole cost up to this stop.
@@ -298,7 +298,7 @@ func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 	if m.working() {
 		return m.systemNotice("the turn is already running again")
 	}
-	m.roundGrant += p.grant()
+	m.agent.GrantRounds(p.grant())
 	m.signal(observe.SignalRounds, "granted")
 	return m.resumeGrantedTurn(p)
 }
@@ -317,7 +317,7 @@ func (m Model) uncapRounds(p *roundPause) (tea.Model, tea.Cmd) {
 	if m.working() {
 		return m.systemNotice("the turn is already running again")
 	}
-	m.roundsUncapped = true
+	m.agent.LiftCap()
 	m.signal(observe.SignalRounds, "uncapped")
 	return m.resumeGrantedTurn(p)
 }
@@ -352,8 +352,6 @@ func (m Model) resumeGrantedTurn(p *roundPause) (tea.Model, tea.Cmd) {
 // bound is the Agent's and belongs to the session, not to the turn.
 func (m *Model) resetRounds() {
 	m.agent.ResetRounds()
-	m.roundGrant = 0
-	m.roundsUncapped = false
 	// A held turn the session has moved past cannot be let go of either, and
 	// a child still parked at its boundary has nothing else that ever would
 	// (hold.go).

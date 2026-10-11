@@ -87,6 +87,14 @@ type Agent struct {
 	rounds    int
 	maxRounds int
 
+	// grant is what the turn has been given on top of its ceiling, and
+	// lifted whether the ceiling has been lifted for the rest of the turn.
+	// Both are the turn's and not the session's: ResetRounds is the turn's
+	// expiry, and clears them. Nothing in this package sets them; a surface
+	// with somebody to ask grants them (GrantRounds, LiftCap).
+	grant  int
+	lifted bool
+
 	// turn is which of the session's turns the conversation is on, so every
 	// message appended can say where it was written. The agent does not
 	// count it: a turn moves for reasons only the front-end knows — a
@@ -353,7 +361,31 @@ func (a *Agent) ResetRounds() {
 	// left. Zeroed here, every turn after the first would be asked a budget
 	// check-in on its opening round.
 	a.markSpend()
+	// Whatever was granted on top of the ceiling, or lifted it, was granted
+	// to the turn the counter belonged to.
+	a.grant = 0
+	a.lifted = false
 }
+
+// GrantRounds raises this turn's ceiling by n rounds, until ResetRounds.
+func (a *Agent) GrantRounds(n int) { a.grant += n }
+
+// LiftCap removes this turn's ceiling, until ResetRounds. A session started
+// uncapped (Uncapped) is a different thing: that bound is the session's.
+func (a *Agent) LiftCap() { a.lifted = true }
+
+// RoundGrant is what this turn has been granted on top of its ceiling.
+func (a *Agent) RoundGrant() int { return a.grant }
+
+// Ceiling is this turn's tool-round ceiling: the configured cap plus whatever
+// the turn has been granted. Callers that render or enforce a ceiling must
+// ask Unbounded first: like MaxRounds, this keeps answering with a number
+// when there is no bound, because no number honestly means "none".
+func (a *Agent) Ceiling() int { return a.MaxRounds() + a.grant }
+
+// Unbounded reports that this turn will not stop at a ceiling: either it was
+// lifted for the turn, or the session was started without one.
+func (a *Agent) Unbounded() bool { return a.lifted || a.Uncapped() }
 
 // Steered is what a person's words joining a running turn do to the loop:
 // they count as fresh input, so the round counter starts over, and the
@@ -365,9 +397,10 @@ func (a *Agent) Steered() {
 	a.StartInterveneTurn()
 }
 
-// CapReached reports whether this turn has used up its tool rounds. An
-// uncapped agent never reaches it.
-func (a *Agent) CapReached() bool { return !a.Uncapped() && a.rounds >= a.MaxRounds() }
+// CapReached reports whether this turn has used up its tool rounds. It is the
+// one check of the ceiling every driver asks. An unbounded turn never reaches
+// it.
+func (a *Agent) CapReached() bool { return !a.Unbounded() && a.rounds >= a.Ceiling() }
 
 // Executing reports whether auto-run tool calls are executing in the
 // background.

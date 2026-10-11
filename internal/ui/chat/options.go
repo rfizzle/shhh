@@ -371,21 +371,13 @@ func (m Model) WithUpdateNotice(notice string) Model {
 }
 
 // effectiveMaxToolRounds is this turn's tool-round ceiling: the configured
-// cap plus whatever [+50] has granted the turn in front of it. The
-// grant lives here rather than on the Agent so that it expires with the turn
-// — a new one starts from the ceiling the session was configured with.
-// Callers that render or enforce a ceiling must ask roundsUnbounded first:
-// like agent.MaxRounds, this keeps answering with a number when there is no
-// bound, because no number honestly means "none".
-func (m Model) effectiveMaxToolRounds() int {
-	return m.agent.MaxRounds() + m.roundGrant
-}
+// cap plus whatever [+50] has granted the turn in front of it. The ceiling is
+// the loop's, so that every driver asks one check of it.
+func (m Model) effectiveMaxToolRounds() int { return m.agent.Ceiling() }
 
 // roundsUnbounded reports that this turn will not stop at a ceiling: either
 // [!] lifted it for the turn, or the session was started without one.
-func (m Model) roundsUnbounded() bool {
-	return m.roundsUncapped || m.agent.Uncapped()
-}
+func (m Model) roundsUnbounded() bool { return m.agent.Unbounded() }
 
 // WithResumedMessages replaces the conversation with a previously saved one
 // and rebuilds the transcript from it. name is the slot it came from, which
@@ -408,7 +400,7 @@ func (m Model) WithResumedMessages(name string, msgs []provider.Message) Model {
 // person reads as "it finished" (hold.go).
 func (m Model) WithHeldTurn(rounds, granted int) Model {
 	m.hold = &turnHold{turn: m.turnCount, rounds: rounds, granted: granted}
-	m.roundGrant = granted
+	m.agent.GrantRounds(granted)
 	m.appendEntry(entry{kind: entrySystem, text: m.heldNotice()})
 	m.syncViewport()
 	return m

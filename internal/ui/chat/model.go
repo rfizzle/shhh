@@ -1427,14 +1427,10 @@ type Model struct {
 	// they last left it, by label. It outlives the screen because the screen
 	// is rebuilt from the accounting on every opening.
 	contextOpen map[string]bool
-	// The round-limit pause: the offer standing on the last turn to
-	// stop at its ceiling, the rounds [+50] has granted the turn in front of
-	// it, and whether [!] has lifted this turn's ceiling altogether. All
-	// three expire with the turn — resetRounds spends the offer and gives the
-	// configured ceiling back.
-	roundPause     *roundPause
-	roundGrant     int
-	roundsUncapped bool
+	// The round-limit pause: the offer standing on the last turn to stop at
+	// its ceiling. It expires with the turn — resetRounds spends the offer,
+	// and the loop gives the configured ceiling back (agent.ResetRounds).
+	roundPause *roundPause
 	// The hold: the turn parked at a round boundary, and whether one has
 	// been asked for and not yet reached (hold.go). Like the pause above
 	// them both belong to the turn — a turn the session has moved past

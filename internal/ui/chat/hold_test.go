@@ -196,8 +196,8 @@ func TestHold_AConversationSavedHeldReopensHeld(t *testing.T) {
 	if !m.heldAtBoundary() {
 		t.Fatal("a slot with a mark on it opens held rather than idle")
 	}
-	if m.roundGrant != 100 {
-		t.Errorf("the grant comes back with the turn, got %d", m.roundGrant)
+	if m.agent.RoundGrant() != 100 {
+		t.Errorf("the grant comes back with the turn, got %d", m.agent.RoundGrant())
 	}
 	if chip := m.holdChip(); !strings.Contains(chip, "held") {
 		t.Errorf("the reopened session wears the same chip, got %q", chip)
