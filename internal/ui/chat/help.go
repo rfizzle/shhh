@@ -240,8 +240,13 @@ func railDoorList() string {
 	doors := make([]string, 0, len(railDoorOrder))
 	for _, block := range railDoorOrder {
 		label := block
-		if block == components.RailWhole {
+		switch block {
+		case components.RailWhole:
 			label = "the rail's ↓ N more"
+		case components.RailProcesses:
+			// CALLS shares the door and can stand beside it, so it is named
+			// with it rather than left for the reader to guess.
+			label = components.RailProcesses + " and " + components.RailCalls
 		}
 		doors = append(doors, label+" is "+commands[block])
 	}
