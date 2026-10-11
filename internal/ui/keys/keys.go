@@ -343,8 +343,8 @@ type DraftKeys struct {
 var Draft = DraftKeys{
 	Send:     bind("enter", "send the message", "enter"),
 	Newline:  bind("shift+enter", "insert a newline", "shift+enter", "ctrl+j"),
-	Queue:    bind("ctrl+n", "queue the draft for after the turn; on an empty draft, pull the newest queued message back", "ctrl+n"),
-	Queued:   bind("f2", "see what is queued, to pull one back or cancel it", "f2"),
+	Queue:    bind("ctrl+n", "queue the draft for after the turn", "ctrl+n"),
+	Queued:   bind("f2", "see what is queued", "f2"),
 	Editor:   bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
 	Attach:   bind("ctrl+v", "attach the clipboard", "ctrl+v"),
 	Complete: bind("tab", "complete a slash command", "tab"),
@@ -365,7 +365,7 @@ var Draft = DraftKeys{
 	// that has to be reachable without looking — the person reaching for it
 	// is about to lose the network — and `p` is the letter both halves of it
 	// are named after.
-	Pause: bind("ctrl+p", "hold the turn between rounds, or let a held one go", "ctrl+p"),
+	Pause: bind("ctrl+p", "hold the turn between rounds", "ctrl+p"),
 
 	HistoryPrev:   bind("↑", "recall the previous input", "up"),
 	HistoryNext:   bind("↓", "the next one", "down"),
@@ -432,7 +432,7 @@ var Draft = DraftKeys{
 	// box happens to be empty. Interrupting is the cancel chord's alone
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	Clear:  bind("esc", "back out one level, or fold what is open", "esc"),
-	Cancel: bind("ctrl+c", "stop the run, else clear the input (kept in history), else quit (press twice)", "ctrl+c"),
+	Cancel: bind("ctrl+c", "stop, else clear, else quit", "ctrl+c"),
 }
 
 // SearchKeys are the input history search's: the incremental reverse search

@@ -4,15 +4,15 @@
 
   · send             enter · send the message  [shipped]
   · newline          shift+enter ctrl+j · insert a newline  [shipped]
-  · queue            ctrl+n · queue the draft for after the turn; on…  [shipped]
-  · queued           f2 · see what is queued, to pull one back or ca…  [shipped]
+  · queue            ctrl+n · queue the draft for after the turn  [shipped]
+  · queued           f2 · see what is queued  [shipped]
   · editor           ctrl+g · open the draft in $EDITOR  [shipped]
   · attach           ctrl+v · attach the clipboard  [shipped]
   · complete         tab · complete a slash command  [shipped]
   · palette          ctrl+/ ctrl+_ · the command palette  [shipped]
   · reasoning        ctrl+t · cycle the reasoning level  [shipped]
   · mode             shift+tab · cycle the permission mode  [shipped]
-  · pause            ctrl+p · hold the turn between rounds, or let a…  [shipped]
+  · pause            ctrl+p · hold the turn between rounds  [shipped]
   · history_prev     up · recall the previous input  [shipped]
   · history_next     down · the next one  [shipped]
   · history_search   ctrl+r · search the input history  [shipped]
@@ -34,7 +34,7 @@
   · redraw           ctrl+l · redraw the screen  [shipped]
   · answer           ctrl+space ctrl+y · answer it  [shipped]
   · clear            esc · back out one level, or fold what is open  [shipped]
-  · cancel           ctrl+c · stop the run, else clear the input (ke…  [shipped]
+  · cancel           ctrl+c · stop, else clear, else quit  [shipped]
 
   SEARCH
 

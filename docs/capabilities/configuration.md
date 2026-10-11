@@ -834,15 +834,15 @@ rules above are what refuse a move, not a list of keys held back from it.
 |---|---|---|---|
 | `draft.send` | `enter` | send the message | yes |
 | `draft.newline` | `shift+enter`, `ctrl+j` | insert a newline | yes |
-| `draft.queue` | `ctrl+n` | queue the draft for after the turn; on an empty draft, pull the newest queued message back | yes |
-| `draft.queued` | `f2` | see what is queued, to pull one back or cancel it | yes |
+| `draft.queue` | `ctrl+n` | queue the draft for after the turn | yes |
+| `draft.queued` | `f2` | see what is queued | yes |
 | `draft.editor` | `ctrl+g` | open the draft in $EDITOR | yes |
 | `draft.attach` | `ctrl+v` | attach the clipboard | yes |
 | `draft.complete` | `tab` | complete a slash command | yes |
 | `draft.palette` | `ctrl+/`, `ctrl+_` | the command palette | yes |
 | `draft.reasoning` | `ctrl+t` | cycle the reasoning level | yes |
 | `draft.mode` | `shift+tab` | cycle the permission mode | yes |
-| `draft.pause` | `ctrl+p` | hold the turn between rounds, or let a held one go | yes |
+| `draft.pause` | `ctrl+p` | hold the turn between rounds | yes |
 | `draft.history_prev` | `up` | recall the previous input | yes |
 | `draft.history_next` | `down` | the next one | yes |
 | `draft.history_search` | `ctrl+r` | search the input history | yes |
@@ -864,7 +864,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `draft.redraw` | `ctrl+l` | redraw the screen | yes |
 | `draft.answer` | `ctrl+space`, `ctrl+y` | answer it | yes |
 | `draft.clear` | `esc` | back out one level, or fold what is open | yes |
-| `draft.cancel` | `ctrl+c` | stop the run, else clear the input (kept in history), else quit (press twice) | yes |
+| `draft.cancel` | `ctrl+c` | stop, else clear, else quit | yes |
 | `search.older` | `ctrl+r` | an older match | yes |
 | `search.keep` | `enter` | keep it in the draft | yes |
 | `search.cancel` | `esc` | back | yes |

@@ -792,5 +792,5 @@ func goldenKeys() report.Report {
 			}
 		}
 	}
-	return keysReport(kb, "/home/dev/.config/shhh/keybindings.toml", nil)
+	return keysReport(kb, "/home/dev/.config/shhh/keybindings.toml", nil, false)
 }

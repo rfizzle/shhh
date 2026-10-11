@@ -16,8 +16,8 @@
 │ DRAFT                                                                    │
 │ ❯ [enter]              send the message                                  │
 │   [shift+enter]        insert a newline                                  │
-│   [ctrl+n]             queue the draft for after the turn; on an empty … │
-│   [f2]                 see what is queued, to pull one back or cancel it │
+│   [ctrl+n]             queue the draft for after the turn                │
+│   [f2]                 see what is queued                                │
 │   [ctrl+g]             open the draft in $EDITOR                         │
 │   [ctrl+v]             attach the clipboard                              │
 │   [tab]                complete a slash command                          │
@@ -81,8 +81,8 @@
 ␛[38;5;245m│␛[m ␛[1;94mDRAFT␛[m                                                                    ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;61m[enter]              send the message                                 ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252m[shift+enter]␛[m        ␛[38;5;245minsert a newline␛[m                                  ␛[38;5;245m│␛[m
-␛[38;5;245m│␛[m   ␛[38;5;252m[ctrl+n]␛[m             ␛[38;5;245mqueue the draft for after the turn; on an empty …␛[m ␛[38;5;245m│␛[m
-␛[38;5;245m│␛[m   ␛[38;5;252m[f2]␛[m                 ␛[38;5;245msee what is queued, to pull one back or cancel it␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;252m[ctrl+n]␛[m             ␛[38;5;245mqueue the draft for after the turn␛[m                ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;252m[f2]␛[m                 ␛[38;5;245msee what is queued␛[m                                ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252m[ctrl+g]␛[m             ␛[38;5;245mopen the draft in $EDITOR␛[m                         ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252m[ctrl+v]␛[m             ␛[38;5;245mattach the clipboard␛[m                              ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252m[tab]␛[m                ␛[38;5;245mcomplete a slash command␛[m                          ␛[38;5;245m│␛[m

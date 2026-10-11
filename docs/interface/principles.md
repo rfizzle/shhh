@@ -134,6 +134,13 @@ is one keystroke away, on every surface, in one shape. Where the draft holds
 the keyboard `?` is a character, so the same list is on a chord there, and the
 rail names that chord instead.
 
+The `?` list and the keys screen (`ctrl+]`) are the same register read two
+ways, and they differ on purpose. The `?` list is one surface's keys, a dozen
+rows at most, over the surface it was opened from: there is nothing to search,
+so it has no query, and the key that opened it, or esc, puts the surface back.
+The keys screen is every surface's keys at once, so it opens with a filter and
+leaves only on esc, because every letter is the query's.
+
 The reason is the hand and not the parser. A letter pressed in the middle of a
 sentence is a letter, and a keyboard that sometimes commits, kills, denies or
 opens on one is a keyboard nobody can type on without watching the screen for

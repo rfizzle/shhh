@@ -38,7 +38,7 @@ func newKeysCmd() *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, keysDoc(kb, path, refused))
 			}
-			return report.Fprint(cmd.OutOrStdout(), keysReport(kb, path, refused))
+			return report.Fprint(cmd.OutOrStdout(), keysReport(kb, path, refused, !report.Terminal(cmd.OutOrStdout())))
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the keyboard as JSON")
@@ -100,8 +100,9 @@ func newKeysDefaultsCmd() *cobra.Command {
 // key. A key a file moved is the one row with a pass mark, carrying the
 // keystrokes it shipped with, because that is the row somebody debugging
 // their own file is looking for; every other row is the shipped key, dotted
-// the way the config listing dots a default.
-func keysReport(kb []keys.Group, path string, refused error) report.Report {
+// the way the config listing dots a default. Off a terminal, where nothing
+// measured the width, a row's words wrap rather than clip.
+func keysReport(kb []keys.Group, path string, refused error, wrap bool) report.Report {
 	r := report.Report{Title: "shhh keys", Subject: "the keyboard shhh ships"}
 	if path != "" && refused == nil {
 		r.Subject = shortPath(path)
@@ -117,6 +118,7 @@ func keysReport(kb []keys.Group, path string, refused error) report.Report {
 				Subject: keysSpelled(a.Keys),
 				Detail:  a.Words,
 				Outcome: "shipped",
+				Wrap:    wrap,
 			}
 			if !g.Movable {
 				row.Outcome = "fixed"

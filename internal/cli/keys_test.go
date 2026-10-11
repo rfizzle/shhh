@@ -135,6 +135,35 @@ func TestKeys_JSONListsEveryGroup(t *testing.T) {
 	}
 }
 
+// Off a terminal nothing measured the width, so a long word wraps under its
+// key instead of being clipped to eighty columns; on one it clips as every
+// listing does.
+func TestKeys_WrapsOffATerminal(t *testing.T) {
+	long := "stop the run when it is going, and say so in a sentence far longer than a terminal row can carry"
+	kb := []keys.Group{{Name: "draft", Movable: true, Acts: []keys.Act{{
+		Name: "draft.long", Words: long, Keys: []string{"ctrl+k"}, Shipped: []string{"ctrl+k"},
+	}}}}
+	wrapped := keysReport(kb, "", nil, true).Render(80)
+	if strings.Contains(wrapped, "…") ||
+		!strings.Contains(wrapped, "say so in a") || !strings.Contains(wrapped, "terminal row can carry") {
+		t.Errorf("the wrapped listing lost words:\n%s", wrapped)
+	}
+	for _, line := range strings.Split(wrapped, "\n") {
+		if len([]rune(line)) > 80 {
+			t.Errorf("a wrapped line is past 80 columns: %q", line)
+		}
+	}
+	if clipped := keysReport(kb, "", nil, false).Render(80); !strings.Contains(clipped, "…") {
+		t.Errorf("the terminal listing should clip:\n%s", clipped)
+	}
+
+	// Through a pipe, the real keyboard has no clipped word.
+	pointConfigAt(t, "")
+	if out := runRoot(t, "keys"); strings.Contains(out, "…") {
+		t.Errorf("a piped listing clipped a word:\n%s", out)
+	}
+}
+
 // The doctor's row names a refused file and quotes the refusal, which is the
 // one place a keyboard that went back to the shipped one is explained after
 // the line at process start.

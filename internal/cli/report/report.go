@@ -114,6 +114,10 @@ type Row struct {
 	// Detail continues the target after ` · `: the path, the version, the
 	// count behind the subject. It is the dim half.
 	Detail string
+	// Wrap lets the target run onto the lines under it instead of clipping,
+	// aligned under its own first column. It is for a listing written where
+	// nothing measured the width: a pipe, a file.
+	Wrap bool
 	// Outcome is the bracketed field at the end and never clips: a row that
 	// cannot fit gives up its target, because the outcome is why the row is
 	// on the screen.
@@ -305,8 +309,16 @@ func (r Row) render(width, nameW int, t theme) []string {
 	// vocabulary is one column today, and a wide one arriving should move the
 	// target rather than push the row past the terminal.
 	lead := r.State.Glyph() + " "
-	target := clip(joinDetail(r.Subject, r.Detail, " · "),
-		width-indent-lipgloss.Width(lead)-lipgloss.Width(name)-lipgloss.Width(outcome))
+	room := width - indent - lipgloss.Width(lead) - lipgloss.Width(name) - lipgloss.Width(outcome)
+	full := joinDetail(r.Subject, r.Detail, " · ")
+	var more []string
+	target := ""
+	if r.Wrap && lipgloss.Width(full) > room && room >= minRowWidth {
+		rest := strings.Split(ansi.Wordwrap(full, room, ""), "\n")
+		target, more = rest[0], rest[1:]
+	} else {
+		target = clip(full, room)
+	}
 
 	line := strings.Repeat(" ", indent) + t.glyph(r.State, r.State.Glyph()) + " "
 	if name != "" {
@@ -317,6 +329,10 @@ func (r Row) render(width, nameW int, t theme) []string {
 		line += "  " + t.outcome(r.State, "["+r.Outcome+"]")
 	}
 	lines := []string{strings.TrimRight(line, " ")}
+	for _, c := range more {
+		under := strings.Repeat(" ", indent+lipgloss.Width(lead)+lipgloss.Width(name))
+		lines = append(lines, strings.TrimRight(under+t.target("", c), " "))
+	}
 	if r.Consequence != "" {
 		lines = append(lines, wrapAt(indent+4, r.Consequence, width, t.consequence)...)
 	}
@@ -436,6 +452,16 @@ func Fprint(w io.Writer, r Report) error {
 // one-line answer and a listing are the same shape at different lengths.
 func Fprintln(w io.Writer, rows ...Row) error {
 	return Fprint(w, Report{Sections: []Section{{Rows: rows}}})
+}
+
+// Terminal reports whether the stream is a terminal that can say its width.
+func Terminal(w io.Writer) bool {
+	f, ok := w.(interface{ Fd() uintptr })
+	if !ok {
+		return false
+	}
+	width, _, err := term.GetSize(f.Fd())
+	return err == nil && width > 0
 }
 
 // Width is how wide a report written to this stream should be. It measures
