@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var testThemes = []string{"auto", "dark", "light", "charm", "high-contrast", "colorblind", "catppuccin-mocha", "dracula"}
+var testThemes = []string{"auto", "dark", "light", "charm", "high-contrast", "colorblind", "catppuccin-mocha", "dracula", "tokyo-night"}
 
 // themeDir is a global config directory holding a config.toml and, where text
 // is not empty, a theme.toml beside it. It answers with the config path.

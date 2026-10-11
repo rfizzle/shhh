@@ -660,6 +660,7 @@ revoke [commands|edits|hosts|agents]   take the grants back`},
 						{components.ThemeColorblind, "Blue and orange for add and remove, apart under every common colour blindness"},
 						{components.ThemeCatppuccinMocha, "Catppuccin Mocha, on its own dark ground"},
 						{components.ThemeDracula, "Dracula, on its own dark ground"},
+						{components.ThemeTokyoNight, "Tokyo Night, on its own dark ground"},
 					}},
 					{after: []string{"ground"}, options: []argOption{
 						{"on", "paint the background the theme was drawn against"},

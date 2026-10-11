@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 31 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 32 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -396,6 +396,42 @@ delBg `#64363f` are the ground with 28% of add `#50fa7b` and of the published de
 on the delBg tint, which lands on 240 `#585858`). Sixteen colours: the dark
 column. The Machado distance is not held for this table; `colorblind` remains
 the answer for that need.
+
+## The `tokyo-night` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: https://github.com/folke/tokyonight.nvim (the night variant,
+extras/lua/tokyonight_night.lua). Ground `#1a1b26` (bg), band `#292e42`
+(bg_highlight), selected row `#283457` (bg_visual); painted by default. The
+selected row is bg_visual and not blue0, which reads only 4.14:1 under the
+bright ink.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #565f89 | 2.76 / 2.17 | #8a94c2 | 5.77 / 4.54 |
+| dimmer | #737aa2 | 4.10 / 3.22 | #8c94bd | 5.77 / 4.53 |
+| status | #676f98 | 3.50 / 2.75 | #8b94bf | 5.77 / 4.53 |
+| key | #9d7cd8 | 5.13 / 4.03 | #a685e2 | 5.76 / 4.52 |
+
+`LiftToAA` lifts these four in their own hue. Dim, the comment grey, keeps its
+lifted value; dimmer, status and subtle are then spaced in even quarters from it
+up to the body `#a9b1d6`, so the lifts of dimmer and status above are not what
+the table holds: status `#929bc7`, dimmer `#9aa3cc` and subtle `#a1aad1` keep
+the ladder bright, body, subtle, dimmer, status, dim descending (7.48, 6.91 and
+6.30 on the ground; 5.87, 5.43 and 4.95 on the band). Every other ink is as
+published: add, del, hunk, accent, info (blue), spin (magenta), code (yellow)
+and the foreground as bright.
+
+Derived, not published: status is the mix of dark5 `#737aa2` and the comment
+grey `#565f89`, and subtle the mix of fg_dark `#a9b1d6` and dark5 (`#969ec4`,
+which clears on its own and moves only to keep the ladder's order). Key is the
+purple `#9d7cd8`, which clears the ground and misses the band, lifted to
+`#a685e2`. addBg `#3f4d39` and delBg `#583443` are the ground with 28% of add
+`#9ece6a` and of del `#f7768e`. 256 rungs: DistinctRungs, worst error 35.6 (RGB
+distance, on dimmer `#9aa3cc`, which lands on 104 `#8787d7`). Sixteen colours:
+the dark column. The Machado distance is not held for this table; `colorblind`
+remains the answer for that need.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 

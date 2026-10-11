@@ -463,6 +463,48 @@ var draculaGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// tokyoNightPalette is Tokyo Night's night variant
+// (https://github.com/folke/tokyonight.nvim, extras/lua/tokyonight_night.lua):
+// the published hex for every token that clears 4.5:1 on its ground #1a1b26
+// and its band #292e42 (bg_highlight), the selected row #283457 (bg_visual,
+// not blue0, which reads 4.14:1 under bright). Four inks were short and
+// LiftToAA lifts them in their own hue: dim (the comment grey), dimmer
+// (dark5), the derived status, and key (purple, short on the band only).
+// Subtle is derived between fg_dark and dark5. The grey ladder is respaced:
+// status, dimmer and subtle sit in even quarters from the lifted dim up to
+// body (fg_dark) so the order holds. addBg and delBg are the ground with 28%
+// of add and of del. The 256 rungs are DistinctRungs' and the sixteen-colour
+// column is the dark table's. The figures are in docs/interface/departures.md.
+var tokyoNightPalette = ColorTokens{
+	Add:     token("#9ece6a", "149", "10"),
+	Del:     token("#f7768e", "210", "9"),
+	addBg:   token("#3f4d39", "238", "2"),
+	delBg:   token("#583443", "239", "1"),
+	Hunk:    token("#7dcfff", "117", "14"),
+	Accent:  token("#ff9e64", "215", "11"),
+	Info:    token("#7aa2f7", "111", "12"),
+	FocusBg: token("#283457", "237", "12"),
+	band:    band("#292e42", "236"),
+	Dim:     token("#8a94c2", "109", "8"),
+	Dimmer:  token("#9aa3cc", "104", "8"),
+	Spin:    token("#bb9af7", "141", "13"),
+	Status:  token("#929bc7", "103", "8"),
+	Bright:  token("#c0caf5", "153", "15"),
+	Subtle:  token("#a1aad1", "110", "7"),
+	Body:    token("#a9b1d6", "146", "7"),
+	Code:    token("#e0af68", "179", "3"),
+	Key:     token("#a685e2", "140", "12"),
+}
+
+// tokyoNightGround is Tokyo Night's bg, #1a1b26 and 234, painted by default
+// like the dark ground and for the same reason: its band is half of a pair.
+// It has no sixteen-colour rung.
+var tokyoNightGround = Token{
+	trueColor: lipgloss.Color("#1a1b26"),
+	ansi256:   lipgloss.Color("234"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -481,6 +523,8 @@ const (
 	ThemeCatppuccinMocha = "catppuccin-mocha"
 	// ThemeDracula is the Dracula palette, a brand theme.
 	ThemeDracula = "dracula"
+	// ThemeTokyoNight is Tokyo Night's night variant, a brand theme.
+	ThemeTokyoNight = "tokyo-night"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -506,6 +550,7 @@ var themes = map[string]theme{
 
 	ThemeCatppuccinMocha: {catppuccinMochaPalette, catppuccinMochaGround},
 	ThemeDracula:         {draculaPalette, draculaGround},
+	ThemeTokyoNight:      {tokyoNightPalette, tokyoNightGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -534,7 +579,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight}
 }
 
 var (
@@ -649,7 +694,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha, ThemeDracula, ThemeTokyoNight:
 		return true
 	}
 	return false

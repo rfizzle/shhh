@@ -17,7 +17,7 @@
       the default theme runs instead of this file
         name "solarized" is not a theme (auto, dark, light, charm)
         it takes one key, name, one of auto, dark, light, charm, high-contrast,
-        colorblind, catppuccin-mocha, dracula
+        colorblind, catppuccin-mocha, dracula, tokyo-night
   ✓ theme     /home/dev/.config/shhh/theme.toml · auto → dark  [ok]
   ✓ theme     no theme.toml · light · set in config.toml, move it  [ok]
   ⚠ otel      the collector endpoint is not a URL · the endpoint ne…  [unusable]

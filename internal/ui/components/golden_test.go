@@ -4072,6 +4072,13 @@ func TestGolden_DraculaTable(t *testing.T) {
 		"the Dracula column, on the surfaces that spend it")
 }
 
+// TestGolden_TokyoNightTable is the same three surfaces through the Tokyo
+// Night table, at every width the set holds.
+func TestGolden_TokyoNightTable(t *testing.T) {
+	captureTable(t, ThemeTokyoNight, "tokyo-night-table", goldenWidths,
+		"the Tokyo Night column, on the surfaces that spend it")
+}
+
 // TestGolden_ColorblindTable is the colour-blind table on the three surfaces
 // that spend its signal inks: the diff, where blue and orange tell the added
 // line from the removed one; the approval card; and the step card in the
