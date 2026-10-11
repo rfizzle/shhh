@@ -11,6 +11,7 @@ package chat
 import (
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
@@ -70,6 +71,12 @@ func (m *Model) injectTreeNotice(turnStart bool) {
 		return
 	}
 	m.agent.AppendMachine(n.Message)
+	m.showTreeNotice(n)
+}
+
+// showTreeNotice puts a tree notice the conversation has just been given on
+// the screen.
+func (m *Model) showTreeNotice(n agent.TreeNotice) {
 	e := entry{kind: entrySystem, text: n.Notice}
 	if !n.Unavailable {
 		e.tree = &treeMove{said: strings.TrimPrefix(n.Notice, treeMovedLead)}

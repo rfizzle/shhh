@@ -64,6 +64,12 @@ func (m *Model) injectInterventions() {
 		return
 	}
 	m.agent.AppendMachine(iv.Message)
+	m.showIntervention(iv)
+}
+
+// showIntervention puts an interruption the conversation has just been given
+// on the screen, and tells the reading schedule about it.
+func (m *Model) showIntervention(iv agent.Intervention) {
 	// One round for both the row the reader sees and the row the next digest
 	// is told about, so a withdrawal can unsay exactly the line it put there.
 	round := m.agent.Rounds()
