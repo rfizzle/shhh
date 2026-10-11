@@ -99,7 +99,7 @@ func TestSpin_StartsWhenTheUserStartsATurn(t *testing.T) {
 // is where the old guard dropped it: a tick arriving just after the state
 // moved was discarded, and the chain went with it.
 func TestSpin_SurvivesEveryHandoff(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "result", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "result", nil }
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, blockingStream(t), Wiring{Executor: executor})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)

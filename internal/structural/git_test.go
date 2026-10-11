@@ -1,6 +1,7 @@
 package structural
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -67,7 +68,7 @@ func TestGitRegisteredOnlyInsideARepository(t *testing.T) {
 	if len(ts.Definitions()) != 0 {
 		t.Fatalf("expected no definitions outside a repository, got %v", ts.Definitions())
 	}
-	if _, err := ts.Execute(GitToolName, json.RawMessage(`{"verb":"status"}`)); err == nil ||
+	if _, err := ts.Execute(context.Background(), GitToolName, json.RawMessage(`{"verb":"status"}`)); err == nil ||
 		!strings.Contains(err.Error(), "not inside a git repository") {
 		t.Fatalf("expected a clean not-a-repository error, got %v", err)
 	}
@@ -392,7 +393,7 @@ func TestGitPathsContainment(t *testing.T) {
 func TestExecuteGitRefusesAnEscapingPathBeforeTheSpawn(t *testing.T) {
 	ts := newTestToolset(t, map[string]string{GitToolName: filepath.Join(t.TempDir(), "no-such-git")})
 	outside := t.TempDir()
-	_, err := ts.Execute(GitToolName, json.RawMessage(`{"verb":"log","paths":["`+outside+`"]}`))
+	_, err := ts.Execute(context.Background(), GitToolName, json.RawMessage(`{"verb":"log","paths":["`+outside+`"]}`))
 	if err == nil || !strings.Contains(err.Error(), "outside the workspace") {
 		t.Fatalf("expected containment to refuse before the spawn, got %v", err)
 	}
@@ -543,7 +544,7 @@ func TestExecuteGitEndToEnd(t *testing.T) {
 	root := newGitRepo(t)
 	ts := &Toolset{root: root, bins: map[string]string{GitToolName: "git"}, timeout: SpawnTimeout}
 
-	out, err := ts.Execute(GitToolName, json.RawMessage(`{"verb":"log","limit":5}`))
+	out, err := ts.Execute(context.Background(), GitToolName, json.RawMessage(`{"verb":"log","limit":5}`))
 	if err != nil {
 		t.Fatalf("log: %v", err)
 	}
@@ -551,7 +552,7 @@ func TestExecuteGitEndToEnd(t *testing.T) {
 		t.Fatalf("log should be one line per commit, got %q", out)
 	}
 
-	out, err = ts.Execute(GitToolName, json.RawMessage(`{"verb":"blame","paths":["main.go"]}`))
+	out, err = ts.Execute(context.Background(), GitToolName, json.RawMessage(`{"verb":"blame","paths":["main.go"]}`))
 	if err != nil {
 		t.Fatalf("blame: %v", err)
 	}
@@ -559,7 +560,7 @@ func TestExecuteGitEndToEnd(t *testing.T) {
 		t.Fatalf("blame should attribute the file's lines, got %q", out)
 	}
 
-	out, err = ts.Execute(GitToolName, json.RawMessage(`{"verb":"status"}`))
+	out, err = ts.Execute(context.Background(), GitToolName, json.RawMessage(`{"verb":"status"}`))
 	if err != nil {
 		t.Fatalf("status: %v", err)
 	}
@@ -567,7 +568,7 @@ func TestExecuteGitEndToEnd(t *testing.T) {
 		t.Fatalf("status should lead with the branch line, got %q", out)
 	}
 
-	out, err = ts.Execute(GitToolName, json.RawMessage(`{"verb":"show","ref":"HEAD"}`))
+	out, err = ts.Execute(context.Background(), GitToolName, json.RawMessage(`{"verb":"show","ref":"HEAD"}`))
 	if err != nil {
 		t.Fatalf("show: %v", err)
 	}
@@ -578,7 +579,7 @@ func TestExecuteGitEndToEnd(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, err = ts.Execute(GitToolName, json.RawMessage(`{"verb":"diff","paths":["main.go"]}`))
+	out, err = ts.Execute(context.Background(), GitToolName, json.RawMessage(`{"verb":"diff","paths":["main.go"]}`))
 	if err != nil {
 		t.Fatalf("diff: %v", err)
 	}
@@ -595,7 +596,7 @@ func TestExecuteGitEndToEnd(t *testing.T) {
 		`{"verb":"show","ref":"HEAD","names":true}`,
 		`{"verb":"diff","ref":"HEAD~1","to_ref":"HEAD","names":true}`,
 	} {
-		out, err = ts.Execute(GitToolName, json.RawMessage(args))
+		out, err = ts.Execute(context.Background(), GitToolName, json.RawMessage(args))
 		if err != nil {
 			t.Fatalf("%s: %v", args, err)
 		}
@@ -607,7 +608,7 @@ func TestExecuteGitEndToEnd(t *testing.T) {
 		}
 	}
 
-	if _, err := ts.Execute(GitToolName, json.RawMessage(`{"verb":"push"}`)); err == nil {
+	if _, err := ts.Execute(context.Background(), GitToolName, json.RawMessage(`{"verb":"push"}`)); err == nil {
 		t.Fatal("a verb outside the set must not reach git")
 	}
 }
@@ -638,7 +639,7 @@ func TestExecuteGitDoesNotRunTheRepositorysHookProgram(t *testing.T) {
 		`{"verb":"diff"}`,
 		`{"verb":"blame","paths":["main.go"]}`,
 	} {
-		if _, err := ts.Execute(GitToolName, json.RawMessage(args)); err != nil {
+		if _, err := ts.Execute(context.Background(), GitToolName, json.RawMessage(args)); err != nil {
 			t.Fatalf("%s: %v", args, err)
 		}
 	}
@@ -733,7 +734,7 @@ func reducedGit(t *testing.T, ts *Toolset, raw string) (string, string) {
 	}
 	red := evidence.NewReducer(store)
 	red.ExemptWhen(GitToolName, GitCallBounded)
-	out, err := red.WrapExecutor(ts.Execute)(GitToolName, json.RawMessage(raw))
+	out, err := red.WrapExecutor(ts.Execute)(context.Background(), GitToolName, json.RawMessage(raw))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -855,7 +856,7 @@ func TestExecuteGitRunsNothingFromAPlantedSubmodule(t *testing.T) {
 	ts := &Toolset{root: p.Root, bins: map[string]string{GitToolName: "git"}, timeout: SpawnTimeout}
 	for _, args := range []string{`{"verb":"status"}`, `{"verb":"diff"}`, `{"verb":"diff","ref":"HEAD"}`} {
 		p.Stir(t)
-		if _, err := ts.Execute(GitToolName, json.RawMessage(args)); err != nil {
+		if _, err := ts.Execute(context.Background(), GitToolName, json.RawMessage(args)); err != nil {
 			t.Fatalf("%s: %v", args, err)
 		}
 		if p.Ran() {

@@ -139,7 +139,7 @@ func mergeFactory(ws map[string]mergeWriter) EnvFactory {
 				close(ch)
 				return ch, func() {}, nil
 			},
-			Executor: func(string, json.RawMessage) (string, error) {
+			Executor: func(context.Context, string, json.RawMessage) (string, error) {
 				w.write(spec.Root)
 				return "written", nil
 			},

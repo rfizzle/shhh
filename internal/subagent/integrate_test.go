@@ -354,17 +354,17 @@ func TestOverlapAllowedLetsTwoWritersClaimOneFile(t *testing.T) {
 		t.Fatalf("the card's scope should say the claim may be shared, got %q (%v)", plan.Scope, err)
 	}
 
-	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) { return "", nil })
+	exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) { return "", nil })
 	execTool(t, sup, SpawnToolName, `{"role":"writer","task":"edit other","name":"writer-4","paths":["other.go"]}`)
-	_, err = exec(SpawnToolName, json.RawMessage(`{"role":"writer","task":"edit other","name":"writer-5","paths":["other.go"],"overlap":"allowed"}`))
+	_, err = exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"writer","task":"edit other","name":"writer-5","paths":["other.go"],"overlap":"allowed"}`))
 	if err == nil || !strings.Contains(err.Error(), "was not spawned with overlap: allowed") {
 		t.Fatalf("overlap allowed on one side only should be refused, got %v", err)
 	}
-	_, err = exec(SpawnToolName, json.RawMessage(`{"role":"researcher","task":"look","overlap":"allowed"}`))
+	_, err = exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"researcher","task":"look","overlap":"allowed"}`))
 	if err == nil || !strings.Contains(err.Error(), "overlap applies to agents that change files") {
 		t.Fatalf("overlap on a reader should be refused, got %v", err)
 	}
-	_, err = exec(SpawnToolName, json.RawMessage(`{"role":"writer","task":"look","overlap":"sometimes"}`))
+	_, err = exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"writer","task":"look","overlap":"sometimes"}`))
 	if err == nil || !strings.Contains(err.Error(), `overlap "sometimes" is not one of`) {
 		t.Fatalf("an unknown overlap word should be refused, got %v", err)
 	}

@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -27,7 +28,7 @@ func headedBy(t *testing.T, m Model, ws string) Model {
 func TestHeader_TheBranchFollowsAGitSwitch(t *testing.T) {
 	ws := treeRepo(t)
 	m := gatedModel(t,
-		func(string, json.RawMessage) (string, error) {
+		func(context.Context, string, json.RawMessage) (string, error) {
 			gitIn(t, ws, "switch", "-q", "-c", "feature/x")
 			return "switched to feature/x", nil
 		},

@@ -155,14 +155,14 @@ func TestReadOnlyProfileIsOfferedTheQualityGate(t *testing.T) {
 	}
 	// The executor has to reach the session's runner, not fall through to
 	// the built-in dispatcher, which would answer an unknown tool.
-	out, err := exec(config.QualityGateTool, json.RawMessage(`{"action":"result"}`))
+	out, err := exec(context.Background(), config.QualityGateTool, json.RawMessage(`{"action":"result"}`))
 	if err != nil || !strings.Contains(out, "No gate runs this session yet") {
 		t.Fatalf("the call did not reach the session's runner: %q %v", out, err)
 	}
 	// A trusted checkout with no suites in it answers the child the way it
 	// answers the session — a verdict of blocked saying where suites are
 	// defined — rather than an error a reader would take for a refusal.
-	out, err = exec(config.QualityGateTool, json.RawMessage(`{"action":"run"}`))
+	out, err = exec(context.Background(), config.QualityGateTool, json.RawMessage(`{"action":"run"}`))
 	if err != nil {
 		t.Fatalf("an unconfigured checkout must answer, not refuse: %v", err)
 	}
@@ -374,11 +374,11 @@ func TestTheQualityGateSurvivesTheWebToolset(t *testing.T) {
 	gate := &quality.Runner{Workspace: t.TempDir()}
 	_, _, exec := profileEnv(def, subagent.Spec{}, shell.Info{}, "", session.web, gate, map[string]bool{})
 
-	if out, err := exec(config.QualityGateTool, json.RawMessage(`{"action":"result"}`)); err != nil ||
+	if out, err := exec(context.Background(), config.QualityGateTool, json.RawMessage(`{"action":"result"}`)); err != nil ||
 		!strings.Contains(out, "No gate runs this session yet") {
 		t.Errorf("the gate was wrapped away by the web toolset: %q %v", out, err)
 	}
-	if _, err := exec(web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
+	if _, err := exec(context.Background(), web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
 		!strings.Contains(err.Error(), "metadata") {
 		t.Errorf("the web toolset was wrapped away by the gate: %v", err)
 	}
@@ -505,7 +505,7 @@ func TestChildWritesIntoTheParentsNotebook(t *testing.T) {
 	_, _, _ = nb.Write(notebook.Orchestrator, "The gate lives in mode.go", "policy.Decide reads the deny list")
 
 	passed := errors.New("passed on")
-	next := func(string, json.RawMessage) (string, error) { return "", passed }
+	next := func(context.Context, string, json.RawMessage) (string, error) { return "", passed }
 
 	for _, child := range []string{"writer-1", "researcher-1", "reviewer-1"} {
 		defs, exec, sysPrompt := withNotebook(nb, child, tools.Definitions(), next, "# Environment")
@@ -525,12 +525,12 @@ func TestChildWritesIntoTheParentsNotebook(t *testing.T) {
 			t.Errorf("%s lost the prompt the block was added to:\n%s", child, sysPrompt)
 		}
 		args := json.RawMessage(`{"title":"` + child + ` found it","body":"in internal/cli"}`)
-		if _, err := exec(notebook.WriteToolName, args); err != nil {
+		if _, err := exec(context.Background(), notebook.WriteToolName, args); err != nil {
 			t.Fatalf("%s could not write: %v", child, err)
 		}
 		// Nothing a child can call removes a note; an unknown name is
 		// passed on down the chain rather than answered here.
-		if _, err := exec("delete_note", json.RawMessage(`{"id":1}`)); !errors.Is(err, passed) {
+		if _, err := exec(context.Background(), "delete_note", json.RawMessage(`{"id":1}`)); !errors.Is(err, passed) {
 			t.Errorf("%s reached something that deletes", child)
 		}
 	}
@@ -576,10 +576,10 @@ func TestAGrandchildSignsItsNotesWithItsLineage(t *testing.T) {
 
 	spawn := func(caller, args string) {
 		t.Helper()
-		exec := sup.WrapExecutor(caller, func(name string, _ json.RawMessage) (string, error) {
+		exec := sup.WrapExecutor(caller, func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 			return "", fmt.Errorf("unexpected passthrough: %s", name)
 		})
-		if _, err := exec(subagent.SpawnToolName, json.RawMessage(args)); err != nil {
+		if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(args)); err != nil {
 			t.Fatalf("%q spawning %s: %v", caller, args, err)
 		}
 	}
@@ -600,11 +600,11 @@ func TestAGrandchildSignsItsNotesWithItsLineage(t *testing.T) {
 	researcher, reviewer := spec("researcher-1"), spec("reviewer-1a")
 
 	nb := notebook.New(nil)
-	next := func(string, json.RawMessage) (string, error) { return "", errors.New("passed on") }
+	next := func(context.Context, string, json.RawMessage) (string, error) { return "", errors.New("passed on") }
 	for _, s := range []subagent.Spec{researcher, reviewer} {
 		_, exec, _ := withNotebook(nb, notebookSignature(sup, s), tools.Definitions(), next, "# Environment")
 		args := json.RawMessage(`{"title":"` + s.Name + ` found it","body":"in internal/cli"}`)
-		if _, err := exec(notebook.WriteToolName, args); err != nil {
+		if _, err := exec(context.Background(), notebook.WriteToolName, args); err != nil {
 			t.Fatalf("%s could not write: %v", s.Name, err)
 		}
 	}
@@ -628,12 +628,12 @@ func TestAGrandchildSignsItsNotesWithItsLineage(t *testing.T) {
 // A session with no notebook is left exactly as it was: the block is what
 // tells a child the tools exist, so it must never be added without them.
 func TestChildWithoutANotebookIsUnchanged(t *testing.T) {
-	base := agent.ToolExecutor(func(string, json.RawMessage) (string, error) { return "ok", nil })
+	base := agent.ToolExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "ok", nil })
 	defs, exec, sysPrompt := withNotebook(nil, "writer-1", tools.Definitions(), base, "# Environment")
 	if len(defs) != len(tools.Definitions()) || sysPrompt != "# Environment" {
 		t.Errorf("a session with no notebook still handed one out: %d defs, prompt %q", len(defs), sysPrompt)
 	}
-	if out, err := exec(notebook.WriteToolName, nil); err != nil || out != "ok" {
+	if out, err := exec(context.Background(), notebook.WriteToolName, nil); err != nil || out != "ok" {
 		t.Errorf("the chain was wrapped anyway: %q %v", out, err)
 	}
 }
@@ -702,7 +702,7 @@ func TestAChildGetsTheNavigationToolsetAndTheBlockThatExplainsIt(t *testing.T) {
 	// The chain dispatches them too: a malformed question is refused by the
 	// language server's own toolset, where a name that fell through to the
 	// base executor would come back unknown.
-	if _, err := exec(lsp.DefinitionToolName, json.RawMessage(`{"line":1,"symbol":"x"}`)); err == nil ||
+	if _, err := exec(context.Background(), lsp.DefinitionToolName, json.RawMessage(`{"line":1,"symbol":"x"}`)); err == nil ||
 		!strings.Contains(err.Error(), "path is required") {
 		t.Errorf("the language server's tools were registered but not wired: %v", err)
 	}
@@ -729,7 +729,7 @@ func TestAChildsStructuralToolsAreContainedToItsOwnWorkspace(t *testing.T) {
 	}
 	// This directory, not the checkout above it: a path that climbs out is
 	// refused by the root the toolset was built with.
-	if _, err := child.Execute(structural.GitToolName,
+	if _, err := child.Execute(context.Background(), structural.GitToolName,
 		json.RawMessage(`{"verb":"status","paths":["../../go.mod"]}`)); err == nil ||
 		!strings.Contains(err.Error(), "outside the workspace") {
 		t.Errorf("a path outside the child's workspace was not refused: %v", err)
@@ -885,7 +885,7 @@ func TestAWritersEditCarriesTheLanguageServersVerdict(t *testing.T) {
 
 	const applied = "Applied 1 edit"
 	calls := 0
-	exec := withDiagnostics(lspMutationHook(ts), func(name string, args json.RawMessage) (string, error) {
+	exec := withDiagnostics(lspMutationHook(ts), func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		calls++
 		if name == "read_file" {
 			return "package main", nil
@@ -894,7 +894,7 @@ func TestAWritersEditCarriesTheLanguageServersVerdict(t *testing.T) {
 	})
 
 	edit := json.RawMessage(`{"path":` + strconv.Quote(path) + `}`)
-	out, err := exec(tools.EditFileName, edit)
+	out, err := exec(context.Background(), tools.EditFileName, edit)
 	if err != nil {
 		t.Fatalf("the edit failed: %v", err)
 	}
@@ -906,7 +906,7 @@ func TestAWritersEditCarriesTheLanguageServersVerdict(t *testing.T) {
 	}
 
 	// A read is not an edit, and nothing is asked about one.
-	if out, err := exec("read_file", edit); err != nil || out != "package main" {
+	if out, err := exec(context.Background(), "read_file", edit); err != nil || out != "package main" {
 		t.Errorf("a read was sent to the language server: %q %v", out, err)
 	}
 	if calls != 2 {
@@ -914,7 +914,7 @@ func TestAWritersEditCarriesTheLanguageServersVerdict(t *testing.T) {
 	}
 	// No server detected is the executor unchanged, not a wrap that asks
 	// nothing.
-	plain := agent.ToolExecutor(func(string, json.RawMessage) (string, error) { return applied, nil })
+	plain := agent.ToolExecutor(func(context.Context, string, json.RawMessage) (string, error) { return applied, nil })
 	if got := withDiagnostics(childMutationHook(nil), plain); got == nil {
 		t.Error("a session with no language server lost its executor")
 	}
@@ -946,8 +946,8 @@ func TestAChildLeavesTheSessionsLateAnswersAlone(t *testing.T) {
 	defer ts.Close()
 
 	edit := func(hook chat.MutationHook, path string) string {
-		exec := withDiagnostics(hook, func(string, json.RawMessage) (string, error) { return "Applied 1 edit", nil })
-		out, err := exec(tools.EditFileName, json.RawMessage(`{"path":`+strconv.Quote(path)+`}`))
+		exec := withDiagnostics(hook, func(context.Context, string, json.RawMessage) (string, error) { return "Applied 1 edit", nil })
+		out, err := exec(context.Background(), tools.EditFileName, json.RawMessage(`{"path":`+strconv.Quote(path)+`}`))
 		if err != nil {
 			t.Fatalf("the edit failed: %v", err)
 		}
@@ -1132,12 +1132,12 @@ func TestAChildsAutoRunCallsMeetTheHookSeam(t *testing.T) {
 
 	seam := &childSeam{}
 	ran := false
-	exec := childHookAuto(r)(seam.seam(), func(string, json.RawMessage) (string, error) {
+	exec := childHookAuto(r)(seam.seam(), func(context.Context, string, json.RawMessage) (string, error) {
 		ran = true
 		return "contents", nil
 	})
 
-	got, err := exec(tools.ReadFileName, json.RawMessage(`{"path":"vendor/x.go"}`))
+	got, err := exec(context.Background(), tools.ReadFileName, json.RawMessage(`{"path":"vendor/x.go"}`))
 	if err != nil {
 		t.Fatalf("a refusal is a result and never an error: %v", err)
 	}
@@ -1286,10 +1286,10 @@ func TestAChildsWriteIsPutToTheSeamBehindItExactlyOnce(t *testing.T) {
 	// mutation chain over the executor, and the approver's wrap around the
 	// resolution that reaches it.
 	gatedExec := withDiagnostics(chainMutation(nil, childPostMutation(r)),
-		func(name string, _ json.RawMessage) (string, error) { return "wrote " + name, nil })
+		func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "wrote " + name, nil })
 	seam := &childSeam{}
 	resolve := childHookGated(r)(seam.seam(), func(tc provider.ToolCall) string {
-		out, err := gatedExec(tc.Name, json.RawMessage(tc.Arguments))
+		out, err := gatedExec(context.Background(), tc.Name, json.RawMessage(tc.Arguments))
 		if err != nil {
 			return "error: " + err.Error()
 		}
@@ -1393,7 +1393,7 @@ func TestDelegationToolsReachAChildWithALevelBelowIt(t *testing.T) {
 			// And the wrap is the supervisor's, under this child's own name:
 			// a call through it reaches the roster rather than falling through
 			// to a dispatcher that has never heard of the tool.
-			out, err := exec(subagent.ReportToolName, json.RawMessage(`{}`))
+			out, err := exec(context.Background(), subagent.ReportToolName, json.RawMessage(`{}`))
 			if err != nil {
 				t.Fatalf("the delegation wrap did not reach the supervisor: %v", err)
 			}
@@ -1695,7 +1695,7 @@ func TestTheBuiltInReviewerIsNotHandedTheWeb(t *testing.T) {
 			// The metadata address is refused by the fetcher's own policy
 			// before any dial, so a regression fails here without a request
 			// leaving the machine.
-			if _, err := exec(web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
+			if _, err := exec(context.Background(), web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
 				!strings.Contains(err.Error(), "unknown tool") {
 				t.Errorf("reviewer's executor dispatched %s: %v", web.FetchToolName, err)
 			}

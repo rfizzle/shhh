@@ -301,7 +301,7 @@ func TestChildFetchesThroughTheSessionsOwnToolset(t *testing.T) {
 	if !gated[web.FetchToolName] {
 		t.Errorf("%s reached a child ungated", web.FetchToolName)
 	}
-	if _, err := exec(web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
+	if _, err := exec(context.Background(), web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
 		!strings.Contains(err.Error(), "metadata") {
 		t.Fatalf("err = %v, want the session fetcher's own refusal", err)
 	}
@@ -350,15 +350,15 @@ func TestRegistrationDeclaresWhatBoundsItself(t *testing.T) {
 	if session.structural == nil || !session.structural.Has(structural.GitToolName) {
 		t.Skip("not inside a git repository, so the git tool was not registered")
 	}
-	exec := ts.evidence.WrapExecutor(func(string, json.RawMessage) (string, error) { return big, nil })
-	whole, err := exec(structural.GitToolName, json.RawMessage(`{"verb":"blame","paths":["internal/cli/toolset.go"],"start_line":200,"end_line":400}`))
+	exec := ts.evidence.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) { return big, nil })
+	whole, err := exec(context.Background(), structural.GitToolName, json.RawMessage(`{"verb":"blame","paths":["internal/cli/toolset.go"],"start_line":200,"end_line":400}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if whole != big {
 		t.Errorf("the blame window the model asked for was cut: %d of %d bytes", len(whole), len(big))
 	}
-	cut, err := exec(structural.GitToolName, json.RawMessage(`{"verb":"show","ref":"HEAD"}`))
+	cut, err := exec(context.Background(), structural.GitToolName, json.RawMessage(`{"verb":"show","ref":"HEAD"}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -401,7 +401,7 @@ func TestAQueryIsKeptInTheSessionsStoreScrubbed(t *testing.T) {
 	}
 	exec := ts.executor(session)
 	args, _ := json.Marshal(map[string]any{"paths": []string{file}, "expression": ".token"})
-	out, err := exec(tools.QueryName, args)
+	out, err := exec(context.Background(), tools.QueryName, args)
 	if err != nil {
 		t.Fatalf("query: %v", err)
 	}
@@ -412,7 +412,7 @@ func TestAQueryIsKeptInTheSessionsStoreScrubbed(t *testing.T) {
 	if m == nil {
 		t.Fatalf("a cut answer should name the evidence id: %q", out[strings.LastIndex(out, "\n"):])
 	}
-	stored, err := exec(evidence.ToolName, json.RawMessage(fmt.Sprintf(`{"action":"search","id":%q,"query":"API_TOKEN"}`, m[1])))
+	stored, err := exec(context.Background(), evidence.ToolName, json.RawMessage(fmt.Sprintf(`{"action":"search","id":%q,"query":"API_TOKEN"}`, m[1])))
 	if err != nil {
 		t.Fatalf("evidence: %v", err)
 	}

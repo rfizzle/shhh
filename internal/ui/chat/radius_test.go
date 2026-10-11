@@ -288,7 +288,7 @@ func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
 	}
 	m := New(msgs, mockStream, Wiring{
 		Workspace: dir,
-		Executor:  func(name string, args json.RawMessage) (string, error) { return "ok", nil },
+		Executor:  func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil },
 		GatedTools: map[string]GatedPreviewFunc{
 			"web_fetch": func(json.RawMessage) (GatedPreview, error) {
 				return GatedPreview{Summary: "GET https://pkg.go.dev/context", Fields: []GatedField{

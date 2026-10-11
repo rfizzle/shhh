@@ -717,12 +717,12 @@ func TestTool_WrapExecutorDispatch(t *testing.T) {
 	ws := t.TempDir()
 	writeConfig(t, ws, shSuite("true"))
 	r := &Runner{Workspace: ws}
-	executor := r.WrapExecutor(func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil })
-	out, err := executor(ToolName, json.RawMessage(`{"action": "result"}`))
+	executor := r.WrapExecutor(func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "next:" + name, nil })
+	out, err := executor(context.Background(), ToolName, json.RawMessage(`{"action": "result"}`))
 	if err != nil || !strings.Contains(out, "No gate runs") {
 		t.Fatalf("gate dispatch = %q, %v", out, err)
 	}
-	out, err = executor("read_file", nil)
+	out, err = executor(context.Background(), "read_file", nil)
 	if err != nil || out != "next:read_file" {
 		t.Fatalf("passthrough = %q, %v", out, err)
 	}
@@ -1093,8 +1093,8 @@ func TestRun_TakesTheSessionsCheckSlot(t *testing.T) {
 	if res := mustRun(t, r, "default"); res.Verdict != VerdictPass || taken != 1 || given != 1 {
 		t.Fatalf("verdict %s, slot taken %d and given back %d times", res.Verdict, taken, given)
 	}
-	held := r.WrapExecutorHolding(func(string, json.RawMessage) (string, error) { return "", nil })
-	if out, err := held(ToolName, json.RawMessage(`{"action": "run"}`)); err != nil || !strings.Contains(out, "PASS") {
+	held := r.WrapExecutorHolding(func(context.Context, string, json.RawMessage) (string, error) { return "", nil })
+	if out, err := held(context.Background(), ToolName, json.RawMessage(`{"action": "run"}`)); err != nil || !strings.Contains(out, "PASS") {
 		t.Fatalf("held run = %q, %v", out, err)
 	}
 	if taken != 1 {

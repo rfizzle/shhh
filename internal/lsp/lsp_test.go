@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -465,7 +466,7 @@ func TestToolset_DefinitionFormatsFileLine(t *testing.T) {
 
 	ts := NewToolset(m)
 	args, _ := json.Marshal(map[string]any{"path": path, "line": 2, "symbol": "target"})
-	out, err := ts.Execute(DefinitionToolName, args)
+	out, err := ts.Execute(context.Background(), DefinitionToolName, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -486,7 +487,7 @@ func TestToolset_ReferencesBounded(t *testing.T) {
 
 	ts := NewToolset(m)
 	args, _ := json.Marshal(map[string]any{"path": path, "line": 2, "symbol": "count"})
-	out, err := ts.Execute(ReferencesToolName, args)
+	out, err := ts.Execute(context.Background(), ReferencesToolName, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -504,7 +505,7 @@ func TestToolset_NoResultsMessage(t *testing.T) {
 	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
 	ts := NewToolset(m)
 	args, _ := json.Marshal(map[string]any{"path": path, "line": 1, "symbol": "main"})
-	out, err := ts.Execute(DefinitionToolName, args)
+	out, err := ts.Execute(context.Background(), DefinitionToolName, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -522,7 +523,7 @@ func TestToolset_ArgumentValidation(t *testing.T) {
 		`{"path":"a.go","line":1,"symbol":" "}`,
 	}
 	for _, args := range cases {
-		if _, err := ts.Execute(DefinitionToolName, json.RawMessage(args)); err == nil {
+		if _, err := ts.Execute(context.Background(), DefinitionToolName, json.RawMessage(args)); err == nil {
 			t.Fatalf("args %s should be rejected", args)
 		}
 	}
@@ -573,7 +574,7 @@ func TestManager_PositionRefusesRatherThanGuesses(t *testing.T) {
 		m, root := testManager(t, fake, Options{})
 		path := writeWorkspaceFile(t, root, "main.go", "package main\nvar count int\n")
 		args, _ := json.Marshal(map[string]any{"path": path})
-		if _, err := tools.Execute(tools.ReadFileName, args); err != nil {
+		if _, err := tools.Execute(context.Background(), tools.ReadFileName, args); err != nil {
 			t.Fatal(err)
 		}
 		writeWorkspaceFile(t, root, "main.go", "package main\n\n\nvar count int\n")
@@ -595,7 +596,7 @@ func TestManager_PositionRefusesRatherThanGuesses(t *testing.T) {
 		m.UseReadRecord(own)
 		path := writeWorkspaceFile(t, root, "main.go", "package main\nvar count int\n")
 		args, _ := json.Marshal(map[string]any{"path": path})
-		if _, err := own.Execute(tools.ReadFileName, args); err != nil {
+		if _, err := own.Execute(context.Background(), tools.ReadFileName, args); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := m.References(path, 2, "count"); err != nil {
@@ -814,7 +815,7 @@ func TestToolset_WorkspaceSymbolFormatsMatches(t *testing.T) {
 
 	ts := NewToolset(m)
 	args, _ := json.Marshal(map[string]any{"query": "Toolset"})
-	out, err := ts.Execute(WorkspaceSymbolToolName, args)
+	out, err := ts.Execute(context.Background(), WorkspaceSymbolToolName, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -886,7 +887,7 @@ func TestToolset_DocumentSymbolOutlinesHierarchy(t *testing.T) {
 
 	ts := NewToolset(m)
 	args, _ := json.Marshal(map[string]any{"path": path})
-	out, err := ts.Execute(DocumentSymbolToolName, args)
+	out, err := ts.Execute(context.Background(), DocumentSymbolToolName, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -913,7 +914,7 @@ func TestToolset_HoverFlattensMarkdown(t *testing.T) {
 
 	ts := NewToolset(m)
 	args, _ := json.Marshal(map[string]any{"path": path, "line": 2, "symbol": "target"})
-	out, err := ts.Execute(HoverToolName, args)
+	out, err := ts.Execute(context.Background(), HoverToolName, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -936,7 +937,7 @@ func TestToolset_HoverBoundedByLines(t *testing.T) {
 
 	ts := NewToolset(m)
 	args, _ := json.Marshal(map[string]any{"path": path, "line": 2, "symbol": "target"})
-	out, err := ts.Execute(HoverToolName, args)
+	out, err := ts.Execute(context.Background(), HoverToolName, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -979,17 +980,17 @@ func TestManager_UnadvertisedQuestionIsRefusedByName(t *testing.T) {
 	ts := NewToolset(m)
 
 	query, _ := json.Marshal(map[string]any{"query": "target"})
-	_, err := ts.Execute(WorkspaceSymbolToolName, query)
+	_, err := ts.Execute(context.Background(), WorkspaceSymbolToolName, query)
 	if err == nil || !strings.Contains(err.Error(), WorkspaceSymbolToolName) {
 		t.Fatalf("an unsupported question should be refused by name, got %v", err)
 	}
 
 	outline, _ := json.Marshal(map[string]any{"path": path})
-	if _, err := ts.Execute(DocumentSymbolToolName, outline); err != nil {
+	if _, err := ts.Execute(context.Background(), DocumentSymbolToolName, outline); err != nil {
 		t.Fatalf("the supported questions must still be answered: %v", err)
 	}
 	position, _ := json.Marshal(map[string]any{"path": path, "line": 2, "symbol": "target"})
-	if _, err := ts.Execute(HoverToolName, position); err != nil {
+	if _, err := ts.Execute(context.Background(), HoverToolName, position); err != nil {
 		t.Fatalf("the supported questions must still be answered: %v", err)
 	}
 
@@ -1024,7 +1025,7 @@ func TestToolset_UnrecognisedResponseShapesAreEmptyAnswers(t *testing.T) {
 		{DocumentSymbolToolName, fmt.Sprintf(`{"path":%q}`, path), "No symbols in"},
 		{HoverToolName, fmt.Sprintf(`{"path":%q,"line":2,"symbol":"target"}`, path), "No hover information"},
 	} {
-		out, err := ts.Execute(tc.tool, json.RawMessage(tc.args))
+		out, err := ts.Execute(context.Background(), tc.tool, json.RawMessage(tc.args))
 		if err != nil {
 			t.Fatalf("%s: %v", tc.tool, err)
 		}
@@ -1040,16 +1041,16 @@ func TestToolset_UnrecognisedResponseShapesAreEmptyAnswers(t *testing.T) {
 func TestToolset_AnOutlineNoServerCoversGoesOn(t *testing.T) {
 	ts := NewToolset(NewManager(t.TempDir(), []ServerSpec{{Name: "gopls", Command: "shhh-no-such-server", Extensions: []string{".go"}}}, Options{}))
 	var passed []string
-	exec := ts.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+	exec := ts.WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		passed = append(passed, string(args))
 		return "fallback", nil
 	})
 	for _, path := range []string{"README.md", "notes.markdown", "a.py"} {
-		if got, err := exec(DocumentSymbolToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path))); err != nil || got != "fallback" {
+		if got, err := exec(context.Background(), DocumentSymbolToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path))); err != nil || got != "fallback" {
 			t.Errorf("%s should reach the fallback outline, got %q, %v", path, got, err)
 		}
 	}
-	if _, err := exec(DocumentSymbolToolName, json.RawMessage(`{"path":"main.go"}`)); err == nil {
+	if _, err := exec(context.Background(), DocumentSymbolToolName, json.RawMessage(`{"path":"main.go"}`)); err == nil {
 		t.Error("a file the server covers is the server's to answer, and this one cannot start")
 	}
 	if len(passed) != 3 {
@@ -1099,7 +1100,7 @@ func TestToolset_NoServerDetectedRefusesEveryTool(t *testing.T) {
 		{DiagnosticsToolName, fmt.Sprintf(`{"path":%q}`, path)},
 		{DiagnosticsToolName, `{}`},
 	} {
-		if _, err := ts.Execute(tc.tool, json.RawMessage(tc.args)); err == nil {
+		if _, err := ts.Execute(context.Background(), tc.tool, json.RawMessage(tc.args)); err == nil {
 			t.Fatalf("%s should refuse when no server was detected", tc.tool)
 		}
 	}
@@ -1116,7 +1117,7 @@ func TestToolset_NewToolArgumentValidation(t *testing.T) {
 		{DiagnosticsToolName, `{"path":42}`},
 		{"symbols", `{"query":"x"}`},
 	} {
-		if _, err := ts.Execute(tc.tool, json.RawMessage(tc.args)); err == nil {
+		if _, err := ts.Execute(context.Background(), tc.tool, json.RawMessage(tc.args)); err == nil {
 			t.Fatalf("%s with %s should be rejected", tc.tool, tc.args)
 		}
 	}
@@ -1248,10 +1249,10 @@ func TestHeldDiagnostics_RideInFrontOfTheNextToolResult(t *testing.T) {
 	m.DiagnosticsAfterChange(path)
 	waitForPublishes(t, m, path, 1)
 
-	exec := NewToolset(m).WrapExecutor(func(string, json.RawMessage) (string, error) {
+	exec := NewToolset(m).WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		return "3 matches", nil
 	})
-	out, err := exec("search", json.RawMessage(`{}`))
+	out, err := exec(context.Background(), "search", json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1261,7 +1262,7 @@ func TestHeldDiagnostics_RideInFrontOfTheNextToolResult(t *testing.T) {
 	if !strings.HasSuffix(out, "3 matches") {
 		t.Fatalf("the result itself must survive intact, got %q", out)
 	}
-	again, err := exec("search", json.RawMessage(`{}`))
+	again, err := exec(context.Background(), "search", json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1279,10 +1280,10 @@ func TestHeldDiagnostics_LeaveAFailedCallAlone(t *testing.T) {
 	m.DiagnosticsAfterChange(path)
 	waitForPublishes(t, m, path, 1)
 
-	exec := NewToolset(m).WrapExecutor(func(string, json.RawMessage) (string, error) {
+	exec := NewToolset(m).WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		return "", fmt.Errorf("no such file")
 	})
-	if _, err := exec("read_file", json.RawMessage(`{}`)); err == nil {
+	if _, err := exec(context.Background(), "read_file", json.RawMessage(`{}`)); err == nil {
 		t.Fatal("the wrapped error must be returned")
 	}
 	if held := m.TakeHeldDiagnostics(); held == "" {
@@ -1355,7 +1356,7 @@ func TestToolset_DiagnosticsReportsFileAndWorkspace(t *testing.T) {
 	waitForPublishes(t, m, path, 1)
 	ts := NewToolset(m)
 
-	out, err := ts.Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	out, err := ts.Execute(context.Background(), DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1367,7 +1368,7 @@ func TestToolset_DiagnosticsReportsFileAndWorkspace(t *testing.T) {
 	}
 
 	// No path is the workspace: every file this session has had checked.
-	out, err = ts.Execute(DiagnosticsToolName, json.RawMessage(`{}`))
+	out, err = ts.Execute(context.Background(), DiagnosticsToolName, json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1392,7 +1393,7 @@ func TestToolset_WorkspaceDiagnosticsPutErrorsFirstAcrossFiles(t *testing.T) {
 	m.DiagnosticsAfterChange(writeWorkspaceFile(t, root, "aaa.go", "package main // WARN\n"))
 	m.DiagnosticsAfterChange(writeWorkspaceFile(t, root, "zzz.go", "package main\n"))
 
-	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(`{}`))
+	out, err := NewToolset(m).Execute(context.Background(), DiagnosticsToolName, json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1413,14 +1414,14 @@ func TestToolset_DiagnosticsSeparatesUncheckedFromClean(t *testing.T) {
 	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
 	ts := NewToolset(m)
 
-	out, err := ts.Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	out, err := ts.Execute(context.Background(), DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out, "has not checked main.go yet") {
 		t.Fatalf("an unchecked file should say so, got %q", out)
 	}
-	out, err = ts.Execute(DiagnosticsToolName, json.RawMessage(`{}`))
+	out, err = ts.Execute(context.Background(), DiagnosticsToolName, json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1438,7 +1439,7 @@ func TestToolset_WorkspaceDiagnosticsSettleAHeldQuestion(t *testing.T) {
 	m.DiagnosticsAfterChange(path)
 	waitForPublishes(t, m, path, 1)
 
-	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(`{}`))
+	out, err := NewToolset(m).Execute(context.Background(), DiagnosticsToolName, json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1469,7 +1470,7 @@ func TestToolset_DiagnosticsKeepsAQuestionItCannotAnswerOpen(t *testing.T) {
 		t.Fatalf("expected the unchecked line, got %q", out)
 	}
 
-	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	out, err := NewToolset(m).Execute(context.Background(), DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1569,7 +1570,7 @@ func TestDiagnostics_AnEarlierCleanReportIsNotThisContentsVerdict(t *testing.T) 
 	if out := m.DiagnosticsAfterChange(path); out != notCheckedYet("gopls") {
 		t.Fatalf("an unchanged re-ask must not inherit the earlier verdict, got %q", out)
 	}
-	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	out, err := NewToolset(m).Execute(context.Background(), DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
 	if err != nil {
 		t.Fatal(err)
 	}

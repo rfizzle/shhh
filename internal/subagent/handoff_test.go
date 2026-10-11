@@ -162,7 +162,7 @@ func (w *keptWriter) factory() EnvFactory {
 		return Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor: func(string, json.RawMessage) (string, error) {
+			Executor: func(context.Context, string, json.RawMessage) (string, error) {
 				return "written", os.WriteFile(filepath.Join(spec.Root, "kept.go"), []byte("package kept\n"), 0o644)
 			},
 			Archive: func(tool, content string) (string, bool) {

@@ -2881,7 +2881,7 @@ func TestGolden_Screen(t *testing.T) {
 	// of its task down, so the lanes and the compact rows under them both
 	// have a grandchild to draw behind the corner, in the same place in the
 	// tree (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
-	if _, err := sup.WrapExecutor("researcher-1", nil)(subagent.SpawnToolName,
+	if _, err := sup.WrapExecutor("researcher-1", nil)(context.Background(), subagent.SpawnToolName,
 		json.RawMessage(`{"role":"researcher","task":"Say who calls the loop."}`)); err != nil {
 		t.Fatal(err)
 	}
@@ -3577,7 +3577,7 @@ func TestGolden_ClassifierStanding(t *testing.T) {
 	}
 	captureGolden(t, "classifier-standing", "a classifier's yes the host lists put to the person", goldenWidths, func(width int) []golden.Panel {
 		judge := &verdictProvider{decision: "allow", reason: "reads a page"}
-		m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, previews)
+		m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, previews)
 		m.classifier.judge = agent.NewClassifier(meter.New(nil).For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
 		m.policy.mode = agent.ModeAuto
 		m.width, m.height = width, 40

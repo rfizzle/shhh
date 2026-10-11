@@ -327,15 +327,15 @@ func TestConnectBuildsTheToolsetAndReports(t *testing.T) {
 	if got := ts.Gated(); len(got) != 0 {
 		t.Errorf("gated = %v on a read-only server", got)
 	}
-	out, err := ts.Execute("echo__echo", json.RawMessage(`{"text":"there"}`))
+	out, err := ts.Execute(context.Background(), "echo__echo", json.RawMessage(`{"text":"there"}`))
 	if err != nil || out != "echo: there" {
 		t.Errorf("execute = %q, %v", out, err)
 	}
-	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
-	if out, _ := ts.WrapExecutor("orchestrator", next)("read_file", nil); out != "next:read_file" {
+	next := func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
+	if out, _ := ts.WrapExecutor("orchestrator", next)(context.Background(), "read_file", nil); out != "next:read_file" {
 		t.Errorf("chain passed through = %q", out)
 	}
-	if out, err := ts.WrapReadOnlyExecutor("orchestrator", next)("echo__echo", json.RawMessage(`{"text":"ro"}`)); err != nil || out != "echo: ro" {
+	if out, err := ts.WrapReadOnlyExecutor("orchestrator", next)(context.Background(), "echo__echo", json.RawMessage(`{"text":"ro"}`)); err != nil || out != "echo: ro" {
 		t.Errorf("read-only chain = %q, %v", out, err)
 	}
 	p, err := ts.Preview("echo__echo", json.RawMessage(`{"text":"a\nb"}`))
@@ -361,11 +361,11 @@ func TestWrapReadOnlyExecutorRefusesGatedTools(t *testing.T) {
 	if ts.Len() != 4 || len(ts.ReadOnlyDefinitions()) != 0 {
 		t.Fatalf("toolset = %d tools, %d read-only", ts.Len(), len(ts.ReadOnlyDefinitions()))
 	}
-	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
-	if _, err := ts.WrapReadOnlyExecutor("orchestrator", next)("echo__echo", json.RawMessage(`{"text":"x"}`)); err == nil || !strings.Contains(err.Error(), "not marked read-only") {
+	next := func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
+	if _, err := ts.WrapReadOnlyExecutor("orchestrator", next)(context.Background(), "echo__echo", json.RawMessage(`{"text":"x"}`)); err == nil || !strings.Contains(err.Error(), "not marked read-only") {
 		t.Errorf("gated tool dispatched through the read-only chain: %v", err)
 	}
-	if out, _ := ts.WrapReadOnlyExecutor("orchestrator", next)("read_file", nil); out != "next:read_file" {
+	if out, _ := ts.WrapReadOnlyExecutor("orchestrator", next)(context.Background(), "read_file", nil); out != "next:read_file" {
 		t.Errorf("chain passed through = %q", out)
 	}
 }
@@ -648,14 +648,14 @@ func TestResourcesAreReadsOnAServerNobodyMarkedReadOnly(t *testing.T) {
 	if len(ts.Gated()) != 3 {
 		t.Fatalf("gated = %v, want the server's own three tools", ts.Gated())
 	}
-	out, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`))
+	out, err := ts.Execute(context.Background(), ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`))
 	if err != nil || out != "the guide, at docs://guide" {
 		t.Fatalf("resource read = %q, %v", out, err)
 	}
 	// A child was handed the read-only servers and nothing else, so the same
 	// uri through its chain is refused rather than read.
-	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
-	_, err = ts.WrapReadOnlyExecutor("orchestrator", next)(ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`))
+	next := func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
+	_, err = ts.WrapReadOnlyExecutor("orchestrator", next)(context.Background(), ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`))
 	if err == nil || !strings.Contains(err.Error(), "not marked read-only") {
 		t.Fatalf("a child read a resource off a server it was not handed: %v", err)
 	}
@@ -671,15 +671,15 @@ func TestResourceUriResolvesByListingThenByScheme(t *testing.T) {
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{testDefinition(t)}}, Options{})
 	defer ts.Close()
 
-	out, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"docs://opaque"}`))
+	out, err := ts.Execute(context.Background(), ResourceToolName, json.RawMessage(`{"uri":"docs://opaque"}`))
 	if err != nil || !strings.Contains(out, "[resource omitted: docs://opaque") {
 		t.Fatalf("templated uri = %q, %v", out, err)
 	}
-	if _, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"tickets://7"}`)); err == nil ||
+	if _, err := ts.Execute(context.Background(), ResourceToolName, json.RawMessage(`{"uri":"tickets://7"}`)); err == nil ||
 		!strings.Contains(err.Error(), "no connected server publishes") {
 		t.Fatalf("an unknown scheme = %v", err)
 	}
-	if _, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"  "}`)); err == nil ||
+	if _, err := ts.Execute(context.Background(), ResourceToolName, json.RawMessage(`{"uri":"  "}`)); err == nil ||
 		!strings.Contains(err.Error(), "needs a uri") {
 		t.Fatalf("an empty uri = %v", err)
 	}
@@ -732,7 +732,7 @@ func TestListChangedIsTakenAtTheBoundaryAndNotMidRound(t *testing.T) {
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{testDefinition(t)}}, Options{})
 	defer ts.Close()
 
-	if _, err := ts.Execute("echo__grow", json.RawMessage(`{"text":"x"}`)); err != nil {
+	if _, err := ts.Execute(context.Background(), "echo__grow", json.RawMessage(`{"text":"x"}`)); err != nil {
 		t.Fatal(err)
 	}
 	server := ts.Servers()[0]
@@ -814,7 +814,7 @@ func TestAToolsetWithNoServersAnswersEverything(t *testing.T) {
 	if ts.Refresh() {
 		t.Error("an empty toolset reported a change")
 	}
-	if _, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"x://y"}`)); err == nil {
+	if _, err := ts.Execute(context.Background(), ResourceToolName, json.RawMessage(`{"uri":"x://y"}`)); err == nil {
 		t.Error("an empty toolset read a resource")
 	}
 	if _, err := ts.Render(context.Background(), "a:b", nil); err == nil {
@@ -959,7 +959,7 @@ func TestOnlyTheNamedToolsOfAServerAreRegistered(t *testing.T) {
 	if _, err := ts.Preview("echo__fail", nil); err == nil {
 		t.Error("a card previewed a call the session cannot make")
 	}
-	if _, err := ts.Execute("echo__fail", json.RawMessage(`{"text":"x"}`)); err == nil {
+	if _, err := ts.Execute(context.Background(), "echo__fail", json.RawMessage(`{"text":"x"}`)); err == nil {
 		t.Error("a tool the definition left out was dispatched")
 	}
 	// The server still holds its whole catalog: `shhh mcp show` is where a
@@ -1120,7 +1120,7 @@ func TestAServerKilledAfterConnectIsNoticedOnceAndAnswersFast(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := ts.Execute("echo__echo", json.RawMessage(`{"text":"hi"}`))
+	_, err := ts.Execute(context.Background(), "echo__echo", json.RawMessage(`{"text":"hi"}`))
 	if err == nil || !strings.Contains(err.Error(), "no longer running") {
 		t.Fatalf("the call that met the dead server = %v", err)
 	}
@@ -1130,7 +1130,7 @@ func TestAServerKilledAfterConnectIsNoticedOnceAndAnswersFast(t *testing.T) {
 	// The second call is the one the model makes after reading the first
 	// result, and it must cost nothing: no session, no timeout, no wait.
 	started := time.Now()
-	_, again := ts.Execute("echo__echo", json.RawMessage(`{"text":"hi"}`))
+	_, again := ts.Execute(context.Background(), "echo__echo", json.RawMessage(`{"text":"hi"}`))
 	if again == nil || !strings.Contains(again.Error(), "no longer running") {
 		t.Fatalf("the next call = %v", again)
 	}
@@ -1185,7 +1185,7 @@ func TestAHungCallEndsAtTheConfiguredTimeout(t *testing.T) {
 	}
 
 	started := time.Now()
-	_, err := ts.Execute("echo__hang", json.RawMessage(`{"text":"x"}`))
+	_, err := ts.Execute(context.Background(), "echo__hang", json.RawMessage(`{"text":"x"}`))
 	took := time.Since(started)
 	if err == nil || !strings.Contains(err.Error(), "did not answer within 200ms") {
 		t.Fatalf("a hung call = %v", err)
@@ -1211,7 +1211,7 @@ func TestAbandonCallsReachesACallInFlight(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		_, err := ts.Execute("echo__hang", json.RawMessage(`{"text":"x"}`))
+		_, err := ts.Execute(context.Background(), "echo__hang", json.RawMessage(`{"text":"x"}`))
 		done <- err
 	}()
 	// Wait for the call to be on the register rather than for a duration:
@@ -1426,15 +1426,15 @@ func TestAPageAServerReadIsFiledInTheLedger(t *testing.T) {
 	}
 	ledger := web.NewLedger(nil)
 	ts.UseLedger(ledger)
-	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
+	next := func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
 
-	if _, err := ts.WrapExecutor(web.Orchestrator, next)("echo__echo", json.RawMessage(`{"text":"x"}`)); err != nil {
+	if _, err := ts.WrapExecutor(web.Orchestrator, next)(context.Background(), "echo__echo", json.RawMessage(`{"text":"x"}`)); err != nil {
 		t.Fatal(err)
 	}
 	if n := ledger.Len(); n != 0 {
 		t.Fatalf("an echo filed %d rows", n)
 	}
-	out, err := ts.WrapReadOnlyExecutor("web-researcher", next)("echo__fetch",
+	out, err := ts.WrapReadOnlyExecutor("web-researcher", next)(context.Background(), "echo__fetch",
 		json.RawMessage(`{"text":"https://example.com/a"}`))
 	if err != nil || !strings.Contains(out, "the page body") {
 		t.Fatalf("fetch = %q, %v", out, err)
@@ -1468,15 +1468,15 @@ func TestAResourceReadAtAWebAddressIsFiledInTheLedger(t *testing.T) {
 	}
 	ledger := web.NewLedger(nil)
 	ts.UseLedger(ledger)
-	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
+	next := func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
 
-	if _, err := ts.WrapExecutor(web.Orchestrator, next)(ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`)); err != nil {
+	if _, err := ts.WrapExecutor(web.Orchestrator, next)(context.Background(), ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`)); err != nil {
 		t.Fatal(err)
 	}
 	if n := ledger.Len(); n != 0 {
 		t.Fatalf("a docs:// read filed %d rows", n)
 	}
-	out, err := ts.WrapExecutor("web-researcher", next)(ResourceToolName, json.RawMessage(`{"uri":"https://example.com/doc"}`))
+	out, err := ts.WrapExecutor("web-researcher", next)(context.Background(), ResourceToolName, json.RawMessage(`{"uri":"https://example.com/doc"}`))
 	if err != nil || !strings.Contains(out, "the doc body") {
 		t.Fatalf("read = %q, %v", out, err)
 	}

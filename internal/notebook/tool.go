@@ -1,6 +1,7 @@
 package notebook
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -104,7 +105,7 @@ func Describers() map[string]describe.Describer {
 // and passes everything else on. Each agent wraps with its own name, so a
 // delegate's notes carry the delegate's name.
 func (s *Store) WrapExecutor(author string, next agent.ToolExecutor) agent.ToolExecutor {
-	return func(name string, args json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		switch name {
 		case WriteToolName:
 			var a struct {
@@ -147,6 +148,6 @@ func (s *Store) WrapExecutor(author string, next agent.ToolExecutor) agent.ToolE
 			}
 			return Format(notes), nil
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }

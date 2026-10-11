@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -17,7 +18,7 @@ import (
 // reason of its own (docs/capabilities/chat.md#a-conversation-has-one-mode).
 func TestConversation_AFetchRunsWithoutACard(t *testing.T) {
 	var fetched []string
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		fetched = append(fetched, name)
 		return "page text", nil
 	}
@@ -53,7 +54,7 @@ func TestConversation_AFetchRunsWithoutACard(t *testing.T) {
 // conversation exactly as it is in a coding session, and nothing is fetched.
 func TestConversation_TheHostDenyListStillRefuses(t *testing.T) {
 	var fetched int
-	executor := func(string, json.RawMessage) (string, error) { fetched++; return "page text", nil }
+	executor := func(context.Context, string, json.RawMessage) (string, error) { fetched++; return "page text", nil }
 	m := gatedModelWith(t, executor, fetchPreviews(), Wiring{
 		Conversation: true,
 		DenyHosts:    []string{"paste.example.test"},
@@ -182,7 +183,7 @@ func TestGolden_ScreenChat(t *testing.T) {
 		chord = updated.(Model)
 
 		fetch := base()
-		fetch.agent.SetExecutor(func(string, json.RawMessage) (string, error) {
+		fetch.agent.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 			return "The cache now expires after an hour.", nil
 		})
 		fetch.gatedTools = fetchPreviews()

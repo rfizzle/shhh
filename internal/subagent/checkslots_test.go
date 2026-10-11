@@ -51,7 +51,7 @@ func (w *slotChecks) factory() EnvFactory {
 		return Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "", nil },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "", nil },
 			Gated:        map[string]bool{tools.ExecCommandName: true},
 			RunCommand: func(ctx context.Context, command string) tools.ExecResult {
 				w.mu.Lock()
@@ -188,12 +188,14 @@ func TestOnlyChecksTakeASlot(t *testing.T) {
 	c := &child{name: "researcher-1"}
 	ran := make(chan struct{})
 	env := sup.throttled(context.Background(), c, Env{
-		Executor: func(name string, _ json.RawMessage) (string, error) {
+		Executor: func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 			close(ran)
 			return "", nil
 		},
 	})
-	go func() { _, _ = env.Executor(quality.ToolName, json.RawMessage(`{"action":"run"}`)) }()
+	go func() {
+		_, _ = env.Executor(context.Background(), quality.ToolName, json.RawMessage(`{"action":"run"}`))
+	}()
 	waitFor(t, func() bool { return c.status().SlotWait == 1 })
 	select {
 	case <-ran:

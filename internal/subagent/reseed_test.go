@@ -103,7 +103,7 @@ func (w *landingWriters) factory() EnvFactory {
 		return Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor: func(string, json.RawMessage) (string, error) {
+			Executor: func(context.Context, string, json.RawMessage) (string, error) {
 				calls++
 				switch {
 				case spec.Name == "writer-1":

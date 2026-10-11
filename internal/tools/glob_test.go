@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -17,7 +18,7 @@ func TestGlob_TopLevel(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "sub", "deep.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "*.go", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -34,7 +35,7 @@ func TestGlob_DoubleStar(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "a", "note.txt"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -56,7 +57,7 @@ func TestGlob_MidPatternDoubleStar(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "cmd", "other.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "cmd/**/main.go", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -77,7 +78,7 @@ func TestGlob_SkipList(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "kept.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -95,7 +96,7 @@ func TestGlob_MatchesFilesOnly(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "somefile"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "*", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -112,7 +113,7 @@ func TestGlob_NoMatches(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "*.rs", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -122,7 +123,7 @@ func TestGlob_NoMatches(t *testing.T) {
 }
 
 func TestGlob_MissingPattern(t *testing.T) {
-	_, err := Execute("glob", json.RawMessage(`{}`))
+	_, err := Execute(context.Background(), "glob", json.RawMessage(`{}`))
 	if err == nil {
 		t.Fatal("expected error for missing pattern")
 	}
@@ -131,7 +132,7 @@ func TestGlob_MissingPattern(t *testing.T) {
 func TestGlob_InvalidPattern(t *testing.T) {
 	tmp := t.TempDir()
 	args, _ := json.Marshal(globArgs{Pattern: "[", Path: tmp})
-	_, err := Execute("glob", args)
+	_, err := Execute(context.Background(), "glob", args)
 	if err == nil {
 		t.Fatal("expected error for invalid pattern")
 	}
@@ -142,7 +143,7 @@ func TestGlob_InvalidPattern(t *testing.T) {
 
 func TestGlob_NonexistentPath(t *testing.T) {
 	args, _ := json.Marshal(globArgs{Pattern: "*.go", Path: "/nonexistent/dir"})
-	_, err := Execute("glob", args)
+	_, err := Execute(context.Background(), "glob", args)
 	if err == nil {
 		t.Fatal("expected error for nonexistent path")
 	}
@@ -184,7 +185,7 @@ func TestGlob_LeavesOutWhatGitignoreNames(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "dist", "bundle.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -206,7 +207,7 @@ func TestGlob_NestedGitignoreAppliesOnlyInsideItsOwnDirectory(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "gen.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -223,7 +224,7 @@ func TestGlob_MatchesHiddenFilesButNotGit(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, ".git", "hooks.yml"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "**/*.yml", Path: tmp})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -242,7 +243,7 @@ func TestGlob_Limit(t *testing.T) {
 	}
 
 	args, _ := json.Marshal(globArgs{Pattern: "*.go", Path: tmp, Limit: 5})
-	result, err := Execute("glob", args)
+	result, err := Execute(context.Background(), "glob", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

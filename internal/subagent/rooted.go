@@ -6,6 +6,7 @@ package subagent
 // session can read anywhere too.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -19,12 +20,12 @@ import (
 // RootedExecutor rewrites path arguments against root before dispatching, so
 // a child's auto-run tools operate on its own workspace.
 func RootedExecutor(root string, next agent.ToolExecutor) agent.ToolExecutor {
-	return func(name string, args json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		rooted, err := RootArgs(root, name, args)
 		if err != nil {
 			return "", err
 		}
-		return next(name, rooted)
+		return next(ctx, name, rooted)
 	}
 }
 

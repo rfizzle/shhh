@@ -1259,7 +1259,7 @@ func TestHeadlessChat_SaveOnTheRoundCapExit(t *testing.T) {
 	a := agent.New(msgs, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		return round()
 	})
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "nothing found", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "nothing found", nil })
 	a.SetMaxRounds(1)
 
 	if _, err := (&agent.Headless{Agent: a}).Run("look for it"); !errors.Is(err, agent.ErrRoundCap) {
@@ -1889,7 +1889,7 @@ func TestJSONLStreamReplaysToTheTranscript(t *testing.T) {
 		},
 		[]provider.StreamEvent{{Token: "done"}, {Done: true}},
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	var lines strings.Builder
 	events := newJSONLStream(&lines)
@@ -2074,7 +2074,7 @@ func TestHeadlessTree_AFileTheRunReadThatMovedIsNamedAtTheBoundary(t *testing.T)
 	c.Dir = ws
 
 	args, _ := json.Marshal(map[string]string{"path": read})
-	if _, err := tools.Execute(tools.ReadFileName, args); err != nil {
+	if _, err := tools.Execute(context.Background(), tools.ReadFileName, args); err != nil {
 		t.Fatalf("read: %v", err)
 	}
 	a := agent.New(nil, nil)

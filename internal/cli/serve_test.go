@@ -107,8 +107,8 @@ func (s *scriptedChildren) factory() subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: "a scripted child",
 			Stream:       stream,
-			Executor:     func(name string, _ json.RawMessage) (string, error) { return "auto:" + name, nil },
-			ExecuteGated: func(name string, _ json.RawMessage) (string, error) { return "gated:" + name, nil },
+			Executor:     func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "auto:" + name, nil },
+			ExecuteGated: func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "gated:" + name, nil },
 			RunCommand: func(context.Context, string) tools.ExecResult {
 				return tools.ExecResult{Output: "ok", Outcome: tools.ExecSucceeded}
 			},
@@ -124,10 +124,10 @@ func spawnScripted(t *testing.T, steps ...childStep) (*subagent.Supervisor, stri
 	env := &scriptedChildren{steps: steps}
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), NewEnv: env.factory()})
 	t.Cleanup(sup.Close)
-	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) {
 		return "", context.Canceled
 	})
-	if _, err := exec(subagent.SpawnToolName,
+	if _, err := exec(context.Background(), subagent.SpawnToolName,
 		json.RawMessage(`{"role":"researcher","task":"survey the exporter"}`)); err != nil {
 		t.Fatalf("spawning a child: %v", err)
 	}
@@ -409,7 +409,7 @@ func TestServedClosingReadingIsFiledUnderItsOwnTurn(t *testing.T) {
 		next++
 		return ch, func() {}, nil
 	})
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	held := &heldSummaries{asked: make(chan struct{}, 1), release: make(chan struct{})}
 	lines := &syncLines{}

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -33,7 +34,9 @@ func gateChain(t *testing.T) (agent.ToolExecutor, *quality.Runner) {
 	}
 	reducer := evidence.NewReducer(store)
 	reducer.SetScrub(vault.Scrub)
-	next := func(name string, _ json.RawMessage) (string, error) { return "unexpected " + name, nil }
+	next := func(_ context.Context, name string, _ json.RawMessage) (string, error) {
+		return "unexpected " + name, nil
+	}
 	exec := reducer.WrapExecutor(gate.WrapExecutor(next))
 	exec = agent.NewRepeatDetector().WrapExecutor(exec)
 	return vault.WrapExecutor(exec), gate
@@ -47,7 +50,7 @@ func TestToolResultValue_SurvivesTheScrub(t *testing.T) {
 	a := agent.New(nil, nil)
 	a.SetExecutor(exec)
 	calls := []provider.ToolCall{{ID: "g1", Name: quality.ToolName, Arguments: `{"action":"run","suite":"fast"}`}}
-	got := a.ExecuteCalls(calls)[0]
+	got := a.ExecuteCalls(context.Background(), calls)[0]
 	if strings.Contains(got.Result, gateSecret) {
 		t.Fatalf("the secret reached the model:\n%s", got.Result)
 	}
@@ -70,7 +73,7 @@ func TestToolResultValue_IdenticalTextsKeepTheirOwn(t *testing.T) {
 	a := agent.New(nil, nil)
 	a.SetExecutor(exec)
 	args := `{"action":"result"}`
-	got := a.ExecuteCalls([]provider.ToolCall{
+	got := a.ExecuteCalls(context.Background(), []provider.ToolCall{
 		{ID: "r1", Name: quality.ToolName, Arguments: args},
 		{ID: "r2", Name: quality.ToolName, Arguments: args},
 	})

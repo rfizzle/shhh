@@ -1093,7 +1093,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 		before := record.before()
 		start := time.Now()
 		if mutating {
-			result = agent.ExecuteWith(tools.ExecuteMutating, call)
+			result = agent.ExecuteWith(context.Background(), tools.ExecuteMutating, call)
 			if mutated != nil {
 				result = mutated(call.Name, json.RawMessage(call.Arguments), result)
 			}
@@ -1102,7 +1102,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 			}
 			result = repeats.Notice(call.Name, json.RawMessage(call.Arguments), result)
 		} else {
-			result = a.ExecuteCall(call)
+			result = a.ExecuteCall(context.Background(), call)
 		}
 		if lead != "" {
 			result = lead + "\n" + result

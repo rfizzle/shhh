@@ -91,7 +91,7 @@ func (w *claimWriters) factory(repo string) EnvFactory {
 		return Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor: func(string, json.RawMessage) (string, error) {
+			Executor: func(context.Context, string, json.RawMessage) (string, error) {
 				if spec.Name == "writer-1" {
 					<-w.release
 				}
@@ -223,8 +223,8 @@ func TestAnOverlappingClaimIsStillRefusedByDefault(t *testing.T) {
 	t.Cleanup(func() { close(w.release) })
 
 	execTool(t, sup, SpawnToolName, `{"role":"writer","task":"edit main","name":"writer-1","paths":["main.go"]}`)
-	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) { return "", nil })
-	_, err := exec(SpawnToolName, json.RawMessage(`{"role":"writer","task":"edit main","name":"writer-2","paths":["main.go"]}`))
+	exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) { return "", nil })
+	_, err := exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"writer","task":"edit main","name":"writer-2","paths":["main.go"]}`))
 	if err == nil || !strings.Contains(err.Error(), "writer-1 already claims main.go") {
 		t.Fatalf("an overlapping claim should be refused by default, got %v", err)
 	}
@@ -232,7 +232,7 @@ func TestAnOverlappingClaimIsStillRefusedByDefault(t *testing.T) {
 		t.Fatal("a refused spawn should leave no agent behind")
 	}
 	// A role that claims nothing has nothing to wait behind.
-	_, err = exec(SpawnToolName, json.RawMessage(`{"role":"researcher","task":"look","wait_for_claim":true}`))
+	_, err = exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"researcher","task":"look","wait_for_claim":true}`))
 	if err == nil || !strings.Contains(err.Error(), "wait_for_claim applies to agents that change files") {
 		t.Fatalf("wait_for_claim on a reader should be refused, got %v", err)
 	}
@@ -288,8 +288,8 @@ func TestAWaitingAndAPlainWriterTogetherNeverBothStart(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) { return "", nil })
-			_, err := exec(SpawnToolName, json.RawMessage(fmt.Sprintf(`{"role":"writer","task":"edit main","name":%q,"paths":["main.go"],"wait_for_claim":%t}`, name, wait)))
+			exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) { return "", nil })
+			_, err := exec(context.Background(), SpawnToolName, json.RawMessage(fmt.Sprintf(`{"role":"writer","task":"edit main","name":%q,"paths":["main.go"],"wait_for_claim":%t}`, name, wait)))
 			mu.Lock()
 			spawned[name] = err == nil
 			mu.Unlock()
@@ -329,8 +329,8 @@ func TestWritersHandedOverInOneRoundStillQueue(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) { return "", nil })
-			if _, err := exec(SpawnToolName, json.RawMessage(`{"role":"writer","task":"edit main","name":"`+name+`","paths":["main.go"],"wait_for_claim":true}`)); err != nil {
+			exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) { return "", nil })
+			if _, err := exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"writer","task":"edit main","name":"`+name+`","paths":["main.go"],"wait_for_claim":true}`)); err != nil {
 				t.Errorf("%s: %v", name, err)
 			}
 		}()
@@ -414,7 +414,7 @@ func TestARetriedWriterDoesNotRunBesideALaterClaim(t *testing.T) {
 				return Env{
 					SystemPrompt: "sys",
 					Stream:       stream,
-					Executor: func(string, json.RawMessage) (string, error) {
+					Executor: func(context.Context, string, json.RawMessage) (string, error) {
 						text := take(spec.Root, "main.go")
 						if spec.Name == "writer-b" {
 							bHolding.Store(true)
@@ -455,8 +455,8 @@ func TestARetriedWriterDoesNotRunBesideALaterClaim(t *testing.T) {
 
 			// The tool is one of the three doors; all of them go through
 			// Supervisor.Retry and so through restart, where the question is.
-			retry := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) { return "", nil })
-			_, err := retry(RetryToolName, json.RawMessage(`{"name":"writer-a"}`))
+			retry := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) { return "", nil })
+			_, err := retry(context.Background(), RetryToolName, json.RawMessage(`{"name":"writer-a"}`))
 			if !wait {
 				if err == nil || !strings.Contains(err.Error(), "writer-b now holds main.go") {
 					t.Fatalf("a retry over a live writer's claim should be refused naming it, got %v", err)

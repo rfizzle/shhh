@@ -267,7 +267,7 @@ func (w *followUpWriter) factory() EnvFactory {
 		return Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor: func(_ string, args json.RawMessage) (string, error) {
+			Executor: func(_ context.Context, _ string, args json.RawMessage) (string, error) {
 				var a struct {
 					Path string `json:"path"`
 				}

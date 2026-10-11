@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -32,7 +33,7 @@ func TestDefinitions(t *testing.T) {
 }
 
 func TestExecute_UnknownTool(t *testing.T) {
-	_, err := Execute("nonexistent", json.RawMessage(`{}`))
+	_, err := Execute(context.Background(), "nonexistent", json.RawMessage(`{}`))
 	if err == nil {
 		t.Fatal("expected error for unknown tool")
 	}
@@ -141,7 +142,7 @@ func TestReadFile_Basic(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("line1\nline2\nline3\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path})
-	result, err := Execute("read_file", args)
+	result, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -156,7 +157,7 @@ func TestReadFile_LineRange(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("a\nb\nc\nd\ne\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 2, EndLine: 4})
-	result, err := Execute("read_file", args)
+	result, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -171,7 +172,7 @@ func TestReadFile_StartLineOnly(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("a\nb\nc\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 2})
-	result, err := Execute("read_file", args)
+	result, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -188,7 +189,7 @@ func TestReadFile_NumbersLinesFromTheirPlaceInTheFile(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("a\nb\nc\nd\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path})
-	whole, err := Execute("read_file", args)
+	whole, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -197,7 +198,7 @@ func TestReadFile_NumbersLinesFromTheirPlaceInTheFile(t *testing.T) {
 	}
 
 	args, _ = json.Marshal(readFileArgs{Path: path, StartLine: 3, EndLine: 3})
-	window, err := Execute("read_file", args)
+	window, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -218,7 +219,7 @@ func TestListDirectory_NamesButDoesNotEnterSkippedDirs(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "src", "main.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: tmp, Depth: 3})
-	out, err := Execute("list_directory", args)
+	out, err := Execute(context.Background(), "list_directory", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -242,7 +243,7 @@ func TestListDirectory_ListsASkippedDirWhenAskedForDirectly(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, ".git", "HEAD"), []byte("ref"), 0o644))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: filepath.Join(tmp, ".git")})
-	out, err := Execute("list_directory", args)
+	out, err := Execute(context.Background(), "list_directory", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -271,7 +272,7 @@ func TestReadFile_StartLineBeyondEnd(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("only\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 100})
-	_, err := Execute("read_file", args)
+	_, err := Execute(context.Background(), "read_file", args)
 	if err == nil {
 		t.Fatal("expected error for start_line beyond file length")
 	}
@@ -279,14 +280,14 @@ func TestReadFile_StartLineBeyondEnd(t *testing.T) {
 
 func TestReadFile_MissingFile(t *testing.T) {
 	args, _ := json.Marshal(readFileArgs{Path: "/nonexistent/file.txt"})
-	_, err := Execute("read_file", args)
+	_, err := Execute(context.Background(), "read_file", args)
 	if err == nil {
 		t.Fatal("expected error for missing file")
 	}
 }
 
 func TestReadFile_MissingPath(t *testing.T) {
-	_, err := Execute("read_file", json.RawMessage(`{}`))
+	_, err := Execute(context.Background(), "read_file", json.RawMessage(`{}`))
 	if err == nil {
 		t.Fatal("expected error for missing path")
 	}
@@ -298,7 +299,7 @@ func TestListDirectory_Basic(t *testing.T) {
 	must(t, os.Mkdir(filepath.Join(tmp, "subdir"), 0o755))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: tmp})
-	result, err := Execute("list_directory", args)
+	result, err := Execute(context.Background(), "list_directory", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -316,7 +317,7 @@ func TestListDirectory_Depth(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "a", "b", "deep.txt"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: tmp, Depth: 3})
-	result, err := Execute("list_directory", args)
+	result, err := Execute(context.Background(), "list_directory", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -331,7 +332,7 @@ func TestListDirectory_DefaultDepth(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "a", "b", "deep.txt"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: tmp})
-	result, err := Execute("list_directory", args)
+	result, err := Execute(context.Background(), "list_directory", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -341,7 +342,7 @@ func TestListDirectory_DefaultDepth(t *testing.T) {
 }
 
 func TestListDirectory_MissingPath(t *testing.T) {
-	_, err := Execute("list_directory", json.RawMessage(`{}`))
+	_, err := Execute(context.Background(), "list_directory", json.RawMessage(`{}`))
 	if err == nil {
 		t.Fatal("expected error for missing path")
 	}
@@ -349,7 +350,7 @@ func TestListDirectory_MissingPath(t *testing.T) {
 
 func TestListDirectory_NonexistentPath(t *testing.T) {
 	args, _ := json.Marshal(listDirectoryArgs{Path: "/nonexistent/dir"})
-	_, err := Execute("list_directory", args)
+	_, err := Execute(context.Background(), "list_directory", args)
 	if err == nil {
 		t.Fatal("expected error for nonexistent path")
 	}
@@ -361,7 +362,7 @@ func TestSearch_Basic(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "other.go"), []byte("package other\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "Hello", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -378,7 +379,7 @@ func TestSearch_CaseInsensitive(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "foobar", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -392,7 +393,7 @@ func TestSearch_NoMatches(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("nothing here\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "zzzzz", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -403,7 +404,7 @@ func TestSearch_NoMatches(t *testing.T) {
 
 func TestSearch_DefaultPath(t *testing.T) {
 	args, _ := json.Marshal(searchArgs{Pattern: "^package tools$"})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -413,7 +414,7 @@ func TestSearch_DefaultPath(t *testing.T) {
 }
 
 func TestSearch_MissingPattern(t *testing.T) {
-	_, err := Execute("search", json.RawMessage(`{"path":"."}`))
+	_, err := Execute(context.Background(), "search", json.RawMessage(`{"path":"."}`))
 	if err == nil {
 		t.Fatal("expected error for missing pattern")
 	}
@@ -426,7 +427,7 @@ func TestSearch_SkipsGitDir(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -444,7 +445,7 @@ func TestSearch_SingleFile(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "beta", Path: path})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -459,7 +460,7 @@ func TestSearch_SkipsBinaryFiles(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "text.txt"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -510,7 +511,7 @@ func TestReadFile_OverTheCeilingIsAnsweredWithItsSizeAndOutline(t *testing.T) {
 
 	r := NewRecorder()
 	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 1, EndLine: 10})
-	got, err := r.Execute(ReadFileName, args)
+	got, err := r.Execute(context.Background(), ReadFileName, args)
 	if err != nil {
 		t.Fatalf("a file over the ceiling is an answer, not an error: %v", err)
 	}
@@ -547,7 +548,7 @@ func TestReadFile_BinaryIsANoticeNamingWhatItIs(t *testing.T) {
 	must(t, os.WriteFile(path, append([]byte("SQLite format 3\x00"), make([]byte, 300)...), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path})
-	result, err := Execute("read_file", args)
+	result, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("a binary file is an answer, not an error: %v", err)
 	}
@@ -569,7 +570,7 @@ func TestReadFile_TextWithNULPastTheSnifferIsStillBinary(t *testing.T) {
 	must(t, os.WriteFile(path, body, 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path})
-	result, err := Execute("read_file", args)
+	result, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -585,7 +586,7 @@ func TestReadFile_ImageComesBackAsANoticeAndAnAttachment(t *testing.T) {
 	must(t, os.WriteFile(path, want, 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path})
-	result, err := Execute("read_file", args)
+	result, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -614,7 +615,7 @@ func TestReadFile_ImageTooLargeToAttachIsStillANotice(t *testing.T) {
 	must(t, os.WriteFile(path, append(tinyPNG(t), make([]byte, attachment.MaxBytes)...), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path})
-	result, err := Execute("read_file", args)
+	result, err := Execute(context.Background(), "read_file", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -635,7 +636,7 @@ func TestListDirectory_LeavesOutWhatGitignoreNames(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "trace.log"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: tmp, Depth: 3})
-	result, err := Execute("list_directory", args)
+	result, err := Execute(context.Background(), "list_directory", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -656,7 +657,7 @@ func TestListDirectory_ListsAnIgnoredDirectoryWhenAskedForItByName(t *testing.T)
 	must(t, os.WriteFile(filepath.Join(tmp, "dist", "app.js"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: filepath.Join(tmp, "dist")})
-	result, err := Execute("list_directory", args)
+	result, err := Execute(context.Background(), "list_directory", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

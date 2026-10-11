@@ -29,7 +29,7 @@ func hangingEnv() EnvFactory {
 		return Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "", errors.New("unused") },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "", errors.New("unused") },
 		}, nil
 	}
 }
@@ -295,24 +295,24 @@ func TestQueuedWriterHasNoWorktreeUntilItRuns(t *testing.T) {
 // See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
 func TestAChildsStepsCallIsTheListItsLaneCounts(t *testing.T) {
 	c := &child{name: "writer-1"}
-	exec := c.stepsExecutor(func(name string, _ json.RawMessage) (string, error) { return "ran " + name, nil })
-	if got, _ := exec("read_file", nil); got != "ran read_file" {
+	exec := c.stepsExecutor(func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "ran " + name, nil })
+	if got, _ := exec(context.Background(), "read_file", nil); got != "ran read_file" {
 		t.Fatalf("another tool should pass through, got %q", got)
 	}
-	out, err := exec(plan.StepsToolName, json.RawMessage(`{"steps":[{"title":"Read","done":true},{"title":"Patch"}]}`))
+	out, err := exec(context.Background(), plan.StepsToolName, json.RawMessage(`{"steps":[{"title":"Read","done":true},{"title":"Patch"}]}`))
 	if err != nil || !strings.Contains(out, "1 of 2 done") {
 		t.Fatalf("steps = %q, %v", out, err)
 	}
 	if sc := c.stepCount(); !sc.Own || sc.Done != 1 || sc.Total != 2 || sc.Current != "Patch" {
 		t.Fatalf("the lane's count = %+v, want 1 of 2 on the patch", sc)
 	}
-	if _, err := exec(plan.StepsToolName, json.RawMessage(`{"steps":[{"title":""}]}`)); err == nil {
+	if _, err := exec(context.Background(), plan.StepsToolName, json.RawMessage(`{"steps":[{"title":""}]}`)); err == nil {
 		t.Fatal("a step with no title should be refused")
 	}
 	if sc := c.stepCount(); sc.Total != 2 {
 		t.Fatalf("a refused call moved the list: %+v", sc)
 	}
-	if _, err := exec(plan.StepsToolName, json.RawMessage(`{"steps":[{"title":"Docs"},{"title":"Changelog"},{"title":"Release note"}]}`)); err != nil {
+	if _, err := exec(context.Background(), plan.StepsToolName, json.RawMessage(`{"steps":[{"title":"Docs"},{"title":"Changelog"},{"title":"Release note"}]}`)); err != nil {
 		t.Fatal(err)
 	}
 	if sc := c.stepCount(); sc.Done != 0 || sc.Total != 3 || sc.Current != "Docs" {

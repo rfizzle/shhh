@@ -28,7 +28,7 @@ func key(r rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: r, Text: string(
 func spawnBlockedChild(t *testing.T, sup *subagent.Supervisor) {
 	t.Helper()
 	exec := sup.WrapExecutor("", nil)
-	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
+	if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool {
@@ -52,7 +52,7 @@ func spawnUnder(t *testing.T, sup *subagent.Supervisor, caller string, role suba
 	t.Helper()
 	exec := sup.WrapExecutor(caller, nil)
 	args := json.RawMessage(fmt.Sprintf(`{"role":%q,"task":"long survey"}`, role))
-	if _, err := exec(subagent.SpawnToolName, args); err != nil {
+	if _, err := exec(context.Background(), subagent.SpawnToolName, args); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool {
@@ -514,7 +514,7 @@ func TestKillAllHandsTheCascadeItsRoots(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	exec := sup.WrapExecutor("researcher-1", nil)
-	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"read it"}`)); err != nil {
+	if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"read it"}`)); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool {
@@ -687,7 +687,7 @@ func TestManagerFloatsABlockedGrandchildUnderItsParent(t *testing.T) {
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-2")
 	// The second of them delegates, and the delegate parks on an approval.
 	exec := sup.WrapExecutor("researcher-2", nil)
-	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"read it"}`)); err != nil {
+	if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"read it"}`)); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 1 })

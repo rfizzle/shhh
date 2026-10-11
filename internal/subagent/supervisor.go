@@ -526,7 +526,7 @@ func (s *Supervisor) isClosed() bool {
 // is waiting on it, and neither of them would ever finish
 // (docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree).
 func (s *Supervisor) WrapExecutor(caller string, next agent.ToolExecutor) agent.ToolExecutor {
-	return func(name string, args json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		switch name {
 		case SpawnToolName:
 			return s.spawnFrom(caller, args)
@@ -537,7 +537,7 @@ func (s *Supervisor) WrapExecutor(caller string, next agent.ToolExecutor) agent.
 		case RetryToolName:
 			return s.retry(caller, args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 

@@ -95,7 +95,7 @@ func TestInbound_ALineWithNoSessionBehindItNamesTheCommandLine(t *testing.T) {
 }
 
 func TestInbound_AMidTurnLineWaitsForTheBoundary(t *testing.T) {
-	executor := func(string, json.RawMessage) (string, error) { return "result", nil }
+	executor := func(context.Context, string, json.RawMessage) (string, error) { return "result", nil }
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}, {Role: provider.RoleUser, Content: "go"}}
 	m := New(msgs, mockStream, Wiring{Executor: executor}).WithInbound(Inbound{Policy: InboundAccept})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -124,7 +124,7 @@ func TestInbound_AMidTurnLineWaitsForTheBoundary(t *testing.T) {
 }
 
 func TestInbound_ACardWaitingIsUntouched(t *testing.T) {
-	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "ok", nil }, nil)
+	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "ok", nil }, nil)
 	m = m.WithInbound(Inbound{Policy: InboundAccept})
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "ran", 0 })
 	m = pendingExec(t, m, "make deploy")

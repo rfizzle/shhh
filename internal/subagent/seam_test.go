@@ -44,11 +44,11 @@ func TestASurfacesSeamsReachBothOfAChildsDispatchers(t *testing.T) {
 			return e, err
 		}
 		e.WrapAuto = func(s Seam, next agent.ToolExecutor) agent.ToolExecutor {
-			return func(name string, args json.RawMessage) (string, error) {
+			return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 				mu.Lock()
 				auto = append(auto, name)
 				mu.Unlock()
-				return next(name, args)
+				return next(ctx, name, args)
 			}
 		}
 		e.WrapGated = func(s Seam, next func(provider.ToolCall) string) func(provider.ToolCall) string {
@@ -114,8 +114,8 @@ func TestASurfacesSeamsReachBothOfAChildsDispatchers(t *testing.T) {
 // A surface that installs nothing leaves the dispatchers exactly as its Env
 // built them, so a session with no seams of its own pays nothing for these.
 func TestAChildWithoutSeamsRunsTheEnvsOwnDispatchers(t *testing.T) {
-	e := Env{Executor: func(name string, _ json.RawMessage) (string, error) { return "auto:" + name, nil }}
-	got, err := e.autoExecutor(Seam{})("read_file", nil)
+	e := Env{Executor: func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "auto:" + name, nil }}
+	got, err := e.autoExecutor(Seam{})(context.Background(), "read_file", nil)
 	if err != nil || got != "auto:read_file" {
 		t.Fatalf("an unwrapped child got %q, %v", got, err)
 	}

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -52,10 +53,10 @@ func TestLedger_AParentAndAChildEachSignTheirOwnReads(t *testing.T) {
 	// through, so a parent and a child are two wraps over it.
 	parent := ts.WrapExecutor(Orchestrator, nil)
 	child := ts.WrapExecutor("web-researcher", nil)
-	if _, err := parent(FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`/a"}`)); err != nil {
+	if _, err := parent(context.Background(), FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`/a"}`)); err != nil {
 		t.Fatalf("parent fetch: %v", err)
 	}
-	if _, err := child(FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`/b"}`)); err != nil {
+	if _, err := child(context.Background(), FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`/b"}`)); err != nil {
 		t.Fatalf("child fetch: %v", err)
 	}
 
@@ -91,7 +92,7 @@ func TestLedger_ASearchIsARowWithItsQueryAndNoURL(t *testing.T) {
 	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()})
 	ledger := NewLedger(nil)
 	ts.UseLedger(ledger)
-	if _, err := ts.Execute(Orchestrator, SearchToolName, json.RawMessage(`{"query":"golang"}`)); err != nil {
+	if _, err := ts.Execute(context.Background(), Orchestrator, SearchToolName, json.RawMessage(`{"query":"golang"}`)); err != nil {
 		t.Fatalf("search: %v", err)
 	}
 
@@ -123,7 +124,7 @@ func TestLedger_AFetchThatKeptItsPageNamesTheEntry(t *testing.T) {
 	ts.UseEvidence(func(tool, content string) (string, bool) { return "ev-1", true }, nil)
 	ledger := NewLedger(nil)
 	ts.UseLedger(ledger)
-	if _, err := ts.Execute(Orchestrator, FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`)); err != nil {
+	if _, err := ts.Execute(context.Background(), Orchestrator, FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`)); err != nil {
 		t.Fatalf("fetch: %v", err)
 	}
 	if got := ledger.List()[0].Evidence; got != "ev-1" {
@@ -277,7 +278,7 @@ func TestLedger_AFetchThatWasRefusedIsStillARow(t *testing.T) {
 	ts := NewToolset(NewFetcher(Policy{}), nil)
 	ledger := NewLedger(nil)
 	ts.UseLedger(ledger)
-	if _, err := ts.Execute(Orchestrator, FetchToolName,
+	if _, err := ts.Execute(context.Background(), Orchestrator, FetchToolName,
 		json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil {
 		t.Fatal("a metadata address was fetched")
 	}
@@ -310,7 +311,7 @@ func TestLedger_APageThatWasAScriptShellIsARowWithNoEntry(t *testing.T) {
 	ts.UseEvidence(func(tool, content string) (string, bool) { return "ev-1", true }, nil)
 	ledger := NewLedger(nil)
 	ts.UseLedger(ledger)
-	out, err := ts.Execute(Orchestrator, FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
+	out, err := ts.Execute(context.Background(), Orchestrator, FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
 	if err != nil {
 		t.Fatalf("fetch: %v", err)
 	}

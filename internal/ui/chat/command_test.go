@@ -137,7 +137,9 @@ func TestCompletionMenu_GreysIdleOnlyCommandsWhileWorking(t *testing.T) {
 // A surface opened mid-turn borrows the screen, not the turn: results that
 // arrive while it is up are still routed.
 func TestSurface_TurnKeepsRunningUnderneath(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "read 3 lines", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
+		return "read 3 lines", nil
+	}
 	m := gatedModel(t, executor, nil)
 	m.changes.Add(1, changeset.Record{
 		Path: "x.go", Before: "one\n", After: "one\ntwo\n",
@@ -207,7 +209,7 @@ func TestAttachCommand_SteersAChildMidTurn(t *testing.T) {
 	m = sendText(t, m, "do the task")
 
 	exec := sup.WrapExecutor("", nil)
-	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
+	if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 1 })
@@ -261,7 +263,7 @@ func TestAttachCommand_HopsBetweenAgentsWhileAttached(t *testing.T) {
 
 	exec := sup.WrapExecutor("", nil)
 	for _, task := range []string{"survey one", "survey two"} {
-		if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"`+task+`"}`)); err != nil {
+		if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"`+task+`"}`)); err != nil {
 			t.Fatal(err)
 		}
 	}

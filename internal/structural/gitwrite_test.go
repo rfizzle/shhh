@@ -1,6 +1,7 @@
 package structural
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -249,7 +250,7 @@ func TestGitWriteIsRegisteredOnlyWhereASurfaceAskedForIt(t *testing.T) {
 			t.Fatal("the write tool must not be offered on its own")
 		}
 	}
-	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"x"}`)); err == nil ||
+	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"x"}`)); err == nil ||
 		!strings.Contains(err.Error(), "does not write to git") {
 		t.Fatalf("expected a clean not-available error, got %v", err)
 	}
@@ -338,17 +339,17 @@ func TestExecuteGitWriteEndToEnd(t *testing.T) {
 	ts := writeToolset(t, root, Writes{Files: func() []string { return changed }, Hooks: true})
 
 	// An empty index is named rather than turned into an empty commit.
-	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"nothing"}`)); err == nil ||
+	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"nothing"}`)); err == nil ||
 		!strings.Contains(err.Error(), "nothing is staged") {
 		t.Fatalf("err = %v, want a refusal naming the empty index", err)
 	}
 
-	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["README.md"]}`)); err == nil ||
+	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["README.md"]}`)); err == nil ||
 		!strings.Contains(err.Error(), "not this session's work") {
 		t.Fatalf("err = %v, want a refusal naming the file", err)
 	}
 
-	out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["feature.go"]}`))
+	out, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["feature.go"]}`))
 	if err != nil {
 		t.Fatalf("add: %v", err)
 	}
@@ -356,7 +357,7 @@ func TestExecuteGitWriteEndToEnd(t *testing.T) {
 		t.Fatalf("add answered %q", out)
 	}
 
-	out, err = ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"feat: a subject\n\nAnd a body with \"quotes\" and $shell punctuation."}`))
+	out, err = ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"feat: a subject\n\nAnd a body with \"quotes\" and $shell punctuation."}`))
 	if err != nil {
 		t.Fatalf("commit: %v", err)
 	}
@@ -377,17 +378,17 @@ func TestExecuteGitWriteEndToEnd(t *testing.T) {
 		t.Fatalf("work that was not this session's must still be uncommitted: %q", status)
 	}
 
-	if out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"branch","branch":"topic"}`)); err != nil || out != "created branch topic" {
+	if out, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"branch","branch":"topic"}`)); err != nil || out != "created branch topic" {
 		t.Fatalf("branch: %q %v", out, err)
 	}
-	if out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`)); err != nil ||
+	if out, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`)); err != nil ||
 		out != "switched to topic\n"+switchReadsNote {
 		t.Fatalf("switch: %q %v", out, err)
 	}
 	if out, _ := gitOut(t, root, "branch", "--show-current"); strings.TrimSpace(out) != "topic" {
 		t.Fatalf("switch did not move: %q", out)
 	}
-	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"push"}`)); err == nil {
+	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"push"}`)); err == nil {
 		t.Fatal("a verb outside the set must not reach git")
 	}
 }
@@ -413,10 +414,10 @@ func TestExecuteGitWriteRefusesACommitThatAddsASecret(t *testing.T) {
 	changed := []string{"deploy.sh", "testdata/aws.txt"}
 	ts := writeToolset(t, root, Writes{Files: func() []string { return changed }, Hooks: true, SecretIgnore: []string{"testdata"}})
 
-	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["deploy.sh","testdata/aws.txt"]}`)); err != nil {
+	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["deploy.sh","testdata/aws.txt"]}`)); err != nil {
 		t.Fatalf("add: %v", err)
 	}
-	_, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add the deploy script"}`))
+	_, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add the deploy script"}`))
 	if err == nil {
 		t.Fatal("a commit adding an aws key was made")
 	}
@@ -431,7 +432,7 @@ func TestExecuteGitWriteRefusesACommitThatAddsASecret(t *testing.T) {
 	if _, code := gitOut(t, root, "restore", "--staged", "--", "deploy.sh"); code != 0 {
 		t.Fatal("could not unstage deploy.sh")
 	}
-	if out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add the fixture"}`)); err != nil ||
+	if out, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add the fixture"}`)); err != nil ||
 		!strings.HasPrefix(out, "committed 1 file") {
 		t.Fatalf("an ignored fixture was refused: %q %v", out, err)
 	}
@@ -458,10 +459,10 @@ func TestExecuteGitWriteReadsEveryStagedFileWhole(t *testing.T) {
 		changed := []string{name}
 		ts := writeToolset(t, root, Writes{Files: func() []string { return changed }, Hooks: true})
 		args, _ := json.Marshal(map[string]any{"verb": "add", "paths": []string{name}})
-		if _, err := ts.Execute(GitWriteToolName, args); err != nil {
+		if _, err := ts.Execute(context.Background(), GitWriteToolName, args); err != nil {
 			t.Fatalf("%s: add: %v", name, err)
 		}
-		_, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add it"}`))
+		_, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add it"}`))
 		if err == nil || !strings.Contains(err.Error(), "aws access key at ") {
 			t.Errorf("%s: err = %v, want the secret refused", name, err)
 		}
@@ -476,7 +477,7 @@ func TestExecuteGitWriteRefusesASwitchThatWouldLoseWork(t *testing.T) {
 	}
 	root := writeRepo(t)
 	ts := writeToolset(t, root, Writes{Files: func() []string { return []string{"main.go"} }, Hooks: true})
-	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"branch","branch":"topic"}`)); err != nil {
+	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"branch","branch":"topic"}`)); err != nil {
 		t.Fatalf("branch: %v", err)
 	}
 	// main.go differs between the branches, and the tree is dirty on it.
@@ -491,7 +492,7 @@ func TestExecuteGitWriteRefusesASwitchThatWouldLoseWork(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "main.go"), []byte("package main // mine\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`)); err == nil {
+	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`)); err == nil {
 		t.Fatal("a switch that would overwrite local changes must be refused")
 	}
 	if out, _ := gitOut(t, root, "status", "--porcelain"); !strings.Contains(out, "main.go") {
@@ -520,10 +521,10 @@ func TestExecuteGitWriteRunsHooksOnlyOnATrustedCheckout(t *testing.T) {
 			t.Fatal(err)
 		}
 		ts := writeToolset(t, root, Writes{Files: func() []string { return []string{"feature.go"} }, Hooks: trusted})
-		if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["feature.go"]}`)); err != nil {
+		if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["feature.go"]}`)); err != nil {
 			t.Fatalf("add: %v", err)
 		}
-		out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"feat: x"}`))
+		out, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"feat: x"}`))
 		if err != nil {
 			t.Fatalf("commit (trusted=%v): %v", trusted, err)
 		}
@@ -606,32 +607,32 @@ func TestExecuteGitWriteSwitchDropsWhatWasRead(t *testing.T) {
 	t.Cleanup(tools.ForgetAll)
 	file := filepath.Join(root, "main.go")
 	ts := writeToolset(t, root, Writes{Files: func() []string { return []string{"main.go"} }, Hooks: true})
-	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"branch","branch":"topic"}`)); err != nil {
+	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"branch","branch":"topic"}`)); err != nil {
 		t.Fatalf("branch: %v", err)
 	}
 
 	read := json.RawMessage(`{"path":` + quote(t, file) + `}`)
 	overwrite := json.RawMessage(`{"path":` + quote(t, file) + `,"content":"package main // mine\n"}`)
-	if _, err := tools.Execute(tools.ReadFileName, read); err != nil {
+	if _, err := tools.Execute(context.Background(), tools.ReadFileName, read); err != nil {
 		t.Fatalf("read_file: %v", err)
 	}
 	// The control: with that reading in hand a full overwrite is allowed, so
 	// the refusal below is the switch's doing and not the rule's.
-	if _, err := tools.ExecuteMutating(tools.WriteFileName, overwrite); err != nil {
+	if _, err := tools.ExecuteMutating(context.Background(), tools.WriteFileName, overwrite); err != nil {
 		t.Fatalf("a file that was read in full may be replaced: %v", err)
 	}
-	if _, err := tools.Execute(tools.ReadFileName, read); err != nil {
+	if _, err := tools.Execute(context.Background(), tools.ReadFileName, read); err != nil {
 		t.Fatalf("read_file: %v", err)
 	}
 
-	out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`))
+	out, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`))
 	if err != nil {
 		t.Fatalf("switch: %v", err)
 	}
 	if !strings.Contains(out, "the working tree changed under every prior read") {
 		t.Fatalf("a switch says what it did to the reads: %q", out)
 	}
-	err = mutateErr(tools.ExecuteMutating(tools.WriteFileName, overwrite))
+	err = mutateErr(tools.ExecuteMutating(context.Background(), tools.WriteFileName, overwrite))
 	if err == nil || !strings.Contains(err.Error(), "has not been read in this session") {
 		t.Fatalf("err = %v, want the refusal for a file this session has not read", err)
 	}

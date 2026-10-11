@@ -24,7 +24,7 @@ func bulkyEnv(s *scriptedEnv, bytes int) EnvFactory {
 		if err != nil {
 			return env, err
 		}
-		env.Executor = func(string, json.RawMessage) (string, error) {
+		env.Executor = func(context.Context, string, json.RawMessage) (string, error) {
 			return strings.Repeat("word ", bytes/5), nil
 		}
 		return env, nil

@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -50,20 +51,20 @@ func TestExecute_RefusesMutatingTools(t *testing.T) {
 	path := filepath.Join(tmp, "blocked.txt")
 	args, _ := json.Marshal(writeFileArgs{Path: path, Content: "x\n"})
 
-	_, err := Execute(WriteFileName, args)
+	_, err := Execute(context.Background(), WriteFileName, args)
 	if err == nil || !strings.Contains(err.Error(), "unknown tool") {
 		t.Fatalf("auto-run path must not know write_file, got err=%v", err)
 	}
 	if _, statErr := os.Stat(path); !os.IsNotExist(statErr) {
 		t.Fatal("auto-run path must not have written the file")
 	}
-	if _, err := Execute(EditFileName, args); err == nil {
+	if _, err := Execute(context.Background(), EditFileName, args); err == nil {
 		t.Fatal("auto-run path must not know edit_file")
 	}
 }
 
 func TestExecuteMutating_RefusesOtherTools(t *testing.T) {
-	_, err := ExecuteMutating("read_file", json.RawMessage(`{"path":"x"}`))
+	_, err := ExecuteMutating(context.Background(), "read_file", json.RawMessage(`{"path":"x"}`))
 	if err == nil || !strings.Contains(err.Error(), "unknown mutating tool") {
 		t.Fatalf("expected unknown mutating tool error, got %v", err)
 	}
@@ -74,7 +75,7 @@ func TestWriteFile_NewFileCreatesParents(t *testing.T) {
 	path := filepath.Join(tmp, "sub", "dir", "new.txt")
 	args, _ := json.Marshal(writeFileArgs{Path: path, Content: "one\ntwo\n"})
 
-	result, err := ExecuteMutating(WriteFileName, args)
+	result, err := ExecuteMutating(context.Background(), WriteFileName, args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -99,7 +100,7 @@ func TestWriteFile_Overwrite(t *testing.T) {
 	readWholeFile(t, path)
 	args, _ := json.Marshal(writeFileArgs{Path: path, Content: "new\n"})
 
-	result, err := ExecuteMutating(WriteFileName, args)
+	result, err := ExecuteMutating(context.Background(), WriteFileName, args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -113,7 +114,7 @@ func TestWriteFile_Overwrite(t *testing.T) {
 }
 
 func TestWriteFile_MissingPath(t *testing.T) {
-	_, err := ExecuteMutating(WriteFileName, json.RawMessage(`{"content":"x"}`))
+	_, err := ExecuteMutating(context.Background(), WriteFileName, json.RawMessage(`{"content":"x"}`))
 	if err == nil || !strings.Contains(err.Error(), "path is required") {
 		t.Fatalf("expected path error, got %v", err)
 	}
@@ -135,7 +136,7 @@ func TestEditFile_SingleReplace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "delta"}))
+	result, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "delta"}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -155,7 +156,7 @@ func TestEditFile_NoMatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "missing", NewText: "x"}))
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "missing", NewText: "x"}))
 	if err == nil || !strings.Contains(err.Error(), "not found") {
 		t.Fatalf("expected no-match error, got %v", err)
 	}
@@ -172,7 +173,7 @@ func TestEditFile_MultiMatchWithoutReplaceAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "x", NewText: "y"}))
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "x", NewText: "y"}))
 	if err == nil || !strings.Contains(err.Error(), "3 locations") || !strings.Contains(err.Error(), "replace_all") {
 		t.Fatalf("expected multi-match error naming the count and replace_all, got %v", err)
 	}
@@ -189,7 +190,7 @@ func TestEditFile_ReplaceAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "x", NewText: "y", ReplaceAll: true}))
+	result, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "x", NewText: "y", ReplaceAll: true}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -204,14 +205,14 @@ func TestEditFile_ReplaceAll(t *testing.T) {
 
 func TestEditFile_MissingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "absent.txt")
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "a", NewText: "b"}))
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "a", NewText: "b"}))
 	if err == nil || !strings.Contains(err.Error(), "cannot read file") {
 		t.Fatalf("expected read error for missing file, got %v", err)
 	}
 }
 
 func TestEditFile_IdenticalTexts(t *testing.T) {
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: "x", OldText: "same", NewText: "same"}))
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: "x", OldText: "same", NewText: "same"}))
 	if err == nil || !strings.Contains(err.Error(), "identical") {
 		t.Fatalf("expected identical-text error, got %v", err)
 	}
@@ -297,7 +298,7 @@ func TestEditFile_NamesTheLineNumberPrefixWhenTheMatchFails(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("package a\n\nfunc F() {}\n"), 0o644))
 
 	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "3\tfunc F() {}", NewText: "func G() {}"})
-	_, err := ExecuteMutating("edit_file", args)
+	_, err := ExecuteMutating(context.Background(), "edit_file", args)
 	if err == nil {
 		t.Fatal("expected the numbered snippet not to match")
 	}
@@ -307,7 +308,7 @@ func TestEditFile_NamesTheLineNumberPrefixWhenTheMatchFails(t *testing.T) {
 
 	// The same edit without the prefix is the one that works.
 	args, _ = json.Marshal(editFileArgs{Path: path, OldText: "func F() {}", NewText: "func G() {}"})
-	if _, err := ExecuteMutating("edit_file", args); err != nil {
+	if _, err := ExecuteMutating(context.Background(), "edit_file", args); err != nil {
 		t.Fatalf("unprefixed snippet should apply: %v", err)
 	}
 }
@@ -320,7 +321,7 @@ func TestEditFile_KeepsThePlainMissMessage(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("package a\n"), 0o644))
 
 	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "func Missing()", NewText: "x"})
-	_, err := ExecuteMutating("edit_file", args)
+	_, err := ExecuteMutating(context.Background(), "edit_file", args)
 	if err == nil {
 		t.Fatal("expected a miss")
 	}
@@ -342,7 +343,7 @@ func TestEditFile_NamesTheLineThatDiffersOnlyInWhitespace(t *testing.T) {
 	// Four spaces where the file has two tabs: the same line on screen, and
 	// no substring of it.
 	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "    if ok {", NewText: "    if !ok {"})
-	_, err := ExecuteMutating("edit_file", args)
+	_, err := ExecuteMutating(context.Background(), "edit_file", args)
 	if err == nil {
 		t.Fatal("a quote whose indent does not match must not apply")
 	}
@@ -374,7 +375,7 @@ func TestEditFile_NamesATabDepthMismatch(t *testing.T) {
 	old := "\t\trecords Records\n\t\tslot    string\n}"
 	new := "\t\trecords Records\n\t\tslot    string\n\t\t// extra\n}"
 	args, _ := json.Marshal(editFileArgs{Path: path, OldText: old, NewText: new})
-	_, err := ExecuteMutating("edit_file", args)
+	_, err := ExecuteMutating(context.Background(), "edit_file", args)
 	if err == nil {
 		t.Fatal("double-tabbed quote against single-tabbed file must not match")
 	}
@@ -399,7 +400,7 @@ func TestEditFile_NearMissSpansTheLinesItMatched(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("package a\n\nfunc F() {\n    return 1\n}\n"), 0o644))
 
 	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "func F() {\n\treturn 1\n}", NewText: "func F() int {\n\treturn 1\n}"})
-	_, err := ExecuteMutating("edit_file", args)
+	_, err := ExecuteMutating(context.Background(), "edit_file", args)
 	if err == nil {
 		t.Fatal("expected the mismatched indent to refuse")
 	}
@@ -417,7 +418,7 @@ func TestEditFile_AnAmbiguousNearMissKeepsThePlainMessage(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("\tcount++\nx\n  count++\n"), 0o644))
 
 	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "    count++", NewText: "    count--"})
-	_, err := ExecuteMutating("edit_file", args)
+	_, err := ExecuteMutating(context.Background(), "edit_file", args)
 	if err == nil {
 		t.Fatal("expected a miss")
 	}
@@ -438,7 +439,7 @@ func TestEditFile_TheNumberedPrefixIsDiagnosedBeforeTheNearMiss(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("package a\n\nfunc F() {}\n"), 0o644))
 
 	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "3\tfunc F() {}", NewText: "func G() {}"})
-	_, err := ExecuteMutating("edit_file", args)
+	_, err := ExecuteMutating(context.Background(), "edit_file", args)
 	if err == nil {
 		t.Fatal("expected the numbered snippet not to match")
 	}
@@ -511,7 +512,7 @@ func TestWriteFile_OverwriteKeepsTheFileMode(t *testing.T) {
 	readWholeFile(t, path)
 	args, _ := json.Marshal(writeFileArgs{Path: path, Content: "#!/bin/sh\necho two\n"})
 
-	if _, err := ExecuteMutating(WriteFileName, args); err != nil {
+	if _, err := ExecuteMutating(context.Background(), WriteFileName, args); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	info, err := os.Stat(path)
@@ -533,7 +534,7 @@ func TestWriteFile_NewFileIsNotExecutable(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "new.sh")
 	args, _ := json.Marshal(writeFileArgs{Path: path, Content: "#!/bin/sh\n"})
 
-	if _, err := ExecuteMutating(WriteFileName, args); err != nil {
+	if _, err := ExecuteMutating(context.Background(), WriteFileName, args); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	info, err := os.Stat(path)
@@ -562,7 +563,7 @@ func TestEditFile_KeepsTheFileMode(t *testing.T) {
 	}
 	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "one", NewText: "two"})
 
-	if _, err := ExecuteMutating(EditFileName, args); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, args); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	info, err := os.Stat(path)
@@ -582,7 +583,7 @@ func TestEditFile_SeveralEditsInOneCall(t *testing.T) {
 	path := filepath.Join(tmp, "code.go")
 	must(t, os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644))
 
-	result, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+	result, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
 		{OldText: "alpha", NewText: "one"},
 		{OldText: "beta", NewText: "two"},
 		{OldText: "gamma", NewText: "three"},
@@ -616,11 +617,11 @@ func TestEditFile_OrderOfTheEditsDoesNotMatter(t *testing.T) {
 		{OldText: "func B() {}", NewText: "func Y() {}"},
 		{OldText: "func C() {}", NewText: "func Z() {}"},
 	}
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: forward, Edits: edits})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: forward, Edits: edits})); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	reversed := []fileEdit{edits[2], edits[1], edits[0]}
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: backward, Edits: reversed})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: backward, Edits: reversed})); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	a, _ := os.ReadFile(forward)
@@ -641,7 +642,7 @@ func TestEditFile_OverlappingEditsAreRefusedNamingBoth(t *testing.T) {
 	path := filepath.Join(tmp, "code.go")
 	must(t, os.WriteFile(path, []byte("func Handle(w, r) {}\n"), 0o644))
 
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
 		{OldText: "func Handle(w, r) {}", NewText: "func Serve(w, r) {}"},
 		{OldText: "Handle", NewText: "Serve"},
 	}}))
@@ -667,7 +668,7 @@ func TestEditFile_OneBadQuoteWritesNothing(t *testing.T) {
 	path := filepath.Join(tmp, "code.go")
 	must(t, os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644))
 
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
 		{OldText: "alpha", NewText: "one"},
 		{OldText: "delta", NewText: "four"},
 		{OldText: "gamma", NewText: "three"},
@@ -693,7 +694,7 @@ func TestEditFile_NamesTheLineNumberPrefixInsideAnArray(t *testing.T) {
 	path := filepath.Join(tmp, "a.go")
 	must(t, os.WriteFile(path, []byte("package a\n\nfunc F() {}\n"), 0o644))
 
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
 		{OldText: "package a", NewText: "package b"},
 		{OldText: "3\tfunc F() {}", NewText: "func G() {}"},
 	}}))
@@ -720,7 +721,7 @@ func TestEditFile_StaleFileRefusesTheWholeCall(t *testing.T) {
 		{OldText: "beta", NewText: "two"},
 	}})
 	var stale StaleError
-	if _, err := ExecuteMutating(EditFileName, args); !errors.As(err, &stale) {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, args); !errors.As(err, &stale) {
 		t.Fatalf("expected a staleness refusal, got %v", err)
 	}
 	if _, err := PreviewMutation(EditFileName, args); !errors.As(err, &stale) {
@@ -750,7 +751,7 @@ func TestPreviewMutation_MultiEditMatchesTheWrite(t *testing.T) {
 	if mut.OldText != before {
 		t.Errorf("preview should diff against the file as read: %q", mut.OldText)
 	}
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: applied, Edits: edits})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: applied, Edits: edits})); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	data, _ := os.ReadFile(applied)
@@ -772,7 +773,7 @@ func TestEditFile_RefusesBothSpellingsAtOnce(t *testing.T) {
 	path := filepath.Join(tmp, "code.go")
 	must(t, os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644))
 
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{
 		Path:    path,
 		OldText: "alpha", NewText: "one",
 		Edits: []fileEdit{{OldText: "beta", NewText: "two"}},
@@ -788,7 +789,7 @@ func TestEditFile_RefusesBothSpellingsAtOnce(t *testing.T) {
 // Neither spelling is a call with nothing to do, and the message has to name
 // the array as well as the pair or the model only ever learns half the tool.
 func TestEditFile_RefusesACallWithNoEdits(t *testing.T) {
-	_, err := ExecuteMutating(EditFileName, json.RawMessage(`{"path":"x"}`))
+	_, err := ExecuteMutating(context.Background(), EditFileName, json.RawMessage(`{"path":"x"}`))
 	if err == nil || !strings.Contains(err.Error(), "old_text is required") || !strings.Contains(err.Error(), "edits") {
 		t.Fatalf("expected an error naming both spellings, got %v", err)
 	}
@@ -801,7 +802,7 @@ func TestEditFile_ReplaceAllInsideAnArray(t *testing.T) {
 	path := filepath.Join(tmp, "code.go")
 	must(t, os.WriteFile(path, []byte("x\ny\nx\n"), 0o644))
 
-	result, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+	result, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
 		{OldText: "x", NewText: "a", ReplaceAll: true},
 		{OldText: "y", NewText: "b"},
 	}}))
@@ -878,7 +879,7 @@ func TestEditFile_OverlapNamesTheEditsInTheOrderTheyWereGiven(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644))
 
 	// The second edit's text starts earlier in the file than the first's.
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
 		{OldText: "eta", NewText: "reak"},
 		{OldText: "beta", NewText: "delta"},
 	}}))
@@ -933,7 +934,7 @@ func TestEditFile_AppendAddsAtTheEndOnALineOfItsOwn(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "CHANGELOG.md")
 			must(t, os.WriteFile(path, []byte(tc.before), 0o644))
-			result, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- two\n"}))
+			result, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- two\n"}))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -956,7 +957,7 @@ func TestEditFile_AppendIsRefusedBesideAReplacement(t *testing.T) {
 		{Path: path, Append: "beta\n", OldText: "alpha", NewText: "one"},
 		{Path: path, Append: "beta\n", Edits: []fileEdit{{OldText: "alpha", NewText: "one"}}},
 	} {
-		_, err := ExecuteMutating(EditFileName, editArgs(t, args))
+		_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, args))
 		if err == nil || !strings.Contains(err.Error(), "append") || !strings.Contains(err.Error(), "not both") {
 			t.Fatalf("expected the mixed call to be refused naming append, got %v", err)
 		}
@@ -972,7 +973,7 @@ func TestEditFile_AppendIsRefusedBesideAReplacement(t *testing.T) {
 // An append is to an existing file; a new one is write_file's.
 func TestEditFile_AppendToAMissingFileIsRefused(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "absent.log")
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Append: "x\n"})); err == nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Append: "x\n"})); err == nil {
 		t.Fatal("appending to a file that does not exist should be refused")
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
@@ -992,7 +993,7 @@ func TestEditFile_AppendTakesNoStalenessCheck(t *testing.T) {
 	if _, err := PreviewMutation(EditFileName, args); err != nil {
 		t.Fatalf("the preview should not refuse a moved file: %v", err)
 	}
-	if _, err := ExecuteMutating(EditFileName, args); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, args); err != nil {
 		t.Fatalf("the append should not refuse a moved file: %v", err)
 	}
 	if data, _ := os.ReadFile(path); string(data) != "one\nsomebody else\nmine\n" {
@@ -1001,7 +1002,7 @@ func TestEditFile_AppendTakesNoStalenessCheck(t *testing.T) {
 	// The record stays stale: the append vouches for nothing somebody else
 	// wrote, so an edit built on the old read is still refused.
 	var stale StaleError
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "one", NewText: "1"})); !errors.As(err, &stale) {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "one", NewText: "1"})); !errors.As(err, &stale) {
 		t.Fatalf("an edit on the stale read should still be refused, got %v", err)
 	}
 }
@@ -1010,13 +1011,13 @@ func TestEditFile_AppendTakesNoStalenessCheck(t *testing.T) {
 // a full overwrite of it is refused as before.
 func TestEditFile_AppendDoesNotMarkTheFileAsRead(t *testing.T) {
 	path := seed(t, t.TempDir(), "notes.md", "# Notes\n")
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- a\n"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- a\n"})); err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := shared.lookupSeen(path); ok {
 		t.Fatal("an append must leave no record of a read")
 	}
-	_, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "replaced\n"))
+	_, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "replaced\n"))
 	if err == nil || !strings.Contains(err.Error(), "has not been read") {
 		t.Fatalf("an overwrite after an append is still an overwrite of an unread file, got %v", err)
 	}
@@ -1027,10 +1028,10 @@ func TestEditFile_AppendDoesNotMarkTheFileAsRead(t *testing.T) {
 func TestEditFile_AppendKeepsAFreshReadingCurrent(t *testing.T) {
 	path := seed(t, t.TempDir(), "notes.md", "# Notes\n")
 	readWholeFile(t, path)
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- a\n"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- a\n"})); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "- a", NewText: "- b"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "- a", NewText: "- b"})); err != nil {
 		t.Fatalf("the model's own append should not make its next edit stale: %v", err)
 	}
 	if data, _ := os.ReadFile(path); string(data) != "# Notes\n- b\n" {
@@ -1055,7 +1056,7 @@ func TestPreviewMutation_AppendMatchesTheWrite(t *testing.T) {
 	if mut.Action != "append" || mut.OldText != before || mut.NewText != "alpha\nbeta\ngamma\n" {
 		t.Fatalf("preview = %+v", mut)
 	}
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: applied, Append: "gamma\n"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: applied, Append: "gamma\n"})); err != nil {
 		t.Fatal(err)
 	}
 	if data, _ := os.ReadFile(applied); string(data) != mut.NewText {

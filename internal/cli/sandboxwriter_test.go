@@ -92,8 +92,8 @@ func TestSandboxWriterGetsItsOwnContainer(t *testing.T) {
 				close(ch)
 				return ch, func() {}, nil
 			},
-			Executor:     func(name string, _ json.RawMessage) (string, error) { return "auto:" + name, nil },
-			ExecuteGated: func(name string, _ json.RawMessage) (string, error) { return "gated:" + name, nil },
+			Executor:     func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "auto:" + name, nil },
+			ExecuteGated: func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "gated:" + name, nil },
 			RunCommand: func(ctx context.Context, command string) tools.ExecResult {
 				if run == nil {
 					return tools.ExecResult{Output: refusal, ExitCode: -1, Outcome: tools.ExecDidNotStart}
@@ -108,8 +108,8 @@ func TestSandboxWriterGetsItsOwnContainer(t *testing.T) {
 	}
 	sup := subagent.New(t.Context(), subagent.Options{Root: repo, NewEnv: newEnv, Removed: writers.releaser()})
 	answerChildAsks(sup, true, nil, func(*subagent.Ask) bool { return true }, nil)
-	spawn := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) { return "", context.Canceled })
-	if _, err := spawn(subagent.SpawnToolName, json.RawMessage(`{"role":"writer","task":"run it","name":"writer-1"}`)); err != nil {
+	spawn := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) { return "", context.Canceled })
+	if _, err := spawn(context.Background(), subagent.SpawnToolName, json.RawMessage(`{"role":"writer","task":"run it","name":"writer-1"}`)); err != nil {
 		t.Fatalf("spawn: %v", err)
 	}
 

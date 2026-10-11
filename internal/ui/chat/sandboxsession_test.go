@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -77,7 +78,7 @@ func TestGolden_SandboxWriterSpawnCard(t *testing.T) {
 		return p, err
 	}
 	captureGolden(t, "sandbox-writer-spawn-card", "a writer's spawn card in a sandbox session", goldenWidths, func(width int) []golden.Panel {
-		m := gatedModelWith(t, func(string, json.RawMessage) (string, error) { return "started", nil },
+		m := gatedModelWith(t, func(context.Context, string, json.RawMessage) (string, error) { return "started", nil },
 			map[string]GatedPreviewFunc{subagent.SpawnToolName: preview}, Wiring{Containment: sandboxContainment()})
 		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 			spawnCall("s1", `{"role":"writer","task":"make the build pass","name":"writer-1","paths":["internal/agent/loop.go"]}`),

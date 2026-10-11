@@ -222,17 +222,17 @@ func TestEnviron(t *testing.T) {
 func TestWrapExecutor_ScrubsResultsAndErrors(t *testing.T) {
 	v := New()
 	_ = v.Add("TOKEN", "hunter2hunter2")
-	exec := v.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+	exec := v.WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == "fail" {
 			return "", errors.New("bad hunter2hunter2")
 		}
 		return "token=hunter2hunter2", nil
 	})
-	out, err := exec("ok", nil)
+	out, err := exec(context.Background(), "ok", nil)
 	if err != nil || out != "token=[secret:TOKEN]" {
 		t.Fatalf("out=%q err=%v", out, err)
 	}
-	if _, err := exec("fail", nil); err == nil || err.Error() != "bad [secret:TOKEN]" {
+	if _, err := exec(context.Background(), "fail", nil); err == nil || err.Error() != "bad [secret:TOKEN]" {
 		t.Fatalf("err=%v", err)
 	}
 }
@@ -287,11 +287,11 @@ func evidenceChain(t *testing.T, v *Vault, dir string, result string) (*evidence
 	}
 	red := evidence.NewReducer(store)
 	red.SetScrub(v.Scrub)
-	exec := v.WrapExecutor(red.WrapExecutor(func(string, json.RawMessage) (string, error) {
+	exec := v.WrapExecutor(red.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		return result, nil
 	}))
 	return store, func(tool string) string {
-		out, err := exec(tool, nil)
+		out, err := exec(context.Background(), tool, nil)
 		if err != nil {
 			t.Fatalf("%s: %v", tool, err)
 		}
@@ -480,10 +480,10 @@ func TestScrub_EvidenceToolPagesTheSameTextEitherWay(t *testing.T) {
 		if scrubBeforeStore {
 			red.SetScrub(v.Scrub)
 		}
-		exec := v.WrapExecutor(red.WrapExecutor(func(string, json.RawMessage) (string, error) {
+		exec := v.WrapExecutor(red.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 			return result, nil
 		}))
-		out, err := exec("execute_command", nil)
+		out, err := exec(context.Background(), "execute_command", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -491,7 +491,7 @@ func TestScrub_EvidenceToolPagesTheSameTextEitherWay(t *testing.T) {
 		if id == "" {
 			t.Fatalf("no evidence id in %q", out)
 		}
-		read, err := exec("evidence", json.RawMessage(`{"action":"read","id":"`+id+`","limit":16384}`))
+		read, err := exec(context.Background(), "evidence", json.RawMessage(`{"action":"read","id":"`+id+`","limit":16384}`))
 		if err != nil {
 			t.Fatal(err)
 		}

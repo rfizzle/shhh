@@ -45,7 +45,7 @@ func answeringEnv(answers ...string) subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "", errors.New("unused") },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "", errors.New("unused") },
 		}, nil
 	}
 }

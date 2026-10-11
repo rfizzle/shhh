@@ -1,6 +1,7 @@
 package subagent
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -29,9 +30,9 @@ type StepCount struct {
 // nothing here reads the session's or another child's.
 // See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
 func (c *child) stepsExecutor(next agent.ToolExecutor) agent.ToolExecutor {
-	return func(name string, args json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name != plan.StepsToolName {
-			return next(name, args)
+			return next(ctx, name, args)
 		}
 		l, err := plan.ParseStepsCall(args)
 		if err != nil {

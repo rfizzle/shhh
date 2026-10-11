@@ -5,6 +5,7 @@ package subagent
 // it — a slot, a card, a classifier round.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -173,7 +174,7 @@ func TestSpawnRefusesAModelOutsideTheList(t *testing.T) {
 			sup := New(t.Context(), Options{Root: t.TempDir(), NewEnv: (&scriptedEnv{steps: readRounds(1)}).factory(), CheckModel: models.check})
 			t.Cleanup(sup.Close)
 			exec := sup.WrapExecutor("", nil)
-			out, err := exec(SpawnToolName, json.RawMessage(tc.args))
+			out, err := exec(context.Background(), SpawnToolName, json.RawMessage(tc.args))
 			started, _ := sup.Spawned()
 			if !tc.refused {
 				if err != nil || started != 1 {

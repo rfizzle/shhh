@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -178,7 +179,7 @@ func parseNavigateArgs(args json.RawMessage) (navigateArgs, error) {
 }
 
 // Execute dispatches an LSP tool call.
-func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
+func (t *Toolset) Execute(_ context.Context, name string, args json.RawMessage) (string, error) {
 	switch name {
 	case WorkspaceSymbolToolName:
 		var a struct {
@@ -245,14 +246,14 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 // error the model is about to read, and a block in front of that reads as
 // part of the failure.
 // See docs/capabilities/coding-agent.md#diagnostics-that-arrive-late-still-arrive.
-func (t *Toolset) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (t *Toolset) WrapExecutor(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		var result string
 		var err error
 		if t.answers(name, args) {
-			result, err = t.Execute(name, args)
+			result, err = t.Execute(ctx, name, args)
 		} else {
-			result, err = next(name, args)
+			result, err = next(ctx, name, args)
 		}
 		// The diagnostics tool has just reported the current set itself;
 		// prefixing its own answer with a held copy of part of it would say

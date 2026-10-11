@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -100,7 +101,7 @@ func writeGzip(t *testing.T, path string, body []byte) {
 func listDir(t *testing.T, path string, depth int) (string, error) {
 	t.Helper()
 	args, _ := json.Marshal(listDirectoryArgs{Path: path, Depth: depth})
-	return Execute(ListDirectoryName, args)
+	return Execute(context.Background(), ListDirectoryName, args)
 }
 
 func readPath(t *testing.T, r *Recorder, path string, extra map[string]any) (string, error) {
@@ -110,7 +111,7 @@ func readPath(t *testing.T, r *Recorder, path string, extra map[string]any) (str
 		m[k] = v
 	}
 	args, _ := json.Marshal(m)
-	return r.Execute(ReadFileName, args)
+	return r.Execute(context.Background(), ReadFileName, args)
 }
 
 var fixtureTree = []fixtureEntry{

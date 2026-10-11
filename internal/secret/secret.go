@@ -8,6 +8,7 @@
 package secret
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -395,12 +396,12 @@ func (ix *index) scrubFragments(s string) string {
 // sits at the executor rather than at one tool because any tool can surface
 // a value: a command prints it, read_file opens the .env it lives in,
 // web_fetch returns the page it was posted to.
-func (v *Vault) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
+func (v *Vault) WrapExecutor(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
 	if v == nil {
 		return next
 	}
-	return func(name string, args json.RawMessage) (string, error) {
-		out, err := next(name, args)
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
+		out, err := next(ctx, name, args)
 		if err != nil {
 			return v.Scrub(out), fmt.Errorf("%s", v.Scrub(err.Error()))
 		}

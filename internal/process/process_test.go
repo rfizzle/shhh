@@ -1,6 +1,7 @@
 package process
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -564,13 +565,13 @@ func TestStartSummary(t *testing.T) {
 
 func TestWrapExecutor_DispatchesAndFallsThrough(t *testing.T) {
 	s := newTestSupervisor(t, nil)
-	exec := s.WrapExecutor(func(name string, _ json.RawMessage) (string, error) {
+	exec := s.WrapExecutor(func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 		return "next:" + name, nil
 	})
-	if out, err := exec("other_tool", nil); err != nil || out != "next:other_tool" {
+	if out, err := exec(context.Background(), "other_tool", nil); err != nil || out != "next:other_tool" {
 		t.Fatalf("fall-through broken: %q %v", out, err)
 	}
-	if out, err := exec(ToolName, json.RawMessage(`{"action":"status"}`)); err != nil || !strings.Contains(out, "No processes") {
+	if out, err := exec(context.Background(), ToolName, json.RawMessage(`{"action":"status"}`)); err != nil || !strings.Contains(out, "No processes") {
 		t.Fatalf("dispatch broken: %q %v", out, err)
 	}
 }

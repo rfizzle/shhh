@@ -39,7 +39,7 @@ func blockingEnv() subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "", errors.New("unused") },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "", errors.New("unused") },
 		}, nil
 	}
 }
@@ -65,7 +65,7 @@ func billedEnv(u provider.Usage) subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "", errors.New("unused") },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "", errors.New("unused") },
 		}, nil
 	}
 }
@@ -178,7 +178,7 @@ func TestAgentRowsAndBadge(t *testing.T) {
 	m := newSubagentModel(t, sup)
 
 	exec := sup.WrapExecutor("", nil)
-	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
+	if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 1 })
@@ -938,7 +938,7 @@ func TestKillConfirmCountsTheSubtree(t *testing.T) {
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	// Spawned through the child's own chain, which is what writes the parent.
 	exec := sup.WrapExecutor("researcher-1", nil)
-	if _, err := exec(subagent.SpawnToolName,
+	if _, err := exec(context.Background(), subagent.SpawnToolName,
 		json.RawMessage(`{"role":"researcher","task":"a piece","name":"reader"}`)); err != nil {
 		t.Fatal(err)
 	}
@@ -1216,7 +1216,7 @@ func keptWriterEnv(answer bool) subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor: func(string, json.RawMessage) (string, error) {
+			Executor: func(context.Context, string, json.RawMessage) (string, error) {
 				return "written", os.WriteFile(filepath.Join(spec.Root, "kept.go"), []byte("package kept\n"), 0o644)
 			},
 		}, nil
@@ -1281,7 +1281,7 @@ func TestAKeptPatchIsReviewedFromTheManager(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	// Spawned without waiting to see it running: it finishes as soon as it
 	// starts, and a wait for the running state could miss it.
-	if _, err := sup.WrapExecutor("", nil)(subagent.SpawnToolName,
+	if _, err := sup.WrapExecutor("", nil)(context.Background(), subagent.SpawnToolName,
 		json.RawMessage(`{"role":"writer","task":"add kept.go"}`)); err != nil {
 		t.Fatal(err)
 	}
@@ -1335,7 +1335,7 @@ func TestTypedSteeringEndsTheSessionsWaitOnItsChildren(t *testing.T) {
 
 	out := make(chan string, 1)
 	go func() {
-		text, _ := sup.WrapExecutor("", nil)(subagent.ReportToolName, json.RawMessage(`{"names":["one"]}`))
+		text, _ := sup.WrapExecutor("", nil)(context.Background(), subagent.ReportToolName, json.RawMessage(`{"names":["one"]}`))
 		out <- text
 	}()
 	select {
@@ -1395,7 +1395,7 @@ func TestApprovingASpawnHandsOverTheTurnsAsTheyStoodAtDispatch(t *testing.T) {
 	m = updated.(Model)
 	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: "a later ask"})
 
-	if _, err := sup.WrapExecutor("", nil)(subagent.SpawnToolName, json.RawMessage(args)); err != nil {
+	if _, err := sup.WrapExecutor("", nil)(context.Background(), subagent.SpawnToolName, json.RawMessage(args)); err != nil {
 		t.Fatal(err)
 	}
 	select {

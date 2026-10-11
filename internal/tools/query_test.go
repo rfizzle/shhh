@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -31,7 +32,7 @@ func runQuery(t *testing.T, r *Recorder, args map[string]any) (string, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return r.Execute(QueryName, raw)
+	return r.Execute(context.Background(), QueryName, raw)
 }
 
 func mustQuery(t *testing.T, args map[string]any) string {
@@ -314,7 +315,7 @@ func TestQuery_AFileOverTheReadCeilingIsStillQueryable(t *testing.T) {
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := NewRecorder().Execute(ReadFileName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, p))); err != nil || !strings.Contains(got, "read_file returns no file over") {
+	if got, err := NewRecorder().Execute(context.Background(), ReadFileName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, p))); err != nil || !strings.Contains(got, "read_file returns no file over") {
 		t.Fatalf("fixture should be past read_file's ceiling: %q, %v", got, err)
 	}
 	got := mustQuery(t, map[string]any{"paths": []string{p}, "expression": "select(.id == 7) | .id"})

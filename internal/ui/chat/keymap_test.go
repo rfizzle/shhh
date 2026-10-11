@@ -310,7 +310,7 @@ func TestHistorySearch_AKeyItDoesNotAnswerHandsTheKeyboardBack(t *testing.T) {
 }
 
 func TestHistorySearch_ClosesWhenADecisionTakesTheKeyboard(t *testing.T) {
-	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil },
+	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil },
 		map[string]GatedPreviewFunc{"write_file": writeFilePreview("old\n")})
 	m.inputHistory = []string{"go build"}
 	m.historyIdx = len(m.inputHistory)

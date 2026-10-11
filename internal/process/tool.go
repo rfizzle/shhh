@@ -1,6 +1,7 @@
 package process
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -120,12 +121,12 @@ func (s *Supervisor) Execute(args json.RawMessage) (string, error) {
 
 // WrapExecutor returns an executor that dispatches process calls and hands
 // everything else to next.
-func (s *Supervisor) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (s *Supervisor) WrapExecutor(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == ToolName {
 			return s.Execute(args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 

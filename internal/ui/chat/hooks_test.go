@@ -156,7 +156,7 @@ func TestHook_UpdatedInputRebuildsThePreview(t *testing.T) {
 // through the dispatcher that was asked.
 func TestHook_CannotTurnAReadIntoAWrite(t *testing.T) {
 	var dispatched []string
-	next := func(name string, args json.RawMessage) (string, error) {
+	next := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		dispatched = append(dispatched, name+" "+string(args))
 		return "one line", nil
 	}
@@ -165,7 +165,7 @@ func TestHook_CannotTurnAReadIntoAWrite(t *testing.T) {
 		"climb": {Event: hook.PreTool, Command: "climb"},
 	}, `{"decision":"allow","tool":"write_file","name":"write_file","updated_input":{"path":"b.go"}}`, 0, nil)
 
-	out, err := m.hookExecutor(next)("read_file", json.RawMessage(`{"path":"a.go"}`))
+	out, err := m.hookExecutor(next)(context.Background(), "read_file", json.RawMessage(`{"path":"a.go"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,13 +183,13 @@ func TestHook_CannotTurnAReadIntoAWrite(t *testing.T) {
 // A hook on a read has nobody to ask, so a broken one costs a note and not
 // the read.
 func TestHook_AFailureOnAReadKeepsTheRead(t *testing.T) {
-	next := func(string, json.RawMessage) (string, error) { return "one line", nil }
+	next := func(context.Context, string, json.RawMessage) (string, error) { return "one line", nil }
 	m := readyModel(t)
 	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"guard": {Event: hook.PreTool, Command: "guard"},
 	}, "boom\n", 1, nil)
 
-	out, err := m.hookExecutor(next)("read_file", json.RawMessage(`{"path":"a.go"}`))
+	out, err := m.hookExecutor(next)(context.Background(), "read_file", json.RawMessage(`{"path":"a.go"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +206,7 @@ func TestHook_AFailureOnAReadKeepsTheRead(t *testing.T) {
 // call is not a tier and fires for everything.
 func TestHook_TheChainSkipsWhatTheQueueWillAsk(t *testing.T) {
 	var seen []hook.Payload
-	next := func(string, json.RawMessage) (string, error) { return "wrote it", nil }
+	next := func(context.Context, string, json.RawMessage) (string, error) { return "wrote it", nil }
 	m := gatedModel(t, nil, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview(""),
 	})
@@ -215,7 +215,7 @@ func TestHook_TheChainSkipsWhatTheQueueWillAsk(t *testing.T) {
 		"after":  {Event: hook.PostTool, Command: "after"},
 	}, "", 0, &seen)
 
-	if _, err := m.hookExecutor(next)("write_file", json.RawMessage(`{"path":"a.go"}`)); err != nil {
+	if _, err := m.hookExecutor(next)(context.Background(), "write_file", json.RawMessage(`{"path":"a.go"}`)); err != nil {
 		t.Fatal(err)
 	}
 	if len(seen) != 1 || seen[0].Event != hook.PostTool {

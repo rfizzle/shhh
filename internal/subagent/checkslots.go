@@ -211,16 +211,22 @@ func (s *Supervisor) throttled(ctx context.Context, c *child, env Env) Env {
 		})
 	}
 	if exec := env.Executor; exec != nil {
-		env.Executor = func(name string, args json.RawMessage) (string, error) {
+		env.Executor = func(callCtx context.Context, name string, args json.RawMessage) (string, error) {
 			if name != quality.ToolName || !gateRun(args) {
-				return exec(name, args)
+				return exec(callCtx, name, args)
 			}
-			release, ok := s.takeCheckSlot(ctx, c)
+			// The wait ends with the attempt or with the call, whichever
+			// goes first: the call's context is the round's, and a round
+			// stopped while its gate run queued has nothing left to wait for.
+			wait, stop := context.WithCancel(ctx)
+			defer stop()
+			defer context.AfterFunc(callCtx, stop)()
+			release, ok := s.takeCheckSlot(wait, c)
 			if !ok {
 				return "", errors.New(slotStopped)
 			}
 			defer release()
-			return exec(name, args)
+			return exec(callCtx, name, args)
 		}
 	}
 	return env

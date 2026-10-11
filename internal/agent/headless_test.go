@@ -70,7 +70,7 @@ func TestHeadlessRun_AutoToolRound(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("done"),
 	))
-	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name != "read_file" {
 			t.Fatalf("executor got tool %q", name)
 		}
@@ -165,7 +165,7 @@ func TestHeadlessRun_RoundCap(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c2", Name: "search"}),
 	}
 	a := New(nil, scriptedStream(t, rounds...))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "r", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "r", nil })
 	a.SetMaxRounds(2)
 
 	h := &Headless{Agent: a}
@@ -215,7 +215,7 @@ func TestHeadlessRun_SteerInjectedBetweenRounds(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
 		doneRound("done"),
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "r", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "r", nil })
 
 	queued := []string{"focus on x"}
 	h := &Headless{Agent: a, Steer: func() []string {
@@ -317,7 +317,7 @@ func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c4", Name: "read_file", Arguments: `{"path":"w"}`}),
 		doneRound("done")))
 	run, _ := testSummaryRun(t, &slowProvider{}, "ship the parser")
-	a.SetExecutor(func(string, json.RawMessage) (string, error) {
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		// A reading the boundary before this call started lands while the
 		// call runs, so the boundary after it is certain to collect one:
 		// this is about what happens to a reading once it has landed, not
@@ -354,7 +354,7 @@ func TestHeadlessRun_OnSummarySilentWithoutAReading(t *testing.T) {
 	a := New(nil, scriptedStream(t,
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("done")))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	called := 0
 	h := &Headless{Agent: a, OnSummary: func(SummaryVerdict) { called++ }}
@@ -375,7 +375,7 @@ func TestHeadlessRun_TellsTheTurnTheTreeMoved(t *testing.T) {
 		doneRound("done"),
 	))
 	a.SetTreeCheck(TreeCheck{Dir: ws})
-	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		// Somebody else writes while the round runs.
 		write(t, ws, "theirs.txt", "x\n")
 		return "hello", nil
@@ -415,7 +415,7 @@ func TestHeadlessRun_ARoundsReadsOverlap(t *testing.T) {
 	overlapped := make(chan struct{})
 	go func() { inFlight.Wait(); close(overlapped) }()
 	fastBack := make(chan struct{})
-	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		inFlight.Done()
 		select {
 		case <-overlapped:
@@ -694,7 +694,7 @@ func TestHeadlessRun_HoldsAtTheRoundTail(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("carried on"),
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	release := make(chan struct{})
 	asked := make(chan int, 4)
@@ -749,7 +749,7 @@ func TestHeadlessRun_InterruptEndsAHold(t *testing.T) {
 	a := New(nil, scriptedStream(t,
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	h := &Headless{Agent: a}
 	h.Hold = func() <-chan struct{} {
@@ -770,7 +770,7 @@ func TestHeadlessRun_ASteerGivenDuringAHoldJoinsAtThatBoundary(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("carried on"),
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	var queued []string
 	h := &Headless{Agent: a}
@@ -802,7 +802,7 @@ func TestHeadlessRun_NoHoldNoWait(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("done"),
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	h := &Headless{Agent: a, Hold: func() <-chan struct{} { return nil }}
 	if final, err := h.Run("go"); err != nil || final != "done" {
@@ -881,6 +881,33 @@ func TestHeadlessRun_OnCloseIsNotAskedOfAnInterruptedTurn(t *testing.T) {
 	}
 	if _, err := h.Run("go"); !errors.Is(err, ErrInterrupted) {
 		t.Fatalf("err = %v, want ErrInterrupted", err)
+	}
+}
+
+// An interrupt reaches a call that is still running: the call waits on
+// nothing but its context, so the run ends only if the round's context was
+// cancelled with the turn.
+func TestHeadlessRun_InterruptReachesARunningCall(t *testing.T) {
+	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}},
+		scriptedStream(t, toolCallRound(provider.ToolCall{ID: "c1", Name: "search", Arguments: `{}`})))
+	h := &Headless{Agent: a}
+	a.SetExecutor(func(ctx context.Context, _ string, _ json.RawMessage) (string, error) {
+		go h.Interrupt()
+		<-ctx.Done()
+		return "", ctx.Err()
+	})
+	done := make(chan error, 1)
+	go func() {
+		_, err := h.Run("go")
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if !errors.Is(err, ErrInterrupted) {
+			t.Fatalf("err = %v, want ErrInterrupted", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the interrupt never reached the running call")
 	}
 }
 
@@ -982,7 +1009,7 @@ func TestHeadlessRun_AToolRoundEarnsItsOwnContinuation(t *testing.T) {
 		lengthRound("after the tools"),
 		doneRound("done"),
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 	var notices int
 	h := &Headless{Agent: a, OnContinue: func(string) { notices++ }}
 
@@ -1011,7 +1038,7 @@ func TestHeadlessRun_ACeilingInsideAToolRoundIsSaidOutLoud(t *testing.T) {
 		}},
 		doneRound("done"),
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 	var notices []string
 	h := &Headless{Agent: a, OnContinue: func(n string) { notices = append(notices, n) }}
 
@@ -1068,7 +1095,7 @@ func TestHeadlessRun_ASteerMovesTheTargetAndRetiresTheQueuedVerdict(t *testing.T
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
 		doneRound("done"),
 	))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "r", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "r", nil })
 
 	run, _ := testSummaryRun(t, &slowProvider{}, "ship the parser")
 	steered := false
@@ -1120,7 +1147,7 @@ func TestHeadlessRun_AVerdictTooOldToActOnIsWithheldAndRecorded(t *testing.T) {
 	if run == nil {
 		t.Fatal("expected a runner")
 	}
-	a.SetExecutor(func(string, json.RawMessage) (string, error) {
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		if a.Rounds() == 3 {
 			// A reading asked at round 1 comes back two rounds later, which
 			// is the ordinary shape of this: it is parked where it lands and
@@ -1163,7 +1190,7 @@ func TestHeadlessRun_ClosesOnAReadingItDoesNotWaitFor(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
 		doneRound("done")))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	p := &slowProvider{delay: 300 * time.Millisecond}
 	run, _ := testSummaryRun(t, p, "ship the parser")
@@ -1201,7 +1228,7 @@ func TestHeadlessRun_TheClosingVerdictSteersNothing(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
 		doneRound("done")))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	run, _ := testSummaryRun(t, &slowProvider{state: "off_target"}, "ship the parser")
 
@@ -1251,7 +1278,7 @@ func TestHeadlessRun_ASecondTurnRetiresTheClosingReading(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
 		doneRound("done"),
 		doneRound("and again")))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	run, _ := testSummaryRun(t, &slowProvider{delay: 300 * time.Millisecond}, "ship the parser")
 

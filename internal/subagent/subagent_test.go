@@ -170,10 +170,10 @@ func (s *scriptedEnv) factory() EnvFactory {
 			SystemPrompt: "test system prompt",
 			Stream:       stream,
 			Summarizer:   s.summarizer,
-			Executor: func(name string, args json.RawMessage) (string, error) {
+			Executor: func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 				return "auto:" + name, nil
 			},
-			ExecuteGated: func(name string, args json.RawMessage) (string, error) {
+			ExecuteGated: func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 				return "gated:" + name, nil
 			},
 			RunCommand: func(ctx context.Context, command string) tools.ExecResult {
@@ -303,10 +303,10 @@ func newTestSupervisor(t *testing.T, env *scriptedEnv) *Supervisor {
 
 func execTool(t *testing.T, sup *Supervisor, name, args string) string {
 	t.Helper()
-	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
-	out, err := exec(name, json.RawMessage(args))
+	out, err := exec(context.Background(), name, json.RawMessage(args))
 	if err != nil {
 		t.Fatalf("%s: %v", name, err)
 	}
@@ -355,7 +355,7 @@ func TestSpawnAndReport(t *testing.T) {
 func TestReportUnknownAgent(t *testing.T) {
 	sup := newTestSupervisor(t, &scriptedEnv{})
 	exec := sup.WrapExecutor("", nil)
-	if _, err := exec(ReportToolName, json.RawMessage(`{"name":"ghost"}`)); err == nil {
+	if _, err := exec(context.Background(), ReportToolName, json.RawMessage(`{"name":"ghost"}`)); err == nil {
 		t.Fatal("expected an error for an unknown agent")
 	}
 }
@@ -363,13 +363,13 @@ func TestReportUnknownAgent(t *testing.T) {
 func TestSpawnValidation(t *testing.T) {
 	sup := newTestSupervisor(t, &scriptedEnv{})
 	exec := sup.WrapExecutor("", nil)
-	if _, err := exec(SpawnToolName, json.RawMessage(`{"role":"admin","task":"x"}`)); err == nil {
+	if _, err := exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"admin","task":"x"}`)); err == nil {
 		t.Fatal("expected an error for an unknown role")
 	}
-	if _, err := exec(SpawnToolName, json.RawMessage(`{"role":"researcher","task":"  "}`)); err == nil {
+	if _, err := exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"researcher","task":"  "}`)); err == nil {
 		t.Fatal("expected an error for an empty task")
 	}
-	if _, err := exec(SpawnToolName, json.RawMessage(`{"role":"researcher","task":"x","name":"bad name!"}`)); err == nil {
+	if _, err := exec(context.Background(), SpawnToolName, json.RawMessage(`{"role":"researcher","task":"x","name":"bad name!"}`)); err == nil {
 		t.Fatal("expected an error for an invalid name")
 	}
 }
@@ -1426,10 +1426,10 @@ func TestASteerIsCountedAgainstItsAuthorAndLeavesTheirReceipt(t *testing.T) {
 
 // spawnRaw calls spawn_agent and returns its error instead of failing.
 func spawnRaw(sup *Supervisor, args string) (string, error) {
-	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
-	return exec(SpawnToolName, json.RawMessage(args))
+	return exec(context.Background(), SpawnToolName, json.RawMessage(args))
 }
 
 // verdictProvider answers every classifier request with a scripted decision.
@@ -1892,7 +1892,7 @@ func TestStaleChildEditIsItsOwnRow(t *testing.T) {
 		t.Fatal(err)
 	}
 	read, _ := json.Marshal(map[string]string{"path": path})
-	if _, err := tools.Execute(tools.ReadFileName, read); err != nil {
+	if _, err := tools.Execute(context.Background(), tools.ReadFileName, read); err != nil {
 		t.Fatal(err)
 	}
 	// Somebody else — an editor, a sibling session — gets there first.
@@ -2373,10 +2373,10 @@ func TestSteerToolRefusesAFailedChildByName(t *testing.T) {
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
 	waitFor(t, func() bool { return statusOf(t, sup, "researcher-1").State == StateFailed })
 
-	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
-	_, err := exec(SteerToolName, json.RawMessage(`{"name":"researcher-1","message":"read the exporter"}`))
+	_, err := exec(context.Background(), SteerToolName, json.RawMessage(`{"name":"researcher-1","message":"read the exporter"}`))
 	if err == nil {
 		t.Fatal("a failed agent cannot be steered")
 	}
@@ -2384,7 +2384,7 @@ func TestSteerToolRefusesAFailedChildByName(t *testing.T) {
 		t.Fatalf("the refusal names the agent and the way to run it again, got %q", err)
 	}
 
-	if _, err := exec(SteerToolName, json.RawMessage(`{"name":"nobody","message":"x"}`)); err == nil ||
+	if _, err := exec(context.Background(), SteerToolName, json.RawMessage(`{"name":"nobody","message":"x"}`)); err == nil ||
 		!strings.Contains(err.Error(), "nobody") {
 		t.Fatalf("an agent that was never spawned is refused by name, got %v", err)
 	}
@@ -2743,7 +2743,7 @@ func (w *writingChild) factory() EnvFactory {
 		return Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor: func(string, json.RawMessage) (string, error) {
+			Executor: func(context.Context, string, json.RawMessage) (string, error) {
 				for _, p := range w.paths {
 					full := filepath.Join(spec.Root, p)
 					if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {

@@ -705,7 +705,7 @@ func reportingEnv(text string) subagent.EnvFactory {
 			return ch, func() {}, nil
 		}
 		return subagent.Env{SystemPrompt: "sys", Stream: stream,
-			Executor: func(string, json.RawMessage) (string, error) { return "", errors.New("unused") }}, nil
+			Executor: func(context.Context, string, json.RawMessage) (string, error) { return "", errors.New("unused") }}, nil
 	}
 }
 
@@ -1031,7 +1031,7 @@ func writingEnv(content string) subagent.EnvFactory {
 			close(ch)
 			return ch, func() {}, nil
 		}
-		write := func(name string, args json.RawMessage) (string, error) {
+		write := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 			var a struct{ Path string }
 			_ = json.Unmarshal(args, &a)
 			return "ok", os.WriteFile(filepath.Join(spec.Root, filepath.Base(a.Path)), []byte(content), 0o644)

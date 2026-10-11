@@ -7,6 +7,7 @@ package chat
 // (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
 
 import (
+	"context"
 	"encoding/json"
 	"slices"
 	"strings"
@@ -46,7 +47,7 @@ func draftedCardModel(t *testing.T, executor ToolExecutor, draft string) Model {
 
 // noRun is the executor of a card that must not run.
 func noRun(t *testing.T) ToolExecutor {
-	return func(name string, _ json.RawMessage) (string, error) {
+	return func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 		t.Fatalf("no tool may run without an answer, but %s did", name)
 		return "", nil
 	}
@@ -142,7 +143,7 @@ func TestApproval_TheDraftIsTheNote(t *testing.T) {
 	t.Run("a yes says what next", func(t *testing.T) {
 		const next = "use the staging bucket for the next one"
 		var ran []string
-		executor := func(name string, _ json.RawMessage) (string, error) {
+		executor := func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 			ran = append(ran, name)
 			return "wrote 2 lines", nil
 		}

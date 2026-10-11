@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,7 +12,7 @@ import (
 
 func readWith(t *testing.T, r *Recorder, args string) string {
 	t.Helper()
-	got, err := r.Execute(ReadFileName, json.RawMessage(args))
+	got, err := r.Execute(context.Background(), ReadFileName, json.RawMessage(args))
 	if err != nil {
 		t.Fatalf("read_file %s: %v", args, err)
 	}
@@ -50,11 +51,11 @@ func TestReadFile_TailLinesIsRefusedBesideARange(t *testing.T) {
 		fmt.Sprintf(`{"path":%q,"tail_lines":1,"start_line":1}`, path),
 		fmt.Sprintf(`{"path":%q,"tail_lines":1,"end_line":2}`, path),
 	} {
-		if _, err := NewRecorder().Execute(ReadFileName, json.RawMessage(args)); err == nil || !strings.Contains(err.Error(), "without start_line/end_line") {
+		if _, err := NewRecorder().Execute(context.Background(), ReadFileName, json.RawMessage(args)); err == nil || !strings.Contains(err.Error(), "without start_line/end_line") {
 			t.Errorf("%s: want the refusal naming the range, got %v", args, err)
 		}
 	}
-	if _, err := NewRecorder().Execute(ReadFileName, json.RawMessage(fmt.Sprintf(`{"path":%q,"tail_lines":0}`, path))); err == nil {
+	if _, err := NewRecorder().Execute(context.Background(), ReadFileName, json.RawMessage(fmt.Sprintf(`{"path":%q,"tail_lines":0}`, path))); err == nil {
 		t.Error("tail_lines 0 should be refused, not read as absent")
 	}
 }

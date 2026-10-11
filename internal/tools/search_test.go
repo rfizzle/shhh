@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -33,7 +34,7 @@ func TestSearch_RegexWalker(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "code.go"), []byte("func Hello() {}\nfunc world() {}\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: `func H\w+`, Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -51,7 +52,7 @@ func TestSearch_RegexCaseInsensitiveDefault(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: `FOO\w+`, Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -66,7 +67,7 @@ func TestSearch_CaseSensitiveFlag(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\nfoobar\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "foobar", Path: tmp, CaseSensitive: true})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -81,7 +82,7 @@ func TestSearch_CaseSensitiveFlag(t *testing.T) {
 func TestSearch_InvalidRegex(t *testing.T) {
 	tmp := t.TempDir()
 	args, _ := json.Marshal(searchArgs{Pattern: "[", Path: tmp})
-	_, err := Execute("search", args)
+	_, err := Execute(context.Background(), "search", args)
 	if err == nil {
 		t.Fatal("expected error for invalid regex")
 	}
@@ -101,7 +102,7 @@ func TestSearch_WalkerSkipsOversizedFiles(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "small.txt"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -122,7 +123,7 @@ func TestSearch_WalkerSkipsBinaryAndGit(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -156,7 +157,7 @@ func TestSearch_RipgrepOutputParsing(t *testing.T) {
 	tmp := t.TempDir()
 
 	args, _ := json.Marshal(searchArgs{Pattern: "match", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -170,7 +171,7 @@ func TestSearch_RipgrepNoMatchExitCode(t *testing.T) {
 	tmp := t.TempDir()
 
 	args, _ := json.Marshal(searchArgs{Pattern: "zzzzz", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -185,7 +186,7 @@ func TestSearch_RipgrepFailureFallsBackToWalker(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "real.txt"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -200,7 +201,7 @@ func TestSearch_Ripgrep(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "hello.go"), []byte("package main\nfunc Hello() {}\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: `func h\w+`, Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -216,7 +217,7 @@ func TestSearch_RipgrepSingleFileKeepsFilename(t *testing.T) {
 	must(t, os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "beta", Path: path})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -231,7 +232,7 @@ func TestSearch_RipgrepNoMatches(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("nothing here\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "zzzzz", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -248,7 +249,7 @@ func TestSearch_RipgrepSkipsVendor(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -523,7 +524,7 @@ func TestSearch_HiddenFilesOnBothBackends(t *testing.T) {
 	t.Run("walker", func(t *testing.T) {
 		forceWalker(t)
 		args, _ := json.Marshal(searchArgs{Pattern: "needle", Path: tree(t)})
-		result, err := Execute("search", args)
+		result, err := Execute(context.Background(), "search", args)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -544,7 +545,7 @@ func TestSearch_HiddenFilesOnBothBackends(t *testing.T) {
 done
 exit 1`)
 		args, _ := json.Marshal(searchArgs{Pattern: "needle", Path: tree(t)})
-		result, err := Execute("search", args)
+		result, err := Execute(context.Background(), "search", args)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -556,7 +557,7 @@ exit 1`)
 	t.Run("ripgrep", func(t *testing.T) {
 		requireRg(t)
 		args, _ := json.Marshal(searchArgs{Pattern: "needle", Path: tree(t)})
-		result, err := Execute("search", args)
+		result, err := Execute(context.Background(), "search", args)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -577,12 +578,12 @@ func TestSearch_LiteralNeedsNoEscaping(t *testing.T) {
 	// Without literal this is an unterminated group and the tool refuses it,
 	// which is the round the argument exists to save.
 	bare, _ := json.Marshal(searchArgs{Pattern: "foo(", Path: tmp})
-	if _, err := Execute("search", bare); err == nil {
+	if _, err := Execute(context.Background(), "search", bare); err == nil {
 		t.Fatal("an unescaped foo( should still be an invalid regular expression")
 	}
 
 	args, _ := json.Marshal(searchArgs{Pattern: "foo(", Path: tmp, Literal: true})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -607,7 +608,7 @@ func TestSearch_RipgrepIsHandedTheWrappedPattern(t *testing.T) {
 done
 exit 1`)
 	args, _ := json.Marshal(searchArgs{Pattern: "foo(", Path: t.TempDir(), Literal: true, WordBoundary: true, CaseSensitive: true})
-	result, err := Execute("search", args)
+	result, err := Execute(context.Background(), "search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

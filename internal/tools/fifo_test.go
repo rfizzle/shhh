@@ -3,6 +3,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"path/filepath"
 	"strings"
@@ -36,7 +37,7 @@ func TestReaders_APipeIsRefusedNotOpened(t *testing.T) {
 			}
 			done := make(chan error, 1)
 			go func() {
-				_, err := NewRecorder().Execute(tc.tool, raw)
+				_, err := NewRecorder().Execute(context.Background(), tc.tool, raw)
 				done <- err
 			}()
 			select {
@@ -60,7 +61,7 @@ func TestDocumentSymbol_APipeIsRefusedNotOpened(t *testing.T) {
 	}
 	done := make(chan error, 1)
 	go func() {
-		_, err := NewRecorder().Execute(DocumentSymbolName, json.RawMessage(`{"path":`+mustJSON(t, pipe)+`}`))
+		_, err := NewRecorder().Execute(context.Background(), DocumentSymbolName, json.RawMessage(`{"path":`+mustJSON(t, pipe)+`}`))
 		done <- err
 	}()
 	select {

@@ -113,12 +113,12 @@ func (r *Runner) executeTool(ctx context.Context, args json.RawMessage) (string,
 
 // WrapExecutor returns an executor that dispatches quality_gate calls and
 // hands everything else to next.
-func (r *Runner) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (r *Runner) WrapExecutor(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == ToolName {
 			return r.ExecuteTool(args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 
@@ -126,11 +126,11 @@ func (r *Runner) WrapExecutor(next func(name string, args json.RawMessage) (stri
 // session's check slots itself before it dispatches a run — a child, whose
 // wait for one is drawn on its own lane — so the run under it does not wait
 // for a second slot behind its own.
-func (r *Runner) WrapExecutorHolding(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (r *Runner) WrapExecutorHolding(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == ToolName {
 			return r.executeTool(WithSlotHeld(context.Background()), args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }

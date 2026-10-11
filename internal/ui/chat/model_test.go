@@ -700,7 +700,7 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 		return ch, cancel, nil
 	}
 
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name != "read_file" {
 			t.Fatalf("unexpected tool name: %s", name)
 		}
@@ -756,7 +756,7 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 }
 
 func TestToolCallLoop_MultipleToolCalls(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		switch name {
 		case "read_file":
 			return "file content", nil
@@ -801,7 +801,7 @@ func TestToolCallLoop_MultipleToolCalls(t *testing.T) {
 }
 
 func TestToolCallLoop_TextBeforeToolCall(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "result", nil
 	}
 
@@ -831,7 +831,7 @@ func TestToolCallLoop_TextBeforeToolCall(t *testing.T) {
 }
 
 func TestToolCallLoop_ExecutorError(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "", errors.New("executor failed")
 	}
 
@@ -998,7 +998,7 @@ func TestSlashCommand_NoDB_StillHandled(t *testing.T) {
 }
 
 func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "slow result", nil
 	}
 	msgs := []provider.Message{
@@ -1854,7 +1854,7 @@ func TestExecTool_Declined(t *testing.T) {
 }
 
 func TestExecTool_MixedWithReadOnly(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "read result", nil
 	}
 	msgs := []provider.Message{
@@ -2295,7 +2295,7 @@ func TestMaxToolRounds_Default(t *testing.T) {
 }
 
 func TestToolLoop_StopsAtRoundCap(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "result", nil
 	}
 	msgs := []provider.Message{
@@ -2468,7 +2468,7 @@ func TestSteering_InputStaysLiveWhileStreaming(t *testing.T) {
 }
 
 func TestSteering_InjectedBeforeNextStreamRequest(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "result", nil
 	}
 	msgs := []provider.Message{
@@ -2509,7 +2509,7 @@ func TestSteering_InjectedBeforeNextStreamRequest(t *testing.T) {
 }
 
 func TestSteering_LiftsRoundCap(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "result", nil
 	}
 	msgs := []provider.Message{

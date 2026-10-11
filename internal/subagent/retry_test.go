@@ -125,7 +125,7 @@ func blockedForeverEnv() EnvFactory {
 		return Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "", errors.New("unused") },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "", errors.New("unused") },
 		}, nil
 	}
 }
@@ -485,15 +485,15 @@ func TestTheRetryToolRefusesWhatTheSupervisorRefuses(t *testing.T) {
 
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
 	waitState(t, sup, "researcher-1", StateRunning)
-	if _, err := exec(RetryToolName, json.RawMessage(`{"name":"researcher-1"}`)); err == nil {
+	if _, err := exec(context.Background(), RetryToolName, json.RawMessage(`{"name":"researcher-1"}`)); err == nil {
 		t.Fatal("a running agent must not be retried")
 	} else if !strings.Contains(err.Error(), "running") {
 		t.Fatalf("the refusal must name the state, got %q", err)
 	}
-	if _, err := exec(RetryToolName, json.RawMessage(`{"name":"ghost"}`)); err == nil {
+	if _, err := exec(context.Background(), RetryToolName, json.RawMessage(`{"name":"ghost"}`)); err == nil {
 		t.Fatal("an unknown agent must not be retried")
 	}
-	if _, err := exec(RetryToolName, json.RawMessage(`{}`)); err == nil {
+	if _, err := exec(context.Background(), RetryToolName, json.RawMessage(`{}`)); err == nil {
 		t.Fatal("a retry with no name has nothing to run")
 	}
 }

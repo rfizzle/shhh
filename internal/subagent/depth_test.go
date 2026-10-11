@@ -26,10 +26,10 @@ import (
 // its runtime is given rather than the session's — which is the only way a
 // parent is written and a depth is counted.
 func spawnFromAgent(sup *Supervisor, caller, args string) (string, error) {
-	exec := sup.WrapExecutor(caller, func(name string, _ json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor(caller, func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 		return "", fmt.Errorf("unexpected passthrough: %s", name)
 	})
-	return exec(SpawnToolName, json.RawMessage(args))
+	return exec(context.Background(), SpawnToolName, json.RawMessage(args))
 }
 
 // TestDepth_TheDefaultIsThreeAndTheThirdLevelIsTheLast walks the default down
@@ -264,10 +264,10 @@ func TestDepth_AnAgentReachesOnlyWhatItSpawned(t *testing.T) {
 	}
 
 	exec := func(caller, tool, args string) error {
-		e := sup.WrapExecutor(caller, func(string, json.RawMessage) (string, error) {
+		e := sup.WrapExecutor(caller, func(context.Context, string, json.RawMessage) (string, error) {
 			return "", errors.New("unexpected passthrough")
 		})
-		_, err := e(tool, json.RawMessage(args))
+		_, err := e(context.Background(), tool, json.RawMessage(args))
 		return err
 	}
 	if err := exec("one", ReportToolName, `{"name":"two","wait":false}`); err == nil {
@@ -291,10 +291,10 @@ func TestDepth_AnAgentReachesOnlyWhatItSpawned(t *testing.T) {
 	if !strings.Contains(roster, "two") {
 		t.Error("the session's roster is missing one of its children")
 	}
-	child := sup.WrapExecutor("one", func(string, json.RawMessage) (string, error) {
+	child := sup.WrapExecutor("one", func(context.Context, string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
-	own, err := child(ReportToolName, json.RawMessage(`{}`))
+	own, err := child(context.Background(), ReportToolName, json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -531,7 +531,7 @@ func perAgentEnv(scripts map[string][]streamStep, wrap func(string, agent.ToolEx
 			_, cancel := context.WithCancel(context.Background())
 			return ch, cancel, nil
 		}
-		base := agent.ToolExecutor(func(tool string, _ json.RawMessage) (string, error) {
+		base := agent.ToolExecutor(func(_ context.Context, tool string, _ json.RawMessage) (string, error) {
 			return "auto:" + tool, nil
 		})
 		return Env{

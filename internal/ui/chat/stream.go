@@ -9,6 +9,7 @@ package chat
 // decided here and not at the key that cancelled it.
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -132,7 +133,7 @@ func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
 	a := m.agent
 	runID := a.RunID()
 	return func() tea.Msg {
-		return toolResultsMsg{runID: runID, results: a.ExecuteCalls(calls)}
+		return toolResultsMsg{runID: runID, results: a.ExecuteCalls(context.Background(), calls)}
 	}
 }
 

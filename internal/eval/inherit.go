@@ -79,15 +79,15 @@ func askInherit(ctx context.Context, p provider.Provider, model string, row Row)
 	defer cancel()
 	sup.SetConversation(func() []provider.Message { return row.Conversation })
 
-	exec := sup.WrapExecutor("", func(name string, _ json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 		return "", fmt.Errorf("%s is not a tool an inherit case registers", name)
 	})
-	if _, err := exec(subagent.SpawnToolName, scriptedArgs(map[string]any{
+	if _, err := exec(ctx, subagent.SpawnToolName, scriptedArgs(map[string]any{
 		"role": string(subagent.RoleResearcher), "task": row.Task, "name": inheritChildName, "inherit": row.Inherit,
 	})); err != nil {
 		return Answer{Row: row, Err: "the spawn was refused: " + firstLine(err.Error())}
 	}
-	report, err := exec(subagent.ReportToolName, scriptedArgs(map[string]any{"name": inheritChildName}))
+	report, err := exec(ctx, subagent.ReportToolName, scriptedArgs(map[string]any{"name": inheritChildName}))
 	a := Answer{Row: row, Usage: child.used()}
 	if err != nil {
 		a.Err = "the report was refused: " + firstLine(err.Error())
@@ -140,7 +140,7 @@ func (c *inheritChild) factory() subagent.EnvFactory {
 			SystemPrompt: prompt.Inherited(prompt.BuildResearcher(info, prompt.WebTools{}), spec.Inherit),
 			Stream:       stream,
 			Executor:     subagent.RootedExecutor(c.root, c.note(tools.Execute)),
-			ExecuteGated: func(name string, _ json.RawMessage) (string, error) {
+			ExecuteGated: func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 				return "", errors.New(name + " is not available to this child")
 			},
 			RunCommand: func(context.Context, string) tools.ExecResult {
@@ -152,7 +152,7 @@ func (c *inheritChild) factory() subagent.EnvFactory {
 
 // note records the path of every read_file call before it runs.
 func (c *inheritChild) note(next agent.ToolExecutor) agent.ToolExecutor {
-	return func(name string, args json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == "read_file" {
 			var call struct {
 				Path string `json:"path"`
@@ -167,7 +167,7 @@ func (c *inheritChild) note(next agent.ToolExecutor) agent.ToolExecutor {
 				c.mu.Unlock()
 			}
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 

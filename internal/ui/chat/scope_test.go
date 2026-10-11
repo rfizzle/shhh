@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ func scopedModel(t *testing.T, root string, mode agent.Mode) Model {
 	if sc == nil {
 		t.Fatalf("scope.New(%q): %v", root, problems)
 	}
-	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "ok", nil },
+	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "ok", nil },
 		map[string]GatedPreviewFunc{"write_file": writeFilePreview("old\n")})
 	m.wiring.Scope = sc
 	m.policy.mode = mode

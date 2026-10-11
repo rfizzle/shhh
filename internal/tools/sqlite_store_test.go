@@ -1,6 +1,7 @@
 package tools_test
 
 import (
+	"context"
 	"encoding/json"
 	"path/filepath"
 	"strings"
@@ -40,7 +41,7 @@ func TestSqlite_ShhhsOwnStoreIsReadWhileTheSessionWrites(t *testing.T) {
 	defer restore()
 
 	raw, _ := json.Marshal(map[string]any{"path": path, "sql": []string{"SELECT name FROM chat_sessions"}})
-	out, err := tools.NewRecorder().Execute(tools.SqliteName, raw)
+	out, err := tools.NewRecorder().Execute(context.Background(), tools.SqliteName, raw)
 	if err != nil {
 		t.Fatalf("sqlite on the store: %v", err)
 	}
@@ -63,7 +64,7 @@ func TestSqlite_ShhhsOwnStoreIsReadWhileTheSessionWrites(t *testing.T) {
 
 	// The schema answer names it too, and an ordinary database does not.
 	raw, _ = json.Marshal(map[string]any{"path": path})
-	if out, err := tools.NewRecorder().Execute(tools.SqliteName, raw); err != nil || strings.Count(out, "shhh observe") != 1 {
+	if out, err := tools.NewRecorder().Execute(context.Background(), tools.SqliteName, raw); err != nil || strings.Count(out, "shhh observe") != 1 {
 		t.Errorf("schema on the store: %v\n%s", err, out)
 	}
 }

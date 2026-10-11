@@ -51,7 +51,7 @@ func scriptedRounds(t *testing.T, rounds ...[]provider.StreamEvent) *agent.Agent
 		close(ch)
 		return ch, func() {}, nil
 	})
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 	return a
 }
 
@@ -189,8 +189,8 @@ func TestTurnTime_EverySurfaceSplitsItsTurn(t *testing.T) {
 		})
 		t.Cleanup(sup.Close)
 		env.sup = sup
-		exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) { return "", context.Canceled })
-		if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"survey the exporter"}`)); err != nil {
+		exec := sup.WrapExecutor("", func(context.Context, string, json.RawMessage) (string, error) { return "", context.Canceled })
+		if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"survey the exporter"}`)); err != nil {
 			t.Fatalf("spawning a child: %v", err)
 		}
 		waitFor(t, "the child's turn row", func() bool {

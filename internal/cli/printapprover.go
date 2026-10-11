@@ -212,8 +212,10 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 		denied:   "error: process start denied (",
 		parseErr: func(err error) string { return "error: " + err.Error() },
 		exec: func(tc provider.ToolCall, _ string) string {
-			exec := func(_ string, args json.RawMessage) (string, error) { return r.procSup.Execute(args) }
-			return r.red.Process(tc.Name, agent.ExecuteWith(exec, tc))
+			exec := func(_ context.Context, _ string, args json.RawMessage) (string, error) {
+				return r.procSup.Execute(args)
+			}
+			return r.red.Process(tc.Name, agent.ExecuteWith(ctx, exec, tc))
 		},
 	}
 	foreground := commandAdmission{
@@ -382,7 +384,7 @@ func (r headlessApproval) approveSpawn(tc provider.ToolCall, call agent.Classifi
 		return reason
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	return r.red.Process(tc.Name, agent.ExecuteWith(func(_ string, args json.RawMessage) (string, error) {
+	return r.red.Process(tc.Name, agent.ExecuteWith(context.Background(), func(_ context.Context, _ string, args json.RawMessage) (string, error) {
 		return r.un.sup.Spawn(args)
 	}, tc))
 }
@@ -396,7 +398,7 @@ func (r headlessApproval) approveServerCall(tc provider.ToolCall, call agent.Cla
 		return reason
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	return r.red.Process(tc.Name, agent.ExecuteWith(r.mcpTools.Execute, tc))
+	return r.red.Process(tc.Name, agent.ExecuteWith(context.Background(), r.mcpTools.Execute, tc))
 }
 
 // approveFetch answers web_fetch, an external action: --yes opts in to any
@@ -453,10 +455,10 @@ func (r headlessApproval) approveFetch(tc provider.ToolCall, call agent.Classifi
 		}
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	fetch := func(name string, args json.RawMessage) (string, error) {
-		return r.webTools.Execute(web.Orchestrator, name, args)
+	fetch := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
+		return r.webTools.Execute(ctx, web.Orchestrator, name, args)
 	}
-	return r.red.Process(tc.Name, agent.ExecuteWith(fetch, tc))
+	return r.red.Process(tc.Name, agent.ExecuteWith(context.Background(), fetch, tc))
 }
 
 // commandAdmission is what sets one way of running a command apart from the
@@ -544,7 +546,7 @@ func (r headlessApproval) approveGitWrite(tc provider.ToolCall, call agent.Class
 		return reason
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	return r.red.Process(tc.Name, agent.ExecuteWith(r.structTools.Execute, tc))
+	return r.red.Process(tc.Name, agent.ExecuteWith(context.Background(), r.structTools.Execute, tc))
 }
 
 // approveWrite answers a file modification.
@@ -576,7 +578,7 @@ func (r headlessApproval) approveWrite(tc provider.ToolCall, call agent.Classifi
 		}
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	result := agent.ExecuteWith(r.un.seen.ExecuteMutating, tc)
+	result := agent.ExecuteWith(context.Background(), r.un.seen.ExecuteMutating, tc)
 	if r.mutationHook != nil {
 		result = r.mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)
 	}

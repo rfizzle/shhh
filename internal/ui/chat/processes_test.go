@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -46,7 +47,7 @@ func TestProcessTool_OnlyStartRequiresApproval(t *testing.T) {
 
 func TestProcessTool_StartApprovalFlow(t *testing.T) {
 	var executed []string
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		executed = append(executed, name)
 		return "process web: running (pid 1)", nil
 	}
@@ -95,7 +96,7 @@ func TestProcessTool_StartApprovalFlow(t *testing.T) {
 }
 
 func TestProcessTool_StartHonorsCommandAllowlist(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil }
 	m := processModel(t, executor)
 	m.policy.allowlist = []string{"npm run dev"}
 

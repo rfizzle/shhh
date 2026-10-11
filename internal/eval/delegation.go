@@ -114,7 +114,7 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 		}
 		msgs = append(msgs, provider.Message{Role: provider.RoleAssistant, Content: reply, ToolCalls: calls})
 		for _, c := range calls {
-			out, err := exec(c.Name, json.RawMessage(c.Arguments))
+			out, err := exec(ctx, c.Name, json.RawMessage(c.Arguments))
 			if err != nil {
 				out = "error: " + err.Error()
 			}

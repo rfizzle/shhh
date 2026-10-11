@@ -3,6 +3,7 @@
 package reports
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -62,15 +63,15 @@ func TestExecuteTool_FreehandIsFrozenAtStoreTime(t *testing.T) {
 
 func TestWrapExecutor_PassesOtherToolsThrough(t *testing.T) {
 	p, _ := testPublisher(t, false)
-	exec := p.WrapExecutor(func(name string, _ json.RawMessage) (string, error) {
+	exec := p.WrapExecutor(func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 		return "handled " + name, nil
 	})
-	out, err := exec("read_file", nil)
+	out, err := exec(context.Background(), "read_file", nil)
 	if err != nil || out != "handled read_file" {
 		t.Fatalf("passthrough = %q, %v", out, err)
 	}
 	args, _ := json.Marshal(sampleDocument())
-	out, err = exec(ToolName, args)
+	out, err = exec(context.Background(), ToolName, args)
 	if err != nil || !strings.HasPrefix(out, "http://127.0.0.1:") {
 		t.Fatalf("dispatch = %q, %v", out, err)
 	}

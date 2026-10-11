@@ -124,7 +124,7 @@ func askReadOnly(ctx context.Context, p provider.Provider, model string, row Row
 			case tools.IsMutating(c.Name):
 				out = agent.ReadOnlyModeResult("", nil)
 			default:
-				res, err := exec(c.Name, json.RawMessage(c.Arguments))
+				res, err := exec(ctx, c.Name, json.RawMessage(c.Arguments))
 				if err != nil {
 					res = "error: " + err.Error()
 				}

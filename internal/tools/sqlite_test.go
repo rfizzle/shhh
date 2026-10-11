@@ -48,7 +48,7 @@ func runSqlite(t *testing.T, r *Recorder, args map[string]any) (string, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return r.Execute(SqliteName, raw)
+	return r.Execute(context.Background(), SqliteName, raw)
 }
 
 func mustSqlite(t *testing.T, args map[string]any) string {

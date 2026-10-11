@@ -7,6 +7,7 @@ package chat
 // the word "yes" could approve a shell command before it had been read.
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -39,7 +40,7 @@ func handover(t *testing.T, m Model) Model {
 // gated write_file call arriving on top of it.
 func interruptedModel(t *testing.T, draft string) Model {
 	t.Helper()
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		t.Fatalf("no tool may run without an answer, but %s did", name)
 		return "", nil
 	}
@@ -500,7 +501,7 @@ func TestSpawnCard_AYTheSendHadInFlightWaitsForTheKeys(t *testing.T) {
 			Detail: "no containment mechanism is in force: bubblewrap (bwrap) not found on PATH"})
 		return p, err
 	}
-	m := tallPanel(t, gatedModel(t, func(string, json.RawMessage) (string, error) {
+	m := tallPanel(t, gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) {
 		return "started", nil
 	}, map[string]GatedPreviewFunc{subagent.SpawnToolName: refused}))
 	m.lastKeypress = time.Now() // the enter that sent the sentence

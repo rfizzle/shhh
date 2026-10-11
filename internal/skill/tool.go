@@ -1,6 +1,7 @@
 package skill
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -60,12 +61,12 @@ func (c *Catalog) Execute(raw json.RawMessage) (string, error) {
 
 // WrapExecutor routes the skill tool to this catalog and everything else
 // to next.
-func (c *Catalog) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (c *Catalog) WrapExecutor(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == ToolName {
 			return c.Execute(args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 

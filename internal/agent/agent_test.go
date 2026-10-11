@@ -89,14 +89,14 @@ func TestBeginToolRound_NilGateAutoRunsEverything(t *testing.T) {
 
 func TestExecuteCalls_FormatsErrors(t *testing.T) {
 	a := newTestAgent()
-	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == "bad" {
 			return "", errors.New("boom")
 		}
 		return "ok:" + name, nil
 	})
 
-	results := a.ExecuteCalls([]provider.ToolCall{
+	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{
 		{ID: "c1", Name: "good", Arguments: `{}`},
 		{ID: "c2", Name: "bad", Arguments: `{}`},
 	})
@@ -108,8 +108,72 @@ func TestExecuteCalls_FormatsErrors(t *testing.T) {
 	}
 }
 
+// A stop reaches every call of the round: the ones running, and the ones
+// still waiting for a slot under the bound. Each call waits on nothing but
+// its context, so the round returns only if the cancel reached all of them.
+func TestExecuteCalls_CancelReachesEveryCall(t *testing.T) {
+	n := MaxParallelToolCalls + 3
+	started := make(chan struct{}, n)
+	a := New(nil, nil)
+	a.SetExecutor(func(ctx context.Context, name string, _ json.RawMessage) (string, error) {
+		started <- struct{}{}
+		<-ctx.Done()
+		return "", ctx.Err()
+	})
+	calls := make([]provider.ToolCall, n)
+	for i := range calls {
+		calls[i] = provider.ToolCall{ID: strconv.Itoa(i), Name: "wait"}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan []ToolResult, 1)
+	go func() { done <- a.ExecuteCalls(ctx, calls) }()
+	for range MaxParallelToolCalls {
+		<-started
+	}
+	cancel()
+	select {
+	case results := <-done:
+		if len(results) != n {
+			t.Fatalf("results = %d, want %d", len(results), n)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the round's cancel did not reach every call: the batch is still running")
+	}
+}
+
+// Each call has a cancel of its own, handed to the per-call seam, and it
+// stops that call and no other.
+func TestExecuteCalls_EachCallHasItsOwnCancel(t *testing.T) {
+	a := New(nil, nil)
+	release := make(chan struct{})
+	a.SetExecutor(func(ctx context.Context, name string, _ json.RawMessage) (string, error) {
+		if name == "stop" {
+			<-ctx.Done()
+			return "", ctx.Err()
+		}
+		<-release
+		return "ran", nil
+	})
+	a.SetCallCancel(func(tc provider.ToolCall, cancel context.CancelFunc) {
+		if tc.Name == "stop" {
+			cancel()
+		} else {
+			close(release)
+		}
+	})
+	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{
+		{ID: "a", Name: "stop"}, {ID: "b", Name: "keep"},
+	})
+	if results[0].Result != "error: "+context.Canceled.Error() {
+		t.Errorf("stopped call = %q, want it cancelled", results[0].Result)
+	}
+	if results[1].Result != "ran" {
+		t.Errorf("the other call = %q, want it to run to the end", results[1].Result)
+	}
+}
+
 func TestExecuteWith_NilExecutor(t *testing.T) {
-	got := ExecuteWith(nil, provider.ToolCall{Name: "x"})
+	got := ExecuteWith(context.Background(), nil, provider.ToolCall{Name: "x"})
 	if !strings.Contains(got, "no tool executor") {
 		t.Fatalf("expected a no-executor error, got %q", got)
 	}
@@ -530,7 +594,7 @@ func TestExecuteCalls_RunsConcurrentlyAndKeepsOrder(t *testing.T) {
 	release := make(chan struct{})
 
 	a := New(nil, nil)
-	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		cur := atomic.AddInt64(&live, 1)
 		for {
 			old := atomic.LoadInt64(&peak)
@@ -552,7 +616,7 @@ func TestExecuteCalls_RunsConcurrentlyAndKeepsOrder(t *testing.T) {
 	}
 
 	done := make(chan []ToolResult, 1)
-	go func() { done <- a.ExecuteCalls(calls) }()
+	go func() { done <- a.ExecuteCalls(context.Background(), calls) }()
 
 	var results []ToolResult
 	select {
@@ -576,7 +640,7 @@ func TestExecuteCalls_RunsConcurrentlyAndKeepsOrder(t *testing.T) {
 func TestExecuteCalls_BoundedByMaxParallel(t *testing.T) {
 	var live, peak int64
 	a := New(nil, nil)
-	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		cur := atomic.AddInt64(&live, 1)
 		for {
 			old := atomic.LoadInt64(&peak)
@@ -595,7 +659,7 @@ func TestExecuteCalls_BoundedByMaxParallel(t *testing.T) {
 	for i := range calls {
 		calls[i] = provider.ToolCall{ID: strconv.Itoa(i), Name: strconv.Itoa(i)}
 	}
-	results := a.ExecuteCalls(calls)
+	results := a.ExecuteCalls(context.Background(), calls)
 
 	if len(results) != len(calls) {
 		t.Fatalf("got %d results for %d calls", len(results), len(calls))
@@ -618,13 +682,13 @@ func TestExecuteCalls_ResultCarriesWhatTheToolAttached(t *testing.T) {
 		MediaType: "image/png",
 		Data:      []byte{0x89, 'P', 'N', 'G'},
 	}
-	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		notice := "logo.png is an image"
 		attachment.NoteResult(notice, img)
 		return notice, nil
 	})
 
-	results := a.ExecuteCalls([]provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
+	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
 	if len(results[0].Attachments) != 1 {
 		t.Fatalf("expected the image on the result, got %d attachments", len(results[0].Attachments))
 	}
@@ -639,9 +703,9 @@ func TestExecuteCalls_ResultCarriesWhatTheToolAttached(t *testing.T) {
 
 func TestExecuteCalls_ResultWithNothingAttachedCarriesNothing(t *testing.T) {
 	a := newTestAgent()
-	a.SetExecutor(func(name string, args json.RawMessage) (string, error) { return "plain text", nil })
+	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "plain text", nil })
 
-	results := a.ExecuteCalls([]provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
+	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
 	if results[0].Attachments != nil {
 		t.Fatalf("expected no attachments, got %+v", results[0].Attachments)
 	}
@@ -669,7 +733,7 @@ func TestExecuteCalls_ImagesSurviveAWholeRoundOfReaders(t *testing.T) {
 	// The repeat detector rewrites a result it has seen before, which is the
 	// wrapper an image has to survive: reading the same picture twice is what
 	// a person asks for when they did not believe the first answer.
-	a.SetExecutor(NewRepeatDetector().WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+	a.SetExecutor(NewRepeatDetector().WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		notice := string(args) + " is an image"
 		attachment.NoteResult(notice, provider.Attachment{
 			Kind: provider.AttachmentImage, Name: "x.png", MediaType: "image/png", Data: []byte{1},
@@ -688,7 +752,7 @@ func TestExecuteCalls_ImagesSurviveAWholeRoundOfReaders(t *testing.T) {
 	// Twice: the second round is where every result carries the detector's
 	// notice above the text the tool wrote.
 	for round := range 2 {
-		for _, r := range a.ExecuteCalls(calls) {
+		for _, r := range a.ExecuteCalls(context.Background(), calls) {
 			if len(r.Attachments) != 1 {
 				t.Fatalf("round %d, call %s: expected the image on the result, got %d",
 					round, r.Call.ID, len(r.Attachments))

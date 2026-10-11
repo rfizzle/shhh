@@ -337,7 +337,7 @@ func (t *Toolset) Binaries() (found []Binary, missing []string) {
 }
 
 // Execute dispatches a structural tool call.
-func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
+func (t *Toolset) Execute(_ context.Context, name string, args json.RawMessage) (string, error) {
 	if _, ok := t.bins[name]; !ok {
 		if name == GitToolName {
 			return "", fmt.Errorf("git is not available: this workspace is not inside a git repository, or the %q binary was not found on PATH", binaryNames[name])
@@ -369,12 +369,12 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 
 // WrapExecutor returns an executor that dispatches structural tools and hands
 // everything else to next.
-func (t *Toolset) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (t *Toolset) WrapExecutor(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if t.Has(name) {
-			return t.Execute(name, args)
+			return t.Execute(ctx, name, args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 

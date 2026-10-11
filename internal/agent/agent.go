@@ -22,8 +22,11 @@ import (
 // is asking for work or for prose.
 type StreamFunc func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error)
 
-// ToolExecutor runs one tool call and returns its result text.
-type ToolExecutor func(name string, args json.RawMessage) (string, error)
+// ToolExecutor runs one tool call and returns its result text. The context
+// is the call's own: it ends when the turn the call belongs to is cancelled,
+// and a tool that waits on anything — a search, a query, a request — waits
+// under it, so a stop reaches the call rather than waiting for it.
+type ToolExecutor func(ctx context.Context, name string, args json.RawMessage) (string, error)
 
 // ApprovalGate reports whether a tool call must be approved by the user
 // before it may run. The front-end implements it (the chat TUI gates
@@ -80,6 +83,9 @@ const CancelledResult = "error: cancelled by user"
 type Agent struct {
 	stream   StreamFunc
 	executor ToolExecutor
+	// callCancel, when set, is handed each auto-run call's own cancel as the
+	// call starts (SetCallCancel).
+	callCancel CallCancel
 
 	messages  []provider.Message
 	folded    []provider.Message
@@ -179,6 +185,17 @@ func New(initial []provider.Message, stream StreamFunc) *Agent {
 
 // SetExecutor sets the executor used for auto-run (non-gated) tool calls.
 func (a *Agent) SetExecutor(executor ToolExecutor) { a.executor = executor }
+
+// CallCancel is told, as each auto-run call starts, the cancel that stops
+// that call alone. The round's context stops every call in it; this is the
+// one that stops one, for a surface that lets a person stop a single call
+// while the rest of its round goes on. It is called from the call's own
+// goroutine, and calling the cancel after the call has returned does nothing.
+type CallCancel func(tc provider.ToolCall, cancel context.CancelFunc)
+
+// SetCallCancel installs the per-call cancel seam. Nil, the default, hands
+// the cancels to nobody, and only the round's context stops a call.
+func (a *Agent) SetCallCancel(fn CallCancel) { a.callCancel = fn }
 
 // KeepResults exempts tool results matching keep from context trimming. A
 // result is elided on the assumption that it was consumed when it arrived;
@@ -473,11 +490,16 @@ const MaxParallelToolCalls = 8
 // the order the conversation has to record them in. Safe to run off the UI
 // goroutine: it touches no Agent state besides the executor.
 //
+// ctx is the round's: cancelling it stops every call still running. Each
+// call runs under a child of it with a cancel of its own, which is handed to
+// the per-call seam (SetCallCancel) so one call can be stopped without the
+// round.
+//
 // A result's non-text parts are collected here, in the goroutine that
 // produced it, because this is the only point where the tool that wrote them
 // and the result they belong to are both in hand: an executor returns a
 // string, and every wrapper on the chain in between passes one.
-func (a *Agent) ExecuteCalls(calls []provider.ToolCall) []ToolResult {
+func (a *Agent) ExecuteCalls(ctx context.Context, calls []provider.ToolCall) []ToolResult {
 	results := make([]ToolResult, len(calls))
 	sem := make(chan struct{}, MaxParallelToolCalls)
 	var wg sync.WaitGroup
@@ -485,10 +507,15 @@ func (a *Agent) ExecuteCalls(calls []provider.ToolCall) []ToolResult {
 		wg.Add(1)
 		go func(i int, tc provider.ToolCall) {
 			defer wg.Done()
+			callCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			if a.callCancel != nil {
+				a.callCancel(tc, cancel)
+			}
 			sem <- struct{}{}
 			defer func() { <-sem }()
 			start := time.Now()
-			result := a.ExecuteCall(tc)
+			result := a.ExecuteCall(callCtx, tc)
 			results[i] = ToolResult{
 				Call:        tc,
 				Result:      result,
@@ -503,17 +530,17 @@ func (a *Agent) ExecuteCalls(calls []provider.ToolCall) []ToolResult {
 }
 
 // ExecuteCall runs one tool call through the Agent's executor.
-func (a *Agent) ExecuteCall(tc provider.ToolCall) string {
-	return ExecuteWith(a.executor, tc)
+func (a *Agent) ExecuteCall(ctx context.Context, tc provider.ToolCall) string {
+	return ExecuteWith(ctx, a.executor, tc)
 }
 
 // ExecuteWith runs one tool call through an explicit executor, formatting
 // failures as error tool results.
-func ExecuteWith(executor ToolExecutor, tc provider.ToolCall) string {
+func ExecuteWith(ctx context.Context, executor ToolExecutor, tc provider.ToolCall) string {
 	if executor == nil {
 		return "error: no tool executor configured"
 	}
-	out, err := executor(tc.Name, json.RawMessage(tc.Arguments))
+	out, err := executor(ctx, tc.Name, json.RawMessage(tc.Arguments))
 	if err != nil {
 		return "error: " + err.Error()
 	}

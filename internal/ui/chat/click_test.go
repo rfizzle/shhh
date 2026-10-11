@@ -303,7 +303,7 @@ func clickCardModel(t *testing.T, draft string, executor ToolExecutor) Model {
 // there is no second decision path that could answer differently.
 func TestClick_ApprovalKeyAnswers(t *testing.T) {
 	var executed []string
-	m := clickCardModel(t, "", func(name string, args json.RawMessage) (string, error) {
+	m := clickCardModel(t, "", func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		executed = append(executed, name)
 		return "wrote 2 lines", nil
 	})
@@ -321,7 +321,7 @@ func TestClick_ApprovalKeyAnswers(t *testing.T) {
 }
 
 func TestClick_ApprovalDenyLandsOnItsWords(t *testing.T) {
-	m := clickCardModel(t, "", func(name string, args json.RawMessage) (string, error) {
+	m := clickCardModel(t, "", func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		t.Fatalf("nothing may run on a denial, but %s did", name)
 		return "", nil
 	})
@@ -339,7 +339,7 @@ func TestClick_ApprovalDenyLandsOnItsWords(t *testing.T) {
 // means what the handover means, and the second one answers.
 func TestClick_UngatedCardHandsOverRatherThanAnswering(t *testing.T) {
 	var executed []string
-	m := clickCardModel(t, "half a sentence", func(name string, args json.RawMessage) (string, error) {
+	m := clickCardModel(t, "half a sentence", func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		executed = append(executed, name)
 		return "wrote 2 lines", nil
 	})
@@ -373,7 +373,7 @@ func TestClick_UngatedCardHandsOverRatherThanAnswering(t *testing.T) {
 // A key clipped away by a narrow terminal is not clickable, because the
 // target is read out of the render rather than laid out beside it.
 func TestClick_OffTheRunAnswersNothing(t *testing.T) {
-	m := clickCardModel(t, "", func(name string, args json.RawMessage) (string, error) {
+	m := clickCardModel(t, "", func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		t.Fatalf("nothing may run without an answer, but %s did", name)
 		return "", nil
 	})
@@ -408,7 +408,7 @@ func TestClick_RoutedChildApproval(t *testing.T) {
 // dimmed, and a click on it answers nothing until the quiet arrives.
 func TestClick_TheGraceWindowHoldsTheRun(t *testing.T) {
 	var executed []string
-	m := clickCardModel(t, "", func(name string, args json.RawMessage) (string, error) {
+	m := clickCardModel(t, "", func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		executed = append(executed, name)
 		return "wrote 2 lines", nil
 	})

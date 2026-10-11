@@ -25,7 +25,7 @@ import (
 // existing one requires the session to have done.
 func showFile(t *testing.T, path string) {
 	t.Helper()
-	if _, err := tools.Execute(tools.ReadFileName, []byte(fmt.Sprintf(`{"path":%q}`, path))); err != nil {
+	if _, err := tools.Execute(context.Background(), tools.ReadFileName, []byte(fmt.Sprintf(`{"path":%q}`, path))); err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
 }

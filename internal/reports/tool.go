@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -221,11 +222,11 @@ func (p *Publisher) ExecuteTool(args json.RawMessage) (string, error) {
 
 // WrapExecutor returns an executor that dispatches report calls and hands
 // everything else to next.
-func (p *Publisher) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (p *Publisher) WrapExecutor(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == ToolName {
 			return p.ExecuteTool(args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }

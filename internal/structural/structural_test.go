@@ -1,6 +1,7 @@
 package structural
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -88,20 +89,20 @@ func TestDetectRegistersOnlyFoundBinaries(t *testing.T) {
 func TestExecuteUnavailableToolIsCleanError(t *testing.T) {
 	ts := newTestToolset(t, nil)
 
-	if _, err := ts.Execute(SdToolName, json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "not found on PATH") {
+	if _, err := ts.Execute(context.Background(), SdToolName, json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "not found on PATH") {
 		t.Fatalf("expected a missing-binary error, got %v", err)
 	}
-	if _, err := ts.Execute("nonsense", json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "unknown structural tool") {
+	if _, err := ts.Execute(context.Background(), "nonsense", json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "unknown structural tool") {
 		t.Fatalf("expected an unknown-tool error, got %v", err)
 	}
 }
 
 func TestWrapExecutorFallsThrough(t *testing.T) {
 	ts := newTestToolset(t, nil)
-	exec := ts.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+	exec := ts.WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "fallback:" + name, nil
 	})
-	out, err := exec("read_file", json.RawMessage(`{}`))
+	out, err := exec(context.Background(), "read_file", json.RawMessage(`{}`))
 	if err != nil || out != "fallback:read_file" {
 		t.Fatalf("expected fallback dispatch, got %q, %v", out, err)
 	}
@@ -372,7 +373,7 @@ func TestExecuteFdEndToEnd(t *testing.T) {
 	script := writeScript(t, `printf '%s\n' "$@"`)
 	ts := newTestToolset(t, map[string]string{FdToolName: script})
 
-	out, err := ts.Execute(FdToolName, json.RawMessage(`{"pattern": "-x", "path": "."}`))
+	out, err := ts.Execute(context.Background(), FdToolName, json.RawMessage(`{"pattern": "-x", "path": "."}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -385,7 +386,7 @@ func TestExecuteFdEndToEnd(t *testing.T) {
 	}
 
 	// A path outside the workspace never spawns.
-	if _, err := ts.Execute(FdToolName, json.RawMessage(`{"path": ".."}`)); err == nil || !strings.Contains(err.Error(), "outside the workspace") {
+	if _, err := ts.Execute(context.Background(), FdToolName, json.RawMessage(`{"path": ".."}`)); err == nil || !strings.Contains(err.Error(), "outside the workspace") {
 		t.Fatalf("expected containment rejection, got %v", err)
 	}
 }
@@ -415,7 +416,7 @@ func TestExecuteEmptyResultsMessages(t *testing.T) {
 		{SdToolName, `{"pattern": "a", "replacement": "b", "paths": ["a.json"]}`, "No replacements: the pattern did not match."},
 	}
 	for _, c := range cases {
-		out, err := ts.Execute(c.tool, json.RawMessage(c.args))
+		out, err := ts.Execute(context.Background(), c.tool, json.RawMessage(c.args))
 		if err != nil {
 			t.Fatalf("%s: %v", c.tool, err)
 		}
@@ -433,7 +434,7 @@ func TestExecuteSdPreviewBanner(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "a", "replacement": "b", "paths": ["a.txt"]}`))
+	out, err := ts.Execute(context.Background(), SdToolName, json.RawMessage(`{"pattern": "a", "replacement": "b", "paths": ["a.txt"]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -566,7 +567,7 @@ else printf 'internal/x/a.go:3:	if err != nil { return err }\ninternal/x/b.go:9:
 		t.Fatal(err)
 	}
 
-	whole, err := ts.Execute(AstGrepToolName, json.RawMessage(`{"pattern": "if err != nil { return $$$R }", "lang": "go"}`))
+	whole, err := ts.Execute(context.Background(), AstGrepToolName, json.RawMessage(`{"pattern": "if err != nil { return $$$R }", "lang": "go"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -574,7 +575,7 @@ else printf 'internal/x/a.go:3:	if err != nil { return err }\ninternal/x/b.go:9:
 		t.Fatalf("a search over the whole tree should be cut at the cap, got %d bytes ending %q", len(whole), whole[max(0, len(whole)-80):])
 	}
 
-	narrow, err := ts.Execute(AstGrepToolName, json.RawMessage(`{"pattern": "if err != nil { return $$$R }", "lang": "go", "path": "internal/x"}`))
+	narrow, err := ts.Execute(context.Background(), AstGrepToolName, json.RawMessage(`{"pattern": "if err != nil { return $$$R }", "lang": "go", "path": "internal/x"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -618,7 +619,7 @@ func TestSdPreviewIsTheDiffOfTheChange(t *testing.T) {
 	}
 	names = append(names, `"big.go"`, `"none.go"`)
 
-	out, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": [`+strings.Join(names, ",")+`]}`))
+	out, err := ts.Execute(context.Background(), SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": [`+strings.Join(names, ",")+`]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -657,7 +658,7 @@ func TestSdPreviewOfALargeChangeIsCutAtTheCap(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(ts.root, "a.go"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": ["a.go"]}`))
+	out, err := ts.Execute(context.Background(), SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": ["a.go"]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -668,7 +669,7 @@ func TestSdPreviewOfALargeChangeIsCutAtTheCap(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(ts.root, "dir"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": ["dir"]}`)); err == nil || !strings.Contains(err.Error(), "is a directory") {
+	if _, err := ts.Execute(context.Background(), SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": ["dir"]}`)); err == nil || !strings.Contains(err.Error(), "is a directory") {
 		t.Fatalf("a directory should be refused by name, got %v", err)
 	}
 }

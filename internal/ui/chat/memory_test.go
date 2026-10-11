@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -30,7 +31,7 @@ func memoryModel(t *testing.T, mode agent.Mode) (Model, *[]savedMemory) {
 		{Role: provider.RoleUser, Content: "do the thing"},
 	}
 	m := New(msgs, mockStream, Wiring{
-		Executor: func(name string, args json.RawMessage) (string, error) {
+		Executor: func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 			t.Fatalf("the remember tool must never reach the executor, got %s", name)
 			return "", nil
 		},

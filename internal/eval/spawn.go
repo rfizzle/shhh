@@ -115,10 +115,10 @@ func askSpawn(ctx context.Context, row Row) Answer {
 		}
 	}()
 
-	exec := sup.WrapExecutor("", func(name string, _ json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 		return "", fmt.Errorf("%s is not a tool a spawn case registers", name)
 	})
-	spawned, err := exec(subagent.SpawnToolName, scriptedArgs(map[string]any{
+	spawned, err := exec(ctx, subagent.SpawnToolName, scriptedArgs(map[string]any{
 		"role": row.Role, "task": row.Task, "name": spawnChildName, "paths": row.Paths,
 	}))
 	if err != nil {
@@ -127,14 +127,14 @@ func askSpawn(ctx context.Context, row Row) Answer {
 	// The report call is what waits for the child, exactly as a parent's
 	// does; the overview beside it is the other half of what a parent can
 	// ask, and the only place a reading of the child's work is spoken.
-	report, err := exec(subagent.ReportToolName, scriptedArgs(map[string]any{"name": spawnChildName}))
+	report, err := exec(ctx, subagent.ReportToolName, scriptedArgs(map[string]any{"name": spawnChildName}))
 	if err != nil {
 		return Answer{Label: LabelBroken, Reason: "the report was refused: " + firstLine(err.Error())}
 	}
 	if env.reader != nil {
 		env.awaitVerdict()
 	}
-	overview, err := exec(subagent.ReportToolName, scriptedArgs(map[string]any{}))
+	overview, err := exec(ctx, subagent.ReportToolName, scriptedArgs(map[string]any{}))
 	if err != nil {
 		return Answer{Label: LabelBroken, Reason: "the overview was refused: " + firstLine(err.Error())}
 	}
@@ -234,10 +234,10 @@ func (s *scriptedChild) factory() subagent.EnvFactory {
 		env := subagent.Env{
 			SystemPrompt: "a scripted child, for measuring the loop around it",
 			Stream:       stream,
-			Executor: func(name string, args json.RawMessage) (string, error) {
+			Executor: func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 				return runScriptedCall(root, name, args)
 			},
-			ExecuteGated: func(name string, args json.RawMessage) (string, error) {
+			ExecuteGated: func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 				return runScriptedCall(root, name, args)
 			},
 			RunCommand: func(context.Context, string) tools.ExecResult { return tools.ExecResult{Outcome: tools.ExecSucceeded} },

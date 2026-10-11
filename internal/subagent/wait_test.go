@@ -54,10 +54,10 @@ func (h *heldEnv) factory() EnvFactory {
 		return Env{
 			SystemPrompt: "test system prompt",
 			Stream:       stream,
-			Executor: func(name string, _ json.RawMessage) (string, error) {
+			Executor: func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 				return "auto:" + name, nil
 			},
-			ExecuteGated: func(name string, _ json.RawMessage) (string, error) {
+			ExecuteGated: func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 				return "gated:" + name, nil
 			},
 			RunCommand: func(context.Context, string) tools.ExecResult { return tools.ExecResult{Outcome: tools.ExecSucceeded} },
@@ -76,11 +76,11 @@ func newHeldSupervisor(t *testing.T) (*Supervisor, *heldEnv) {
 // waitAsync runs an agent_report call as caller in the background.
 func waitAsync(sup *Supervisor, caller, args string) <-chan string {
 	out := make(chan string, 1)
-	exec := sup.WrapExecutor(caller, func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor(caller, func(context.Context, string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
 	go func() {
-		text, err := exec(ReportToolName, json.RawMessage(args))
+		text, err := exec(context.Background(), ReportToolName, json.RawMessage(args))
 		if err != nil {
 			text = "error: " + err.Error()
 		}
@@ -163,14 +163,14 @@ func TestAWaitOnASetIsBoundedToTheCallersOwn(t *testing.T) {
 	if _, err := spawnFromAgent(sup, "one", `{"role":"researcher","task":"c","name":"one-a"}`); err != nil {
 		t.Fatal(err)
 	}
-	exec := sup.WrapExecutor("one", func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("one", func(context.Context, string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
-	if _, err := exec(ReportToolName, json.RawMessage(`{"names":["one-a","two"]}`)); err == nil ||
+	if _, err := exec(context.Background(), ReportToolName, json.RawMessage(`{"names":["one-a","two"]}`)); err == nil ||
 		!strings.Contains(err.Error(), `"two"`) {
 		t.Fatalf("a set naming a sibling should be refused naming it, got %v", err)
 	}
-	if _, err := exec(ReportToolName, json.RawMessage(`{"names":["nobody"]}`)); err == nil {
+	if _, err := exec(context.Background(), ReportToolName, json.RawMessage(`{"names":["nobody"]}`)); err == nil {
 		t.Fatal("a set naming no agent should be refused")
 	}
 	for _, name := range []string{"one", "two", "one-a"} {

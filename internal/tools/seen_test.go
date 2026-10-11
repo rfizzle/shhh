@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -17,7 +18,7 @@ import (
 func readWholeFile(t *testing.T, path string) {
 	t.Helper()
 	args, _ := json.Marshal(readFileArgs{Path: path})
-	if _, err := Execute(ReadFileName, args); err != nil {
+	if _, err := Execute(context.Background(), ReadFileName, args); err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
 }
@@ -47,7 +48,7 @@ func seed(t *testing.T, dir, name, content string) string {
 func TestWriteFileRefusesAFileItNeverRead(t *testing.T) {
 	path := seed(t, t.TempDir(), "config.yaml", "port: 8080\n")
 
-	_, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "port: 9090\n"))
+	_, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "port: 9090\n"))
 	if err == nil {
 		t.Fatal("overwriting an unread file should be refused")
 	}
@@ -61,7 +62,7 @@ func TestWriteFileRefusesAFileItNeverRead(t *testing.T) {
 
 func TestWriteFileAllowsANewFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "fresh.txt")
-	if _, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "hello\n")); err != nil {
+	if _, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "hello\n")); err != nil {
 		t.Fatalf("a file that does not exist yet has nothing to clobber: %v", err)
 	}
 }
@@ -69,11 +70,11 @@ func TestWriteFileAllowsANewFile(t *testing.T) {
 func TestWriteFileRefusesAFileReadOnlyInPart(t *testing.T) {
 	path := seed(t, t.TempDir(), "long.txt", "a\nb\nc\nd\n")
 	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 1, EndLine: 2})
-	if _, err := Execute(ReadFileName, args); err != nil {
+	if _, err := Execute(context.Background(), ReadFileName, args); err != nil {
 		t.Fatal(err)
 	}
 
-	_, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "z\n"))
+	_, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "z\n"))
 	if err == nil {
 		t.Fatal("replacing a file from a windowed read writes over what was never seen")
 	}
@@ -90,7 +91,7 @@ func TestWriteFileRefusesAFileThatChangedSinceItWasRead(t *testing.T) {
 	readWholeFile(t, path)
 	seed(t, dir, "shared.txt", "somebody else's work\n")
 
-	_, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "mine\n"))
+	_, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "mine\n"))
 	if err == nil {
 		t.Fatal("a file that moved under the model should be refused")
 	}
@@ -107,7 +108,7 @@ func TestWriteFileRefusesAFileThatChangedSinceItWasRead(t *testing.T) {
 func TestEditFileNeedsNoPriorRead(t *testing.T) {
 	path := seed(t, t.TempDir(), "code.go", "alpha\nbeta\n")
 
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"})); err != nil {
 		t.Fatalf("an exact unique match is evidence enough: %v", err)
 	}
 	if data, _ := os.ReadFile(path); string(data) != "alpha\ngamma\n" {
@@ -121,7 +122,7 @@ func TestEditFileRefusesAFileThatChangedSinceItWasRead(t *testing.T) {
 	readWholeFile(t, path)
 	seed(t, dir, "code.go", "alpha\nbeta\ndelta\n")
 
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"}))
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"}))
 	if err == nil {
 		t.Fatal("the edit was written against a file that has since moved")
 	}
@@ -136,13 +137,13 @@ func TestAMutationRefreshesTheRecordItWroteAgainst(t *testing.T) {
 	path := seed(t, t.TempDir(), "code.go", "alpha\nbeta\n")
 	readWholeFile(t, path)
 
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"})); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "alpha", NewText: "omega"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "alpha", NewText: "omega"})); err != nil {
 		t.Fatalf("a second edit on top of the first should not be stale: %v", err)
 	}
-	if _, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "rewritten\n")); err != nil {
+	if _, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "rewritten\n")); err != nil {
 		t.Fatalf("the file was read in full and then written by us: %v", err)
 	}
 }
@@ -172,7 +173,7 @@ func TestTheRecordFollowsTheFileNotThePathSpelling(t *testing.T) {
 	readWholeFile(t, path)
 
 	indirect := filepath.Join(dir, ".", "code.go")
-	if _, err := ExecuteMutating(WriteFileName, writeArgs(t, indirect, "beta\n")); err != nil {
+	if _, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, indirect, "beta\n")); err != nil {
 		t.Fatalf("a differently spelled path is the same file: %v", err)
 	}
 }
@@ -212,7 +213,7 @@ func TestStalenessIsItsOwnErrorAndTheOtherRefusalsAreNot(t *testing.T) {
 	}
 	partial := seed(t, dir, "partial.txt", "a\nb\nc\n")
 	window, _ := json.Marshal(readFileArgs{Path: partial, StartLine: 1, EndLine: 2})
-	if _, err := Execute(ReadFileName, window); err != nil {
+	if _, err := Execute(context.Background(), ReadFileName, window); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := PreviewMutation(WriteFileName, writeArgs(t, partial, "z\n")); errors.As(err, &stale) {
@@ -225,13 +226,13 @@ func TestStalenessIsItsOwnErrorAndTheOtherRefusalsAreNot(t *testing.T) {
 func TestForgetAllTakesBackWhatAnEarlierSessionWasShown(t *testing.T) {
 	path := seed(t, t.TempDir(), "config.yaml", "port: 8080\n")
 	readWholeFile(t, path)
-	if _, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "port: 9090\n")); err != nil {
+	if _, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "port: 9090\n")); err != nil {
 		t.Fatalf("a file this session read may be replaced: %v", err)
 	}
 
 	ForgetAll()
 
-	_, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "port: 9999\n"))
+	_, err := ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "port: 9999\n"))
 	if err == nil || !strings.Contains(err.Error(), "read_file") {
 		t.Fatalf("the new session has read nothing, so the overwrite is refused: %v", err)
 	}
@@ -330,7 +331,7 @@ func TestNoteUnknownRefusesTheFirstChangeAndReportsNothing(t *testing.T) {
 		t.Fatalf("a record with no fingerprint has nothing to compare: %v", got)
 	}
 
-	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"}))
+	_, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"}))
 	var stale StaleError
 	if !errors.As(err, &stale) {
 		t.Fatalf("the first change to a restored read is refused as stale, got %T: %v", err, err)
@@ -339,13 +340,13 @@ func TestNoteUnknownRefusesTheFirstChangeAndReportsNothing(t *testing.T) {
 	// A path the restored transcript never read keeps the ordinary rule: the
 	// quoted text is its own evidence.
 	fresh := seed(t, dir, "unrestored.go", "alpha\nbeta\n")
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: fresh, OldText: "beta", NewText: "gamma"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: fresh, OldText: "beta", NewText: "gamma"})); err != nil {
 		t.Fatalf("a file nothing claims to have read is not stale: %v", err)
 	}
 
 	// And reading it again answers the question the record could not.
 	readWholeFile(t, path)
-	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"})); err != nil {
+	if _, err := ExecuteMutating(context.Background(), EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"})); err != nil {
 		t.Fatalf("a re-read is what the refusal asked for: %v", err)
 	}
 }
@@ -403,16 +404,16 @@ func TestTwoOwnersDoNotShareOneRecordOfWhatTheyWereShown(t *testing.T) {
 	first, second := NewRecorder(), NewRecorder()
 	for _, r := range []*Recorder{first, second} {
 		args, _ := json.Marshal(readFileArgs{Path: path})
-		if _, err := r.Execute(ReadFileName, args); err != nil {
+		if _, err := r.Execute(context.Background(), ReadFileName, args); err != nil {
 			t.Fatalf("read %s: %v", path, err)
 		}
 	}
 
-	if _, err := second.ExecuteMutating(WriteFileName, writeArgs(t, path, "the second session's work\n")); err != nil {
+	if _, err := second.ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "the second session's work\n")); err != nil {
 		t.Fatalf("the second session read the file and may replace it: %v", err)
 	}
 
-	_, err := first.ExecuteMutating(WriteFileName, writeArgs(t, path, "the first session's work\n"))
+	_, err := first.ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "the first session's work\n"))
 	var stale StaleError
 	if !errors.As(err, &stale) {
 		t.Fatalf("the first session is writing over content it was never shown: %v", err)
@@ -434,7 +435,7 @@ func TestForgetAllTakesBackOnlyTheOwnersOwnRecord(t *testing.T) {
 	first, second := NewRecorder(), NewRecorder()
 	for _, r := range []*Recorder{first, second} {
 		args, _ := json.Marshal(readFileArgs{Path: path})
-		if _, err := r.Execute(ReadFileName, args); err != nil {
+		if _, err := r.Execute(context.Background(), ReadFileName, args); err != nil {
 			t.Fatalf("read %s: %v", path, err)
 		}
 	}
@@ -461,7 +462,7 @@ func TestNoteOpenedIsTheOwnersRecordAlone(t *testing.T) {
 	readWholeFile(t, path)
 	person := NewRecorder()
 	person.NoteOpened(path, []byte("one\n"))
-	if _, err := person.ExecuteMutating(WriteFileName, writeArgs(t, path, "two\n")); err != nil {
+	if _, err := person.ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "two\n")); err != nil {
 		t.Fatalf("the person's save was refused: %v", err)
 	}
 	if err := StaleSinceRead(path, []byte("two\n")); err == nil {
@@ -470,7 +471,7 @@ func TestNoteOpenedIsTheOwnersRecordAlone(t *testing.T) {
 	if err := os.WriteFile(path, []byte("three\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := person.ExecuteMutating(WriteFileName, writeArgs(t, path, "four\n")); err == nil {
+	if _, err := person.ExecuteMutating(context.Background(), WriteFileName, writeArgs(t, path, "four\n")); err == nil {
 		t.Error("a save over a file that moved since it was opened went through")
 	}
 }

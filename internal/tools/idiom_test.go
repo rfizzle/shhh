@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -76,7 +77,7 @@ func TestDataReaders_AnswerEachIdiomInOneCallNoLargerThanIt(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := NewRecorder().Execute(tc.tool, raw)
+			got, err := NewRecorder().Execute(context.Background(), tc.tool, raw)
 			if err != nil {
 				t.Fatalf("%s: %v", tc.tool, err)
 			}

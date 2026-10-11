@@ -23,7 +23,7 @@ import (
 func spawnInto(t *testing.T, sup *subagent.Supervisor, args string) {
 	t.Helper()
 	exec := sup.WrapExecutor("", nil)
-	if _, err := exec(subagent.SpawnToolName, json.RawMessage(args)); err != nil {
+	if _, err := exec(context.Background(), subagent.SpawnToolName, json.RawMessage(args)); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -162,7 +162,7 @@ func checkRunEnv(ran chan<- string) subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "", nil },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "", nil },
 			Gated:        map[string]bool{tools.ExecCommandName: true},
 			RunCommand: func(ctx context.Context, _ string) tools.ExecResult {
 				ran <- spec.Name
@@ -327,7 +327,7 @@ func gatedEnv() subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "", errors.New("unused") },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "", errors.New("unused") },
 			Gated:        map[string]bool{tools.ExecCommandName: true},
 		}, nil
 	}

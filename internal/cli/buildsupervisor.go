@@ -392,11 +392,11 @@ func childExecutors(base agent.ToolExecutor, red *evidence.Reducer, ts *lsp.Tool
 	// Approved non-exec gated calls: file mutations dispatch through their
 	// own path (never the auto-run executor), everything else falls back to
 	// the child's base chain.
-	gatedExec = agent.ToolExecutor(func(name string, args json.RawMessage) (string, error) {
+	gatedExec = agent.ToolExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if tools.IsMutating(name) {
-			return tools.ExecuteMutating(name, args)
+			return tools.ExecuteMutating(ctx, name, args)
 		}
-		return base(name, args)
+		return base(ctx, name, args)
 	})
 	autoExec = base
 	if red != nil {

@@ -4,6 +4,7 @@ package chat
 // (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -179,7 +180,7 @@ func TestGrantList_ListedWithItsEndAndRevokedWithTheRest(t *testing.T) {
 // and the fetcher is told the same thing: it is the only place a redirect off
 // a granted host is visible, so it has to lose the host when the turn does.
 func TestGrantList_ATurnGrantReachesAChildAndIsTakenBack(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "page text", nil }
 	var pushed []string
 	m := gatedModel(t, executor, fetchPreviews())
 	m.wiring.HostGrants = func(hosts []string) { pushed = hosts }
@@ -390,7 +391,7 @@ func TestGrantList_NoLengthOutranksTheDenyList(t *testing.T) {
 }
 
 func TestGrantList_AFetchCardHasNoNarrowRow(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "page text", nil }
 	m := gatedModel(t, executor, fetchPreviews())
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),

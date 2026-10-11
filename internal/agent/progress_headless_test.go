@@ -19,7 +19,7 @@ func TestHeadlessRun_EmitsCheckpointStatusBeforeFollowingTools(t *testing.T) {
 		doneRound("done"),
 	))
 	a.SetProgressIntervals(1, time.Hour)
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "ok", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "ok", nil })
 	var progress []string
 	h := &Headless{Agent: a, OnProgress: func(s string) { progress = append(progress, s) }}
 	if final, err := h.Run("investigate"); err != nil || final != "done" {
@@ -41,7 +41,7 @@ func TestHeadlessRun_ProgressCheckpointDoesNotPolluteTextCallback(t *testing.T) 
 		doneRound("answer"),
 	))
 	a.SetProgressIntervals(1, time.Hour)
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "ok", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "ok", nil })
 	var text string
 	h := &Headless{Agent: a, OnText: func(s string) { text += s }}
 	if _, err := h.Run("investigate"); err != nil {
@@ -78,7 +78,7 @@ func TestHeadlessRun_AnInterruptedCheckpointKeepsItsStatus(t *testing.T) {
 	}
 	a := New(nil, stream)
 	a.SetProgressIntervals(1, time.Hour)
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "ok", nil })
+	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "ok", nil })
 	var progress []string
 	var text string
 	h = &Headless{

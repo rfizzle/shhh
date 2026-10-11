@@ -1,6 +1,7 @@
 package notebook
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -136,31 +137,31 @@ func TestCapDropsOldest(t *testing.T) {
 
 func TestToolsRouteAndSign(t *testing.T) {
 	s := New(nil)
-	next := func(name string, _ json.RawMessage) (string, error) { return "passed:" + name, nil }
+	next := func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "passed:" + name, nil }
 	child := s.WrapExecutor("researcher-2", next)
-	out, err := child(WriteToolName, json.RawMessage(`{"title":"Found it","body":"see README"}`))
+	out, err := child(context.Background(), WriteToolName, json.RawMessage(`{"title":"Found it","body":"see README"}`))
 	if err != nil || !strings.Contains(out, "[n1]") {
 		t.Fatalf("write via tool: %q %v", out, err)
 	}
 	if s.List()[0].Author != "researcher-2" {
 		t.Fatal("note not signed by the wrapping agent")
 	}
-	out, _ = child(ReadToolName, nil)
+	out, _ = child(context.Background(), ReadToolName, nil)
 	if !strings.Contains(out, "Found it") {
 		t.Fatalf("read all: %q", out)
 	}
-	out, _ = child(ReadToolName, json.RawMessage(`{"id":1}`))
+	out, _ = child(context.Background(), ReadToolName, json.RawMessage(`{"id":1}`))
 	if !strings.Contains(out, "see README") {
 		t.Fatalf("read by id: %q", out)
 	}
-	out, _ = child(ReadToolName, json.RawMessage(`{"query":"nothing here"}`))
+	out, _ = child(context.Background(), ReadToolName, json.RawMessage(`{"query":"nothing here"}`))
 	if !strings.Contains(out, "No note matches") {
 		t.Fatalf("miss: %q", out)
 	}
-	if _, err := child(ReadToolName, json.RawMessage(`{"id":9}`)); err == nil {
+	if _, err := child(context.Background(), ReadToolName, json.RawMessage(`{"id":9}`)); err == nil {
 		t.Fatal("missing id did not error")
 	}
-	if out, _ := child("read_file", nil); out != "passed:read_file" {
+	if out, _ := child(context.Background(), "read_file", nil); out != "passed:read_file" {
 		t.Fatalf("passthrough: %q", out)
 	}
 }
@@ -233,10 +234,10 @@ func TestNoAgentCanDelete(t *testing.T) {
 	}
 	s := New(nil)
 	_, _, _ = s.Write("assistant", "Kept", "the fact")
-	next := func(string, json.RawMessage) (string, error) { return "", errNotMine }
+	next := func(context.Context, string, json.RawMessage) (string, error) { return "", errNotMine }
 	child := s.WrapExecutor("writer-1", next)
 	for _, name := range []string{"delete_note", "drop_note", "notebook_delete"} {
-		if _, err := child(name, json.RawMessage(`{"id":1}`)); !errors.Is(err, errNotMine) {
+		if _, err := child(context.Background(), name, json.RawMessage(`{"id":1}`)); !errors.Is(err, errNotMine) {
 			t.Errorf("%s was answered by the notebook rather than passed on", name)
 		}
 	}

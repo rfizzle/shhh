@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -123,11 +124,11 @@ func TestChecklist_KeepsTheStepsPaths(t *testing.T) {
 
 // Every other tool passes through the wrap untouched.
 func TestWrapStepsExecutor_PassesEveryOtherToolOn(t *testing.T) {
-	exec := WrapStepsExecutor(func(name string, _ json.RawMessage) (string, error) { return "ran " + name, nil })
-	if got, err := exec("read_file", nil); err != nil || got != "ran read_file" {
+	exec := WrapStepsExecutor(func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "ran " + name, nil })
+	if got, err := exec(context.Background(), "read_file", nil); err != nil || got != "ran read_file" {
 		t.Fatalf("read_file = %q, %v", got, err)
 	}
-	if got, err := exec(StepsToolName, json.RawMessage(`{"steps":[{"title":"Read"}]}`)); err != nil || !strings.Contains(got, "0 of 1 done") {
+	if got, err := exec(context.Background(), StepsToolName, json.RawMessage(`{"steps":[{"title":"Read"}]}`)); err != nil || !strings.Contains(got, "0 of 1 done") {
 		t.Fatalf("steps = %q, %v", got, err)
 	}
 }

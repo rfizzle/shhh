@@ -519,7 +519,9 @@ func (h *Headless) runTools(text string, calls []provider.ToolCall) {
 	for _, tc := range auto {
 		h.notifyCall(tc)
 	}
-	results := h.Agent.ExecuteCalls(auto)
+	ctx, release := h.roundContext()
+	results := h.Agent.ExecuteCalls(ctx, auto)
+	release()
 	for _, r := range results {
 		h.notifyResult(r)
 	}
@@ -538,6 +540,27 @@ func (h *Headless) runTools(text string, calls []provider.ToolCall) {
 		result := h.resolveGated(tc)
 		value := h.Agent.ResolveApproval(result)
 		h.notifyResult(ToolResult{Call: tc, Result: result, Value: value, Duration: time.Since(start)})
+	}
+}
+
+// roundContext is the context a round's auto calls run under. It registers
+// its cancel where the stream's goes, so an Interrupt reaches a call that is
+// still running the way it reaches a stream, rather than waiting for the
+// call to finish on its own. release unregisters it and ends the context.
+func (h *Headless) roundContext() (context.Context, func()) {
+	ctx, cancel := context.WithCancel(context.Background())
+	h.mu.Lock()
+	if h.interrupted {
+		cancel()
+	} else {
+		h.streamCancel = cancel
+	}
+	h.mu.Unlock()
+	return ctx, func() {
+		h.mu.Lock()
+		h.streamCancel = nil
+		h.mu.Unlock()
+		cancel()
 	}
 }
 

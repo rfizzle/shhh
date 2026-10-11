@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -216,11 +217,11 @@ func withSessionTools(session chatSession, red *evidence.Reducer, signature, cro
 				held[d.Name] = true
 			}
 			chain := ts.WrapReadOnlyExecutor(signature, base)
-			base = func(name string, args json.RawMessage) (string, error) {
+			base = func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 				if !held[name] && ts.Has(name) {
 					return "", fmt.Errorf("%s is not available to this agent: its server joined the session after this agent started", name)
 				}
-				return chain(name, args)
+				return chain(ctx, name, args)
 			}
 			sysPrompt = prompt.CombineExtra(sysPrompt, block)
 		}
@@ -340,8 +341,8 @@ func withDiagnostics(hook chat.MutationHook, exec agent.ToolExecutor) agent.Tool
 	if hook == nil {
 		return exec
 	}
-	return func(name string, args json.RawMessage) (string, error) {
-		result, err := exec(name, args)
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
+		result, err := exec(ctx, name, args)
 		if err != nil {
 			return result, err
 		}

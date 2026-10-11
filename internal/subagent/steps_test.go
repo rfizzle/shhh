@@ -1,6 +1,7 @@
 package subagent
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -15,7 +16,7 @@ func planningWriter() *child {
 // setSteps makes a steps call on c, as the child's executor answers one.
 func setSteps(t *testing.T, c *child, args string) error {
 	t.Helper()
-	_, err := c.stepsExecutor(nil)(plan.StepsToolName, json.RawMessage(args))
+	_, err := c.stepsExecutor(nil)(context.Background(), plan.StepsToolName, json.RawMessage(args))
 	return err
 }
 

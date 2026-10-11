@@ -8,6 +8,7 @@ package chat
 // unchecked is denied, one at a time, by the path a single card's no takes.
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -753,7 +754,7 @@ func readCall(id, path string) provider.ToolCall {
 // write, which is the split a round has to keep its order across.
 func batchModel(t *testing.T) Model {
 	t.Helper()
-	return tallPanel(t, gatedModel(t, func(name string, args json.RawMessage) (string, error) {
+	return tallPanel(t, gatedModel(t, func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "ok", nil
 	}, map[string]GatedPreviewFunc{"write_file": writeNeedsContent}))
 }

@@ -222,7 +222,7 @@ func TestAFailedListingDoesNotRefuseTheSpawn(t *testing.T) {
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(),
 		NewEnv: (&scriptedChildren{steps: []childStep{{text: "done"}}}).factory(), CheckModel: spawn.check})
 	t.Cleanup(sup.Close)
-	out, err := sup.WrapExecutor("", nil)(subagent.SpawnToolName,
+	out, err := sup.WrapExecutor("", nil)(context.Background(), subagent.SpawnToolName,
 		json.RawMessage(`{"role":"researcher","task":"survey","model":"qwen3:8b"}`))
 	if err != nil {
 		t.Fatalf("the spawn was refused: %v", err)

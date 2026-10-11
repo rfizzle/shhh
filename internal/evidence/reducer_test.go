@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -84,10 +85,10 @@ func TestReducer_NilSafe(t *testing.T) {
 func TestReducer_WrapExecutorReduces(t *testing.T) {
 	r := testReducer(t)
 	in := bigOutput()
-	exec := r.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+	exec := r.WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return in, nil
 	})
-	out, err := exec("execute_command", nil)
+	out, err := exec(context.Background(), "execute_command", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,10 +99,10 @@ func TestReducer_WrapExecutorReduces(t *testing.T) {
 
 func TestReducer_WrapExecutorPassesErrors(t *testing.T) {
 	r := testReducer(t)
-	exec := r.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+	exec := r.WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "", fmt.Errorf("boom")
 	})
-	if _, err := exec("execute_command", nil); err == nil || err.Error() != "boom" {
+	if _, err := exec(context.Background(), "execute_command", nil); err == nil || err.Error() != "boom" {
 		t.Fatalf("errors must pass through unreduced, got %v", err)
 	}
 }
@@ -109,11 +110,11 @@ func TestReducer_WrapExecutorPassesErrors(t *testing.T) {
 func TestReducer_WrapExecutorDispatchesEvidenceTool(t *testing.T) {
 	r := testReducer(t)
 	id, _ := r.Store().Put("exec", []byte("stored original body"))
-	exec := r.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+	exec := r.WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		t.Fatal("evidence tool calls must not reach the inner executor")
 		return "", nil
 	})
-	out, err := exec(ToolName, json.RawMessage(`{"action":"read","id":"`+id+`"}`))
+	out, err := exec(context.Background(), ToolName, json.RawMessage(`{"action":"read","id":"`+id+`"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,16 +204,16 @@ func TestReducer_ExemptWhenSplitsOneToolByItsArguments(t *testing.T) {
 		}
 		return json.Unmarshal(args, &a) == nil && a.Verb == "blame"
 	})
-	exec := r.WrapExecutor(func(string, json.RawMessage) (string, error) { return in, nil })
+	exec := r.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) { return in, nil })
 
-	whole, err := exec("git", json.RawMessage(`{"verb":"blame"}`))
+	whole, err := exec(context.Background(), "git", json.RawMessage(`{"verb":"blame"}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if whole != in {
 		t.Errorf("the window the caller asked for must arrive whole, got %d of %d bytes", len(whole), len(in))
 	}
-	cut, err := exec("git", json.RawMessage(`{"verb":"show"}`))
+	cut, err := exec(context.Background(), "git", json.RawMessage(`{"verb":"show"}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -221,7 +222,7 @@ func TestReducer_ExemptWhenSplitsOneToolByItsArguments(t *testing.T) {
 	}
 	// The exemption is a question about one call, not a state the first one
 	// leaves behind.
-	if again, _ := exec("git", json.RawMessage(`{"verb":"blame"}`)); again != in {
+	if again, _ := exec(context.Background(), "git", json.RawMessage(`{"verb":"blame"}`)); again != in {
 		t.Error("a reduced call must not make the next bounded one reducible")
 	}
 }

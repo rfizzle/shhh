@@ -256,7 +256,7 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 }
 
 func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil }
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"my_tool": func(raw json.RawMessage) (GatedPreview, error) {
 			return GatedPreview{Summary: "do the thing"}, nil
@@ -294,7 +294,7 @@ func TestPolicy_AWriteTierToolIsAnsweredLikeAnEdit(t *testing.T) {
 		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{call}})
 		return updated.(Model)
 	}
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "committed 1 file as a41f2c9 on master", nil
 	}
 
@@ -992,7 +992,7 @@ func fetchCall(id, rawURL string) provider.ToolCall {
 // the next page from the same site is not a card, and the first page from
 // another site still is.
 func TestPolicy_AlwaysAllowOneHostViaKey(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "page text", nil }
 	m := gatedModel(t, executor, fetchPreviews())
 	var pushed []string
 	m.wiring.HostGrants = func(hosts []string) { pushed = hosts }
@@ -1065,7 +1065,7 @@ func declineCard(t *testing.T, m Model) Model {
 // list beats both: a refused host is not a card, in any mode, and what the
 // model is told is that no URL on it will run.
 func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "page text", nil }
 
 	allowed := gatedModel(t, executor, fetchPreviews())
 	allowed.policy.allowHosts, allowed.policy.denyHosts = []string{"pkg.go.dev"}, nil

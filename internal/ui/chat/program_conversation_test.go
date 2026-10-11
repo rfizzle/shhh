@@ -5,6 +5,7 @@ package chat
 // than a mode (docs/capabilities/chat.md#a-conversation-has-one-mode).
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -18,7 +19,7 @@ func TestProgram_AConversationFetchesWithoutACard(t *testing.T) {
 	m, _ := scriptedSessionWith(Wiring{
 		Conversation: true,
 		GatedTools:   fetchPreviews(),
-		Executor: func(string, json.RawMessage) (string, error) {
+		Executor: func(context.Context, string, json.RawMessage) (string, error) {
 			fetched++
 			return "The cache now expires after an hour.", nil
 		},

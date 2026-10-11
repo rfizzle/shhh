@@ -884,7 +884,7 @@ func ServerReceipt(readOnly bool) calldescribe.Describer {
 
 // Execute runs one registered tool. Unknown names are an error rather than
 // a pass-through: the executor chain asks Has first.
-func (ts *Toolset) Execute(name string, args json.RawMessage) (string, error) {
+func (ts *Toolset) Execute(_ context.Context, name string, args json.RawMessage) (string, error) {
 	return ts.execute(web.Orchestrator, name, args)
 }
 
@@ -1073,12 +1073,12 @@ func bound(out string) string {
 // WrapExecutor puts the toolset on an executor chain: its own tools are
 // dispatched here, everything else passes to next. agent is who a page the
 // call read is filed under in the ledger.
-func (ts *Toolset) WrapExecutor(agent string, next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (ts *Toolset) WrapExecutor(agent string, next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if ts.Has(name) {
 			return ts.execute(agent, name, args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 
@@ -1088,8 +1088,8 @@ func (ts *Toolset) WrapExecutor(agent string, next func(name string, args json.R
 // on, and a name it learned from its task text must not be a way around
 // the card the parent would have shown
 // (docs/capabilities/mcp.md#what-a-conversation-may-reach).
-func (ts *Toolset) WrapReadOnlyExecutor(agent string, next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (ts *Toolset) WrapReadOnlyExecutor(agent string, next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if ts.Has(name) {
 			if name == ResourceToolName {
 				return ts.readResource(agent, args, true)
@@ -1099,7 +1099,7 @@ func (ts *Toolset) WrapReadOnlyExecutor(agent string, next func(name string, arg
 			}
 			return ts.execute(agent, name, args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 

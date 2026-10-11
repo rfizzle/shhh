@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -53,7 +54,7 @@ func TestReputation_AutoModeLetsAKnownHostThrough(t *testing.T) {
 	judge := &verdictProvider{decision: "deny", reason: "should not be asked"}
 	ledger := meter.New(nil)
 	var fetched int
-	executor := func(string, json.RawMessage) (string, error) { fetched++; return "page text", nil }
+	executor := func(context.Context, string, json.RawMessage) (string, error) { fetched++; return "page text", nil }
 	var decisions [][2]string
 	m := recordingDecisions(gatedModelWith(t, executor, fetchPreviews(), Wiring{
 		Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
@@ -94,7 +95,7 @@ func TestReputation_AutoModeLetsAKnownHostThrough(t *testing.T) {
 // known host as it always has.
 func TestReputation_ManualModeStillAsks(t *testing.T) {
 	useFixtureReputation(t, nil)
-	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
+	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://pkg.go.dev/context")}})
 	if m = updated.(Model); m.state != stateConfirmRun {
 		t.Fatalf("manual mode let a known host through (state %d)", m.state)
@@ -116,7 +117,7 @@ func TestReputation_AWarnedHostIsCardedWhereTheClassifierAllowed(t *testing.T) {
 			judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 			ledger := meter.New(nil)
 			var decisions [][2]string
-			m := recordingDecisions(gatedModelWith(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
+			m := recordingDecisions(gatedModelWith(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
 				Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
 			}),
 				&decisions)
@@ -167,7 +168,7 @@ func TestReputation_AWarnedHostIsNotOfferedTheGrant(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			useFixtureReputation(t, map[string][]string{"urlhaus": {"bad.test"}})
-			m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
+			m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
 			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://"+c.host+"/x")}})
 			m = handover(t, updated.(Model))
 			view := m.View().Content
@@ -194,7 +195,7 @@ func TestReputation_AnUnknownHostLeavesTheClassifiersAnswer(t *testing.T) {
 	useFixtureReputation(t, nil)
 	judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 	ledger := meter.New(nil)
-	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
+	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
 	m.classifier.judge = agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
 	m.policy.mode = agent.ModeAuto
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://nowhere.test/x")}})
@@ -213,7 +214,7 @@ func TestObserve_AHostStandingAskCarriesTheClassifiersTime(t *testing.T) {
 	useFixtureReputation(t, map[string][]string{"urlhaus": {"bad.test"}})
 	judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 	ledger := meter.New(nil)
-	m := gatedModelWith(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
+	m := gatedModelWith(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
 		Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
 	})
 	var untimed, timed [][2]string

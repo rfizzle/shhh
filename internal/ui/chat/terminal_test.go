@@ -460,7 +460,7 @@ func heldChildEnv() subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: "sys",
 			Stream:       stream,
-			Executor:     func(string, json.RawMessage) (string, error) { return "contents", nil },
+			Executor:     func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil },
 		}, nil
 	}
 }

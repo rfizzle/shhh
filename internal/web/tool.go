@@ -211,7 +211,7 @@ func (t *Toolset) Has(name string) bool {
 
 // Execute dispatches a web tool call made by agent — the orchestrator or a
 // named child, which is what the ledger's row is signed with.
-func (t *Toolset) Execute(agent, name string, args json.RawMessage) (string, error) {
+func (t *Toolset) Execute(_ context.Context, agent, name string, args json.RawMessage) (string, error) {
 	switch {
 	case name == FetchToolName:
 		return t.executeFetch(agent, args)
@@ -225,12 +225,12 @@ func (t *Toolset) Execute(agent, name string, args json.RawMessage) (string, err
 // everything else to next. Each agent wraps with its own name, the way it
 // wraps the notebook with it, so the ledger says which of a fan-out's
 // researchers read a page.
-func (t *Toolset) WrapExecutor(agent string, next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (t *Toolset) WrapExecutor(agent string, next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if t.Has(name) {
-			return t.Execute(agent, name, args)
+			return t.Execute(ctx, agent, name, args)
 		}
-		return next(name, args)
+		return next(ctx, name, args)
 	}
 }
 

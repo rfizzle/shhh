@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -234,13 +235,13 @@ func DefinitionsWithExec() []provider.Tool {
 // Execute dispatches an auto-run tool call. Only read-only tools are
 // reachable here: mutating tools (Mutating) and execute_command must go
 // through user approval and are deliberately unknown to this path.
-func Execute(name string, args json.RawMessage) (string, error) {
-	return shared.Execute(name, args)
+func Execute(ctx context.Context, name string, args json.RawMessage) (string, error) {
+	return shared.Execute(ctx, name, args)
 }
 
 // Execute dispatching into r's record, which is what an owner that does not
 // share the process's record hands the executor chain.
-func (r *Recorder) Execute(name string, args json.RawMessage) (string, error) {
+func (r *Recorder) Execute(_ context.Context, name string, args json.RawMessage) (string, error) {
 	for _, d := range r.ReadOnly() {
 		if d.Tool.Name == name {
 			return d.Execute(args)

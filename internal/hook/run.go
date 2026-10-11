@@ -445,7 +445,7 @@ func (v Verdict) Lead(result string) string {
 // Executor runs one tool call and answers with its result text. It is the
 // shape every dispatcher in the tree already has, so the wrap below can be
 // written once rather than once per surface.
-type Executor func(name string, args json.RawMessage) (string, error)
+type Executor func(ctx context.Context, name string, args json.RawMessage) (string, error)
 
 // WrapExecutor puts the tool seams inside one tier's dispatcher.
 //
@@ -464,11 +464,11 @@ func (r *Runner) WrapExecutor(at func() Pos, gated func(name string, args json.R
 	if r == nil {
 		return next
 	}
-	return func(name string, args json.RawMessage) (string, error) {
-		ctx, call := context.Background(), Call{Name: name, Arguments: string(args)}
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
+		hctx, call := context.Background(), Call{Name: name, Arguments: string(args)}
 		var pre Verdict
 		if gated == nil || !gated(name, args) {
-			pre = r.PreTool(ctx, at(), call, false)
+			pre = r.PreTool(hctx, at(), call, false)
 			if pre.Denied() {
 				return DeniedResult(pre.Reason), nil
 			}
@@ -477,7 +477,7 @@ func (r *Runner) WrapExecutor(at func() Pos, gated func(name string, args json.R
 				call.Arguments = string(args)
 			}
 		}
-		out, err := next(name, args)
+		out, err := next(ctx, name, args)
 		if err != nil {
 			return out, err
 		}
@@ -485,7 +485,7 @@ func (r *Runner) WrapExecutor(at func() Pos, gated func(name string, args json.R
 		// the hook in front of it prepended: the outcome and the result are
 		// both about the call, and reading them off annotated text would have
 		// a failure with a note in front of it come back as a success.
-		post := r.PostTool(ctx, at(), call, out, Outcome(out))
+		post := r.PostTool(hctx, at(), call, out, Outcome(out))
 		return pre.Lead(post.Lead(out)), nil
 	}
 }

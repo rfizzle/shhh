@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -236,12 +237,12 @@ func (r *Reducer) Process(tool, result string) string {
 //
 // This is also the only place a per-call exemption can be honoured, because
 // it is the only place the arguments and the result are both in hand.
-func (r *Reducer) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
-	return func(name string, args json.RawMessage) (string, error) {
+func (r *Reducer) WrapExecutor(next func(ctx context.Context, name string, args json.RawMessage) (string, error)) func(context.Context, string, json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name == ToolName {
 			return r.store.ExecuteTool(args)
 		}
-		out, err := next(name, args)
+		out, err := next(ctx, name, args)
 		if err != nil {
 			return out, err
 		}

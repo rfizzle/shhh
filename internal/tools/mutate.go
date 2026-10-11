@@ -2,6 +2,7 @@ package tools
 
 import (
 	"cmp"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -93,13 +94,13 @@ func WrittenPath(name, rawArgs string) string {
 // ExecuteMutating dispatches a user-approved file-modification tool call. It
 // refuses every other tool name so read-only tools cannot be routed here by
 // mistake.
-func ExecuteMutating(name string, args json.RawMessage) (string, error) {
-	return shared.ExecuteMutating(name, args)
+func ExecuteMutating(ctx context.Context, name string, args json.RawMessage) (string, error) {
+	return shared.ExecuteMutating(ctx, name, args)
 }
 
 // ExecuteMutating against r's record, which is what an owner that does not
 // share the process's record hands its approver.
-func (r *Recorder) ExecuteMutating(name string, args json.RawMessage) (string, error) {
+func (r *Recorder) ExecuteMutating(_ context.Context, name string, args json.RawMessage) (string, error) {
 	for _, d := range r.Mutating() {
 		if d.Tool.Name == name {
 			return d.Execute(args)

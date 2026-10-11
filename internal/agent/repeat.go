@@ -36,6 +36,7 @@ package agent
 // See docs/capabilities/coding-agent.md#many-questions-about-one-place-are-a-sweep.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -337,8 +338,8 @@ func (d *RepeatDetector) WrapExecutor(next ToolExecutor) ToolExecutor {
 	if d == nil {
 		return next
 	}
-	return func(name string, args json.RawMessage) (string, error) {
-		out, err := next(name, args)
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
+		out, err := next(ctx, name, args)
 		if err != nil {
 			// The caller puts errorPrefix back in front of either notice, so
 			// what the model reads is what leadNotice builds for a failure.

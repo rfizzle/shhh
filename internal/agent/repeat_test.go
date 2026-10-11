@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -64,12 +65,12 @@ func TestRepeatDetector_WindowForgets(t *testing.T) {
 
 func TestRepeatDetector_WrapExecutorAnnotatesTheRepeat(t *testing.T) {
 	d := NewRepeatDetector()
-	exec := d.WrapExecutor(func(string, json.RawMessage) (string, error) {
+	exec := d.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		return "a.go:1: foo", nil
 	})
 	args := json.RawMessage(`{"pattern":"foo"}`)
 
-	first, err := exec("search", args)
+	first, err := exec(context.Background(), "search", args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +78,7 @@ func TestRepeatDetector_WrapExecutorAnnotatesTheRepeat(t *testing.T) {
 		t.Errorf("the first call is not a repeat: %q", first)
 	}
 
-	second, err := exec("search", args)
+	second, err := exec(context.Background(), "search", args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,19 +98,19 @@ func TestRepeatDetector_WrapExecutorNotesTheSameFailureTwice(t *testing.T) {
 	// that succeeds identically, and it is the shape a stuck turn usually
 	// takes: a path that is not there, an argument the tool will not accept.
 	d := NewRepeatDetector()
-	exec := d.WrapExecutor(func(string, json.RawMessage) (string, error) {
+	exec := d.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		return "", errors.New("no such file or directory")
 	})
 	args := json.RawMessage(`{"path":"internal/nope.go"}`)
 
-	if _, err := exec("read_file", args); err == nil {
+	if _, err := exec(context.Background(), "read_file", args); err == nil {
 		t.Fatal("expected the underlying error to pass through")
 	}
-	_, err := exec("read_file", args)
+	_, err := exec(context.Background(), "read_file", args)
 	if err == nil {
 		t.Fatal("the second failure is still a failure")
 	}
-	result := ExecuteWith(exec, provider.ToolCall{Name: "read_file", Arguments: string(args)})
+	result := ExecuteWith(context.Background(), exec, provider.ToolCall{Name: "read_file", Arguments: string(args)})
 	if !strings.HasPrefix(result, "error: [repeat:") {
 		t.Errorf("the notice goes behind the error prefix, got %q", result)
 	}
@@ -180,11 +181,11 @@ func TestRepeatDetector_OneDetectorIsOneHistoryAcrossBothTiers(t *testing.T) {
 	// that re-runs a command it once had approved is the same circle whether
 	// the second attempt was answered by a policy or by a person.
 	d := NewRepeatDetector()
-	exec := d.WrapExecutor(func(string, json.RawMessage) (string, error) { return "same output", nil })
+	exec := d.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "same output", nil })
 	resolve := d.WrapResolver(func(provider.ToolCall) string { return "same output" })
 	args := `{"command":"ls"}`
 
-	_, _ = exec("execute_command", json.RawMessage(args))
+	_, _ = exec(context.Background(), "execute_command", json.RawMessage(args))
 	if got := resolve(provider.ToolCall{Name: "execute_command", Arguments: args}); !IsRepeatNotice(got) {
 		t.Errorf("the second tier should see the first tier's call, got %q", got)
 	}
@@ -195,8 +196,8 @@ func TestRepeatDetector_NilIsSafe(t *testing.T) {
 	if n := d.Note("search", json.RawMessage(`{}`), "out"); n != 0 {
 		t.Errorf("a nil detector counts nothing, got %d", n)
 	}
-	exec := d.WrapExecutor(func(string, json.RawMessage) (string, error) { return "out", nil })
-	if got, _ := exec("search", json.RawMessage(`{}`)); got != "out" {
+	exec := d.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "out", nil })
+	if got, _ := exec(context.Background(), "search", json.RawMessage(`{}`)); got != "out" {
 		t.Errorf("a nil detector wraps nothing, got %q", got)
 	}
 	resolve := d.WrapResolver(func(provider.ToolCall) string { return "out" })
@@ -461,12 +462,12 @@ func TestRepeatDetector_AFailingSweepIsStillASweep(t *testing.T) {
 	// a dozen that keep returning hits, and the failure is wrapped rather
 	// than replaced so a caller testing it still finds it.
 	d := NewRepeatDetector()
-	exec := d.WrapExecutor(func(_ string, args json.RawMessage) (string, error) {
+	exec := d.WrapExecutor(func(_ context.Context, _ string, args json.RawMessage) (string, error) {
 		return "", fmt.Errorf("no such directory: internal/nope (%s)", args)
 	})
 	var last error
 	for i := 1; i <= sweepNoticeAfter; i++ {
-		_, last = exec("search", searchOf(fmt.Sprintf("needle%d", i), "internal/nope"))
+		_, last = exec(context.Background(), "search", searchOf(fmt.Sprintf("needle%d", i), "internal/nope"))
 	}
 	if last == nil || !swept(last.Error()) {
 		t.Fatalf("a failing sweep is still a sweep, got %v", last)

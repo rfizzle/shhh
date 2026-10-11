@@ -5,6 +5,7 @@ package chat
 // unavailable cannot be taken, and that an empty note is an empty note.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -34,7 +35,7 @@ func questionModel(t *testing.T, mode agent.Mode) Model {
 		{Role: provider.RoleUser, Content: "do the thing"},
 	}
 	m := New(msgs, mockStream, Wiring{
-		Executor: func(name string, _ json.RawMessage) (string, error) {
+		Executor: func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 			t.Fatalf("a question must never reach the executor, got %s", name)
 			return "", nil
 		},

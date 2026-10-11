@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -149,9 +150,9 @@ const CarriedStepsPrefix = agent.CarriedStepsPrefix
 // (ParseStepsCall), where that list lives, so a checked call and a drawn one
 // cannot disagree.
 func WrapStepsExecutor(next agent.ToolExecutor) agent.ToolExecutor {
-	return func(name string, args json.RawMessage) (string, error) {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name != StepsToolName {
-			return next(name, args)
+			return next(ctx, name, args)
 		}
 		l, err := ParseStepsCall(args)
 		if err != nil {

@@ -37,7 +37,7 @@ func TestProgram_TheGatesPassSettlesTheFailureBeforeIt(t *testing.T) {
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) {
 		return "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4", 1
 	})
-	m.agent.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+	m.agent.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		if name != quality.ToolName {
 			t.Errorf("an unexpected auto-run call: %s", name)
 		}

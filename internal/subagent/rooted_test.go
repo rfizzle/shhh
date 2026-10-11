@@ -132,13 +132,13 @@ func TestAWriterQueriesAFileOnlyItsCopyHolds(t *testing.T) {
 			return e, err
 		}
 		rooted := RootedExecutor(spec.Root, tools.Execute)
-		e.Executor = func(name string, args json.RawMessage) (string, error) {
+		e.Executor = func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 			// Asked at the call: once the child finishes, its patch may
 			// land and put the file in the parent's tree as well.
 			if _, err := os.Stat(filepath.Join(repo, "conf", "only.json")); err == nil {
 				t.Error("the file must be in the child's copy only when it is queried")
 			}
-			return rooted(name, args)
+			return rooted(context.Background(), name, args)
 		}
 		return e, nil
 	}

@@ -103,7 +103,7 @@ func tallPanel(t *testing.T, m Model) Model {
 
 func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	var executed []string
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		executed = append(executed, name)
 		return "wrote 2 lines", nil
 	}
@@ -182,7 +182,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 }
 
 func TestGatedTool_Declined(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		t.Fatal("executor must not be called on decline")
 		return "", nil
 	}
@@ -222,7 +222,7 @@ func TestGatedTool_Declined(t *testing.T) {
 }
 
 func TestGatedTool_QueueMixedWithExec(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil }
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview(""),
 	})
@@ -280,7 +280,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 }
 
 func TestGatedTool_InvalidPreviewSkipped(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil }
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": func(raw json.RawMessage) (GatedPreview, error) {
 			return GatedPreview{}, errors.New("path is required")
@@ -305,7 +305,7 @@ func TestGatedTool_InvalidPreviewSkipped(t *testing.T) {
 // so it gets a row that names the file instead of the line every malformed
 // call gets. The model still receives its own sentence, unchanged.
 func TestGatedTool_StalePreviewNamesTheFile(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil }
 	path := filepath.Join(t.TempDir(), "loop.go")
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": func(raw json.RawMessage) (GatedPreview, error) {
@@ -339,7 +339,7 @@ func TestGatedTool_StalePreviewNamesTheFile(t *testing.T) {
 }
 
 func TestGatedTool_GenericPreview(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil }
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"my_tool": func(raw json.RawMessage) (GatedPreview, error) {
 			return GatedPreview{Summary: "do the thing"}, nil
@@ -368,7 +368,7 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 // answering `GET pkg.go.dev/context`, not `use web_fetch`
 // (docs/interface/surfaces.md#the-approval-card).
 func TestGatedTool_APreviewThatNamesTheActLeadsWithIt(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil }
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"my_tool": func(raw json.RawMessage) (GatedPreview, error) {
 			return GatedPreview{Action: "fetch", Summary: "GET pkg.go.dev/context"}, nil
@@ -396,7 +396,7 @@ func TestGatedTool_APreviewThatNamesTheActLeadsWithIt(t *testing.T) {
 // registration needed, diff preview from disk, execution via ExecuteMutating
 // rather than the session's auto-run executor.
 func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
-	executor := func(name string, args json.RawMessage) (string, error) {
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		t.Errorf("session executor must not run mutating tool %s", name)
 		return "", nil
 	}
@@ -508,7 +508,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		fmt.Fprintf(&content, "line %d\n", i)
 	}
-	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "ok", nil }
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview(""),
 	})
@@ -1031,7 +1031,7 @@ func TestAutoApproval_NeverPrintsWhatTheRowBounds(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := gatedModel(t,
-		func(string, json.RawMessage) (string, error) { return "staged 20 files", nil },
+		func(context.Context, string, json.RawMessage) (string, error) { return "staged 20 files", nil },
 		map[string]GatedPreviewFunc{
 			structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) {
 				// What the real preview builds: every path, joined.
@@ -1137,7 +1137,7 @@ func spawnPreview(raw json.RawMessage) (GatedPreview, error) {
 // already queued and the keyboard handed to the card.
 func spawnModel(t *testing.T, calls ...provider.ToolCall) Model {
 	t.Helper()
-	m := tallPanel(t, gatedModel(t, func(string, json.RawMessage) (string, error) {
+	m := tallPanel(t, gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) {
 		return "started", nil
 	}, map[string]GatedPreviewFunc{subagent.SpawnToolName: spawnPreview}))
 	updated, _ := m.Update(toolCallsMsg{calls: calls})
@@ -1224,7 +1224,7 @@ func TestSpawnCard_ABatchStatesItsReasonFromTheRowsItDraws(t *testing.T) {
 // rebuilt from the queue's contents alone would let the plain key overrule a
 // denial the reader gave a row one card earlier (queue.go).
 func TestSpawnCard_AnAnsweredChildIsNotAskedAgain(t *testing.T) {
-	m := tallPanel(t, gatedModel(t, func(string, json.RawMessage) (string, error) {
+	m := tallPanel(t, gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) {
 		return "started", nil
 	}, map[string]GatedPreviewFunc{subagent.SpawnToolName: spawnPreview}))
 	// The list denied the third child and allowed the second; the head has

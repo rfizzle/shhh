@@ -278,8 +278,10 @@ func TestSpawn_ReadsTheServersUpNow(t *testing.T) {
 	settledReport(t, s.mcpTools, 0)
 	join.take("")
 
-	base := func(name string, _ json.RawMessage) (string, error) { return "", errors.New("unknown tool: " + name) }
-	spawn := func() ([]string, func(string, json.RawMessage) (string, error), string) {
+	base := func(_ context.Context, name string, _ json.RawMessage) (string, error) {
+		return "", errors.New("unknown tool: " + name)
+	}
+	spawn := func() ([]string, func(context.Context, string, json.RawMessage) (string, error), string) {
 		defs, exec, sys, _ := withSessionTools(*s, nil, "child-1", t.TempDir(), nil, base, fixedPrompt(""))
 		var names []string
 		for _, d := range defs {
@@ -300,7 +302,7 @@ func TestSpawn_ReadsTheServersUpNow(t *testing.T) {
 	if !slices.Contains(late, "wiki__page") || !strings.Contains(latePrompt, "wiki") {
 		t.Fatalf("a child spawned after the join holds %v", late)
 	}
-	if _, err := earlyExec("wiki__page", json.RawMessage(`{}`)); err == nil ||
+	if _, err := earlyExec(context.Background(), "wiki__page", json.RawMessage(`{}`)); err == nil ||
 		!strings.Contains(err.Error(), "joined the session after this agent started") {
 		t.Fatalf("the first child reached a server it was never handed: %v", err)
 	}

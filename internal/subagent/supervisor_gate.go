@@ -377,7 +377,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
 		return c.nudgeTurn().Append(c.pos().Turn, action.Command, c.env.execResult(result))
 	}
-	return agent.ExecuteWith(c.env.ExecuteGated, provider.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
+	return agent.ExecuteWith(c.ctx, c.env.ExecuteGated, provider.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
 }
 
 // classify runs the auto-mode permission classifier for a call the

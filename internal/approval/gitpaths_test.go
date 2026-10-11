@@ -1,6 +1,7 @@
 package approval
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -199,7 +200,7 @@ func TestWriteByPerson_IsNotRefusedAndTheModelsWriteIs(t *testing.T) {
 	}
 	args, _ := json.Marshal(map[string]string{"path": filepath.Join(hooks, "pre-commit"), "content": "#!/bin/sh\n"})
 	rec := tools.NewRecorder()
-	if _, err := rec.ExecuteMutating(tools.WriteFileName, args); !errors.Is(err, tools.ErrGitProgramPath) {
+	if _, err := rec.ExecuteMutating(context.Background(), tools.WriteFileName, args); !errors.Is(err, tools.ErrGitProgramPath) {
 		t.Fatalf("the model's write: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(hooks, "pre-commit")); err == nil {

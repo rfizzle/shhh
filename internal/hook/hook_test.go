@@ -523,7 +523,7 @@ func TestVerdict_LeadCarriesFailuresAndNotNotes(t *testing.T) {
 func TestRunner_WrapExecutorSkipsOnlyTheSeamInFront(t *testing.T) {
 	var seen []fired
 	var dispatched []string
-	next := func(name string, args json.RawMessage) (string, error) {
+	next := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		dispatched = append(dispatched, name+" "+string(args))
 		return "one line", nil
 	}
@@ -534,7 +534,7 @@ func TestRunner_WrapExecutorSkipsOnlyTheSeamInFront(t *testing.T) {
 	gated := func(name string, _ json.RawMessage) bool { return name == "write_file" }
 	exec := r.WrapExecutor(func() Pos { return Pos{Round: 2} }, gated, next)
 
-	if _, err := exec("read_file", json.RawMessage(`{"path":"a.go"}`)); err != nil {
+	if _, err := exec(context.Background(), "read_file", json.RawMessage(`{"path":"a.go"}`)); err != nil {
 		t.Fatal(err)
 	}
 	if len(seen) != 2 || seen[0].payload.Event != PreTool || seen[1].payload.Event != PostTool {
@@ -545,7 +545,7 @@ func TestRunner_WrapExecutorSkipsOnlyTheSeamInFront(t *testing.T) {
 	}
 
 	seen = nil
-	if _, err := exec("write_file", json.RawMessage(`{"path":"a.go"}`)); err != nil {
+	if _, err := exec(context.Background(), "write_file", json.RawMessage(`{"path":"a.go"}`)); err != nil {
 		t.Fatal(err)
 	}
 	if len(seen) != 1 || seen[0].payload.Event != PostTool {
@@ -557,12 +557,12 @@ func TestRunner_WrapExecutorSkipsOnlyTheSeamInFront(t *testing.T) {
 // front of it prepended: an error with a note above it is still an error.
 func TestRunner_WrapExecutorReadsTheOutcomeOffTheCall(t *testing.T) {
 	var seen []fired
-	next := func(string, json.RawMessage) (string, error) { return "error: no such file", nil }
+	next := func(context.Context, string, json.RawMessage) (string, error) { return "error: no such file", nil }
 	r := runnerOf(t, fakeExec(&seen, `{"context":"look in internal/"}`, 0), map[string]Entry{
 		"a-hint":  {Event: PreTool, Command: "hint"},
 		"b-after": {Event: PostTool, Command: "after"},
 	})
-	out, err := r.WrapExecutor(func() Pos { return Pos{} }, nil, next)("read_file", json.RawMessage(`{}`))
+	out, err := r.WrapExecutor(func() Pos { return Pos{} }, nil, next)(context.Background(), "read_file", json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}

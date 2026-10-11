@@ -170,7 +170,7 @@ func researchAttempt(ctx context.Context, c Case, opts Options) Attempt {
 			}
 			return ev, cancel, nil
 		})
-	ag.SetExecutor(ts.WrapExecutor(web.Orchestrator, func(name string, _ json.RawMessage) (string, error) {
+	ag.SetExecutor(ts.WrapExecutor(web.Orchestrator, func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 		return "", fmt.Errorf("there is no %s tool in this session", name)
 	}))
 
