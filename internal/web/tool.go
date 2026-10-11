@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/calltier"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -195,6 +196,21 @@ func Describers() map[string]describe.Describer {
 	return map[string]describe.Describer{
 		FetchToolName:  {Kind: describe.KindLookup, Verb: "web", Does: "one page, read as text"},
 		SearchToolName: {Kind: describe.KindLookup, Verb: "web", Does: "search the web"},
+	}
+}
+
+// Tiers is the tier each web tool declares for its calls, by tool name: a
+// fetch leaves for a host and is answered as one, carrying the reading of that
+// host every surface asks for the same way. A search declares nothing.
+func Tiers() map[string]calltier.Declaration {
+	return map[string]calltier.Declaration{
+		FetchToolName: {
+			Tier: calltier.Command,
+			Kind: calltier.Fetch,
+			Contribute: func(_ string, args json.RawMessage) calltier.Contribution {
+				return calltier.Contribution{Reading: ReadFetch(args)}
+			},
+		},
 	}
 }
 

@@ -41,6 +41,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/calltier"
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
@@ -293,6 +294,21 @@ func Describers() map[string]describe.Describer {
 		TokeiToolName:    tokeiReceipt,
 		GitToolName:      gitReceipt,
 		GitWriteToolName: gitWriteReceipt,
+	}
+}
+
+// Tiers is the tier each structural tool declares for its calls, by tool
+// name: the writing half of git sits at the write tier and carries the line
+// it stands for. The readers declare nothing.
+func Tiers() map[string]calltier.Declaration {
+	return map[string]calltier.Declaration{
+		GitWriteToolName: {
+			Tier: calltier.Write,
+			Kind: calltier.Edit,
+			Contribute: func(_ string, args json.RawMessage) calltier.Contribution {
+				return calltier.Contribution{Line: WriteLine(args)}
+			},
+		},
 	}
 }
 

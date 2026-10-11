@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/calltier"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -144,18 +145,16 @@ func classify(name string, args json.RawMessage, has bool,
 		c.Action.Command = command
 		c.Action.SafetyFlagged = len(safety.Check(command)) > 0
 		return c, nil
-	case name == web.FetchToolName:
-		// The reading comes from the function every surface asks, so a host
-		// is judged alike wherever the fetch was made.
-		return Classified{Tier: TierCommand, Action: Action{Kind: ActionFetch, Reading: web.ReadFetch(args)}}, nil
-	case tools.IsMutating(name):
-		return Classified{Tier: TierWrite, Action: Action{Kind: ActionEdit, Path: tools.WrittenPath(name, string(args))}}, nil
-	case name == structural.GitWriteToolName:
-		// The writing half of git sits at the write tier and carries the line
-		// it stands for, so a deny-list entry for `git commit` refuses the
-		// commit verb by the match the command path uses.
+	case declared(name):
+		// A tool whose package declared its tier beside its definition
+		// (calltier): the tier and kind come from the declaration, and what
+		// the call adds to the action from the package that owns the tool. A
+		// web fetch carries the reading every surface asks alike, so a host
+		// is judged alike wherever the fetch was made; the writing half of
+		// git carries the line it stands for, so a deny-list entry for `git
+		// commit` refuses the commit verb by the match the command path uses.
 		// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
-		return Classified{Tier: TierWrite, Action: Action{Kind: ActionEdit, Command: structural.WriteLine(args)}}, nil
+		return fromDeclaration(registry[name], name, args), nil
 	case has:
 		// A name only the surface knows — a server's tool, a child, a memory,
 		// a question — that the surface has an answer for. It is the
@@ -167,6 +166,38 @@ func classify(name string, args json.RawMessage, has bool,
 	// to the policy, and one that somehow was would be asked about rather
 	// than answered as an edit.
 	return Classified{Tier: TierRead, Action: Action{Kind: ActionOther}}, nil
+}
+
+// registry is every tool's declared tier, built from what each package that
+// defines a tool declares beside it. Building it refuses a tool with no tier,
+// so one cannot be added without.
+var registry = calltier.Must(tools.Tiers(), web.Tiers(), structural.Tiers())
+
+func declared(name string) bool {
+	_, ok := registry[name]
+	return ok
+}
+
+// fromDeclaration is the classification a declared tool's call stands for.
+func fromDeclaration(d calltier.Declaration, name string, args json.RawMessage) Classified {
+	c := Classified{Tier: TierCommand}
+	if d.Tier == calltier.Write {
+		c.Tier = TierWrite
+	}
+	got := d.Read(name, args)
+	switch d.Kind {
+	case calltier.Fetch:
+		c.Action.Kind = ActionFetch
+		c.Action.Reading, _ = got.Reading.(web.Reading)
+	case calltier.Run:
+		c.Action.Kind = ActionCommand
+		c.Action.Command = got.Line
+	default:
+		c.Action.Kind = ActionEdit
+		c.Action.Path = got.Path
+		c.Action.Command = got.Line
+	}
+	return c
 }
 
 // claims reports whether a surface's start reader reads name as its own.
