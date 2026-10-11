@@ -169,7 +169,7 @@ func (m Model) passInbound(line InboundLine) (tea.Model, tea.Cmd) {
 	m.openTurn("")
 	m.injectSent(item, true)
 	// Whatever the session had queued for itself joins behind it.
-	m.injectSteering()
+	m.deliverSteering()
 	return m.streamOpenedTurn()
 }
 

@@ -250,7 +250,7 @@ func TestIntervene_AReadersSteerRetiresTheQueuedVerdict(t *testing.T) {
 	m = applyReading(t, m)
 
 	m.steering = []steeringItem{{text: "actually, check the tests too"}}
-	if !m.injectSteering() {
+	if !m.deliverSteering() {
 		t.Fatal("the steer should have been injected")
 	}
 	before := len(m.agent.Messages())

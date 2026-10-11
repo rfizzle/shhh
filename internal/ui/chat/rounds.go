@@ -352,6 +352,13 @@ func (m Model) resumeGrantedTurn(p *roundPause) (tea.Model, tea.Cmd) {
 // bound is the Agent's and belongs to the session, not to the turn.
 func (m *Model) resetRounds() {
 	m.agent.ResetRounds()
+	m.movedPastTurn()
+}
+
+// movedPastTurn is the screen's half of resetRounds: the hold and the offer
+// that belonged to the turn the session has moved past. A steer takes this
+// half here and leaves the counter to the loop (agent.Agent.Steered).
+func (m *Model) movedPastTurn() {
 	// A held turn the session has moved past cannot be let go of either, and
 	// a child still parked at its boundary has nothing else that ever would
 	// (hold.go).

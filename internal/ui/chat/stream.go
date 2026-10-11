@@ -28,7 +28,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	// Steering messages queued mid-turn join the conversation here, between
 	// tool rounds, so the model sees them on its next request. They
 	// count as fresh user input, so they also lift a hit round cap.
-	if m.injectSteering() {
+	if m.deliverSteering() {
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	}
@@ -241,14 +241,29 @@ func (m *Model) cancelStreaming() {
 	m.syncViewport()
 }
 
+// deliverSteering injects queued steering and, where a person's words (or
+// another session's) joined, tells the loop the turn was steered, reporting
+// whether anything was queued. It is the whole of a steer for a caller that
+// is not the round tail; the tail tells the loop itself (agent.RoundTail).
+func (m *Model) deliverSteering() bool {
+	queued, fresh := m.injectSteering()
+	if fresh {
+		m.agent.Steered()
+	}
+	return queued
+}
+
 // injectSteering appends queued steering messages to the conversation and
-// transcript, reporting whether any were queued. Human steering resets the
-// tool-round counter, extends the summary target and records checkpoints;
-// machine-authored steering (announcements the session wrote for itself)
-// joins as machine messages without disturbing those metrics.
-func (m *Model) injectSteering() bool {
+// transcript, reporting whether any were queued and whether any of them were
+// fresh input — a person's, or another session's. Fresh input extends the
+// summary target and records checkpoints, and the loop's half of it, the
+// round counter and the verdict judged before it, is the caller's
+// (agent.Agent.Steered); machine-authored steering (announcements the session
+// wrote for itself) joins as machine messages without disturbing those
+// metrics.
+func (m *Model) injectSteering() (queued, fresh bool) {
 	if len(m.steering) == 0 {
-		return false
+		return false, false
 	}
 	// Each line carries what was staged when it was queued: those belong to
 	// it, and what is staged now belongs to the sentence still being typed.
@@ -295,12 +310,12 @@ func (m *Model) injectSteering() bool {
 		if humanSteers > 0 {
 			m.signal(observe.SignalSteer, strconv.Itoa(humanSteers))
 		}
-		m.resetRounds()
+		m.movedPastTurn()
 	}
 	m.steering = nil
 	m.denialNotice = ""
 	m.syncViewport()
-	return true
+	return true, humanSteers+sentSteers > 0
 }
 
 // dispatchSteering turns queued steering messages into a fresh user turn once
@@ -317,7 +332,7 @@ func (m *Model) dispatchSteering() tea.Cmd {
 	if m.turnState() == stateCloseGate {
 		return nil
 	}
-	if !m.injectSteering() {
+	if !m.deliverSteering() {
 		return nil
 	}
 	m.setTurnState(stateStreaming)

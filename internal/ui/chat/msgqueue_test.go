@@ -66,7 +66,7 @@ func TestQueue_PullBackTakesTheMessageOutOfTheQueue(t *testing.T) {
 			len(m.steering), len(m.attachments))
 	}
 	before := len(userTexts(m))
-	if m.injectSteering() {
+	if m.deliverSteering() {
 		t.Fatal("the boundary should have nothing left to deliver")
 	}
 	if len(userTexts(m)) != before {
@@ -83,7 +83,7 @@ func TestQueue_PullBackTakesTheMessageOutOfTheQueue(t *testing.T) {
 	if len(m.steering) != 1 || len(m.steering[0].atts) != 1 {
 		t.Fatalf("the re-sent steer should carry its picture: %+v", m.steering)
 	}
-	if !m.injectSteering() {
+	if !m.deliverSteering() {
 		t.Fatal("the re-sent steer should be delivered")
 	}
 	sent := 0
@@ -114,7 +114,7 @@ func TestQueue_CancelDropsTheMessageAndItsAttachments(t *testing.T) {
 		!strings.Contains(last.notice.Subject, "Image#1") {
 		t.Fatalf("the cancel should leave one row naming the message and its picture: %+v", last.notice)
 	}
-	if m.injectSteering() {
+	if m.deliverSteering() {
 		t.Fatal("a cancelled message was delivered")
 	}
 	// Cancelling the last one gives the keyboard back.
@@ -132,7 +132,7 @@ func TestQueue_AMessageDeliveredFirstIsAlreadySent(t *testing.T) {
 		m := queuedModel(t, 100)
 		m = pressKeys(t, m, queueKey, queueUp)
 		m.input.SetValue("")
-		if !m.injectSteering() {
+		if !m.deliverSteering() {
 			t.Fatal("the boundary should deliver the steer")
 		}
 		m = pressKeys(t, m, key)

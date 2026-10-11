@@ -162,7 +162,7 @@ func TestAttachments_RideOnQueuedSteering(t *testing.T) {
 			len(next.attachments), len(next.steering[0].atts))
 	}
 
-	if !next.injectSteering() {
+	if !next.deliverSteering() {
 		t.Fatal("expected steering to inject")
 	}
 	msgs := next.Messages()

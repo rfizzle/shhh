@@ -35,7 +35,7 @@ func TestSecret_MidTurnAnnouncementIsMachineSteering(t *testing.T) {
 	m.steering = append(m.steering, steeringItem{text: "focus on unit tests", machine: false})
 
 	turnBefore := m.turnCount
-	if !m.injectSteering() {
+	if !m.deliverSteering() {
 		t.Fatal("steering injection failed")
 	}
 
@@ -139,7 +139,7 @@ func TestSecret_MidTurnAnnouncementRendersAsSystemRowAfterSaveAndLoad(t *testing
 	updated, _ := m.secretCommand([]string{"set", "KEY=val"})
 	m = updated.(Model)
 
-	if !m.injectSteering() {
+	if !m.deliverSteering() {
 		t.Fatal("injectSteering failed")
 	}
 

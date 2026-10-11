@@ -176,7 +176,7 @@ func TestObserver_ASteerMovesTheTurnOnBothSidesOfTheJoin(t *testing.T) {
 	model = updated.(Model)
 
 	model.steering = []steeringItem{{text: "actually do this instead"}}
-	if !model.injectSteering() {
+	if !model.deliverSteering() {
 		t.Fatal("the steering should inject")
 	}
 

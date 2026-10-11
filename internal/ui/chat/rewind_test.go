@@ -419,7 +419,7 @@ func TestSteering_RecordsCheckpoint(t *testing.T) {
 	m = completeExchange(t, m, "first", "one")
 	m.state = stateStreaming
 	m.steering = []steeringItem{{text: "actually do this instead"}}
-	if !m.injectSteering() {
+	if !m.deliverSteering() {
 		t.Fatal("steering should inject")
 	}
 	if len(m.checkpoints) != 2 {

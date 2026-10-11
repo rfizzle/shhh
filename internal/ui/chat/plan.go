@@ -193,6 +193,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 		// way a typed steer retires it (summary.go): a reading still out was
 		// asked about the turn that produced the plan, not the turn that
 		// carries it out.
+		m.agent.StartInterveneTurn()
 		m.summarySteered()
 	}
 	m.invalidateRenderCache()

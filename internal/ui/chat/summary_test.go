@@ -790,7 +790,7 @@ func TestSummary_AReadersSteerExtendsTheTarget(t *testing.T) {
 	m = applyReading(t, m)
 
 	m.steering = []steeringItem{{text: "also check the tests"}}
-	if !m.injectSteering() {
+	if !m.deliverSteering() {
 		t.Fatal("the steer should have been injected")
 	}
 	want := "make the round limit a checkpoint\n\nalso check the tests"
@@ -840,7 +840,7 @@ func TestSummary_AReadersSteerRetiresTheReadingInFlight(t *testing.T) {
 	}
 
 	m.steering = []steeringItem{{text: "actually, check the tests too"}}
-	m.injectSteering()
+	m.deliverSteering()
 	if m.summary.inFlight {
 		t.Fatal("a steer retires the reading in flight")
 	}

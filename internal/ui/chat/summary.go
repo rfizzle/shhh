@@ -153,9 +153,10 @@ func (s *summaryState) startTurn() {
 // counts in takes no further reading this turn, close included. What survives
 // is what a turn start also leaves alone: the reading on screen, which is
 // still the last thing anybody knows, and the accounting.
+//
+// The Agent holds the queued verdict, and retiring it is the loop's half of a
+// steer (agent.Agent.Steered); this file holds the reading.
 func (m *Model) summarySteered() {
-	// The Agent holds the queued verdict; this file holds the reading.
-	m.agent.StartInterveneTurn()
 	m.summary.gen++
 	m.summary.schedule = agent.SummarySchedule{}
 	if !m.summary.inFlight {
