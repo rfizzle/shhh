@@ -472,3 +472,31 @@ func TestBuiltinHostsAreListedInTheDoc(t *testing.T) {
 		}
 	}
 }
+
+// A ranked or listed registrable domain vouches for the organisation's own
+// subdomains and never for a tenant below a public-suffix boundary.
+func TestReputation_KnownIsTheExactHost(t *testing.T) {
+	platforms := []string{"github.io", "workers.dev", "pages.dev", "vercel.app", "netlify.app", "herokuapp.com", "amazonaws.com", "s3.amazonaws.com"}
+	r := fixtureReputation(t, map[string][]string{"tranco": append([]string{"example.com", "go.dev"}, platforms...)})
+	for _, c := range []struct {
+		host string
+		want Standing
+	}{
+		{"GitHub.COM", StandingKnown},
+		{"github.com.", StandingKnown},
+		{"docs.python.org", StandingKnown},
+		{"pkg.go.dev", StandingKnown},
+		{"evil.github.io", StandingUnknown},
+		{"evil.workers.dev", StandingUnknown},
+		{"evil.pages.dev", StandingUnknown},
+		{"evil.vercel.app", StandingUnknown},
+		{"evil.netlify.app", StandingUnknown},
+		{"evil.herokuapp.com", StandingUnknown},
+		{"bucket.s3.amazonaws.com", StandingUnknown},
+		{"Evil.GitHub.io.", StandingUnknown},
+	} {
+		if got := r.Read(c.host); got.Standing != c.want {
+			t.Errorf("Read(%q) = %+v, want %s", c.host, got, c.want)
+		}
+	}
+}
