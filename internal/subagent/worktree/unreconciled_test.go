@@ -2,6 +2,8 @@ package worktree
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -43,4 +45,60 @@ func TestUnreconciled_APickedSideIsNotAReconciliation(t *testing.T) {
 			}
 		})
 	}
+}
+
+// A turn that deletes a conflicting file keeps neither side's change, so it is
+// not a reconciliation; where one side of the merge was itself the file's
+// deletion, leaving it absent is that side rather than a file made to vanish.
+func TestUnreconciled_ADeletedFileIsNotAReconciliation(t *testing.T) {
+	for _, c := range []struct {
+		name       string
+		landedGone bool
+		want       bool
+	}{
+		{"both sides kept the file", false, true},
+		{"the landed side deleted it", true, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			landed, lane := mergingPair(t, editThree("landed words"), editThree("lane words"))
+			if c.landedGone {
+				landed = deletedIn(t, lane.RepoTop)
+			}
+			rec, err := ReseedMerging(context.Background(), lane.Dir, landed, nil, "landed-item", "lane-item")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Contains(rec.Unsettled, "main.go") || rec.Seeded["main.go"].SideDeleted != c.landedGone {
+				t.Fatalf("main.go is unsettled, its seed saying whether a side deleted it: %+v", rec.Seeded)
+			}
+			if err := os.Remove(filepath.Join(lane.Root, "main.go")); err != nil {
+				t.Fatal(err)
+			}
+			patch, err := WorktreePatch(lane.Dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := slices.Contains(Unreconciled(lane.Dir, patch, rec.Unsettled, rec.Seeded), "main.go"); got != c.want {
+				t.Fatalf("the deleted file judged unreconciled %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
+// deletedIn is a patch, made in a copy of its own, that deletes main.go.
+func deletedIn(t *testing.T, repo string) string {
+	t.Helper()
+	other, err := addWorktree(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { RemoveWorktree(other.RepoTop, other.Dir) })
+	if err := os.Remove(filepath.Join(other.Root, "main.go")); err != nil {
+		t.Fatal(err)
+	}
+	patch, err := WorktreePatch(other.Dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return patch
 }

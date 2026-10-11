@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -79,6 +80,12 @@ func (w *integrationScript) openedWith(name string) (string, Spec) {
 // patch meets writer-1's on the same line — and the integration writer
 // writing what integrate does into its own copy.
 func conflictingWriters(repo string, integrate func(root string)) *integrationScript {
+	return conflictingWritersOver(repo, func(root string) { put(root, "main.go", yIsTwo) }, integrate)
+}
+
+// conflictingWritersOver is conflictingWriters with writer-2's change made by
+// second instead.
+func conflictingWritersOver(repo string, second, integrate func(root string)) *integrationScript {
 	landed := make(chan struct{})
 	wrote1, wrote2 := make(chan struct{}), make(chan struct{})
 	var once sync.Once
@@ -91,7 +98,7 @@ func conflictingWriters(repo string, integrate func(root string)) *integrationSc
 				answering: func() { <-wrote2 },
 			},
 			"writer-2": {
-				write: func(root string) { <-wrote1; put(root, "main.go", yIsTwo) },
+				write: func(root string) { <-wrote1; second(root) },
 				answering: func() {
 					close(wrote2)
 					// writer-2 answers once writer-1's patch is on the
@@ -269,6 +276,101 @@ func TestAnIntegrationThatDoesNotReconcileKeepsBothPatches(t *testing.T) {
 	}
 	if _, ok := sup.Get("integrator-2"); ok {
 		t.Fatal("a second integration should not be started for a patch one already tried")
+	}
+}
+
+// An integration writer that deletes the conflicting file keeps neither
+// side's change, so it has not reconciled them: no card, nothing written, and
+// the source's patch stays kept with the file named. The same holds for one
+// that puts the file back as the workspace had it, which drops the patch's
+// change.
+func TestAnIntegrationThatDeletesTheFileDoesNotReconcile(t *testing.T) {
+	for name, left := range map[string]func(root string){
+		"deleted":                 func(root string) { _ = os.Remove(filepath.Join(root, "main.go")) },
+		"as the workspace had it": func(root string) { put(root, "main.go", yIsOne) },
+	} {
+		t.Run(name, func(t *testing.T) { integrationLeaving(t, left) })
+	}
+}
+
+// integrationLeaving is a conflict whose integration writer leaves main.go
+// as left does, which is not a reconciliation.
+func integrationLeaving(t *testing.T, left func(root string)) {
+	t.Helper()
+	repo := mergeRepo(t)
+	w := conflictingWriters(repo, left)
+	sup, cards, _ := startConflict(t, repo, w)
+
+	waitState(t, sup, "integrator-1", StateDone)
+	select {
+	case card := <-cards:
+		t.Fatalf("a patch that deletes the conflicting file should not be put on a card: %s", card.Title)
+	default:
+	}
+	if !statusOf(t, sup, "writer-2").PatchKept {
+		t.Fatal("the source's patch should stay kept for the person")
+	}
+	if !transcriptHas(sup.Transcript("integrator-1"), EntrySystem, "integrator-1 did not reconcile main.go with the workspace") {
+		t.Fatalf("the integration writer's note should name the file: %v", sup.Transcript("integrator-1"))
+	}
+	if got := take(repo, "main.go"); got != yIsOne {
+		t.Fatalf("the checkout should be as writer-1 left it:\n%s", got)
+	}
+}
+
+// Where the kept patch itself deleted the file the workspace changed, an
+// integration writer that leaves it deleted has taken that side, which is
+// not a file made to vanish: its patch goes to the card and lands.
+func TestAnIntegrationMayKeepTheKeptPatchsDeletion(t *testing.T) {
+	repo := mergeRepo(t)
+	gone := func(root string) { _ = os.Remove(filepath.Join(root, "main.go")) }
+	w := conflictingWritersOver(repo, gone, gone)
+	sup, cards, _ := startConflict(t, repo, w)
+
+	var card *Ask
+	select {
+	case card = <-cards:
+	case <-time.After(10 * time.Second):
+		t.Fatalf("the integration writer's patch never reached a card: %v", sup.Transcript("integrator-1"))
+	}
+	card.Respond(true)
+	waitState(t, sup, "integrator-1", StateDone)
+	if _, err := os.Stat(filepath.Join(repo, "main.go")); !os.IsNotExist(err) {
+		t.Fatalf("the reconciliation's deletion should have landed: %v", err)
+	}
+}
+
+// The kept patch's hunks outside the conflict reach the integration writer:
+// its copy holds the conflicting file as the marked merge of both sides, so a
+// writer that reconciles only the region lands the patch's other hunk too.
+func TestAnIntegrationsCopyHoldsTheKeptPatchsCleanHunks(t *testing.T) {
+	repo := mergeRepo(t)
+	xIsNine := func(s string) string { return strings.Replace(s, "var x = 0", "var x = 9", 1) }
+	region := regexp.MustCompile(`(?s)<<<<<<< the workspace\n.*>>>>>>> writer-2\n`)
+	seeded := make(chan string, 1)
+	w := conflictingWritersOver(repo, func(root string) { put(root, "main.go", xIsNine(yIsTwo)) }, func(root string) {
+		text := take(root, "main.go")
+		seeded <- text
+		put(root, "main.go", region.ReplaceAllString(text, "var y = 1 + 2\n"))
+	})
+	sup, cards, _ := startConflict(t, repo, w)
+
+	var card *Ask
+	select {
+	case card = <-cards:
+	case <-time.After(10 * time.Second):
+		t.Fatalf("the integration writer's patch never reached a card: %v", sup.Transcript("integrator-1"))
+	}
+	text := <-seeded
+	for _, want := range []string{"var x = 9", "<<<<<<< the workspace\nvar y = 1\n", "||||||| base\nvar y = 0\n", "=======\nvar y = 2\n>>>>>>> writer-2\n"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("the integration's copy should hold %q:\n%s", want, text)
+		}
+	}
+	card.Respond(true)
+	waitState(t, sup, "integrator-1", StateDone)
+	if got := take(repo, "main.go"); got != xIsNine(yIsBoth) {
+		t.Fatalf("the landing should keep the kept patch's clean hunk with the reconciled region:\n%s", got)
 	}
 }
 

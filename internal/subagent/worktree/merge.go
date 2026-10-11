@@ -31,8 +31,12 @@ type patchMerge struct {
 	// Moved is the writer's files the checkout changed since the copy's base:
 	// the ones the merge went over.
 	Moved []string
-	// Conflicts is the files whose merge left a conflict region.
-	Conflicts []string
+	// Conflicts is the files whose merge left a conflict region, and
+	// ConflictSides each one's base, ours and theirs: what an integration
+	// writer's copy is seeded with the marked merge of (MarkedMerge), since
+	// a conflicting file is in neither Patch nor Resolved.
+	Conflicts     []string
+	ConflictSides map[string][3]MergeSide
 	// Resolved is, where there are conflicts, the merge of every other file
 	// as a patch against the checkout now: what an integration writer's
 	// copy starts from, so the files it is not asked to reconcile arrive
@@ -193,7 +197,7 @@ func mergeRaw(worktree, repoTop, raw string, skip []string) (patchMerge, error) 
 			return m, err
 		}
 		if !ok {
-			m.Conflicts = append(m.Conflicts, path)
+			m.conflict(path, [3]MergeSide{base, ours, theirs})
 			continue
 		}
 		entries = append(entries, entry{path, ours, merged})
@@ -252,6 +256,16 @@ func mergeRaw(worktree, repoTop, raw string, skip []string) (patchMerge, error) 
 	return m, err
 }
 
+// conflict records a file whose merge left a conflict region, with the
+// three sides it was merged from.
+func (m *patchMerge) conflict(path string, sides [3]MergeSide) {
+	m.Conflicts = append(m.Conflicts, path)
+	if m.ConflictSides == nil {
+		m.ConflictSides = map[string][3]MergeSide{}
+	}
+	m.ConflictSides[path] = sides
+}
+
 // CheckoutSide reads one file of the person's checkout as git would hold it.
 // A path that is not there is absent; one that is neither a file nor a link —
 // a directory where the writer has a file — is a side no merge can use, and
@@ -290,6 +304,21 @@ func mergeFile(scratch string, base, ours, theirs MergeSide) (MergeSide, bool, e
 		return MergeSide{}, false, err
 	}
 	return merged, true, nil
+}
+
+// MarkedMerge is one file's three-way line merge with every region it cannot
+// settle marked as `git merge-file --diff3` marks it, under the labels given
+// for ours, the base and theirs. Every change of either side outside a region
+// is merged in. False where the sides are not a line merge — the file added
+// or removed on a side, or not text — which has no regions to mark.
+func MarkedMerge(base, ours, theirs MergeSide, labels [3]string) (MergeSide, bool, error) {
+	scratch, err := os.MkdirTemp("", "shhh-marked-*")
+	if err != nil {
+		return MergeSide{}, false, err
+	}
+	defer func() { _ = os.RemoveAll(scratch) }()
+	merged, _, textual, err := mergeLines(scratch, base, ours, theirs, []string{"--diff3", "-L", labels[0], "-L", labels[1], "-L", labels[2]})
+	return merged, textual && err == nil, err
 }
 
 // mergeLines is `git merge-file -p` over three sides, with args added to the

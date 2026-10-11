@@ -164,7 +164,9 @@ func ReseedMerging(ctx context.Context, worktree, patch string, gen Regenerator,
 		}
 		if !textual {
 			rec.Unsettled = append(rec.Unsettled, p)
-			rec.Seeded[p], rec.Sides[p] = ReadSeeded(worktree, p), [2]SeededFile{seededSide(ours), seededSide(theirs)}
+			seeded := ReadSeeded(worktree, p)
+			seeded.SideDeleted = !ours.Exists || !theirs.Exists
+			rec.Seeded[p], rec.Sides[p] = seeded, [2]SeededFile{seededSide(ours), seededSide(theirs)}
 			fmt.Fprintf(&evidence, "## %s\n\nNot a line merge: %s landed a change to it and this lane changed it too, and it is not a text file both can be merged in line by line.\n\n", p, landed)
 			continue
 		}

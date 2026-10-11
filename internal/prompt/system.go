@@ -496,9 +496,9 @@ Your last message IS the deliverable. Report what you changed (files and why), h
 // See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
 const IntegrationWriter = `# Reconciling two changes
 You were started because two changes were made to the same lines of the same files, and a merge cannot choose between two intentions. Your task names the writer whose patch conflicted and quotes what it was asked; your first message holds each conflicting region with the workspace's text, the text both started from, and that writer's.
-- Your copy is the workspace as it stands, with every other file of that writer's patch already merged into it. Change the conflicting files; leave the merged ones as you find them.
+- Your copy is the workspace as it stands, with every other file of that writer's patch already merged into it, and each conflicting file your first message shows regions for holding both changes merged, with those regions marked in it. Change the conflicting files; leave the merged ones as you find them.
 - Make each region do what both changes meant to do. Do not keep one side whole by default, and do not drop anything either side added without saying why in your report.
-- Leave no conflict markers. A conflicting file still as the workspace had it, or one carrying a marker, is read as not reconciled, and nothing you wrote lands.
+- Leave no conflict markers. A conflicting file still as you found it or as the workspace had it, or one carrying a marker, is read as not reconciled, and nothing you wrote lands.
 - Verify as for any change, then report which intention each region kept.
 - If the two cannot both hold — they want opposite things of the same lines — leave the conflicting files as you found them and say so in your report, naming each file and what each side wanted. Both patches then stay kept for the person to decide.`
 

@@ -122,6 +122,11 @@ func TestTodoRunHeadless_AnUnreconciledCollisionStillBlocks(t *testing.T) {
 			writeCount(t, dir, strings.Replace(string(marked), "y\n", "z\n", 1))
 		}},
 		{"the file as the merge left it", "count.txt is as the merge left it", func(*testing.T, string) {}},
+		{"the file deleted", "count.txt was deleted, which keeps neither side's change", func(t *testing.T, dir string) {
+			if err := os.Remove(filepath.Join(dir, "count.txt")); err != nil {
+				t.Error(err)
+			}
+		}},
 		{"the landed side whole", "count.txt is a-one's side whole, which drops this lane's change", func(t *testing.T, dir string) {
 			writeCount(t, dir, aText)
 		}},
@@ -151,6 +156,63 @@ func TestTodoRunHeadless_AnUnreconciledCollisionStillBlocks(t *testing.T) {
 				t.Fatalf("the kept copy holds the lane's own work, unmarked: %q", got)
 			}
 		})
+	}
+}
+
+// A landing that deleted the file the lane changed is still reconciled where
+// the turn carries the lane's work over the deletion: the judge refuses a
+// deletion only where neither side was one.
+func TestTodoRunHeadless_AReconciliationOverALandedDeletionLands(t *testing.T) {
+	const carried = "x\nn = 2 // b, after a-one\ny\n"
+	root := todoRepo(t)
+	if err := os.WriteFile(filepath.Join(root, "count.txt"), []byte("x\nn = 2\ny\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"add", "count.txt"}, {"commit", "-q", "-m", "count"}} {
+		if out, code := run.Git(root, args...); code != 0 {
+			t.Fatalf("git %v: %s", args, out)
+		}
+	}
+	laneItem(t, root, "a-one", "a-one.go")
+	laneItem(t, root, "b-two", "b-two.go")
+	removeLaneCopies(t, root)
+	started := newLaneStarted()
+	landed := func() bool {
+		log, _ := run.Git(root, "log", "--format=%s")
+		return strings.Contains(log, "Build a-one")
+	}
+	a := &laneAnswers{
+		write: func(slug string) (string, string) {
+			if slug == "b-two" {
+				return "count.txt", "x\nn = 2 // b\ny\n"
+			}
+			return "a-one.go", "package aone\n"
+		},
+		hold: func(slug string, stage run.Stage, dir string) {
+			switch {
+			case slug == "b-two" && stage == run.StageResearch:
+				started.arrive()
+			case slug == "a-one" && stage == run.StageImplement:
+				started.wait(t, slug)
+				_ = os.Remove(filepath.Join(dir, "count.txt"))
+			case slug == "b-two" && stage == run.StageReview:
+				eventually(landed)
+			}
+		},
+	}
+	d, out := laneDriverFor(t, root, a)
+	prompts := reconcilingTurn(d, func(dir string) { writeCount(t, dir, carried) })
+	if blocked := d.sprintParallel(context.Background(), 0, 2); blocked {
+		t.Fatalf("a reconciliation over a landed deletion lands:\n%s", out.String())
+	}
+	if len(prompts()) != 1 {
+		t.Fatalf("one reconciling turn, got %d:\n%s", len(prompts()), out.String())
+	}
+	if got, _ := os.ReadFile(filepath.Join(root, "count.txt")); string(got) != carried {
+		t.Fatalf("the checkout holds the reconciliation: %q", got)
+	}
+	if !strings.Contains(out.String(), "… b-two reconciled a-one's landing in count.txt\n") {
+		t.Fatalf("the reconciliation is judged and written:\n%s", out.String())
 	}
 }
 

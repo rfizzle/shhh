@@ -542,14 +542,16 @@ func (d *todoDriver) reconcile(st *run.State, it todo.Item, r *todoReconcile) ru
 
 // judged answers for the turn a reconciliation was owed, once it has ended,
 // with why the lane blocks where the turn did not reconcile: a file still
-// holding a mark, one left as the merge wrote it, or one that is either side
-// of the merge whole, which drops the other's change
-// (worktree.Unreconciled, worktree.PickedSide). The copy is then put back to
-// the lane's own patch on the base it had, both patches kept as a block
-// keeps them. A reconciliation that holds is written on the row and in the
-// log, with any file the turn changed outside the regions, and the landing's
-// generated paths are regenerated over it. Nothing is owed outside a lane,
-// or where no reconciliation was.
+// holding a mark, one left as the merge wrote it, one the turn deleted, which
+// keeps neither side's change, or one that is either side of the merge whole,
+// which drops the other's change (worktree.Unreconciled,
+// worktree.PickedSide). A deletion is a side whole where one side was itself
+// the file's deletion. The copy is then put back to the lane's own patch on
+// the base it had, both patches kept as a block keeps them. A reconciliation
+// that holds is written on the row and in the log, with any file the turn
+// changed outside the regions, and the landing's generated paths are
+// regenerated over it. Nothing is owed outside a lane, or where no
+// reconciliation was.
 func (l *todoLane) judged(d *todoDriver) string {
 	if l == nil || l.reconciling == nil {
 		return ""
@@ -595,9 +597,13 @@ func (r *todoReconcile) refusals(marked, picked []string) string {
 	said := map[string]bool{}
 	for _, p := range marked {
 		said[p] = true
-		if worktree.ReadSeeded(r.rec.Dir(), p) == r.rec.Seeded[p] {
+		now := worktree.ReadSeeded(r.rec.Dir(), p)
+		switch {
+		case now.Same(r.rec.Seeded[p]):
 			out = append(out, p+" is as the merge left it")
-		} else {
+		case !now.Exists:
+			out = append(out, p+" was deleted, which keeps neither side's change")
+		default:
 			out = append(out, p+" still holds a conflict mark")
 		}
 	}

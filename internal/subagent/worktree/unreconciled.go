@@ -8,10 +8,20 @@ import (
 )
 
 // SeededFile is one file as a copy held it when it was seeded for a
-// reconciliation: its text, and whether it was there at all.
+// reconciliation: its text, and whether it was there at all. SideDeleted is
+// set on a seed where one side of the merge was itself the file's deletion,
+// so a turn that leaves it absent has taken that side rather than made the
+// file vanish (Unreconciled).
 type SeededFile struct {
-	Text   string
-	Exists bool
+	Text        string
+	Exists      bool
+	SideDeleted bool
+}
+
+// Same is whether two copies of a file hold the same thing: both absent, or
+// both there with the same text.
+func (f SeededFile) Same(g SeededFile) bool {
+	return f.Exists == g.Exists && f.Text == g.Text
 }
 
 // ReadSeeded is a copy's file as it holds it now, in the shape it was seeded
@@ -22,10 +32,13 @@ func ReadSeeded(dir, path string) SeededFile {
 }
 
 // Unreconciled is the conflicting files a copy does not hold a
-// reconciliation of: any still exactly as it was seeded, and any file the
-// copy's patch writes a conflict marker into. Either is a patch that must not
-// land as the one result. Both a session's integration writer and a sprint's
-// lane are judged by it.
+// reconciliation of: any still exactly as it was seeded, any the seeded copy
+// held that the copy no longer has, and any file the copy's patch writes a
+// conflict marker into. Each is a patch that must not land as the one result:
+// a deleted file keeps neither side's change. A file one side of the merge
+// deleted is the exception to the second, since leaving it absent is that
+// side's change. Both a session's integration writer and a sprint's lane are
+// judged by it.
 func Unreconciled(dir, patch string, conflicts []string, seeded map[string]SeededFile) []string {
 	var out []string
 	seen := map[string]bool{}
@@ -36,7 +49,8 @@ func Unreconciled(dir, patch string, conflicts []string, seeded map[string]Seede
 		}
 	}
 	for _, p := range conflicts {
-		if ReadSeeded(dir, p) == seeded[p] {
+		now, was := ReadSeeded(dir, p), seeded[p]
+		if now.Same(was) || (was.Exists && !now.Exists && !was.SideDeleted) {
 			add(p)
 		}
 	}

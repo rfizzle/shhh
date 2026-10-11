@@ -247,7 +247,9 @@ the same slots, the same limits on how many and how deep, the same admission,
 a claim on the conflicting files that waits behind the writer it reconciles —
 and it works in a copy of its own. That copy is your checkout as it stands,
 with every file of the conflicting patch that did merge cleanly already
-written in, so the only thing left for it is the conflict. It opens on the
+written in, and each conflicting file holding the merge of both with its
+regions marked, so every change of the patch outside the regions is there
+too and the only thing left for it is the conflict. It opens on the
 conflict itself, the way a review opens on its diff: each region with your
 text, the text both started from and the writer's, and the writer's own task
 beside them, so the intention on that side is in its own words. Its prompt
@@ -264,12 +266,15 @@ reconciled is spent — offering that patch again from its row would be the same
 work twice.
 
 An integration writer that cannot reconcile the two says so and lands
-nothing. Its patch is read, not trusted: a conflicting file still as your
-checkout had it, or one carrying a conflict marker, is not a reconciliation,
-whatever the report says. Both patches then stay kept — the writer's and the
-integration's — each on its own row with the files named, and nothing is
-written with markers. That is where you come in, and only there: the person
-is the last resort, asked with both patches in hand, never the first. A kept
+nothing. Its patch is read, not trusted: a conflicting file still as its
+copy was given it or as your checkout had it, one carrying a conflict marker,
+or one deleted, is not a reconciliation, whatever the report says. A
+deletion keeps neither change; it stands only where one of the two changes
+was itself the file's deletion. Both patches then stay kept — the writer's
+and the integration's — each on its own row with the files named, and
+nothing is written with markers. That is where you come in, and only there:
+the person is the last resort, asked with both patches in hand, never the
+first. A kept
 patch's row starts at most one integration writer; after that, reviewing it
 puts the patch itself in front of you.
 

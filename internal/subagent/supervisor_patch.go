@@ -34,9 +34,9 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 		return false
 	}
 	// An integration writer's patch is the one result only where it holds a
-	// reconciliation of every conflicting file. One that left a file as the
-	// workspace had it, or wrote a conflict marker, lands nothing, and both
-	// patches stay kept for the person.
+	// reconciliation of every conflicting file. One that left a file as its
+	// copy was seeded, deleted one, or wrote a conflict marker, lands nothing,
+	// and both patches stay kept for the person.
 	// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
 	if c.integrates != nil {
 		if files := c.integrates.unreconciled(c.worktree, patch); len(files) > 0 {

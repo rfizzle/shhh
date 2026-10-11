@@ -59,6 +59,10 @@ type integration struct {
 	// integration writer did not reconcile.
 	conflicts []string
 	seeded    map[string]wtree.SeededFile
+	// workspace is, for each conflicting file seeded as a marked merge, the
+	// workspace's side of it: a file left as that has kept the workspace's
+	// change whole and dropped the patch's, which is not a reconciliation.
+	workspace map[string]wtree.SeededFile
 }
 
 // sourceName is the writer an integration reconciles, or "" for no
@@ -207,8 +211,8 @@ func integrationEvidence(repoTop, base, patch string, conflicts []string, source
 		return "", err
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "# The conflict\n\n%s's patch was written against a tree the workspace has since moved from, and in %s the two changed the same lines. Your copy is the workspace as it stands, with every other file of %s's patch already merged into it; the files below are as the workspace has them. Each region is marked as `git merge-file --diff3` marks it: the workspace's text, then the text both started from, then %s's.\n\n",
-		source, wtree.PatchPaths(conflicts), source, source)
+	fmt.Fprintf(&b, "# The conflict\n\n%s's patch was written against a tree the workspace has since moved from, and in %s the two changed the same lines. Your copy is the workspace as it stands, with every other file of %s's patch already merged into it; each file below holds the two merged, with every change of %s's outside these regions already in it and each region marked in it as `git merge-file --diff3` marks it: the workspace's text, then the text both started from, then %s's. Lines are numbered as in your copy's file.\n\n",
+		source, wtree.PatchPaths(conflicts), source, source, source)
 	for _, p := range conflicts {
 		fmt.Fprintf(&b, "## %s\n\n", p)
 		ours, err := wtree.CheckoutSide(filepath.Join(repoTop, filepath.FromSlash(p)))
@@ -265,7 +269,7 @@ func sideWord(side wtree.MergeSide) string {
 
 // conflictRegions runs the line merge of ours, base and theirs with the
 // three labels and answers with each conflict region and the lines around
-// it, each headed with the line it starts at in the workspace's file. False
+// it, each headed with the line it starts at in the marked merge. False
 // where the sides are not all text, which has no regions to show.
 func conflictRegions(sides []wtree.MergeSide, labels []string) (string, bool) {
 	for _, side := range sides {
@@ -297,23 +301,17 @@ func conflictRegions(sides []wtree.MergeSide, labels []string) (string, bool) {
 	_ = cmd.Run()
 	lines := strings.Split(strings.TrimSuffix(out.String(), "\n"), "\n")
 
-	// Each line's place in the workspace's file — the next of its lines,
-	// for a marker or a line of the other two sides — and the regions.
-	ourNo := make([]int, len(lines))
+	// The regions, each line numbered by its place in the marked merge,
+	// which is the file the integration writer's copy holds (seed).
 	var regions [][2]int
-	next, inOurs, start := 1, false, -1
+	start := -1
 	for i, line := range lines {
-		ourNo[i] = next
 		switch {
 		case isMarker(line, "<<<<<<<"):
-			start, inOurs = i, true
-		case start >= 0 && (isMarker(line, "|||||||") || line == "======="):
-			inOurs = false
+			start = i
 		case start >= 0 && isMarker(line, ">>>>>>>"):
 			regions = append(regions, [2]int{start, i})
 			start = -1
-		case start < 0 || inOurs:
-			next++
 		}
 	}
 	var b strings.Builder
@@ -325,7 +323,7 @@ func conflictRegions(sides []wtree.MergeSide, labels []string) (string, bool) {
 			if shownTo >= 0 {
 				b.WriteString("…\n")
 			}
-			fmt.Fprintf(&b, "@@ line %d\n", ourNo[from])
+			fmt.Fprintf(&b, "@@ line %d\n", from+1)
 		}
 		for _, l := range lines[from : to+1] {
 			b.WriteString(l + "\n")
@@ -344,9 +342,11 @@ func isMarker(line, marker string) bool {
 // seed makes an integration writer's fresh copy what it reconciles in: the
 // source's patch merged over it again — against the checkout as it stands
 // now, which is what the copy was just taken from — with every file that
-// merges cleanly written in, and the conflicting files left as the workspace
-// has them for the writer to reconcile. It records those files as seeded, so
-// the landing can tell which of them the writer did not touch.
+// merges cleanly written in, and each conflicting file written as the marked
+// merge of the workspace's side and the patch's, so every hunk of the patch
+// outside the regions reaches the writer too. A conflicting file that is not
+// a line merge is left as the workspace has it. It records those files as
+// seeded, so the landing can tell which of them the writer did not touch.
 func (in *integration) seed(wt wtree.WorktreeHandle) error {
 	m, err := wtree.MergeKept(wt.RepoTop, in.kept.base, in.kept.patch, nil)
 	if err != nil {
@@ -362,24 +362,52 @@ func (in *integration) seed(wt wtree.WorktreeHandle) error {
 		}
 	}
 	seeded := make(map[string]wtree.SeededFile, len(m.Conflicts))
+	workspace := map[string]wtree.SeededFile{}
 	for _, p := range m.Conflicts {
-		seeded[p] = wtree.ReadSeeded(wt.Dir, p)
+		sides := m.ConflictSides[p]
+		marked, ok, err := wtree.MarkedMerge(sides[0], sides[1], sides[2], [3]string{"the workspace", "base", in.source})
+		if err != nil {
+			return fmt.Errorf("marking the conflict in %s in the integration's copy: %w", p, err)
+		}
+		if ok {
+			workspace[p] = wtree.SeededFile{Text: sides[1].Text, Exists: sides[1].Exists}
+			full := filepath.Join(wt.Dir, filepath.FromSlash(p))
+			perm := os.FileMode(0o644)
+			if marked.Mode == "100755" {
+				perm = 0o755
+			}
+			if err := os.WriteFile(full, []byte(marked.Text), perm); err != nil {
+				return fmt.Errorf("writing the conflict in %s into the integration's copy: %w", p, err)
+			}
+			if err := os.Chmod(full, perm); err != nil {
+				return fmt.Errorf("writing the conflict in %s into the integration's copy: %w", p, err)
+			}
+		}
+		held := wtree.ReadSeeded(wt.Dir, p)
+		held.SideDeleted = !sides[1].Exists || !sides[2].Exists
+		seeded[p] = held
 	}
 	in.mu.Lock()
-	in.conflicts, in.seeded = m.Conflicts, seeded
+	in.conflicts, in.seeded, in.workspace = m.Conflicts, seeded, workspace
 	in.mu.Unlock()
 	return nil
 }
 
 // unreconciled is the conflicting files an integration writer's copy does not
-// hold a reconciliation of: any still exactly as the workspace had it when
-// the copy was seeded, and any file the patch writes a conflict marker into
-// (worktree.Unreconciled).
+// hold a reconciliation of: any still exactly as the copy was seeded, any it
+// deleted where neither side had, any the patch writes a conflict marker into
+// (worktree.Unreconciled), and any put back to the workspace's side whole.
 func (in *integration) unreconciled(worktree, patch string) []string {
 	in.mu.Lock()
-	conflicts, seeded := in.conflicts, in.seeded
+	conflicts, seeded, workspace := in.conflicts, in.seeded, in.workspace
 	in.mu.Unlock()
-	return wtree.Unreconciled(worktree, patch, conflicts, seeded)
+	out := wtree.Unreconciled(worktree, patch, conflicts, seeded)
+	for _, p := range conflicts {
+		if side, ok := workspace[p]; ok && !slices.Contains(out, p) && wtree.ReadSeeded(worktree, p).Same(side) {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // unreconciledNote is what an integration writer that did not reconcile

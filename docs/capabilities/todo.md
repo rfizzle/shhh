@@ -1131,11 +1131,13 @@ count, a list and a section, and each region at its line. It returns to
 verify as every fix does, and the item is then reviewed and committed with
 the reconciliation in its diff. The turn's work is judged before anything
 else reads it: a file still holding a mark, one left as the merge wrote it,
-or one that is either side whole — which drops the other's change — is not a
-reconciliation, and the lane blocks with the files named and its copy put
-back to its own work on the base it had, the landed work staying on the
-checkout. A turn that also changed other files is not refused, since those
-are verified and reviewed with the rest, but the row names them. The row and
+one deleted — which keeps neither change — or one that is either side whole,
+as a deletion is where one side deleted the file — which drops the other's
+change — is not a reconciliation, and the lane blocks with the files named
+and its copy put back to its own work on the base it had, the landed work
+staying on the checkout. A turn that also changed other files is not
+refused, since those are verified and reviewed with the rest, but the row
+names them. The row and
 `sprint.log` read `remediate · reconciling a-one's landing` during the turn
 and `reconciled a-one's landing in count.txt` after it, with `; also changed`
 and the paths where it wrote elsewhere. An item may take more than one
