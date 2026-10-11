@@ -87,7 +87,16 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 	if total := len(t.Sources) + t.More; total > 0 {
 		meta = fmt.Sprintf("%d of %d up", t.Up, total)
 	}
-	b := railBlock{heading: railHeading("TOOLS", meta, sty.dim, width)}
+	// Every source up reads the same from send to send; one that is blocked,
+	// broken or still starting is standing news. The heading's ratio states
+	// the sources that are up, so once the block has collapsed their rows are
+	// not rows the marker has to count.
+	b := railBlock{heading: railHeading("TOOLS", meta, sty.dim, width), class: railStatic}
+	for _, s := range t.Sources {
+		if s.State == ToolSourceBlocked || s.State == ToolSourceFailed || s.State == ToolSourceStarting {
+			b.class = railStanding
+		}
+	}
 	for _, s := range t.Sources {
 		glyph, word, style := toolSourceTone(s.State)
 		left := glyph + " " + sty.body.Render(s.Name)
@@ -103,7 +112,8 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 				right += sty.dim.Render(Clip(sep+s.Note, room))
 			}
 		}
-		b.add(railRow(left, right, width, inspectorIndent))
+		b.rows = append(b.rows, railLine{text: railRow(left, right, width, inspectorIndent),
+			stated: s.State == ToolSourceUp && meta != ""})
 	}
 	if t.More > 0 {
 		// A count of sources rather than one, so it folds with the first

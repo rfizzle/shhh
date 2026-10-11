@@ -46,17 +46,29 @@ func (r InspectorRail) spendBlock(width int) (railBlock, bool) {
 	if s == nil || (s.Turn == "" && len(s.Models) == 0 && s.Session == "") {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("SPEND", sty.body.Render(s.Turn), sty.body, width)}
+	// The bill reads the same from send to send. Collapsed, the heading
+	// carries the session total beside the turn's cost, and the shares, which
+	// add up to it, are /stats's.
+	b := railBlock{heading: railHeading("SPEND", sty.body.Render(s.Turn), sty.body, width), class: railStatic}
+	if s.Session != "" {
+		collapsed := sty.dim.Render("session " + s.Session)
+		if s.Turn != "" {
+			collapsed = sty.body.Render(s.Turn) + sty.dim.Render(" · ") + collapsed
+		}
+		b.collapsedHeading = railHeading("SPEND", collapsed, sty.body, width)
+	}
 	room := railRoom(width, "", inspectorIndent)
 	for _, m := range s.Models {
 		if line := m.fit(room); line != "" {
-			b.add(railRow(sty.dim.Render(line), "", width, inspectorIndent))
+			b.rows = append(b.rows, railLine{text: railRow(sty.dim.Render(line), "", width, inspectorIndent),
+				stated: s.Session != ""})
 		}
 	}
 	if s.Session != "" {
 		// The total is what the rows above it add up to, and the one figure a
 		// short rail keeps: its shares fold before it does.
-		b.pin(railRow(sty.dim.Render("session total · "+s.Session), "", width, inspectorIndent))
+		b.rows = append(b.rows, railLine{text: railRow(sty.dim.Render("session total · "+s.Session), "", width, inspectorIndent),
+			pinned: true, stated: true})
 	}
 	return b, true
 }

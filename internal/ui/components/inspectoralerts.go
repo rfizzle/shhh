@@ -99,7 +99,10 @@ func (r InspectorRail) alertsBlock(width int) (railBlock, bool) {
 	}
 	superseded := len(r.Alerts) - len(live)
 	b := railBlock{heading: railHeading("ALERTS",
-		fmt.Sprintf("%d standing", len(live)), sty.err, width)}
+		fmt.Sprintf("%d standing", len(live)), sty.err, width),
+		// A block that is drawn at all has a live alert, which is the news
+		// that wants an answer now; its heading is already its one figure.
+		class: railAsks}
 	// The most recent live alerts are the ones drawn: an alert older than
 	// two failures ago is the least likely of them to be what the session is
 	// standing in front of now.

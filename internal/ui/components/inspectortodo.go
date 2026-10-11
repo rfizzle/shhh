@@ -89,7 +89,15 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 	if t.Blocked > 0 {
 		meta += fmt.Sprintf(" · %d blocked", t.Blocked)
 	}
-	b := railBlock{heading: railHeading("TODO", meta, sty.dim, width)}
+	b := railBlock{heading: railHeading("TODO", meta, sty.dim, width), class: railStanding}
+	if t.SprintItem != "" {
+		// Collapsed, the heading names the item the sprint is on — the one
+		// fact the block keeps whatever else has folded.
+		lead := fmt.Sprintf("project · %d open · on ", t.Open)
+		if room := railRoom(width, "", inspectorIndent) - lipgloss.Width("TODO") - 1 - lipgloss.Width(lead); room > 0 {
+			b.collapsedHeading = railHeading("TODO", sty.dim.Render(lead)+sty.body.Render(Clip(t.SprintItem, room)), sty.dim, width)
+		}
+	}
 	// The sprint sits above the items because it is what scopes them: the
 	// rows under it are the set, and n of m is how far through it the
 	// project is. The word "sprint" is on the row because the name alone
@@ -103,8 +111,8 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 	// four of a backlog that may hold forty, and where a sprint is up to is
 	// the one fact that must not depend on the current item having fitted.
 	if t.SprintItem != "" {
-		b.add(railRow(sty.dim.Render("on")+" "+sty.body.Render(t.SprintItem),
-			sty.dim.Render(t.SprintStage), width, inspectorIndent))
+		b.rows = append(b.rows, railLine{text: railRow(sty.dim.Render("on")+" "+sty.body.Render(t.SprintItem),
+			sty.dim.Render(t.SprintStage), width, inspectorIndent), stated: b.collapsedHeading != ""})
 	}
 	for _, row := range t.Rows {
 		glyph, style := todoRowTone(row.State)

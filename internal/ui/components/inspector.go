@@ -10,10 +10,18 @@ package components
 //
 // The rail is passive, like Cockpit: the host feeds it the session's numbers
 // and renders View every frame. It owns no keys, no state and no goroutines,
-// and the block order is fixed — THIS TURN, ALERTS, PLAN, CHANGES, AGENTS,
-// CONTEXT, SPEND. A block with nothing to say is omitted rather than rendered
-// empty, and a rail that does not fit its height takes its rows off the
-// longest block that has one to give and says how many it swallowed.
+// and the block order is fixed — SUMMARY, THIS TURN, ALERTS, PLAN, STEPS,
+// TODO, CHANGES, AGENTS, TOOLS, CONTEXT, SPEND. A block with nothing to say is
+// omitted rather than rendered empty.
+//
+// A rail that does not fit its height gives up the least alive thing first.
+// Each block states its class from its own state every frame — asks and
+// motion, live readings, standing, static — and a block collapses to its
+// heading before a livelier block loses a row; only a standing or static
+// block is dropped, and a dropped block is still counted on one foot line
+// that is a door to the rail in full. Nothing moves: a block whose class
+// rises takes its rows back where it stands
+// (docs/interface/surfaces.md#the-inspector-rail).
 //
 // ALERTS sits directly under the turn because it is the one block that is
 // about neither the turn nor the session but about what wants answering now:
@@ -161,6 +169,28 @@ const (
 	RailSpend   = "SPEND"
 )
 
+// railClass is how alive a block is, which is what decides the order the
+// rail gives its rows up in when it runs short of height: the lowest class
+// first. A block states its class from its own state every frame, so the
+// same block is history at one moment and the thing that must not go at
+// the next (docs/interface/surfaces.md#the-inspector-rail).
+type railClass int
+
+const (
+	// railStatic is a block that reads the same from send to send: the
+	// bill, a window under its warning, every tool source up.
+	railStatic railClass = iota
+	// railStanding changes between turns and is read before the next send:
+	// the changeset, the backlog, an idle plan, a map of settled children.
+	railStanding
+	// railLive changes this turn and is read mid-turn: the turn's figures,
+	// a reading on target, a window past its warning, a running plan step.
+	railLive
+	// railAsks wants the reader now or is moving now: a standing alert, a
+	// child waiting or working, a running turn, a reading off target.
+	railAsks
+)
+
 // Empty reports whether every block is omitted, so the host can skip the
 // split rather than draw an empty column.
 func (r InspectorRail) Empty() bool {
@@ -237,6 +267,11 @@ type railLine struct {
 	// of pressure — and the marker would then report something hidden that is
 	// still on screen.
 	shed bool
+	// stated marks a row whose figure the block's collapsed heading states,
+	// so once the block has collapsed the row is not one the marker has to
+	// count: it is on screen, in the heading. A pinned stated row moves into
+	// the heading when the block collapses.
+	stated bool
 	// more marks a row that is itself a count of list rows the host left out
 	// — TODO's `… N more` — and holds that count. It is never taken on its
 	// own: the first list row the block folds takes it with it, and the
@@ -260,6 +295,19 @@ type railBlock struct {
 	// door is what the heading and the fold marker point at: the block
 	// itself where it has a surface behind it, nothing where it has none.
 	door RailTarget
+	// name is the block's Rail* name, which the foot line says when the
+	// block is dropped.
+	name string
+	// class is how alive the block is (railClass), stated by its builder
+	// from its own state.
+	class railClass
+	// collapsedHeading is the heading a collapsed block draws: the same
+	// label with the one figure its rows would have stated. Empty keeps the
+	// heading as it is.
+	collapsedHeading string
+	// collapsed reports that truncation has taken every row the block could
+	// give, so it is down to its heading, what it must keep, and a marker.
+	collapsed bool
 }
 
 // add appends an ordinary row: truncation may take it, and it carries no
@@ -282,10 +330,51 @@ func (b *railBlock) shedRow(text string) { b.rows = append(b.rows, railLine{text
 
 func (b railBlock) height() int {
 	h := 1 + len(b.rows)
-	if len(b.hidden) > 0 {
+	if len(b.folded()) > 0 {
 		h++
 	}
 	return h
+}
+
+// folded is what the block's marker counts: every hidden row but, once the
+// block has collapsed, the ones its heading states.
+func (b railBlock) folded() []railLine {
+	if !b.collapsed {
+		return b.hidden
+	}
+	var out []railLine
+	for _, h := range b.hidden {
+		if !h.stated {
+			out = append(out, h)
+		}
+	}
+	return out
+}
+
+// collapse puts the block down to its heading: the heading states the
+// block's figure from here on, and a pinned row whose figure that is moves
+// into it.
+func (b *railBlock) collapse() {
+	b.collapsed = true
+	kept := make([]railLine, 0, len(b.rows))
+	for _, r := range b.rows {
+		if r.stated {
+			b.hidden = append(b.hidden, r)
+			continue
+		}
+		kept = append(kept, r)
+	}
+	b.rows = kept
+}
+
+// rowClass is the class a row is given up at: the block's, except for chrome
+// a block sheds — a trailer naming keys reads the same from send to send
+// whatever block it ends, so it goes with the static blocks.
+func (b railBlock) rowClass(row int) railClass {
+	if b.rows[row].shed {
+		return railStatic
+	}
+	return b.class
 }
 
 // render draws the block at the rail's width, each row beside what it points
@@ -302,7 +391,11 @@ func (b railBlock) height() int {
 // door. A block with no surface behind it keeps all of them inert.
 func (b railBlock) render(width int) []railTargetRow {
 	out := make([]railTargetRow, 0, b.height())
-	out = append(out, railTargetRow{Text: b.heading, Target: b.door})
+	heading := b.heading
+	if b.collapsed && b.collapsedHeading != "" {
+		heading = b.collapsedHeading
+	}
+	out = append(out, railTargetRow{Text: heading, Target: b.door})
 	for _, r := range b.rows {
 		target := r.target
 		if r.more > 0 {
@@ -310,13 +403,13 @@ func (b railBlock) render(width int) []railTargetRow {
 		}
 		out = append(out, railTargetRow{Text: r.text, Target: target})
 	}
-	switch {
-	case len(b.hidden) == 0:
+	switch hidden := b.folded(); {
+	case len(hidden) == 0:
 	case b.fold != nil:
-		out = append(out, railTargetRow{Text: b.fold(b.hidden), Target: b.door})
+		out = append(out, railTargetRow{Text: b.fold(hidden), Target: b.door})
 	default:
 		n := 0
-		for _, h := range b.hidden {
+		for _, h := range hidden {
 			n += max(h.more, 1)
 		}
 		out = append(out, railTargetRow{Text: indentRow(sty.hint.Render(fmt.Sprintf("… %d more", n)), width), Target: b.door})
@@ -385,6 +478,7 @@ func (r InspectorRail) blocks(width int) []railBlock {
 		{RailContext, r.contextBlock}, {RailSpend, r.spendBlock},
 	} {
 		if blk, ok := b.build(width); ok {
+			blk.name = b.name
 			if r.Doors[b.name] {
 				blk.door = RailTarget{Kind: RailTargetBlock, Name: b.name}
 			}
@@ -394,23 +488,45 @@ func (r InspectorRail) blocks(width int) []railBlock {
 	return blocks
 }
 
-// fitBlocks truncates the rail into height rows, taking rows off the block
-// with the most of them to give. A truncated block keeps its heading and says
-// how many rows it is hiding, so the rail never ends silently; CHANGES and
-// ALERTS fold rather than truncate, and their markers carry what they took.
+// fitBlocks truncates the rail into height rows, giving up the least alive
+// thing first: a block collapses to its heading before a livelier block
+// loses a row (docs/interface/surfaces.md#the-inspector-rail).
+//
+// Each pass asks its questions in order, the way the title row sheds its
+// facts, and takes the first that has an answer: collapse a block below the
+// class of the next row that would go, else take that row. Once no block has
+// a row to give, pinned rows go bottom-up, the least alive block's first.
+// Nothing reorders: a block keeps its place, which is what lets a block whose
+// class rises take its rows back where it stands.
 func fitBlocks(blocks []railBlock, height int) []railBlock {
 	for total(blocks) > height {
 		block, row, ok := nextToHide(blocks)
+		next := railAsks + 1
+		if ok {
+			next = blocks[block].rowClass(row)
+		}
+		if i := toCollapse(blocks, next); i >= 0 {
+			blocks[i].collapse()
+			continue
+		}
+		if !ok {
+			block, row, ok = lastToHide(blocks)
+		}
 		if !ok {
 			// Every block is down to its heading: nothing left to give.
 			break
 		}
-		b := &blocks[block]
-		taken := b.rows[row]
-		b.rows = append(b.rows[:row], b.rows[row+1:]...)
-		if taken.shed {
-			continue
-		}
+		take(&blocks[block], row)
+	}
+	return blocks
+}
+
+// take moves one row of the block behind its marker, or off the rail where it
+// is chrome, and collapses the block once it has no row left to give.
+func take(b *railBlock, row int) {
+	taken := b.rows[row]
+	b.rows = append(b.rows[:row:row], b.rows[row+1:]...)
+	if !taken.shed {
 		b.hidden = append([]railLine{taken}, b.hidden...)
 		// The marker this fold draws is the block's only count from here on,
 		// so a host's count row goes behind it in the same step rather than
@@ -418,71 +534,123 @@ func fitBlocks(blocks []railBlock, height int) []railBlock {
 		for j := len(b.rows) - 1; j >= 0; j-- {
 			if b.rows[j].more > 0 {
 				b.hidden = append(b.hidden, b.rows[j])
-				b.rows = append(b.rows[:j], b.rows[j+1:]...)
+				b.rows = append(b.rows[:j:j], b.rows[j+1:]...)
 			}
 		}
 	}
-	return blocks
+	if !b.collapsed && !givable(*b) {
+		b.collapse()
+	}
 }
 
-// nextToHide is the row truncation takes next: the most expendable unpinned
-// row of the longest block that still has one, and — once every block is down
-// to pinned rows — the bottom-most row of the longest block, because a rail
-// that cannot fit what it must keep still has to end somewhere. Which of a
-// block's rows is the most expendable is the block's own answer, in give;
-// a block that gives no answer loses its bottom row first.
+// toCollapse is the lowest block below class next with no row left to give
+// that would still be shorter collapsed — a pinned row its heading states —
+// or -1.
+func toCollapse(blocks []railBlock, next railClass) int {
+	for i := len(blocks) - 1; i >= 0; i-- {
+		b := blocks[i]
+		if b.class >= next || b.collapsed || givable(b) {
+			continue
+		}
+		shut := b
+		shut.rows = append([]railLine(nil), b.rows...)
+		shut.hidden = append([]railLine(nil), b.hidden...)
+		shut.collapse()
+		if shut.height() < b.height() {
+			return i
+		}
+	}
+	return -1
+}
+
+// nextToHide is the row truncation takes next among the rows a block may
+// give: the lowest class first, then the longest block with a row of it, then
+// the lower of two the same length. Which of a block's rows is the most
+// expendable is the block's own answer, in give; a block that gives no answer
+// loses its bottom row first.
 //
-// Two blocks of the same length are a tie the lower one loses, in both
-// passes. The rail is read downwards and its order runs from the turn out to
-// the session, so the block nearer the top is the one nearer what is
-// happening now: without this the turn's own block hands over a row while a
-// block of session history keeps all of its
+// Two blocks of the same class and length are a tie the lower one loses. The
+// rail is read downwards and its order runs from the turn out to the session,
+// so the block nearer the top is the one nearer what is happening now
 // (docs/interface/surfaces.md#the-inspector-rail).
 //
-// A block with nothing but pinned rows is not a candidate while any other
-// block has a row to give. That is what keeps ALERTS whole: it is short, its
-// live rows are pinned, and picking by length alone would take the news off a
-// rail that could have folded a file row instead
+// A pinned row is never a candidate here. That is what keeps ALERTS whole:
+// its live rows are pinned, and a rail that took them while it could have
+// folded a file row would take the news off to keep the history
 // (docs/interface/surfaces.md#the-inspector-rail).
 func nextToHide(blocks []railBlock) (block, row int, ok bool) {
+	class := railAsks + 1
+	for _, b := range blocks {
+		for j, r := range b.rows {
+			if takeable(r) && b.rowClass(j) < class {
+				class = b.rowClass(j)
+			}
+		}
+	}
+	if class > railAsks {
+		return 0, 0, false
+	}
 	block, rows := -1, 0
 	for i, b := range blocks {
-		if len(b.rows) < rows || !givable(b) {
+		if len(b.rows) < rows || !b.gives(class) {
 			continue
 		}
 		block, rows = i, len(b.rows)
 	}
-	if block >= 0 {
-		row = -1
-		for j := len(blocks[block].rows) - 1; j >= 0; j-- {
-			if r := blocks[block].rows[j]; r.pinned || r.more > 0 {
-				continue
-			}
-			if row < 0 || blocks[block].rows[j].give < blocks[block].rows[row].give {
-				row = j
-			}
+	b := blocks[block]
+	row = -1
+	for j := len(b.rows) - 1; j >= 0; j-- {
+		if !takeable(b.rows[j]) || b.rowClass(j) != class {
+			continue
 		}
-		if row >= 0 {
-			return block, row, true
+		if row < 0 || b.rows[j].give < b.rows[row].give {
+			row = j
 		}
 	}
+	return block, row, true
+}
+
+// gives reports whether the block has a row of that class to give.
+func (b railBlock) gives(class railClass) bool {
+	for j, r := range b.rows {
+		if takeable(r) && b.rowClass(j) == class {
+			return true
+		}
+	}
+	return false
+}
+
+// lastToHide is the row taken once no block has one to give: the bottom-most
+// row of the least alive block that has rows left, pinned or not, the longest
+// of a class first and the lower of two the same length — because a rail
+// that cannot fit what it must keep still has to end somewhere, and what it
+// keeps longest is what is asking for the reader.
+func lastToHide(blocks []railBlock) (block, row int, ok bool) {
 	longest := -1
 	for i, b := range blocks {
-		if longest < 0 || len(b.rows) >= len(blocks[longest].rows) {
+		if len(b.rows) == 0 {
+			continue
+		}
+		if longest < 0 || b.class < blocks[longest].class ||
+			b.class == blocks[longest].class && len(b.rows) >= len(blocks[longest].rows) {
 			longest = i
 		}
 	}
-	if longest < 0 || len(blocks[longest].rows) == 0 {
+	if longest < 0 {
 		return 0, 0, false
 	}
 	return longest, len(blocks[longest].rows) - 1, true
 }
 
+// takeable reports whether truncation may take a row before it starts on the
+// pinned ones. A host's count row is never taken on its own (railLine.more).
+func takeable(r railLine) bool { return !r.pinned && r.more == 0 }
+
 // givable reports whether a block has a row truncation may take before it
 // starts taking pinned ones.
 func givable(b railBlock) bool {
 	for _, r := range b.rows {
-		if !r.pinned && r.more == 0 {
+		if takeable(r) {
 			return true
 		}
 	}

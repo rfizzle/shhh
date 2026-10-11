@@ -62,9 +62,25 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 	if p == nil || len(p.Steps) == 0 {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("PLAN",
-		fmt.Sprintf("%d of %d done", p.Done, len(p.Steps)), sty.dim, width)}
-	for _, s := range p.Steps {
+	done := fmt.Sprintf("%d of %d done", p.Done, len(p.Steps))
+	b := railBlock{heading: railHeading("PLAN", done, sty.dim, width), class: railStanding}
+	named := -1
+	for i, s := range p.Steps {
+		if s.State != PlanStepRunning {
+			continue
+		}
+		// A step in flight makes the plan a reading of this turn, and
+		// collapsed, the heading names that step.
+		b.class = railLive
+		glyph, _ := planStepTone(s.State)
+		lead := sty.dim.Render(done+" · ") + glyph + " "
+		if room := railRoom(width, "", inspectorIndent) - lipgloss.Width("PLAN") - 1 - lipgloss.Width(lead); room > 0 {
+			b.collapsedHeading = railHeading("PLAN", lead+brightStyle().Render(Clip(s.Title, room)), sty.dim, width)
+			named = i
+		}
+		break
+	}
+	for i, s := range p.Steps {
 		glyph, style := planStepTone(s.State)
 		// A step with no duration yet gets no right-hand field at all, so the
 		// title has the whole row rather than a column reserved for nothing.
@@ -72,7 +88,10 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 		if s.Elapsed != "" {
 			elapsed = sty.dim.Render(s.Elapsed)
 		}
-		b.add(railRow(glyph+" "+style.Render(s.Title), elapsed, width, inspectorIndent))
+		b.rows = append(b.rows, railLine{
+			text:   railRow(glyph+" "+style.Render(s.Title), elapsed, width, inspectorIndent),
+			stated: i == named,
+		})
 	}
 	if p.Drift != "" {
 		// Pinned, because it is a warning and not a step: the rail folds

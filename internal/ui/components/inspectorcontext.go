@@ -44,8 +44,22 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 	meter := Meter{pctValue: pct, cellCount: railCells(meterCellsRail, width), tone: meterPressure,
 		warn: c.WarnPct, alert: c.AlertPct}
 	style := meter.style()
+	level := ctxLevel(pct, c.WarnPct, c.AlertPct)
+	// A window under its warning reads the same from send to send; past it,
+	// it is a reading the turn is moving. The heading is the block's figure
+	// either way, so collapsed it is the whole block.
+	class := railStatic
+	if level != "" {
+		class = railLive
+	}
 	b := railBlock{heading: railHeading("CONTEXT",
-		style.Render(join(fmt.Sprintf("%d%% of %s", pct, formatTokens(c.Window)), ctxLevel(pct, c.WarnPct, c.AlertPct))), style, width)}
+		style.Render(join(fmt.Sprintf("%d%% of %s", pct, formatTokens(c.Window)), level)), style, width), class: class}
+	if c.Estimated {
+		// Collapsed, the heading carries the sigil the count row did: an
+		// estimate stays one when it is the only figure on screen.
+		b.collapsedHeading = railHeading("CONTEXT",
+			style.Render(join(fmt.Sprintf("~%d%% of %s", pct, formatTokens(c.Window)), level)), style, width)
+	}
 	count := formatTokens(c.Tokens)
 	if c.Estimated {
 		count = "~" + count
@@ -56,7 +70,7 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 	if c.Corrected {
 		right = sty.dim.Render("corrected") + " " + right
 	}
-	b.add(railRow(meter.bar(), right, width, inspectorIndent))
+	b.rows = append(b.rows, railLine{text: railRow(meter.bar(), right, width, inspectorIndent), stated: true})
 	tokens := strings.TrimSpace(c.Tokens1 + " " + c.Tokens2)
 	lead := ""
 	switch {
@@ -68,7 +82,7 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 		lead = sty.dim.Render("estimated")
 	}
 	if lead != "" || tokens != "" {
-		b.add(railRow(lead, sty.dim.Render(tokens), width, inspectorIndent))
+		b.rows = append(b.rows, railLine{text: railRow(lead, sty.dim.Render(tokens), width, inspectorIndent), stated: true})
 	}
 	return b, true
 }

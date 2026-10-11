@@ -93,7 +93,22 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 		fields, metaStyle = append(fields, "stale"), sty.accent
 	}
 	meta := strings.Join(fields, " · ")
-	b := railBlock{heading: railHeading("SUMMARY", meta, metaStyle, width)}
+	b := railBlock{heading: railHeading("SUMMARY", meta, metaStyle, width), class: railLive}
+	if s.State == SummaryOffTarget {
+		// A run that has left its instruction is the one reading that asks
+		// something of the reader.
+		b.class = railAsks
+	}
+	// Collapsed, the verdict moves into the heading beside the round it was
+	// taken at, and a stale reading still says so.
+	collapsed := SummaryLabel(s.State)
+	if s.Round > 0 {
+		collapsed += sty.dim.Render(fmt.Sprintf(" · round %d", s.Round))
+	}
+	if s.Stale {
+		collapsed += sty.dim.Render(" · ") + sty.accent.Render("stale")
+	}
+	b.collapsedHeading = railHeading("SUMMARY", collapsed, metaStyle, width)
 
 	lines := wrapPlain(s.Text, width-inspectorIndent)
 	if len(lines) > summaryLines {
@@ -112,7 +127,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 		b.add(row)
 	}
 
-	b.pin(indentRow(SummaryLabel(s.State), width))
+	b.rows = append(b.rows, railLine{text: indentRow(SummaryLabel(s.State), width), pinned: true, stated: true})
 	// The reason gets its own rows rather than a suffix on the state row: it
 	// is the whole content of a departure, and at 46 columns a suffix is a
 	// reason clipped mid-word. It follows its state the way an alert's note

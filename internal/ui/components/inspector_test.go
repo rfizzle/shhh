@@ -316,25 +316,31 @@ func TestInspectorRail_HeadingMetaIsRightAligned(t *testing.T) {
 	t.Fatal("CONTEXT heading not found")
 }
 
-func TestInspectorRail_TruncatesLongestBlockFirst(t *testing.T) {
-	r := fullRail()
-	for i := 0; i < 12; i++ {
-		r.Changes.Files = append(r.Changes.Files, InspectorFile{Path: "pkg/f.go", Added: 1, Removed: 1})
+// Within one class the longest block gives first: two standing blocks, and
+// the changeset with the most rows is the one that folds.
+func TestInspectorRail_TruncatesTheLongestBlockOfAClassFirst(t *testing.T) {
+	r := InspectorRail{
+		Todo: &InspectorTodo{Open: 3, Rows: []InspectorTodoRow{
+			{Slug: "rail-width", Priority: "H", Grade: "M"},
+			{Slug: "rail-setting", Priority: "M", Grade: "S"},
+		}},
+		Changes: &InspectorChanges{Added: 6, Removed: 6},
 	}
-	full := r.Lines(InspectorWidth, 0)
-	height := len(full) - 6
+	for i := 0; i < 6; i++ {
+		r.Changes.Files = append(r.Changes.Files, InspectorFile{Path: fmt.Sprintf("pkg/f%d.go", i), Added: 1, Removed: 1})
+	}
+	height := len(r.Lines(InspectorWidth, 0)) - 3
 	lines := r.Lines(InspectorWidth, height)
 	if len(lines) > height {
 		t.Fatalf("rail must fit %d rows, got %d", height, len(lines))
 	}
 	view := stripANSI(strings.Join(lines, "\n"))
-	if !strings.Contains(view, "… ") || !strings.Contains(view, "more") {
-		t.Fatalf("a truncated block says what it swallowed:\n%s", view)
+	if !strings.Contains(view, "… 4 more") {
+		t.Fatalf("the longer block folds and says what it swallowed:\n%s", view)
 	}
-	// The longest block gave up the rows; the short ones kept theirs.
-	for _, want := range []string{"THIS TURN", "SPEND", "session total · $1.86", "CONTEXT"} {
+	for _, want := range []string{"rail-width", "rail-setting"} {
 		if !strings.Contains(view, want) {
-			t.Fatalf("truncation should not drop %q:\n%s", want, view)
+			t.Fatalf("the shorter block of the same class keeps %q:\n%s", want, view)
 		}
 	}
 }

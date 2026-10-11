@@ -96,7 +96,14 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 	if len(r.Agents) == 0 {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("AGENTS", r.childTally(), sty.dim, width)}
+	b := railBlock{heading: railHeading("AGENTS", r.childTally(), sty.dim, width), class: r.agentsClass()}
+	if children := r.childCount(); children > 0 {
+		collapsed := sty.dim.Render(fmt.Sprintf("%d", children))
+		if tally := r.childTally(); tally != "" {
+			collapsed += sty.dim.Render(" · ") + tally
+		}
+		b.collapsedHeading = railHeading("AGENTS", collapsed, sty.dim, width)
+	}
 	shown, folded := r.mappedAgents()
 	rows := make([][]railLine, len(shown))
 	for i, a := range shown {
@@ -121,6 +128,36 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 	}
 	b.fold = func(hidden []railLine) string { return agentsFold(hidden, r.Agents, width) }
 	return b, true
+}
+
+// agentsClass is how alive the map is. A child waiting on an answer or still
+// working, or the keyboard in a child, is the thing on the rail that must not
+// go; a map whose every child has settled is history read before the next
+// send; anything between — a child queued, parked or idle — is a reading of
+// this turn (docs/interface/surfaces.md#the-inspector-rail).
+func (r InspectorRail) agentsClass() railClass {
+	class := railStanding
+	for _, a := range r.Agents {
+		switch {
+		case a.Self:
+		case a.State == FanoutBlocked || a.State == FanoutRunning || a.Focused:
+			return railAsks
+		case !a.State.settled():
+			class = railLive
+		}
+	}
+	return class
+}
+
+// childCount is how many sessions the map draws under the orchestrator.
+func (r InspectorRail) childCount() int {
+	n := 0
+	for _, a := range r.Agents {
+		if !a.Self {
+			n++
+		}
+	}
+	return n
 }
 
 // giveFirst is the give of a row the block would rather lose than any other.

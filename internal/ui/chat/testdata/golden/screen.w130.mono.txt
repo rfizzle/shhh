@@ -83,7 +83,7 @@
    ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...  exit 1    │  ALERTS                            1 standing  
       Thread the sentinel through the loop                                       │   ✗ go test  exit 1                    turn 1  
       --- FAIL: TestRoundLimit                                         1 line  ┃ │                                                
-                                                                               ┃ │  AGENTS                             4 running  
+                                                                               ┃ │  AGENTS                         4 · 4 running  
                                                                                ┃ │❯ ⊘ orchestrator                         $0.51  
                                                                                ┃ │    ready                                       
     ◇ spawned 4 agents · 4 of 32 in the session                   in parallel  ┃ │  ⚠ researcher-1                                
@@ -96,11 +96,11 @@
     ∗ worked 24.7s · 6 tools · $0.14                                           ┃ │    waiting approval: run echo hi · 1 tool      
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back       ┃ │                                                
     ✗ go test ./internal/agent/... failing · exit 1 · 21s                      ┃ │  CONTEXT                          32% of 128k  
-                                                                               ┃ │  … 2 more                                      
-  ⚠ researcher-1 · Say where the round count…       waiting approval: run echo hi│                                                
-  └⚠ researcher-4 · Say who calls the loop.         waiting approval: run echo hi│  SPEND                                  $0.51  
-  ⚠ researcher-2 · Say where the round limit…       waiting approval: run echo hi│  session total · $0.51                         
-  ⚠ researcher-3 · Say where the loop exits.        waiting approval: run echo hi│  … 1 more                                      
+                                                                               ┃ │  ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
+  ⚠ researcher-1 · Say where the round count…       waiting approval: run echo hi│                                  ↑41.2k ↓9.8k  
+  └⚠ researcher-4 · Say who calls the loop.         waiting approval: run echo hi│                                                
+  ⚠ researcher-2 · Say where the round limit…       waiting approval: run echo hi│  SPEND                  $0.51 · session $0.51  
+  ⚠ researcher-3 · Say where the loop exits.        waiting approval: run echo hi│                                                
   ╭─ ✓ done ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
   │ ▸                                                                                                                          │  
   ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 · ◇4 ─────────────────────────────────────────────────────────────────────────────┤  
@@ -308,7 +308,7 @@
    ␛[38;5;254m▎✗␛[m ␛[38;5;254mwrote␛[m ␛[38;5;244minternal/agent/loop.go · ran go test ./internal/agent/...␛[m  ␛[38;5;254mexit 1␛[m    ␛[38;5;244m│␛[m  ␛[38;5;254;1mALERTS␛[m                            ␛[38;5;254m1 standing␛[m  
       ␛[38;5;254mThread the sentinel through the loop␛[m                                       ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test␛[m  ␛[38;5;244mexit 1␛[m                    ␛[38;5;244mturn 1␛[m  
       ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                         ␛[38;5;244m1 line␛[m  ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
-                                                                               ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                             ␛[38;5;244m4 running␛[m  
+                                                                               ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                         ␛[38;5;244m4 · 4 running␛[m  
                                                                                ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[38;5;254m❯␛[m ␛[38;5;244;48;5;237m⊘␛[39m ␛[38;5;254morchestrator                         $0.51␛[m  
                                                                                ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                       
     ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[38;5;244m 4 agents · 4 of 32 in the session␛[m                   ␛[38;5;244min parallel␛[m  ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254m⚠␛[m ␛[38;5;254mresearcher-1␛[m                                
@@ -321,11 +321,11 @@
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                                           ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m    ␛[38;5;244mwaiting approval: run echo hi · 1 tool␛[m      
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo 1 takes it back␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
     ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                      ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mCONTEXT␛[m                          ␛[38;5;254m32% of 128k␛[m  
-                                                                               ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;244m… 2 more␛[m                                      
-  ␛[38;5;254m⚠␛[m researcher-1␛[38;5;244m · Say where the round count…␛[m       ␛[38;5;254mwaiting approval: run echo hi␛[38;5;244m│␛[m                                                
-  ␛[38;5;244m└␛[38;5;254m⚠␛[m researcher-4␛[38;5;244m · Say who calls the loop.␛[m         ␛[38;5;254mwaiting approval: run echo hi␛[38;5;244m│␛[m  ␛[38;5;254;1mSPEND␛[m                                  ␛[38;5;254m$0.51␛[m  
-  ␛[38;5;254m⚠␛[m researcher-2␛[38;5;244m · Say where the round limit…␛[m       ␛[38;5;254mwaiting approval: run echo hi␛[38;5;244m│␛[m  ␛[38;5;244msession total · $0.51␛[m                         
-  ␛[38;5;254m⚠␛[m researcher-3␛[38;5;244m · Say where the loop exits.␛[m        ␛[38;5;254mwaiting approval: run echo hi␛[38;5;244m│␛[m  ␛[38;5;244m… 1 more␛[m                                      
+                                                                               ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254m▰▰▰▰▰▰▰␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[38;5;254m41k␛[m  
+  ␛[38;5;254m⚠␛[m researcher-1␛[38;5;244m · Say where the round count…␛[m       ␛[38;5;254mwaiting approval: run echo hi␛[38;5;244m│␛[m                                  ␛[38;5;244m↑41.2k ↓9.8k␛[m  
+  ␛[38;5;244m└␛[38;5;254m⚠␛[m researcher-4␛[38;5;244m · Say who calls the loop.␛[m         ␛[38;5;254mwaiting approval: run echo hi␛[38;5;244m│␛[m                                                
+  ␛[38;5;254m⚠␛[m researcher-2␛[38;5;244m · Say where the round limit…␛[m       ␛[38;5;254mwaiting approval: run echo hi␛[38;5;244m│␛[m  ␛[38;5;254;1mSPEND␛[m                  ␛[38;5;254m$0.51␛[38;5;244m · session $0.51␛[m  
+  ␛[38;5;254m⚠␛[m researcher-3␛[38;5;244m · Say where the loop exits.␛[m        ␛[38;5;254mwaiting approval: run echo hi␛[38;5;244m│␛[m                                                
   ␛[38;5;244m╭─␛[m ␛[38;5;254m✓ done␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                                                                                        ␛[m ␛[38;5;244m│␛[m  
   ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51 · ␛[38;5;254m◇4␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────┤␛[m  

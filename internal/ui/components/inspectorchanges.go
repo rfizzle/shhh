@@ -143,7 +143,17 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 			meta = sty.dim.Render("session")
 		}
 	}
-	b := railBlock{heading: railHeading("CHANGES", meta, sty.dim, width)}
+	// The changeset is standing: it changes between turns and is read before
+	// the next send. Collapsed, the heading counts the files as well as their
+	// lines, since the rows that named them are behind the marker.
+	b := railBlock{heading: railHeading("CHANGES", meta, sty.dim, width), class: railStanding}
+	if len(c.Files) > 0 {
+		files := sty.dim.Render("session · " + plural(len(c.Files), "file"))
+		if c.Added != 0 || c.Removed != 0 {
+			files += " " + DiffStat(c.Added, c.Removed)
+		}
+		b.collapsedHeading = railHeading("CHANGES", files, sty.dim, width)
+	}
 	// What has been banked, above the paths that have not. It is pinned
 	// because it is the one row in the block that says some of this work is
 	// now somewhere a session ending cannot lose it.

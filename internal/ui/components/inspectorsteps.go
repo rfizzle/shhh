@@ -34,11 +34,15 @@ func (r InspectorRail) stepsBlock(width int) (railBlock, bool) {
 	if s == nil || s.Total <= 0 {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("STEPS", "", sty.dim, width)}
-	parts := []string{sty.info.Render(fmt.Sprintf("%d of %d", min(max(s.Done, 0), s.Total), s.Total))}
+	count := fmt.Sprintf("%d of %d", min(max(s.Done, 0), s.Total), s.Total)
+	// The agent's own list is standing: it changes between turns, and is read
+	// before the next send. Collapsed, its count is the heading's.
+	b := railBlock{heading: railHeading("STEPS", "", sty.dim, width), class: railStanding,
+		collapsedHeading: railHeading("STEPS", count, sty.dim, width)}
+	parts := []string{sty.info.Render(count)}
 	if s.Current != "" {
 		parts = append(parts, sty.body.Render(s.Current))
 	}
-	b.add(indentRow(strings.Join(parts, sty.dim.Render(" · ")), width))
+	b.rows = append(b.rows, railLine{text: indentRow(strings.Join(parts, sty.dim.Render(" · ")), width), stated: true})
 	return b, true
 }

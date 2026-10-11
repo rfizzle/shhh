@@ -8,6 +8,8 @@ package components
 import (
 	"fmt"
 	"strings"
+
+	"charm.land/lipgloss/v2"
 )
 
 // InspectorTurn is the THIS TURN block: how far through its steps the turn
@@ -46,11 +48,15 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 		// not be, so no denominator and no meter.
 		meta = fmt.Sprintf("step %d", t.Step)
 	}
-	b := railBlock{heading: railHeading("THIS TURN", meta, sty.dim, width)}
+	b := railBlock{heading: railHeading("THIS TURN", meta, sty.dim, width), class: railLive,
+		collapsedHeading: railHeading("THIS TURN", t.collapsedMeta(width), sty.dim, width)}
+	if t.Running {
+		b.class = railAsks
+	}
 	if m, ok := stepMeter(t.Step, t.Steps, railCells(meterCellsRail, width), t.Running); ok {
 		// The count sits beside the bar rather than in the heading, because a
 		// bar is never the only carrier of its value.
-		b.add(indentRow(m.View(), width))
+		b.rows = append(b.rows, railLine{text: indentRow(m.View(), width), stated: true})
 	}
 	// "3 files this turn" rather than "3 files": CHANGES counts files too, and
 	// the two are different questions, so both say their scope in words.
@@ -68,6 +74,27 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	if t.Tools > 0 {
 		stats = append(stats, sty.dim.Render(plural(t.Tools, "tool")))
 	}
-	b.add(indentRow(strings.Join(stats, sty.dim.Render(" · ")), width))
+	b.rows = append(b.rows, railLine{text: indentRow(strings.Join(stats, sty.dim.Render(" · ")), width), stated: true})
 	return b, true
+}
+
+// collapsedMeta is the turn on its heading alone: the step it is on, the
+// files it has changed, and their counts where the row has room for them.
+func (t InspectorTurn) collapsedMeta(width int) string {
+	var parts []string
+	switch {
+	case t.Steps > 0:
+		parts = append(parts, fmt.Sprintf("step %d of %d", t.Step, t.Steps))
+	case t.Step > 0:
+		parts = append(parts, fmt.Sprintf("step %d", t.Step))
+	}
+	parts = append(parts, plural(t.Files, "file"))
+	meta := sty.dim.Render(strings.Join(parts, " · "))
+	if t.Files > 0 {
+		counted := meta + " " + DiffStat(t.Added, t.Removed)
+		if lipgloss.Width(counted) <= railRoom(width, "", inspectorIndent)-lipgloss.Width("THIS TURN")-1 {
+			meta = counted
+		}
+	}
+	return meta
 }
