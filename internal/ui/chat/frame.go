@@ -371,21 +371,38 @@ func (m Model) frameHints(room int) string {
 		// that it can be
 		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 		list := segAs(keys.Screen.List, keys.Words(keys.Screen.List)).render()
+		//
+		// The row is a ladder like the others: the key list is the handover
+		// floor, and the draft's position is the rung that leaves when the
+		// width cannot hold both, whole and never cut against the corner.
 		if m.input.Value() == "" {
 			return list
 		}
-		return m.draftPosition() + sty.Hint.Dim.Render(" · ") + list
+		both := m.draftPosition() + sty.Hint.Dim.Render(" · ") + list
+		if lipgloss.Width(both) > room {
+			return list
+		}
+		return both
 	case m.decisionUngated():
 		// The three keys that matter while a decision waits. Stopping the run
 		// is the cancel chord, never esc: esc on this surface goes back rather
 		// than stopping anything, and ending a turn belongs to a chord no
 		// reflex produces
 		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+		//
+		// The waiting ladder, floor first: the handover, the key that
+		// answers the card, which every width keeps. Then the steer, the
+		// stop and the key list, shed from the right as the width runs out,
+		// so no width cuts a word against the corner.
 		hints = []hintSeg{
 			segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)),
-			segAs(keys.Draft.Send, "add to this turn"),
-			m.ctrlCHint(),
+			segAs(keys.Draft.Send, "add to this turn").givesUp(1),
+			m.ctrlCHint().givesUp(2),
 		}
+		if m.attachedTo == "" {
+			hints = append(hints, m.keyListHint().givesUp(3))
+		}
+		ladder = true
 	case m.attachedTo != "":
 		hints = []hintSeg{
 			segAs(keys.Agent.Detach, "back to your session"),

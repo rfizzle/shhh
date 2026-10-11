@@ -1,0 +1,35 @@
+# program test: TestProgram_TheWaitingAndGatedRowsShedRungs
+#
+# The input frame's foot row is one ladder in every state that writes one: the
+# width that cannot hold the whole row drops whole rungs from the right, never
+# a word against the corner, and the floor is the handover alone
+# (docs/interface/surfaces.md#the-input-frame). Driven at 80 columns, where the
+# waiting row used to be cut mid-word at `[ctrl+c] sto`.
+#
+# The session works on a request the endpoint holds open for six seconds, a
+# steer is typed into the draft meanwhile, and then a yes-or-no question
+# lands over that sentence: it rides above the frame without taking the
+# keyboard, so the frame is waiting; the handover gives the card the keyboard,
+# so the frame is gated, with the sentence still in the box.
+#
+# What each snap holds: 02 the working row, `[ctrl+p] hold · [ctrl+c] stop the
+# run · [enter] add to this turn` (the unchanged ladder, the baseline); 03 the
+# waiting row, `[ctrl+space/ctrl+y] answer it · [enter] add to this turn`
+# followed by rule, the stop and the key list having left whole from the right,
+# no `[ctrl+c] sto` against the corner; 04 the gated row, `22 characters,
+# cursor at 22 · [?] keys`; 05 the answer.
+snap 01-start "Some things worth doing first"
+keys "settle the migration" Enter
+snap 02-working "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn"
+keys "and keep it reversible"
+snap 03-waiting "Should the migration be reversible?" "╰─ [ctrl+space/ctrl+y] answer it · [enter] add to this turn ─"
+# A card that has just landed holds its keys for a beat.
+sleep 1
+keys C-y
+snap 04-gated "22 characters, cursor at 22 · [?] keys"
+keys y
+snap 05-answered "Understood, it stays reversible"
+keys C-c
+sleep 0.6
+keys C-c
+snap 06-exit "that is everything the screen was holding"

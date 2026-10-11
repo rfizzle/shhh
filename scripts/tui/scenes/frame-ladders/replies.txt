@@ -1,0 +1,9 @@
+# One reply per request. The last line repeats once these run out.
+#
+# The first request is held open for six seconds so the turn is working while
+# the reader types a steer into the draft; then the question lands over that
+# sentence, which is the waiting row, and the handover makes it the gated one.
+# Nothing here acts on the machine: a question is a decision and not an act.
+wait:6
++tool:ask:{"question":"Should the migration be reversible?","shape":"confirm"}
+Understood, it stays reversible.

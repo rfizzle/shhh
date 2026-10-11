@@ -1212,6 +1212,19 @@ named on every row wide enough to hold the whole ladder, since a key whose
 first press is silent has to be told before it is pressed. With text in the
 draft the same slot says `[ctrl+c] clear`.
 
+The two rows that belong to a waiting decision are on the same ladder. While
+a card or a child's request waits on the person with the draft still holding
+the keyboard, the row reads
+
+`[ctrl+space/ctrl+y] answer it · [enter] add to this turn · [ctrl+c] stop the run · [ctrl+]] keys`
+
+and it sheds the key list, then the stop, then the steer, so that the floor
+is the handover alone; no width cuts the stop in half against the corner, as
+the row did at eighty columns. Once the card holds the keyboard the row says
+what the box is holding and the key list, `33 characters, cursor at 33 ·
+[?] keys`, and the count is the rung that leaves, so the floor there is the
+key list. Neither row tells the model anything.
+
 The editor and the attach chord are not rungs. A rarity does not earn the
 editor a slot, and the key list holds it; attach is offered where it is useful
 and nowhere else. While the clipboard holds something the chord would take — an

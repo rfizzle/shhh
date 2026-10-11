@@ -604,6 +604,44 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
+// TestGolden_InputFrameLadders captures the input frame's foot row in the
+// four states that write one: idle, working, waiting on the person (a
+// child's approval is up and the draft still holds the keyboard) and gated
+// (a card holds the keyboard). They share one ladder: a width that cannot
+// hold the whole row drops whole rungs from the right, never a word cut
+// against the corner, and the floor is the handover alone
+// (docs/interface/surfaces.md#the-input-frame).
+func TestGolden_InputFrameLadders(t *testing.T) {
+	captureBoundedGolden(t, "input-frame-ladders", "the input frame's foot row in four states", goldenWidths, func(width int) []golden.Panel {
+		idle := goldenModel(t, width)
+		working := goldenModel(t, width)
+		working.state = stateStreaming
+
+		waiting := frameModel(t, width, 40)
+		waiting.childAsks = []*subagent.Ask{subagent.NewAsk("researcher-1", subagent.AskCommand, "run make")}
+		waiting.input.SetValue("keep going")
+
+		// A one-answer question rides above the frame while it holds the
+		// keyboard, so the frame is drawn and not live: the only gated state
+		// whose foot row is on screen with a sentence still in the box.
+		gm := questionModel(t, agent.ModeManual)
+		resized, _ := gm.Update(tea.WindowSizeMsg{Width: width, Height: 40})
+		gm = resized.(Model)
+		gm.input.SetValue("the one that needs no new service")
+		asked, _ := gm.Update(askCall(`{"question":"Should the migration be reversible?","shape":"confirm"}`))
+		gated := handover(t, asked.(Model))
+		if !gated.frameShowing() {
+			t.Fatal("the gated frame should be drawn under the riding card")
+		}
+		return []golden.Panel{
+			{Label: "state \u00b7 idle", View: promptSurface(idle)},
+			{Label: "state \u00b7 working", View: promptSurface(working)},
+			{Label: "state \u00b7 waiting on the person", View: promptSurface(waiting)},
+			{Label: "state \u00b7 gated, a card holds the keyboard", View: promptSurface(gated)},
+		}
+	})
+}
+
 // TestGolden_ModeWord captures the frame in every permission mode, one panel
 // each, because the mode segment is one field read before every keystroke and
 // the thing to check is the five of them side by side: five distinct words,

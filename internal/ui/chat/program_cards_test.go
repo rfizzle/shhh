@@ -478,3 +478,37 @@ func TestProgram_AFreeAnswerIsTypedBesideTheRail(t *testing.T) {
 		t.Fatalf("the typed sentence should be the answer the model reads: %+v", p.asked)
 	}
 }
+
+// The waiting and the gated foot rows shed whole rungs from the right at 80
+// columns, the way the idle and working rows do: the waiting row used to run
+// `[ctrl+c] sto` into the corner, and no row is cut against it now. The floor
+// is the handover, which the waiting row keeps and the gated row says as the
+// key list.
+func TestProgram_TheWaitingAndGatedRowsShedRungs(t *testing.T) {
+	hold, release := quietHold(t)
+	m, _ := scriptedSession(
+		programTurn{hold: hold, calls: []provider.ToolCall{call("q1", ask.ToolName, `{"question":"Should the migration be reversible?","shape":"confirm"}`)}},
+		programTurn{text: "Reversible it is."},
+	)
+	m.wiring.Ask = true
+	tm := runProgramAt(t, m, 80, 30)
+
+	send(tm, "fix the round limit")
+	waitForText(t, tm, "[ctrl+p] hold")
+	// A sentence in the draft when the card lands: the card rides above the
+	// frame without the keyboard, and the frame is waiting.
+	tm.Type("and keep it reversible")
+	release()
+	waitForText(t, tm, "Should the migration be reversible?")
+	waitForText(t, tm, "[ctrl+space/ctrl+y] answer it · [enter] add to this turn ─")
+	if f := tm.frame.Load(); f != nil && strings.Contains(*f, "stop the") {
+		t.Fatalf("the waiting row should have shed the stop whole at 80 columns:\n%s", *f)
+	}
+
+	// The handover gives the card the keyboard: the frame is gated, and its
+	// row is the sentence's position beside the key list.
+	tm.Send(programHandover)
+	waitForText(t, tm, "22 characters, cursor at 22 · [?] keys")
+	programPress(t, tm, "y")
+	waitForText(t, tm, "Reversible it is")
+}
