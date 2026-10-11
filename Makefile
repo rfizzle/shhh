@@ -117,7 +117,10 @@ lint: ## Run golangci-lint
 
 vulncheck: ## Fail on a known vulnerability the binary reaches (needs govulncheck and the network)
 	@echo "${MAGENTA}Running govulncheck $(GOVULNCHECK_VERSION)...${RESET}"
-	@$(GOVULNCHECK) ./...
+	@# The source-mode scan loads the whole program and was killed at 3 GiB on
+	@# a 6 GiB host; the binary scan reads the built symbol table in under
+	@# 100 MB and names the same advisories by the symbols the binary links.
+	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && $(GOCMD) build -o "$$tmp/shhh" ./cmd/shhh && $(GOVULNCHECK) -mode=binary "$$tmp/shhh"
 
 ## Test:
 # The run stays cacheable on purpose: nothing here adds -count=1, and a test
