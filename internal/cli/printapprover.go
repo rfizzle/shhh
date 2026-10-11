@@ -244,11 +244,11 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 			// A call this run holds nothing for is refused below, whatever
 			// its tier.
 		case call.Action.Kind == agent.ActionOther && tc.Name == subagent.SpawnToolName:
-			return r.approveSpawn(tc, call)
+			return r.approveSpawn(ctx, tc, call)
 		case call.Action.Kind == agent.ActionOther:
-			return r.approveServerCall(tc, call)
+			return r.approveServerCall(ctx, tc, call)
 		case call.Action.Kind == agent.ActionFetch:
-			return r.approveFetch(tc, call)
+			return r.approveFetch(ctx, tc, call)
 		// A process start is approved like a command: safety-flagged
 		// commands are always denied headless; --yes or an allowlist match
 		// opts in.
@@ -257,9 +257,9 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 		case call.Action.Kind == agent.ActionCommand:
 			return r.admitCommand(tc, call, callErr, foreground)
 		case call.Tier == agent.TierWrite && tc.Name == structural.GitWriteToolName:
-			return r.approveGitWrite(tc, call)
+			return r.approveGitWrite(ctx, tc, call)
 		case call.Tier == agent.TierWrite:
-			return r.approveWrite(tc, call)
+			return r.approveWrite(ctx, tc, call)
 		}
 		return "error: tool " + tc.Name + " cannot be approved in this session"
 	}
@@ -370,7 +370,7 @@ func (r headlessApproval) answers(name string) bool {
 // for the calls it goes on to make, so this is the decision — and the only
 // one.
 // See docs/capabilities/subagents.md#spawning-is-a-decision.
-func (r headlessApproval) approveSpawn(tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveSpawn(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
 	// A model the session cannot run is refused ahead of the verdict, as
 	// the session refuses it ahead of its card: no classifier round is spent
 	// on a spawn that cannot start.
@@ -384,27 +384,27 @@ func (r headlessApproval) approveSpawn(tc provider.ToolCall, call agent.Classifi
 		return reason
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	return r.red.Process(tc.Name, agent.ExecuteWith(context.Background(), func(_ context.Context, _ string, args json.RawMessage) (string, error) {
+	return r.red.Process(tc.Name, agent.ExecuteWith(ctx, func(_ context.Context, _ string, args json.RawMessage) (string, error) {
 		return r.un.sup.Spawn(args)
 	}, tc))
 }
 
 // approveServerCall answers a server call, an external action like a fetch:
 // --yes opts in, the default denies.
-func (r headlessApproval) approveServerCall(tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveServerCall(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
 	reason, took, ok := r.answer(tc, call.Action,
 		r.opts.yes, observe.ReasonHeadlessYes, tc.Name, "external actions by default (run with --yes)")
 	if !ok {
 		return reason
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	return r.red.Process(tc.Name, agent.ExecuteWith(context.Background(), r.mcpTools.Execute, tc))
+	return r.red.Process(tc.Name, agent.ExecuteWith(ctx, r.mcpTools.Execute, tc))
 }
 
 // approveFetch answers web_fetch, an external action: --yes opts in to any
 // host the deny list does not name, the default denies like every other
 // gated call.
-func (r headlessApproval) approveFetch(tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveFetch(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
 	// The host is on the action because it is the unit a fetch is judged
 	// on: the classifier is being asked whether this page is an outbound
 	// channel worth stopping for, and where the request goes is most of that
@@ -455,10 +455,10 @@ func (r headlessApproval) approveFetch(tc provider.ToolCall, call agent.Classifi
 		}
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	fetch := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
-		return r.webTools.Execute(ctx, web.Orchestrator, name, args)
+	fetch := func(c context.Context, name string, args json.RawMessage) (string, error) {
+		return r.webTools.Execute(c, web.Orchestrator, name, args)
 	}
-	return r.red.Process(tc.Name, agent.ExecuteWith(context.Background(), fetch, tc))
+	return r.red.Process(tc.Name, agent.ExecuteWith(ctx, fetch, tc))
 }
 
 // commandAdmission is what sets one way of running a command apart from the
@@ -531,7 +531,7 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 // answered where a file modification is answered — after the deny list,
 // which reads the command line the call stands for, because a person who
 // refused `git commit` refused the act and not the spelling.
-func (r headlessApproval) approveGitWrite(tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveGitWrite(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
 	line := call.Action.Command
 	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
 		r.refuse(tc, line, refusal.Code)
@@ -546,11 +546,11 @@ func (r headlessApproval) approveGitWrite(tc provider.ToolCall, call agent.Class
 		return reason
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	return r.red.Process(tc.Name, agent.ExecuteWith(context.Background(), r.structTools.Execute, tc))
+	return r.red.Process(tc.Name, agent.ExecuteWith(ctx, r.structTools.Execute, tc))
 }
 
 // approveWrite answers a file modification.
-func (r headlessApproval) approveWrite(tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveWrite(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
 	// Before --yes and before the judge, as the screen reads it before its
 	// card: a path git runs is no grant's to write.
 	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
@@ -578,7 +578,7 @@ func (r headlessApproval) approveWrite(tc provider.ToolCall, call agent.Classifi
 		}
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
-	result := agent.ExecuteWith(context.Background(), r.un.seen.ExecuteMutating, tc)
+	result := agent.ExecuteWith(ctx, r.un.seen.ExecuteMutating, tc)
 	if r.mutationHook != nil {
 		result = r.mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)
 	}
