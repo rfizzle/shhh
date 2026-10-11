@@ -24,29 +24,36 @@ builds:
       - arm64
 
 archives:
-  - format: tar.gz
+  - formats: ["tar.gz"]
     # Windows has no tar in the shell most people extract with, and a .zip is
     # what its own Explorer opens without a second tool.
     format_overrides:
       - goos: windows
-        format: zip
+        formats: ["zip"]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - THIRD_PARTY_LICENSES
 
-brews:
+# A cask, not a formula: goreleaser retired `brews` (deprecated from v2.10,
+# formally in v2.16). A cask installs the archive's binary by name and has no
+# install or test block; the hook strips the quarantine flag macOS puts on a
+# downloaded binary that is not signed and notarized, which this one is not.
+homebrew_casks:
   - repository:
       owner: rfizzle
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     name: shhh
+    binaries:
+      - shhh
     homepage: https://github.com/rfizzle/shhh
     description: Natural language to shell commands
-    license: MIT
-    install: |
-      bin.install "shhh"
-    test: |
-      system "#{bin}/shhh", "--version"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/shhh"]
+          end
 
 checksum:
   name_template: "checksums.txt"
