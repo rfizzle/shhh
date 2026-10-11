@@ -192,6 +192,30 @@ func wordingKeys() []wording {
 	return out
 }
 
+// wordingKeyList is the keys a file can replace, one per line. The table
+// carries no description for a key, so the key is all a line holds.
+func wordingKeyList() string {
+	var b strings.Builder
+	for _, w := range wordingKeys() {
+		b.WriteString(w.key + "\n")
+	}
+	return b.String()
+}
+
+// builtinWording is the text of the built-in under key, ending in one
+// newline, for a person starting an override from it. An unknown key is
+// refused naming the known ones.
+func builtinWording(key string) (string, error) {
+	var known []string
+	for _, w := range wordingKeys() {
+		if w.key == key {
+			return strings.TrimRight(w.builtin(), "\n") + "\n", nil
+		}
+		known = append(known, w.key)
+	}
+	return "", fmt.Errorf("no built-in wording is named %q; the known keys are %s", key, strings.Join(known, ", "))
+}
+
 func setSteer(p *sessionPrompts, text string)      { p.steer = text }
 func setCheckIn(p *sessionPrompts, text string)    { p.checkIn = text }
 func setSummary(p *sessionPrompts, text string)    { p.summary = text }

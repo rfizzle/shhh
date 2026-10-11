@@ -575,8 +575,10 @@ does not exist until you write a file into it. To change a wording, write
 `<key>.md` under `.shhh/prompts/` (a checkout's) or `prompts/` beside your
 settings file (yours), holding the whole of the text you want sent: a file
 there replaces the built-in whole, and deleting it puts the built-in back. The
-built-in text is in the program, not in the docs, and `config init --stdout`
-prints the settings, not a wording; the keys are the ones the `[prompts]`
+built-in text is in the program, not in the docs: `shhh config init --wording
+<key>` prints one to stdout, to start a file from (`shhh config init --wording`
+alone lists the keys, and an unknown key is refused naming them), and
+`config init --stdout` prints the settings, not a wording; the keys are the ones the `[prompts]`
 table lists and the steps of the run, and the comment above each says what its
 placeholders are. A file that says exactly what its built-in says is reported:
 `shhh doctor` names it `<key> — same as the built-in, no effect` as a warning

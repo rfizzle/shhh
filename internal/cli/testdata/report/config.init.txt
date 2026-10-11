@@ -5,6 +5,8 @@
   ⊘ /home/dev/.config/shhh/prompts/ · no wordings written  [global]
         a file at <key>.md here replaces that built-in wording whole; delete it
         and the built-in words are back
+        `shhh config init --wording <key>` prints a built-in's text to start one
+        from; with no key it lists them
   ✓ wrote /home/dev/.config/shhh/keybindings.toml · 235 keys, each co…  [global]
         uncomment a line to move a key; shhh keys check reads it the way a
         session will

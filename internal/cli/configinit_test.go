@@ -173,3 +173,25 @@ func TestProjectWordings_NamesWhatTheCheckoutSupplied(t *testing.T) {
 		t.Fatalf("a session with no checkout names none, got %v", named)
 	}
 }
+
+// `--wording <key>` prints one built-in and nothing else, `--wording` alone
+// lists the keys, and an unknown key is refused naming them: with no copies
+// written, this is the only text an override can start from.
+func TestConfigInit_WordingPrintsABuiltinToStartAnOverrideFrom(t *testing.T) {
+	path := pointConfigAt(t, "")
+	want, err := builtinWording("steer")
+	must(t, err)
+	if out := runRoot(t, "config", "init", "--wording", "steer"); out != want {
+		t.Fatalf("--wording steer printed more or less than the built-in:\n%s", out)
+	}
+	if out := runRoot(t, "config", "init", "--wording"); out != wordingKeyList() || !strings.Contains(out, "todo_review\n") {
+		t.Fatalf("--wording alone did not list the keys one per line:\n%s", out)
+	}
+	if exists(path) || exists(filepath.Join(filepath.Dir(path), "prompts")) {
+		t.Fatal("printing a wording wrote a file")
+	}
+	err = runRootErr(t, "config", "init", "--wording", "nope")
+	if err == nil || !strings.Contains(err.Error(), `no built-in wording is named "nope"; the known keys are steer, `) {
+		t.Fatalf("an unknown key was not refused naming the known ones: %v", err)
+	}
+}

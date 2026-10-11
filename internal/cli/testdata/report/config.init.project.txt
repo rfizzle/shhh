@@ -5,6 +5,8 @@
   ⊘ /home/dev/src/app/.shhh/prompts/ · no wordings written  [project]
         a file at <key>.md here replaces that built-in wording whole; delete it
         and the built-in words are back
+        `shhh config init --wording <key>` prints a built-in's text to start one
+        from; with no key it lists them
         this checkout is not trusted, so its settings do not load here — `shhh
         trust` loads them
   ⊘ no keybindings.toml · a keymap is yours alone; --global writes it

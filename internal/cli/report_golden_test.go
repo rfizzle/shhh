@@ -123,6 +123,8 @@ func TestReportGoldens(t *testing.T) {
 		{"config.init.project", goldenConfigInitProject().Render(80)},
 		{"config.init.update", goldenConfigUpdate().Render(80)},
 		{"config.scaffold", goldenScaffoldOpening()},
+		{"config.wording.keys", strings.TrimRight(wordingKeyList(), "\n")},
+		{"config.wording.text", goldenWordingOpening()},
 		{"keys", goldenKeys().Render(80)},
 		{"chats", chatsReport(goldenChats(), goldenNow).Render(80)},
 		{"chats.w60", chatsReport(goldenChats(), goldenNow).Render(60)},
@@ -613,6 +615,17 @@ func goldenScaffoldOpening() string {
 		return text[:at+1]
 	}
 	return text
+}
+
+// goldenWordingOpening is the first lines `config init --wording steer`
+// prints: the built-in's text, which is what an override starts from.
+func goldenWordingOpening() string {
+	text, err := builtinWording("steer")
+	if err != nil {
+		return err.Error()
+	}
+	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
+	return strings.Join(lines[:min(len(lines), 6)], "\n")
 }
 
 // goldenObserveCompare is two cohorts either side of a prompt edit, both

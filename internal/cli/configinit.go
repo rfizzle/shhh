@@ -48,6 +48,7 @@ import (
 
 func newConfigInitCmd() *cobra.Command {
 	var global, toStdout, update bool
+	var wordingKey string
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Write the settings file at its defaults",
@@ -55,7 +56,8 @@ func newConfigInitCmd() *cobra.Command {
 			"that says what it decides — and, for the global pair, a keybindings.toml " +
 			"holding every key at its shipped keystrokes, commented out. No wording is written: " +
 			"a file at <key>.md under the prompts directory replaces that built-in whole, so you add one " +
-			"only for a wording you change.\n" +
+			"only for a wording you change. `--wording <key>` prints one built-in's text to start from, " +
+			"and `--wording` alone lists the keys.\n" +
 			"Run in a checkout, it writes the project pair — " + project.ConfigFile +
 			" — with the keys a checkout may not decide left out; run anywhere else, " +
 			"or in your home directory, it writes the global pair. `--global` writes the global pair wherever it is run. " +
@@ -66,8 +68,32 @@ func newConfigInitCmd() *cobra.Command {
 			"its new name with its value, a wording file that equals its built-in is deleted, your keybindings.toml gets the " +
 			"keys added since it was written, commented out, and every value and binding is " +
 			"kept; with `--stdout` it prints the settings file it would write.",
-		Args: cobra.NoArgs,
+		// A bare `--wording` lists the keys, which pflag spells by giving
+		// the flag a value of its own when none is attached, so
+		// `--wording steer` reaches here as the flag and one argument: the
+		// argument is the key.
+		Args: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("wording") {
+				return cobra.MaximumNArgs(1)(cmd, args)
+			}
+			return cobra.NoArgs(cmd, args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("wording") {
+				if len(args) == 1 {
+					wordingKey = args[0]
+				}
+				if wordingKey == wordingList {
+					_, err := io.WriteString(cmd.OutOrStdout(), wordingKeyList())
+					return err
+				}
+				text, err := builtinWording(wordingKey)
+				if err != nil {
+					return err
+				}
+				_, err = io.WriteString(cmd.OutOrStdout(), text)
+				return err
+			}
 			plan, err := configInit(global, workingDir())
 			if err != nil {
 				return err
@@ -109,8 +135,17 @@ func newConfigInitCmd() *cobra.Command {
 		"print the settings file instead of writing it, with the values that file already holds filled in")
 	cmd.Flags().BoolVar(&update, "update", false,
 		"bring the files already there up to date: add the keys they lack, move renamed keys, delete wording files that equal their built-in, keep every value")
+	cmd.Flags().StringVar(&wordingKey, "wording", "",
+		"print one built-in wording's text, to start an override from; with no key, list the keys")
+	cmd.Flags().Lookup("wording").NoOptDefVal = wordingList
+	for _, other := range []string{"global", "stdout", "update"} {
+		cmd.MarkFlagsMutuallyExclusive("wording", other)
+	}
 	return cmd
 }
+
+// wordingList is what `--wording` holds when it is given no key.
+const wordingList = "list"
 
 // initPlan is everything the command would write and everything already in
 // its way, worked out before a byte is written. It is one pass because the
@@ -251,6 +286,7 @@ func (p initPlan) wrote() report.Report {
 		Outcome: pair, Detail: "no wordings written"}
 	wordings.Fix = []string{
 		"a file at <key>.md here replaces that built-in wording whole; delete it and the built-in words are back",
+		"`shhh config init --wording <key>` prints a built-in's text to start one from; with no key it lists them",
 	}
 	if p.project {
 		// Whether what was just written is read at all is the checkout's
