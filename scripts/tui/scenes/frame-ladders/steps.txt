@@ -29,6 +29,10 @@ keys C-y
 snap 04-gated "22 characters, cursor at 22 · [?] keys"
 keys y
 snap 05-answered "Understood, it stays reversible"
+# The draft typed during the hold is still in the box: the first chord
+# clears it, the second arms the quit and the third quits.
+keys C-c
+sleep 0.6
 keys C-c
 sleep 0.6
 keys C-c
