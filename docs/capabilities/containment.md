@@ -1213,6 +1213,13 @@ container, then the second exec where the hang-up did not arrive. A command that
 is still printing is handed to the supervisor as anywhere, and the session
 ending removes the container with whatever process is left in it.
 
+A process the assistant started is the person's to stop as well. The rail
+counts every one in its PROCESSES block, and `/ps` — the [process
+manager](../interface/surfaces.md#the-process-manager) — lists each with where
+it runs, opens it onto its output, and stops it with the same stop the
+process tool uses, the two legs included in a container, or kills it without
+the grace.
+
 ## The model is told what its commands run under
 
 The mechanism, the profile it applies, whether the network is open and how

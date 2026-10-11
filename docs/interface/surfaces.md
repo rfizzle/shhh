@@ -1899,7 +1899,8 @@ A block is a door to the whole of what it bounds. Where a block has a surface
 holding all of it, its heading and its fold marker open that surface: SUMMARY
 opens every reading the session has taken, THIS TURN every turn the session
 has run, ALERTS every alert the session has had, standing and superseded,
-CHANGES opens the session's diff, AGENTS the manager, STEPS the whole working list,
+CHANGES opens the session's diff, AGENTS the manager, PROCESSES and CALLS the
+[process manager](#the-process-manager), STEPS the whole working list,
 PLAN the approved plan's whole checklist on that same screen,
 TODO the backlog screen, CONTEXT the occupancy screen, SPEND the session's whole bill and TOOLS every place the session's tools came from — each the surface its command already opens, so
 the command is the door's key. The surface is left by its own esc, and by a
@@ -1917,13 +1918,14 @@ one foot line that is a door. How alive a block is, is read off what it says
 at that moment rather than fixed to the block, in four classes. A block asks,
 or is in motion: a standing alert, a map with an agent waiting on an answer or
 still working or the keyboard in one, a turn that is running, a reading that
-says the run is off target. A block is a live reading, changing this turn: the
+says the run is off target, a process running or one that failed since the
+last turn began, a call in flight. A block is a live reading, changing this turn: the
 turn's figures once it has stopped, a reading on target, a window past its
 warning, a plan with a step in flight, a map whose agents are queued or
 parked rather than working. A block is standing, changing between
 turns and read before the next send: an idle plan or working list, the
-backlog, the changeset, a map whose every agent has settled, tool sources with
-one blocked, broken or still starting. And a block is static, the same from
+backlog, the changeset, a map whose every agent has settled, processes that
+have all ended, tool sources with one blocked, broken or still starting. And a block is static, the same from
 send to send: the bill, a window under its warning, every tool source up. So
 the same map is history while its agents have all finished and the one block
 that must not go the moment one of them asks for you; the marks already say
@@ -1964,6 +1966,17 @@ asks, a window crosses its warning — it takes its rows back where it stands on
 the next frame and something less alive pays for them; it never jumps above
 the blocks over it, because the rows under the reader's hand are click
 targets, and a rail that reordered itself would put a different one there.
+
+Two blocks beside the map are the rest of what the session left running.
+PROCESSES is there once a process has been started: a row for each, with its
+mark, its name, its state in the manager's words, how long it has been up and
+`· container` where it runs in the container, and the heading counts what is
+running and what failed. CALLS is there only while a round has calls in
+flight: a row for each, the call in its receipt's words and how long it has
+run, or `stopped by you` for one stopped from the manager until its round
+ends. A session that started no process and is running no call draws neither.
+CALLS is not TOOLS: TOOLS says where the session's tools came from, CALLS
+which of them are running now.
 
 One block is not about the work at all: where the session's tools came from.
 A server that failed to answer leaves no trace in a transcript — a tool that
@@ -2418,7 +2431,9 @@ It is one list in two sections. **processes** has a row for each process the
 session started: its name, whether it is running or how it ended — `exited 0`,
 `exited 1`, `stopped` where the end was asked for, `killed` where a signal
 nobody here sent ended it — how long it has been up or ran for, and where it
-runs, `host` or `container`. **tools** has a row for each call running now.
+runs, `host` or `container`. **tools** has a row for each call running now:
+a round's calls, a call you approved, a command the model ran — the tool, its
+arguments in a line in the receipt's words, how long it has run and where.
 A section with nothing in it says `nothing running` on its heading, so an empty
 section reads as an answer rather than as a list that did not load. Beside
 the list is the row under the pointer: its command, its age, where it runs and
@@ -2426,8 +2441,9 @@ the last line it printed.
 
 `enter` opens a row. A process opens onto its output and its errors, each as
 the process tool's read returns them, so a person reads exactly what the model
-would ask for. `esc` goes back to the list, and `esc` on the list goes back to
-the prompt.
+would ask for. A call opens onto its arguments whole and, for a command, what
+it has printed so far; any other tool shows nothing until it returns. `esc`
+goes back to the list, and `esc` on the list goes back to the prompt.
 
 `d` stops the row, after asking, with the agent manager's two answers: `y`
 stops it and `k` kills it, and esc keeps it. Stopping a process is the
@@ -2442,6 +2458,15 @@ it started and a person stopped is the same fact as a process that ended. The
 keys are the agent manager's own, `↑↓/jk` to move, `enter`, `d`, `?` and
 `esc`, so the manager spends no letter of its own; `k` is a kill only as the
 answer to the stop's question, where it is in the agent manager too.
+
+Stopping a call ends that call alone, through the stop the turn's own stop
+uses, and the rest of its round goes on: a call that ran a command gets the
+runner's stop sequence, and its row in the list reads `stopped by you` until
+the round is over. The model is answered for it exactly as for a call a stop
+of the turn caught — a tool as stopped by the person, a command as stopped
+before it finished, with what it printed — and the round's other results
+reach it beside that one. A call has nothing gentler to stop it with, so its
+stop and its kill are one act.
 
 ## Cards
 
