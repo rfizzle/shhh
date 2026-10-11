@@ -24,7 +24,7 @@ import (
 
 type Definition struct {
 	Tool    provider.Tool
-	Execute func(args json.RawMessage) (string, error)
+	Execute func(ctx context.Context, args json.RawMessage) (string, error)
 	// Receipt is how a call to the tool reads on a receipt. It sits beside
 	// the schema rather than in it: no model reads it.
 	Receipt describe.Describer
@@ -241,10 +241,10 @@ func Execute(ctx context.Context, name string, args json.RawMessage) (string, er
 
 // Execute dispatching into r's record, which is what an owner that does not
 // share the process's record hands the executor chain.
-func (r *Recorder) Execute(_ context.Context, name string, args json.RawMessage) (string, error) {
+func (r *Recorder) Execute(ctx context.Context, name string, args json.RawMessage) (string, error) {
 	for _, d := range r.ReadOnly() {
 		if d.Tool.Name == name {
-			return d.Execute(args)
+			return d.Execute(ctx, args)
 		}
 	}
 	return "", UnknownTool(name, ReadOnlyNames())
@@ -360,7 +360,7 @@ type readFileArgs struct {
 	TailLines *int `json:"tail_lines"`
 }
 
-func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
+func (r *Recorder) executeReadFile(_ context.Context, raw json.RawMessage) (string, error) {
 	var args readFileArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -799,7 +799,7 @@ type listDirectoryArgs struct {
 	Depth int    `json:"depth"`
 }
 
-func executeListDirectory(raw json.RawMessage) (string, error) {
+func executeListDirectory(_ context.Context, raw json.RawMessage) (string, error) {
 	var args listDirectoryArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)

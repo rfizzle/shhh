@@ -337,7 +337,7 @@ func (t *Toolset) Binaries() (found []Binary, missing []string) {
 }
 
 // Execute dispatches a structural tool call.
-func (t *Toolset) Execute(_ context.Context, name string, args json.RawMessage) (string, error) {
+func (t *Toolset) Execute(ctx context.Context, name string, args json.RawMessage) (string, error) {
 	if _, ok := t.bins[name]; !ok {
 		if name == GitToolName {
 			return "", fmt.Errorf("git is not available: this workspace is not inside a git repository, or the %q binary was not found on PATH", binaryNames[name])
@@ -352,17 +352,17 @@ func (t *Toolset) Execute(_ context.Context, name string, args json.RawMessage) 
 	}
 	switch name {
 	case FdToolName:
-		return t.executeFd(args)
+		return t.executeFd(ctx, args)
 	case AstGrepToolName:
-		return t.executeAstGrep(args)
+		return t.executeAstGrep(ctx, args)
 	case SdToolName:
-		return t.executeSd(args)
+		return t.executeSd(ctx, args)
 	case TokeiToolName:
-		return t.executeTokei(args)
+		return t.executeTokei(ctx, args)
 	case GitToolName:
-		return t.executeGit(args)
+		return t.executeGit(ctx, args)
 	case GitWriteToolName:
-		return t.executeGitWrite(args)
+		return t.executeGitWrite(ctx, args)
 	}
 	return "", fmt.Errorf("unknown structural tool: %s", name)
 }
@@ -449,14 +449,14 @@ func (w *capWriter) overflowed() bool { return w.total > w.limit }
 // run spawns the tool's binary with the prebuilt argv, bounded by the
 // toolset's timeout and output caps. Timeouts, cancellation, and non-zero
 // exits all come back as clean errors.
-func (t *Toolset) run(name string, argv []string) (string, error) {
-	return t.runCapped(name, argv, MaxOutputBytes)
+func (t *Toolset) run(ctx context.Context, name string, argv []string) (string, error) {
+	return t.runCapped(ctx, name, argv, MaxOutputBytes)
 }
 
 // runCapped is run with the stdout cap stated by the caller, which is how a
 // git call the pipeline reduces is spawned under the store's cap.
-func (t *Toolset) runCapped(name string, argv []string, limit int) (string, error) {
-	out, overflowed, err := t.spawn(name, argv, limit)
+func (t *Toolset) runCapped(ctx context.Context, name string, argv []string, limit int) (string, error) {
+	out, overflowed, err := t.spawn(ctx, name, argv, limit)
 	if overflowed {
 		// The process was killed for flooding; what we kept is the result.
 		return truncated(out, limit), nil
@@ -472,13 +472,15 @@ func truncated(out string, limit int) string {
 
 // spawn is runCapped without the notice: it reports whether stdout ran past
 // limit, for a caller that reads the output as data rather than showing it.
-func (t *Toolset) spawn(name string, argv []string, limit int) (string, bool, error) {
+func (t *Toolset) spawn(ctx context.Context, name string, argv []string, limit int) (string, bool, error) {
 	bin, ok := t.bins[name]
 	if !ok {
 		return "", false, fmt.Errorf("%s is not available: the %q binary was not found on PATH", name, binaryNames[name])
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), t.timeout)
+	// Under the call's context, so a stop kills the binary the way the
+	// time limit does (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn).
+	ctx, cancel := context.WithTimeout(ctx, t.timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, bin, argv...)

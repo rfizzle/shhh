@@ -136,6 +136,13 @@ func TestExecuteCalls_CancelReachesEveryCall(t *testing.T) {
 		if len(results) != n {
 			t.Fatalf("results = %d, want %d", len(results), n)
 		}
+		// Stopped, every one of them, and not a failure the model would
+		// try again: the ones that ran and the ones that never started.
+		for i, r := range results {
+			if r.Result != CancelledResult {
+				t.Errorf("call %d = %q, want %q", i, r.Result, CancelledResult)
+			}
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("the round's cancel did not reach every call: the batch is still running")
 	}
@@ -164,11 +171,29 @@ func TestExecuteCalls_EachCallHasItsOwnCancel(t *testing.T) {
 	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{
 		{ID: "a", Name: "stop"}, {ID: "b", Name: "keep"},
 	})
-	if results[0].Result != "error: "+context.Canceled.Error() {
-		t.Errorf("stopped call = %q, want it cancelled", results[0].Result)
+	if results[0].Result != CancelledResult {
+		t.Errorf("stopped call = %q, want %q", results[0].Result, CancelledResult)
 	}
 	if results[1].Result != "ran" {
 		t.Errorf("the other call = %q, want it to run to the end", results[1].Result)
+	}
+}
+
+// A call answers as stopped only when it answered with the stop. A tool that
+// takes none — an approved write — finished under a context that ended
+// meanwhile, and the model is told what it did, not that it never happened.
+func TestExecuteWith_AFinishedCallKeepsItsResultPastTheStop(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	wrote := func(context.Context, string, json.RawMessage) (string, error) {
+		cancel()
+		return "wrote a.go", nil
+	}
+	if got := ExecuteWith(ctx, wrote, provider.ToolCall{Name: "write_file"}); got != "wrote a.go" {
+		t.Errorf("a finished write reads %q", got)
+	}
+	stopped := func(ctx context.Context, _ string, _ json.RawMessage) (string, error) { return "", ctx.Err() }
+	if got := ExecuteWith(ctx, stopped, provider.ToolCall{Name: "search"}); got != CancelledResult {
+		t.Errorf("a stopped call reads %q, want %q", got, CancelledResult)
 	}
 }
 

@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -37,7 +38,7 @@ type globArgs struct {
 	Limit   int    `json:"limit"`
 }
 
-func executeGlob(raw json.RawMessage) (string, error) {
+func executeGlob(_ context.Context, raw json.RawMessage) (string, error) {
 	var args globArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)

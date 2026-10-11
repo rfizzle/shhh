@@ -143,7 +143,7 @@ func (r *Recorder) evidenceKeep() ExecKeep {
 	return r.keep
 }
 
-func (r *Recorder) executeQuery(raw json.RawMessage) (string, error) {
+func (r *Recorder) executeQuery(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args queryArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -169,7 +169,11 @@ func (r *Recorder) executeQuery(raw json.RawMessage) (string, error) {
 		return "", err
 	}
 
-	timed, cancelTimed := context.WithTimeout(context.Background(), queryTimeout)
+	// The call's bounds sit under the turn's context, so a stop ends the
+	// read the way the time limit does, and is told apart from it below.
+	// See docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn.
+	turn := ctx
+	timed, cancelTimed := context.WithTimeout(turn, queryTimeout)
 	defer cancelTimed()
 	ctx, cancel := context.WithCancelCause(timed)
 	defer cancel(nil)
@@ -185,6 +189,10 @@ func (r *Recorder) executeQuery(raw json.RawMessage) (string, error) {
 		err := queryFile(ctx, watch, out, f, args, code)
 		if errors.Is(err, errQueryFull) {
 			break
+		}
+		if turn.Err() != nil {
+			// Stopped with the turn: not a query to narrow.
+			return "", turn.Err()
 		}
 		if ctx.Err() != nil {
 			// A memory bound ends the call as the timeout does, rather than

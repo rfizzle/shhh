@@ -225,7 +225,7 @@ func TestGitWriteStagesOnlyThisSessionsWork(t *testing.T) {
 func TestGitWriteRefusesAnEscapingPathBeforeTheSpawn(t *testing.T) {
 	ts := &Toolset{root: t.TempDir(), bins: map[string]string{GitWriteToolName: "/nonexistent/git"}, timeout: SpawnTimeout}
 	ts.writes = &Writes{Files: func() []string { return nil }}
-	_, err := ts.executeGitWrite(json.RawMessage(`{"verb":"add","paths":["../outside.go"]}`))
+	_, err := ts.executeGitWrite(context.Background(), json.RawMessage(`{"verb":"add","paths":["../outside.go"]}`))
 	if err == nil || !strings.Contains(err.Error(), "outside the workspace") {
 		t.Fatalf("err = %v, want a containment refusal", err)
 	}

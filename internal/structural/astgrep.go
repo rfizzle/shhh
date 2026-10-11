@@ -1,6 +1,7 @@
 package structural
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -83,7 +84,7 @@ func buildAstGrepArgv(a astGrepArgs, searchPath string) []string {
 	return append(argv, "--", searchPath)
 }
 
-func (t *Toolset) executeAstGrep(raw json.RawMessage) (string, error) {
+func (t *Toolset) executeAstGrep(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args astGrepArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -95,7 +96,7 @@ func (t *Toolset) executeAstGrep(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	out, err := t.run(AstGrepToolName, buildAstGrepArgv(args, searchPath))
+	out, err := t.run(ctx, AstGrepToolName, buildAstGrepArgv(args, searchPath))
 	if err != nil {
 		return "", err
 	}

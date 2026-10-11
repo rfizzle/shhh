@@ -512,7 +512,14 @@ func (a *Agent) ExecuteCalls(ctx context.Context, calls []provider.ToolCall) []T
 			if a.callCancel != nil {
 				a.callCancel(tc, cancel)
 			}
-			sem <- struct{}{}
+			// A call still waiting for a slot when it is stopped never
+			// runs: it is answered as stopped rather than started late.
+			select {
+			case sem <- struct{}{}:
+			case <-callCtx.Done():
+				results[i] = ToolResult{Call: tc, Result: CancelledResult}
+				return
+			}
 			defer func() { <-sem }()
 			start := time.Now()
 			result := a.ExecuteCall(callCtx, tc)
@@ -536,11 +543,23 @@ func (a *Agent) ExecuteCall(ctx context.Context, tc provider.ToolCall) string {
 
 // ExecuteWith runs one tool call through an explicit executor, formatting
 // failures as error tool results.
+//
+// A call whose context ended was stopped, not failed: whatever the tool
+// made of being cut off — a killed search, a query past its context — is
+// not what the model reads, because a failure invites the same call again
+// and a stop is the person saying not now. It reads what a call the stop
+// caught before it ran reads (CancelledResult).
+// See docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn.
 func ExecuteWith(ctx context.Context, executor ToolExecutor, tc provider.ToolCall) string {
 	if executor == nil {
 		return "error: no tool executor configured"
 	}
 	out, err := executor(ctx, tc.Name, json.RawMessage(tc.Arguments))
+	// Only a call that answered with the stop: a tool that takes none — an
+	// approved write, carried out whole — finished, and its result stands.
+	if err != nil && ctx.Err() != nil {
+		return CancelledResult
+	}
 	if err != nil {
 		return "error: " + err.Error()
 	}

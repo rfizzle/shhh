@@ -1199,6 +1199,29 @@ that stopped it.
 A hard limit would throw away a mostly-finished turn to enforce a number that
 was a guess. Children default to uncapped, because they have nobody to ask.
 
+## A tool stops with the turn
+
+Stopping a turn stops whatever the turn is waiting on, and that includes a
+tool that is still running. A search over a large tree, a query or a database
+statement that will take most of its time limit, a page that is slow to
+answer: each runs under the turn, and the stop reaches it where it is rather
+than once it is done. Cancel that means "when the tool is finished" is a
+stop that arrives after the work the person was trying to stop, and a turn
+that has been stopped has nothing left to read the result anyway.
+
+What the model is told about a call caught this way is that the person
+stopped it — the same thing it is told about a call the stop reached before
+it started — and not whatever the tool made of being cut off. A killed search
+or a query past its context looks like a failure, and a failure invites the
+same call again, which is the one thing a stop is not asking for. The row in
+the transcript reads *stopped*, for the same reason.
+
+The stop reaches the round as a whole, and each call in it has a stop of its
+own underneath, so a surface that lets someone stop one call while the rest
+of its round goes on has somewhere to reach. A write the person approved is
+the exception: it is carried out whole, because a write cut halfway leaves the
+files in a state nobody asked for.
+
 ## A turn can be held between rounds
 
 Stopping a turn used to mean cancelling it, which made "I am about to lose

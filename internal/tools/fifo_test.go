@@ -83,7 +83,7 @@ func TestSearch_APipeInADirectoryIsPassedOver(t *testing.T) {
 	}
 	done := make(chan error, 1)
 	go func() {
-		_, err := executeSearch(json.RawMessage(`{"pattern":"x","path":` + mustJSON(t, dir) + `}`))
+		_, err := executeSearch(context.Background(), json.RawMessage(`{"pattern":"x","path":`+mustJSON(t, dir)+`}`))
 		done <- err
 	}()
 	select {

@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -321,7 +322,7 @@ func TestReadFile_LineCapTruncation(t *testing.T) {
 	}
 	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
-	out, err := shared.executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
+	out, err := shared.executeReadFile(context.Background(), json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -349,7 +350,7 @@ func TestReadFile_ByteCapTruncation(t *testing.T) {
 	}
 	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
-	out, err := shared.executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
+	out, err := shared.executeReadFile(context.Background(), json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -374,7 +375,7 @@ func TestReadFile_RangeStillCapped(t *testing.T) {
 	}
 	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
-	out, err := shared.executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 100}`, path)))
+	out, err := shared.executeReadFile(context.Background(), json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 100}`, path)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -389,7 +390,7 @@ func TestReadFile_EndBeforeStart(t *testing.T) {
 	path := filepath.Join(tmp, "test.txt")
 	must(t, os.WriteFile(path, []byte("a\nb\nc\n"), 0o644))
 
-	_, err := shared.executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 3, "end_line": 1}`, path)))
+	_, err := shared.executeReadFile(context.Background(), json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 3, "end_line": 1}`, path)))
 	if err == nil {
 		t.Fatal("expected error when end_line is before start_line")
 	}
@@ -401,7 +402,7 @@ func TestListDirectory_EntryCapTruncation(t *testing.T) {
 		must(t, os.WriteFile(filepath.Join(tmp, fmt.Sprintf("f%04d.txt", i)), []byte("x"), 0o644))
 	}
 
-	out, err := executeListDirectory(json.RawMessage(fmt.Sprintf(`{"path": %q}`, tmp)))
+	out, err := executeListDirectory(context.Background(), json.RawMessage(fmt.Sprintf(`{"path": %q}`, tmp)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -421,7 +422,7 @@ func TestSearch_ResultCapNotice(t *testing.T) {
 	// context_lines is pinned off: the cap counts matches, and context rides
 	// along with the match that earned it, so the default would put a couple
 	// of extra lines past the last one.
-	out, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "needle", "path": %q, "context_lines": 0}`, tmp)))
+	out, err := executeSearch(context.Background(), json.RawMessage(fmt.Sprintf(`{"pattern": "needle", "path": %q, "context_lines": 0}`, tmp)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -438,7 +439,7 @@ func TestSearch_LongMatchLineTrimmed(t *testing.T) {
 	path := filepath.Join(tmp, "minified.txt")
 	must(t, os.WriteFile(path, []byte("needle"+strings.Repeat("x", 2*MaxSearchLineBytes)+"\n"), 0o644))
 
-	out, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "needle", "path": %q}`, tmp)))
+	out, err := executeSearch(context.Background(), json.RawMessage(fmt.Sprintf(`{"pattern": "needle", "path": %q}`, tmp)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

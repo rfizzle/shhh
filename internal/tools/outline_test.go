@@ -129,14 +129,14 @@ func TestListingsCarryEachFilesSize(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(dir, "a.go"), make([]byte, 3000), 0o644))
 	must(t, os.MkdirAll(filepath.Join(dir, "sub"), 0o755))
 
-	list, err := executeListDirectory(json.RawMessage(fmt.Sprintf(`{"path":%q}`, dir)))
+	list, err := executeListDirectory(context.Background(), json.RawMessage(fmt.Sprintf(`{"path":%q}`, dir)))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if list != "file: a.go\t3 KB\ndir: sub" {
 		t.Errorf("list_directory = %q", list)
 	}
-	glob, err := executeGlob(json.RawMessage(fmt.Sprintf(`{"pattern":"*.go","path":%q}`, dir)))
+	glob, err := executeGlob(context.Background(), json.RawMessage(fmt.Sprintf(`{"pattern":"*.go","path":%q}`, dir)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +171,7 @@ func TestDocumentSymbol_OutlinesMarkdownHeadings(t *testing.T) {
 		"## Last",
 	}, "\n")
 	must(t, os.WriteFile(path, []byte(doc), 0o644))
-	got, err := executeDocumentSymbol(json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	got, err := executeDocumentSymbol(context.Background(), json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,12 +185,12 @@ func TestDocumentSymbol_WithoutAServerOutlinesMarkdownOnly(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "a.go")
 	must(t, os.WriteFile(src, []byte("package a\n"), 0o644))
-	if _, err := executeDocumentSymbol(json.RawMessage(fmt.Sprintf(`{"path":%q}`, src))); err == nil || !strings.Contains(err.Error(), "no language server answers for .go files") {
+	if _, err := executeDocumentSymbol(context.Background(), json.RawMessage(fmt.Sprintf(`{"path":%q}`, src))); err == nil || !strings.Contains(err.Error(), "no language server answers for .go files") {
 		t.Errorf("a source file with no server should be refused by name, got %v", err)
 	}
 	plain := filepath.Join(dir, "notes.md")
 	must(t, os.WriteFile(plain, []byte("just text\n"), 0o644))
-	got, err := executeDocumentSymbol(json.RawMessage(fmt.Sprintf(`{"path":%q}`, plain)))
+	got, err := executeDocumentSymbol(context.Background(), json.RawMessage(fmt.Sprintf(`{"path":%q}`, plain)))
 	if err != nil || got != fmt.Sprintf("No headings in %s (1 line).", plain) {
 		t.Errorf("a document with no headings: %q, %v", got, err)
 	}

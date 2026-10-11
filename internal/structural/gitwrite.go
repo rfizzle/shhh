@@ -12,6 +12,7 @@ package structural
 // See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -240,8 +241,10 @@ func buildGitWriteArgv(a gitWriteArgs, paths []string, messageFile string, hooks
 
 // executeGitWrite runs one write verb, after the checks that cannot be
 // expressed in an argv: what may be staged, and whether there is anything to
-// commit.
-func (t *Toolset) executeGitWrite(raw json.RawMessage) (string, error) {
+// commit. It takes no stop from the turn: a write the person approved is
+// carried out whole, and git killed between staging and committing leaves
+// an index nobody asked for.
+func (t *Toolset) executeGitWrite(_ context.Context, raw json.RawMessage) (string, error) {
 	var args gitWriteArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -265,7 +268,7 @@ func (t *Toolset) executeGitWrite(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err := t.run(GitWriteToolName, argv); err != nil {
+	if _, err := t.run(context.Background(), GitWriteToolName, argv); err != nil {
 		return "", err
 	}
 	switch args.Verb {
@@ -400,7 +403,7 @@ func (t *Toolset) commit(args gitWriteArgs) (string, error) {
 	// commit's own refusal — "Please tell me who you are" — and passing
 	// --author to get past it would be inventing one, which is why there is
 	// no field for it.
-	if _, err := t.run(GitWriteToolName, argv); err != nil {
+	if _, err := t.run(context.Background(), GitWriteToolName, argv); err != nil {
 		return "", err
 	}
 	return CommitReceipt(len(staged), t.head(), t.branch(), hooks), nil
@@ -544,7 +547,7 @@ func (t *Toolset) stagedSecrets() ([]CommitFinding, error) {
 	if t.writes != nil {
 		ignore = t.writes.SecretIgnore
 	}
-	list, err := t.run(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "diff", "--cached", "--name-only", "-z", "--diff-filter=d", "--no-ext-diff", "--no-textconv"})
+	list, err := t.run(context.Background(), GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "diff", "--cached", "--name-only", "-z", "--diff-filter=d", "--no-ext-diff", "--no-textconv"})
 	if err != nil {
 		return nil, fmt.Errorf("cannot read what is staged to check it for secrets; nothing was committed: %w", err)
 	}
@@ -553,12 +556,12 @@ func (t *Toolset) stagedSecrets() ([]CommitFinding, error) {
 		if p == "" {
 			continue
 		}
-		after, over, err := t.spawn(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "cat-file", "blob", ":" + p}, maxScannedBlob)
+		after, over, err := t.spawn(context.Background(), GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "cat-file", "blob", ":" + p}, maxScannedBlob)
 		if err != nil || over {
 			return nil, fmt.Errorf("cannot read all of %s to check it for secrets; nothing was committed", p)
 		}
 		// No blob at HEAD is a new file, all of it added.
-		before, _, _ := t.spawn(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "cat-file", "blob", "HEAD:" + p}, maxScannedBlob)
+		before, _, _ := t.spawn(context.Background(), GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "cat-file", "blob", "HEAD:" + p}, maxScannedBlob)
 		out = append(out, CommitFindings(p, before, after, ignore)...)
 	}
 	return out, nil
@@ -579,7 +582,7 @@ const maxScannedBlob = 32 << 20
 // The name list rather than an exit code, because the count is the other
 // half of the receipt.
 func (t *Toolset) stagedFiles() ([]string, error) {
-	out, err := t.run(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "diff", "--cached", "--name-only", "--no-ext-diff", "--no-textconv"})
+	out, err := t.run(context.Background(), GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "diff", "--cached", "--name-only", "--no-ext-diff", "--no-textconv"})
 	if err != nil {
 		return nil, err
 	}
@@ -595,7 +598,7 @@ func (t *Toolset) stagedFiles() ([]string, error) {
 // output, whose shape is a user-facing sentence and not a contract; both are
 // empty where git could not answer, so the receipt states what it knows.
 func (t *Toolset) head() string {
-	out, err := t.run(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "rev-parse", "--short", "HEAD"})
+	out, err := t.run(context.Background(), GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "rev-parse", "--short", "HEAD"})
 	if err != nil {
 		return ""
 	}
@@ -603,7 +606,7 @@ func (t *Toolset) head() string {
 }
 
 func (t *Toolset) branch() string {
-	out, err := t.run(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "branch", "--show-current"})
+	out, err := t.run(context.Background(), GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "branch", "--show-current"})
 	if err != nil {
 		return ""
 	}

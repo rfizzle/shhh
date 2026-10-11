@@ -283,7 +283,7 @@ func mustWrite(t *testing.T, path, content string) {
 
 func runSearch(t *testing.T, args string) string {
 	t.Helper()
-	out, err := executeSearch(json.RawMessage(args))
+	out, err := executeSearch(context.Background(), json.RawMessage(args))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -354,7 +354,7 @@ func TestSearch_Include(t *testing.T) {
 func TestSearch_IncludeInvalid(t *testing.T) {
 	forceWalker(t)
 	dir := searchOptsFixture(t)
-	if _, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern":"Target","path":%q,"include":"[bad"}`, dir))); err == nil {
+	if _, err := executeSearch(context.Background(), json.RawMessage(fmt.Sprintf(`{"pattern":"Target","path":%q,"include":"[bad"}`, dir))); err == nil {
 		t.Error("expected an error for a malformed include pattern")
 	}
 }
@@ -444,7 +444,7 @@ func TestSearch_ContextByDefault(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(tmp, "a.go"), []byte(
 		"package a\n\nfunc before() {}\n\nfunc Needle() {}\n\nfunc after() {}\n"), 0o644))
 
-	out, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "Needle", "path": %q}`, tmp)))
+	out, err := executeSearch(context.Background(), json.RawMessage(fmt.Sprintf(`{"pattern": "Needle", "path": %q}`, tmp)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -454,7 +454,7 @@ func TestSearch_ContextByDefault(t *testing.T) {
 		}
 	}
 
-	bare, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "Needle", "path": %q, "context_lines": 0}`, tmp)))
+	bare, err := executeSearch(context.Background(), json.RawMessage(fmt.Sprintf(`{"pattern": "Needle", "path": %q, "context_lines": 0}`, tmp)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -826,7 +826,7 @@ func TestSearch_OnlyMatchingTrimsALongMatch(t *testing.T) {
 
 func TestSearch_OnlyMatchingRefusesFilesOnly(t *testing.T) {
 	forceWalker(t)
-	_, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern":"x","path":%q,"only_matching":true,"files_only":true}`, t.TempDir())))
+	_, err := executeSearch(context.Background(), json.RawMessage(fmt.Sprintf(`{"pattern":"x","path":%q,"only_matching":true,"files_only":true}`, t.TempDir())))
 	if err == nil {
 		t.Error("only_matching and files_only are two answers to one call; expected a refusal")
 	}

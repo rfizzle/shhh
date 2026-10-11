@@ -1,6 +1,7 @@
 package structural
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -101,7 +102,7 @@ func buildSdArgv(a sdArgs, resolvedPaths []string) []string {
 	return append(argv, resolvedPaths...)
 }
 
-func (t *Toolset) executeSd(raw json.RawMessage) (string, error) {
+func (t *Toolset) executeSd(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args sdArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -115,7 +116,7 @@ func (t *Toolset) executeSd(raw json.RawMessage) (string, error) {
 	}
 	var b strings.Builder
 	for _, path := range resolved {
-		fileDiff, err := t.sdFileDiff(args, path)
+		fileDiff, err := t.sdFileDiff(ctx, args, path)
 		if err != nil {
 			return "", err
 		}
@@ -139,7 +140,7 @@ func (t *Toolset) executeSd(raw json.RawMessage) (string, error) {
 // nothing in it changes. sd is handed one path at a time because, given one,
 // it prints the file's new content bare, with no header to parse out of text
 // that could itself contain one.
-func (t *Toolset) sdFileDiff(args sdArgs, path string) (string, error) {
+func (t *Toolset) sdFileDiff(ctx context.Context, args sdArgs, path string) (string, error) {
 	rel, err := filepath.Rel(t.root, path)
 	if err != nil {
 		rel = path
@@ -159,7 +160,7 @@ func (t *Toolset) sdFileDiff(args sdArgs, path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot read %s: %w", rel, err)
 	}
-	after, overflowed, err := t.spawn(SdToolName, buildSdArgv(args, []string{path}), MaxSdFileBytes)
+	after, overflowed, err := t.spawn(ctx, SdToolName, buildSdArgv(args, []string{path}), MaxSdFileBytes)
 	if err != nil {
 		return "", err
 	}

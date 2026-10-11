@@ -3,6 +3,7 @@ package tools
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -59,7 +60,7 @@ func IsMarkdown(path string) bool {
 	return false
 }
 
-func executeDocumentSymbol(raw json.RawMessage) (string, error) {
+func executeDocumentSymbol(_ context.Context, raw json.RawMessage) (string, error) {
 	var a struct {
 		Path string `json:"path"`
 	}

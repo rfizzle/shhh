@@ -100,10 +100,10 @@ func ExecuteMutating(ctx context.Context, name string, args json.RawMessage) (st
 
 // ExecuteMutating against r's record, which is what an owner that does not
 // share the process's record hands its approver.
-func (r *Recorder) ExecuteMutating(_ context.Context, name string, args json.RawMessage) (string, error) {
+func (r *Recorder) ExecuteMutating(ctx context.Context, name string, args json.RawMessage) (string, error) {
 	for _, d := range r.Mutating() {
 		if d.Tool.Name == name {
-			return d.Execute(args)
+			return d.Execute(ctx, args)
 		}
 	}
 	return "", fmt.Errorf("unknown mutating tool: %s", name)
@@ -215,7 +215,7 @@ func parseWriteFileArgs(raw json.RawMessage, byPerson bool) (writeFileArgs, erro
 	return args, nil
 }
 
-func (r *Recorder) executeWriteFile(raw json.RawMessage) (string, error) {
+func (r *Recorder) executeWriteFile(_ context.Context, raw json.RawMessage) (string, error) {
 	return r.writeFile(raw, false)
 }
 
@@ -366,7 +366,7 @@ func parseEditFileArgs(raw json.RawMessage) (editFileArgs, error) {
 	return args, nil
 }
 
-func (r *Recorder) executeEditFile(raw json.RawMessage) (string, error) {
+func (r *Recorder) executeEditFile(_ context.Context, raw json.RawMessage) (string, error) {
 	args, err := parseEditFileArgs(raw)
 	if err != nil {
 		return "", err

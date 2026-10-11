@@ -1,6 +1,7 @@
 package structural
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -65,7 +66,7 @@ func buildTokeiArgv(a tokeiArgs, path string) ([]string, error) {
 	return append(argv, "--", path), nil
 }
 
-func (t *Toolset) executeTokei(raw json.RawMessage) (string, error) {
+func (t *Toolset) executeTokei(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args tokeiArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -78,7 +79,7 @@ func (t *Toolset) executeTokei(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	out, err := t.run(TokeiToolName, argv)
+	out, err := t.run(ctx, TokeiToolName, argv)
 	if err != nil {
 		return "", err
 	}

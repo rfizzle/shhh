@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -217,7 +218,7 @@ func searchExpr(args searchArgs) string {
 	return "(?" + flags + ")" + searchPattern(args)
 }
 
-func executeSearch(raw json.RawMessage) (string, error) {
+func executeSearch(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args searchArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -274,7 +275,7 @@ func executeSearch(raw json.RawMessage) (string, error) {
 	args.inflate = newInflateBudget()
 
 	if args.OnlyMatching {
-		return searchDistinct(re, include, args)
+		return searchDistinct(ctx, re, include, args)
 	}
 
 	// Ripgrep reads a .gz as the bytes it is, so a named one is searched
@@ -282,10 +283,10 @@ func executeSearch(raw json.RawMessage) (string, error) {
 	// ripgrep has answered for everything else (ripgrepArgv leaves them
 	// out). Both backends then read one file the same way.
 	if rg, ok := lookupRg(); ok && !isGzipFile(args.Path) {
-		results, matches, err := searchWithRipgrep(rg, args)
+		results, matches, err := searchWithRipgrep(ctx, rg, args)
 		if err == nil {
 			if info.IsDir() {
-				for _, p := range ripgrepGzipFiles(rg, include, args) {
+				for _, p := range ripgrepGzipFiles(ctx, rg, include, args) {
 					if matches >= args.limit {
 						break
 					}
@@ -294,11 +295,17 @@ func executeSearch(raw json.RawMessage) (string, error) {
 			}
 			return withInflateNotes(formatSearchResults(results, matches, args), args), nil
 		}
+		// A ripgrep the turn's stop killed has not failed, and the walker
+		// must not go on to search the tree it was stopped from searching.
+		// See docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn.
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
 		// Ripgrep failed (e.g. a pattern its regex engine rejects): fall
 		// through to the pure-Go walker.
 	}
 
-	results, matches, err := searchWithWalker(re, include, args)
+	results, matches, err := searchWithWalker(ctx, re, include, args)
 	if err != nil {
 		return "", err
 	}
@@ -354,7 +361,7 @@ func (m *includeMatcher) match(rel string) bool {
 // every machine with rg installed — and the model, told "No matches found",
 // concludes the file does not exist and writes a new one. The three excluded
 // globs are what keeps .git out once hidden files are in.
-func searchWithRipgrep(rg string, args searchArgs) (results []string, matches int, err error) {
+func searchWithRipgrep(ctx context.Context, rg string, args searchArgs) (results []string, matches int, err error) {
 	argv := ripgrepArgv(args)
 	limit := args.limit
 	switch {
@@ -369,7 +376,7 @@ func searchWithRipgrep(rg string, args searchArgs) (results []string, matches in
 	}
 	argv = append(argv, "--regexp", searchPattern(args), "--", args.Path)
 
-	cmd := exec.Command(rg, argv...)
+	cmd := exec.CommandContext(ctx, rg, argv...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, 0, err
@@ -423,6 +430,9 @@ func searchWithRipgrep(rg string, args searchArgs) (results []string, matches in
 		_ = cmd.Process.Kill()
 	}
 	waitErr := cmd.Wait()
+	if ctx.Err() != nil {
+		return nil, 0, ctx.Err()
+	}
 
 	if stoppedEarly && len(results) > 0 {
 		return results, matches, nil
@@ -472,13 +482,13 @@ func ripgrepArgv(args searchArgs) []string {
 // the ignore rules are the ones every other file was chosen by, and the
 // include glob and the walker's size and binary tests are then asked here,
 // as walkSearch asks them.
-func ripgrepGzipFiles(rg string, include *includeMatcher, args searchArgs) []string {
+func ripgrepGzipFiles(ctx context.Context, rg string, include *includeMatcher, args searchArgs) []string {
 	argv := []string{
 		"--files", "--no-messages", "--null", "--hidden",
 		"--glob", "!.git", "--glob", "!node_modules", "--glob", "!vendor",
 		"--iglob", "*.gz", "--", args.Path,
 	}
-	out, _ := exec.Command(rg, argv...).Output()
+	out, _ := exec.CommandContext(ctx, rg, argv...).Output()
 	var files []string
 	for _, p := range strings.Split(string(out), "\x00") {
 		if p = strings.Trim(p, "\n"); p == "" || !strings.HasSuffix(strings.ToLower(p), ".gz") {
@@ -508,10 +518,13 @@ func ripgrepGzipFiles(rg string, include *includeMatcher, args searchArgs) []str
 // files it named with the same compiled expression the walker uses — so the
 // texts and their counts are one engine's answer on every machine, rather
 // than ripgrep's -o on one and RE2 on another.
-func ripgrepFiles(rg string, args searchArgs) ([]string, error) {
+func ripgrepFiles(ctx context.Context, rg string, args searchArgs) ([]string, error) {
 	argv := removeArg(ripgrepArgv(args), "--line-number")
 	argv = append(argv, "--files-with-matches", "--regexp", searchPattern(args), "--", args.Path)
-	out, err := exec.Command(rg, argv...).Output()
+	out, err := exec.CommandContext(ctx, rg, argv...).Output()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
@@ -544,9 +557,9 @@ func removeArg(argv []string, drop string) []string {
 // searchWithWalker is the pure-Go fallback: walk the tree, skipping the
 // standard directories, the paths .gitignore names, and binary or oversized
 // files.
-func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArgs) (results []string, matches int, err error) {
+func searchWithWalker(ctx context.Context, re *regexp.Regexp, include *includeMatcher, args searchArgs) (results []string, matches int, err error) {
 	limit := args.limit
-	err = walkSearch(include, args, func(p string) bool {
+	err = walkSearch(ctx, include, args, func(p string) bool {
 		results, matches = searchFile(p, re, args, results, matches, limit)
 		return matches < limit
 	})
@@ -557,8 +570,9 @@ func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArg
 }
 
 // walkSearch hands visit every file under args.Path the search reads, and
-// stops when visit answers false. A path naming one file is that file alone.
-func walkSearch(include *includeMatcher, args searchArgs, visit func(path string) bool) error {
+// stops when visit answers false or ctx ends, answering ctx's error for the
+// second. A path naming one file is that file alone.
+func walkSearch(ctx context.Context, include *includeMatcher, args searchArgs, visit func(path string) bool) error {
 	info, err := os.Stat(args.Path)
 	if err != nil {
 		return fmt.Errorf("cannot access path: %w", err)
@@ -574,6 +588,9 @@ func walkSearch(include *includeMatcher, args searchArgs, visit func(path string
 	ignore := newWalkIgnore(args.Path)
 	more := true
 	err = filepath.WalkDir(args.Path, func(p string, d os.DirEntry, walkErr error) error {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if walkErr != nil {
 			return nil
 		}
@@ -608,6 +625,9 @@ func walkSearch(include *includeMatcher, args searchArgs, visit func(path string
 		more = visit(p)
 		return nil
 	})
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	if err != nil {
 		return fmt.Errorf("search error: %w", err)
 	}
@@ -755,7 +775,7 @@ type distinctMatch struct {
 //
 // Ripgrep, where it is on PATH, chooses the files; the texts are read out of
 // them by the compiled expression either way (ripgrepFiles says why).
-func searchDistinct(re *regexp.Regexp, include *includeMatcher, args searchArgs) (string, error) {
+func searchDistinct(ctx context.Context, re *regexp.Regexp, include *includeMatcher, args searchArgs) (string, error) {
 	tally := map[string]*distinctMatch{}
 	count := func(path string) {
 		text, err := readSearchFile(path, args)
@@ -779,7 +799,7 @@ func searchDistinct(re *regexp.Regexp, include *includeMatcher, args searchArgs)
 
 	walked := false
 	if rg, ok := lookupRg(); ok && !isGzipFile(args.Path) {
-		if files, err := ripgrepFiles(rg, args); err == nil {
+		if files, err := ripgrepFiles(ctx, rg, args); err == nil {
 			// The walker leaves an oversized file out of a directory's
 			// search and reads a file it was pointed at, so this does too.
 			dir := false
@@ -793,15 +813,18 @@ func searchDistinct(re *regexp.Regexp, include *includeMatcher, args searchArgs)
 				count(p)
 			}
 			if dir {
-				for _, p := range ripgrepGzipFiles(rg, include, args) {
+				for _, p := range ripgrepGzipFiles(ctx, rg, include, args) {
 					count(p)
 				}
 			}
 			walked = true
 		}
 	}
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
 	if !walked {
-		if err := walkSearch(include, args, func(p string) bool { count(p); return true }); err != nil {
+		if err := walkSearch(ctx, include, args, func(p string) bool { count(p); return true }); err != nil {
 			return "", err
 		}
 	}

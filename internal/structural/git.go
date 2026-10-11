@@ -1,6 +1,7 @@
 package structural
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -413,7 +414,7 @@ func spawnEnv(name string) []string {
 	return hostgit.Env(nil)
 }
 
-func (t *Toolset) executeGit(raw json.RawMessage) (string, error) {
+func (t *Toolset) executeGit(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args gitArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -433,7 +434,7 @@ func (t *Toolset) executeGit(raw json.RawMessage) (string, error) {
 	if max, _ := gitBounds(args); max == 0 && t.reducedCap > limit {
 		limit = t.reducedCap
 	}
-	out, err := t.runCapped(GitToolName, argv, limit)
+	out, err := t.runCapped(ctx, GitToolName, argv, limit)
 	if err != nil {
 		return "", err
 	}

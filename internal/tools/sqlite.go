@@ -113,7 +113,7 @@ var sqliteHeader = []byte("SQLite format 3\x00")
 // errSqliteStopped is a statement cut off by the call's time limit.
 var errSqliteStopped = errors.New("stopped at the time limit")
 
-func (r *Recorder) executeSqlite(raw json.RawMessage) (string, error) {
+func (r *Recorder) executeSqlite(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args sqliteArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -147,7 +147,11 @@ func (r *Recorder) executeSqlite(raw json.RawMessage) (string, error) {
 		return "", err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), sqliteTimeout)
+	// The time limit sits under the turn's context, so a stop ends a
+	// statement the way the limit does, and is told apart from it below.
+	// See docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn.
+	turn := ctx
+	ctx, cancel := context.WithTimeout(turn, sqliteTimeout)
 	defer cancel()
 	sess, err := openSqlite(ctx, args.Path)
 	if err != nil {
@@ -173,6 +177,9 @@ func (r *Recorder) executeSqlite(raw json.RawMessage) (string, error) {
 			}
 			out.line(fmt.Sprintf("==> %d: %s <==", i+1, sqliteLabel(s)))
 		}
+		if turn.Err() != nil {
+			return "", turn.Err()
+		}
 		if ctx.Err() != nil {
 			out.line(fmt.Sprintf("not run: the call's %s were spent", sqliteTimeout))
 			continue
@@ -180,6 +187,10 @@ func (r *Recorder) executeSqlite(raw json.RawMessage) (string, error) {
 		err := sess.run(ctx, out, s, params, limit)
 		if err == nil {
 			continue
+		}
+		if turn.Err() != nil {
+			// Stopped with the turn: not a statement to narrow.
+			return "", turn.Err()
 		}
 		if errors.Is(err, errSqliteStopped) {
 			err = fmt.Errorf("stopped after %s; narrow it with WHERE or LIMIT, or ask for count(*) first", sqliteTimeout)

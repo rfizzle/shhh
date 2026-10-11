@@ -1,6 +1,7 @@
 package structural
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -107,7 +108,7 @@ func buildFdArgv(a fdArgs, searchPath string) ([]string, error) {
 	return argv, nil
 }
 
-func (t *Toolset) executeFd(raw json.RawMessage) (string, error) {
+func (t *Toolset) executeFd(ctx context.Context, raw json.RawMessage) (string, error) {
 	var args fdArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -120,7 +121,7 @@ func (t *Toolset) executeFd(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	out, err := t.run(FdToolName, argv)
+	out, err := t.run(ctx, FdToolName, argv)
 	if err != nil {
 		return "", err
 	}

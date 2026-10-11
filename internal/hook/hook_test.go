@@ -3,6 +3,7 @@ package hook
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -550,6 +551,47 @@ func TestRunner_WrapExecutorSkipsOnlyTheSeamInFront(t *testing.T) {
 	}
 	if len(seen) != 1 || seen[0].payload.Event != PostTool {
 		t.Fatalf("a gated call meets only the seam behind it: %+v", seen)
+	}
+}
+
+// A hook runs under the call's context, so a stop reaches it; and a hook the
+// stop cut off has not failed, so no note about a broken hook is left for a
+// person to go and fix.
+func TestRunner_WrapExecutorTakesTheCallsStop(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	var calls int
+	stoppedHere := func(hctx context.Context, _ string, _ []byte) (string, int, error) {
+		calls++
+		cancel()
+		return "", 0, hctx.Err()
+	}
+	r := runnerOf(t, stoppedHere, map[string]Entry{
+		"a-before": {Event: PreTool, Command: "a"},
+		"b-before": {Event: PreTool, Command: "b"},
+	})
+	v := r.PreTool(ctx, Pos{}, Call{Name: "read_file", Arguments: `{}`}, false)
+	if calls != 1 {
+		t.Errorf("hooks run after the stop: %d, want 1", calls)
+	}
+	if v.Failed || len(v.Notes) > 0 {
+		t.Errorf("a stopped hook reads as failed: %+v", v)
+	}
+	// A stop that skipped the hooks in front does not let the call run on
+	// an answer they never gave.
+	ran := false
+	skipped := func(context.Context, string, json.RawMessage) (string, error) { ran = true; return "ok", nil }
+	if _, err := r.WrapExecutor(func() Pos { return Pos{} }, nil, skipped)(ctx, "write_file", nil); !errors.Is(err, context.Canceled) || ran {
+		t.Errorf("a stopped call ran past its hooks: err %v, ran %v", err, ran)
+	}
+	var got context.Context
+	next := func(c context.Context, _ string, _ json.RawMessage) (string, error) { got = c; return "ok", nil }
+	call, stop := context.WithCancel(context.Background())
+	defer stop()
+	if _, err := r.WrapExecutor(func() Pos { return Pos{} }, nil, next)(call, "x", nil); err != nil {
+		t.Fatal(err)
+	}
+	if got != call {
+		t.Error("the call behind the hooks was handed another context than its own")
 	}
 }
 

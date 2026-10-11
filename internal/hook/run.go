@@ -296,7 +296,16 @@ func (r *Runner) fire(ctx context.Context, event, tool string, p Payload, gated 
 		if v.Input != nil {
 			p.Arguments = string(v.Input)
 		}
+		// A call the turn's stop reached runs no more hooks, and a hook it
+		// cut off has not broken: the stop is the person's, not the hook's,
+		// and saying the hook failed would send them to fix one that works.
+		if ctx.Err() != nil {
+			return v
+		}
 		res, failed := r.one(ctx, h, p)
+		if failed && errors.Is(ctx.Err(), context.Canceled) {
+			return v
+		}
 		if failed {
 			v.Failed = true
 			v.Notes = append(v.Notes, res.Note)
@@ -465,10 +474,12 @@ func (r *Runner) WrapExecutor(at func() Pos, gated func(name string, args json.R
 		return next
 	}
 	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
-		hctx, call := context.Background(), Call{Name: name, Arguments: string(args)}
+		// The hooks run under the call's context: a stop that reaches the call
+		// reaches the hook in front of it and the one behind it too.
+		call := Call{Name: name, Arguments: string(args)}
 		var pre Verdict
 		if gated == nil || !gated(name, args) {
-			pre = r.PreTool(hctx, at(), call, false)
+			pre = r.PreTool(ctx, at(), call, false)
 			if pre.Denied() {
 				return DeniedResult(pre.Reason), nil
 			}
@@ -476,6 +487,12 @@ func (r *Runner) WrapExecutor(at func() Pos, gated func(name string, args json.R
 				args = pre.Input
 				call.Arguments = string(args)
 			}
+		}
+		// A stop that arrived while the hooks in front ran skipped the rest
+		// of them, so the call does not run on an answer they never gave:
+		// a write takes no stop of its own, and must not run unvetted.
+		if err := ctx.Err(); err != nil {
+			return "", err
 		}
 		out, err := next(ctx, name, args)
 		if err != nil {
@@ -485,7 +502,7 @@ func (r *Runner) WrapExecutor(at func() Pos, gated func(name string, args json.R
 		// the hook in front of it prepended: the outcome and the result are
 		// both about the call, and reading them off annotated text would have
 		// a failure with a note in front of it come back as a success.
-		post := r.PostTool(hctx, at(), call, out, Outcome(out))
+		post := r.PostTool(ctx, at(), call, out, Outcome(out))
 		return pre.Lead(post.Lead(out)), nil
 	}
 }

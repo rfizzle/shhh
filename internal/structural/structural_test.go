@@ -313,7 +313,7 @@ func TestRunCapturesOutput(t *testing.T) {
 	script := writeScript(t, `printf 'hello\nworld\n'`)
 	ts := newTestToolset(t, map[string]string{FdToolName: script})
 
-	out, err := ts.run(FdToolName, nil)
+	out, err := ts.run(context.Background(), FdToolName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,7 +326,7 @@ func TestRunNonZeroExitIsCleanError(t *testing.T) {
 	script := writeScript(t, `echo 'bad pattern' >&2; exit 2`)
 	ts := newTestToolset(t, map[string]string{FdToolName: script})
 
-	_, err := ts.run(FdToolName, nil)
+	_, err := ts.run(context.Background(), FdToolName, nil)
 	if err == nil || !strings.Contains(err.Error(), "bad pattern") {
 		t.Fatalf("expected the stderr detail in the error, got %v", err)
 	}
@@ -338,7 +338,7 @@ func TestRunTimesOut(t *testing.T) {
 	ts.timeout = 100 * time.Millisecond
 
 	start := time.Now()
-	_, err := ts.run(FdToolName, nil)
+	_, err := ts.run(context.Background(), FdToolName, nil)
 	if err == nil || !strings.Contains(err.Error(), "timed out") {
 		t.Fatalf("expected a timeout error, got %v", err)
 	}
@@ -352,7 +352,7 @@ func TestRunOutputFloodIsTruncated(t *testing.T) {
 	ts := newTestToolset(t, map[string]string{FdToolName: script})
 
 	start := time.Now()
-	out, err := ts.run(FdToolName, nil)
+	out, err := ts.run(context.Background(), FdToolName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -683,7 +683,7 @@ func TestSdPreviewSpellsTheUnifiedDiffExactly(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(ts.root, "a.go"), []byte("one\ntwo Foo\nthree\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got, err := ts.sdFileDiff(sdArgs{Pattern: "Foo", Replacement: "Bar"}, filepath.Join(ts.root, "a.go"))
+	got, err := ts.sdFileDiff(context.Background(), sdArgs{Pattern: "Foo", Replacement: "Bar"}, filepath.Join(ts.root, "a.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -695,7 +695,7 @@ func TestSdPreviewSpellsTheUnifiedDiffExactly(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(ts.root, "b.go"), []byte("x\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got, err = ts.sdFileDiff(sdArgs{Pattern: "x", Replacement: "x"}, filepath.Join(ts.root, "b.go"))
+	got, err = ts.sdFileDiff(context.Background(), sdArgs{Pattern: "x", Replacement: "x"}, filepath.Join(ts.root, "b.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
