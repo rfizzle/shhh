@@ -1,8 +1,10 @@
 # One queue for the session. It starts a process, then fetches a page the
-# scripted endpoint takes a minute to serve, and answers once the fetch has
-# come back — which it does as soon as the scene stops it.
+# scripted endpoint takes a minute to serve. The fetch comes back as soon as
+# the scene stops it, and the answer after it is held for twenty seconds, so
+# the turn is still running while the scene stops the process too.
 Starting the ticker first.
 +tool:process:{"action":"start","name":"ticker","command":"while true; do echo tick; sleep 1; done"}
 Reading the release notes.
 +tool:web_fetch:{"url":"http://127.0.0.1:{port}/slow/the-release-notes"}
-The page did not come back; the ticker is still running.
+wait:20
++The page did not come back, and the ticker has stopped.

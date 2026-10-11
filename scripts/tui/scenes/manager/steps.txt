@@ -5,8 +5,9 @@
 # the session left running, each thing a key from its output and a key from
 # its stop. The session starts a process that prints a line a second, then
 # fetches a page the scripted endpoint takes a minute to serve. The scene
-# opens /ps while the fetch waits, stops the fetch alone — the turn goes on
-# and finishes on the next reply — and then stops the process.
+# opens /ps while the fetch waits and stops the fetch alone; the turn goes on
+# to its last reply, which is held for twenty seconds, and while it is still
+# running the scene stops the process as well.
 #
 # The slow call is a fetch rather than a command on purpose: a command needs
 # a containment mechanism on the host, and a fetch needs none. A started
@@ -18,11 +19,15 @@
 # the fetch under tools, each with its age and where it runs; at 06 enter has
 # opened the ticker onto its output, the read the process tool returns, with
 # its `tick` lines; at 07, back on the list and down a row, d asks about the
-# fetch with the agent manager's two answers; at 08 y has stopped the fetch,
-# the turn has gone on to its last reply and the tools section reads
-# `nothing running`; at 09, out of the manager, the fetch's row in the
-# transcript reads stopped under the closing reply; at 10 /ps again, d and y
-# on the ticker, and its row reads stopped.
+# fetch with the agent manager's two answers; at 08 y has stopped the fetch
+# alone — the tools section reads `nothing running` and the ticker still
+# runs; at 09 d asks about the ticker, and at 10 y has stopped it and its row
+# reads stopped; at 11, out of the manager with the turn still running, the
+# fetch's row in the transcript reads stopped and the process's stop is said
+# under it; at 12 the turn finishes on its last reply.
+#
+# Each esc is followed by a pause: an esc and the next key inside the
+# terminal's escape timeout read as one alt chord.
 snap 01-start "Some things worth doing first"
 keys "start the ticker and read the release notes" Enter
 # A start is a command to approve. The card lands a moment after the enter,
@@ -38,24 +43,24 @@ sleep 2
 wide 130 snap 04-rail "PROCESSES" "CALLS" "ticker"
 narrow 130 snap 04-rail "Reading the release notes."
 keys "/ps" Enter
-snap 05-manager "1 call running" "processes" "ticker" "web_fetch"
+snap 05-manager "1 call running" "1 process running" "ticker" "web_fetch"
 keys Enter
 snap 06-process-opened "process ticker (stdout)" "tick"
 keys Escape
+sleep 0.5
 keys Down
 keys d
 snap 07-stop-asks "stop the call web_fetch?" "[y] stop · [k] kill"
 keys y
-snap 08-call-stopped "tools · nothing running" "ticker"
-keys Escape
-snap 09-turn-finished "The page did not come back" "stopped"
-keys "/ps" Enter
-snap 10-manager-again "processes" "ticker"
+snap 08-call-stopped "tools · nothing running" "1 process running"
 keys d
-snap 11-stop-process-asks "stop the process ticker?"
+snap 09-stop-process-asks "stop the process ticker?"
 keys y
-snap 12-process-stopped "⊘ ticker" "stopped"
+snap 10-process-stopped "⊘ ticker" "stopped"
 keys Escape
+sleep 0.5
+snap 11-both-stopped "process ticker: exited" "stopped"
+snap 12-turn-finished "The page did not come back"
 keys C-c
 sleep 0.6
 keys C-c
