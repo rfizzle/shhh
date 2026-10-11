@@ -769,6 +769,12 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	switch decision, reason := agent.ResolveAuto(act, v); decision {
 	case agent.Allow:
 		m.recordVerdict(observe.DecisionAllow, observe.ReasonClassifier, v.Elapsed)
+		if reason != agent.ScratchReason {
+			if m.approval.classifierAllowed == nil {
+				m.approval.classifierAllowed = map[string]struct{}{}
+			}
+			m.approval.classifierAllowed[req.call.ID] = struct{}{}
+		}
 		req.autoRule, req.autoCost = classifierRule, v.Elapsed
 		if reason == agent.ScratchReason {
 			// A flagged command ran without a card, so the row says what

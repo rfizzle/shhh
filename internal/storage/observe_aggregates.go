@@ -36,8 +36,9 @@ type AgentCohort struct {
 // cohort first. Sessions the column is empty or NULL for are left out: a row
 // written before the column existed ran under a value nobody recorded, and
 // putting them all in one bucket would compare a cohort against the history
-// of the store.
-func (db *DB) AgentCohorts(since time.Time, key string) ([]AgentCohort, error) {
+// of the store. A non-empty backend keeps only the sessions that ran that
+// classifier backend.
+func (db *DB) AgentCohorts(since time.Time, key, backend string) ([]AgentCohort, error) {
 	column, ok := agentSplitColumn(key)
 	if !ok {
 		return nil, fmt.Errorf("cannot split sessions on %q", key)
@@ -58,8 +59,9 @@ func (db *DB) AgentCohorts(since time.Time, key string) ([]AgentCohort, error) {
 		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0), COALESCE(SUM(est_cost), 0),
 		        MIN(started_at), MAX(started_at)
 		 FROM agent_sessions
-		 WHERE started_at >= ? AND %[1]s IS NOT NULL AND %[1]s != ''
-		 GROUP BY %[1]s ORDER BY COUNT(*) DESC, MIN(started_at)`, column), observeCutoff(since))
+		 WHERE started_at >= ? AND %[1]s IS NOT NULL AND %[1]s != ''%[2]s
+		 GROUP BY %[1]s ORDER BY COUNT(*) DESC, MIN(started_at)`, column, cohortBackendClause(backend)),
+		append([]any{observeCutoff(since)}, backendArgs(backend)...)...)
 }
 
 // AgentCohortReading is every aggregate the dashboard draws, taken over one
@@ -90,7 +92,7 @@ type AgentCohortReading struct {
 }
 
 // ReadAgentCohort runs those aggregates for one value of the split column.
-func (db *DB) ReadAgentCohort(since time.Time, key, value string) (AgentCohortReading, error) {
+func (db *DB) ReadAgentCohort(since time.Time, key, value, backend string) (AgentCohortReading, error) {
 	column, ok := agentSplitColumn(key)
 	if !ok {
 		return AgentCohortReading{}, fmt.Errorf("cannot split sessions on %q", key)
@@ -98,41 +100,41 @@ func (db *DB) ReadAgentCohort(since time.Time, key, value string) (AgentCohortRe
 	var (
 		r        AgentCohortReading
 		err      error
-		cutoff   = observeCutoff(since)
-		events   = observeEventCohort(column)
-		sessions = observeSessionCohort(column)
+		events   = observeEventCohort(column, backend)
+		sessions = observeSessionCohort(column, backend)
+		args     = append([]any{observeCutoff(since), value}, backendArgs(backend)...)
 	)
-	if r.Turns, err = db.agentTurns(events, cutoff, value); err != nil {
+	if r.Turns, err = db.agentTurns(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort turns: %w", err)
 	}
-	if r.Tools, err = db.agentToolMix(events, cutoff, value); err != nil {
+	if r.Tools, err = db.agentToolMix(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort tool mix: %w", err)
 	}
-	if r.ToolErrors, err = db.agentToolErrors(events, cutoff, value); err != nil {
+	if r.ToolErrors, err = db.agentToolErrors(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort tool errors: %w", err)
 	}
-	if r.Commands, err = db.agentCommandPurposes(events, cutoff, value); err != nil {
+	if r.Commands, err = db.agentCommandPurposes(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort command purposes: %w", err)
 	}
-	if r.FirstWrites, err = db.agentFirstWrites(events, cutoff, value); err != nil {
+	if r.FirstWrites, err = db.agentFirstWrites(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort first writes: %w", err)
 	}
-	if r.Decisions, err = db.agentDecisions(events, cutoff, value); err != nil {
+	if r.Decisions, err = db.agentDecisions(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort decisions: %w", err)
 	}
-	if r.Overturns, err = db.agentOverturns(events, cutoff, value); err != nil {
+	if r.Overturns, err = db.agentOverturns(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort overturns: %w", err)
 	}
-	if r.Signals, err = db.agentSignals(events, cutoff, value); err != nil {
+	if r.Signals, err = db.agentSignals(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort signals: %w", err)
 	}
-	if r.Interventions, err = db.agentInterventionOutcomes(events, cutoff, value); err != nil {
+	if r.Interventions, err = db.agentInterventionOutcomes(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort intervention outcomes: %w", err)
 	}
-	if r.Gates, err = db.agentGateVerdicts(events, cutoff, value); err != nil {
+	if r.Gates, err = db.agentGateVerdicts(events, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort gate verdicts: %w", err)
 	}
-	if r.Outcomes, err = db.agentSessionOutcomes(sessions, cutoff, value); err != nil {
+	if r.Outcomes, err = db.agentSessionOutcomes(sessions, args...); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort outcomes: %w", err)
 	}
 	return r, nil
@@ -898,4 +900,21 @@ func (db *DB) AgentSuitePatterns(since time.Time, project string, minSessions in
 	return queryRows(db, scanFields(func(s *AgentSuitePattern) []any {
 		return []any{&s.Suite, &s.Sessions, &s.Ran}
 	}), agentSuitePatternsQuery, project, AgentEventSignal, observeCutoff(since), minSessions)
+}
+
+// backendArgs is the bound value cohortBackendClause leaves a placeholder for.
+func backendArgs(backend string) []any {
+	if backend == "" {
+		return nil
+	}
+	return []any{backend}
+}
+
+// AgentClassifierBackendNames lists the classifier backends the window's
+// sessions ran under, so a comparison can tell whether it spans more than one.
+func (db *DB) AgentClassifierBackendNames(since time.Time) ([]string, error) {
+	return queryRows(db, scanFields(func(s *string) []any { return []any{s} }),
+		`SELECT DISTINCT classifier_backend FROM agent_sessions
+		 WHERE started_at >= ? AND classifier_backend IS NOT NULL AND classifier_backend != ''
+		 ORDER BY classifier_backend`, observeCutoff(since))
 }

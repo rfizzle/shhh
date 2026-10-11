@@ -482,8 +482,9 @@ func (r *observeRecorder) observer() observe.Observer {
 		return observe.Observer{}
 	}
 	return observe.Observer{
-		Usage:    r.usagePriced,
-		ToolCall: r.toolCallAt,
+		Usage:          r.usagePriced,
+		ClassifierCost: r.classifierSpend,
+		ToolCall:       r.toolCallAt,
 		Decision: func(at observe.Pos, decision, reason string) {
 			r.decisionAt(at, decision, reason, 0)
 		},
@@ -516,6 +517,14 @@ func (r *observeRecorder) usage(turns, tokensIn, tokensOut int64) {
 	}
 	r.span.Usage(turns, tokensIn, tokensOut, cost)
 	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
+}
+
+// classifierSpend records what the classifier has spent so far this session.
+func (r *observeRecorder) classifierSpend(cost float64) {
+	if r == nil {
+		return
+	}
+	_ = r.db.SetAgentClassifierCost(r.id, cost)
 }
 
 // usagePriced records totals that arrive already priced, which is what both a

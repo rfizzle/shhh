@@ -75,12 +75,26 @@ const observeEventsOfWindowSessions = `session_id IN (SELECT id FROM agent_sessi
 // session's window already bounds them, and a second cutoff would only
 // differ by cutting the tail off a session that started inside the window
 // and ran past its edge.
-func observeEventCohort(column string) string {
-	return `session_id IN (SELECT id FROM agent_sessions WHERE started_at >= ? AND ` + column + ` = ?)`
+//
+// backend narrows a cohort to the sessions that ran one classifier backend as
+// well, bound as a third argument after the value; empty narrows nothing and
+// binds nothing (see cohortBackend).
+func observeEventCohort(column, backend string) string {
+	return `session_id IN (SELECT id FROM agent_sessions WHERE started_at >= ? AND ` + column + ` = ?` +
+		cohortBackendClause(backend) + `)`
 }
 
-func observeSessionCohort(column string) string {
-	return `started_at >= ? AND ` + column + ` = ?`
+func observeSessionCohort(column, backend string) string {
+	return `started_at >= ? AND ` + column + ` = ?` + cohortBackendClause(backend)
+}
+
+// cohortBackendClause is the clause that keeps only one classifier backend's
+// sessions, written after the cohort's own placeholders.
+func cohortBackendClause(backend string) string {
+	if backend == "" {
+		return ""
+	}
+	return ` AND classifier_backend = ?`
 }
 
 // agentSplitColumns are the columns a window's sessions may be split into

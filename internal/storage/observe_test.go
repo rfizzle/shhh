@@ -895,7 +895,7 @@ func TestAgentCohorts_SplitEveryKeyTheStoreOffers(t *testing.T) {
 
 	since := time.Now().Add(-time.Hour)
 	for _, key := range AgentSplitKeys() {
-		cohorts, err := db.AgentCohorts(since, key)
+		cohorts, err := db.AgentCohorts(since, key, "")
 		if err != nil {
 			t.Fatalf("split on %s: %v", key, err)
 		}
@@ -912,7 +912,7 @@ func TestAgentCohorts_SplitEveryKeyTheStoreOffers(t *testing.T) {
 			}
 		}
 	}
-	if _, err := db.AgentCohorts(since, "started_at); DROP TABLE agent_sessions --"); err == nil {
+	if _, err := db.AgentCohorts(since, "started_at); DROP TABLE agent_sessions --", ""); err == nil {
 		t.Fatal("a key the store does not offer should be refused rather than run")
 	}
 }
@@ -925,7 +925,7 @@ func TestAgentCohorts_AnUnstampedSessionIsInNoCohort(t *testing.T) {
 	if _, err := db.StartAgentSession("chat", "openai", "gpt-test"); err != nil {
 		t.Fatalf("start session: %v", err)
 	}
-	cohorts, err := db.AgentCohorts(time.Now().Add(-time.Hour), "prompt_hash")
+	cohorts, err := db.AgentCohorts(time.Now().Add(-time.Hour), "prompt_hash", "")
 	if err != nil {
 		t.Fatalf("cohorts: %v", err)
 	}
@@ -966,7 +966,7 @@ func TestReadAgentCohort_ScopesEveryAggregateToItsOwnSessions(t *testing.T) {
 	write("aaa", "read_file", "done", "summary", "pass", "completed", 4)
 	write("bbb", "execute_command", "failed", "repeat-notice", "fail", "abandoned", 9)
 
-	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa")
+	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa", "")
 	if err != nil {
 		t.Fatalf("read cohort: %v", err)
 	}
@@ -1228,7 +1228,7 @@ func TestReadAgentCohort_FirstWritesAreTheCohortsOwn(t *testing.T) {
 		}
 	}
 
-	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "version", "v1")
+	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "version", "v1", "")
 	if err != nil {
 		t.Fatalf("read cohort: %v", err)
 	}
@@ -1391,7 +1391,7 @@ func TestAgentOverturns_PairsAJudgedDenialWithThePersonsAnswer(t *testing.T) {
 	if got != want {
 		t.Errorf("window overturns = %+v, want %+v", got, want)
 	}
-	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa")
+	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa", "")
 	if err != nil {
 		t.Fatalf("read cohort: %v", err)
 	}
@@ -1731,7 +1731,7 @@ func TestReadAgentCohort_CommandsAreTheCohortsOwn(t *testing.T) {
 	write("aaa", observe.PurposeRead, observe.PurposeRead, observe.PurposeBuild)
 	write("bbb", observe.PurposeSearch)
 
-	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa")
+	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa", "")
 	if err != nil {
 		t.Fatalf("read cohort: %v", err)
 	}

@@ -423,6 +423,7 @@ func (r *oneShotRun) finish() {
 	}
 	t := r.ledger.Total()
 	recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
+	recorder.classifierSpend(r.ledger.SourceTotal(meter.SourceClassifier).Cost)
 	took, split := r.timer.span()
 	recorder.turnTimed(1, 0, took, r.outcome, split)
 	recorder.end()

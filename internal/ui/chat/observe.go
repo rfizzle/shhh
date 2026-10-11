@@ -12,6 +12,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -72,6 +73,9 @@ func (m *Model) notifyUsage() {
 	}
 	t := m.wiring.Ledger.Total()
 	m.wiring.Observer.Usage(m.turnCount, t.In, t.Out, t.Cost, t.Priced)
+	if m.wiring.Observer.ClassifierCost != nil {
+		m.wiring.Observer.ClassifierCost(m.wiring.Ledger.SourceTotal(meter.SourceClassifier).Cost)
+	}
 }
 
 // usageTotalCost prices a token pair against the session's current model, for

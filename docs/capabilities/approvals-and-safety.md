@@ -453,6 +453,19 @@ how often a person overturned the classifier is a share of the denials they
 answered, which `shhh observe` draws and a comparison carries
 ([`sessions-and-memory.md`](sessions-and-memory.md#observations-are-what-the-session-did)).
 
+An allow has no card to be answered at, so its overturn is the person
+stopping the turn while the call it let run is still running: a decision row
+of its own, a deny under the reason `user-stop`, written right after the
+allow. `shhh observe classifier` sets the backends side by side from these
+rows: for each classifier backend the window's sessions ran on, its verdicts
+and how many allowed and denied, the median and worst time to a verdict, what
+a verdict cost (the ledger's classifier origin, kept on the session row, over
+the backend's verdicts), how many of its denials the person then allowed at
+the card, and how many of its allows the person stopped. A classifier that
+failed closed reached no verdict and is not counted. A call that finished
+before the person stopped the turn, or a stop in a headless run, is not an
+overturn and writes no row.
+
 Where there is no human to fall back to — a scripted run in auto mode, a
 served session told nobody is attached, a backlog stage, a child with no route
 to a card — the fallback is a refusal instead, and a classifier's no stands as
@@ -491,7 +504,9 @@ gets the retries a completion would.
 What this gives up is the reason. The card's sentence becomes the
 probability and the threshold rather than the model's account of the call,
 which is a worse sentence for someone deciding whether to overturn a no —
-and whether that matters is what the comparison is for. A replaced wording
+and whether that matters is what the comparison is for. The eval's table is
+one answer; `shhh observe classifier` is the other, from your own sessions on
+each backend. A replaced wording
 is not sent to this backend, since it is written for a reply in words that
 the backend does not give, and the doctor says so. The explanation a card
 offers reads with the classifier's model on the other backend; on this one

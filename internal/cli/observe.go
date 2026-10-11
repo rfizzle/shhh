@@ -180,7 +180,8 @@ func newObserveCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(exportCmd, sessionCmd, classifyCmd, purgeCmd, newObserveCompareCmd(&window),
-		newObserveStartupCmd(&window), newObserveQuietCmd(&window), newObservePatternsCmd(&window))
+		newObserveStartupCmd(&window), newObserveQuietCmd(&window), newObservePatternsCmd(&window),
+		newObserveClassifierCmd(&window))
 	return cmd
 }
 

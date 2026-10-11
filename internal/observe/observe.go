@@ -64,6 +64,10 @@ type Observer struct {
 	// itself: a session mixes models, and pricing one total against one of
 	// them is how a mixed session gets misreported.
 	Usage func(turns, tokensIn, tokensOut int64, cost float64, priced bool)
+	// ClassifierCost reports what the session's classifier has spent so far,
+	// from the ledger's classifier origin. It is the session's running
+	// figure, not a delta, so a report can price a verdict by it.
+	ClassifierCost func(cost float64)
 	// ToolCall reports one executed tool call. class is the error's class
 	// when the outcome is an error, and "empty" for a search that found
 	// nothing. purpose is what a command was for, from ToolPurpose or
@@ -208,7 +212,13 @@ const (
 	ReasonUserTurn   = "user-turn"
 	ReasonUserAlways = "user-always"
 	ReasonUserExact  = "user-exact"
-	ReasonMemory     = "memory"
+	// ReasonUserStop is the person stopping a turn while a call the
+	// classifier allowed was still running: the answer to a yes that had no
+	// card to be answered at. Its outcome is deny. It is how often the person
+	// overturned an allow, as the next decision under ReasonUser is how often
+	// they overturned a deny.
+	ReasonUserStop = "user-stop"
+	ReasonMemory   = "memory"
 	// The auto-mode classifier's. A classifier that could not decide is its
 	// own code rather than a denial, because failing closed to a prompt is
 	// not the same event as deciding no. A denial under this code is the

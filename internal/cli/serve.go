@@ -727,6 +727,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			l.usage = u
 			l.mu.Unlock()
 			l.recorder.usagePriced(l.turnNow(), t.In, t.Out, t.Cost, t.Priced)
+			l.recorder.classifierSpend(l.ledger.SourceTotal(meter.SourceClassifier).Cost)
 			l.obs.usage(u)
 		},
 	}

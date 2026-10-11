@@ -1393,6 +1393,14 @@ has not got. No row draws a tick or a cross either: fewer rounds is an
 improvement unless the turns got shorter by failing, and more interruptions
 is a regression unless they are what stopped the person having to break in.
 
+**A window that ran two classifier backends is compared once per backend.**
+A suite verdict rate or a decision share on the completion backend says
+nothing about the decisions backend, so when the window's sessions carry both
+values of `classifier_backend` and the split is on something else, the
+comparison is drawn as one block per backend under headers that name it, and
+the first row says so. A window on one backend, or a split on the backend
+itself, is drawn as before.
+
 A window whose sessions all ran under one value is an empty state rather than
 every rate having appeared or vanished at once, and the JSON carries the same
 figures the screen draws, from the same list, so the two cannot come to

@@ -19,6 +19,10 @@ import "github.com/rfizzle/shhh/internal/ui/components"
 // Everything else here belongs to the decision as a whole — the queue it
 // heads — and is set and reset where that changes (queue.go).
 type approvalState struct {
+	// classifierAllowed are the calls the classifier let run without a card,
+	// by call ID: a cancel that finds one still running records the person
+	// stopping it (observe.ReasonUserStop). Session-long, so clear leaves it.
+	classifierAllowed map[string]struct{}
 	// request is the head of the agent's approval queue while its confirm
 	// prompt is showing, with everything needed to preview and execute it.
 	request *approvalRequest

@@ -327,7 +327,22 @@ type observeCompareData struct {
 	// rendered with a caveat, it is not rendered.
 	Comparable bool            `json:"comparable"`
 	Changes    []observeChange `json:"changes,omitempty"`
+	// Backends is the comparison drawn once per classifier backend, and is
+	// set only when the window's sessions ran under more than one: a gate
+	// verdict rate or a decision share on one backend is not evidence about
+	// the other, so the two are never pooled into one cohort. Everything
+	// above is then empty except Sessions.
+	Backends []observeBackendCompare `json:"backends,omitempty"`
 }
+
+// observeBackendCompare is one classifier backend's comparison.
+type observeBackendCompare struct {
+	Backend string `json:"backend"`
+	observeCompareData
+}
+
+// observeBackendSplit is the key a comparison is not split a second time on.
+const observeBackendSplit = "classifier_backend"
 
 // readObserveCompare reads both cohorts out of the store. The two compared
 // are the two with the most sessions, which is also what the small-n rule
@@ -335,7 +350,29 @@ type observeCompareData struct {
 // comparison to a value that appeared twice yesterday, and taking every
 // value would print a screen of cohorts too small to read.
 func readObserveCompare(db *storage.DB, window, split string, since time.Time) (observeCompareData, error) {
-	cohorts, err := db.AgentCohorts(since, split)
+	backends, err := db.AgentClassifierBackendNames(since)
+	if err != nil {
+		return observeCompareData{}, fmt.Errorf("query classifier backends: %w", err)
+	}
+	if len(backends) < 2 || split == observeBackendSplit {
+		return readObserveCompareOn(db, window, split, since, "")
+	}
+	data := observeCompareData{Window: window, Split: split, MinSessions: compareMinSessions}
+	for _, backend := range backends {
+		sub, err := readObserveCompareOn(db, window, split, since, backend)
+		if err != nil {
+			return observeCompareData{}, err
+		}
+		data.Sessions += sub.Sessions
+		data.Backends = append(data.Backends, observeBackendCompare{Backend: backend, observeCompareData: sub})
+	}
+	return data, nil
+}
+
+// readObserveCompareOn is one comparison over the sessions that ran one
+// classifier backend, or over every session where backend is empty.
+func readObserveCompareOn(db *storage.DB, window, split string, since time.Time, backend string) (observeCompareData, error) {
+	cohorts, err := db.AgentCohorts(since, split, backend)
 	if err != nil {
 		return observeCompareData{}, fmt.Errorf("query cohorts: %w", err)
 	}
@@ -354,7 +391,7 @@ func readObserveCompare(db *storage.DB, window, split string, since time.Time) (
 	}
 	sides := make([]*observeCohortData, len(pair))
 	for i, c := range pair {
-		reading, err := db.ReadAgentCohort(since, split, c.Value)
+		reading, err := db.ReadAgentCohort(since, split, c.Value, backend)
 		if err != nil {
 			return observeCompareData{}, err
 		}
@@ -834,6 +871,21 @@ func observeCompareReport(data observeCompareData) report.Report {
 		Subject: joinDetail(data.Split, joinDetail(
 			countOf(data.Sessions, "session", "sessions"), "last "+data.Window)),
 	}
+	if len(data.Backends) > 0 {
+		// Said where the reader starts, because the figures below it are
+		// read in blocks and a block is only the backend's own.
+		names := make([]string, len(data.Backends))
+		for i, b := range data.Backends {
+			names[i] = b.Backend
+		}
+		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{{State: report.Run, Name: "split",
+			Subject: "by classifier backend: " + strings.Join(names, ", "),
+			Detail:  "a rate on one backend is never read against the other"}}})
+		for _, b := range data.Backends {
+			r = observeBackendBlock(r, b)
+		}
+		return observeCompareNotes(r, data)
+	}
 	// The way out names no --split: whoever is reading this typed one, and
 	// the thing to change is the window.
 	const wayOut = "shhh observe compare --window 90d"
@@ -880,6 +932,36 @@ func observeCompareReport(data observeCompareData) report.Report {
 		last.Rows = append(last.Rows, observeChangeRow(c))
 	}
 	return observeCompareNotes(r, data)
+}
+
+// observeBackendBlock draws one backend's comparison under headers that
+// name it, so no figure on the screen stands without the backend it was
+// read on.
+func observeBackendBlock(r report.Report, b observeBackendCompare) report.Report {
+	tag := strings.ToUpper(b.Backend) + " · "
+	switch {
+	case b.Earlier == nil || b.Later == nil:
+		r.Sections = append(r.Sections, report.Section{Header: tag + "COHORTS", Rows: []report.Row{{
+			State: report.Skip, Subject: "nothing to compare on " + b.Backend,
+			Outcome: countOf(b.Sessions, "session", "sessions")}}})
+		return r
+	case !b.Comparable:
+		r.Sections = append(r.Sections, report.Section{Header: tag + "COHORTS", Rows: []report.Row{
+			observeCohortRow("earlier", b.Earlier), observeCohortRow("later", b.Later),
+			{State: report.Skip, Subject: "too few sessions to compare",
+				Outcome: strconv.Itoa(b.MinSessions) + " is the fewest a rate is read from"}}})
+		return r
+	}
+	r.Sections = append(r.Sections, report.Section{Header: tag + "COHORTS", Rows: []report.Row{
+		observeCohortRow("earlier", b.Earlier), observeCohortRow("later", b.Later)}})
+	for _, c := range b.Changes {
+		if header := tag + strings.ToUpper(c.Section); r.Sections[len(r.Sections)-1].Header != header {
+			r.Sections = append(r.Sections, report.Section{Header: header})
+		}
+		last := &r.Sections[len(r.Sections)-1]
+		last.Rows = append(last.Rows, observeChangeRow(c))
+	}
+	return r
 }
 
 // observeCohortRow is one side of the comparison in the header: what it ran

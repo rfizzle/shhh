@@ -705,6 +705,10 @@ var migrations = []string{
 	// slot, and the next opening takes the reading
 	// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
 	`ALTER TABLE chat_sessions ADD COLUMN account_owed INTEGER NOT NULL DEFAULT 0;`,
+
+	// What the session's classifier spent, from the ledger's classifier
+	// origin, so a report can price a verdict by the backend that reached it.
+	`ALTER TABLE agent_sessions ADD COLUMN classifier_cost REAL NOT NULL DEFAULT 0;`,
 }
 
 const (

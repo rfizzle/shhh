@@ -39,6 +39,7 @@ var releasedMigrations = []string{
 	"849da27ff7ef403d", // 54: chat_messages.value
 	"66a46c68b1f0e5db", // 55: cache_readings
 	"bdfab591d9cf9023", // 56: chat_sessions.account_owed
+	"fe297b7127eeec64", // 57: agent_sessions.classifier_cost
 }
 
 func migrationDigest(m string) string {
