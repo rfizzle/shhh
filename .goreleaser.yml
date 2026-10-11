@@ -5,7 +5,8 @@ before:
     - make third-party-licenses
 
 builds:
-  - main: ./cmd/shhh
+  - id: shhh
+    main: ./cmd/shhh
     binary: shhh
     env:
       - CGO_ENABLED=0
@@ -36,8 +37,8 @@ archives:
 
 # A cask, not a formula: goreleaser retired `brews` (deprecated from v2.10,
 # formally in v2.16). A cask installs the archive's binary by name and has no
-# install or test block; the hook strips the quarantine flag macOS puts on a
-# downloaded binary that is not signed and notarized, which this one is not.
+# install or test block. It needs no quarantine hook: the darwin binaries are
+# signed and notarized below, so Gatekeeper lets them run.
 homebrew_casks:
   - repository:
       owner: rfizzle
@@ -48,12 +49,27 @@ homebrew_casks:
       - shhh
     homepage: https://github.com/rfizzle/shhh
     description: Natural language to shell commands
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/shhh"]
-          end
+
+# The darwin binaries are signed with the Developer ID certificate and
+# notarized through the App Store Connect API, on this runner, with no macOS
+# machine: Quill does both for a bare binary. Enabled only where the secrets
+# are set, so a fork or a dry run without them still builds. The identity is
+# five repository secrets: the base64 .p12 and its password, and the API
+# key's issuer id, key id and .p8 contents.
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
+      ids:
+        - shhh
+      sign:
+        certificate: "{{ .Env.MACOS_SIGN_P12 }}"
+        password: "{{ .Env.MACOS_SIGN_PASSWORD }}"
+      notarize:
+        issuer_id: "{{ .Env.MACOS_NOTARY_ISSUER_ID }}"
+        key_id: "{{ .Env.MACOS_NOTARY_KEY_ID }}"
+        key: "{{ .Env.MACOS_NOTARY_KEY }}"
+        wait: true
+        timeout: 20m
 
 checksum:
   name_template: "checksums.txt"
