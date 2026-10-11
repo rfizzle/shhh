@@ -4058,6 +4058,13 @@ func TestGolden_HighContrastTable(t *testing.T) {
 		"the high-contrast column, on the surfaces that spend it")
 }
 
+// TestGolden_CatppuccinMochaTable is the same three surfaces through the
+// Catppuccin Mocha table, at every width the set holds.
+func TestGolden_CatppuccinMochaTable(t *testing.T) {
+	captureTable(t, ThemeCatppuccinMocha, "catppuccin-mocha-table", goldenWidths,
+		"the Catppuccin Mocha column, on the surfaces that spend it")
+}
+
 // TestGolden_ColorblindTable is the colour-blind table on the three surfaces
 // that spend its signal inks: the diff, where blue and orange tell the added
 // line from the removed one; the approval card; and the step card in the

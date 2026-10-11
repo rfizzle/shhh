@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 29 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 30 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -333,6 +333,34 @@ it was mixed from. 256 rungs: DistinctRungs, worst error <n> on <token>.
 Sixteen colours: the dark (or light) column. The Machado distance is not
 held for this table; `colorblind` remains the answer for that need.
 ```
+
+## The `catppuccin-mocha` table
+
+_Filed 2026-10-11 · closes by the binary_
+
+Source: https://github.com/catppuccin/catppuccin (the palette, flavour Mocha).
+Ground `#1e1e2e` (base), band `#313244` (surface0), selected row `#45475a`
+(surface1); painted by default.
+
+| token | published | ratio (ground / band) | lifted | ratio (ground / band) |
+|---|---|---|---|---|
+| dim | #6c7086 | 3.36 / 2.57 | #959ab1 | 5.89 / 4.51 |
+| dimmer | #9399b2 | 5.81 / 4.45 | #a8aec8 | 7.46 / 5.72 |
+| status | #7f849c | 4.44 / 3.40 | #9ea4bc | 6.63 / 5.08 |
+| subtle | #a6adc8 | 7.37 / 5.65 | #b1b8d3 | 8.33 / 6.39 |
+
+`LiftToAA` lifts dim, dimmer and status in their own hue; left to itself it
+lands all three at about #959ab1 (#959ab1, #949ab3, #959ab3), so dim keeps its
+lifted value and status, dimmer and subtle are spaced by hand in even steps
+from it to the body (#bac2de), which keeps the ladder bright, body, subtle,
+dimmer, status, dim descending. Subtle clears as published and moves only
+to stay above dimmer. Every other ink is as published.
+
+Derived, not published: addBg `#44554e` and delBg `#5a3d50` (the ground with
+28% of add `#a6e3a1` and of del `#f38ba8`). 256 rungs: DistinctRungs, worst
+error 28.2 (RGB distance, on the delBg tint). Sixteen colours: the dark
+column. The Machado distance is not held for this table; `colorblind`
+remains the answer for that need.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 

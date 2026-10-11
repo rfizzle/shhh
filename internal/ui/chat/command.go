@@ -658,6 +658,7 @@ revoke [commands|edits|hosts|agents]   take the grants back`},
 						{components.ThemeCharm, fmt.Sprintf("The same %d jobs in CharmTone", components.PaletteSize)},
 						{components.ThemeHighContrast, "The same jobs on pure black, every text colour at 7:1 or more"},
 						{components.ThemeColorblind, "Blue and orange for add and remove, apart under every common colour blindness"},
+						{components.ThemeCatppuccinMocha, "Catppuccin Mocha, on its own dark ground"},
 					}},
 					{after: []string{"ground"}, options: []argOption{
 						{"on", "paint the background the theme was drawn against"},

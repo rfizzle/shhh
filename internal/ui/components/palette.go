@@ -380,6 +380,46 @@ func tint(k charmtone.Key, ansi256, ansi16 string) Token {
 	}
 }
 
+// catppuccinMochaPalette is Catppuccin's Mocha flavour
+// (https://github.com/catppuccin/catppuccin, the palette): the published hex
+// for every token that clears 4.5:1 on its ground #1e1e2e and its band
+// #313244 (surface0), the selected row surface1. Three overlay greys were
+// short and are lifted in their own hue by LiftToAA (dim, dimmer and status,
+// which all land near #959ab1), then dim is kept and status, dimmer and subtle
+// are spaced evenly from it up to the body so the ladder keeps its order;
+// addBg and delBg are the ground with 28% of add and of del. The 256 rungs are
+// DistinctRungs' and the sixteen-colour column is the dark table's. The
+// figures are in docs/interface/departures.md.
+var catppuccinMochaPalette = ColorTokens{
+	Add:     token("#a6e3a1", "151", "10"),
+	Del:     token("#f38ba8", "211", "9"),
+	addBg:   token("#44554e", "238", "2"),
+	delBg:   token("#5a3d50", "240", "1"),
+	Hunk:    token("#94e2d5", "116", "14"),
+	Accent:  token("#fab387", "216", "11"),
+	Info:    token("#89b4fa", "111", "12"),
+	FocusBg: token("#45475a", "239", "12"),
+	band:    band("#313244", "237"),
+	Dim:     token("#959ab1", "247", "8"),
+	Dimmer:  token("#a8aec8", "249", "8"),
+	Spin:    token("#f5c2e7", "218", "13"),
+	Status:  token("#9ea4bc", "248", "8"),
+	Bright:  token("#cdd6f4", "189", "15"),
+	Subtle:  token("#b1b8d3", "250", "7"),
+	Body:    token("#bac2de", "146", "7"),
+	Code:    token("#f9e2af", "223", "3"),
+	Key:     token("#b4befe", "147", "12"),
+}
+
+// catppuccinMochaGround is Mocha's base, #1e1e2e and 235, painted by default
+// like the dark ground and for the same reason: its band is half of a pair.
+// It has no sixteen-colour rung.
+var catppuccinMochaGround = Token{
+	trueColor: lipgloss.Color("#1e1e2e"),
+	ansi256:   lipgloss.Color("235"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // The theme names, which are what `/ui theme` takes and what appearance.theme
 // holds. ThemeAuto is the one that is not a table: it is whichever of dark and
 // light matches the ground the terminal reported, and it is the default,
@@ -394,6 +434,8 @@ const (
 	// name in theme.toml is a quoted string.
 	ThemeHighContrast = "high-contrast"
 	ThemeColorblind   = "colorblind"
+	// ThemeCatppuccinMocha is Catppuccin's Mocha flavour, a brand theme.
+	ThemeCatppuccinMocha = "catppuccin-mocha"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -416,6 +458,8 @@ var themes = map[string]theme{
 
 	ThemeHighContrast: {highContrastPalette, highContrastGround},
 	ThemeColorblind:   {colorblindPalette, darkGround},
+
+	ThemeCatppuccinMocha: {catppuccinMochaPalette, catppuccinMochaGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -444,7 +488,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha}
 }
 
 var (
@@ -559,7 +603,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast, ThemeColorblind:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind, ThemeCatppuccinMocha:
 		return true
 	}
 	return false
