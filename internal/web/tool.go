@@ -211,12 +211,12 @@ func (t *Toolset) Has(name string) bool {
 
 // Execute dispatches a web tool call made by agent — the orchestrator or a
 // named child, which is what the ledger's row is signed with.
-func (t *Toolset) Execute(_ context.Context, agent, name string, args json.RawMessage) (string, error) {
+func (t *Toolset) Execute(ctx context.Context, agent, name string, args json.RawMessage) (string, error) {
 	switch {
 	case name == FetchToolName:
-		return t.executeFetch(agent, args)
+		return t.executeFetch(ctx, agent, args)
 	case name == SearchToolName && t.Searcher != nil:
-		return t.executeSearch(agent, args)
+		return t.executeSearch(ctx, agent, args)
 	}
 	return "", fmt.Errorf("unknown web tool: %s", name)
 }
@@ -326,7 +326,7 @@ func formatBytes(n int64) string {
 	return fmt.Sprintf("%d B", n)
 }
 
-func (t *Toolset) executeFetch(agent string, args json.RawMessage) (string, error) {
+func (t *Toolset) executeFetch(ctx context.Context, agent string, args json.RawMessage) (string, error) {
 	var a fetchArgs
 	if err := json.Unmarshal(args, &a); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -335,7 +335,10 @@ func (t *Toolset) executeFetch(agent string, args json.RawMessage) (string, erro
 		return "", fmt.Errorf("url is required")
 	}
 	requested := strings.TrimSpace(a.URL)
-	res, err := t.Fetcher.Fetch(context.Background(), a.URL, nil)
+	// The request goes out under the call's context, so a stop ends the
+	// wait for a slow host rather than leaving it to the fetch's own limit
+	// (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn).
+	res, err := t.Fetcher.Fetch(ctx, a.URL, nil)
 	if err != nil {
 		// A fetch that never got an answer is a row too — refused by the
 		// policy, rate limited twice, timed out. The ledger answers "what
@@ -569,7 +572,7 @@ type searchArgs struct {
 	Offset    int    `json:"offset"`
 }
 
-func (t *Toolset) executeSearch(agent string, args json.RawMessage) (string, error) {
+func (t *Toolset) executeSearch(ctx context.Context, agent string, args json.RawMessage) (string, error) {
 	var a searchArgs
 	if err := json.Unmarshal(args, &a); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -594,7 +597,7 @@ func (t *Toolset) executeSearch(agent string, args json.RawMessage) (string, err
 	if refusal := t.Searcher.Refuse(q); refusal != "" {
 		return "", errors.New(refusal)
 	}
-	results, err := t.Searcher.Search(context.Background(), q)
+	results, err := t.Searcher.Search(ctx, q)
 	// The request is reported whether or not it came back with anything: a
 	// backend that answers nothing and one that answers badly are the same
 	// event to a rate over how often a session searches.

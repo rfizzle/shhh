@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -93,6 +94,28 @@ func TestToolset_ExecuteFetchHTML(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("result missing %q:\n%s", want, out)
 		}
+	}
+}
+
+// A fetch goes out under the call's context: a host that never answers is
+// left when the turn is stopped, not when the fetch's own limit runs out.
+func TestToolset_AStopEndsAFetchThatIsStillWaiting(t *testing.T) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+
+	ts := NewToolset(testFetcher(), nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	stop := time.AfterFunc(100*time.Millisecond, cancel)
+	defer stop.Stop()
+	start := time.Now()
+	_, err := ts.Execute(ctx, Orchestrator, FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("err = %v, want the stop", err)
+	}
+	if took := time.Since(start); took > 5*time.Second {
+		t.Errorf("the stop took %s to reach the fetch", took)
 	}
 }
 
