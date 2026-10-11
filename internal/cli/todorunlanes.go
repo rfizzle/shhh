@@ -941,6 +941,10 @@ func (l *todoLane) end(ctx context.Context, d *todoDriver, st *run.State, it tod
 		fmt.Fprintln(d.out, line)
 		d.settleChats(st)
 		st.Stage, st.Blocked = run.StageBlocked, "the sprint was stopped"
+		// The boxes the stages ticked in the kept copy reach the item too.
+		l.set.land.Lock()
+		l.applyTicks(d, it)
+		l.set.land.Unlock()
 		return true
 	}
 	if st.Stage == run.StageDone && !l.landed {

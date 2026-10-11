@@ -117,3 +117,51 @@ func TestTodoRunHeadless_ALaneWritesNothingInTheCheckout(t *testing.T) {
 		t.Errorf("the lane's commit carries its copy of the item:\n%s", names)
 	}
 }
+
+// A sprint stopped after a stage had ticked a box keeps the lane's copy, and
+// the box still reaches the item, which is open again.
+func TestTodoRunHeadless_AStoppedLanesTicksReachTheItem(t *testing.T) {
+	root := todoRepo(t)
+	tickItem(t, root, "a-one")
+	d, out := laneDriverFor(t, root, &laneAnswers{})
+	inner := d.turn
+	d.turn = func(ctx context.Context, at time.Time, dir string, step run.Step) (todoTurn, error) {
+		m := laneFileIn.FindStringSubmatch(step.Prompt)
+		if step.Stage != run.StageImplement || m == nil {
+			return inner(ctx, at, dir, step)
+		}
+		data, err := os.ReadFile(m[1])
+		if err != nil {
+			t.Errorf("the copy is not readable: %v", err)
+		} else if err := os.WriteFile(m[1], []byte(strings.Replace(string(data), "- [ ] first criterion", "- [x] first criterion", 1)), 0o644); err != nil {
+			t.Errorf("the copy could not be ticked: %v", err)
+		}
+		_ = os.WriteFile(filepath.Join(dir, "a-one.go"), []byte("package aone\n"), 0o644)
+		if err := run.RequestStop(root); err != nil {
+			t.Error(err)
+		}
+		select {
+		case <-ctx.Done():
+			return todoTurn{}, ctx.Err()
+		case <-time.After(30 * time.Second):
+			t.Error("the stop never reached the lane's step")
+		}
+		return todoTurn{}, ctx.Err()
+	}
+
+	d.sprintParallel(context.Background(), 0, 2)
+	it, ok := todo.Load(todo.BuiltinCode(), root).Find("a-one")
+	if !ok || it.Status != todo.StatusOpen {
+		t.Fatalf("the stopped item is open again:\n%s", out.String())
+	}
+	if !strings.Contains(out.String(), "its work so far is kept in") {
+		t.Fatalf("the stop names where the lane's work is:\n%s", out.String())
+	}
+	data, err := os.ReadFile(it.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "- [x] first criterion\n") || !strings.Contains(string(data), "- [ ] second criterion\n") {
+		t.Fatalf("the first criterion should be ticked on the item:\n%s", data)
+	}
+}
