@@ -1,0 +1,29 @@
+# Dependency bumps arrive as grouped pull requests on a cadence, so an
+# advisory is a PR to merge and not a red scan. Each ecosystem is one group:
+# the provider SDKs and golang.org/x/* move with every other module.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      go-modules:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Keeps the sandbox base image's digest fresh.
+  - package-ecosystem: docker
+    directory: /docker/sandbox
+    schedule:
+      interval: weekly
+    groups:
+      sandbox-image:
+        patterns: ["*"]
