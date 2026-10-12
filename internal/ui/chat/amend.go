@@ -196,6 +196,11 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 	// The standing rules read the call's classification (ruleCall), so the
 	// line they are asked about is the amended one too.
 	amended.class.Action.Command = line
+	// A line the reader wrote is not one the model sent again after a
+	// redirect.
+	if line != req.command {
+		amended.class.AfterRedirect = false
+	}
 	amended.summary = firstLine(line)
 	amended.dryCommand = dryRunForm(line)
 	if amended.amendedFrom == "" {

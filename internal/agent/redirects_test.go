@@ -18,7 +18,8 @@ func execArgs(t *testing.T, command string) json.RawMessage {
 }
 
 func TestRedirects_AnEditIsAnsweredOnceAndTheSameLineRuns(t *testing.T) {
-	r := NewRedirects("/work/proj")
+	round := 1
+	r := NewRedirects("/work/proj", func() int { return round })
 	answers := Answers{Redirects: r}
 	line := "sed -i 's/a/b/' main.go"
 
@@ -32,6 +33,12 @@ func TestRedirects_AnEditIsAnsweredOnceAndTheSameLineRuns(t *testing.T) {
 		}
 	}
 	r.Spent(err)
+
+	// The same line again in the same message: the model has read nothing yet.
+	if _, err := ClassifyCall(tools.ExecCommandName, execArgs(t, line), answers); err == nil {
+		t.Fatal("the same line in the same round ran before the model read the answer")
+	}
+	round = 2
 
 	c, err := ClassifyCall(tools.ExecCommandName, execArgs(t, " "+line+"\n"), answers)
 	if err != nil || !c.AfterRedirect {

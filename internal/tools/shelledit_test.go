@@ -46,6 +46,18 @@ func TestShellEdit_ReadsAnInPlaceEditAndNothingElse(t *testing.T) {
 		{"cat main.go | grep x", false},
 		{"python - <<EOF\nif a > b:\n  pass\nEOF", false},
 		{"echo 'unterminated > x", false},
+		{"cat <<EOF | tee out.txt\nhi\nEOF", true},
+		{"cat <<EOF; sed -i s/a/b/ f\nhi\nEOF", true},
+		{"grep '<<EOF' f && sed -i s/a/b/ f", true},
+		{"cat <<EOF\nit's\nEOF\nsed -i s/a/b/ f", true},
+		{"cat <<EOF\nsed -i s/a/b/ f\nEOF", false},
+		{"cat <<'EOF'\nit's > x\nEOF", false},
+		{"cat <<-EOF\n\tif a > b\n\tEOF", false},
+		{"cat <<EOF\nsed -i s/a/b/ f", true},
+		{"python3 - << EOF\nprint(1)\nif a > b: pass\nEOF", false},
+		{"echo $((3 > 2))", false},
+		{"perl script.pl -input data", false},
+		{"perl -Mstrict -pi -e 's/a/b/' f", true},
 		{"", false},
 	}
 	for _, c := range cases {

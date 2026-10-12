@@ -87,10 +87,12 @@ type Agent struct {
 	// call starts (SetCallCancel).
 	callCancel CallCancel
 
-	messages  []provider.Message
-	folded    []provider.Message
-	runID     int
-	rounds    int
+	messages []provider.Message
+	folded   []provider.Message
+	runID    int
+	rounds   int
+	// roundSeq counts every tool round the agent has begun, across turns.
+	roundSeq  int
 	maxRounds int
 
 	// grant is what the turn has been given on top of its ceiling, and
@@ -367,6 +369,10 @@ func (a *Agent) RunID() int { return a.runID }
 // Rounds is how many tool-call rounds the current user turn has used.
 func (a *Agent) Rounds() int { return a.rounds }
 
+// RoundSeq is how many tool rounds the agent has begun in all: unlike Rounds
+// it never resets, so it orders any two rounds of a session.
+func (a *Agent) RoundSeq() int { return a.roundSeq }
+
 // ResetRounds clears the round counter (a fresh user input continues a
 // capped turn). The intervention mark goes with it: the user's own message is
 // the most direct form of taking stock there is, and the counter it is
@@ -437,6 +443,7 @@ func (a *Agent) CarryReasoning(blocks []provider.ReasoningBlock) { a.reasoning =
 // wait in the approval queue until the front-end resolves them.
 func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate ApprovalGate) (auto, gated []provider.ToolCall) {
 	a.rounds++
+	a.roundSeq++
 	// Whether this round's prose was the public status the session asked for
 	// is recorded on the message that carries it, from the latch
 	// NoteProgressProse set a moment ago (progress.go). The message is the

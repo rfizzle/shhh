@@ -50,24 +50,106 @@ type ShellScope struct {
 // edit it recognises. A session with no workspace recognises only the two
 // in-place flags, because a path has nothing to be inside of.
 func ShellEdit(command string, scope ShellScope) bool {
-	heredoc := ""
-	for _, seg := range splitSegments(command) {
-		if heredoc != "" {
-			if len(seg.words) == 1 && seg.words[0] == heredoc {
-				heredoc = ""
-			}
-			continue
-		}
+	for _, seg := range splitSegments(withoutHeredocBodies(command)) {
 		if shellEditSegment(seg, scope) {
 			return true
 		}
-		for _, w := range seg.words {
-			if d, ok := strings.CutPrefix(w, "<<"); ok && !strings.HasPrefix(d, "<") {
-				heredoc = strings.TrimPrefix(d, "-")
+	}
+	return false
+}
+
+// withoutHeredocBodies drops the lines a here-document carries as data, from
+// the line after its operator to its terminator, and keeps the line the
+// operator is on, whose other commands are still the model's. It reads the
+// physical lines and not the words, because a quote in the body (an
+// apostrophe) would otherwise join lines and hide the terminator. A heredoc
+// whose terminator is never found drops nothing: the body is read as
+// commands, which can only recognise too much, once, and never hides an edit
+// behind an unclosed operator.
+func withoutHeredocBodies(command string) string {
+	if !strings.Contains(command, "<<") {
+		return command
+	}
+	lines := strings.Split(command, "\n")
+	var out []string
+	for i := 0; i < len(lines); i++ {
+		out = append(out, lines[i])
+		end := i
+		for _, d := range heredocDelimiters(lines[i]) {
+			found := -1
+			for k := end + 1; k < len(lines); k++ {
+				l := lines[k]
+				if d.stripTabs {
+					l = strings.TrimLeft(l, "\t")
+				}
+				if l == d.word {
+					found = k
+					break
+				}
+			}
+			if found < 0 {
+				end = i
+				break
+			}
+			end = found
+		}
+		i = end
+	}
+	return strings.Join(out, "\n")
+}
+
+type heredocDelimiter struct {
+	word      string
+	stripTabs bool
+}
+
+// heredocDelimiters reads the unquoted << operators of one line and the word
+// each one names, whether written <<EOF, << EOF, <<-EOF or <<'EOF'.
+func heredocDelimiters(line string) []heredocDelimiter {
+	var found []heredocDelimiter
+	var quote byte
+	for i := 0; i < len(line); i++ {
+		c := line[i]
+		switch {
+		case quote != 0:
+			if c == quote {
+				quote = 0
+			} else if c == '\\' && quote == '"' {
+				i++
+			}
+		case c == '\'' || c == '"':
+			quote = c
+		case c == '\\':
+			i++
+		case c == '<' && strings.HasPrefix(line[i:], "<<") && !strings.HasPrefix(line[i:], "<<<"):
+			i += 2
+			d := heredocDelimiter{}
+			if i < len(line) && line[i] == '-' {
+				d.stripTabs = true
+				i++
+			}
+			for i < len(line) && (line[i] == ' ' || line[i] == '\t') {
+				i++
+			}
+			var word strings.Builder
+			for ; i < len(line); i++ {
+				c := line[i]
+				if c == '\'' || c == '"' || c == '\\' {
+					continue
+				}
+				if c == ' ' || c == '\t' || c == ';' || c == '|' || c == '&' || c == '<' || c == '>' || c == ')' {
+					break
+				}
+				word.WriteByte(c)
+			}
+			i--
+			if word.Len() > 0 {
+				d.word = word.String()
+				found = append(found, d)
 			}
 		}
 	}
-	return false
+	return found
 }
 
 func shellEditSegment(seg segment, scope ShellScope) bool {
@@ -89,9 +171,9 @@ func shellEditWords(words []string, scope ShellScope) bool {
 	cmd, args := path.Base(words[0]), words[1:]
 	switch cmd {
 	case "sed":
-		return inPlaceFlag(args, "nEsuzr", "--in-place")
+		return inPlaceFlag(args, "nEsuzr", "--in-place", false)
 	case "perl":
-		return inPlaceFlag(args, "pnlawsSTtuUWXc0123456789", "")
+		return inPlaceFlag(args, "pnlawsSTtuUWXc0123456789", "", true)
 	case "tee":
 		for _, a := range args {
 			if !strings.HasPrefix(a, "-") && inScope(a, scope) {
@@ -123,9 +205,19 @@ func shellEditWords(words []string, scope ShellScope) bool {
 // other flags that take nothing, an i is the in-place flag (whatever follows
 // it is the backup suffix), and any other letter ends the cluster, since it
 // takes the rest of the word or the next one. long is the long spelling, if
-// the program has one.
-func inPlaceFlag(args []string, carry, long string) bool {
+// the program has one. With operands, the options end at the first word that
+// is not one (perl's script, or the code after -e), so a flag-shaped word
+// given to the script is not read as perl's.
+func inPlaceFlag(args []string, carry, long string, operands bool) bool {
+	skip := false
 	for _, a := range args {
+		if skip {
+			skip = false
+			continue
+		}
+		if operands && !strings.HasPrefix(a, "-") {
+			return false
+		}
 		switch {
 		case a == "--":
 			return false
@@ -139,6 +231,7 @@ func inPlaceFlag(args []string, carry, long string) bool {
 				return true
 			}
 			if !strings.ContainsRune(carry, r) {
+				skip = operands && (r == 'e' || r == 'E') && strings.HasSuffix(a, string(r))
 				break
 			}
 		}
@@ -173,7 +266,7 @@ func redirectTarget(seg segment, i int) (string, bool) {
 // and not scratch. A path with a variable, a command substitution or a tilde
 // in it cannot be read here and is not recognised.
 func inScope(p string, scope ShellScope) bool {
-	if scope.Workspace == "" || p == "" || strings.ContainsAny(p, "$`~*?") {
+	if scope.Workspace == "" || p == "" || strings.ContainsAny(p, "$`~*?()") {
 		return false
 	}
 	ws := filepath.Clean(scope.Workspace)

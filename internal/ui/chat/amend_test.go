@@ -446,3 +446,19 @@ func TestAmend_TheFieldOpensOnTheCommandItself(t *testing.T) {
 func cardText(card *components.ApprovalCard, m Model) string {
 	return ansi.Strip(card.View(m.contentWidth()))
 }
+
+// A line the reader wrote in place of the model's is not one the model sent
+// again after a redirect, so its row does not say so.
+func TestAmend_AnAmendedLineIsNotAfterARedirect(t *testing.T) {
+	var ran []string
+	m := amendModel(t, "npm test", &ran)
+	m.approval.request.class.AfterRedirect = true
+	m = openAmend(t, m, "npm test -- --runInBand")
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	updated, _ = m.Update(driveCmdDone(t, cmd))
+	m = updated.(Model)
+	if row := m.transcript[len(m.transcript)-1]; row.afterRedirect {
+		t.Fatalf("an amended line carries the redirect mark: %+v", row)
+	}
+}

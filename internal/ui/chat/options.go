@@ -58,10 +58,11 @@ func New(initialMessages []provider.Message, stream StreamFunc, w Wiring) Model 
 	// One frame set, one cadence, one colour, shared with the one-shot UI.
 	s := components.NewSpinnerModel()
 
+	ag := agent.New(initialMessages, stream)
 	m := Model{
-		agent:     agent.New(initialMessages, stream),
+		agent:     ag,
 		wiring:    w,
-		approval:  approvalState{redirects: agent.NewRedirects(sessionWorkspace(w.Workspace))},
+		approval:  approvalState{redirects: agent.NewRedirects(sessionWorkspace(w.Workspace), ag.RoundSeq)},
 		input:     ta,
 		spinner:   s,
 		state:     stateInput,
