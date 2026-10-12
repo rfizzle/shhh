@@ -707,6 +707,7 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 	// the user sees exactly what the model got. /run — the user's own
 	// command — stays unreduced.
 	var allowedBy, approvedBy, amendedFrom string
+	var afterRedirect bool
 	var allowElapsed time.Duration
 	// The formatted result, made once and read twice. Formatting a
 	// command's result is not free of consequence any more: an output
@@ -736,11 +737,12 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 		if allowedBy == "" {
 			approvedBy = decidedByYou
 		}
+		afterRedirect = m.approval.request.class.AfterRedirect
 	}
 	m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
 		exitCode: msg.exitCode, commandResult: result, localRun: msg.local, duration: msg.duration,
 		allowedBy: allowedBy, allowElapsed: allowElapsed, approvedBy: approvedBy,
-		amendedFrom: amendedFrom, end: msg.end, ranIn: msg.ranIn})
+		amendedFrom: amendedFrom, afterRedirect: afterRedirect, end: msg.end, ranIn: msg.ranIn})
 	if m.approval.request != nil {
 		call := m.approval.request.call
 		m.approval.request = nil

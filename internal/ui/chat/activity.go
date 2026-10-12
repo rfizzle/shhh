@@ -600,6 +600,16 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 	if e.amendedFrom != "" {
 		row.Allowed = components.OutcomeBy(components.OutcomeAmended, decidedByYou)
 	}
+	// A command that ran because the same line had already been answered with
+	// the editor says so in the same field: the reader scrolling back sees
+	// the run was the second asking, not the first.
+	if e.afterRedirect {
+		if row.Allowed == "" {
+			row.Allowed = afterRedirectWord
+		} else {
+			row.Allowed = components.OutcomeBy(row.Allowed, afterRedirectWord)
+		}
+	}
 	if strings.TrimSpace(result) != "" {
 		row.Detail = strings.Split(strings.TrimRight(result, "\n"), "\n")
 		if !row.Failed() && m.density(verbosityNormal) {
@@ -1073,3 +1083,7 @@ func (m Model) composeRowLine(width int, prev entry, havePrev bool) string {
 	}
 	return lead + row.View(width) + "\n"
 }
+
+// afterRedirectWord is the account on a command that ran because the same
+// line had been answered with the editor first.
+const afterRedirectWord = "after a redirect"

@@ -362,6 +362,28 @@ A script's mode is the write's and not a command's: the write tool takes an
 mode row and in the file's recorded mode change, so `chmod +x` is not a second
 command to approve. The flag only adds: leaving it out never strips a mode.
 
+**An edit written as a command is answered with the editor, once.** A `sed -i`
+or `perl -pi`, a `>` or `>>` onto a file of the workspace, and a `tee` onto
+one are not run the first time they are sent. The result tells the model the
+editor's four spellings — one place, several places in one file in a single
+call, every occurrence, text at the end — because an edit made as a command is
+not recorded, cannot be undone, is not reviewable as a diff, and has the
+host's regex dialect, which on a Mac is not the one the model was taught. A
+redirection to `/dev/null`, to a path outside the workspace or into the
+session's scratch directory, a pipe into a program, a `sed` that only reads
+and a line the reading cannot parse are not edits and run as always.
+
+The answer is a nudge and not a wall. The editor cannot yet make a
+replacement that depends on what matched, or one replacement across several
+files, and a closed list that fails open must never stand between the model
+and a need the editor cannot meet. So the result says as much, and the same
+line sent again — the same after trimming, for the rest of the session —
+runs as it always did, its row marked `after a redirect`. A different line
+that is also an edit is answered again. The reader's own `/run` and `!` are
+never answered this way, and a child, which is not asked, runs every line.
+The sibling rule for a command that cannot finish is in
+[containment](containment.md#a-command-that-will-not-finish-is-not-waited-on-forever).
+
 **A shell read is not allowed because of any of this.** The gate reads a
 command line as a command line whatever it contains; auto mode does not wave
 a `cat` through because a reader could have answered it. The tools and the

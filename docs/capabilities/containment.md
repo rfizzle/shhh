@@ -1157,6 +1157,11 @@ listed runs as it always did and meets the ceiling, which is why the row that
 reports the hand-over says what to do next time. The reader's own `/run` and
 `!` are never answered this way; they chose the command.
 
+The sibling rule answers a command that edits a workspace file in place
+(`sed -i`, a redirect onto a file) with the editor, once, and runs the same
+line when it is sent again; it is described with the built-in tools in
+[the coding agent](coding-agent.md#the-built-in-tools-come-before-the-shell).
+
 **One command's output cannot take the session's memory with it.** Output is
 held to a bound as it arrives, far above the few thousand bytes any reader or
 model is shown, so a build with a verbose flag left on is capped while it runs

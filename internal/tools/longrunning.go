@@ -36,7 +36,10 @@ func LongRunning(command string) bool {
 }
 
 type segment struct {
-	words      []string
+	words []string
+	// quoted[i] is whether words[i] had a quote or a backslash in it, so a
+	// reader that cares whether a > was an operator can tell.
+	quoted     []bool
 	background bool
 }
 
@@ -46,21 +49,23 @@ type segment struct {
 func splitSegments(line string) []segment {
 	var segs []segment
 	var words []string
+	var quoted []bool
 	var word strings.Builder
-	inWord := false
+	inWord, wordQuoted := false, false
 	endWord := func() {
 		if inWord {
 			words = append(words, word.String())
+			quoted = append(quoted, wordQuoted)
 			word.Reset()
-			inWord = false
+			inWord, wordQuoted = false, false
 		}
 	}
 	endSeg := func(background bool) {
 		endWord()
 		if len(words) > 0 {
-			segs = append(segs, segment{words: words, background: background})
+			segs = append(segs, segment{words: words, quoted: quoted, background: background})
 		}
-		words = nil
+		words, quoted = nil, nil
 	}
 	var quote byte
 	for i := 0; i < len(line); i++ {
@@ -77,11 +82,11 @@ func splitSegments(line string) []segment {
 			}
 		case c == '\'' || c == '"':
 			quote = c
-			inWord = true
+			inWord, wordQuoted = true, true
 		case c == '\\' && i+1 < len(line):
 			i++
 			word.WriteByte(line[i])
-			inWord = true
+			inWord, wordQuoted = true, true
 		case c == ' ' || c == '\t':
 			endWord()
 		case c == '\n' || c == ';' || c == '|':

@@ -258,7 +258,7 @@ func (m Model) answers(name string) bool {
 // approval; status, read, input and stop auto-run — so its reading goes with
 // it where the session manages processes.
 func (m Model) holds() agent.Answers {
-	h := agent.Answers{Has: m.answers}
+	h := agent.Answers{Has: m.answers, Redirects: m.approval.redirects}
 	if m.wiring.Processes.Manage != nil {
 		h.Command = process.CommandOf
 	}
@@ -440,6 +440,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 // the error as the call's result, the transcript files the skipped row, and
 // the queue moves to the next call.
 func (m Model) skipApproval(tc provider.ToolCall, err error) (tea.Model, tea.Cmd) {
+	m.approval.redirects.Spent(err)
 	m.agent.ResolveApproval(m.refusedResult(tc, "error: "+err.Error()))
 	m.appendCallRow(tc.ID, m.skippedCallEntry(tc, err))
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -717,6 +718,7 @@ func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
 		}
 		rebuilt, err := m.buildApprovalRequest(call)
 		if err != nil {
+			m.approval.redirects.Spent(err)
 			m.agent.ResolveApproval(m.refusedResult(call, "error: "+err.Error()))
 			m.appendCallRow(call.ID, m.skippedCallEntry(call, err))
 			m.viewport.SetLines(m.renderHistoryLines())

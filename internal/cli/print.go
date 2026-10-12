@@ -808,6 +808,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		mcpTools:     session.mcpTools,
 		structTools:  session.structural,
 		un:           unattended{sup: sup, judge: judge, at: obs.pos, conversation: conversationReads(session.conversation, rules.DenyHosts)},
+		redirects:    agent.NewRedirects(workingDir()),
 	})
 	// The gated tier is where an unattended run circles: the test command
 	// that fails the same way every round, the edit a policy refuses every

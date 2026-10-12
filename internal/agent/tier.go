@@ -52,6 +52,9 @@ type Classified struct {
 	// Gated is whether the call is put to a decision: it sits above the read
 	// tier and the surface has an answer for it.
 	Gated bool
+	// AfterRedirect is whether a command is one the surface already answered
+	// with the editor and is now running as it always did.
+	AfterRedirect bool
 }
 
 // errInvalidCommand is the error a command call with no command in it is
@@ -73,6 +76,9 @@ type Answers struct {
 	// registered it, because the package that owns it cannot be imported
 	// from here.
 	Command func(name string, args json.RawMessage) (command string, starts, ok bool, err error)
+	// Redirects is the surface's memory of the commands it has answered with
+	// the editor. Nil is a surface that answers none.
+	Redirects *Redirects
 }
 
 func (a Answers) has(name string) bool { return a.Has != nil && a.Has(name) }
@@ -98,7 +104,7 @@ func (a Answers) has(name string) bool { return a.Has != nil && a.Has(name) }
 // See docs/capabilities/approvals-and-safety.md#one-classifier-names-a-calls-tier.
 func ClassifyCall(name string, args json.RawMessage, answers Answers) (Classified, error) {
 	has := answers.has(name)
-	c, err := classify(name, args, has, answers.Command)
+	c, err := classify(name, args, has, answers.Command, answers.Redirects)
 	c.Gated = has && c.Tier != TierRead
 	return c, err
 }
@@ -106,7 +112,7 @@ func ClassifyCall(name string, args json.RawMessage, answers Answers) (Classifie
 // classify is the table itself. The order is the order of precedence, and
 // the names it knows are the ones whose tier does not depend on the surface.
 func classify(name string, args json.RawMessage, has bool,
-	starts func(string, json.RawMessage) (string, bool, bool, error)) (Classified, error) {
+	starts func(string, json.RawMessage) (string, bool, bool, error), redirects *Redirects) (Classified, error) {
 	switch {
 	case name == tools.ExecCommandName:
 		c := Classified{Tier: TierCommand, Action: Action{Kind: ActionCommand}}
@@ -127,6 +133,15 @@ func classify(name string, args json.RawMessage, has bool,
 		if tools.LongRunning(a.Command) {
 			return c, tools.LongRunningError{}
 		}
+		// An edit written as a command is answered once with the editor; the
+		// same line sent again runs. Asking does not spend the answer: the
+		// surface that gives it to the model says so (Redirects.Spent).
+		// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+		after, err := redirects.read(a.Command)
+		if err != nil {
+			return c, err
+		}
+		c.AfterRedirect = after
 		return c, nil
 	case starts != nil && claims(starts, name, args):
 		// A background start's tier is its verb's: a start launches a

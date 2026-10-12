@@ -656,6 +656,9 @@ type entry struct {
 	// (docs/interface/principles.md#one-grid). Empty on every call the queue
 	// accepted, which is nearly all of them.
 	skipped string
+	// afterRedirect is whether a command ran after the same line had been
+	// answered with the editor; the row says so beside what allowed it.
+	afterRedirect bool
 	// notice is the grid row a system notice draws itself as, where it is a
 	// row rather than a sentence: what the session did to itself — reopened
 	// a conversation, started a new one — in the transcript's own columns.

@@ -174,6 +174,9 @@ type headlessApproval struct {
 	mcpTools     *mcp.Toolset
 	structTools  *structural.Toolset
 	un           unattended
+	// redirects is the run's memory of the commands it answered with the
+	// editor; nil answers none.
+	redirects *agent.Redirects
 
 	// recordTook is record for a verdict the classifier reached, with how
 	// long it took; nil sends those through record untimed.
@@ -201,7 +204,7 @@ type headlessApproval struct {
 // to, and the judge a call the flags did not answer is put to (approvals.go).
 // A zero value is the surface exactly as it was — flags, or a refusal.
 func headlessApprover(ctx context.Context, r headlessApproval) func(provider.ToolCall) string {
-	holds := agent.Answers{Has: r.answers}
+	holds := agent.Answers{Has: r.answers, Redirects: r.redirects}
 	if r.procSup != nil {
 		holds.Command = process.CommandOf
 	}
@@ -491,6 +494,7 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 		return r.rules.Containment
 	}
 	if callErr != nil {
+		r.redirects.Spent(callErr)
 		return how.parseErr(callErr)
 	}
 	command := call.Action.Command

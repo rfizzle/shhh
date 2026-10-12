@@ -303,6 +303,7 @@ func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 func (m Model) StandingAnswer(tc provider.ToolCall) (decision agent.Decision, result, code string) {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
+		m.approval.redirects.Spent(err)
 		return agent.Deny, "error: " + err.Error(), ""
 	}
 	if refusal := m.containmentRefusal(req); refusal != "" {

@@ -27,6 +27,8 @@ func amendModel(t *testing.T, command string, ran *[]string) Model {
 	t.Helper()
 	m := gatedModel(t, nil, nil)
 	m.wiring.Workspace = t.TempDir()
+	// These are about the amend field, and their lines write files.
+	m.approval.redirects = nil
 	m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
 		*ran = append(*ran, cmd)
 		return "ok", 0

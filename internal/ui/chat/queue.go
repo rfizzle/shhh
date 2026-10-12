@@ -262,6 +262,10 @@ func (m Model) skippedCallEntry(call provider.ToolCall, err error) entry {
 		e.toolResult = stale.Error()
 		return e
 	}
+	var edit tools.ShellEditError
+	if errors.As(err, &edit) {
+		e.text, e.skipped = firstLine(edit.Command), shellEditReason
+	}
 	var long tools.LongRunningError
 	if errors.As(err, &long) {
 		// A command answered with the redirect: the row names the line the
@@ -281,6 +285,9 @@ func (m Model) skippedCallEntry(call provider.ToolCall, err error) entry {
 // longRunningReason is the account beside `skipped` on a command answered
 // with the redirect to the process tool.
 const longRunningReason = "long-running"
+
+// shellEditReason is the same for a command answered with the editor.
+const shellEditReason = "edit as a command"
 
 // rowPath is a path as a transcript row writes it: relative to the session's
 // workspace when it is inside it, and as it arrived when it is not — that a

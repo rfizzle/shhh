@@ -1,6 +1,9 @@
 package chat
 
-import "github.com/rfizzle/shhh/internal/ui/components"
+import (
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/ui/components"
+)
 
 // approvalState is the decision card's own state on the session: the call it
 // asks about and what was resolved for it, the queue behind it, the field or
@@ -19,6 +22,10 @@ import "github.com/rfizzle/shhh/internal/ui/components"
 // Everything else here belongs to the decision as a whole — the queue it
 // heads — and is set and reset where that changes (queue.go).
 type approvalState struct {
+	// redirects is the session's memory of the commands it answered with the
+	// editor, so the same line sent again runs (agent.Redirects). Session-long,
+	// so clear leaves it.
+	redirects *agent.Redirects
 	// classifierAllowed are the calls the classifier let run without a card,
 	// by call ID: a cancel that finds one still running records the person
 	// stopping it (observe.ReasonUserStop). Session-long, so clear leaves it.

@@ -15,6 +15,7 @@ package chat
 // See docs/architecture.md#the-screen-is-handed-its-wiring-as-one-value.
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -60,6 +61,7 @@ func New(initialMessages []provider.Message, stream StreamFunc, w Wiring) Model 
 	m := Model{
 		agent:     agent.New(initialMessages, stream),
 		wiring:    w,
+		approval:  approvalState{redirects: agent.NewRedirects(sessionWorkspace(w.Workspace))},
 		input:     ta,
 		spinner:   s,
 		state:     stateInput,
@@ -404,4 +406,14 @@ func (m Model) WithHeldTurn(rounds, granted int) Model {
 func (m *Model) loadTodos() {
 	m.reloadTodos()
 	m.todo.runner.following = m.lanesLive()
+}
+
+// sessionWorkspace is the directory a session's relative paths are read
+// against: the one it was told, or the process's own.
+func sessionWorkspace(w string) string {
+	if w != "" {
+		return w
+	}
+	wd, _ := os.Getwd()
+	return wd
 }
