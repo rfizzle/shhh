@@ -20,6 +20,10 @@
 # would read as a column that drifted.
 setup printf 'package agent\n\nconst limit = 25\n\nfunc round() int {\n    return limit\n}\n' > loop.go
 setup printf 'The cap is read from one place.\n' > notes.md
+# The file the command copies over loop.go: what somebody else's tool would
+# leave there. A copy rather than a redirect, because a command that writes a
+# workspace path by `>` is answered with a redirect to the edit tool first.
+setup printf 'package agent\n\nconst limit = 12\n' > loop.moved
 snap 01-start "Some things worth doing first"
 keys "raise the round cap" Enter
 # The edit is gated, so the card is what the turn stops on. Each answer waits
@@ -35,7 +39,7 @@ keys y
 # The command that moves the file under the model is the second decision, and
 # it is answered the same way — the handover only ever gives the keyboard to
 # the card, so asking twice costs nothing.
-snap 03-command-card "const limit = 12"
+snap 03-command-card "cp loop.moved loop.go"
 sleep 1
 keys C-Space
 sleep 0.3

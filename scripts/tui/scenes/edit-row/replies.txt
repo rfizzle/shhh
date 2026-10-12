@@ -15,7 +15,7 @@ tool:edit_file:{"path":"loop.go","old_text":"const limit = 25","new_text":"const
 # fresh picture of it, and the refusal below is the model acting on a stale
 # one. A prose line would end the turn instead of being spent.
 tool:read_file:{"path":"notes.md"}
-tool:execute_command:{"command":"printf 'package agent\\n\\nconst limit = 12\\n' > loop.go"}
+tool:execute_command:{"command":"cp loop.moved loop.go"}
 tool:read_file:{"path":"notes.md"}
 tool:write_file:{"path":"loop.go","content":"package agent\n\nconst limit = 99\n"}
 The cap is where the file says it is.

@@ -29,4 +29,8 @@ snap 04-notice "tree moved" "· tree moved — 1 path changed outside this sessi
 snap 05-answered "so somebody else"
 keys C-c
 keys C-c
+# The stranger's line left notes.md uncommitted, so the quit offers a handoff;
+# n declines.
+snap 05a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 06-exit "that is everything the screen was holding"
