@@ -67,6 +67,10 @@ type Call struct {
 	// git-program-path rule reads, cleaned and resolved against the
 	// session's directory. Empty for a call that names no file.
 	Path string
+	// Paths is every file an edit across a list names, Path the first; nil
+	// for a call naming one. The rule refuses the call when any of them is
+	// refused.
+	Paths []string
 	// InDir marks a command run in the session's own directory. A process
 	// start names a directory of its own, so its relative paths prove
 	// nothing and only its absolute ones are read.
@@ -92,6 +96,7 @@ func CallOf(name string, c agent.Classified) Call {
 		Host:    c.Action.Host,
 		Write:   c.Tier == agent.TierWrite,
 		Path:    c.Action.Path,
+		Paths:   c.Action.Paths,
 		InDir:   runs && name == tools.ExecCommandName,
 		Runs:    runs,
 	}
@@ -135,8 +140,10 @@ func (r Router) Rule(c Call) (Refusal, bool) {
 	}
 	// A write names a file in the session's own directory; the config read
 	// for the paths it points git at is that directory's repository's.
-	if c.Path != "" && tools.GitProgramPath(r.where(true).Dir, c.Path) {
-		return Refusal{Result: tools.GitProgramPathResult, Reason: agent.DenyReasonGitPath, Code: observe.ReasonSafety}, true
+	for _, p := range append([]string{c.Path}, c.Paths...) {
+		if p != "" && tools.GitProgramPath(r.where(true).Dir, p) {
+			return Refusal{Result: tools.GitProgramPathResult, Reason: agent.DenyReasonGitPath, Code: observe.ReasonSafety}, true
+		}
 	}
 	if c.Command == "" {
 		return Refusal{}, false

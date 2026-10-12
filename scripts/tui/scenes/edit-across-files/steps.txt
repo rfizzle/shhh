@@ -1,0 +1,43 @@
+# program test: TestProgram_AnEditCardAppliesTheEdit,
+#   TestProgram_AnEditAcrossFilesIsOneCard
+#
+# One edit across a list of files
+# (docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell).
+# The card is what the scene is for: one card for the whole call, its act
+# naming how many files, the rule as the call wrote it — the pattern, the
+# replacement, and that it is a pattern said in words — then each file under
+# its own row with its hunk count and lines, the file the pattern does not
+# match saying it is left alone, and the call's totals at the foot. Once it
+# is answered, the call's row counts files and the turn's close counts each
+# file the edit changed.
+#
+# Spaces rather than tabs in the fixture: a tab is re-expanded by the
+# terminal against the pane's own columns, and the capture would read as a
+# column that drifted.
+setup printf 'package agent\n\nfunc run(ctx int) {\n    step(ctx)\n}\n' > loop.go
+setup printf 'package agent\n\nfunc round(ctx int) {\n    step(ctx)\n    step(next)\n}\n' > round.go
+setup printf 'package agent\n\n// Package agent runs the loop.\n' > doc.go
+snap 01-start "Some things worth doing first"
+keys "pass the budget to every step call" Enter
+# The card waits on its own act row, and compares the rule's rows and the
+# first file's own row, which only this card draws. (No compared string here
+# holds a dollar sign: the harness's shell would read one as a variable.)
+snap 02-card "edit 3 files" "find      step\((\w+)\)" "replace   step(" "match     regular expression" "loop.go · 1 hunk · +1 −1"
+sleep 1
+keys C-Space
+sleep 0.3
+# The body is taller than the card's share of the panel, so it is scrolled:
+# first to the second file's own row, then to the foot — the file the
+# pattern leaves alone, and the call's totals.
+press 0.05 S-Down S-Down S-Down S-Down S-Down S-Down S-Down S-Down S-Down S-Down S-Down S-Down S-Down S-Down
+snap 02b-second-file "round.go · 1 hunk · +2 −2" "step(next, budget)"
+press 0.05 S-Down S-Down S-Down
+snap 02c-card-foot "2 hunks in 2 files" "doc.go · no match, left alone" "undo yes — each file recorded on its own"
+keys y
+snap 03-applied "Every call to step now passes the budget" "wrote loop.go, round.go" "2 files changed +3 −3"
+keys C-c
+sleep 0.3
+keys C-c
+snap 04a-handoff-offer "Write a handoff first?"
+keys n
+snap 04-exit "that is everything the screen was holding"

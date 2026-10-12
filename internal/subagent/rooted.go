@@ -41,7 +41,7 @@ func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) 
 	}
 	optionalPath := false
 	switch name {
-	case "read_file", "list_directory", tools.SqliteName, tools.WriteFileName, tools.EditFileName:
+	case "read_file", "list_directory", tools.SqliteName, tools.WriteFileName:
 	// The language server's questions take the same argument and mean the
 	// same thing by it. A child shares its parent's server rather than
 	// starting one of its own, and that server resolves a relative path
@@ -56,6 +56,10 @@ func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) 
 		optionalPath = true
 	case tools.QueryName:
 		return rootPaths(root, args), nil
+	case tools.EditFileName:
+		// An edit across a list names its files in paths, and each is a
+		// write that must stay inside the workspace, as path's is.
+		return rootEditPaths(root, args)
 	default:
 		return args, nil
 	}
@@ -127,6 +131,44 @@ func rootPaths(root string, args json.RawMessage) json.RawMessage {
 		return args
 	}
 	return b
+}
+
+// rootEditPaths roots an edit's path, or every entry of its list of files, and
+// refuses the call where any of them lands outside root: one file of a list
+// outside the worktree is a write to the parent's checkout, whichever entry
+// it is.
+func rootEditPaths(root string, args json.RawMessage) (json.RawMessage, error) {
+	var m map[string]any
+	if err := json.Unmarshal(args, &m); err != nil {
+		return args, nil
+	}
+	escapes := func(p string) error {
+		return fmt.Errorf("path %q escapes the agent workspace; file changes must stay under %s", p, root)
+	}
+	if p, _ := m["path"].(string); p != "" {
+		rooted := rootPath(root, p)
+		if !withinRoot(root, rooted) {
+			return nil, escapes(p)
+		}
+		m["path"] = rooted
+	}
+	list, _ := m["paths"].([]any)
+	for i, e := range list {
+		p, ok := e.(string)
+		if !ok || p == "" {
+			continue
+		}
+		rooted := rootPath(root, p)
+		if !withinRoot(root, rooted) {
+			return nil, escapes(p)
+		}
+		list[i] = rooted
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return args, nil
+	}
+	return b, nil
 }
 
 // withinRoot reports whether p (already cleaned/joined) is root or inside it.

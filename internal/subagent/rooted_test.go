@@ -196,6 +196,32 @@ func TestRootArgs_MutatingEscapeRefused(t *testing.T) {
 	}
 }
 
+// An edit across files roots each file of its list, and one entry escaping
+// the workspace refuses the whole call — the second entry as much as the
+// first.
+func TestRootArgs_AnEditAcrossFilesRootsEachAndRefusesAnEscape(t *testing.T) {
+	root := t.TempDir()
+	out, err := RootArgs(root, tools.EditFileName, json.RawMessage(`{"paths":["a.go","sub/b.go"],"old_text":"x","new_text":"y"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m struct {
+		Paths []string `json:"paths"`
+	}
+	if err := json.Unmarshal(out, &m); err != nil {
+		t.Fatal(err)
+	}
+	if len(m.Paths) != 2 || m.Paths[0] != filepath.Join(root, "a.go") || m.Paths[1] != filepath.Join(root, "sub", "b.go") {
+		t.Errorf("paths = %q", m.Paths)
+	}
+	if _, err := RootArgs(root, tools.EditFileName, json.RawMessage(`{"paths":["a.go","../escape.go"],"old_text":"x","new_text":"y"}`)); err == nil {
+		t.Error("a list with an entry outside the workspace must be refused")
+	}
+	if _, err := RootArgs(root, tools.EditFileName, json.RawMessage(`{"paths":["a.go","/etc/x"],"old_text":"x","new_text":"y"}`)); err == nil {
+		t.Error("an absolute entry outside the workspace must be refused")
+	}
+}
+
 func TestRootArgs_OptionalPathDefaultsToRoot(t *testing.T) {
 	root := t.TempDir()
 	for _, tool := range []string{"search", "glob"} {

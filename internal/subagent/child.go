@@ -616,8 +616,8 @@ func (c *child) noteApproved(id string) {
 // an error wrote nothing, and a file written twice is one file — the same
 // reading of a write every surface without a changeset takes.
 func (c *child) noteWrite(call provider.ToolCall, result string) {
-	path := tools.WrittenPath(call.Name, call.Arguments)
-	if path == "" || digest.Outcome(result) == digest.OutcomeError {
+	paths := tools.WrittenPaths(call.Name, call.Arguments)
+	if len(paths) == 0 || digest.Outcome(result) == digest.OutcomeError {
 		return
 	}
 	c.mu.Lock()
@@ -625,7 +625,9 @@ func (c *child) noteWrite(call provider.ToolCall, result string) {
 	if c.wrote == nil {
 		c.wrote = map[string]bool{}
 	}
-	c.wrote[path] = true
+	for _, path := range paths {
+		c.wrote[path] = true
+	}
 }
 
 // changed is this child's changeset for the digest its readings are made of:

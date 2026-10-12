@@ -12,6 +12,7 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -250,6 +251,41 @@ func TestProgram_AnEditCardAppliesTheEdit(t *testing.T) {
 	// read. Both forms are pinned where the header is built, in the receipt
 	// package's header test.
 	frameHas(t, frame, "✎ read loop.go · wrote ", "The rounds are capped at the limit now")
+}
+
+// An edit across a list of files is one card, answered once: the card names
+// the count and the rule, and [y] lands the change in every file it matched.
+func TestProgram_AnEditAcrossFilesIsOneCard(t *testing.T) {
+	dir := fixtureDir(t, map[string]string{"a.go": "step(ctx)\n", "b.go": "step(next)\n"})
+	paths := []string{filepath.Join(dir, "a.go"), filepath.Join(dir, "b.go")}
+	// The files are read into the session's record ahead of the turn, by
+	// their absolute paths, because a list is admitted only file by file
+	// against what was read and the program's own reads name them relative.
+	for _, p := range paths {
+		raw, _ := json.Marshal(map[string]string{"path": p})
+		if _, err := tools.Execute(context.Background(), tools.ReadFileName, raw); err != nil {
+			t.Fatal(err)
+		}
+	}
+	args, _ := json.Marshal(map[string]any{"paths": paths, "old_text": `step\((\w+)\)`, "new_text": "step($1, budget)", "regex": true})
+	m := readingSession(dir,
+		programTurn{calls: []provider.ToolCall{call("e1", "edit_file", string(args))}},
+		programTurn{text: "Both calls pass the budget now"},
+	)
+	tm := runProgram(t, m)
+
+	send(tm, "pass the budget")
+	waitForText(t, tm, "edit 2 files")
+	tm.Send(programHandover)
+	tm.Send(programAllow)
+	waitForText(t, tm, "Both calls pass the budget")
+
+	frame := finalFrame(t, tm)
+	for i, want := range []string{"step(ctx, budget)\n", "step(next, budget)\n"} {
+		if got, err := os.ReadFile(paths[i]); err != nil || string(got) != want {
+			t.Fatalf("%s = %q (%v)\n%s", paths[i], got, err, frame)
+		}
+	}
 }
 
 // programKey is one keystroke spelled the way the register spells it —

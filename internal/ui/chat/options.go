@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -245,6 +246,9 @@ func ApplySettings(a *agent.Agent, w Wiring) {
 func (m *Model) applyLoop() {
 	w, a := m.wiring, m.agent
 	ApplyLoop(a, w)
+	// The session's reads and searches are filed in the process's record,
+	// and a search names a file for the turn that asked it.
+	a.SetTurnStart(tools.NewTurn)
 	m.backoff.SetLimit(w.RetryLimit)
 	if w.TreeCheck != nil {
 		cfg := *w.TreeCheck

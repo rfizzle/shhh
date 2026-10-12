@@ -8,14 +8,18 @@ import (
 
 // shellEditAnswer is what a command that edits a workspace file in place is
 // answered with the first time it is sent. It is the one place the words
-// live: the redirect names the editor's spellings, and says what the editor
-// cannot yet do, so that a later change to the editor re-aims this text and
-// nothing else.
+// live: the redirect names the editor's spellings, so that a change to the
+// editor re-aims this text and nothing else. The pattern and the list of
+// files are named because they are the two a `sed -i` across a package is
+// reaching for; the closing sentence stays because the list of edits this
+// recognises is closed and fails open, and an edit none of the spellings
+// fits must still be one the model can make.
 const shellEditAnswer = "this edits a file in place; edit_file does it where it is recorded and can be undone: " +
 	"one place is old_text and new_text, several places in one file are one call carrying edits, " +
-	"every occurrence is replace_all, text at the end is append. " +
-	"It has no spelling yet for a replacement that depends on what matched, or one replacement across several files. " +
-	"For those, send the same line again and it runs"
+	"every occurrence is replace_all, text at the end is append, " +
+	"a replacement that depends on what matched is regex with $1 for a group in new_text, " +
+	"and one replacement across several files is paths listing them. " +
+	"If none of those fits, send the same line again and it runs"
 
 // ShellEditError is what a command that edits a workspace file in place is
 // answered with in place of a run: the model reads it as the call's result
@@ -23,8 +27,8 @@ const shellEditAnswer = "this edits a file in place; edit_file does it where it 
 //
 // The redirect is a nudge and not a wall. The line it answered is not asked
 // again: the identical line, sent again, runs as it always did, so a closed
-// list that fails open never stands between the model and an edit the editor
-// cannot yet make. The person's own /run and ! never come through the
+// list that fails open never stands between the model and an edit none of
+// the editor's spellings fits. The person's own /run and ! never come through the
 // model's tool, so they are not asked.
 // See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
 type ShellEditError struct {

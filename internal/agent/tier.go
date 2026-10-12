@@ -210,6 +210,9 @@ func fromDeclaration(d calltier.Declaration, name string, args json.RawMessage) 
 	default:
 		c.Action.Kind = ActionEdit
 		c.Action.Path = got.Path
+		if len(got.Paths) > 1 {
+			c.Action.Paths = got.Paths
+		}
 		c.Action.Command = got.Line
 	}
 	return c

@@ -108,13 +108,13 @@ func TestFindingThings_KeepsTheThreeRules(t *testing.T) {
 }
 
 // The two find-and-replace tools have to be told apart. sd never writes a
-// file — it previews a replacement across the tree — and the edit tool now
-// changes several places in one file in a single call, so a note that still
-// described that as a call per site would send a one-file rename to the
-// wrong tool.
+// file — it previews a replacement across the tree — and the edit tool is
+// what applies one, to a list of files in a single call or to several places
+// in one file, so the note names the edit tool's list as the apply and keeps
+// the one-file split.
 func TestToolbox_SplitsSdFromABatchedEdit(t *testing.T) {
 	got := Toolbox(toolList("sd"), false)
-	for _, want := range []string{"- sd — preview", "spans files", "edits array"} {
+	for _, want := range []string{"- sd — preview", "It only previews", "edit_file, naming the files in paths", "edits array"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the sd note should name the split, missing %q:\n%s", want, got)
 		}

@@ -282,6 +282,16 @@ func uncontainedDetail(detail string) string {
 // whether or not git ever knew about it.
 func (m Model) editRadius(req *approvalRequest) blastRadius {
 	b := blastRadius{severity: components.SeverityMedium, reason: editReason(req.path)}
+	if len(req.files) > 0 {
+		b.reason = fmt.Sprintf("edits %d files", len(req.files))
+	}
+	// What the call states beside its diff — the rule of an edit across
+	// files or of a pattern, the mode a write adds — is a row of the block,
+	// in the tone of a fact. Without this the request carried the rows and
+	// no edit card drew them.
+	for _, f := range req.fields {
+		b.fields = append(b.fields, components.CardField{Label: f.Label, Value: f.Value, Detail: f.Detail, Tone: components.ToneNeutral})
+	}
 	// An edit outside the working scope is the one thing an edit card cannot
 	// say with a diff: the diff shows what changes, not that it changes
 	// something the session was never scoped to.
@@ -298,6 +308,11 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 	switch {
 	case m.changes == nil:
 		b.reversibility = "undo none — this session records no changeset"
+	case len(req.files) > 0:
+		// Each file is its own record, so each is undone on its own; whether
+		// git has them is a fact per file, and a list of those is the review
+		// screen's, not a stats line's.
+		b.reversibility = "undo yes — each file recorded on its own"
 	case m.wiring.Tracker.Track(req.path) == changeset.TrackTracked:
 		b.reversibility = "undo yes — recorded, and git has this file"
 	case m.wiring.Tracker.Repo():
@@ -553,6 +568,9 @@ func (m Model) childEditRadius(ask *subagent.Ask) blastRadius {
 	b := blastRadius{severity: components.SeverityMedium}
 	if ask.Path != "" {
 		b.reason = editReason(ask.Path)
+	}
+	if len(ask.EditFiles) > 0 {
+		b.reason = fmt.Sprintf("edits %d files", len(ask.EditFiles))
 	}
 	if ask.Secret != "" {
 		b.risks = append(b.risks, ask.Secret)

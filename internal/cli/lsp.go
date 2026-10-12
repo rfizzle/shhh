@@ -49,11 +49,11 @@ func lspMutationHook(ts *lsp.Toolset) chat.MutationHook {
 		return nil
 	}
 	return func(name string, args json.RawMessage, result string) string {
-		path := lspTouchedPath(name, args, result)
-		if path == "" {
+		paths := lspTouchedPaths(name, args, result)
+		if len(paths) == 0 {
 			return result
 		}
-		fresh := ts.Manager.DiagnosticsAfterChange(path)
+		fresh := diagnoseEach(ts, paths, nil)
 		if held := ts.Manager.TakeHeldDiagnostics(); held != "" {
 			result = held + "\n\n" + result
 		}
@@ -88,17 +88,16 @@ func childMutationHook(ts *lsp.Toolset) chat.MutationHook {
 		return nil
 	}
 	return func(name string, args json.RawMessage, result string) string {
-		path := lspTouchedPath(name, args, result)
-		if path == "" {
+		paths := lspTouchedPaths(name, args, result)
+		if len(paths) == 0 {
 			return result
 		}
-		fresh := ts.Manager.DiagnosticsAfterChange(path)
-		// Closed whatever the verdict was, because a wait that ran out leaves
-		// the question open by design and this reader is never the one who
-		// will collect it — including on the round the child is told the file
-		// has not been checked yet, which is exactly the round a question was
-		// left behind.
-		ts.Manager.DropHeld(path)
+		// Each file's question is closed whatever the verdict was, because a
+		// wait that ran out leaves the question open by design and this
+		// reader is never the one who will collect it — including on the
+		// round the child is told the file has not been checked yet, which is
+		// exactly the round a question was left behind.
+		fresh := diagnoseEach(ts, paths, ts.Manager.DropHeld)
 		if fresh != "" {
 			return result + "\n\n" + fresh
 		}
@@ -106,8 +105,26 @@ func childMutationHook(ts *lsp.Toolset) chat.MutationHook {
 	}
 }
 
-// lspTouchedPath is the file a mutation hook should ask the language server
-// about, and "" for every call it must leave alone.
+// diagnoseEach asks the server about every file a write touched, in the
+// order the call named them, and joins what it says; after, when set, is
+// told each path once its question is asked. An edit across a list is a
+// change to each of its files, and a verdict on the first alone would leave
+// the model believing the rest were checked.
+func diagnoseEach(ts *lsp.Toolset, paths []string, after func(string)) string {
+	var out []string
+	for _, p := range paths {
+		if fresh := ts.Manager.DiagnosticsAfterChange(p); fresh != "" {
+			out = append(out, fresh)
+		}
+		if after != nil {
+			after(p)
+		}
+	}
+	return strings.Join(out, "\n\n")
+}
+
+// lspTouchedPaths is every file a mutation hook should ask the language
+// server about, and nothing for a call it must leave alone.
 //
 // Which calls those are is the tools package's own reading and not a second
 // copy of it: a hook that named write_file and edit_file itself would go on
@@ -115,9 +132,9 @@ func childMutationHook(ts *lsp.Toolset) chat.MutationHook {
 // then quietly stop asking about the files that one wrote, with nothing
 // failing to say so. A write that came back an error changed nothing, and
 // diagnostics fetched for it would describe the file as it already was.
-func lspTouchedPath(name string, args json.RawMessage, result string) string {
+func lspTouchedPaths(name string, args json.RawMessage, result string) []string {
 	if strings.HasPrefix(result, "error:") {
-		return ""
+		return nil
 	}
-	return tools.WrittenPath(name, string(args))
+	return tools.WrittenPaths(name, string(args))
 }

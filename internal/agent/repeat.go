@@ -532,5 +532,5 @@ const sweepNoticePrefix = "[sweep:"
 func wroteSomething(tool string, args json.RawMessage) bool {
 	return tool == tools.ExecCommandName ||
 		tool == structural.GitWriteToolName ||
-		tools.WrittenPath(tool, string(args)) != ""
+		len(tools.WrittenPaths(tool, string(args))) > 0
 }

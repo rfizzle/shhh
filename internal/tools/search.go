@@ -96,6 +96,19 @@ type searchArgs struct {
 	// inflate is the call's budget for decompressing .gz files, shared by
 	// every file the call reads.
 	inflate *inflateBudget
+
+	// named hears every file the answer names with a match, as the backend
+	// that wrote the line spelled its path; nil hears nothing. It is how a
+	// file the search showed the model becomes one the editor will take in
+	// a list (Recorder.noteSearched).
+	named func(path string)
+}
+
+// name tells the call's listener that path is in the answer.
+func (a searchArgs) name(path string) {
+	if a.named != nil {
+		a.named(path)
+	}
 }
 
 // inflateBudget is how much one search may decompress across every .gz it
@@ -218,7 +231,30 @@ func searchExpr(args searchArgs) string {
 	return "(?" + flags + ")" + searchPattern(args)
 }
 
+// compileSearch is the one place a pattern in the search tool's dialect
+// becomes an expression: the walker's search and the editor's regex mode both
+// compile here, so the pattern that found a line is the pattern that edits
+// it, on every host, with one refusal for a pattern that does not parse.
+// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+func compileSearch(args searchArgs) (*regexp.Regexp, error) {
+	re, err := regexp.Compile(searchExpr(args))
+	if err != nil {
+		return nil, fmt.Errorf("invalid regular expression: %w", err)
+	}
+	return re, nil
+}
+
 func executeSearch(ctx context.Context, raw json.RawMessage) (string, error) {
+	return searchNaming(ctx, raw, nil)
+}
+
+// executeSearch with the files the answer names filed in r's record, which
+// is what lets a list of files a search found be edited in one call.
+func (r *Recorder) executeSearch(ctx context.Context, raw json.RawMessage) (string, error) {
+	return searchNaming(ctx, raw, r.noteSearched)
+}
+
+func searchNaming(ctx context.Context, raw json.RawMessage, named func(string)) (string, error) {
 	var args searchArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -255,10 +291,11 @@ func executeSearch(ctx context.Context, raw json.RawMessage) (string, error) {
 
 	// Validate the pattern up front so both backends reject the same inputs
 	// with the same error.
-	re, err := regexp.Compile(searchExpr(args))
+	re, err := compileSearch(args)
 	if err != nil {
-		return "", fmt.Errorf("invalid regular expression: %w", err)
+		return "", err
 	}
+	args.named = named
 
 	include, err := compileInclude(args.Include)
 	if err != nil {
@@ -404,6 +441,7 @@ func searchWithRipgrep(ctx context.Context, rg string, args searchArgs) (results
 		path, rest := line[:nul], line[nul+1:]
 		if args.FilesOnly {
 			results = append(results, formatFileCount(path, rest))
+			args.name(path)
 			matches++
 			continue
 		}
@@ -422,6 +460,7 @@ func searchWithRipgrep(ctx context.Context, rg string, args searchArgs) (results
 		}
 		results = append(results, formatMatch(path, rest[:end], string(sep), rest[end+1:]))
 		if sep == ':' {
+			args.name(path)
 			matches++
 		}
 	}
@@ -714,6 +753,7 @@ func searchFile(path string, re *regexp.Regexp, args searchArgs, results []strin
 	}
 
 	if args.FilesOnly {
+		args.name(path)
 		return append(results, formatFileCount(path, strconv.Itoa(len(hits)))), matches + 1
 	}
 
@@ -747,6 +787,7 @@ func searchFile(path string, re *regexp.Regexp, args searchArgs, results []strin
 			sep := "-"
 			if _, ok := slices.BinarySearch(hits, i); ok {
 				sep = ":"
+				args.name(path)
 			}
 			results = append(results, formatMatch(path, strconv.Itoa(i+1), sep, lines[i]))
 		}

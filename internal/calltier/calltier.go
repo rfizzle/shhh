@@ -47,8 +47,11 @@ const (
 // Contribution is what one call adds to the action the policy is asked
 // about, read off the call's own arguments by the package that owns the tool.
 type Contribution struct {
-	// Path is the file an edit names.
+	// Path is the file an edit names, the first where it names several.
 	Path string
+	// Paths is every file an edit names, Path among them. A gate that
+	// answers for a file answers for each of these, or for none.
+	Paths []string
 	// Line is the command line the call stands for.
 	Line string
 	// Reading is the tool's reading of the call's host, for a fetch. It is

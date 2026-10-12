@@ -702,6 +702,16 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		c.ReadChanged = l.seen.SeenChanged
 		a.SetTreeCheck(*c)
 	}
+	// The same record is the one a search names a file in, for the turn
+	// that asked it.
+	a.SetTurnStart(func() {
+		l.seen.NewTurn()
+		// The session's children search and edit through the process's
+		// record rather than this one, so a turn of the session ends their
+		// searches' word too. A second session served by this process
+		// resets it as well, which can only refuse a list, never admit one.
+		tools.NewTurn()
+	})
 
 	// The compaction seams sit on the recovery step itself, where a served
 	// turn's window is recovered (hooks.go).

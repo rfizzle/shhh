@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -120,7 +121,13 @@ type approvalRequest struct {
 	verb    string      // approvalDiff: the action verb, e.g. "edit"
 	path    string      // approvalDiff: the file being modified
 	hunks   []diff.Hunk // approvalDiff: the change to show
-	summary string      // one-line description for transcript entries
+	// files is an edit across several files, one entry per file the call
+	// listed, in its order, with the change it would make there; path and
+	// hunks are then empty, because no one file is what the card is about.
+	// Every reader that answers for the request's file answers for each of
+	// these (editPaths).
+	files   []editFileChange
+	summary string // one-line description for transcript entries
 	// fields is a gated tool's own blast-radius block, from its
 	// GatedPreview.
 	fields []GatedField
@@ -210,6 +217,29 @@ type approvalRequest struct {
 	// the mode and the grants ask instead of allowing (agent.Action.Claims),
 	// a batch answer is not carried out for it, and a yes records them.
 	claims []structural.Claim
+}
+
+// editFileChange is one file of an edit across several, as the card and the
+// record read it.
+type editFileChange struct {
+	path  string
+	hunks []diff.Hunk
+}
+
+// editPaths is every file an edit request names: its list, or its one path.
+// It is empty for a request that names no file.
+func (r *approvalRequest) editPaths() []string {
+	if len(r.files) > 0 {
+		out := make([]string, len(r.files))
+		for i, f := range r.files {
+			out[i] = f.path
+		}
+		return out
+	}
+	if r.path == "" {
+		return nil
+	}
+	return []string{r.path}
 }
 
 // approvedToolDoneMsg carries the executor result of an approved non-exec
@@ -351,11 +381,14 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			// No preview is drawn for a path no card can allow; the request
 			// carries the classification so the standing rules refuse it
 			// before any card is built.
-			path := tools.WrittenPath(tc.Name, tc.Arguments)
+			path := strings.Join(tools.WrittenPaths(tc.Name, tc.Arguments), ", ")
 			return &approvalRequest{call: tc, class: call, kind: approvalDiff, title: "write " + path, path: path, summary: "write " + path}, nil
 		}
 		if err != nil {
 			return nil, fmt.Errorf("invalid arguments: %w", err)
+		}
+		if len(mut.Files) > 0 {
+			return filesApproval(tc, call, mut), nil
 		}
 		title := mut.Action + " " + mut.Path
 		return &approvalRequest{
@@ -367,7 +400,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			path:    mut.Path,
 			hunks:   diff.Compute(mut.OldText, mut.NewText),
 			summary: title,
-			fields:  executableField(mut.Executable),
+			fields:  append(executableField(mut.Executable), patternFields(mut)...),
 			secret:  secret.AddedNote(mut.OldText, mut.NewText),
 		}, nil
 	}
@@ -1157,15 +1190,19 @@ type changeRecording struct {
 	store   *changeset.Store
 	tracker *changeset.Tracker
 	turn    int64
-	path    string
-	origin  changeset.Origin
+	// paths is every file the call names: one for an ordinary edit or write,
+	// each of the list for an edit across files. Each is read either side of
+	// the call and recorded as a record of its own, so review and undo take
+	// them one file at a time.
+	paths  []string
+	origin changeset.Origin
 }
 
 // changeRecorder describes what this approval would record. A call with no
 // file behind it (a command, a memory, a generic tool) records nothing.
 func (m Model) changeRecorder() changeRecording {
 	req := m.approval.request
-	if req == nil || req.kind != approvalDiff || req.path == "" {
+	if req == nil || req.kind != approvalDiff || len(req.editPaths()) == 0 {
 		return changeRecording{}
 	}
 	origin := changeset.Approved
@@ -1176,7 +1213,7 @@ func (m Model) changeRecorder() changeRecording {
 		store:   m.changes,
 		tracker: m.wiring.Tracker,
 		turn:    m.turnCount,
-		path:    req.path,
+		paths:   req.editPaths(),
 		origin:  origin,
 	}
 }
@@ -1196,13 +1233,13 @@ type fileState struct {
 // before reads the file the approved call is about to modify, along with
 // whether git knew about it — the input to the reversibility line elsewhere
 // in the UI.
-func (c changeRecording) before() fileState {
-	if c.path == "" {
-		return fileState{}
+func (c changeRecording) before() []fileState {
+	states := make([]fileState, len(c.paths))
+	for i, p := range c.paths {
+		states[i] = readFileState(p)
+		states[i].track = c.tracker.Track(p)
 	}
-	st := readFileState(c.path)
-	st.track = c.tracker.Track(c.path)
-	return st
+	return states
 }
 
 // after records what the call actually left behind and returns the turns
@@ -1210,13 +1247,24 @@ func (c changeRecording) before() fileState {
 // of itself: a call that changed nothing records nothing, and a call that
 // changed a file records it whatever it went on to report. Undo depends on
 // the store knowing everything the workspace lost.
-func (c changeRecording) after(before fileState) []int64 {
-	if c.path == "" {
-		return nil
+//
+// An edit across files is recorded the same way, file by file: a list whose
+// third write failed left the first two changed and the rest as they were,
+// and reading each file is what records exactly the two — the tool's own
+// account of how far it got is not what undo trusts.
+func (c changeRecording) after(before []fileState) []int64 {
+	var evicted []int64
+	for i, p := range c.paths {
+		evicted = append(evicted, c.record(p, before[i])...)
 	}
-	now := readFileState(c.path)
+	return evicted
+}
+
+// record files one path's change in the turn.
+func (c changeRecording) record(path string, before fileState) []int64 {
+	now := readFileState(path)
 	return c.store.Add(c.turn, changeset.Record{
-		Path:         c.path,
+		Path:         path,
 		Before:       before.text,
 		After:        now.text,
 		BeforeExists: before.exists,
@@ -1394,6 +1442,23 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.FullDiff = len(req.hunks) > 0
 		card.FullLabel = "full diff"
 		card.Answer = "apply the change"
+		if len(req.files) > 0 {
+			// One card for an edit across files: each file under its own row
+			// with its counts, scrolled as one body. There is no single diff
+			// to open full screen, and no grant: [a] is offered over a
+			// file's directory, and a list can span several, so a grant
+			// from this card would be a reach nobody read
+			// (docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell).
+			card.Files = make([]components.EditFile, len(req.files))
+			for i, f := range req.files {
+				card.Files[i] = components.EditFile{Path: f.path, Hunks: f.hunks, Syntax: diffSyntax(f.path)}
+			}
+			card.Hunks, card.FullDiff = nil, false
+			if len(card.Warnings) == 0 && card.Footnote == "" {
+				card.Footnote = "[a] always — not offered: an edit across files is answered once"
+			}
+			break
+		}
 		// No grant of any length on a flagged card, here as on the command
 		// card above: "only for a minute" is still blanket, and a flagged
 		// action is never blanket-approved
@@ -1853,4 +1918,68 @@ func executableField(executable bool) []GatedField {
 		return nil
 	}
 	return []GatedField{{Label: "mode", Value: "executable"}}
+}
+
+// filesApproval is the request for an edit across several files: one card for
+// the whole call, because the call is one decision — the same replacement in
+// every file — and a card per file would ask the same question N times and
+// invite answering the first and waving the rest through. What the card says
+// is how many files, how much in each, and the replacement as it was written,
+// so the reader judges the rule and can check its every application.
+// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+func filesApproval(tc provider.ToolCall, call agent.Classified, mut tools.Mutation) *approvalRequest {
+	files := make([]editFileChange, len(mut.Files))
+	var notes []string
+	for i, f := range mut.Files {
+		files[i] = editFileChange{path: f.Path, hunks: diff.Compute(f.OldText, f.NewText)}
+		// A credential shape added to any file of the list is the card's
+		// warning, as it is on a card about that file alone.
+		if n := secret.AddedNote(f.OldText, f.NewText); n != "" && !slices.Contains(notes, n) {
+			notes = append(notes, n)
+		}
+	}
+	title := fmt.Sprintf("%s %d files", mut.Action, len(files))
+	return &approvalRequest{
+		call:    tc,
+		class:   call,
+		kind:    approvalDiff,
+		title:   title,
+		verb:    mut.Action,
+		files:   files,
+		summary: title,
+		fields:  patternFields(mut),
+		secret:  strings.Join(notes, "; "),
+	}
+}
+
+// patternFields are the rows that state an edit's rule as the call wrote it —
+// what it finds, what it puts there, and whether the first is a pattern —
+// on the two cards whose change is not read off one diff alone: an edit
+// across files, and a pattern edit, whose replacement depends on what each
+// place matched. Nil on every other edit.
+func patternFields(mut tools.Mutation) []GatedField {
+	if len(mut.Files) == 0 && !mut.Regex {
+		return nil
+	}
+	var out []GatedField
+	if mut.Pattern != "" {
+		out = append(out, GatedField{Label: "find", Value: asWritten(mut.Pattern)},
+			GatedField{Label: "replace", Value: asWritten(mut.Replacement)})
+	}
+	if mut.Regex {
+		return append(out, GatedField{Label: "match", Value: "regular expression", Detail: "RE2, case-sensitive; $1 and ${name} are its groups"})
+	}
+	return append(out, GatedField{Label: "match", Value: "exact text"})
+}
+
+// asWritten is a pattern or replacement on one row, as the call wrote it: a
+// line break is drawn as `\n`, the spelling a pattern would match it by,
+// rather than breaking the row, and nothing else is escaped, so a backslash
+// in a pattern reads as the one the pattern holds. An empty replacement says
+// so rather than drawing nothing.
+func asWritten(s string) string {
+	if s == "" {
+		return "(nothing)"
+	}
+	return strings.ReplaceAll(s, "\n", `\n`)
 }

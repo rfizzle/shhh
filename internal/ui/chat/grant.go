@@ -132,6 +132,11 @@ func (m Model) grantOffers(req *approvalRequest) ([]grantOffer, []components.Sel
 		if !strings.Contains(req.command, "\n") {
 			narrow, narrowLabel = strings.TrimSpace(req.command), "this exact line"
 		}
+	case req.kind == approvalDiff && len(req.files) > 0:
+		// An edit across files is never granted from its card: the list can
+		// span directories, and a grant over one would answer for files the
+		// card did not show under it.
+		return nil, nil
 	case req.kind == approvalDiff:
 		covers = displayDir(filepath.Dir(req.path))
 		narrow, narrowLabel = req.path, "this file only"
@@ -270,6 +275,8 @@ func (m *Model) recordGrant(req *approvalRequest, o grantOffer) string {
 			}
 			return grantNote("Commands starting "+what+" will run", o.length)
 		}
+	case req.kind == approvalDiff && len(req.files) > 0:
+		return ""
 	case req.kind == approvalDiff:
 		if what := m.grantEdit(req.path, o); what != "" {
 			if o.exact {

@@ -292,6 +292,15 @@ type SpawnRow struct {
 	Writer bool
 }
 
+// EditFile is one file of an edit across several: its path as the card names
+// it, its change, and the highlighter for its lines. A file with no hunks is
+// one the edit lists and does not change.
+type EditFile struct {
+	Path   string
+	Hunks  []diff.Hunk
+	Syntax Syntax
+}
+
 // ApprovalCard is the single surface for every approval-gated action. One
 // container, four body variants.
 type ApprovalCard struct {
@@ -385,6 +394,11 @@ type ApprovalCard struct {
 	// Hunks is the edit variant's diff body; Syntax highlights its lines.
 	Hunks  []diff.Hunk
 	Syntax Syntax
+	// Files is the edit variant's body for one edit across several files,
+	// in place of Hunks: each file under a row naming it and its own counts,
+	// so the reader answering for the call sees how much of it lands where
+	// (docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell).
+	Files []EditFile
 	// FullDiff offers [enter] to open the card's full view.
 	FullDiff bool
 	// Reversibility rides the edit variant's stats line: whether the
@@ -752,7 +766,14 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 			body = append(body, f.render(inner))
 		}
 	}
-	if c.Variant == ApprovalEdit {
+	if c.Variant == ApprovalEdit && len(c.Files) > 0 {
+		// The rule above, the files it lands in below: a blank row keeps the
+		// first file's name from reading as one more field of the rule.
+		if len(c.Fields) > 0 {
+			body = append(body, "")
+		}
+		body = append(body, c.filesBody(inner)...)
+	} else if c.Variant == ApprovalEdit {
 		adds, dels := diff.Stats(c.Hunks)
 		line := fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(c.Hunks), "hunk"))
 		if c.Reversibility != "" {
@@ -768,6 +789,34 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	hints = c.hintRowsFor(width, inner)
 	// The keys sit below a rule so they never blend into the body.
 	return body, append([]string{cardRule}, hints...)
+}
+
+// filesBody is the edit variant's body for an edit across several files: a
+// row per file — its path, then its hunk count and lines, or that the edit
+// leaves it alone — over that file's diff, and the call's totals last where
+// a single file's stats line goes. The counts ride the file's own row rather
+// than a table above the diffs, because the row is where a reader scrolling
+// the card is when they want to know how much of this file there is.
+func (c *ApprovalCard) filesBody(inner int) []string {
+	var rows []string
+	adds, dels, hunks, changed := 0, 0, 0, 0
+	for _, f := range c.Files {
+		a, d := diff.Stats(f.Hunks)
+		adds, dels, hunks = adds+a, dels+d, hunks+len(f.Hunks)
+		if len(f.Hunks) == 0 {
+			rows = append(rows, sty.dim.Render(f.Path)+sty.dimmer.Render(detailSep+"no match, left alone"))
+			continue
+		}
+		changed++
+		rows = append(rows, sty.bright.Render(f.Path)+sty.dim.Render(fmt.Sprintf("%s%s · +%d −%d", detailSep, plural(len(f.Hunks), "hunk"), a, d)))
+		rows = append(rows, unifiedLines(f.Hunks, inner,
+			unifiedOpts{lineNumbers: true, emphasis: true, syntax: f.Syntax})...)
+	}
+	line := fmt.Sprintf("+%d −%d · %s in %s", adds, dels, plural(hunks, "hunk"), plural(changed, "file"))
+	if c.Reversibility != "" {
+		line += " · " + c.Reversibility
+	}
+	return append(rows, sty.dim.Render(line))
 }
 
 // visibleBody is how many body rows fit once the frame and the pinned block

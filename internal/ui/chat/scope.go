@@ -64,8 +64,10 @@ func (m Model) scopeReachFor(req *approvalRequest) scopeReach {
 	}
 	var paths []string
 	switch {
-	case req.kind == approvalDiff && req.path != "":
-		paths = []string{req.path}
+	case req.kind == approvalDiff && len(req.editPaths()) > 0:
+		// Every file of an edit across a list: one outside the scope is
+		// what the card has to say, wherever it falls in the list.
+		paths = req.editPaths()
 	case req.command != "":
 		paths = radius.WritePaths(req.command)
 	}

@@ -168,9 +168,12 @@ the write would go on to refuse. And the staleness rule is unchanged, covering
 the call rather than each element of it — it is one question about the file,
 and every edit in the call was matched against that one answer.
 
-A second file is a second call. What is batched is one file's several places,
-which is the shape most changes actually have; a list of files would be one
-decision covering changes a person would want to answer separately.
+Different changes to different files are different calls. What is batched is
+one file's several places, which is the shape most changes actually have; a
+list of files each with its own changes would be one decision covering changes
+a person would want to answer separately. The one list of files the editor
+takes is a single replacement applied to each — the shape of a rename — which
+is one decision however many files it reaches (see below).
 
 ## Adding to the end of a file needs no read
 
@@ -371,24 +374,67 @@ command to approve. The flag only adds: leaving it out never strips a mode.
 **An edit written as a command is answered with the editor, once.** A `sed -i`
 or `perl -pi`, a `>` or `>>` onto a file of the workspace, and a `tee` onto
 one are not run the first time they are sent. The result tells the model the
-editor's four spellings — one place, several places in one file in a single
-call, every occurrence, text at the end — because an edit made as a command is
-not recorded, cannot be undone, is not reviewable as a diff, and has the
-host's regex dialect, which on a Mac is not the one the model was taught. A
+editor's spellings — one place, several places in one file in a single call,
+every occurrence, text at the end, a pattern whose replacement uses what it
+matched, and one replacement across a list of files — because an edit made as
+a command is not recorded, cannot be undone, is not reviewable as a diff, and
+has the host's regex dialect, which on a Mac is not the one the model was
+taught. A
 redirection to `/dev/null`, to a path outside the workspace or into the
 session's scratch directory, a pipe into a program, a `sed` that only reads
 and a line the reading cannot parse are not edits and run as always.
 
-The answer is a nudge and not a wall. The editor cannot yet make a
-replacement that depends on what matched, or one replacement across several
-files, and a closed list that fails open must never stand between the model
-and a need the editor cannot meet. So the result says as much, and the same
-line sent again — the same after trimming, for the rest of the session —
+The answer is a nudge and not a wall. A closed list that fails open must
+never stand between the model and an edit none of the spellings fits, so the
+same line sent again — the same after trimming, for the rest of the session —
 runs as it always did, its row marked `after a redirect`. A different line
 that is also an edit is answered again. The reader's own `/run` and `!` are
 never answered this way, and a child, which is not asked, runs every line.
 The sibling rule for a command that cannot finish is in
 [containment](containment.md#a-command-that-will-not-finish-is-not-waited-on-forever).
+
+**A replacement that depends on what matched, and one across files, are the
+editor's.** The edit tool takes a pattern in place of a quote, and a list of
+files in place of one. The pattern is the search tool's own dialect, matched
+the same on every host — the failure it replaces is a `\w` that BSD sed
+ignores without a word — and case-sensitive, with `^` and `$` at line ends;
+the replacement names what each group matched, and `$$` is a literal dollar.
+Two patterns are refused before anything is read: one that can match empty
+text, which inserts rather than replaces, and a replacement naming a group the
+pattern does not have, which the template language would quietly expand to
+nothing while the card showed it as written. A pattern that matches more than
+once without the every-occurrence flag is refused as a repeated quote is, and
+the result lists each replacement as a before and after pair, the first
+twenty and a count of the rest, so the model can see its groups landed.
+
+A list of files is one replacement applied to each file named. Every file is
+read and planned before any is written, so a refusal anywhere — a file that
+moved, a pattern matching one file twice — leaves every file as it was; a file
+the pattern does not match is reported and left alone, and a list where
+nothing matches is refused. Each file is then written whole and recorded as
+its own change, so review and undo take them one at a time, and a write that
+fails part-way keeps the files already written and says which failed and
+which were never reached. The approval is one card for the whole call: how
+many files, each file's own hunks under its name, and the pattern and its
+replacement as written, with whether it is a pattern said in words. No grant
+is offered from it, since a list can span directories and a grant over one
+would answer for files the card did not show under it; a standing grant
+answers such an edit only where it covers every file.
+
+The staleness rule asks one thing more of a list. A single edit's quote is its
+own evidence about the one file it names; a replacement applied to a list is
+evidence about none of them, and a list is where a file the model never
+looked at slips in. So each file has to be one the session has read, held to
+the usual rule about moving since, or one a search in this turn found the
+pattern's text in — the answer the list was most likely built from, and
+recent enough to describe the file being changed. A search from an earlier
+turn is not enough: the tree has had a whole turn to move. A file admitted on
+a search alone is recorded afterwards as read in part, so a later overwrite of
+it still asks for a whole read. A glob is not taken. Its expansion is decided
+when the call runs rather than when the card is read, so a file that appears
+in between would be changed on an answer given about a list that did not hold
+it; the search and file-finding tools produce the list, and the list is what
+the person sees.
 
 **A shell read is not allowed because of any of this.** The gate reads a
 command line as a command line whatever it contains; auto mode does not wave

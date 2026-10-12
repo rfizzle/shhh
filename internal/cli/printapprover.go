@@ -89,12 +89,12 @@ func (w *writtenByCalls) wrap(resolve func(provider.ToolCall) string) func(provi
 }
 
 func (w *writtenByCalls) note(tc provider.ToolCall, result string) {
-	path := tools.WrittenPath(tc.Name, tc.Arguments)
-	if path == "" || strings.HasPrefix(result, "error:") {
+	paths := tools.WrittenPaths(tc.Name, tc.Arguments)
+	if len(paths) == 0 || strings.HasPrefix(result, "error:") {
 		return
 	}
 	w.mu.Lock()
-	w.list = append(w.list, path)
+	w.list = append(w.list, paths...)
 	w.mu.Unlock()
 }
 
@@ -597,8 +597,19 @@ func (r headlessApproval) approveWrite(ctx context.Context, tc provider.ToolCall
 	}
 	mut, mutErr := r.un.seen.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments))
 	edit := call.Action
+	// Every file the write names: its one path, or each of an edit's list,
+	// all of which the scope is asked about below.
+	var touched []string
 	if mutErr == nil {
-		edit.Path = mut.Path
+		touched = []string{mut.Path}
+		if len(mut.Files) > 0 {
+			touched = touched[:0]
+			for _, f := range mut.Files {
+				touched = append(touched, f.Path)
+			}
+		} else {
+			edit.Path = mut.Path
+		}
 	}
 	reason, took, ok := r.answer(tc, edit, r.opts.yes, observe.ReasonHeadlessYes,
 		"file modification", "edits by default (run with --yes)")
@@ -606,7 +617,7 @@ func (r headlessApproval) approveWrite(ctx context.Context, tc provider.ToolCall
 		return reason
 	}
 	if mutErr == nil {
-		if deny, ok := headlessScopeCheck(r.rules.Scope, r.opts.yes, []string{mut.Path}); !ok {
+		if deny, ok := headlessScopeCheck(r.rules.Scope, r.opts.yes, touched); !ok {
 			// No command on the line, and the path is not put on one: a
 			// refusal for what a call reaches is a refusal about a path, and
 			// this file is shared and outlives every session that writes to

@@ -911,10 +911,12 @@ func TestEditFile_SchemaDescribesTheEditsArray(t *testing.T) {
 	if !slices.Equal(edits.Items.Required, []string{"old_text", "new_text"}) {
 		t.Errorf("an edits entry requires both texts, got %v", edits.Items.Required)
 	}
-	// Only the path is required now: either spelling of the change is valid,
-	// so requiring old_text would refuse every array call before it is read.
-	if !slices.Equal(schema.Required, []string{"path"}) {
-		t.Errorf("edit_file should require the path alone, got %v", schema.Required)
+	// Nothing is required by the schema: either spelling of the change is
+	// valid, and so is either spelling of the file — path, or paths for a
+	// list — so requiring either would refuse a valid call before it is
+	// read. The parse says which one is missing.
+	if len(schema.Required) != 0 {
+		t.Errorf("edit_file should require nothing in its schema, got %v", schema.Required)
 	}
 }
 

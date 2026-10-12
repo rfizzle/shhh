@@ -1,0 +1,11 @@
+# One reply per request. The last line repeats once these run out.
+# A rename across a package the way a model reaches for `sed -i` across it:
+# a search that names the files holding the call, a read of the one file the
+# search will not name, and then one edit carrying the list and a pattern
+# whose replacement keeps what each call passed. The search is what admits
+# the two files nobody read; the read admits the third, which the pattern
+# does not match and the edit leaves alone.
+tool:search:{"pattern":"step\\(","files_only":true,"case_sensitive":true}
+tool:read_file:{"path":"doc.go"}
+tool:edit_file:{"paths":["loop.go","round.go","doc.go"],"old_text":"step\\((\\w+)\\)","new_text":"step($1, budget)","regex":true,"replace_all":true}
+Every call to step now passes the budget.

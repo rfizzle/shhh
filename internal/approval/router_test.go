@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -50,6 +51,8 @@ func TestApprovalCall_IsBuiltOnce(t *testing.T) {
 			want: Call{Command: "git commit", Write: true}},
 		{name: "a file edit", tool: tools.WriteFileName, args: `{"path":"a.go","content":"x"}`,
 			want: Call{Write: true, Path: "a.go"}},
+		{name: "an edit across files", tool: tools.EditFileName, args: `{"paths":["a.go","b.go"],"old_text":"x","new_text":"y"}`,
+			want: Call{Write: true, Path: "a.go", Paths: []string{"a.go", "b.go"}}},
 		{name: "a fetch", tool: web.FetchToolName, args: `{"url":"https://evil.test/page"}`, host: "evil.test",
 			want: Call{Host: "evil.test"}},
 		{name: "a server's tool", tool: "github__create_issue", args: `{}`, want: Call{}},
@@ -60,7 +63,7 @@ func TestApprovalCall_IsBuiltOnce(t *testing.T) {
 				t.Fatal(err)
 			}
 			classified.Action.Host = c.host
-			if got := CallOf(c.tool, classified); got != c.want {
+			if got := CallOf(c.tool, classified); !reflect.DeepEqual(got, c.want) {
 				t.Fatalf("CallOf = %+v, want %+v", got, c.want)
 			}
 		})

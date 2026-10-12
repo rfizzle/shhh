@@ -173,6 +173,21 @@ func TestApprovalTool_RefusesAGitProgramPathInTheRulesSentence(t *testing.T) {
 	}
 }
 
+// An edit across files is refused when any file of its list is one git runs,
+// at the rule and at the tool alike: the hook in second place is the one a
+// reading of the first path alone would have let through.
+func TestRouter_RefusesAGitProgramPathAnywhereInAList(t *testing.T) {
+	ws := realDir(t)
+	hook := filepath.Join(ws, ".git", "hooks", "pre-commit")
+	if _, refused := (Router{Workspace: ws}).Rule(Call{Write: true, Path: "a.go", Paths: []string{"a.go", hook}}); !refused {
+		t.Error("the rule let a list through with a hook in it")
+	}
+	args, _ := json.Marshal(map[string]any{"paths": []string{filepath.Join(ws, "a.go"), hook}, "old_text": "x", "new_text": "y"})
+	if _, err := tools.PreviewMutation(tools.EditFileName, args); !errors.Is(err, tools.ErrGitProgramPath) {
+		t.Errorf("the tool's own refusal = %v", err)
+	}
+}
+
 // The person's own write is not the model's: the tool-layer refusal stands for
 // every model path and WriteByPerson is the one door around it.
 func TestWriteByPerson_IsNotRefusedAndTheModelsWriteIs(t *testing.T) {

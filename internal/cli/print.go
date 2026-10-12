@@ -31,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
@@ -845,6 +846,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if c := headlessTree(cfg, session.sibling, own); c != nil {
 		a.SetTreeCheck(*c)
 	}
+	// A run's reads and searches are filed in the process's record, and a
+	// search names a file for the turn that asked it.
+	a.SetTurnStart(tools.NewTurn)
 	// The compaction seams sit on the recovery step itself, which is where
 	// an unattended run recovers its window (hooks.go).
 	compact := headlessCompactor(cmd.Context(), cfg, env, ledger, prices, session.toolDefs)

@@ -1,6 +1,9 @@
 package tools
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestShellEdit_ReadsAnInPlaceEditAndNothingElse(t *testing.T) {
 	scope := ShellScope{Workspace: "/work/proj", Scratch: []string{"/tmp", "/work/proj/.cache"}}
@@ -80,5 +83,19 @@ func TestShellEdit_AScratchDirectoryHoldingTheWorkspaceIsNotScratch(t *testing.T
 	scope := ShellScope{Workspace: "/tmp/checkout", Scratch: []string{"/tmp"}}
 	if !ShellEdit("echo hi > notes.txt", scope) {
 		t.Error("a workspace under /tmp had every path read as scratch")
+	}
+}
+
+// The answer names both of the editor's spellings a sed across a package is
+// reaching for, and keeps the way through for an edit none of them fits.
+func TestShellEditError_NamesThePatternAndTheList(t *testing.T) {
+	got := ShellEditError{}.Error()
+	for _, want := range []string{"regex", "paths", "send the same line again and it runs"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("answer lacks %q: %s", want, got)
+		}
+	}
+	if strings.Contains(got, "no spelling yet") {
+		t.Errorf("answer still says the editor cannot: %s", got)
 	}
 }

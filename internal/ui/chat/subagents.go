@@ -430,6 +430,11 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Hunks = ask.Hunks
 		card.FullDiff, card.FullLabel = len(ask.Hunks) > 0, "full diff"
 		card.Answer = "apply it in the agent's workspace"
+		// An edit across files is drawn file by file, as the session's own
+		// is (approval.go).
+		for _, f := range ask.EditFiles {
+			card.Files = append(card.Files, components.EditFile{Path: f.Path, Hunks: f.Hunks, Syntax: diffSyntax(f.Path)})
+		}
 	case subagent.AskPatch:
 		card.Variant = components.ApprovalEdit
 		card.Title = prefix + "Apply patch"

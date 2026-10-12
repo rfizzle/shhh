@@ -167,7 +167,7 @@ func (m *Model) saveEditPane(s *editSession) (string, bool) {
 	if !m.turnOpen {
 		turn++
 	}
-	record := changeRecording{store: m.changes, tracker: m.wiring.Tracker, turn: turn, path: s.abs, origin: changeset.ByPerson}
+	record := changeRecording{store: m.changes, tracker: m.wiring.Tracker, turn: turn, paths: []string{s.abs}, origin: changeset.ByPerson}
 	before := record.before()
 	if _, err := s.seen.WriteByPerson(args); err != nil {
 		var stale tools.StaleError

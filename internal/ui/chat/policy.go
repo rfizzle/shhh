@@ -249,7 +249,11 @@ func baseAction(req *approvalRequest) agent.Action {
 			SafetyFlagged: len(safety.Check(req.command)) > 0,
 		}
 	case approvalDiff:
-		return agent.Action{Kind: agent.ActionEdit, Path: req.path}
+		a := agent.Action{Kind: agent.ActionEdit, Path: req.path}
+		if paths := req.editPaths(); len(req.files) > 0 && len(paths) > 0 {
+			a.Path, a.Paths = paths[0], paths
+		}
+		return a
 	}
 	// A generic approval that said it sits at the write tier is judged as an
 	// edit, and carries its deny line so a person's refusal of the command

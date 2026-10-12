@@ -255,6 +255,11 @@ type Action struct {
 	// Path is the file for ActionEdit, which is what a directory-scoped edit
 	// grant is matched against (GrantPrefix's counterpart).
 	Path string
+	// Paths is every file an ActionEdit names where it names more than one —
+	// an edit across a list of files — Path being the first. A grant allows
+	// such an edit only where it covers every one of them: a grant over one
+	// directory is not an answer for a file outside it that shares a call.
+	Paths []string
 	// Host is the host an ActionFetch leaves for, exactly as the card names
 	// it. It is what a host grant and the host deny list are matched
 	// against, and it carries no port and no path: the person answered for
@@ -972,9 +977,9 @@ func (p ModePolicy) decide(a Action) (Decision, string) {
 			return Allow, p.Mode.String() + " mode"
 		case p.AllowEdits:
 			return Allow, "session policy"
-		case p.TurnGrants.CoversEdit(a.Path):
+		case everyEdited(a, p.TurnGrants.CoversEdit):
 			return Allow, TurnGrantReason
-		case PathUnder(p.EditDirs, a.Path), PathIs(p.EditPaths, a.Path):
+		case everyEdited(a, func(path string) bool { return PathUnder(p.EditDirs, path) || PathIs(p.EditPaths, path) }):
 			return Allow, "session grant"
 		}
 	case ActionCommand:
@@ -1019,4 +1024,20 @@ func ReadingAllows(mode Mode, a Action) (string, bool) {
 		return "", false
 	}
 	return a.Reading.Reason(), true
+}
+
+// everyEdited reports whether covers answers for every file an edit names:
+// its one path, or each of its list. An edit naming no file is covered by
+// nothing, as it always was.
+func everyEdited(a Action, covers func(string) bool) bool {
+	paths := a.Paths
+	if len(paths) == 0 {
+		paths = []string{a.Path}
+	}
+	for _, p := range paths {
+		if !covers(p) {
+			return false
+		}
+	}
+	return true
 }

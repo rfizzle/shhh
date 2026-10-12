@@ -86,6 +86,8 @@ type Agent struct {
 	// callCancel, when set, is handed each auto-run call's own cancel as the
 	// call starts (SetCallCancel).
 	callCancel CallCancel
+	// turnStart, when set, is told each time a turn begins (SetTurnStart).
+	turnStart func()
 
 	messages []provider.Message
 	folded   []provider.Message
@@ -201,6 +203,11 @@ type CallCancel func(ctx context.Context, tc provider.ToolCall, cancel context.C
 // SetCallCancel installs the per-call cancel seam. Nil, the default, hands
 // the cancels to nobody, and only the round's context stops a call.
 func (a *Agent) SetCallCancel(fn CallCancel) { a.callCancel = fn }
+
+// SetTurnStart installs what is told that a turn has begun: the tools' read
+// record, whose search results are evidence for the turn that asked them and
+// for no later one (tools.Recorder.NewTurn). Nil, the default, tells nobody.
+func (a *Agent) SetTurnStart(fn func()) { a.turnStart = fn }
 
 // KeepResults exempts tool results matching keep from context trimming. A
 // result is elided on the assumption that it was consumed when it arrived;
@@ -334,6 +341,9 @@ func (a *Agent) StartMachineTurn(text string) {
 }
 
 func (a *Agent) startTurn() {
+	if a.turnStart != nil {
+		a.turnStart()
+	}
 	a.rounds = 0
 	a.lastIntervention = 0
 	a.checkIns = 0

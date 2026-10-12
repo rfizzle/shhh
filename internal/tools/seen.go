@@ -60,6 +60,11 @@ type seenFile struct {
 	// output cap. It is the difference between changing a file and replacing
 	// one, which is why write_file asks about it and edit_file does not.
 	whole bool
+	// unread is a record an edit made of a file no read had shown: the edit
+	// knows what it wrote, so the next edit is not refused as stale, but it
+	// is not a read, and a list of files does not admit it as one
+	// (checkListed). A read clears it.
+	unread bool
 }
 
 // unknown reports a record made for a file something says was read without
@@ -86,6 +91,10 @@ func (f seenFile) unknown() bool { return f.sum == "" }
 type Recorder struct {
 	mu   sync.Mutex
 	seen map[string]seenFile
+	// searched is every file a search named with a match since the owner's
+	// turn began (NewTurn), by record key. It is the second way a file
+	// enters an edit's list of files (checkListed).
+	searched map[string]bool
 	// keep is where a query answer too long to show keeps the rest of
 	// itself (UseEvidence); nil where the owner has no evidence store.
 	keep ExecKeep
@@ -185,6 +194,9 @@ func (r *Recorder) noteAppended(path string, before, after []byte) {
 		return
 	}
 	r.noteShown(path, after, rec.whole)
+	if rec.unread {
+		r.markUnread(path)
+	}
 }
 
 // NoteOpened records a file as one owner has been shown whole: a person who
@@ -200,6 +212,15 @@ func (r *Recorder) NoteOpened(path string, content []byte) {
 		return
 	}
 	r.noteShown(path, content, true)
+}
+
+// markUnread flags a file's record as one an edit made rather than a read.
+func (r *Recorder) markUnread(path string) {
+	key := seenKey(path)
+	if rec, ok := r.file(key); ok {
+		rec.unread = true
+		r.record(key, rec)
+	}
 }
 
 // forget drops a file's record, for a path whose content is no longer
@@ -484,4 +505,61 @@ func (r *Recorder) ForgetAll() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	clear(r.seen)
+	clear(r.searched)
+}
+
+// noteSearched files path as one a search named with a match in this turn.
+func (r *Recorder) noteSearched(path string) {
+	key := seenKey(path)
+	r = r.records()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.searched == nil {
+		r.searched = map[string]bool{}
+	}
+	r.searched[key] = true
+}
+
+// NewTurn begins a turn in the process-wide record (Recorder.NewTurn).
+func NewTurn() { shared.NewTurn() }
+
+// NewTurn begins a new turn for one owner: the files its searches named stop
+// counting as reasons to edit a file nobody read. What it was shown is
+// untouched; a read is evidence for as long as the file has not moved, and a
+// search result is evidence for the turn that asked it.
+func (r *Recorder) NewTurn() {
+	r = r.records()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	clear(r.searched)
+}
+
+// checkListed is checkSeen for a file named in an edit's list of files, which
+// asks one thing more than an edit of one file does. A single edit's quote is
+// its own evidence about the one file it names; one replacement applied to a
+// list carries no evidence about any particular file on it, and a list is
+// where a file the model never looked at slips in — a name from memory, a
+// sibling it assumed has the same shape. So a file on the list has to be one
+// this owner has read (and is held to the staleness rule as ever), or one a
+// search in this turn named with a match: the answer the list was most likely
+// built from, and fresh enough that the file it named is the file being
+// edited. A search from an earlier turn is not: the tree has had a person's
+// whole turn to move.
+// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+func (r *Recorder) checkListed(path string, current []byte) error {
+	if err := r.checkSeen(path, current, true, false); err != nil {
+		return err
+	}
+	if rec, ok := r.lookupSeen(path); ok && !rec.unread {
+		return nil
+	}
+	key := seenKey(path)
+	rr := r.records()
+	rr.mu.Lock()
+	named := rr.searched[key]
+	rr.mu.Unlock()
+	if named {
+		return nil
+	}
+	return fmt.Errorf("%s has not been read in this session and no search in this turn named it; a file in paths has to be one you read_file'd or one a search this turn found the pattern in — search for it, or read it, then send the call again", path)
 }

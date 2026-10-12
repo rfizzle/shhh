@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -46,6 +47,9 @@ type Ask struct {
 	Hunks    []diff.Hunk // AskEdit / AskPatch: the change to review
 	Summary  string      // AskGeneric: one-line description
 	Path     string      // AskEdit: the file, spelled as the child's own row spells it
+	// EditFiles is an AskEdit across several files, one per file the call
+	// listed, each spelled as Path is; Path and Hunks are then empty.
+	EditFiles []AskFile
 	// Secret is the card's warning for the credential shapes an AskEdit adds
 	// to its file (secret.AddedNote), empty where it adds none.
 	Secret string
@@ -169,7 +173,9 @@ func (s *Supervisor) refuseUncontained(c *child, tc provider.ToolCall) (string, 
 // refuseGitProgramPath answers a child's write to a path git runs or reads as
 // configuration with the session's refusal, filed with the safety table's.
 func refuseGitProgramPath(c *child, name string, rooted json.RawMessage, title string) (string, bool) {
-	if !tools.IsMutating(name) || !tools.GitProgramPath(c.root, tools.WrittenPath(name, string(rooted))) {
+	if !tools.IsMutating(name) || !slices.ContainsFunc(tools.WrittenPaths(name, string(rooted)), func(p string) bool {
+		return tools.GitProgramPath(c.root, p)
+	}) {
 		return "", false
 	}
 	if c.rec.Decision != nil {
@@ -649,6 +655,12 @@ func (s *Supervisor) buildAsk(c *child, name string, rooted json.RawMessage, act
 	return ask, nil
 }
 
+// AskFile is one file of an edit across several, as a child's card shows it.
+type AskFile struct {
+	Path  string
+	Hunks []diff.Hunk
+}
+
 // askFor is the request itself: the variant, and what only that variant knows.
 func askFor(c *child, name string, rooted json.RawMessage, action agent.Action) (*Ask, error) {
 	switch action.Kind {
@@ -663,6 +675,14 @@ func askFor(c *child, name string, rooted json.RawMessage, action agent.Action) 
 		mut, err := tools.PreviewMutation(name, rooted)
 		if err != nil {
 			return nil, fmt.Errorf("invalid arguments: %w", err)
+		}
+		if len(mut.Files) > 0 {
+			ask := NewAsk(c.name, AskEdit, fmt.Sprintf("%s %d files", mut.Action, len(mut.Files)))
+			for _, f := range mut.Files {
+				ask.EditFiles = append(ask.EditFiles, AskFile{Path: wtree.DisplayPath(c.root, f.Path), Hunks: diff.Compute(f.OldText, f.NewText)})
+			}
+			ask.Secret = mutationSecret(mut)
+			return ask, nil
 		}
 		path := wtree.DisplayPath(c.root, mut.Path)
 		ask := NewAsk(c.name, AskEdit, mut.Action+" "+path)
@@ -696,7 +716,24 @@ func editSecret(name string, rooted json.RawMessage) string {
 	if err != nil {
 		return ""
 	}
-	return secret.AddedNote(mut.OldText, mut.NewText)
+	return mutationSecret(mut)
+}
+
+// mutationSecret is the note for the credential shapes a previewed change
+// adds: to its one file, or to any file of a list, since a key written into
+// the third file of a rename is as much the card's warning as one written
+// into a file alone.
+func mutationSecret(mut tools.Mutation) string {
+	if len(mut.Files) == 0 {
+		return secret.AddedNote(mut.OldText, mut.NewText)
+	}
+	var notes []string
+	for _, f := range mut.Files {
+		if n := secret.AddedNote(f.OldText, f.NewText); n != "" && !slices.Contains(notes, n) {
+			notes = append(notes, n)
+		}
+	}
+	return strings.Join(notes, "; ")
 }
 
 // await routes one ask to the parent and blocks the child until the user

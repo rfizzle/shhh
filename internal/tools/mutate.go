@@ -69,26 +69,48 @@ func IsMutating(name string) bool {
 	return false
 }
 
-// WrittenPath is the file a mutating call names, and "" for any other call,
-// for arguments that do not parse, and for a call that named no path.
+// WrittenPaths is every file a mutating call names — its path, or each entry
+// of an edit's list of files — and nothing for any other call, for arguments
+// that do not parse, and for a call that named no path.
 //
 // The surfaces that keep no changeset read what a run has written off the
 // calls that wrote it — an unattended run for its tree reading and its git
-// stager, a sub-agent for the digest its readings are made of — and they
-// share this reading rather than each parsing the arguments again. A copy
-// agrees with the original on the day it is written and stops agreeing the
-// day a third mutating tool is registered.
-func WrittenPath(name, rawArgs string) string {
+// stager, a sub-agent for the digest its readings are made of — and the
+// gates read a write's targets off it too, so they share this reading rather
+// than each parsing the arguments again. It was one path once, on the
+// reading that a write is one of two tools and names one file; an edit that
+// names several broke the second half, and a copy that kept reading `path`
+// would have answered for the first file of a list and let the rest through
+// unread.
+func WrittenPaths(name, rawArgs string) []string {
 	if !IsMutating(name) {
-		return ""
+		return nil
 	}
+	return callPaths(rawArgs)
+}
+
+// callPaths is WrittenPaths without asking whether the call writes: the path
+// and the list of files a file tool's arguments name. It is apart so the
+// edit tool's own describer can read it without the definition referring to
+// the list of definitions it is in.
+func callPaths(rawArgs string) []string {
 	var args struct {
-		Path string `json:"path"`
+		Path  string   `json:"path"`
+		Paths []string `json:"paths"`
 	}
 	if json.Unmarshal([]byte(rawArgs), &args) != nil {
-		return ""
+		return nil
 	}
-	return strings.TrimSpace(args.Path)
+	var out []string
+	if p := strings.TrimSpace(args.Path); p != "" {
+		out = append(out, p)
+	}
+	for _, p := range args.Paths {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // ExecuteMutating dispatches a user-approved file-modification tool call. It
@@ -120,6 +142,25 @@ type Mutation struct {
 	// Executable is a write that also adds the execute bits, so the card can
 	// say so beside the diff.
 	Executable bool
+	// Files is an edit across a list of files, one entry per file listed in
+	// the order the call listed them, and Path is then empty: there is no
+	// one file the card is about.
+	Files []FileMutation
+	// Pattern and Replacement are the edit's old_text and new_text as the
+	// call wrote them, and Regex whether the first is a pattern. They are
+	// set for an edit across files and for a pattern edit of one, which are
+	// the two cards where the change is not read off its diff alone.
+	Pattern, Replacement string
+	Regex                bool
+}
+
+// FileMutation is one file of an edit across a list: its content now, what
+// the edit would leave, and how many places it replaces — zero for a file the
+// pattern does not match, which the edit leaves alone.
+type FileMutation struct {
+	Path             string
+	OldText, NewText string
+	Replacements     int
 }
 
 // PreviewMutation computes the before/after content for a mutating tool call
@@ -152,6 +193,17 @@ func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, 
 		if err != nil {
 			return Mutation{}, err
 		}
+		if len(args.Paths) > 0 {
+			plans, err := r.planPaths(args)
+			if err != nil {
+				return Mutation{}, err
+			}
+			m := Mutation{Action: "edit", Pattern: args.Edits[0].OldText, Replacement: args.Edits[0].NewText, Regex: args.Regex}
+			for _, p := range plans {
+				m.Files = append(m.Files, FileMutation{Path: p.path, OldText: string(p.before), NewText: p.after, Replacements: len(p.repls)})
+			}
+			return m, nil
+		}
 		content, err := os.ReadFile(args.Path)
 		if err != nil {
 			return Mutation{}, fmt.Errorf("cannot read file: %w", err)
@@ -164,7 +216,12 @@ func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, 
 		if args.Append != "" {
 			action = "append"
 		}
-		return Mutation{Action: action, Path: args.Path, OldText: string(content), NewText: updated}, nil
+		m := Mutation{Action: action, Path: args.Path, OldText: string(content), NewText: updated}
+		m.Regex = args.Regex
+		if args.Regex && len(args.Edits) == 1 {
+			m.Pattern, m.Replacement = args.Edits[0].OldText, args.Edits[0].NewText
+		}
+		return m, nil
 	}
 	return Mutation{}, fmt.Errorf("unknown mutating tool: %s", name)
 }
@@ -288,12 +345,14 @@ func addExecuteBits(path string) error {
 
 var editFile = Definition{
 	Receipt: describe.Describer{Kind: describe.KindWrite, Verb: "edit",
+		Subject: editSubject, Count: countEdited,
 		Does: "a change to part of a file"},
 	Tool: provider.Tool{
 		Name: EditFileName,
 		Description: "Change an existing file: replace exact text snippets in it, or add text to its end. Give one replacement as old_text/new_text, several as edits — one entry per place — or the text to add as append, and never two of these in the same call. " +
-			"Batch changes to one file into one call; a second file is a second call. " +
+			"Batch changes to one file into one call. One old_text/new_text applied to several files is one call naming them in paths instead of path; different changes to different files are separate calls. " +
 			"Every old_text must match the file content exactly (including whitespace) and match exactly once, unless replace_all is set. " +
+			"Set regex when the replacement depends on what matched: old_text is then a pattern and new_text may use its groups. " +
 			"Strip read_file's `<line number>\t` prefix before quoting a line here; the numbers are not in the file. " +
 			"Every quote is matched against the file as it stands, not against the edit before it, so the order does not matter and two edits that would touch the same text are refused. Nothing is written unless all of them apply. " +
 			"A file that has changed since you last read it is refused: read it again and rebase the edits. " +
@@ -303,9 +362,11 @@ var editFile = Definition{
 			"type": "object",
 			"properties": {
 				"path": {"type": "string", "description": "File path to edit"},
+				"paths": {"type": "array", "items": {"type": "string"}, "description": "Several files to apply one old_text/new_text to, in place of path — a rename or an added argument across a package. Each is read, changed and recorded as its own file, and can be undone on its own. List each file by name, at most 50: a glob is not taken, so get the list from search or fd first. Every file has to be one you have read, or one a search in this turn found a match in; a file the pattern does not match is reported and left alone, unless none matches. Not with edits or append"},
 				"old_text": {"type": "string", "description": "Exact existing text to replace, for a call that changes one place"},
 				"new_text": {"type": "string", "description": "Replacement text, for a call that changes one place"},
 				"replace_all": {"type": "boolean", "description": "Replace every occurrence instead of requiring a unique match"},
+				"regex": {"type": "boolean", "description": "Treat each old_text as a regular expression in the search tool's dialect (RE2), case-sensitive, with ^ and $ matching at line ends; prefix (?i) to ignore case. new_text may then use $1 or ${name} for what a group matched; write ${1}x when a letter, digit or underscore follows the group, and $$ for a literal $. A pattern that can match empty text is refused. Leave it off for literal text, where nothing needs escaping"},
 				"append": {"type": "string", "description": "Text to add at the end of the existing file, for a call that only adds — a log line, a changelog entry, an item on a list. It needs no read_file first. Give it without old_text/new_text or edits"},
 				"edits": {
 					"type": "array",
@@ -320,8 +381,7 @@ var editFile = Definition{
 						"required": ["old_text", "new_text"]
 					}
 				}
-			},
-			"required": ["path"]
+			}
 		}`),
 	},
 	// Execute is filled in by Mutating, for the same reason write_file's is.
@@ -345,6 +405,12 @@ type editFileArgs struct {
 	// kept apart from Edits rather than folded into them because it quotes
 	// nothing, and a quote is what every rule applied to Edits is about.
 	Append string `json:"append,omitempty"`
+	// Paths is the call's list of files, in place of Path, for one
+	// replacement applied to each (editacross.go).
+	Paths []string `json:"paths,omitempty"`
+	// Regex reads every OldText as a pattern and every NewText as a
+	// template over its groups.
+	Regex bool `json:"regex,omitempty"`
 }
 
 // parseEditFileArgs reads the call and normalises both spellings into Edits,
@@ -363,10 +429,16 @@ func parseEditFileArgs(raw json.RawMessage) (editFileArgs, error) {
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return args, fmt.Errorf("invalid arguments: %w", err)
 	}
-	if args.Path == "" {
-		return args, fmt.Errorf("path is required")
-	}
-	if GitProgramPath("", args.Path) {
+	switch {
+	case args.Path != "" && len(args.Paths) > 0:
+		return args, fmt.Errorf("give either path or paths, not both: put every file in paths")
+	case len(args.Paths) > 0:
+		if err := checkPathList(args); err != nil {
+			return args, err
+		}
+	case args.Path == "":
+		return args, fmt.Errorf("path is required, or paths for one replacement across several files")
+	case GitProgramPath("", args.Path):
 		return args, ErrGitProgramPath
 	}
 	inline := args.OldText != "" || args.NewText != ""
@@ -383,10 +455,19 @@ func parseEditFileArgs(raw json.RawMessage) (editFileArgs, error) {
 		return args, fmt.Errorf("old_text is required, or edits with one entry per replacement, or append to add text at the end")
 	}
 	for i, e := range args.Edits {
-		switch e.OldText {
-		case "":
+		switch {
+		case e.OldText == "":
 			return args, fmt.Errorf("%sold_text is required", editLabel(args.Edits, i))
-		case e.NewText:
+		case args.Regex:
+			// A pattern and a template that read the same can still change
+			// the file — `\.` replaced by `\.` writes a backslash — so the
+			// identical-text refusal is a literal edit's alone. What a
+			// pattern is refused for is asked once here, before any file
+			// is read, so a bad pattern is one error and not one per file.
+			if _, err := compileEditPattern(e.OldText, e.NewText); err != nil {
+				return args, fmt.Errorf("%s%w", editLabel(args.Edits, i), err)
+			}
+		case e.OldText == e.NewText:
 			return args, fmt.Errorf("%sold_text and new_text are identical", editLabel(args.Edits, i))
 		}
 	}
@@ -398,14 +479,18 @@ func (r *Recorder) executeEditFile(_ context.Context, raw json.RawMessage) (stri
 	if err != nil {
 		return "", err
 	}
+	if len(args.Paths) > 0 {
+		return r.editPaths(args)
+	}
 	content, err := os.ReadFile(args.Path)
 	if err != nil {
 		return "", fmt.Errorf("cannot read file: %w", err)
 	}
-	updated, count, err := r.planEdit(content, args)
+	updated, repls, err := r.planEdit(content, args)
 	if err != nil {
 		return "", err
 	}
+	count := len(repls)
 	if err := os.WriteFile(args.Path, []byte(updated), newFileMode); err != nil {
 		// The file is now of unknown content, so nothing may be claimed about
 		// it until something reads it again.
@@ -419,12 +504,22 @@ func (r *Recorder) executeEditFile(_ context.Context, raw json.RawMessage) (stri
 	}
 	// The model knows exactly what it just wrote, so the next edit is not
 	// asked to read it again.
+	_, had := r.lookupSeen(args.Path)
 	r.noteShown(args.Path, []byte(updated), true)
+	if !had {
+		// Recorded so the next edit is not refused as stale, but not as a
+		// read: a later list of files does not admit it on this alone.
+		r.markUnread(args.Path)
+	}
 	made := fmt.Sprintf("%d replacement(s)", count)
 	if len(args.Edits) > 1 {
 		made += fmt.Sprintf(" from %d edits", len(args.Edits))
 	}
-	return fmt.Sprintf("Edited %s: %s, file now %d bytes (%d lines)", args.Path, made, len(updated), countLines(updated)), nil
+	out := fmt.Sprintf("Edited %s: %s, file now %d bytes (%d lines)", args.Path, made, len(updated), countLines(updated))
+	if args.Regex {
+		out += replacedList([]plannedFile{{path: args.Path, repls: repls}}, false)
+	}
+	return out, nil
 }
 
 // planEdit is the file a call would leave behind, asked by the preview and by
@@ -437,20 +532,20 @@ func (r *Recorder) executeEditFile(_ context.Context, raw json.RawMessage) (stri
 // writing to, and a model sent to re-read one before adding a line to it
 // reaches for a shell redirect instead.
 // See docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read.
-func (r *Recorder) planEdit(content []byte, args editFileArgs) (string, int, error) {
+func (r *Recorder) planEdit(content []byte, args editFileArgs) (string, []replacement, error) {
 	if args.Append != "" {
-		return appendText(string(content), args.Append), 0, nil
+		return appendText(string(content), args.Append), nil, nil
 	}
 	// An edit needs no prior read — old_text is its own evidence — but a file
 	// that moved since it was read is one this edit was not written against.
 	// One question about the file answers it for every edit in the call,
 	// because every one of them is matched against this content.
 	if err := r.checkSeen(args.Path, content, true, false); err != nil {
-		return "", 0, err
+		return "", nil, err
 	}
 	// Every edit is planned before any of them is written, so a call with one
 	// bad quote leaves the file exactly as it was rather than half changed.
-	return applyEdits(string(content), args.Path, args.Edits)
+	return applyEdits(string(content), args.Path, args.Edits, args.Regex, false)
 }
 
 // appendText puts text after content, starting it on a line of its own. The
@@ -469,6 +564,9 @@ func appendText(content, text string) string {
 type match struct {
 	start, end int
 	edit       int
+	// repl is what goes in its place: the edit's new_text, or for a pattern
+	// that template expanded against this match's groups.
+	repl string
 }
 
 // applyEdits is the one validator, shared by execution and the approval
@@ -483,39 +581,42 @@ type match struct {
 // have no order to be resolved by, so they are refused naming both rather
 // than silently resolved by position in the array.
 // See docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call.
-func applyEdits(content, path string, edits []fileEdit) (string, int, error) {
+//
+// A pattern edit takes the same road: its matches are places like a quote's,
+// with their own replacement each, so the uniqueness rule, the overlap rule
+// and the all-or-nothing splice are the literal edit's and not a second set.
+// missOK is an edit across a list of files, where a file the pattern does not
+// match is left alone rather than refused: the caller counts the misses.
+func applyEdits(content, path string, edits []fileEdit, regex, missOK bool) (string, []replacement, error) {
 	var matches []match
 	for i, e := range edits {
-		// Occurrences are counted by walking them, because they are what the
-		// splice needs anyway: they are non-overlapping in the same sense
-		// strings.Count and strings.ReplaceAll are, so "aa" in "aaa" is one.
-		var starts []int
-		for off := 0; ; {
-			at := strings.Index(content[off:], e.OldText)
-			if at < 0 {
-				break
-			}
-			starts = append(starts, off+at)
-			off += at + len(e.OldText)
-		}
 		label := editLabel(edits, i)
+		found, err := findEdit(content, path, e, regex)
+		if err != nil {
+			return "", nil, fmt.Errorf("%s%w", label, err)
+		}
 		switch {
-		case len(starts) == 0:
+		case len(found) == 0 && missOK:
+			continue
+		case len(found) == 0 && regex:
+			return "", nil, fmt.Errorf("%sold_text pattern matches nothing in %s", label, path)
+		case len(found) == 0:
 			if looksLineNumbered(e.OldText) {
-				return "", 0, fmt.Errorf("%sold_text not found in %s; it looks like it still carries read_file's line-number prefixes — strip the leading digits and tab from each line and try again", label, path)
+				return "", nil, fmt.Errorf("%sold_text not found in %s; it looks like it still carries read_file's line-number prefixes — strip the leading digits and tab from each line and try again", label, path)
 			}
 			if miss, ok := nearMiss(content, e.OldText); ok {
-				return "", 0, fmt.Errorf("%sold_text not found in %s; %s from it only in whitespace%s: %s — re-quote it from the file, indentation and all", label, path, miss.where(), miss.indentGap(), snippet(miss.actual))
+				return "", nil, fmt.Errorf("%sold_text not found in %s; %s from it only in whitespace%s: %s — re-quote it from the file, indentation and all", label, path, miss.where(), miss.indentGap(), snippet(miss.actual))
 			}
-			return "", 0, fmt.Errorf("%sold_text not found in %s; it must match the file content exactly, including whitespace", label, path)
-		case len(starts) > 1 && !e.ReplaceAll:
-			return "", 0, fmt.Errorf("%sold_text matches %d locations in %s; provide a longer unique snippet or set replace_all", label, len(starts), path)
+			return "", nil, fmt.Errorf("%sold_text not found in %s; it must match the file content exactly, including whitespace", label, path)
+		case len(found) > 1 && !e.ReplaceAll:
+			return "", nil, fmt.Errorf("%sold_text matches %d locations in %s; provide a longer unique snippet or set replace_all", label, len(found), path)
 		}
 		if !e.ReplaceAll {
-			starts = starts[:1]
+			found = found[:1]
 		}
-		for _, start := range starts {
-			matches = append(matches, match{start: start, end: start + len(e.OldText), edit: i})
+		for _, m := range found {
+			m.edit = i
+			matches = append(matches, m)
 		}
 	}
 	slices.SortFunc(matches, func(a, b match) int { return cmp.Compare(a.start, b.start) })
@@ -528,20 +629,59 @@ func applyEdits(content, path string, edits []fileEdit) (string, int, error) {
 		// two are named in the order it listed them: a refusal that says
 		// "edits 2 and 1" makes the reader check whether it means something.
 		a, b := min(prev.edit, m.edit), max(prev.edit, m.edit)
-		return "", 0, fmt.Errorf("edits %d and %d overlap in %s: %s and %s claim the same text; quote text that does not overlap, or combine them into one edit",
+		return "", nil, fmt.Errorf("edits %d and %d overlap in %s: %s and %s claim the same text; quote text that does not overlap, or combine them into one edit",
 			a+1, b+1, path, snippet(edits[a].OldText), snippet(edits[b].OldText))
 	}
 
 	var b strings.Builder
 	b.Grow(len(content))
+	repls := make([]replacement, 0, len(matches))
 	at := 0
 	for _, m := range matches {
 		b.WriteString(content[at:m.start])
-		b.WriteString(edits[m.edit].NewText)
+		b.WriteString(m.repl)
+		repls = append(repls, replacement{line: 1 + strings.Count(content[:m.start], "\n"), before: content[m.start:m.end], after: m.repl})
 		at = m.end
 	}
 	b.WriteString(content[at:])
-	return b.String(), len(matches), nil
+	return b.String(), repls, nil
+}
+
+// findEdit is every place one edit matches in content, in file order and not
+// overlapping, each with its replacement. A literal is walked with
+// strings.Index — non-overlapping in the sense strings.Count and
+// strings.ReplaceAll are, so "aa" in "aaa" is one — and a pattern is matched
+// by the expression the search tool compiles, with new_text expanded against
+// each match's own groups.
+func findEdit(content, path string, e fileEdit, regex bool) ([]match, error) {
+	var found []match
+	if !regex {
+		for off := 0; ; {
+			at := strings.Index(content[off:], e.OldText)
+			if at < 0 {
+				return found, nil
+			}
+			found = append(found, match{start: off + at, end: off + at + len(e.OldText), repl: e.NewText})
+			off += at + len(e.OldText)
+		}
+	}
+	re, err := compileEditPattern(e.OldText, e.NewText)
+	if err != nil {
+		return nil, err
+	}
+	for _, loc := range re.FindAllStringSubmatchIndex(content, -1) {
+		if loc[0] == loc[1] {
+			// compileEditPattern refuses a pattern that matches the empty
+			// string, and this is the rest of that rule: `\b` or `(?m)$`
+			// matches nothing at the start of an empty text and empty text
+			// all through a real one. A replacement there inserts at a
+			// position rather than replacing anything, which is not the edit
+			// the call describes.
+			return nil, fmt.Errorf("old_text pattern matches empty text at line %d of %s; anchor it to text it must find", 1+strings.Count(content[:loc[0]], "\n"), path)
+		}
+		found = append(found, match{start: loc[0], end: loc[1], repl: string(re.ExpandString(nil, e.NewText, content, loc))})
+	}
+	return found, nil
 }
 
 // whitespaceMiss is the one place a failed quote nearly matched: the 1-based
