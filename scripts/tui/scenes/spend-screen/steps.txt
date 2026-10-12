@@ -50,4 +50,7 @@ snap 10-back "The notes file is there" "[enter] send"
 keys C-c
 snap 11-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over the recorded changes; n declines.
+snap 12a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 12-exit "that is everything the screen was holding"

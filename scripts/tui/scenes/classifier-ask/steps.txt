@@ -29,9 +29,12 @@ keys n
 snap 04-refused "Leaving the release alone" "denied · you"
 # And the session goes on. The next command is judged, allowed and runs.
 keys "start the release notes instead" Enter
-wide 80 snap 05-later-ran "The notes file is there" "ok · auto-allowed · classifier"
+wide 80 snap 05-later-ran "The notes file is there" "1 file recorded · auto-allowed · classifier"
 narrow 80 snap 05-later-ran "The notes file is there" "ran touch RELEASE_NOTES.md"
 keys C-c
 snap 06-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over the recorded file; n declines.
+snap 07a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 07-exit "that is everything the screen was holding"

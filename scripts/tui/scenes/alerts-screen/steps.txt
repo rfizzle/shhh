@@ -54,4 +54,7 @@ snap 12-back "The checks pass now."
 keys C-c
 snap 13-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over the recorded changes; n declines.
+snap 14a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 14-exit "that is everything the screen was holding"
