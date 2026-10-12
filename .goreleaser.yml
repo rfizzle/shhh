@@ -70,10 +70,12 @@ notarize:
         key: "{{ .Env.MACOS_NOTARY_KEY }}"
         # Waited for, so a refusal fails the release here and not on a
         # user's Mac. Apple usually answers in minutes; a team's first
-        # submissions are the slow ones, and the bound is Apple's own
-        # worst case. The wait runs on the Linux runner.
+        # submissions are the slow ones. Twenty minutes is the most
+        # goreleaser accepts: Apple rejects authentication tokens that
+        # live longer, so a longer wait fails before anything is signed.
+        # The wait runs on the Linux runner.
         wait: true
-        timeout: 45m
+        timeout: 20m
 
 checksum:
   name_template: "checksums.txt"
