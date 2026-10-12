@@ -30,7 +30,15 @@
  ▎✗ ran add README.md                                              error
 
      ▎✗ add README.md                                              error
-        error: README.md is not this session's work; commit it yourself
+        error: README.md is not in this session's record of what it cha…
+
+
+
+· staged · a generator's output beside an edit
+
+ ▎$ ran add internal/agen… staged 3 files · 1 generated · 1 by a command
+
+     ▎$ add internal/agen… staged 3 files · 1 generated · 1 by a command
 
 
 
@@ -76,7 +84,15 @@
  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mran␛[m ␛[38;5;244madd README.md␛[m                                              ␛[38;5;254merror␛[m
 
      ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;244madd README.md␛[m                                              ␛[38;5;254merror␛[m
-        ␛[38;5;244merror: README.md is not this session's work; commit it yourself␛[m
+        ␛[38;5;244merror: README.md is not in this session's record of what it cha…␛[m
+
+
+
+· staged · a generator's output beside an edit
+
+ ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244madd internal/agen…␛[m ␛[38;5;254mstaged 3 files · 1 generated · 1 by a command␛[m
+
+     ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;244madd internal/agen…␛[m ␛[38;5;254mstaged 3 files · 1 generated · 1 by a command␛[m
 
 
 

@@ -394,6 +394,9 @@ type cmdDoneMsg struct {
 	// end is how the command ended where its exit code cannot say, read off
 	// the context it ran on while that context is still to hand (run.go).
 	end commandEnd
+	// work is what an assistant command changed in the tree, read either
+	// side of it (cmdwork.go). Empty for a command the reader typed.
+	work commandWork
 }
 type initialPromptMsg struct{}
 
@@ -550,6 +553,9 @@ type entry struct {
 	localRun bool
 	// ranIn is cmdDoneMsg.ranIn kept for the row, which says it.
 	ranIn string
+	// recorded is what the bracket round an assistant command recorded, in
+	// the words its row's outcome carries: `2 files recorded` (cmdwork.go).
+	recorded string
 	// duration is how long the tool call or command ran, shown on its
 	// activity row; zero hides it.
 	duration time.Duration
@@ -1251,6 +1257,9 @@ type Model struct {
 	// renders. The tracker beside it, which answers whether git knew about a
 	// file when it was edited, is the wiring's, and nil outside a repository.
 	changes *changeset.Store
+	// commandWorkOver says the session has already said, once, that the
+	// tree is past the bound the command bracket reads to (cmdwork.go).
+	commandWorkOver bool
 	// The open completion menu — slash commands, their arguments, and the @
 	// file mention (complete.go).
 	complete completionState

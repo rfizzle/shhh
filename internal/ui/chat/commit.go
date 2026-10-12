@@ -190,7 +190,8 @@ func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
 	// an undo takes before it writes, and it has the same answer: the
 	// content the record never saw is not this commit's to move.
 	drift := map[string]bool{}
-	for _, f := range changeset.PlanUndo(t, nil).Files {
+	plan := changeset.PlanUndo(t, nil)
+	for _, f := range append(plan.Files, plan.Kept...) {
 		drift[f.Path()] = f.Drifted
 	}
 	var staging []commitPath

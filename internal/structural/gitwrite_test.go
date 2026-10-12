@@ -204,7 +204,7 @@ func TestGitWriteStagesOnlyThisSessionsWork(t *testing.T) {
 		t.Fatalf("this session's own file must be stageable: %v", err)
 	}
 	err := ts.stageable([]string{"theirs.go"}, []string{filepath.Join(ts.root, "theirs.go")})
-	if err == nil || !strings.Contains(err.Error(), "theirs.go is not this session's work") {
+	if err == nil || !strings.Contains(err.Error(), "theirs.go is not in this session's record of what it changed; if a command of yours produced it, stage it with claim") {
 		t.Fatalf("err = %v, want a refusal naming the file", err)
 	}
 	// "." resolves to the workspace root, which is not a file the session
@@ -345,7 +345,7 @@ func TestExecuteGitWriteEndToEnd(t *testing.T) {
 	}
 
 	if _, err := ts.Execute(context.Background(), GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["README.md"]}`)); err == nil ||
-		!strings.Contains(err.Error(), "not this session's work") {
+		!strings.Contains(err.Error(), "not in this session's record of what it changed") {
 		t.Fatalf("err = %v, want a refusal naming the file", err)
 	}
 

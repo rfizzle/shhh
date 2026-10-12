@@ -213,6 +213,7 @@ func (j *autoJudge) judge(tc provider.ToolCall, action agent.Action) (agent.Deci
 	}
 	v := j.classifier.Judge(j.ctx, agent.ClassifierRequest{
 		Tool: tc.Name, Arguments: tc.Arguments, CWD: j.cwd, Recent: recent, Reading: action.Reading,
+		Claims: action.Claims,
 	})
 	code := observe.ReasonClassifier
 	if v.Failed {

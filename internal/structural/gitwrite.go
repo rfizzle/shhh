@@ -43,7 +43,8 @@ var gitWriteTool = provider.Tool{
 	Name: GitWriteToolName,
 	Description: "Write to this repository: stage files, commit them, create a branch, switch to one. " +
 		"Use this rather than running git through execute_command — the message is a field here, so no quoting is involved and no approval is spent on punctuation. " +
-		"add stages only files this session changed: anything else is refused by name, and there is no way to stage everything. " +
+		"add stages only files this session changed — what its file tools wrote and what its own commands changed — and anything else is refused by name; there is no way to stage everything. " +
+		"A file a command of yours produced that the record still does not hold goes in claim, with which command made it: each claim is put to the person on the card, and a path the working tree does not show changed is refused before it is asked. " +
 		"commit needs a staged index and writes the message verbatim; a commit that adds a credential shape is refused and names it, by kind, file and line. branch creates and never deletes; switch moves to an existing branch, or to a new one off the current commit with create. " +
 		"Nothing else is reachable here: push, reset, clean, checkout, rebase, merge, stash, tag, amend and force have no field, and pushing stays with execute_command.",
 	Parameters: json.RawMessage(`{
@@ -51,6 +52,7 @@ var gitWriteTool = provider.Tool{
 		"properties": {
 			"verb": {"type": "string", "enum": ["add", "commit", "branch", "switch"], "description": "Which write to make to the repository"},
 			"paths": {"type": "array", "items": {"type": "string"}, "description": "add only: the files to stage, named one by one, relative to the workspace root"},
+			"claim": {"type": "array", "items": {"type": "object", "properties": {"path": {"type": "string", "description": "the file, relative to the workspace root, as add refused it"}, "why": {"type": "string", "description": "which command of yours produced it, e.g. written by make gen this turn"}}, "required": ["path", "why"]}, "description": "add only: files this session's record does not hold that a command of yours produced, each with why — the command that made it. Pass it only after add has refused a path by name; the person answers each claim on the card. Never claim a file you did not change: work already in the tree is the person's, and a claim is a question, not a declaration."},
 			"message": {"type": "string", "description": "commit only: the whole commit message, written verbatim"},
 			"branch": {"type": "string", "description": "branch/switch only: the branch name"},
 			"create": {"type": "boolean", "description": "switch only: create the branch off the current commit instead of expecting it to exist"}
@@ -71,11 +73,32 @@ var gitWriteTool = provider.Tool{
 var gitWriteReceipt = describe.Describer{Kind: describe.KindRun, Verb: CommitVerb, Count: describe.Uncounted}
 
 type gitWriteArgs struct {
-	Verb    string   `json:"verb"`
-	Paths   []string `json:"paths"`
-	Message string   `json:"message"`
-	Branch  string   `json:"branch"`
-	Create  bool     `json:"create"`
+	Verb    string     `json:"verb"`
+	Paths   []string   `json:"paths"`
+	Claim   []gitClaim `json:"claim"`
+	Message string     `json:"message"`
+	Branch  string     `json:"branch"`
+	Create  bool       `json:"create"`
+}
+
+// gitClaim is one path an add asks for that the session's record does not
+// hold, and the model's reason. The field never stages anything by itself:
+// the stager admits only what the record holds, and a claim reaches the
+// record only through an answer on the card.
+// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
+type gitClaim struct {
+	Path string `json:"path"`
+	Why  string `json:"why"`
+}
+
+// staged is every path an add names, the claimed ones after the rest, in the
+// spelling the caller typed.
+func (a gitWriteArgs) staged() []string {
+	out := append([]string(nil), a.Paths...)
+	for _, c := range a.Claim {
+		out = append(out, c.Path)
+	}
+	return out
 }
 
 // gitWriteFields is each verb's vocabulary, read the way the reader's is: a
@@ -83,7 +106,7 @@ type gitWriteArgs struct {
 // commit that silently ignored a paths list is a commit whose caller believes
 // it staged something.
 var gitWriteFields = map[string][]string{
-	gitAdd:    {"paths"},
+	gitAdd:    {"paths", "claim"},
 	gitCommit: {"message"},
 	gitBranch: {"branch"},
 	gitSwitch: {"branch", "create"},
@@ -94,6 +117,9 @@ func (a gitWriteArgs) setFields() []string {
 	var f []string
 	if len(a.Paths) > 0 {
 		f = append(f, "paths")
+	}
+	if len(a.Claim) > 0 {
+		f = append(f, "claim")
 	}
 	if a.Message != "" {
 		f = append(f, "message")
@@ -128,6 +154,15 @@ type Writes struct {
 	// whose credential shapes are there on purpose. A commit that adds a
 	// shape anywhere else is refused (SecretRefusal).
 	SecretIgnore []string
+	// Origins answers, for each path Files holds that no file tool wrote,
+	// the word a staging counts it in — `by a command`, `generated`,
+	// `claimed` — so the receipt says what kind of work it staged. Nil
+	// counts every path as the session's own edit.
+	Origins func() map[string]string
+	// Generated is the subset of these workspace-relative paths the
+	// project's generated block claims, which the card states beside a
+	// claim. Nil claims none.
+	Generated func(paths []string) []string
 }
 
 // AllowWrites registers the write tool on a toolset that already found git.
@@ -252,13 +287,20 @@ func (t *Toolset) executeGitWrite(_ context.Context, raw json.RawMessage) (strin
 	if args.Verb == "" {
 		return "", fmt.Errorf("verb is required: add, commit, branch, or switch")
 	}
-	paths, err := t.resolveGitPaths(args.Paths)
+	asked := args.Paths
+	if args.Verb == gitAdd {
+		asked = args.staged()
+	}
+	paths, err := t.resolveGitPaths(asked)
 	if err != nil {
 		return "", err
 	}
 	switch args.Verb {
 	case gitAdd:
-		if err := t.stageable(args.Paths, paths); err != nil {
+		// A claim is admitted here exactly as a path is: by the record. The
+		// answer on the card is what put a claimed path in the record, so a
+		// claim nobody answered is refused by name like any other path.
+		if err := t.stageable(asked, paths); err != nil {
 			return "", err
 		}
 	case gitCommit:
@@ -273,7 +315,7 @@ func (t *Toolset) executeGitWrite(_ context.Context, raw json.RawMessage) (strin
 	}
 	switch args.Verb {
 	case gitAdd:
-		return fmt.Sprintf("staged %s", plural(len(paths), "file")), nil
+		return "staged " + plural(len(paths), "file") + t.originWords(paths), nil
 	case gitBranch:
 		return "created branch " + args.Branch, nil
 	}
@@ -347,9 +389,204 @@ func (t *Toolset) stageable(asked, resolved []string) error {
 		}
 		// Named as the caller wrote it: a refusal that answers with an
 		// absolute path the model never typed reads as a different file.
-		return fmt.Errorf("%s is not this session's work; commit it yourself", asked[i])
+		// It names the way through and not a way round: a refusal that
+		// said to commit it some other way sent the model to git as a
+		// command, which is the guard this tool exists to be.
+		return fmt.Errorf("%s is not in this session's record of what it changed; if a command of yours produced it, stage it with claim and say which", asked[i])
 	}
 	return nil
+}
+
+// originWords counts a staging's paths that no file tool wrote, in the
+// words the record keeps for them — ` · 1 by a command · 2 generated` — and
+// is empty where every path was an edit.
+func (t *Toolset) originWords(resolved []string) string {
+	if t.writes == nil || t.writes.Origins == nil {
+		return ""
+	}
+	words := map[string]string{}
+	for p, w := range t.writes.Origins() {
+		abs := p
+		if !filepath.IsAbs(abs) {
+			abs = filepath.Join(t.root, abs)
+		}
+		abs = filepath.Clean(abs)
+		words[abs] = w
+		if real, err := filepath.EvalSymlinks(abs); err == nil {
+			words[real] = w
+		}
+	}
+	counts := map[string]int{}
+	var order []string
+	for _, abs := range resolved {
+		w := words[abs]
+		if w == "" {
+			continue
+		}
+		if counts[w] == 0 {
+			order = append(order, w)
+		}
+		counts[w]++
+	}
+	out := ""
+	for _, w := range order {
+		out += fmt.Sprintf(" · %d %s", counts[w], w)
+	}
+	return out
+}
+
+// Claim is one path an add asks to stage that the session's record does not
+// hold, read for the card that asks about it: the path as the model typed
+// it, the reason it gave, whether the working tree shows it changed, and
+// whether the project declares it generated.
+type Claim struct {
+	Path      string
+	Abs       string
+	Why       string
+	Dirty     bool
+	Generated bool
+}
+
+// Row is the claim as the classifier reads it, one line:
+// `claims gen/kms.pb.go · "written by make gen this turn" · generated · dirty`.
+func (c Claim) Row() string {
+	return fmt.Sprintf("claims %s · %q%s", c.Path, c.Why, c.facts())
+}
+
+// Facts is the path and what the tree and the project say about it —
+// `gen/kms.pb.go · generated · dirty` — which is the card's claims row. The
+// reason is a row of its own there (Reason), so a narrow card that clips one
+// never clips the other.
+func (c Claim) Facts() string { return c.Path + c.facts() }
+
+// Reason is the model's reason, quoted the way the row quotes it.
+func (c Claim) Reason() string { return fmt.Sprintf("%q", c.Why) }
+
+func (c Claim) facts() string {
+	r := ""
+	if c.Generated {
+		r += " · generated"
+	}
+	if c.Dirty {
+		return r + " · dirty"
+	}
+	return r + " · clean"
+}
+
+// ClaimRows is every claim's row, in the order the call made them.
+func ClaimRows(claims []Claim) []string {
+	out := make([]string, 0, len(claims))
+	for _, c := range claims {
+		out = append(out, c.Row())
+	}
+	return out
+}
+
+// Claims reads the claims an add carries. It answers nil for a call that
+// carries none, and an error for one whose claims cannot be put to anybody:
+// a claim with no reason, or a path outside the workspace.
+func (t *Toolset) Claims(raw json.RawMessage) ([]Claim, error) {
+	var a gitWriteArgs
+	if err := json.Unmarshal(raw, &a); err != nil {
+		return nil, fmt.Errorf("invalid arguments: %w", err)
+	}
+	if a.Verb != gitAdd || len(a.Claim) == 0 {
+		return nil, nil
+	}
+	asked := make([]string, 0, len(a.Claim))
+	for _, c := range a.Claim {
+		if strings.TrimSpace(c.Why) == "" {
+			return nil, fmt.Errorf("claim for %s needs why: say which command of yours produced it", c.Path)
+		}
+		asked = append(asked, c.Path)
+	}
+	abs, err := t.resolveGitPaths(asked)
+	if err != nil {
+		return nil, err
+	}
+	dirty := t.dirtyUnder(abs)
+	rels := make([]string, 0, len(abs))
+	for _, p := range abs {
+		rels = append(rels, t.rel(p))
+	}
+	generated := map[string]bool{}
+	if t.writes != nil && t.writes.Generated != nil {
+		for _, g := range t.writes.Generated(rels) {
+			generated[g] = true
+		}
+	}
+	out := make([]Claim, 0, len(a.Claim))
+	for i, c := range a.Claim {
+		out = append(out, Claim{
+			Path: c.Path, Abs: abs[i], Why: strings.TrimSpace(c.Why),
+			Dirty: dirty[rels[i]], Generated: generated[rels[i]],
+		})
+	}
+	return out, nil
+}
+
+// CheckClaims is the refusal a claim meets before any card is drawn: one the
+// working tree does not show changed has nothing in it for this session to
+// have made, and asking the person about it would be asking them to vouch for
+// a file exactly as the last commit left it.
+func (t *Toolset) CheckClaims(raw json.RawMessage) error {
+	claims, err := t.Claims(raw)
+	if err != nil {
+		return err
+	}
+	for _, c := range claims {
+		if !c.Dirty {
+			return fmt.Errorf("%s shows no change in the working tree, so there is nothing to claim", c.Path)
+		}
+	}
+	return nil
+}
+
+// dirtyUnder is which of these paths the working tree shows changed —
+// modified, added, deleted, or untracked and not ignored — keyed by the
+// workspace-relative path. It is a read through the reader's own flags, and
+// a git that cannot answer shows nothing dirty, which refuses the claim
+// rather than asking about a guess.
+func (t *Toolset) dirtyUnder(abs []string) map[string]bool {
+	dirty := map[string]bool{}
+	top, err := t.run(context.Background(), GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "rev-parse", "--show-toplevel"})
+	if err != nil {
+		return dirty
+	}
+	top = strings.TrimSpace(top)
+	argv := append([]string{"--no-pager", "--no-optional-locks", "status", "--porcelain", "-z", "-uall", "--"}, abs...)
+	out, err := t.run(context.Background(), GitWriteToolName, argv)
+	if err != nil {
+		return dirty
+	}
+	records := strings.Split(out, "\x00")
+	for i := 0; i < len(records); i++ {
+		r := records[i]
+		if len(r) < 4 {
+			continue
+		}
+		dirty[t.rel(filepath.Join(top, filepath.FromSlash(r[3:])))] = true
+		// A rename or a copy carries where it came from as the next record.
+		if r[0] == 'R' || r[0] == 'C' {
+			i++
+		}
+	}
+	return dirty
+}
+
+// rel is an absolute path inside the workspace as the workspace names it,
+// read through a link in either spelling of the root.
+func (t *Toolset) rel(abs string) string {
+	roots := []string{t.root}
+	if real, err := filepath.EvalSymlinks(t.root); err == nil && real != t.root {
+		roots = append(roots, real)
+	}
+	for _, root := range roots {
+		if r, err := filepath.Rel(root, abs); err == nil && r != ".." && !strings.HasPrefix(r, "../") {
+			return filepath.ToSlash(r)
+		}
+	}
+	return filepath.ToSlash(abs)
 }
 
 // commit is the verb with a before and an after: nothing may be committed
@@ -700,8 +937,8 @@ func (t *Toolset) WritePlan(raw json.RawMessage) (Write, error) {
 	w := Write{Verb: a.Verb, Hooks: t.hooksRun()}
 	switch a.Verb {
 	case gitAdd:
-		w.Title = "stage " + plural(len(a.Paths), "file")
-		w.Summary = strings.Join(a.Paths, ", ")
+		w.Title = "stage " + plural(len(a.staged()), "file")
+		w.Summary = strings.Join(a.staged(), ", ")
 	case gitCommit:
 		w.Title = "commit"
 		w.Summary = firstMessageLine(a.Message)

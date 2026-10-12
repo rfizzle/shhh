@@ -56,6 +56,14 @@ func (f UndoFile) Removes() bool { return !f.Record.BeforeExists }
 type UndoPlan struct {
 	Turn  int64
 	Files []UndoFile
+	// Kept are the records with no before side — what a command changed and
+	// what a claim made the session's. They are in the turn, and nothing
+	// can put them back: the content they replaced was never read. The plan
+	// names them so the confirm can say so for exactly these paths, and
+	// reads them against the disk the way it reads the rest, so a commit
+	// built off the plan can tell which of them moved since.
+	// See docs/capabilities/coding-agent.md#a-rewind-can-put-the-files-back.
+	Kept []UndoFile
 }
 
 // PlanUndo builds the plan for turn t, restricted to paths when it is
@@ -88,13 +96,27 @@ func PlanUndo(t Turn, paths []string) UndoPlan {
 		if r.ModeChanged() && f.NowExists && f.NowMode != 0 && f.NowMode.Perm() != r.AfterMode.Perm() {
 			f.Drifted = true
 		}
+		if r.BeforeUnknown() {
+			plan.Kept = append(plan.Kept, f)
+			continue
+		}
 		plan.Files = append(plan.Files, f)
 	}
 	return plan
 }
 
-// Empty reports a plan with nothing in it.
-func (p UndoPlan) Empty() bool { return len(p.Files) == 0 }
+// Empty reports a plan with nothing in it — nothing to put back and nothing
+// to say it cannot.
+func (p UndoPlan) Empty() bool { return len(p.Files) == 0 && len(p.Kept) == 0 }
+
+// KeptPaths names the files the plan cannot put back, in turn order.
+func (p UndoPlan) KeptPaths() []string {
+	out := make([]string, 0, len(p.Kept))
+	for _, f := range p.Kept {
+		out = append(out, f.Path())
+	}
+	return out
+}
 
 // Drifted names the files that changed since the turn, in plan order.
 func (p UndoPlan) Drifted() []string {

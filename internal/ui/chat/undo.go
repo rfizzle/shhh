@@ -16,6 +16,7 @@ package chat
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -111,10 +112,24 @@ func (m *Model) armUndo(plan changeset.UndoPlan, of undoSubject, confirmTurn int
 		Restores: plan.Restores() - driftedIn(plan, false),
 		Removes:  plan.Removes() - driftedIn(plan, true),
 		Drifted:  plan.Drifted(),
+		Kept:     m.keptNames(plan),
 	}
 	m.undoReturn = ret
 	m.enterSurface(stateUndoConfirm)
 	m.syncViewport()
+}
+
+// keptNames are the plan's files nothing can put back, named the way the
+// workspace names them: a command's record holds the path it was read at.
+func (m Model) keptNames(plan changeset.UndoPlan) []string {
+	var out []string
+	for _, p := range plan.KeptPaths() {
+		if filepath.IsAbs(p) && m.wiring.Workspace != "" {
+			p = workspaceRel(m.wiring.Workspace, p)
+		}
+		out = append(out, p)
+	}
+	return out
 }
 
 // driftedIn counts the drifted files of one kind — the ones the plan would

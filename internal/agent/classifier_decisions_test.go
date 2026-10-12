@@ -18,7 +18,7 @@ import (
 // every byte where it was: a classifier left on the default is asked
 // exactly what it was asked before. Change the wording on purpose and this
 // moves with it; change it by accident and this is what says so.
-const todaysWording = "45dbcafdb1417c0229513a66ae45368a6917dcb55137775dc10ff8952532ed09"
+const todaysWording = "d7ac85164b9601db38b440d0b588e083b273665ff1ba2f628418207ed013c0c9"
 
 // Unset, or `completion`, the request is the one the classifier always sent:
 // the same instruction to the byte, the evidence as the user turn, the same

@@ -397,22 +397,32 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 		offers = append(offers, commitOffer())
 		back = fmt.Sprintf("/undo %d takes it back", t.N)
 	}
-	byYou := 0
+	byYou, byCommand, generated, claimed := 0, 0, 0, 0
 	for _, r := range t.Records {
-		if r.Origin == changeset.ByPerson {
+		switch {
+		case r.Origin == changeset.ByPerson:
 			byYou++
+		case r.BeforeUnknown() && r.Generated:
+			generated++
+		case r.Origin == changeset.ByCommand:
+			byCommand++
+		case r.Origin == changeset.ByClaim:
+			claimed++
 		}
 	}
 	return &components.TurnChanges{
-		ByYou:   byYou,
-		Files:   t.Files(),
-		Ignored: countTracking(t, changeset.TrackIgnored),
-		Added:   t.Added,
-		Removed: t.Removed,
-		Mode:    t.ModeChange(),
-		Keys:    offers,
-		Note:    trackingNote(t),
-		Back:    back,
+		ByYou:     byYou,
+		ByCommand: byCommand,
+		Generated: generated,
+		Claimed:   claimed,
+		Files:     t.Files(),
+		Ignored:   countTracking(t, changeset.TrackIgnored),
+		Added:     t.Added,
+		Removed:   t.Removed,
+		Mode:      t.ModeChange(),
+		Keys:      offers,
+		Note:      trackingNote(t),
+		Back:      back,
 	}
 }
 

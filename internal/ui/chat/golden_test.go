@@ -3767,7 +3767,13 @@ func TestGolden_GitWriteRows(t *testing.T) {
 			)},
 			{Label: "refused · a file the session did not change", View: build(
 				row(`{"verb":"add","paths":["README.md"]}`,
-					"error: README.md is not this session's work; commit it yourself"),
+					"error: README.md is not in this session's record of what it changed; if a command of yours produced it, stage it with claim and say which"),
+			)},
+			// What a command made is the session's work, and the receipt
+			// counts it in the record's own words.
+			{Label: "staged · a generator's output beside an edit", View: build(
+				row(`{"verb":"add","paths":["internal/agent/loop.go","gen/kms/v1/kms.pb.go","go.sum"]}`,
+					"staged 3 files · 1 generated · 1 by a command"),
 			)},
 			{Label: "committed on an untrusted checkout · the hooks that did not run", View: build(
 				row(`{"verb":"commit","message":"feat(agent): cap rounds at the limit"}`,

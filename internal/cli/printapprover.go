@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/safety"
@@ -148,7 +149,8 @@ func headlessWrites(session chatSession, own *writtenByCalls, ignore []string) *
 	if session.conversation {
 		return nil
 	}
-	return &structural.Writes{Files: own.paths, Hooks: projectTrust().RunsOwnPrograms(), SecretIgnore: ignore}
+	return &structural.Writes{Files: own.paths, Hooks: projectTrust().RunsOwnPrograms(), SecretIgnore: ignore,
+		Generated: (&quality.Runner{Workspace: "."}).Generated}
 }
 
 // headlessApproval is what the unattended approver answers a call with: the
@@ -177,6 +179,15 @@ type headlessApproval struct {
 	// redirects is the run's memory of the commands it answered with the
 	// editor; nil answers none.
 	redirects *agent.Redirects
+	// claimed is where an answered claim's paths join what this run wrote,
+	// which is the list the git stager admits from (headlessclaim.go). Nil
+	// refuses every claim: a run with nowhere to record one cannot stage it.
+	claimed func(paths ...string)
+	// perCall says the yes this approver holds was given about the one call
+	// in front of it — a served client answering that call — rather than a
+	// blanket --yes given before the run began. Only an answer about the
+	// call answers a claim.
+	perCall bool
 
 	// recordTook is record for a verdict the classifier reached, with how
 	// long it took; nil sends those through record untimed.
@@ -542,15 +553,37 @@ func (r headlessApproval) approveGitWrite(ctx context.Context, tc provider.ToolC
 		r.refuse(tc, line, refusal.Code)
 		return refusal.Result
 	}
+	// A claim is read before any answer: one the tree shows unchanged is
+	// refused as the screen refuses it before its card, and the rows go to
+	// the judge as evidence (headlessclaim.go).
+	claims, refusal := r.readClaims(tc)
+	if refusal != "" {
+		return refusal
+	}
+	action, byFlag := call.Action, r.opts.yes
+	if len(claims) > 0 {
+		action.Claims = structural.ClaimRows(claims)
+		// --yes was given before the run and about the run's own work; a
+		// claim is the model asking for a path that is not yet that, so
+		// only an answer about this call — a client's, or the classifier's
+		// over the claim rows — says yes to it.
+		// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
+		byFlag = r.opts.yes && r.perCall
+		if !byFlag && r.un.judge == nil {
+			r.refuse(tc, line, observe.ReasonHeadlessDefault)
+			return "error: a claim is answered by somebody looking at it, and this run has nobody: --yes does not answer one; run with --mode auto for the classifier to judge it, or stage only what this run recorded"
+		}
+	}
 	// The line the call stands for travels with it, so the judge reads
 	// `git commit` rather than a tool name and a blob of arguments — the
 	// same reading the deny list just took.
-	reason, took, ok := r.answer(tc, call.Action,
-		r.opts.yes, observe.ReasonHeadlessYes, "git write", "writes by default (run with --yes)")
+	reason, took, ok := r.answer(tc, action,
+		byFlag, observe.ReasonHeadlessYes, "git write", "writes by default (run with --yes)")
 	if !ok {
 		return reason
 	}
 	r.noteTook(observe.DecisionAllow, reason, took)
+	r.recordClaims(claims)
 	return r.red.Process(tc.Name, agent.ExecuteWith(ctx, r.structTools.Execute, tc))
 }
 

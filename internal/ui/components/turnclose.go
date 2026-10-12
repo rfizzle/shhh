@@ -63,6 +63,13 @@ type TurnChanges struct {
 	// and says nothing where it is none
 	// (docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed).
 	ByYou int
+	// ByCommand, Generated and Claimed count the files the turn holds with
+	// no before side: what its commands changed, the part of that the
+	// project calls generated, and what a claim on the card made the
+	// session's. They are counted in Files and add nothing to the line
+	// counts, and the row says them in their own words and that undo cannot
+	// put them back (docs/capabilities/coding-agent.md#a-rewind-can-put-the-files-back).
+	ByCommand, Generated, Claimed int
 	// Note is the right-aligned reversibility note.
 	Note string
 	// Back is the command that takes the turn back, said after Note where
@@ -330,12 +337,16 @@ func (c TurnClose) Summary() string {
 	}
 	if ch := c.Changes; ch != nil {
 		changed := fmt.Sprintf("%s changed · +%d −%d", plural(ch.Files, "file"), ch.Added, ch.Removed)
-		if ch.Mode != "" {
+		switch {
+		case ch.Mode != "":
 			changed = plural(ch.Files, "file") + " changed · " + ch.Mode
+		case ch.uncounted():
+			changed = plural(ch.Files, "file") + " changed"
 		}
 		if ch.ByYou > 0 {
 			changed += fmt.Sprintf(" · %d changed by you", ch.ByYou)
 		}
+		changed += ch.unrecordedClause()
 		parts = append(parts, changed)
 	} else if c.WroteNothing {
 		parts = append(parts, wroteNothing)
@@ -463,16 +474,63 @@ func byYouClause(n int) string {
 	return sty.dim.Render(fmt.Sprintf(" · %d changed by you", n))
 }
 
+// uncounted reports a row whose every file is one with no before side, so
+// there are no lines to count and `+0 −0` would be a measurement of nothing
+// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+func (ch TurnChanges) uncounted() bool {
+	return ch.Added == 0 && ch.Removed == 0 && ch.ByCommand+ch.Generated+ch.Claimed == ch.Files
+}
+
+// unrecordedClause is the changed-files row's account of the files it holds
+// with no before side — ` · 2 by commands · 1 generated · not restorable` —
+// and nothing where there are none.
+func (ch TurnChanges) unrecordedClause() string {
+	var parts []string
+	switch {
+	case ch.ByCommand == 1:
+		parts = append(parts, "1 by a command")
+	case ch.ByCommand > 1:
+		parts = append(parts, fmt.Sprintf("%d by commands", ch.ByCommand))
+	}
+	if ch.Generated > 0 {
+		parts = append(parts, fmt.Sprintf("%d generated", ch.Generated))
+	}
+	if ch.Claimed > 0 {
+		parts = append(parts, fmt.Sprintf("%d claimed", ch.Claimed))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return " · " + strings.Join(parts, " · ") + " · not restorable"
+}
+
+// stated is the changed-files row's statement: the count, the lines where
+// there are lines to count, and the clauses saying whose files they are.
+func (ch TurnChanges) stated() string {
+	stats := DiffStat(ch.Added, ch.Removed)
+	switch {
+	case ch.Mode != "":
+		stats = sty.dim.Render(ch.Mode)
+	case ch.uncounted():
+		stats = ""
+	}
+	changed := plural(ch.Files, "file") + " changed"
+	if stats != "" {
+		changed += " "
+	}
+	stated := sty.body.Render(changed) + stats + byYouClause(ch.ByYou)
+	if clause := ch.unrecordedClause(); clause != "" {
+		stated += sty.dim.Render(clause)
+	}
+	return stated
+}
+
 // View renders the close block at the given width, one line per row.
 func (c TurnClose) View(width int) string {
 	lines := []string{c.total().view(width)}
 
 	if ch := c.Changes; ch != nil {
-		stats := DiffStat(ch.Added, ch.Removed)
-		if ch.Mode != "" {
-			stats = sty.dim.Render(ch.Mode)
-		}
-		stated := sty.body.Render(plural(ch.Files, "file")+" changed ") + stats + byYouClause(ch.ByYou)
+		stated := ch.stated()
 		lead := closeLead(sty.accent.Render("▎"), sty.accent.Render("✎"))
 		notes := []string{sty.dim.Render(ch.Note)}
 		if ch.Back != "" {

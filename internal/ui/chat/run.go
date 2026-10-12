@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -254,7 +255,15 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	if assistant && m.approval.request != nil {
 		hookLead = m.approval.request.hookContext
 	}
+	// The model's command is bracketed by two readings of the tree, so what
+	// it changed is the session's record of its work; the reader's own
+	// command is theirs and is not (cmdwork.go).
+	workspace, store, tracker := m.wiring.Workspace, m.changes, m.wiring.Tracker
 	return m, func() tea.Msg {
+		var bracket changeset.CommandBracket
+		if assistant {
+			bracket = openCommandBracket(workspace)
+		}
 		start := time.Now()
 		var result tools.ExecResult
 		// The tail-capable runner feeds the live row when wired.
@@ -285,8 +294,13 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		// context it ran on is still to hand: the code alone cannot tell the
 		// reader's cancel from the ceiling from a signal off the machine
 		// (activity.go).
+		duration := time.Since(start)
+		var work commandWork
+		if assistant {
+			work = closeCommandBracket(bracket, workspace, command, store, tracker)
+		}
 		return cmdDoneMsg{runID: runID, command: command, output: result.Output, exitCode: result.ExitCode,
-			result: result, duration: time.Since(start), local: local, end: end, ranIn: ranIn}
+			result: result, duration: duration, local: local, end: end, ranIn: ranIn, work: work}
 	}
 }
 

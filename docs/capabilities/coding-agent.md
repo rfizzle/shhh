@@ -94,12 +94,18 @@ therefore left alone unless a deliberate second answer says otherwise. Putting
 them back is itself a change, recorded like any other, so a rewind's restore
 can be reviewed and undone in turn.
 
-**What a command changed is not in the records, and the card says so.** The
-session records what the file tools wrote, both sides of every edit; a shell
-command that moved, generated or deleted something wrote nothing through them
-and is invisible here. A restore that quietly missed half of a turn's work
-would be worse than one that never offered, so the row that would write files
-names the hole before it is chosen.
+**What a command changed is recorded, not restorable, and the card says
+so.** The session records what the file tools wrote, both sides of every
+edit. A shell command that moved, generated or deleted something wrote
+nothing through them, so the session reads the tree either side of each
+command the model runs and records what the command made dirty — which is
+what lets it be staged as the session's work — but nothing read what those
+files held before, so there is nothing to put back. A restore that quietly
+missed half of a turn's work would be worse than one that never offered, so
+the undo's confirm names those files, and the rewind's row that would write
+files counts them, before either is chosen; the turn's close says
+`not restorable` beside their count. A file a command changed that was
+already dirty when it started is not recorded at all.
 
 **Where the tree is too large to read, the message says so rather than
 guessing.** The line reporting whether the working tree still matches the

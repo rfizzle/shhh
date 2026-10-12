@@ -450,14 +450,16 @@ func (m *Model) openRewindScope(n int, turns []changeset.Turn) {
 		Title: "Rewind to " + turnPoint(n),
 		Code: components.CardField{
 			Label: "code", Tone: components.ToneNeutral,
-			Value: fmt.Sprintf("%s restored %s", plural(folded.Files(), "file"),
+			Value: fmt.Sprintf("%s restored %s", plural(folded.Files()-unrestorable(folded), "file"),
 				components.DiffStat(folded.Added, folded.Removed)),
 			// The shell is the hole in the offer and the card is where it
-			// has to be said: the records hold what the file tools wrote, so
-			// a command that moved, generated or deleted something is not in
-			// them and does not come back with the rest.
-			Detail: fmt.Sprintf("the reverse of %s; what a command changed was never recorded",
-				turnSpanPhrase(scope.ret.first, scope.ret.last)),
+			// has to be said: the records hold what a command changed, but
+			// not what it replaced, so those files do not come back with
+			// the rest — and a file a command changed that was already
+			// dirty is not in them at all.
+			// See docs/capabilities/coding-agent.md#a-rewind-can-put-the-files-back.
+			Detail: fmt.Sprintf("the reverse of %s; %s",
+				turnSpanPhrase(scope.ret.first, scope.ret.last), commandHole(folded)),
 		},
 		Talk: components.CardField{
 			Label: "talk", Tone: components.ToneNeutral,
@@ -472,6 +474,30 @@ func (m *Model) openRewindScope(n int, turns []changeset.Turn) {
 	m.rewindScope = scope
 	m.enterSurface(stateRewindScope)
 	m.syncViewport()
+}
+
+// unrestorable counts the fold's files with no before side.
+func unrestorable(t changeset.Turn) int {
+	n := 0
+	for _, r := range t.Records {
+		if r.BeforeUnknown() {
+			n++
+		}
+	}
+	return n
+}
+
+// commandHole is the restore's sentence about what commands did: how many of
+// the files are a command's and cannot come back, where there are any.
+func commandHole(t changeset.Turn) string {
+	n := unrestorable(t)
+	switch n {
+	case 0:
+		return "what a command changed is not restorable"
+	case 1:
+		return "1 file by a command is not restorable"
+	}
+	return fmt.Sprintf("%d files by commands are not restorable", n)
 }
 
 // rewindReturnFor reads what the conversation half of a rewind to turn n

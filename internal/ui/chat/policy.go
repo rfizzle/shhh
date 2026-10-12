@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -233,6 +234,7 @@ func (m Model) approvalAction(req *approvalRequest) agent.Action {
 		a.Irreplaceable = m.rules().Irreplaceable(ruleCall(req))
 		a.Scratch = req.scratch
 	}
+	a.Claims = structural.ClaimRows(req.claims)
 	return a
 }
 

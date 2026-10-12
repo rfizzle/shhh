@@ -128,6 +128,11 @@ func (m Model) todoRunDiff() []string {
 // recordDiff renders one record as a unified diff.
 func recordDiff(rel string, r changeset.Record) string {
 	old, now := "a/"+rel, "b/"+rel
+	if r.BeforeUnknown() {
+		// What a command changed has no before side to diff against, and a
+		// diff from nothing would show a changed file as a new one.
+		return fmt.Sprintf("--- %s\n+++ %s\n# changed by a command; what it replaced was not recorded\n", old, now)
+	}
 	if !r.BeforeExists {
 		old = "/dev/null"
 	}

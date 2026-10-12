@@ -54,6 +54,20 @@ const (
 	// origin the close row counts as the person's own
 	// (docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed).
 	ByPerson
+	// ByCommand: a command the session ran changed the file. Nothing wrote
+	// it through the file tools, so the record was made by reading the tree
+	// either side of the command — the path was clean when the command
+	// started and dirty when it ended — and it has no before side: the
+	// content the command replaced was never read. Its Evidence is the
+	// command line, so an attribution that crossed with another session's
+	// work in the same checkout is one a person can read and judge.
+	// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
+	ByCommand
+	// ByClaim: the model asked for a path the record did not hold and the
+	// person — or, in auto mode, the classifier shown the claim — said yes
+	// on the card. Its Evidence is the reason the model gave. Like a
+	// command's record it has no before side.
+	ByClaim
 )
 
 func (o Origin) String() string {
@@ -64,6 +78,10 @@ func (o Origin) String() string {
 		return "child patch"
 	case ByPerson:
 		return "by you"
+	case ByCommand:
+		return "by a command"
+	case ByClaim:
+		return "claimed"
 	default:
 		return "approved"
 	}
@@ -128,21 +146,44 @@ type Record struct {
 	Origin Origin
 	Track  Tracking
 	At     time.Time
+	// Evidence is why a record with no before side is the session's: the
+	// command line that was running when the path became dirty, or the
+	// reason a claim gave. Empty on every other origin. It is held for the
+	// sitting and not written down — the origin is, and the origin is what
+	// keeps a resumed record from being read as a creation.
+	Evidence string
+	// Generated says the project's generated block claims the path, so the
+	// surfaces that count a command's work say `generated` for it rather
+	// than `by a command`.
+	Generated bool
 
 	Hunks          []diff.Hunk
 	Added, Removed int
 }
 
+// BeforeUnknown reports a record with no before side: a command changed the
+// file, or a claim made it the session's, and nothing read what was there
+// first. Before is empty and BeforeExists false on one, and neither means
+// anything — so it is not a creation, not a deletion, has no lines to count,
+// and nothing can be put back from it. Undo says so for exactly these paths
+// rather than deleting a file it takes for new.
+// See docs/capabilities/coding-agent.md#a-rewind-can-put-the-files-back.
+func (r Record) BeforeUnknown() bool { return r.Origin == ByCommand || r.Origin == ByClaim }
+
 // Created reports a file the turn brought into existence.
-func (r Record) Created() bool { return !r.BeforeExists && r.AfterExists }
+func (r Record) Created() bool { return !r.BeforeUnknown() && !r.BeforeExists && r.AfterExists }
 
 // Deleted reports a file the turn removed.
-func (r Record) Deleted() bool { return r.BeforeExists && !r.AfterExists }
+func (r Record) Deleted() bool { return !r.BeforeUnknown() && r.BeforeExists && !r.AfterExists }
 
 // Changed reports whether the record says anything at all — a call that left
 // the file byte-identical, and its permissions alone, is not a change,
-// however it was applied.
+// however it was applied. A record with no before side is a change by
+// definition: it was made because the path became dirty.
 func (r Record) Changed() bool {
+	if r.BeforeUnknown() {
+		return true
+	}
 	return r.Before != r.After || r.BeforeExists != r.AfterExists || r.ModeChanged()
 }
 
@@ -152,7 +193,7 @@ func (r Record) Changed() bool {
 // have to be known: zero means nothing read one, so a record missing one says
 // nothing about permissions rather than reporting a file stripped to 000.
 func (r Record) ModeChanged() bool {
-	return r.BeforeExists && r.AfterExists && modeChanged(r.BeforeMode, r.AfterMode)
+	return !r.BeforeUnknown() && r.BeforeExists && r.AfterExists && modeChanged(r.BeforeMode, r.AfterMode)
 }
 
 // modeChanged is the comparison itself, shared by one record and by the fold
@@ -191,6 +232,13 @@ func modeChange(before, after os.FileMode) string {
 }
 
 func (r *Record) compute() {
+	if r.BeforeUnknown() {
+		// A diff from nothing would count every line of the file as the
+		// turn's, which is a measurement of what nobody read.
+		// See docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out.
+		r.Hunks, r.Added, r.Removed = nil, 0, 0
+		return
+	}
 	r.Hunks = diff.Compute(r.Before, r.After)
 	r.Added, r.Removed = diff.Stats(r.Hunks)
 }
@@ -599,6 +647,7 @@ func Fold(turns []Turn) Turn {
 				// earlier one left is still what is on disk (Add).
 				r.AfterMode = prev.AfterMode
 			}
+			r = keepUnknown(prev, r)
 			r.compute()
 			out.Records[i] = r
 		}
@@ -675,6 +724,11 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 		s.order = append(s.order, turn)
 		sort.Slice(s.order, func(i, j int) bool { return s.order[i] < s.order[j] })
 	}
+	if i := indexOf(t.Records, r.Path); i >= 0 && r.BeforeUnknown() && !t.Records[i].BeforeUnknown() {
+		// The turn already holds this file from a write that read both
+		// sides; a record with no before side would only take that away.
+		return nil
+	}
 	if i := indexOf(t.Records, r.Path); i >= 0 {
 		prev := t.Records[i]
 		s.bytes -= prev.size()
@@ -686,6 +740,7 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 		if prev.Origin == ByPerson {
 			r.Origin = ByPerson
 		}
+		r = keepUnknown(prev, r)
 		if r.AfterMode == 0 && r.AfterExists {
 			// The later edit did not read the mode, which for the tools that
 			// write files means it did not change one either — so the mode
@@ -710,6 +765,19 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 	t.recount()
 	s.writeLocked(t.N, indexOf(t.Records, r.Path), r)
 	return s.evict()
+}
+
+// keepUnknown carries a missing before side forward through a merge. A file a
+// command changed and a file tool wrote after it is still a file whose
+// starting content nobody read: the merged record keeps the earlier origin,
+// its evidence and its generated word, and stays one undo cannot put back.
+func keepUnknown(prev, r Record) Record {
+	if !prev.BeforeUnknown() {
+		return r
+	}
+	r.Origin, r.Evidence, r.Generated = prev.Origin, prev.Evidence, prev.Generated
+	r.Before, r.BeforeExists, r.BeforeMode = "", false, 0
+	return r
 }
 
 // writeLocked puts one record where it will outlive the process, and
@@ -1018,16 +1086,70 @@ func (s *Store) SessionFiles() []SessionFile {
 // it is not in SessionFiles: the session's state, not its history. Staging a
 // file the session left exactly as it found it would put nothing in the
 // index anyway.
+//
+// A path held with no before side — a command changed it, or a claim was
+// answered for it — is in it too, after the rest: it has no diff to put in
+// SessionFiles, and it is this session's work all the same.
+// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
 func (s *Store) Paths() []string {
 	files := s.SessionFiles()
-	if len(files) == 0 {
-		return nil
-	}
-	paths := make([]string, 0, len(files))
+	var paths []string
+	seen := map[string]bool{}
 	for _, f := range files {
 		paths = append(paths, f.Path)
+		seen[f.Path] = true
+	}
+	for _, r := range s.Unknown() {
+		if !seen[r.Path] {
+			seen[r.Path] = true
+			paths = append(paths, r.Path)
+		}
 	}
 	return paths
+}
+
+// Unknown is the latest record of every path a retained turn holds with no
+// before side, in first-record order: what commands changed and what claims
+// were answered for. The git stager reads its words — `by a command`,
+// `generated`, `claimed` — off these.
+func (s *Store) Unknown() []Record {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	at := map[string]int{}
+	var out []Record
+	for _, n := range s.order {
+		for _, r := range s.turns[n].Records {
+			if !r.BeforeUnknown() {
+				continue
+			}
+			if i, ok := at[r.Path]; ok {
+				out[i] = r
+				continue
+			}
+			at[r.Path] = len(out)
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// Origins is the word each path held with no before side is counted in —
+// `generated` where the project's generated block claims it, otherwise its
+// origin's own (`by a command`, `claimed`) — keyed by the recorded path.
+// It is what a staging's receipt says about the kind of work it staged.
+func (s *Store) Origins() map[string]string {
+	out := map[string]string{}
+	for _, r := range s.Unknown() {
+		w := r.Origin.String()
+		if r.Generated {
+			w = "generated"
+		}
+		out[r.Path] = w
+	}
+	return out
 }
 
 // sessionFilesLocked is the walk itself. It reads the turns directly rather
@@ -1040,6 +1162,7 @@ func (s *Store) sessionFilesLocked() []SessionFile {
 		beforeMode, afterMode     os.FileMode
 		turns                     int
 		last                      int64
+		unknown                   bool
 	}
 	var paths []string
 	at := map[string]*acc{}
@@ -1062,11 +1185,18 @@ func (s *Store) sessionFilesLocked() []SessionFile {
 			}
 			p.turns++
 			p.last = t.N
+			p.unknown = p.unknown || r.BeforeUnknown()
 		}
 	}
 	var files []SessionFile
 	for _, path := range paths {
 		p := at[path]
+		if p.unknown {
+			// A path some turn holds with no before side has no net change
+			// to draw: the diff would be from content nobody read. It is
+			// still the session's, which Paths answers for.
+			continue
+		}
 		hunks := diff.Compute(p.before, p.after)
 		// The two modes are compared only where the file is there on both
 		// sides, for the reason one record's are: a file the session created

@@ -55,6 +55,15 @@ func ContentBound() string {
 	return fmt.Sprintf("%d-path / %d MiB", maxHashedPaths, maxHashedBytes>>20)
 }
 
+// PastContentBound reports a reading past those bounds: more dirty paths, or
+// more bytes in them, than a digest reads. It is the one test of the bound,
+// for a reader that has to stop where the digest stops — what a command
+// changed is read off the same tree, and a record of part of a tree that
+// large would read as the whole of it.
+func PastContentBound(paths int, bytes int64) bool {
+	return paths > maxHashedPaths || bytes > maxHashedBytes
+}
+
 // TakeFingerprint captures the workspace's current fingerprint. Every gate
 // run takes it — attended, backgrounded or unattended — so there is one
 // definition of "the tree this verdict covers" and no path that skips it.

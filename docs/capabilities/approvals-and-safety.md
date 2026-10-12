@@ -1136,6 +1136,40 @@ path the session's own record of what it changed does not hold. The rule that
 work already in the tree is not the agent's stops being a sentence in the
 prompt and becomes a fact about the arguments.
 
+**What the session's commands changed is its work too.** A generator, a
+formatter or a `sed` writes nothing through the file tools, so a record fed by
+them alone refused the output of a command the session had just run, and the
+refusal's advice — commit it yourself — sent the model to git as a command,
+round the very guard this tool is. So each command the model runs is read
+either side: a path that was clean when the command started and is dirty when
+it ends — changed, added, deleted, or new and not ignored — is recorded as
+that command's, with the command line beside it as the evidence. The window
+is the command and not the session, because a session-long baseline would
+sweep in whatever another session or the person changed in the same checkout
+over an afternoon; a path already dirty when the command started is left
+alone however the command changed it. Two sessions running commands in one
+checkout in the same seconds can still cross, which is why the command line
+is kept: a wrong attribution is one a person can read. A tree too large for
+the gate's digest to read is too large to bracket, and the session says once
+that it stopped recording rather than recording part of it. A path the
+project's generated block claims is counted as `generated` rather than `by a
+command`, on the receipt and on the turn's close.
+
+**A claim is a question, not a declaration.** For what the record still
+misses, the add takes a claim: the path and the model's reason. The claim
+stages nothing by itself — the stager admits only what the record holds — and
+a claim reaches the record only through an answer about that call: the card
+names each claimed path, the reason, whether the project calls it generated
+and whether the tree shows it changed, and saying yes is what records it. A
+path the tree shows unchanged is refused before any card, because there is
+nothing in it for the session to have made. In auto mode the classifier
+judges the call with the claim rows in its evidence. Nothing standing says yes
+to one: accept-edits, auto mode's own pass for edits, a session grant, a
+ticked row in the queue and an unattended run's `--yes` were each given about
+the session's own work before this question existed, so a claim they would
+have let through is put to the card, or to the classifier, instead. The
+model cannot declare a file its own; it can only ask.
+
 **A commit's checks run only on a checkout you trust.** A commit hook is a
 program git runs as you, and a checkout can point git at one inside itself.
 That is the line trust already draws around everything else a clone can make a session

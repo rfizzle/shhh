@@ -431,6 +431,12 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 		if e.ranIn != "" {
 			row.Outcome += " · " + e.ranIn
 		}
+		// What the command left in the tree that the session now holds as
+		// its work, so a reader scrolling back sees which command a file
+		// came from without opening the close (cmdwork.go).
+		if e.recorded != "" {
+			row.Outcome += " · " + e.recorded
+		}
 	} else {
 		// A search's place goes dim behind its pattern, so the column reads
 		// as one question asked somewhere

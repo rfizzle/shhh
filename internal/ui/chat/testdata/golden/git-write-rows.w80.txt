@@ -30,7 +30,15 @@
  ▎✗ ran add README.md                                              error  
                                                                           
      ▎✗ add README.md                                              error  
-        error: README.md is not this session's work; commit it yourself   
+        error: README.md is not in this session's record of what it cha…  
+                                                                          
+
+
+· staged · a generator's output beside an edit
+                                                                          
+ ▎$ ran add internal/agen… staged 3 files · 1 generated · 1 by a command  
+                                                                          
+     ▎$ add internal/agen… staged 3 files · 1 generated · 1 by a command  
                                                                           
 
 
@@ -76,7 +84,15 @@
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248madd README.md␛[m␛[48;5;234m                                              ␛[91merror␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 ␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248madd README.md␛[m␛[48;5;234m                                              ␛[91merror␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;248merror: README.md is not this session's work; commit it yourself␛[m␛[48;5;234m   ␛[m
+␛[48;5;234m        ␛[38;5;248merror: README.md is not in this session's record of what it cha…␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                          ␛[m
+
+
+· staged · a generator's output beside an edit
+␛[48;5;234m                                                                          ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248madd internal/agen…␛[m␛[48;5;234m ␛[92mstaged 3 files · 1 generated · 1 by a command␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                          ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248madd internal/agen…␛[m␛[48;5;234m ␛[92mstaged 3 files · 1 generated · 1 by a command␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 

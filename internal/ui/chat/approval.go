@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -66,6 +67,12 @@ type GatedPreview struct {
 	// what a row says (docs/capabilities/subagents.md#spawning-is-a-decision).
 	// Nil on every other call.
 	Spawn *components.SpawnRow
+	// Claims are the paths a git add asks for that the session's record does
+	// not hold, read for this card. Answering yes is what puts them in the
+	// record, which is the only thing the stager admits; no mode, grant or
+	// batch answer says yes to one (claim.go).
+	// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
+	Claims []structural.Claim
 }
 
 // GatedField is one row of a tool's blast-radius block.
@@ -198,6 +205,11 @@ type approvalRequest struct {
 	// queue.
 	explaining bool
 	explained  *explainDoneMsg
+	// claims are the paths a git add asks for that the record does not hold
+	// (GatedPreview.Claims). Non-empty, nothing standing answers the call:
+	// the mode and the grants ask instead of allowing (agent.Action.Claims),
+	// a batch answer is not carried out for it, and a yes records them.
+	claims []structural.Claim
 }
 
 // approvedToolDoneMsg carries the executor result of an approved non-exec
@@ -419,6 +431,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		host:      p.Host,
 		hostWarns: p.Host != "" && web.ReadFetch(json.RawMessage(tc.Arguments)).Warns(),
 		spawn:     p.Spawn,
+		claims:    p.Claims,
 	}, nil
 }
 
@@ -747,12 +760,14 @@ func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 	classifier := m.classifier.judge
 	runID := m.agent.RunID()
 	cwd, _ := os.Getwd()
+	act := m.approvalAction(req)
 	creq := agent.ClassifierRequest{
 		Tool:      req.call.Name,
 		Arguments: req.call.Arguments,
 		CWD:       cwd,
 		Recent:    m.agent.RequestMessages(),
-		Reading:   m.approvalAction(req).Reading,
+		Reading:   act.Reading,
+		Claims:    act.Claims,
 	}
 	return m, func() tea.Msg {
 		return classifierDoneMsg{runID: runID, verdict: classifier.Judge(ctx, creq)}
@@ -992,6 +1007,11 @@ func (m Model) declineApprovalWith(note string) (tea.Model, tea.Cmd) {
 		// written down for the sessions after this one.
 		m.recordMemoryDecline(req)
 	}
+	// A claim refused is refused by name, so the model reads which paths
+	// stay out of the record rather than a no it has to guess the reach of.
+	if len(req.claims) > 0 {
+		content = "error: the user declined the claim on " + claimPaths(req.claims) + "; it is not this session's to stage"
+	}
 	if note != "" {
 		content = "error: " + note
 	}
@@ -1090,6 +1110,10 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// reads happen next to the write, so a file that changed underneath the
 	// approval preview is recorded as it really was, not as it was previewed.
 	record := m.changeRecorder()
+	// A claim answered yes becomes the session's record of the path here,
+	// before the call runs, because the record is what the stager admits
+	// (claim.go).
+	m.recordClaims(m.approval.request)
 	// What a hook in front of this call wanted the model to read leads the
 	// result, where every other notice goes (hooks.go).
 	lead := m.approval.request.hookContext

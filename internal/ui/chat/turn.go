@@ -706,7 +706,7 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 	// before both the transcript entry and the tool result, so
 	// the user sees exactly what the model got. /run — the user's own
 	// command — stays unreduced.
-	var allowedBy, approvedBy, amendedFrom string
+	var allowedBy, approvedBy, amendedFrom, recorded string
 	var afterRedirect bool
 	var allowElapsed time.Duration
 	// The formatted result, made once and read twice. Formatting a
@@ -738,11 +738,12 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 			approvedBy = decidedByYou
 		}
 		afterRedirect = m.approval.request.class.AfterRedirect
+		recorded = m.recordCommandWork(msg.work)
 	}
 	m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
 		exitCode: msg.exitCode, commandResult: result, localRun: msg.local, duration: msg.duration,
 		allowedBy: allowedBy, allowElapsed: allowElapsed, approvedBy: approvedBy,
-		amendedFrom: amendedFrom, afterRedirect: afterRedirect, end: msg.end, ranIn: msg.ranIn})
+		amendedFrom: amendedFrom, afterRedirect: afterRedirect, end: msg.end, ranIn: msg.ranIn, recorded: recorded})
 	if m.approval.request != nil {
 		call := m.approval.request.call
 		m.approval.request = nil

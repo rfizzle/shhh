@@ -86,11 +86,27 @@ func gitWriteGatedPreview(st *structural.Toolset, args json.RawMessage) (chat.Ga
 		fields = append(fields, chat.GatedField{Label: "undo", Value: "git switch -",
 			Detail: "the tree becomes the other branch's, and every file this session had read is re-read"})
 	}
+	// A claim is the question this card is asked about, two rows a path:
+	// the path with what the project calls it and what the tree shows, and
+	// the model's reason under it. Both are values rather than a value and
+	// its detail, because a card too narrow for a detail drops it, and the
+	// reason is what the person is answering.
+	// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
+	claims, err := st.Claims(args)
+	if err != nil {
+		return chat.GatedPreview{}, err
+	}
+	for _, c := range claims {
+		fields = append(fields,
+			chat.GatedField{Label: "claims", Value: c.Facts()},
+			chat.GatedField{Label: "why", Value: c.Reason()})
+	}
 	return chat.GatedPreview{
 		Title:    w.Title,
 		Action:   w.Verb,
 		Summary:  w.Summary,
 		Fields:   fields,
 		DenyLine: structural.WriteLine(args),
+		Claims:   claims,
 	}, nil
 }

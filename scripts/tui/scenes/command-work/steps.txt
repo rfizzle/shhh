@@ -1,0 +1,44 @@
+# program test: TestProgram_ACommandsFileIsCountedOnTheClose
+#
+# What the model's command made is the session's work. The command's card is
+# answered and the command writes a file nothing else wrote, which the
+# bracket records; the write tool then stages that file under a card of its
+# own and its receipt counts it as a command's; and the turn's close counts it
+# in its own words and says it cannot be put back
+# (docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too).
+# The reader's own uncommitted README.md was dirty before the command ran,
+# so it is never recorded and never staged.
+#
+# The identity is repository-local because the pane runs under a home of its
+# own, so there is no global one for git to find.
+setup printf '# project\n' > README.md
+setup printf 'printf "package gen\\n" > gen.pb.go\n' > gen.sh
+setup git add README.md gen.sh
+setup git config user.email tui@shhh
+setup git config user.name tui
+setup git commit -q -m 'seed the repository'
+setup printf '# project\n\nnotes of my own\n' > README.md
+snap 01-start "Some things worth doing first"
+keys "regenerate the protobufs and stage them" Enter
+# The command is gated, so its card is what the turn stops on. The answer
+# waits out the card's grace window and hands the keyboard over first.
+snap 02-command-card "sh gen.sh"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+# Staging is a write to the repository, a card of its own.
+snap 03-add-card "$ stage 1 file" "this session's files only"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+# The two calls fold into one step; the stage's receipt counts the
+# file as a command's, and the close counts it and says undo cannot reach it.
+snap 04-close "Generated gen.pb.go and staged it" "staged 1 file · 1 by a command" "1 file changed · 1 by a command · not restorable"
+keys C-c
+snap 05-quit-armed "again quits"
+keys C-c
+snap 06-handoff-offer "Write a handoff first?"
+keys n
+snap 07-exit "that is everything the screen was holding"

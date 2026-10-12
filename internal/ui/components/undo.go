@@ -51,6 +51,13 @@ type UndoConfirm struct {
 	Restores, Removes int
 	// Drifted names the files that changed since the turn, in plan order.
 	Drifted []string
+	// Kept names the files the turn holds that nothing can put back: what a
+	// command changed and what a claim made the session's. Nothing read
+	// what they replaced, so [y] and [f] both leave them as they are, and
+	// the confirm says so for exactly these paths rather than letting a
+	// count that leaves them out read as the whole turn.
+	// See docs/capabilities/coding-agent.md#a-rewind-can-put-the-files-back.
+	Kept []string
 	// note is a warning the host adds under the question: something the
 	// caller knows about how the selection was made that the plan itself
 	// cannot see. An undo plans per file, so a review that staged part of a
@@ -111,6 +118,32 @@ func (c UndoConfirm) noteRows(width int) []string {
 	return []string{Clip(sty.warn.Render("⚠ "+c.note), width)}
 }
 
+// keptRows name the files the undo cannot reach, under the question and
+// above the drift: the hole in the offer, said before it is chosen.
+func (c UndoConfirm) keptRows(width int) []string {
+	if len(c.Kept) == 0 {
+		return nil
+	}
+	// The rewind card's sentence, word for word: nothing read what these
+	// files held before, so neither answer can write it back.
+	head := fmt.Sprintf("%s by commands are not restorable", plural(len(c.Kept), "file"))
+	if len(c.Kept) == 1 {
+		head = "1 file by a command is not restorable"
+	}
+	rows := []string{Clip(sty.dim.Render("· "+head), width)}
+	named := c.Kept
+	if len(named) > undoDriftNames {
+		named = named[:undoDriftNames]
+	}
+	for _, p := range named {
+		rows = append(rows, Clip("    "+sty.dim.Render(p), width))
+	}
+	if rest := len(c.Kept) - len(named); rest > 0 {
+		rows = append(rows, Clip("    "+sty.dim.Render(fmt.Sprintf("and %d more", rest)), width))
+	}
+	return rows
+}
+
 // driftRows are the drift lines: the count and what the default answer does
 // with it, then the paths themselves. The state is a glyph and a sentence,
 // never a colour (invariant 1).
@@ -157,6 +190,7 @@ func (c UndoConfirm) headRows(width int) []string {
 func (c UndoConfirm) View(width int) string {
 	rows := c.headRows(width)
 	rows = append(rows, c.noteRows(width)...)
+	rows = append(rows, c.keptRows(width)...)
 	rows = append(rows, c.driftRows(width)...)
 	if len(c.Drifted) > 0 {
 		force := keyOfferAs(keys.Confirm.Force, fmt.Sprintf("%s — take back %s too, discarding what changed",
@@ -169,6 +203,11 @@ func (c UndoConfirm) View(width int) string {
 // defaultKeys is the answer set on the head line. Without anything for [y]
 // to do it is not offered, so the prompt never shows a key that does nothing.
 func (c UndoConfirm) defaultKeys() string {
+	if c.touches() == 0 && len(c.Drifted) == 0 {
+		// Everything the turn holds is a command's: there is nothing for
+		// either answer to write, and the only way out is the no.
+		return confirmPair(keys.Shown(keys.Confirm.No))
+	}
 	if c.touches() == 0 {
 		return confirmPair(keys.Shown(keys.Confirm.Force), keys.Shown(keys.Confirm.No))
 	}

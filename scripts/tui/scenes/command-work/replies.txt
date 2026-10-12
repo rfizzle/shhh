@@ -1,0 +1,12 @@
+# One reply per request. The last line repeats once these run out.
+# The turn runs a generator as a command, which writes a file the file tools
+# never touched, and then stages that file through the write tool — which
+# admits it because the command's bracket recorded it as the session's work.
+# The reader's own uncommitted README.md is in the tree throughout and is
+# never named.
+[session]
+tool:execute_command:{"command":"sh gen.sh"}
+tool:git_write:{"verb":"add","paths":["gen.pb.go"]}
+Generated gen.pb.go and staged it.
+[reading]
+on_target: Generating the protobufs and staging what the generator made.

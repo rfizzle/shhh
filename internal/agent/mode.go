@@ -304,6 +304,17 @@ type Action struct {
 	// (ClassifierClearsScratch). The zero value is the card.
 	// See docs/capabilities/approvals-and-safety.md#severity-moves-the-default.
 	Scratch bool
+	// Claims are the rows of a git add that asks for paths the session's
+	// record does not hold, one per path: the path, the model's reason, and
+	// what the tree and the project say about it. A claim is a question the
+	// model puts, and only an answer about this call may say yes to it — the
+	// person on the card, or in auto mode the classifier, which reads these
+	// rows as evidence. No standing answer does: a mode that applies edits,
+	// a session grant and an allowlist were all given about the session's
+	// own work, and a claim is the model asking for something that is not
+	// yet that.
+	// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
+	Claims []string
 }
 
 // Decision is a mode policy verdict for one gated tool call.
@@ -835,11 +846,21 @@ func ReadOnlyAllowed(command string, extra []string) bool {
 // See docs/capabilities/configuration.md#a-failure-is-written-down.
 func (p ModePolicy) Decide(a Action) (Decision, string) {
 	decision, reason := p.decide(a)
+	if decision == Allow && len(a.Claims) > 0 {
+		// A refusal still stands, and so does an ask; only a yes is taken
+		// back, because the yes was the mode's or a grant's and a claim is
+		// answered by somebody looking at it (Claims).
+		return Ask, ClaimAsksReason
+	}
 	if decision == Deny {
 		LogRefusal(a.Kind.String(), a.Command, reason, 0, 0)
 	}
 	return decision, reason
 }
+
+// ClaimAsksReason is why a claim that a mode or a grant would have let
+// through is put to somebody instead.
+const ClaimAsksReason = "a claim is answered on the card"
 
 // LogRefusal writes the one line a refused call leaves behind: what was
 // asked for, the first word of the command it stands for, the rule that

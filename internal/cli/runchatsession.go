@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -196,6 +197,13 @@ func (b *screenBuild) toolset(sc *scope.Scope) toolsetOpts {
 			// See docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs.
 			Hooks:        projectTrust().RunsOwnPrograms(),
 			SecretIgnore: ConfigFrom(cmd.Context()).Commit.SecretIgnore,
+			// What a command changed and what a claim was answered for are
+			// in the same record, counted in their own words on the receipt,
+			// and a claim's card says whether the project calls the path
+			// generated.
+			// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
+			Origins:   func() map[string]string { return b.changes.Origins() },
+			Generated: (&quality.Runner{Workspace: "."}).Generated,
 		}
 	}
 	// A session pops a browser for a page the model published,
@@ -779,6 +787,9 @@ func (b *screenBuild) wireGated(w *chat.Wiring) {
 		gatedPreviews[structural.GitWriteToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
 			return gitWriteGatedPreview(st, args)
 		}
+		// A claim on a path the tree shows unchanged is refused before any
+		// card: there is nothing in it for the session to have made.
+		gatedChecks[structural.GitWriteToolName] = st.CheckClaims
 	}
 	if session.mcpTools != nil {
 		b.wireMCP(w, gatedPreviews)

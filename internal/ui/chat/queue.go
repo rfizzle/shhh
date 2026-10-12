@@ -448,8 +448,11 @@ func (m Model) batchCategory(req *approvalRequest) (agent.ActionKind, bool) {
 	// the reader has not already answered for.
 	// A fetch is out for a reason of its own: two fetches in one queue are
 	// two hosts, which is two decisions however alike the two calls look.
+	// A claim is out because the list row states the call's summary and
+	// not the claim's rows, which are what the person is answering.
+	// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
 	if act.SafetyFlagged || act.Kind == agent.ActionOther || act.Kind == agent.ActionFetch ||
-		len(act.OutOfScope) > 0 {
+		len(act.OutOfScope) > 0 || len(act.Claims) > 0 {
 		return act.Kind, false
 	}
 	return act.Kind, true
@@ -728,7 +731,10 @@ func (m *Model) takeQueueAnswer(req *approvalRequest) (allow, answered bool) {
 		return false, true
 	}
 	act := m.approvalAction(req)
-	if m.policy.mode.ReadOnly() || act.SafetyFlagged || len(act.OutOfScope) > 0 {
+	// A claim is answered on its own card: a tick on a list row stood for
+	// the call's summary, and the claim's rows are what is being asked.
+	// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
+	if m.policy.mode.ReadOnly() || act.SafetyFlagged || len(act.OutOfScope) > 0 || len(act.Claims) > 0 {
 		return false, false
 	}
 	return true, true

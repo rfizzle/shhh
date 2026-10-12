@@ -1345,6 +1345,14 @@ func gitWriteCards() []gitWriteCard {
 			GatedPreview{Title: "branch topic", Action: "branch", Summary: "create the branch topic",
 				Fields: []GatedField{stages, push,
 					{Label: "undo", Value: "git branch -d", Detail: "a new branch moves no file and holds no work; deleting it is a line you type"}}}},
+		// A claim is the question the card asks: each claimed path with what
+		// the project and the tree say about it, and the model's reason on a
+		// row of its own so a narrow card clips neither.
+		{"stage · a claim, put to the person", `{"verb":"add","claim":[{"path":"gen/gokms/kms/v1/kms.pb.go","why":"written by make gen this turn"}]}`,
+			GatedPreview{Title: "stage 1 file", Action: "add", Summary: "gen/gokms/kms/v1/kms.pb.go",
+				Fields: []GatedField{stages, push,
+					{Label: "claims", Value: "gen/gokms/kms/v1/kms.pb.go · generated · dirty"},
+					{Label: "why", Value: `"written by make gen this turn"`}}}},
 		{"switch · switching back is the way back", `{"verb":"switch","branch":"topic"}`,
 			GatedPreview{Title: "switch to topic", Action: "switch", Summary: "switch to the branch topic",
 				Fields: []GatedField{stages, push,
