@@ -67,7 +67,8 @@ about the same things.
 ## shhh carries skills of its own
 
 The binary carries a few skills about shhh itself: how to write a checkout's
-quality gate, and what belongs in its `.shhh/` directory. A model asked to
+quality gate, what belongs in its `.shhh/` directory, its global
+configuration, and what shhh is and where it keeps things. A model asked to
 set shhh up in a project knows nothing of shhh's own files, and without them
 it searches the disk for an example or guesses at a shape. With them it
 learns shhh the way it learns anything else: the list line stands in every
@@ -81,7 +82,12 @@ line is the standing cost and the body is paid only on a match: a skill
 about the gate is not loaded to answer a question about wordings. Each body
 says what to do, with the commands and the file shapes, and is checked
 against the code it describes, so the shape the model is taught is the one
-that loads; why the gate works as it does stays in these documents.
+that loads; why the gate works as it does stays in these documents. The two
+about shhh as a whole, `shhh-global-config` and `shhh-about`, keep one rule
+that stops them going stale: a value that differs between machines, such as a
+path, a default or which provider is in use, is never written in the body,
+which points at the command that prints it (`shhh config get`, `shhh config
+list`, `shhh doctor --table`) instead.
 
 They load whether or not the checkout is trusted, because they are the
 binary's and not the repository's, and they list after every skill found on

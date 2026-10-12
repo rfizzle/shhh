@@ -3,9 +3,9 @@
 # The skills the binary carries, listed by /skills after one of the user's
 # own (docs/capabilities/skills.md#shhh-carries-skills-of-its-own). The
 # workspace is a checkout nobody has trusted, under a home of its own, so the
-# catalog is the user skill the setup writes and the two built-ins, which load
+# catalog is the user skill the setup writes and the four built-ins, which load
 # whatever the checkout's standing. The golden is skills-builtin.
 setup mkdir -p $home/.agents/skills/changelog && printf -- '---\nname: changelog\ndescription: Use when writing the release notes for a tagged version.\n---\nbody\n' > $home/.agents/skills/changelog/SKILL.md
 snap 01-start "Some things worth doing first"
 keys "/skills" Enter
-snap 02-listing "shhh-quality-gate" "shhh skills — 3 skills" "changelog" "shhh-checkout-setup" "[built-in]"
+snap 02-listing "shhh-quality-gate" "shhh skills — 5 skills" "changelog" "shhh-about" "shhh-checkout-setup" "shhh-global-config" "[built-in]"

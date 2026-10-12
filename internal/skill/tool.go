@@ -27,7 +27,7 @@ func ToolDefinition(c *Catalog) provider.Tool {
 	names, _ := json.Marshal(c.Names())
 	return provider.Tool{
 		Name:        ToolName,
-		Description: "Load a skill's full instructions by name. Call it when the current task matches one of the available skills, before starting the work; the result is the skill's instructions plus the directory its supporting files live in.",
+		Description: "Load a skill's full instructions by name. Call it when the current task matches one of the available skills, before starting the work; the result is the skill's instructions plus, for a skill on disk, the directory its supporting files live in.",
 		Parameters: json.RawMessage(fmt.Sprintf(`{
 			"type": "object",
 			"properties": {

@@ -52,10 +52,7 @@ func skillsReport(c *skill.Catalog) report.Report {
 		// reader with no skills needs the whole search order and a clipped
 		// row would give them half of it.
 		empty := report.Empty("no skills found", "a skill is a directory holding a SKILL.md")
-		empty.Body = []string{
-			"in the project, once you trust the checkout: .shhh/skills, .agents/skills, .claude/skills",
-			"for you: " + strings.Join(config.SkillDirs(), ", ") + ", ~/.agents/skills, ~/.claude/skills",
-		}
+		empty.Body = skillSearchLines()
 		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{empty}})
 		return r
 	}
@@ -77,7 +74,32 @@ func skillsReport(c *skill.Catalog) report.Report {
 	for _, d := range c.Diagnostics {
 		r.Notes = append(r.Notes, report.Note{State: report.Fail, Text: d})
 	}
+	// The built-ins mean the listing is never empty, so the empty state's
+	// way out is said here instead: where a file skill would be read from.
+	if !hasFileSkill(c) {
+		r.Notes = append(r.Notes, report.Note{State: report.Skip,
+			Text: "no file skill loaded; " + strings.Join(skillSearchLines(), "; ")})
+	}
 	return r
+}
+
+// hasFileSkill reports whether any skill in the catalog was read from disk.
+func hasFileSkill(c *skill.Catalog) bool {
+	for _, sk := range c.Skills {
+		if sk.Scope != skill.ScopeBuiltin {
+			return true
+		}
+	}
+	return false
+}
+
+// skillSearchLines are the directories a file skill is read from, in the
+// order skill.Roots searches them: the project's, then the person's.
+func skillSearchLines() []string {
+	return []string{
+		"in the project, once you trust the checkout: .shhh/skills, .agents/skills, .claude/skills",
+		"for you: " + strings.Join(config.SkillDirs(), ", ") + ", ~/.agents/skills, ~/.claude/skills",
+	}
 }
 
 // skillDetail is `shhh skills show <name>`: the frontmatter as read, and

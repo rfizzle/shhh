@@ -145,7 +145,7 @@ func TestGolden_SkillsBuiltin(t *testing.T) {
 		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Skills: c, SkillsList: list})
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 		m = sendText(t, updated.(Model), "/skills")
-		return []golden.Panel{{Label: "a user skill, then the two the binary carries",
+		return []golden.Panel{{Label: "a user skill, then the four the binary carries",
 			View: strings.Join(m.renderHistoryLines(), "\n")}}
 	})
 }

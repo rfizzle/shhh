@@ -70,7 +70,7 @@ func TestFileSkillShadowsABuiltin(t *testing.T) {
 		writeSkill(t, root, "alpha", "name: alpha\ndescription: Alpha.", "alpha")
 		c := Load([]Root{{Path: root, Scope: scope}})
 		names := c.Names()
-		if names[0] != "alpha" || names[1] != "shhh-quality-gate" || names[len(names)-1] != "shhh-checkout-setup" {
+		if names[0] != "alpha" || names[1] != "shhh-quality-gate" || names[len(names)-1] != "shhh-global-config" {
 			t.Errorf("%s: order = %v", scope, names)
 		}
 		s, _ := c.Find("shhh-quality-gate")

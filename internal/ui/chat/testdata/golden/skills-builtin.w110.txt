@@ -10,22 +10,26 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· a user skill, then the two the binary carries
-    shhh skills — 3 skills
+· a user skill, then the four the binary carries
+    shhh skills — 5 skills
 
     ✓ changelog            Use when writing the release notes for a tagge…  [user]
+    ✓ shhh-about           Use when asked what shhh is, where it keep…  [built-in]
     ✓ shhh-checkout-setup  Use when setting shhh up in a checkout or …  [built-in]
+    ✓ shhh-global-config   Use when asked about shhh's own settings, …  [built-in]
     ✓ shhh-quality-gate    Use when adding, editing or fixing this ch…  [built-in]
 
     /skill <name> [task] activates one now; the model activates them itself when …
 
 
 ── ansi ────────────────────────────────────────────────────
-· a user skill, then the two the binary carries
-  ␛[38;5;245m  shhh skills — 3 skills␛[m
+· a user skill, then the four the binary carries
+  ␛[38;5;245m  shhh skills — 5 skills␛[m
 
   ␛[38;5;245m  ✓ changelog            Use when writing the release notes for a tagge…  [user]␛[m
+  ␛[38;5;245m  ✓ shhh-about           Use when asked what shhh is, where it keep…  [built-in]␛[m
   ␛[38;5;245m  ✓ shhh-checkout-setup  Use when setting shhh up in a checkout or …  [built-in]␛[m
+  ␛[38;5;245m  ✓ shhh-global-config   Use when asked about shhh's own settings, …  [built-in]␛[m
   ␛[38;5;245m  ✓ shhh-quality-gate    Use when adding, editing or fixing this ch…  [built-in]␛[m
 
   ␛[38;5;245m  /skill <name> [task] activates one now; the model activates them itself when …␛[m
