@@ -85,6 +85,21 @@ func (c *child) ownProgress() (done, total int, current string) {
 	return sc.Done, sc.Total, sc.Current
 }
 
+// ownReading is the child's own plan as its check-in is handed it: the count
+// ownProgress gives, with the list itself, so a child asked to take stock
+// sees its own marks the way the session does. A child keeps no count of
+// rounds since it set the list, so its check-in says no age. Zero for a
+// child that named none, for ownProgress's reason.
+func (c *child) ownReading() agent.StepReading {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	sc := c.stepCount()
+	if !sc.Own {
+		return agent.StepReading{}
+	}
+	return agent.StepReading{Done: sc.Done, Total: sc.Total, Current: sc.Current, List: c.own.Report(), Age: -1}
+}
+
 // nearDone reports, with c.mu held, that a writer is on the last step of its
 // own plan or past it, in the turn it was spawned for. A follow-up is a new
 // ask the plan was not written for, so it does not count.

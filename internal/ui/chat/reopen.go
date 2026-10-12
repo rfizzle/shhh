@@ -390,7 +390,7 @@ func (m *Model) injectResumeContext() {
 	m.compactSummary = n.Summary
 	// And so does the working list, which the next save would otherwise
 	// write over with none (worksteps.go).
-	m.workSteps = plan.DecodeChecklist(n.Steps)
+	m.setWorkSteps(plan.DecodeChecklist(n.Steps))
 	// A checkpoint is a conversation index, and every restored turn has just
 	// moved down by what was put in front of it. Left alone, a rewind would
 	// cut the conversation short of the turn the reader picked.

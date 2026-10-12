@@ -818,6 +818,30 @@ being executed, the plan is the checklist and the session keeps no second one.
 Every step marked is the agent saying so, not the task being done; only the
 turn's own ending and its checks say that.
 
+**A list that lags the work looks exactly as trustworthy as one that does
+not.** An agent that sets seven steps, marks two, and then builds the other
+five without calling again leaves the rail reading `2 of 7` for as long as
+nobody asks — and the person watching has no way to tell a list being kept
+from one that was abandoned twenty-five rounds ago. Two things answer that,
+and neither touches the list. The session's routine check-in, the moment the
+agent is already being asked to take stock, puts the list back in front of
+it — every step with its mark, and how many tool rounds ago it was last sent
+— and asks whether it still holds and for it again with what is done marked.
+Shown its own marks beside their age the agent can see the gap; told a count,
+it would only confirm the count. And once a list has stood twenty rounds
+unchanged, the STEPS block, the steps screen and the close of a turn that
+ends with steps still open say how long (`unchanged 25 rounds`), so the count
+stops looking authoritative when it is not. Twenty is half the check-in's
+interval: the person sees a list go quiet before the agent is next asked
+about it, and a list being worked through, which moves every few rounds,
+never shows an age. The age is counted by the session across turns, since a
+list that lagged the last turn and lags this one has lagged both; any call
+that sets the list starts it over, even one that names the same list, because
+that is the agent saying it holds. It is not saved: a reopened list counts
+from the opening. Nothing infers a step finished from a file the agent wrote
+— what is done stays the agent's word, and the session only asks for it. A
+child is asked the same way about its own list, without the age.
+
 It is saved with the conversation beside the compaction summary and comes
 back when the conversation is opened again, so a resumed session shows the
 steps it was on. **The list lives outside the conversation, so wherever the

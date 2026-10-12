@@ -113,6 +113,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 		WroteNothing: changes == nil && commit == nil && m.ranUnvouched(es),
 		Commit:       commit,
 		Notes:        m.turnNotesClause(),
+		List:         m.turnList(),
 		Checks:       turnChecksRow(es, m.wiring.Gate.Manage != nil),
 	}
 }

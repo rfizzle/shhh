@@ -16,6 +16,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -46,14 +47,34 @@ func (m *Model) noteStepsCall(call provider.ToolCall) bool {
 	if err != nil {
 		return false
 	}
-	m.workSteps = l
+	m.setWorkSteps(l)
 	return true
 }
 
+// setWorkSteps puts a list in place and starts its age over. Every way the
+// list is set goes through here — a steps call, a reopened conversation, a
+// branch switched to, a new session or a rewind clearing it — so the age is
+// always counted from the moment the list on screen became the one it is.
+// A steps call that names the list it replaces exactly still starts it over:
+// the agent has said the list holds, which is what the age asks.
+func (m *Model) setWorkSteps(l plan.Checklist) {
+	m.workSteps, m.workStepsAge = l, 0
+}
+
+// noteToolRound counts a tool round beginning toward the list's age. It is
+// counted here rather than read off the loop because the loop's count starts
+// over with every turn, and a list that lagged the last turn and lags this
+// one has lagged both: a turn boundary is not the agent saying anything
+// about its list. At a round boundary, which is where the check-in reads it,
+// every round counted has finished.
+// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+func (m *Model) noteToolRound() { m.workStepsAge++ }
+
 // inspectorSteps is the STEPS block: how far the session is through its own
-// list, and the step it is on. It is nil where there is no list — a short
-// task declares none, and zero of zero is not a reading — and while an
-// approved plan is being executed, since PLAN is the checklist then.
+// list, the step it is on, and how long the list has stood unchanged. It is
+// nil where there is no list — a short task declares none, and zero of zero
+// is not a reading — and while an approved plan is being executed, since
+// PLAN is the checklist then.
 func (m Model) inspectorSteps() *components.InspectorSteps {
 	if m.planRun != nil || !m.codingSurfaces() {
 		return nil
@@ -62,7 +83,29 @@ func (m Model) inspectorSteps() *components.InspectorSteps {
 	if !sc.Own {
 		return nil
 	}
-	return &components.InspectorSteps{Done: sc.Done, Total: sc.Total, Current: sc.Current}
+	return &components.InspectorSteps{Done: sc.Done, Total: sc.Total, Current: sc.Current, Age: m.workStepsAge}
+}
+
+// checkInSteps is the session's list as its check-in reads it: the list
+// itself, drawn the way the steps tool answers with it, and its age. Zero
+// wherever the rail draws no STEPS block, for that block's reasons, so a
+// check-in never asks about a list the person cannot see.
+func (m Model) checkInSteps() agent.StepReading {
+	if m.inspectorSteps() == nil {
+		return agent.StepReading{}
+	}
+	done, total, current := m.workSteps.Tally()
+	return agent.StepReading{Done: done, Total: total, Current: current, List: m.workSteps.Report(), Age: m.workStepsAge}
+}
+
+// turnList is the working list as a turn's close reads it, nil where the
+// rail draws no STEPS block. Whether it is worth a row is the close's call.
+func (m Model) turnList() *components.TurnList {
+	s := m.inspectorSteps()
+	if s == nil {
+		return nil
+	}
+	return &components.TurnList{Done: s.Done, Total: s.Total, Age: s.Age}
 }
 
 // storedChatSteps is the checklist a slot holds, and none where the slot has
@@ -185,7 +228,7 @@ func (m Model) stepsScreenData() components.StepsScreen {
 	if focus < 0 {
 		focus = len(items) - 1
 	}
-	screen := components.StepsScreen{Steps: items, Subject: fmt.Sprintf("%d of %d", done, total)}
+	screen := components.StepsScreen{Steps: items, Subject: fmt.Sprintf("%d of %d", done, total), Age: m.workStepsAge}
 	screen.Focus = focus
 	return screen
 }

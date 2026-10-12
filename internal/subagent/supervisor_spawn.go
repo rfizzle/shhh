@@ -171,9 +171,9 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	// environment. Every attempt comes through here, which is the property
 	// newChildAgent exists for.
 	w.agent.SetCheckInBudget(c.budget, c.written)
-	// And the plan the child names itself, which every check-in names the
-	// step of — installed here for the reason the budget is.
-	w.agent.SetCheckInSteps(c.ownProgress)
+	// And the plan the child names itself, which every check-in puts back in
+	// front of it — installed here for the reason the budget is.
+	w.agent.SetCheckInSteps(c.ownReading)
 	// The mode recorded is the one in force — the profile's or the parent's
 	// after the clamp — not the one asked for; c.mode alone is the request.
 	if s.opts.Record != nil {

@@ -126,6 +126,27 @@ type TurnChecks struct {
 	Flakes string
 }
 
+// TurnList is the session's working list as a turn's close reads it: its
+// count, and how many tool rounds it has stood unchanged.
+type TurnList struct {
+	Done, Total, Age int
+}
+
+// staleRow is the list's row, and "" where the close has nothing to say
+// about it: a turn that ends with steps open on a list nobody has kept for
+// StaleListRounds is ending on a count that may not be true, and the close
+// is the last thing the person reads before they believe it.
+// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+func (l *TurnList) staleRow() (stated, age string) {
+	if l == nil || l.Total <= 0 || l.Done >= l.Total {
+		return "", ""
+	}
+	if age = listAge(l.Age); age == "" {
+		return "", ""
+	}
+	return fmt.Sprintf("steps %d of %d done", max(l.Done, 0), l.Total), "list " + age
+}
+
 // TurnClose is the block a finished turn appends. Steps, Tools, Elapsed and
 // Spend are the first row's stats; an empty or zero field is left out rather
 // than reported as nothing.
@@ -164,6 +185,13 @@ type TurnClose struct {
 	// the whole clause, because what counts as unread is a reading of the
 	// session (docs/interface/surfaces.md#the-supporting-screens).
 	Notes string
+	// List is the session's working list as the turn left it, nil where it
+	// keeps none. It is not the first row's Steps, which counts the titled
+	// runs the turn made: this is the agent's own list. It draws a row only
+	// where the turn ends with steps still open on a list that has stood
+	// StaleListRounds unchanged — a fresh list, or one every step of which
+	// is marked, has nothing the close needs to say.
+	List *TurnList
 	// KeysWaiting says the changeset row does not hold the keyboard, so its
 	// keys render grey rather than in the colour that means "you can press
 	// this": while the draft has it, `u` is a letter and belongs in the
@@ -287,9 +315,9 @@ func (c TurnClose) total() turnTotal {
 
 // Summary is the whole block said in one plain line, without the state word
 // the notification's title already carries and without a glyph in it: what
-// the turn cost, what it changed, what its delegates wrote down, and whether
-// the checks still pass — the rows a turn closes with, in the order the
-// screen draws them.
+// the turn cost, what it changed, what its delegates wrote down, a working
+// list left standing, and whether the checks still pass — the rows a turn
+// closes with, in the order the screen draws them.
 //
 // It exists because a notification is the one surface that cannot draw
 // . Everything it says has to be words, so the glyph that
@@ -317,6 +345,9 @@ func (c TurnClose) Summary() string {
 	}
 	if c.Notes != "" {
 		parts = append(parts, c.Notes)
+	}
+	if stated, age := c.List.staleRow(); stated != "" {
+		parts = append(parts, stated+" · "+age)
 	}
 	if ck := c.Checks; ck != nil {
 		verdict := " passing"
@@ -490,6 +521,13 @@ func (c TurnClose) View(width int) string {
 		// reading of what the session already holds is not one of the acts
 		// the glyph column names. The empty gutter is what says so.
 		lines = append(lines, closeLine(closeLead("", " "), sty.dim.Render(c.Notes), "", width))
+	}
+
+	if stated, age := c.List.staleRow(); stated != "" {
+		// The notes row's empty gutter, for its reason: a reading of what
+		// the session holds, not an act. A narrow pane carries the age on
+		// at the words' column rather than dropping it.
+		lines = append(lines, closeRunOn(closeLead("", " "), sty.dim.Render(stated), age, width)...)
 	}
 
 	if ck := c.Checks; ck != nil {

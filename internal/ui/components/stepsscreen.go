@@ -82,6 +82,10 @@ type StepsScreen struct {
 	// Subject is what the header says the screen is over — `2 of 7`, the
 	// rail block's own count.
 	Subject string
+	// Age is how many tool rounds the working list has stood unchanged,
+	// said after the subject in the rail block's words once it reaches
+	// StaleListRounds. An approved plan's list has none.
+	Age int
 	// Plan says the list is an approved plan's checklist rather than the
 	// agent's own working list: the header is /plan's, a step's state is the
 	// transcript's reading of its run rather than a mark the agent made, and
@@ -287,6 +291,11 @@ func (s *StepsScreen) header() screenHeader {
 	h := screenHeader{left: []RailSegment{screenTitle(title)}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
+	}
+	// The list's age, where it has gone quiet, for the reason the rail's
+	// STEPS block says it (inspectorsteps.go).
+	if age := listAge(s.Age); age != "" && !s.Plan {
+		h.left = append(h.left, screenField(age))
 	}
 	return h
 }

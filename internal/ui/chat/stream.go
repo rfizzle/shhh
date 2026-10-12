@@ -28,6 +28,12 @@ import (
 // counter), or a hold asked mid-turn parks it, or the window wants a summary
 // first.
 func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
+	// The check-in reads the session's working list off this copy, at the
+	// boundary it is asked at. Bound once where the loop is configured it
+	// would read the Model as it stood then — the screen is a value, copied
+	// on every message — and a list set since would never reach the
+	// question (worksteps.go).
+	m.agent.SetCheckInSteps(m.checkInSteps)
 	switch step, _ := m.roundTail().Next(); step {
 	case agent.StepHeld:
 		return m.holdTurn()

@@ -48,26 +48,66 @@ func TestSummarySteps(t *testing.T) {
 	}
 }
 
-// Every check-in names the step the turn said it was on, under the wording,
-// and a turn with no plan is asked exactly what it was asked before.
-func TestCheckIn_NamesTheStepTheTurnIsOn(t *testing.T) {
+// The session's check-in puts its own list in front of it, every step with
+// its mark, says how many rounds ago the list was set, and asks whether it
+// still holds and for it again with what is done marked — under the
+// wording, on every route a check-in takes.
+func TestCheckIn_CarriesTheListAndAsksWhetherItHolds(t *testing.T) {
+	const list = "Working list, 2 of 4 done — on: wire the flag\n" +
+		"  [x] 1. read the loop\n  [x] 2. add the field\n→ [ ] 3. wire the flag\n  [ ] 4. test it"
 	a := New(nil, noStream)
 	a.rounds = DefaultCheckInInterval
-	a.SetCheckInSteps(func() (int, int, string) { return 2, 5, "wire the flag" })
+	a.SetCheckInSteps(func() StepReading {
+		return StepReading{Done: 2, Total: 4, Current: "wire the flag", List: list, Age: 25}
+	})
 	prompt, ok := a.TakeCheckIn()
 	if !ok {
 		t.Fatal("the round check-in is due")
 	}
 	base := CheckInPrompt(DefaultCheckInInterval, FinishedInSession)
-	if !strings.HasPrefix(prompt, base) || !strings.Contains(prompt, "2 of 5 steps done and are on: wire the flag") {
-		t.Errorf("the check-in should keep the wording and name the step:\n%s", prompt)
+	if !strings.HasPrefix(prompt, base) {
+		t.Errorf("the check-in should keep the surface's wording first:\n%s", prompt)
 	}
-	if got := a.CheckInMessage(); !strings.Contains(got, "on: wire the flag") {
-		t.Errorf("the cap's check-in should name the step too:\n%s", got)
+	for _, want := range []string{
+		"as you last sent it 25 tool rounds ago:\n" + list,
+		"Say whether this list still holds",
+		"send the list again — every step, with each one you have finished marked done",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("the check-in should carry %q:\n%s", want, prompt)
+		}
+	}
+	if got := a.CheckInMessage(); !strings.Contains(got, list) {
+		t.Errorf("the cap's check-in should carry the list too:\n%s", got)
+	}
+	if strings.Contains(prompt, "progress line") {
+		t.Errorf("the check-in still names the retired progress line:\n%s", prompt)
+	}
+}
+
+// A turn with no list is asked exactly the wording, with no paragraph about
+// one; a surface that keeps no age, or hands over a count alone, still gets
+// the question.
+func TestCheckIn_NoListNoParagraph(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = DefaultCheckInInterval
+	base := CheckInPrompt(DefaultCheckInInterval, FinishedInSession)
+	a.SetCheckInSteps(func() StepReading { return StepReading{} })
+	if prompt, ok := a.TakeCheckIn(); !ok || prompt != base {
+		t.Errorf("a turn with no list is asked the wording alone (due %v):\n%s", ok, prompt)
 	}
 
-	a.SetCheckInSteps(func() (int, int, string) { return 0, 0, "" })
-	if got := a.ForceCheckIn(); got != base {
-		t.Errorf("a turn with no plan is asked the wording alone:\n%s", got)
+	for _, tc := range []struct {
+		r    StepReading
+		want string
+	}{
+		{StepReading{Done: 1, Total: 3, Current: "patch it", Age: -1}, "as you last sent it:\n1 of 3 steps done — on: patch it"},
+		{StepReading{Done: 3, Total: 3, Age: 0}, "in the round just finished:\n3 of 3 steps done\n"},
+		{StepReading{Done: 0, Total: 1, Current: "read", Age: 1}, "1 tool round ago:\n0 of 1 step done — on: read"},
+	} {
+		got := stepNote(tc.r)
+		if !strings.Contains(got, tc.want) || !strings.Contains(got, "Say whether this list still holds") {
+			t.Errorf("stepNote(%+v) = %q, want it to carry %q and the question", tc.r, got, tc.want)
+		}
 	}
 }

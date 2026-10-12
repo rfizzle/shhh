@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // A list the model sets with the steps tool reaches the rail's STEPS block
@@ -65,4 +66,30 @@ func TestProgram_BarePlanOpensTheApprovedPlansChecklist(t *testing.T) {
 	waitForAll(t, tm, "/plan · make the round limit recoverable · 1 of 2 done", "queued")
 
 	frameHas(t, finalFrame(t, tm), "✓ Locate the round accounting", "the approved plan")
+}
+
+// A list the model set and then stopped keeping says how old it is through
+// the whole program once it has stood past the threshold: the rail's STEPS
+// block carries the age after the count, the turn that ends with steps open
+// on it closes with the row that says so, and /steps says it after the count.
+func TestProgram_AListLeftStandingSaysHowOldItIs(t *testing.T) {
+	dir := fixtureDir(t, map[string]string{"loop.go": "package fixture\n"})
+	turns := []programTurn{{text: "Working through it in steps.\n", calls: append([]provider.ToolCall{
+		{ID: "s1", Name: plan.StepsToolName, Arguments: `{"steps":[{"title":"Read the loop","done":true},{"title":"Patch the limit"},{"title":"Test it"}]}`},
+	}, reads("loop.go")...)}}
+	for range components.StaleListRounds + 1 {
+		turns = append(turns, programTurn{text: "Reading on.\n", calls: reads("loop.go")})
+	}
+	turns = append(turns, programTurn{text: "The limit is patched and tested."})
+	m, _ := scriptedSession(turns...)
+	m.wiring.Workspace = dir
+	m.agent.SetExecutor(plan.WrapStepsExecutor(subagent.RootedExecutor(dir, tools.Execute)))
+	tm := runProgramAt(t, m, 130, 40)
+
+	send(tm, "patch the round limit")
+	waitForText(t, tm, "patched and tested")
+	waitForAll(t, tm, "1 of 3 · Patch the limit", "steps 1 of 3 done · list unchanged 21 rounds")
+	send(tm, "/steps")
+
+	frameHas(t, finalFrame(t, tm), "/steps · 1 of 3 · unchanged 21 rounds")
 }

@@ -1,0 +1,29 @@
+# program test: TestProgram_AListLeftStandingSaysHowOldItIs,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# A working list gone quiet
+# (docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps):
+# the model sets three steps, marks the first, and then reads for twenty-one
+# rounds without sending the list again. The scene's own size is 130 columns,
+# the narrowest the rail is drawn at; at 110 the rail is not drawn and the
+# rail's snap is skipped.
+#
+# What the captures are read for: at 02 the turn has closed on the row that
+# says its steps are still open on a list nobody has kept,
+# `steps 1 of 3 done · list unchanged 21 rounds`; at 03, where the rail is
+# drawn, its STEPS block reads `1 of 3 · Patch the limit` with
+# `unchanged 21 rounds` after it or under it; at 04 `/steps` says the same
+# age after its count in the header; at 05 esc has put the prompt back.
+setup printf 'package agent\n\nfunc loop() {}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "patch the round limit" Enter
+snap 02-closed "list unchanged 21 rounds" "steps 1 of 3 done · list unchanged 21 rounds" "patched and tested"
+wide 130 snap 03-rail "1 of 3 · Patch the limit" "STEPS"
+keys "/steps" Enter
+snap 04-steps "/steps · 1 of 3 · unchanged 21 rounds" "Patch the limit"
+keys Escape
+snap 05-back "[enter] send"
+keys C-c
+snap 06-quit-armed "again quits"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

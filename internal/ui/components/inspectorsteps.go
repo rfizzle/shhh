@@ -10,6 +10,8 @@ package components
 import (
 	"fmt"
 	"strings"
+
+	"charm.land/lipgloss/v2"
 )
 
 // InspectorSteps is the STEPS block: how far the session is through the list
@@ -20,6 +22,29 @@ type InspectorSteps struct {
 	Done, Total int
 	// Current is the first step not yet marked; empty once every step is.
 	Current string
+	// Age is how many tool rounds have passed since the agent last set the
+	// list. It is drawn only from StaleListRounds on.
+	Age int
+}
+
+// StaleListRounds is how many tool rounds a working list may stand unchanged
+// before the surfaces that draw it say how old it is. A list being worked
+// through moves every few rounds — a step is a handful of calls and the
+// agent sends the list again as each one finishes — so a list that has not
+// moved in twenty has stopped being kept, whatever its count says. Twenty is
+// half the session's check-in interval of forty: the person sees a list go
+// quiet well before the agent is next asked about it, and a fresh list,
+// being worked, never shows an age at all.
+// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+const StaleListRounds = 20
+
+// listAge is how a list's age is said, and "" for a list younger than
+// StaleListRounds, which says nothing about its age.
+func listAge(age int) string {
+	if age < StaleListRounds {
+		return ""
+	}
+	return "unchanged " + plural(age, "round")
 }
 
 // stepsBlock is the STEPS reading. It takes PLAN's place in the rail's order
@@ -43,6 +68,29 @@ func (r InspectorRail) stepsBlock(width int) (railBlock, bool) {
 	if s.Current != "" {
 		parts = append(parts, sty.body.Render(s.Current))
 	}
-	b.rows = append(b.rows, railLine{text: indentRow(strings.Join(parts, sty.dim.Render(" · ")), width), stated: true})
+	row := strings.Join(parts, sty.dim.Render(" · "))
+	// A list that has gone quiet says so, dim, after what it states: the
+	// count of a list nobody has kept for twenty rounds looks exactly as
+	// authoritative as a fresh one, and is not. The age rides the row where
+	// the row has room for it whole, and takes a row of its own under it
+	// where it does not, so it is never the thing a long step title clips;
+	// collapsed, it joins the count in the heading while that fits and is
+	// shed before the count is. Under the threshold nothing is drawn.
+	// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+	age := listAge(s.Age)
+	if age == "" {
+		b.rows = append(b.rows, railLine{text: indentRow(row, width), stated: true})
+		return b, true
+	}
+	if heading := count + " · " + age; lipgloss.Width("STEPS "+heading) <= railRoom(width, "", inspectorIndent) {
+		b.collapsedHeading = railHeading("STEPS", heading, sty.dim, width)
+	}
+	if aged := row + sty.dim.Render(" · "+age); lipgloss.Width(aged) <= railRoom(width, "", inspectorIndent) {
+		b.rows = append(b.rows, railLine{text: indentRow(aged, width), stated: true})
+		return b, true
+	}
+	b.rows = append(b.rows,
+		railLine{text: indentRow(row, width), stated: true},
+		railLine{text: indentRow(sty.dim.Render(age), width), stated: true})
 	return b, true
 }

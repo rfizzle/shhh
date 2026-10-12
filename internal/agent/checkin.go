@@ -144,17 +144,35 @@ func (a *Agent) SetCheckInBudget(spend func() (spent, budget int64), written fun
 	a.markSpend()
 }
 
-// SetCheckInSteps names where the turn's progress through its own plan is
-// read, so every check-in says which step the turn said it was on: a turn
-// asked to take stock against the steps it named answers about those, rather
-// than describing its work in new words the plan cannot be held to. Nil, the
-// default, is a turn that named no plan and a check-in without the line.
+// StepReading is the turn's own working list as a check-in reads it.
+type StepReading struct {
+	// Done and Total are the list as a count. Total zero is no list, and a
+	// check-in for a turn with none carries no paragraph about one.
+	Done, Total int
+	// Current is the first step not marked, empty once every step is.
+	Current string
+	// List is the list as the steps tool answers with it, every step with
+	// its [x] or [ ] mark, and empty where the surface hands over the count
+	// alone.
+	List string
+	// Age is how many tool rounds have passed since the list was last set,
+	// counted by the surface across its turns; negative where the surface
+	// keeps no such count.
+	Age int
+}
+
+// SetCheckInSteps names where the turn's own working list is read, so every
+// check-in puts the list in front of the turn and asks whether it still
+// holds: a turn asked to take stock against the steps it named answers about
+// those, rather than describing its work in new words the list cannot be
+// held to. Nil, the default, is a turn that keeps no list and a check-in
+// without the paragraph.
 // See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
-func (a *Agent) SetCheckInSteps(steps func() (done, total int, current string)) {
+func (a *Agent) SetCheckInSteps(steps func() StepReading) {
 	a.steps = steps
 }
 
-// checkIn is the check-in in the surface's wording with the turn's step line
+// checkIn is the check-in in the surface's wording with the turn's list
 // under it, which is the one text all three ways of asking one send.
 func (a *Agent) checkIn() string {
 	prompt := a.steering.checkInPrompt(a.rounds)
@@ -167,18 +185,45 @@ func (a *Agent) checkIn() string {
 	return prompt
 }
 
-// stepNote is the sentence naming the step a turn is on, under the wording
-// for the reason budgetNote is: an operator who replaced the words did not
-// replace this. "" for a turn with no plan.
-func stepNote(done, total int, current string) string {
-	if total <= 0 {
+// stepNote is the turn's own list put back in front of it, with how long it
+// has stood and the question whether it still holds. It goes under the
+// wording for the reason budgetNote does: an operator who replaced the words
+// did not replace this. "" for a turn with no list.
+//
+// It carries the list rather than a count because a list that lags the work
+// looks as trustworthy as one that does not: a turn that marked two steps of
+// seven and then built the other five without saying so reads "2 of 7" on
+// the rail for as long as nobody asks, and the check-in is the moment it is
+// already being asked to take stock. Shown its own marks beside how many
+// rounds ago it set them, it can see the gap; told a count, it confirms the
+// count. Nothing marks a step for it — what is done is its word, and the
+// question asks it to say so.
+// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+func stepNote(r StepReading) string {
+	if r.Total <= 0 {
 		return ""
 	}
-	if current == "" {
-		return fmt.Sprintf("By your own plan you have marked all %d %s done.", total, sidejobs.Plural(total, "step"))
+	var b strings.Builder
+	switch {
+	case r.Age < 0:
+		b.WriteString("Your working list, as you last sent it:")
+	case r.Age == 0:
+		b.WriteString("Your working list, as you sent it in the round just finished:")
+	default:
+		fmt.Fprintf(&b, "Your working list, as you last sent it %d tool %s ago:", r.Age, sidejobs.Plural(r.Age, "round"))
 	}
-	return fmt.Sprintf("By your own plan you have marked %d of %d %s done and are on: %s. Say whether that still holds, and mark each step done with its progress line as you finish it.",
-		min(max(done, 0), total), total, sidejobs.Plural(total, "step"), current)
+	b.WriteString("\n")
+	if r.List != "" {
+		b.WriteString(r.List)
+	} else {
+		fmt.Fprintf(&b, "%d of %d %s done", min(max(r.Done, 0), r.Total), r.Total, sidejobs.Plural(r.Total, "step"))
+		if r.Current != "" {
+			b.WriteString(" — on: " + r.Current)
+		}
+	}
+	b.WriteString("\n\nSay whether this list still holds: which steps are finished, and whether the ones left are still the work. " +
+		"Then send the list again — every step, with each one you have finished marked done — even if nothing on it has changed.")
+	return b.String()
 }
 
 // checkInInterval is the number of rounds owed before the next check-in,

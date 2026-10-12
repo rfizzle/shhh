@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
 )
 
@@ -163,17 +164,26 @@ func TestReseed_AWriterOnItsLastStepIsLeftAlone(t *testing.T) {
 	}
 }
 
-// ownProgress is what the reading and the check-in are handed: the child's
-// own plan, and nothing for a count the spawn declared.
+// ownProgress is what the reading is handed and ownReading what the check-in
+// is: the child's own plan, the check-in's with the list itself, and nothing
+// for a count the spawn declared.
 func TestOwnProgress_IsTheChildsOwnPlanOnly(t *testing.T) {
 	c := planningWriter()
 	if d, n, cur := c.ownProgress(); d != 0 || n != 0 || cur != "" {
 		t.Fatalf("a declared count reached the reading: %d/%d %q", d, n, cur)
+	}
+	if r := c.ownReading(); r != (agent.StepReading{}) {
+		t.Fatalf("a declared count reached the check-in: %+v", r)
 	}
 	if err := setSteps(t, c, `{"steps":[{"title":"Read","done":true},{"title":"Write"}]}`); err != nil {
 		t.Fatal(err)
 	}
 	if d, n, cur := c.ownProgress(); d != 1 || n != 2 || cur != "Write" {
 		t.Fatalf("ownProgress = %d/%d %q, want 1/2 on Write", d, n, cur)
+	}
+	r := c.ownReading()
+	if r.Done != 1 || r.Total != 2 || r.Current != "Write" || r.Age >= 0 ||
+		!strings.Contains(r.List, "[x] 1. Read") || !strings.Contains(r.List, "[ ] 2. Write") {
+		t.Fatalf("ownReading = %+v, want 1/2 on Write with the list and no age", r)
 	}
 }

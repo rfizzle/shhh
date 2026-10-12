@@ -1106,6 +1106,11 @@ type Model struct {
 	// call left it (noteStepsCall, worksteps.go), and saved with the slot
 	// beside compactSummary. It is not the approved plan and never becomes it.
 	workSteps plan.Checklist
+	// workStepsAge is how many tool rounds have begun since workSteps was
+	// last set, counted here across turns because the loop's own round
+	// count starts over with each one (worksteps.go). It is not saved:
+	// a reopened list counts from the opening.
+	workStepsAge int
 	// compactRun is what a compaction in flight remembers about the
 	// conversation it is about to replace, so the receipt it leaves can
 	// account for the act the way every other row accounts for one: how full

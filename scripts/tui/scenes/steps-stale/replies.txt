@@ -1,0 +1,56 @@
+# A working list set and then left standing. The first reply sets three
+# steps with the first marked and reads; the next twenty-one each say a
+# sentence and read again without sending the list, which is more rounds
+# than the threshold the surfaces say a list's age from (twenty); the last
+# ends the turn with the list still one of three. Every reading the session
+# takes of its run is answered from its own queue, so none of them takes a
+# round's reply and leaves the turn short.
+[session]
+I will work through this in steps.
++tool:steps:{"steps":[{"title":"Read the loop","done":true},{"title":"Patch the limit"},{"title":"Test it"}]}
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+Reading on.
++tool:read_file:{"path":"loop.go"}
+The limit is patched and tested.
+[reading]
+on_target: Patching the round limit the reader asked for.

@@ -755,7 +755,7 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	// The working list goes with the turns: what it marked may be work the
 	// cut just took back, and the branch keeps the list the whole
 	// conversation had (worksteps.go).
-	m.workSteps = plan.Checklist{}
+	m.setWorkSteps(plan.Checklist{})
 	if split {
 		// The turns that stay keep the rows they already have, as a
 		// compaction's kept turns do: a turn redrawn from its messages is
@@ -920,7 +920,7 @@ func (m *Model) switchToBranch(target string) string {
 	m.compactSummary = storedChatSummary(m.wiring.DB, target)
 	// So is the working list: each branch keeps the one it was last saved
 	// with, and the one just left is on its own slot (worksteps.go).
-	m.workSteps = storedChatSteps(m, target)
+	m.setWorkSteps(storedChatSteps(m, target))
 	m.contextTokens = 0
 	m.resetRounds()
 	return fmt.Sprintf("switched to branch %q (%s)", target, plural(len(msgs), "message"))

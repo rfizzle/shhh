@@ -276,3 +276,125 @@ func TestWorkSteps_ACompactionCarriesTheList(t *testing.T) {
 		t.Fatalf("the stored summary should be the model's own, got %q", m.compactSummary)
 	}
 }
+
+// The list's age is the host's count of tool rounds since a steps call last
+// set it, carried across a turn boundary the loop's own count starts over
+// at: a call resets it, the same list sent again still resets it, a cleared
+// list has none, and a reopened list counts from the opening.
+func TestWorkSteps_TheListsAgeIsCountedAcrossTurns(t *testing.T) {
+	const set = `{"steps":[{"title":"Read","done":true},{"title":"Patch"},{"title":"Test"}]}`
+	round := func(t *testing.T, m *Model) {
+		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{ID: "read", Name: "read_file", Arguments: `{"path":"a.go"}`}}})
+		*m = updated.(Model)
+	}
+	nextTurn := func(t *testing.T, m *Model) {
+		updated, _ := m.sendUserMessage("carry on")
+		*m = updated.(Model)
+		m.setTurnState(stateStreaming)
+		if n := m.agent.Rounds(); n != 0 {
+			t.Fatalf("the loop's count should start over with the turn, got %d", n)
+		}
+	}
+	for _, tc := range []struct {
+		name string
+		do   func(t *testing.T, m *Model)
+		age  int // -1 is no STEPS block at all
+	}{
+		{"three rounds after the call", func(t *testing.T, m *Model) {
+			for range 3 {
+				round(t, m)
+			}
+		}, 3},
+		{"a call resets it", func(t *testing.T, m *Model) {
+			round(t, m)
+			round(t, m)
+			m.noteStepsCall(stepsCall(`{"steps":[{"title":"Read","done":true},{"title":"Patch","done":true},{"title":"Test"}]}`))
+			round(t, m)
+		}, 1},
+		{"the same list sent again resets it", func(t *testing.T, m *Model) {
+			round(t, m)
+			round(t, m)
+			m.noteStepsCall(stepsCall(set))
+		}, 0},
+		{"it grows across a turn boundary", func(t *testing.T, m *Model) {
+			round(t, m)
+			round(t, m)
+			nextTurn(t, m)
+			round(t, m)
+		}, 3},
+		{"a cleared list has no age", func(t *testing.T, m *Model) {
+			round(t, m)
+			m.noteStepsCall(stepsCall(`{"steps":[]}`))
+			round(t, m)
+		}, -1},
+		{"a reopened list counts from the opening", func(t *testing.T, m *Model) {
+			round(t, m)
+			round(t, m)
+			m.setWorkSteps(plan.DecodeChecklist(m.workSteps.Encode()))
+			round(t, m)
+		}, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := progressModel(t, mockStream)
+			m.noteStepsCall(stepsCall(set))
+			tc.do(t, &m)
+			s := stepsOnRail(m)
+			switch {
+			case tc.age < 0 && s != nil:
+				t.Fatalf("no list should have no block and no age, got %+v", s)
+			case tc.age >= 0 && (s == nil || s.Age != tc.age):
+				t.Fatalf("the block = %+v, want age %d", s, tc.age)
+			}
+		})
+	}
+}
+
+// The session's check-in is handed the list itself and its age at the round
+// boundary it is asked at, and a turn that ends with steps open on a list
+// past the threshold says so on its close; a fresh one does not.
+func TestWorkSteps_TheCheckInAndTheCloseReadTheList(t *testing.T) {
+	m := progressModel(t, mockStream)
+	m.noteStepsCall(stepsCall(`{"steps":[{"title":"Read","done":true},{"title":"Patch"}]}`))
+	if got := m.turnCloseData().List.Age; got != 0 {
+		t.Fatalf("a fresh list's close reads age %d", got)
+	}
+	for range components.StaleListRounds {
+		m.noteToolRound()
+	}
+	updated, _ := m.resumeToolLoop()
+	m = updated.(Model)
+	msg := m.agent.CheckInMessage()
+	for _, want := range []string{
+		"as you last sent it 20 tool rounds ago:",
+		"  [x] 1. Read\n→ [ ] 2. Patch",
+		"Say whether this list still holds",
+	} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("the session's check-in should carry %q:\n%s", want, msg)
+		}
+	}
+	if row := stripANSI(m.turnCloseData().View(110)); !strings.Contains(row, "steps 1 of 2 done · list unchanged 20 rounds") {
+		t.Errorf("the close should say the list is stale:\n%s", row)
+	}
+	if s := m.stepsScreenData(); s.Age != components.StaleListRounds {
+		t.Errorf("/steps should carry the list's age, got %d", s.Age)
+	}
+
+	m.noteStepsCall(stepsCall(`{"steps":[]}`))
+	updated, _ = m.resumeToolLoop()
+	m = updated.(Model)
+	if got := m.agent.CheckInMessage(); strings.Contains(got, "working list") {
+		t.Errorf("a cleared list still reached the check-in:\n%s", got)
+	}
+	if m.turnCloseData().List != nil {
+		t.Error("a cleared list still reached the close")
+	}
+}
+
+// The threshold is drawn before the agent's own check-in comes round, so the
+// person sees a list go quiet before the agent is asked about it.
+func TestWorkSteps_TheThresholdComesBeforeTheCheckIn(t *testing.T) {
+	if components.StaleListRounds >= agent.DefaultCheckInInterval {
+		t.Fatalf("a list is drawn stale at %d rounds, after the check-in at %d", components.StaleListRounds, agent.DefaultCheckInInterval)
+	}
+}

@@ -344,6 +344,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		checkpoint := m.noteProgressProse(m.streaming)
 		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
+		m.noteToolRound()
 		m.approval.total = len(gated)
 		// A round is also where the session summary is scheduled:
 		// the round counter has just moved, which is the clock the reading
