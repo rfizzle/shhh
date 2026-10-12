@@ -55,12 +55,20 @@ func Content(s Skill) (string, error) {
 	var b strings.Builder
 	b.WriteString(contentOpen + escape(s.Name) + "\">\n")
 	b.WriteString(body)
-	b.WriteString("\n\nSkill directory: " + s.Dir + "\n")
-	b.WriteString("Relative paths in this skill are relative to the skill directory.")
+	// A built-in has no directory: naming one would send the model looking
+	// for files beside a SKILL.md that is not on any disk.
+	if s.Dir != "" {
+		b.WriteString("\n\nSkill directory: " + s.Dir + "\n")
+		b.WriteString("Relative paths in this skill are relative to the skill directory.")
+	}
 	if s.Compatibility != "" {
 		b.WriteString("\nCompatibility: " + s.Compatibility)
 	}
-	files, partial := Resources(s.Dir)
+	var files []string
+	var partial bool
+	if s.Dir != "" {
+		files, partial = Resources(s.Dir)
+	}
 	if len(files) > 0 {
 		b.WriteString("\n<skill_resources>\n")
 		for _, f := range files {

@@ -121,6 +121,11 @@ func TestRun_NoConfigBlocked(t *testing.T) {
 	if res.Verdict != VerdictBlocked || !strings.Contains(res.Reason, ConfigRelPath) {
 		t.Fatalf("verdict = %s, reason = %q", res.Verdict, res.Reason)
 	}
+	// The refusal keeps its leading words for the callers that read them,
+	// and names the skill that carries the file's shape.
+	if want := "no quality config: define named suites in .shhh/quality.json — the shhh-quality-gate skill has the shape and a starter"; res.Reason != want {
+		t.Fatalf("reason = %q, want %q", res.Reason, want)
+	}
 	if !strings.Contains(res.Format(res.Fingerprint), "Blocked is never a pass") {
 		t.Fatal("blocked result must say it is not a pass")
 	}

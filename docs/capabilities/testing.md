@@ -127,6 +127,13 @@ Continuous integration selects those targets in separate jobs, so preparing a
 listener or an operating-system mechanism cannot change the result of the
 ordinary contained gate.
 
+The suites are declared in the checkout's `.shhh/quality.json`. Its shape,
+key by key, with the placeholder and a starter, is kept in the
+`shhh-quality-gate` skill the binary carries, where the model reads it when
+it writes the file and where a test holds it to the code that loads it
+([`skills.md`](skills.md#shhh-carries-skills-of-its-own)); this section says
+why the gate behaves as it does.
+
 ## A flake is counted where it happened
 
 One flake is a machine that was busy; the ninth is a check that needs fixing,

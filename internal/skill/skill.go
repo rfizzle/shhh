@@ -27,6 +27,10 @@ type Scope string
 const (
 	ScopeProject Scope = "project"
 	ScopeUser    Scope = "user"
+	// ScopeBuiltin is a skill the binary carries: listed after every file
+	// skill, and shadowed by any file skill of the same name.
+	// See docs/capabilities/skills.md#shhh-carries-skills-of-its-own.
+	ScopeBuiltin Scope = "built-in"
 )
 
 // Root is one directory to scan for skill subdirectories.
@@ -43,10 +47,16 @@ type Skill struct {
 	Name        string
 	Description string
 	// Location is the absolute path of the SKILL.md; Dir is its parent,
-	// the base every relative path in the body resolves against.
+	// the base every relative path in the body resolves against. A
+	// built-in's Location is BuiltinLocation and its Dir is empty: it has
+	// no directory and bundles no files.
 	Location string
 	Dir      string
 	Scope    Scope
+
+	// embedded is a built-in's path in the binary's own files; empty for a
+	// skill read from disk.
+	embedded string
 
 	License       string
 	Compatibility string
@@ -64,9 +74,15 @@ type Skill struct {
 }
 
 // Body reads the skill's instructions: the SKILL.md with its frontmatter
-// stripped.
+// stripped — from the binary for a built-in, from disk for the rest.
 func (s Skill) Body() (string, error) {
-	data, err := os.ReadFile(s.Location)
+	var data []byte
+	var err error
+	if s.embedded != "" {
+		data, err = builtinFS.ReadFile(s.embedded)
+	} else {
+		data, err = os.ReadFile(s.Location)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -184,6 +200,12 @@ func LoadFile(location string) (Skill, error) {
 	if err != nil {
 		return Skill{}, err
 	}
+	return parse(data, location, filepath.Dir(location))
+}
+
+// parse reads a SKILL.md's frontmatter under LoadFile's rules; dir is the
+// directory whose name the skill's name is checked against.
+func parse(data []byte, location, dir string) (Skill, error) {
 	fm, _, err := splitFrontmatter(string(data))
 	if err != nil {
 		return Skill{}, err
@@ -195,7 +217,7 @@ func LoadFile(location string) (Skill, error) {
 
 	s := Skill{
 		Location:      location,
-		Dir:           filepath.Dir(location),
+		Dir:           dir,
 		Description:   strings.TrimSpace(fields.scalar("description")),
 		License:       strings.TrimSpace(fields.scalar("license")),
 		Compatibility: strings.TrimSpace(fields.scalar("compatibility")),

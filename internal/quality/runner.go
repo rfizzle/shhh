@@ -425,7 +425,12 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 	if err != nil {
 		if os.IsNotExist(err) {
 			res.Unconfigured = true
-			return blocked("no quality config: define named suites in " + ConfigRelPath)
+			// The refusal names the built-in skill that carries the file's
+			// shape, so the model asked to add a gate loads it rather than
+			// searching the disk for an example. The leading words stay:
+			// callers read "no quality config".
+			// See docs/capabilities/skills.md#shhh-carries-skills-of-its-own.
+			return blocked("no quality config: define named suites in " + ConfigRelPath + " — the " + gateSkill + " skill has the shape and a starter")
 		}
 		return blocked("invalid quality config: " + err.Error())
 	}

@@ -130,6 +130,7 @@ func TestReportGoldens(t *testing.T) {
 		{"keys", goldenKeys().Render(80)},
 		{"chats", chatsReport(goldenChats(), goldenNow).Render(80)},
 		{"chats.w60", chatsReport(goldenChats(), goldenNow).Render(60)},
+		{"skills", skillsReport(goldenSkills(t)).Render(80)},
 	} {
 		t.Run(c.name, func(t *testing.T) { assertReportGolden(t, c.name, c.body) })
 	}

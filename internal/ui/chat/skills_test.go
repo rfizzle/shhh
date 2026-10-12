@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
 func skillCatalog(t *testing.T) *skill.Catalog {
@@ -109,5 +110,56 @@ func TestSkillCommand_UnknownAndListing(t *testing.T) {
 	bare = sendText(t, updated.(Model), "/skills")
 	if !transcriptContains(bare, "no skills loaded") {
 		t.Fatal("a session without skills says so")
+	}
+}
+
+// builtinListing is a session's catalog holding one user skill and the
+// built-ins, and what /skills prints for it: the command's own fixture,
+// read rather than drawn again here, so the screen is checked against the
+// listing the command really prints (internal/cli renders it, and this
+// package cannot import that one).
+func builtinListing(t *testing.T) (*skill.Catalog, func(*skill.Catalog) string) {
+	t.Helper()
+	listing, err := os.ReadFile(filepath.Join("..", "..", "cli", "testdata", "report", "skills.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	dir := filepath.Join(root, "changelog")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("---\nname: changelog\ndescription: Use when writing the release notes for a tagged version.\n---\nbody\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := skill.Load([]skill.Root{{Path: root, Scope: skill.ScopeUser}})
+	return c, func(*skill.Catalog) string { return strings.TrimRight(string(listing), "\n") }
+}
+
+// TestGolden_SkillsBuiltin captures /skills in a session whose catalog
+// carries the binary's own skills after the user's, as the transcript draws
+// the listing.
+func TestGolden_SkillsBuiltin(t *testing.T) {
+	c, list := builtinListing(t)
+	captureGolden(t, "skills-builtin", "/skills with the built-in skills", goldenWidths, func(width int) []golden.Panel {
+		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Skills: c, SkillsList: list})
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		m = sendText(t, updated.(Model), "/skills")
+		return []golden.Panel{{Label: "a user skill, then the two the binary carries",
+			View: strings.Join(m.renderHistoryLines(), "\n")}}
+	})
+}
+
+// /skills reaches the listing through the real program with the built-ins
+// on it. The scene `skills-builtin` is the same route in a terminal.
+func TestProgram_SkillsListsTheBuiltins(t *testing.T) {
+	c, list := builtinListing(t)
+	tm := runProgramAt(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream,
+		Wiring{Skills: c, SkillsList: list}), 110, 40)
+	tm.Type("/skills")
+	tm.Send(programEnter)
+	waitForText(t, tm, "shhh-quality-gate")
+	if frame := finalFrame(t, tm); !strings.Contains(frame, "[built-in]") {
+		t.Errorf("the built-in rows carry their scope word:\n%s", frame)
 	}
 }

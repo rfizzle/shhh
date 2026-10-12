@@ -18,17 +18,24 @@ import (
 // with (docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs).
 const ToolName = "quality_gate"
 
+// gateSkill is the built-in skill that teaches the config's shape, named by
+// the tool's description and by the missing-config refusal.
+const gateSkill = "shhh-quality-gate"
+
 // ToolDefinition is the quality_gate tool registered for agent sessions.
 //
 // The flake sentence is there so a model reading a `~` line does not spend a
 // round fixing a check that passed: the rerun is the gate's, over the same
-// tree, and the verdict already counts it.
+// tree, and the verdict already counts it. The config's shape is not spelled
+// here, where every session would pay for it: the clause points at the
+// built-in skill that carries it, loaded only when the file is being written
+// (docs/capabilities/skills.md#shhh-carries-skills-of-its-own).
 // See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
 func ToolDefinition() provider.Tool {
 	return provider.Tool{
 		Name: ToolName,
 		Description: "Verify your work with the repository's own quality checks (tests, linters). " +
-			"Suites are named in the project's trusted config (" + ConfigRelPath + "); you pick a suite by name and can never supply command text. " +
+			"Suites are named in the project's trusted config (" + ConfigRelPath + ", whose shape the " + gateSkill + " skill has); you pick a suite by name and can never supply command text. " +
 			"Action \"run\" executes a suite (blocking; suite defaults to \"" + DefaultSuite + "\") and returns pass/fail/blocked/cancelled with each check's outcome. " +
 			"A check that failed and then passed on its rerun is reported as flaked and counts as passed. " +
 			"A scoped check runs first, over the packages you changed, and a failure in it ends the run: the checks after it are reported as not run. " +

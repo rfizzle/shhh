@@ -324,9 +324,10 @@ func (t *toolset) executor(session chatSession) agent.ToolExecutor {
 
 // registerSkills puts the catalog's activation tool on the toolset and its
 // names and descriptions in the prompt, and does neither when nothing
-// loaded. It is not part of buildToolset because it runs after the servers
-// have answered on both surfaces, so that the prompt states the tools in the
-// order the model is offered them.
+// loaded — which, with the built-ins in every catalog loadSkills returns, is
+// only a session built without one. It is not part of buildToolset because
+// it runs after the servers have answered on both surfaces, so that the
+// prompt states the tools in the order the model is offered them.
 //
 // Activation is a read, so no surface gates it — which is what lets a run
 // with nobody to ask have skills at all.

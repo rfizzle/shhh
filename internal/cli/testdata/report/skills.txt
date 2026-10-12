@@ -1,0 +1,7 @@
+  shhh skills — 3 skills
+
+  ✓ changelog            Use when writing the release notes for a tagge…  [user]
+  ✓ shhh-checkout-setup  Use when setting shhh up in a checkout or …  [built-in]
+  ✓ shhh-quality-gate    Use when adding, editing or fixing this ch…  [built-in]
+
+  /skill <name> [task] activates one now; the model activates them itself when …

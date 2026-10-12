@@ -108,9 +108,10 @@ type chatSession struct {
 	// answer in the same words
 	// (docs/capabilities/headless.md#a-client-answers-one-call-at-a-time).
 	ask bool
-	// skills is the catalog of Agent Skills the session discovered; nil
-	// registers neither the tool nor the prompt section. Both `shhh chat`
-	// and `shhh code`, headless included: activation is a read.
+	// skills is the catalog of Agent Skills the session discovered, the
+	// built-ins included; nil registers neither the tool nor the prompt
+	// section. Both `shhh chat` and `shhh code`, headless included:
+	// activation is a read.
 	skills *skill.Catalog
 	// requireSandbox is --require-sandbox: the flag half of sandbox.require,
 	// which it can only turn on. A session that requires containment and has

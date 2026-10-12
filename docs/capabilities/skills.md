@@ -64,6 +64,31 @@ else's, arrived with a clone, and a strict reader would reject skills that
 every other harness accepts — the value of a shared format is being lenient
 about the same things.
 
+## shhh carries skills of its own
+
+The binary carries a few skills about shhh itself: how to write a checkout's
+quality gate, and what belongs in its `.shhh/` directory. A model asked to
+set shhh up in a project knows nothing of shhh's own files, and without them
+it searches the disk for an example or guesses at a shape. With them it
+learns shhh the way it learns anything else: the list line stands in every
+session, and the instructions arrive only when the task needs them, written
+for this version of shhh. The quality gate's refusal for a checkout that has
+no gate names the skill, so the model asked to add one is pointed at it at
+the moment it needs it.
+
+They are several narrow skills rather than one broad one because the list
+line is the standing cost and the body is paid only on a match: a skill
+about the gate is not loaded to answer a question about wordings. Each body
+says what to do, with the commands and the file shapes, and is checked
+against the code it describes, so the shape the model is taught is the one
+that loads; why the gate works as it does stays in these documents.
+
+They load whether or not the checkout is trusted, because they are the
+binary's and not the repository's, and they list after every skill found on
+disk. A skill of the same name in a project or in your own skills
+directories replaces the built-in, the way a wording file replaces its
+built-in text, and `shhh skills` notes the one it replaced.
+
 ## The user can activate one too
 
 The model decides a skill applies by reading the catalog. The user can decide

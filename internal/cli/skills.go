@@ -17,24 +17,21 @@ import (
 )
 
 // loadSkills discovers the skills a session opened in the working directory
-// can see. Nil when there are none, so callers register nothing — a skill
-// tool with an empty enum, or a Skills section with no skills, is a promise
-// the model would try to keep.
+// can see. It always returns a catalog, because the binary carries skills of
+// its own: every session that registers tools is offered the skill tool and
+// the list, the way a session with a file skill always was
+// (docs/capabilities/skills.md#shhh-carries-skills-of-its-own).
 //
-// An untrusted checkout contributes none of its own: the user's skills are
-// still there, and the withheld list on the start screen says what was left
-// out rather than letting a session look as though the repository had
-// written nothing.
+// An untrusted checkout contributes none of its own: the user's skills and
+// the built-ins are still there, and the withheld list on the start screen
+// says what was left out rather than letting a session look as though the
+// repository had written nothing.
 func loadSkills() *skill.Catalog {
 	cwd, err := os.Getwd()
 	if err != nil {
 		cwd = "."
 	}
-	c := skill.Discover(skill.Roots(cwd, config.SkillDirs(), projectTrust().Allows()))
-	if c.Len() == 0 && len(c.Diagnostics) == 0 {
-		return nil
-	}
-	return c
+	return skill.Load(skill.Roots(cwd, config.SkillDirs(), projectTrust().Allows()))
 }
 
 // skillsListing is the /skills answer and the `shhh skills` output: every
