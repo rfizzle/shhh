@@ -117,6 +117,9 @@ type Mutation struct {
 	Path    string
 	OldText string
 	NewText string
+	// Executable is a write that also adds the execute bits, so the card can
+	// say so beside the diff.
+	Executable bool
 }
 
 // PreviewMutation computes the before/after content for a mutating tool call
@@ -143,7 +146,7 @@ func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, 
 		if err := r.checkSeen(args.Path, []byte(old), existed, true); err != nil {
 			return Mutation{}, err
 		}
-		return Mutation{Action: "write", Path: args.Path, OldText: old, NewText: args.Content}, nil
+		return Mutation{Action: "write", Path: args.Path, OldText: old, NewText: args.Content, Executable: args.Executable}, nil
 	case EditFileName:
 		args, err := parseEditFileArgs(raw)
 		if err != nil {
@@ -187,7 +190,8 @@ var writeFile = Definition{
 			"type": "object",
 			"properties": {
 				"path": {"type": "string", "description": "File path to create or overwrite"},
-				"content": {"type": "string", "description": "Full content the file will have"}
+				"content": {"type": "string", "description": "Full content the file will have"},
+				"executable": {"type": "boolean", "description": "Set true to make the file executable (adds the execute bits to its mode), for a script you are writing. False or absent leaves the mode as it is: a new file is not executable, and an overwritten script stays executable. Do not run chmod +x for this."}
 			},
 			"required": ["path", "content"]
 		}`),
@@ -197,8 +201,9 @@ var writeFile = Definition{
 }
 
 type writeFileArgs struct {
-	Path    string `json:"path"`
-	Content string `json:"content"`
+	Path       string `json:"path"`
+	Content    string `json:"content"`
+	Executable bool   `json:"executable"`
 }
 
 func parseWriteFileArgs(raw json.RawMessage, byPerson bool) (writeFileArgs, error) {
@@ -252,11 +257,33 @@ func (r *Recorder) writeFile(raw json.RawMessage, byPerson bool) (string, error)
 		r.forget(args.Path)
 		return "", fmt.Errorf("cannot write file: %w", err)
 	}
+	exec := ""
+	if args.Executable {
+		if err := addExecuteBits(args.Path); err != nil {
+			r.forget(args.Path)
+			return "", fmt.Errorf("wrote the file but cannot make it executable: %w", err)
+		}
+		exec = ", executable"
+	}
 	r.noteShown(args.Path, []byte(args.Content), true)
 	if existed {
-		return fmt.Sprintf("Overwrote %s: wrote %d bytes (%d lines), was %d bytes", args.Path, len(args.Content), countLines(args.Content), len(old)), nil
+		return fmt.Sprintf("Overwrote %s: wrote %d bytes (%d lines), was %d bytes%s", args.Path, len(args.Content), countLines(args.Content), len(old), exec), nil
 	}
-	return fmt.Sprintf("Created %s: wrote %d bytes (%d lines)", args.Path, len(args.Content), countLines(args.Content)), nil
+	return fmt.Sprintf("Created %s: wrote %d bytes (%d lines)%s", args.Path, len(args.Content), countLines(args.Content), exec), nil
+}
+
+// addExecuteBits adds an execute bit wherever the file already has a read
+// bit, so the umask that made a new file 0644 or 0640 is honoured (0755, 0750)
+// and an existing mode is only ever added to, never stripped. A script's mode
+// is the write's and not a command's.
+// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+func addExecuteBits(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	mode := info.Mode().Perm()
+	return os.Chmod(path, mode|(mode&0o444)>>2)
 }
 
 var editFile = Definition{

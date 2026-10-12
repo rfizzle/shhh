@@ -357,6 +357,11 @@ line is its whole output and an in-place sed is a command somebody asks it
 for — and so does a profile holding commands and not the edit tool, whose
 commands are its only way to change a file.
 
+A script's mode is the write's and not a command's: the write tool takes an
+`executable` flag that adds the execute bits, shown on the approval card as a
+mode row and in the file's recorded mode change, so `chmod +x` is not a second
+command to approve. The flag only adds: leaving it out never strips a mode.
+
 **A shell read is not allowed because of any of this.** The gate reads a
 command line as a command line whatever it contains; auto mode does not wave
 a `cat` through because a reader could have answered it. The tools and the

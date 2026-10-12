@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -543,6 +544,67 @@ func TestWriteFile_NewFileIsNotExecutable(t *testing.T) {
 	}
 	if info.Mode().Perm()&0o111 != 0 {
 		t.Fatalf("a created file should not be executable, got %v", info.Mode().Perm())
+	}
+}
+
+// The executable field only adds execute bits: true on a new or an existing
+// file adds them, and false or absent never strips an existing file's.
+func TestWriteFile_ExecutableOnlyAddsExecuteBits(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	tests := []struct {
+		name       string
+		existing   os.FileMode // 0 means the file does not exist
+		executable string      // the JSON value, empty for absent
+		wantExec   bool
+		wantMode   os.FileMode // 0 means only the execute bit is checked
+		wantSaid   bool
+	}{
+		{name: "new file executable", executable: "true", wantExec: true, wantSaid: true},
+		{name: "existing file made executable", existing: 0o644, executable: "true", wantExec: true, wantMode: 0o755, wantSaid: true},
+		{name: "absent leaves the mode", existing: 0o644, wantMode: 0o644},
+		{name: "absent keeps an executable script", existing: 0o755, wantExec: true, wantMode: 0o755},
+		{name: "false leaves the mode", existing: 0o644, executable: "false", wantMode: 0o644},
+		{name: "false does not strip an executable file", existing: 0o755, executable: "false", wantExec: true, wantMode: 0o755},
+		{name: "true on an executable file keeps it", existing: 0o755, executable: "true", wantExec: true, wantMode: 0o755, wantSaid: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "run.sh")
+			if tt.existing != 0 {
+				if err := os.WriteFile(path, []byte("#!/bin/sh\n"), tt.existing); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(path, tt.existing); err != nil {
+					t.Fatal(err)
+				}
+				readWholeFile(t, path)
+			}
+			raw := `{"path":` + strconv.Quote(path) + `,"content":"#!/bin/sh\necho hi\n"`
+			if tt.executable != "" {
+				raw += `,"executable":` + tt.executable
+			}
+			raw += `}`
+
+			out, err := ExecuteMutating(context.Background(), WriteFileName, json.RawMessage(raw))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			info, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := info.Mode().Perm()&0o100 != 0; got != tt.wantExec {
+				t.Fatalf("owner execute = %v, want %v (mode %v)", got, tt.wantExec, info.Mode().Perm())
+			}
+			if tt.wantMode != 0 && info.Mode().Perm() != tt.wantMode {
+				t.Fatalf("mode = %v, want %v", info.Mode().Perm(), tt.wantMode)
+			}
+			if said := strings.Contains(out, "executable"); said != tt.wantSaid {
+				t.Fatalf("result %q says executable = %v, want %v", out, said, tt.wantSaid)
+			}
+		})
 	}
 }
 

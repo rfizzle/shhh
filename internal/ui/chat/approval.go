@@ -355,6 +355,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			path:    mut.Path,
 			hunks:   diff.Compute(mut.OldText, mut.NewText),
 			summary: title,
+			fields:  executableField(mut.Executable),
 			secret:  secret.AddedNote(mut.OldText, mut.NewText),
 		}, nil
 	}
@@ -1817,4 +1818,13 @@ func (m *Model) syncViewport() {
 	m.viewport.SetWidth(w)
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
+}
+
+// executableField is the card's row for a write that also makes the file
+// executable, so the person approving the diff sees the mode it carries.
+func executableField(executable bool) []GatedField {
+	if !executable {
+		return nil
+	}
+	return []GatedField{{Label: "mode", Value: "executable"}}
 }
