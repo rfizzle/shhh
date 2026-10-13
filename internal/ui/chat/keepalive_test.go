@@ -100,7 +100,7 @@ func TestKeepAlive_IsBoundedAndAnthropicOnly(t *testing.T) {
 
 	// Not Anthropic's own endpoint, not the hour, not asked for.
 	for name, mutate := range map[string]func(*Model){
-		"a gateway, not Claude": func(m *Model) { m.providerName, m.modelName = "agoda", "gpt-5" },
+		"a gateway, not Claude": func(m *Model) { m.providerName, m.modelName = "gateway", "gpt-5" },
 		"the off setting":       func(m *Model) { m.wiring.KeepAliveMax = 0 },
 		"no sender":             func(m *Model) { m.wiring.KeepAliveSend = nil },
 		"a downgraded one": func(m *Model) {
@@ -171,7 +171,7 @@ func TestKeepAlive_NeverJoinsTheConversation(t *testing.T) {
 func TestKeepAlive_FiresThroughAGatewayWhoseCacheWorks(t *testing.T) {
 	var sent [][]provider.Message
 	m := keepAliveSession(t, idleReadUsage, &sent)
-	m.providerName = "agoda"
+	m.providerName = "gateway"
 	if !m.keepAliveDue(clock()) {
 		t.Fatal("a gateway whose cache works, on a Claude model and the hour, was declined")
 	}

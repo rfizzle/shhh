@@ -27,7 +27,7 @@ func idleSession(t *testing.T, requests *int) Model {
 	t.Helper()
 	m := compactingModel(requests)
 	m.wiring.Ledger = idledLedger(t, "1h", "claude-sonnet-5-5", 20*time.Minute, idleReadUsage)
-	m.providerName, m.modelName = "agoda", "claude-sonnet-5-5"
+	m.providerName, m.modelName = "gateway", "claude-sonnet-5-5"
 	m.wiring.IdleCompact = IdleCompact{On: true, Margin: 5 * time.Minute, Floor: 30}
 	m.wiring.EndpointWindows = func(string) (int64, bool) { return 32_768, true }
 	m.contextTokens = 20_000
@@ -103,7 +103,7 @@ func TestIdleCompact_DeclinesWhenTheCacheIsNotSeen(t *testing.T) {
 			l := meter.New(pricing.NewTable(nil))
 			l.SetCacheLease("1h")
 			for range 14 {
-				l.ObserveCache("agoda", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000})
+				l.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000})
 			}
 			m.wiring.Ledger = l
 		}},
@@ -125,10 +125,10 @@ func TestIdleCompact_DeclinesWhenTheCacheIsNotSeen(t *testing.T) {
 	}
 
 	m := idleSession(t, &requests)
-	provider.RegisterDeclarations("agoda", map[string]provider.Declared{
+	provider.RegisterDeclarations("gateway", map[string]provider.Declared{
 		"claude-sonnet-5-5": {Model: map[string]any{provider.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { provider.RegisterDeclarations("agoda", nil) })
+	t.Cleanup(func() { provider.RegisterDeclarations("gateway", nil) })
 	if m.idleCompactDue(clock()) {
 		t.Error("a profile that declares the cache off: the rule fired")
 	}
@@ -192,7 +192,7 @@ func TestIdleCompact_DeclinesWithNoLifetime(t *testing.T) {
 	// A model that takes no lease has no lifetime until one is measured.
 	m.wiring.Ledger = idledLedger(t, "1h", "qwen3", 20*time.Minute, idleReadUsage)
 	m.modelName = "qwen3"
-	if r := m.wiring.Ledger.CacheReadingFor("agoda", "qwen3"); r.State() != meter.CacheWorks || r.EffectiveLifetime() != 0 {
+	if r := m.wiring.Ledger.CacheReadingFor("gateway", "qwen3"); r.State() != meter.CacheWorks || r.EffectiveLifetime() != 0 {
 		t.Fatalf("the fixture has a lifetime of %v", r.EffectiveLifetime())
 	}
 	if m.idleCompactDue(clock()) {

@@ -75,11 +75,11 @@ func TestProviders_CacheRowReadsTheStore(t *testing.T) {
 // resolves to, from the store, and a profile's declaration first.
 func TestDoctorModel_NamesTheCacheReading(t *testing.T) {
 	readings := []storage.CacheReading{
-		{Provider: "agoda", Endpoint: "default", Model: "claude-sonnet-5-5", Lease: "1h", Requests: 9, WithReads: 8, LastPct: 95},
+		{Provider: "gateway", Endpoint: "default", Model: "claude-sonnet-5-5", Lease: "1h", Requests: 9, WithReads: 8, LastPct: 95},
 		{Provider: "vllm-local", Endpoint: "vllm-local", Model: "qwen3", Requests: 14},
 	}
 	for _, tc := range []struct{ prov, model, want string }{
-		{"agoda", "claude-sonnet-5-5", "anthropic · cache works (95% read last request)"},
+		{"gateway", "claude-sonnet-5-5", "anthropic · cache works (95% read last request)"},
 		{"vllm-local", "qwen3", "anthropic · cache not seen in 14 requests"},
 		{"openai", "gpt-5", "anthropic"},
 	} {
@@ -89,11 +89,11 @@ func TestDoctorModel_NamesTheCacheReading(t *testing.T) {
 		}
 	}
 
-	provider.RegisterDeclarations("agoda", map[string]provider.Declared{
+	provider.RegisterDeclarations("gateway", map[string]provider.Declared{
 		"claude-sonnet-5-5": {Model: map[string]any{provider.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { provider.RegisterDeclarations("agoda", nil) })
-	if f := withCacheNote(doctor.Finding{}, readings, "agoda", "claude-sonnet-5-5"); f.Detail != "cache off (profile agoda)" {
+	t.Cleanup(func() { provider.RegisterDeclarations("gateway", nil) })
+	if f := withCacheNote(doctor.Finding{}, readings, "gateway", "claude-sonnet-5-5"); f.Detail != "cache off (profile gateway)" {
 		t.Errorf("a declared off: %q", f.Detail)
 	}
 }
@@ -101,13 +101,13 @@ func TestDoctorModel_NamesTheCacheReading(t *testing.T) {
 // `shhh providers` says on the cache row what has been measured of the
 // lifetime, and says nothing where no gap has been seen.
 func TestProviders_CacheRowCarriesTheMeasuredLifetime(t *testing.T) {
-	row := cacheRow(storage.CacheReading{Provider: "agoda", Model: "claude-sonnet-5-5", Lease: "1h",
+	row := cacheRow(storage.CacheReading{Provider: "gateway", Model: "claude-sonnet-5-5", Lease: "1h",
 		Requests: 9, WithReads: 8, LastPct: 95,
 		SurvivedMax: 48 * time.Minute, SurvivedN: 6, ExpiredMin: 72 * time.Minute, ExpiredN: 1})
 	if !strings.Contains(row.Detail, "survived 48m, expired by 72m") {
 		t.Errorf("the cache row lacks the lifetime: %q", row.Detail)
 	}
-	quiet := cacheRow(storage.CacheReading{Provider: "agoda", Model: "m", Requests: 9, WithReads: 8})
+	quiet := cacheRow(storage.CacheReading{Provider: "gateway", Model: "m", Requests: 9, WithReads: 8})
 	if strings.Contains(quiet.Detail, "survived") || strings.Contains(quiet.Detail, "expired") {
 		t.Errorf("a row nothing was measured on says a lifetime: %q", quiet.Detail)
 	}
@@ -117,12 +117,12 @@ func TestProviders_CacheRowCarriesTheMeasuredLifetime(t *testing.T) {
 // been seen to work where the model resolves to: there it will never fire.
 func TestDoctorModel_WarnsWhenIdleCompactionCannotFire(t *testing.T) {
 	readings := []storage.CacheReading{
-		{Provider: "agoda", Endpoint: "default", Model: "claude-sonnet-5-5", Lease: "1h", Requests: 9, WithReads: 8, LastPct: 95},
+		{Provider: "gateway", Endpoint: "default", Model: "claude-sonnet-5-5", Lease: "1h", Requests: 9, WithReads: 8, LastPct: 95},
 		{Provider: "vllm-local", Endpoint: "vllm-local", Model: "qwen3", Requests: 14},
 	}
 	var on config.Config
 	on.Behavior.CompactWhenIdle = true
-	ok := withIdleCompactWarning(doctor.Finding{Outcome: "ok"}, on, readings, "agoda", "claude-sonnet-5-5")
+	ok := withIdleCompactWarning(doctor.Finding{Outcome: "ok"}, on, readings, "gateway", "claude-sonnet-5-5")
 	if ok.State != components.DoctorPassed || ok.Outcome != "ok" {
 		t.Errorf("a cache that works needs no warning: %+v", ok)
 	}

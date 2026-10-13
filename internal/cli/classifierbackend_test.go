@@ -35,7 +35,7 @@ func TestDoctorFlows_NamesTheClassifiersBackend(t *testing.T) {
 // never on the decisions backend, and nowhere a flow has nothing to narrow.
 func TestDoctorFlows_NamesANarrowedSchema(t *testing.T) {
 	registerProfile(t, `
-name     = "agoda"
+name     = "gateway"
 base_url = "https://gw.example"
 
 [[models]]
@@ -48,7 +48,7 @@ structured_outputs = false
 `)
 	var cfg config.Config
 	cfg.Behavior.ClassifierModel = "claude-sonnet-5-5"
-	lines := flowsFinding(cfg, "agoda", resolveFlows(cfg, "agoda", "claude-opus-5-5"), false).Fix
+	lines := flowsFinding(cfg, "gateway", resolveFlows(cfg, "gateway", "claude-opus-5-5"), false).Fix
 	line := func(name string) string {
 		for _, l := range lines {
 			if strings.HasPrefix(l, name+" — ") {
@@ -58,11 +58,11 @@ structured_outputs = false
 		t.Fatalf("no %s line in %q", name, lines)
 		return ""
 	}
-	if got, want := line("classifier"), "classifier — claude-sonnet-5-5 · flow key behavior.classifier_model · completion backend · its tool, not a schema (profile agoda)"; got != want {
+	if got, want := line("classifier"), "classifier — claude-sonnet-5-5 · flow key behavior.classifier_model · completion backend · its tool, not a schema (profile gateway)"; got != want {
 		t.Errorf("classifier:\n got %q\nwant %q", got, want)
 	}
 	// The backlog is on the session's model, whose declaration is model-wide.
-	if got := line("backlog"); !strings.HasSuffix(got, " · its tool, not a schema (profile agoda)") {
+	if got := line("backlog"); !strings.HasSuffix(got, " · its tool, not a schema (profile gateway)") {
 		t.Errorf("backlog = %q", got)
 	}
 	// A flow that sends no schema keeps its line unchanged.
@@ -71,7 +71,7 @@ structured_outputs = false
 	}
 
 	cfg.Behavior.ClassifierBackend = "decisions"
-	lines = flowsFinding(cfg, "agoda", resolveFlows(cfg, "agoda", "claude-opus-5-5"), false).Fix
+	lines = flowsFinding(cfg, "gateway", resolveFlows(cfg, "gateway", "claude-opus-5-5"), false).Fix
 	if got := line("classifier"); strings.Contains(got, "schema") {
 		t.Errorf("the decisions backend sends no schema, got %q", got)
 	}

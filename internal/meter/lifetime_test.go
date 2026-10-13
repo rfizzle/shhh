@@ -18,7 +18,7 @@ type scriptProvider struct {
 	n      int
 }
 
-func (s *scriptProvider) Name() string { return "agoda" }
+func (s *scriptProvider) Name() string { return "gateway" }
 
 func (s *scriptProvider) StreamCompletion(_ context.Context, _ []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
 	u := s.script[s.n]
@@ -83,7 +83,7 @@ func TestGate_ObservesSurvivalAcrossAnIdleGap(t *testing.T) {
 	*now = now.Add(5 * time.Second)
 	send(t, p, c.next("c"))
 
-	r := l.CacheReadingFor("agoda", lifeModel)
+	r := l.CacheReadingFor("gateway", lifeModel)
 	if r.SurvivedMax != 48*time.Minute || r.SurvivedN != 1 || r.ExpiredN != 0 {
 		t.Errorf("reading %+v", r)
 	}
@@ -103,7 +103,7 @@ func TestGate_ObservesAnExpiry(t *testing.T) {
 	*now = now.Add(62 * time.Minute)
 	send(t, p, c.next("b"))
 
-	r := l.CacheReadingFor("agoda", lifeModel)
+	r := l.CacheReadingFor("gateway", lifeModel)
 	if r.ExpiredMin != 62*time.Minute || r.ExpiredN != 1 || r.SurvivedN != 0 {
 		t.Fatalf("reading %+v", r)
 	}
@@ -170,7 +170,7 @@ func TestGate_ObservesEachOriginAgainstItsOwnPrevious(t *testing.T) {
 	*now = now.Add(10 * time.Minute)
 	send(t, childP, []provider.Message{{Role: provider.RoleUser, Content: "other"}})
 	send(t, agentP, c.next("b"))
-	if r := l.CacheReadingFor("agoda", lifeModel); r.SurvivedN != 1 || r.SurvivedMax != 10*time.Minute || r.ExpiredN != 0 {
+	if r := l.CacheReadingFor("gateway", lifeModel); r.SurvivedN != 1 || r.SurvivedMax != 10*time.Minute || r.ExpiredN != 0 {
 		t.Errorf("reading %+v", r)
 	}
 }

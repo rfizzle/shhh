@@ -16,7 +16,7 @@ import (
 // idleProvider answers each request with the next usage in its script.
 type idleProvider struct{ script []provider.Usage }
 
-func (*idleProvider) Name() string { return "agoda" }
+func (*idleProvider) Name() string { return "gateway" }
 
 func (p *idleProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
 	u := p.script[0]

@@ -25,9 +25,9 @@ func cacheContextModel(t *testing.T, width int, u provider.Usage) (Model, *meter
 	ledger := meter.New(nil)
 	ledger.SetCacheLease("1h")
 	m := contextModelWith(t, width, func(w *Wiring) {
-		w.Ledger, w.ProviderName, w.ModelName = ledger, "agoda", "claude-sonnet-5-5"
+		w.Ledger, w.ProviderName, w.ModelName = ledger, "gateway", "claude-sonnet-5-5"
 	})
-	ledger.ObserveCache("agoda", "claude-sonnet-5-5", u)
+	ledger.ObserveCache("gateway", "claude-sonnet-5-5", u)
 	m.accumulateUsage(&u)
 	return m, ledger
 }
@@ -299,7 +299,7 @@ func TestContext_IsOfferedInTheRegistryAndTheHelp(t *testing.T) {
 func TestContext_SaysWhetherTheCacheWorked(t *testing.T) {
 	m, _ := cacheContextModel(t, 110, cacheHit)
 	got := m.contextScreenData().Cache
-	want := components.ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%"}
+	want := components.ContextCache{Verdict: "works on gateway", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%"}
 	if got != want {
 		t.Errorf("works: %+v, want %+v", got, want)
 	}
@@ -313,17 +313,17 @@ func TestContext_SaysWhetherTheCacheWorked(t *testing.T) {
 		t.Errorf("one silent request: %q", got)
 	}
 	for range 13 {
-		ledger.ObserveCache("agoda", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000})
+		ledger.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000})
 	}
-	if got := m.contextScreenData().Cache.Verdict; got != "not seen on agoda in 14 requests" {
+	if got := m.contextScreenData().Cache.Verdict; got != "not seen on gateway in 14 requests" {
 		t.Errorf("not seen: %q", got)
 	}
 
-	provider.RegisterDeclarations("agoda", map[string]provider.Declared{
+	provider.RegisterDeclarations("gateway", map[string]provider.Declared{
 		"claude-sonnet-5-5": {Model: map[string]any{provider.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { provider.RegisterDeclarations("agoda", nil) })
-	if got := m.contextScreenData().Cache; got != (components.ContextCache{Verdict: "off (profile agoda)"}) {
+	t.Cleanup(func() { provider.RegisterDeclarations("gateway", nil) })
+	if got := m.contextScreenData().Cache; got != (components.ContextCache{Verdict: "off (profile gateway)"}) {
 		t.Errorf("off: %+v", got)
 	}
 

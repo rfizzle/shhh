@@ -534,8 +534,8 @@ func (c *ContextScreen) cacheRow() string {
 // gateway that strips the marks.
 // See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
 type ContextCache struct {
-	// Verdict is the reading with where it was taken: `works on agoda`,
-	// `not seen on vllm-local in 14 requests`, `off (profile agoda)`. Empty
+	// Verdict is the reading with where it was taken: `works on gateway`,
+	// `not seen on vllm-local in 14 requests`, `off (profile gateway)`. Empty
 	// leaves the row out.
 	Verdict string
 	// Model is the model the reading is for, drawn after a verdict that

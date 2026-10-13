@@ -2734,21 +2734,21 @@ func TestGolden_ContextScreen(t *testing.T) {
 				c.Groups[0].Open = true
 			})},
 			{Label: "the cache row · works, lease confirmed", View: screen(func(c *ContextScreen) {
-				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%"}
+				c.Cache = ContextCache{Verdict: "works on gateway", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%"}
 			})},
 			{Label: "the cache row · an hour written as five minutes", View: screen(func(c *ContextScreen) {
-				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "5m", Share: "0%"}
+				c.Cache = ContextCache{Verdict: "works on gateway", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "5m", Share: "0%"}
 			})},
 			{Label: "the lifetime row", View: screen(func(c *ContextScreen) {
-				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
+				c.Cache = ContextCache{Verdict: "works on gateway", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
 					Lifetime: "survived 48m (6), no expiry seen", Idle: "12m"}
 			})},
 			{Label: "the lifetime row · idle against the moment compacting fires", View: screen(func(c *ContextScreen) {
-				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
+				c.Cache = ContextCache{Verdict: "works on gateway", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
 					Lifetime: "survived 48m (6), no expiry seen", Idle: "12m of 55m"}
 			})},
 			{Label: "the lifetime row · an expiry inside the lease", View: screen(func(c *ContextScreen) {
-				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
+				c.Cache = ContextCache{Verdict: "works on gateway", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%",
 					Lifetime: "survived 8m (3)", Expired: "expired by 12m, lease 1h", Idle: "2m"}
 			})},
 			{Label: "the cache row · not seen", View: screen(func(c *ContextScreen) {

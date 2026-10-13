@@ -99,7 +99,7 @@
   anthropic
   ~312.4k of 1m · 31% full · provider-reported
   cache reads · 298.1k of 312.4k input · 95%
-  cache · works on agoda · claude-sonnet-5-5
+  cache · works on gateway · claude-sonnet-5-5
     lease 1h, confirmed 1h · 95% of the last input
 
   OCCUPANCY BY CATEGORY
@@ -134,7 +134,7 @@
   anthropic
   ~312.4k of 1m · 31% full · provider-reported
   cache reads · 298.1k of 312.4k input · 95%
-  cache · works on agoda · claude-sonnet-5-5
+  cache · works on gateway · claude-sonnet-5-5
     lease 1h, confirmed 5m · 0% of the last input
 
   OCCUPANCY BY CATEGORY
@@ -169,7 +169,7 @@
   anthropic
   ~312.4k of 1m · 31% full · provider-reported
   cache reads · 298.1k of 312.4k input · 95%
-  cache · works on agoda · claude-sonnet-5-5
+  cache · works on gateway · claude-sonnet-5-5
     lease 1h, confirmed 1h · 95% of the last input
   lifetime · survived 48m (6), no expiry seen
     idle 12m
@@ -206,7 +206,7 @@
   anthropic
   ~312.4k of 1m · 31% full · provider-reported
   cache reads · 298.1k of 312.4k input · 95%
-  cache · works on agoda · claude-sonnet-5-5
+  cache · works on gateway · claude-sonnet-5-5
     lease 1h, confirmed 1h · 95% of the last input
   lifetime · survived 48m (6), no expiry seen
     idle 12m of 55m
@@ -243,7 +243,7 @@
   anthropic
   ~312.4k of 1m · 31% full · provider-reported
   cache reads · 298.1k of 312.4k input · 95%
-  cache · works on agoda · claude-sonnet-5-5
+  cache · works on gateway · claude-sonnet-5-5
     lease 1h, confirmed 1h · 95% of the last input
   lifetime · survived 8m (3), expired by 12m, lease 1h
     idle 2m
@@ -413,7 +413,7 @@
   ␛[38;5;245manthropic␛[m
   ␛[38;5;252m~312.4k␛[m␛[38;5;245m of 1m · ␛[m␛[92m31%␛[m␛[38;5;245m full␛[m␛[38;5;245m · provider-reported␛[m
   ␛[38;5;245mcache reads · ␛[m␛[38;5;252m298.1k␛[m␛[38;5;245m of 312.4k input · ␛[m␛[38;5;252m95%␛[m
-  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on agoda␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
+  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on gateway␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245mlease ␛[m␛[38;5;252m1h␛[m␛[38;5;245m, confirmed ␛[m␛[38;5;252m1h␛[m␛[38;5;245m · ␛[m␛[38;5;252m95%␛[m␛[38;5;245m of the last input␛[m
 
   ␛[1;94mOCCUPANCY BY CATEGORY␛[m
@@ -448,7 +448,7 @@
   ␛[38;5;245manthropic␛[m
   ␛[38;5;252m~312.4k␛[m␛[38;5;245m of 1m · ␛[m␛[92m31%␛[m␛[38;5;245m full␛[m␛[38;5;245m · provider-reported␛[m
   ␛[38;5;245mcache reads · ␛[m␛[38;5;252m298.1k␛[m␛[38;5;245m of 312.4k input · ␛[m␛[38;5;252m95%␛[m
-  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on agoda␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
+  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on gateway␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245mlease ␛[m␛[38;5;252m1h␛[m␛[38;5;245m, confirmed ␛[m␛[38;5;214m5m␛[m␛[38;5;245m · ␛[m␛[38;5;252m0%␛[m␛[38;5;245m of the last input␛[m
 
   ␛[1;94mOCCUPANCY BY CATEGORY␛[m
@@ -483,7 +483,7 @@
   ␛[38;5;245manthropic␛[m
   ␛[38;5;252m~312.4k␛[m␛[38;5;245m of 1m · ␛[m␛[92m31%␛[m␛[38;5;245m full␛[m␛[38;5;245m · provider-reported␛[m
   ␛[38;5;245mcache reads · ␛[m␛[38;5;252m298.1k␛[m␛[38;5;245m of 312.4k input · ␛[m␛[38;5;252m95%␛[m
-  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on agoda␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
+  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on gateway␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245mlease ␛[m␛[38;5;252m1h␛[m␛[38;5;245m, confirmed ␛[m␛[38;5;252m1h␛[m␛[38;5;245m · ␛[m␛[38;5;252m95%␛[m␛[38;5;245m of the last input␛[m
   ␛[38;5;245mlifetime · ␛[m␛[38;5;252msurvived 48m (6), no expiry seen␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245midle ␛[m␛[38;5;252m12m␛[m
@@ -520,7 +520,7 @@
   ␛[38;5;245manthropic␛[m
   ␛[38;5;252m~312.4k␛[m␛[38;5;245m of 1m · ␛[m␛[92m31%␛[m␛[38;5;245m full␛[m␛[38;5;245m · provider-reported␛[m
   ␛[38;5;245mcache reads · ␛[m␛[38;5;252m298.1k␛[m␛[38;5;245m of 312.4k input · ␛[m␛[38;5;252m95%␛[m
-  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on agoda␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
+  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on gateway␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245mlease ␛[m␛[38;5;252m1h␛[m␛[38;5;245m, confirmed ␛[m␛[38;5;252m1h␛[m␛[38;5;245m · ␛[m␛[38;5;252m95%␛[m␛[38;5;245m of the last input␛[m
   ␛[38;5;245mlifetime · ␛[m␛[38;5;252msurvived 48m (6), no expiry seen␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245midle ␛[m␛[38;5;252m12m of 55m␛[m
@@ -557,7 +557,7 @@
   ␛[38;5;245manthropic␛[m
   ␛[38;5;252m~312.4k␛[m␛[38;5;245m of 1m · ␛[m␛[92m31%␛[m␛[38;5;245m full␛[m␛[38;5;245m · provider-reported␛[m
   ␛[38;5;245mcache reads · ␛[m␛[38;5;252m298.1k␛[m␛[38;5;245m of 312.4k input · ␛[m␛[38;5;252m95%␛[m
-  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on agoda␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
+  ␛[38;5;245mcache · ␛[m␛[38;5;252mworks on gateway␛[m␛[38;5;245m · claude-sonnet-5-5␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245mlease ␛[m␛[38;5;252m1h␛[m␛[38;5;245m, confirmed ␛[m␛[38;5;252m1h␛[m␛[38;5;245m · ␛[m␛[38;5;252m95%␛[m␛[38;5;245m of the last input␛[m
   ␛[38;5;245mlifetime · ␛[m␛[38;5;252msurvived 8m (3)␛[m␛[38;5;245m, ␛[m␛[38;5;214mexpired by 12m, lease 1h␛[m
   ␛[38;5;245m  ␛[m␛[38;5;245midle ␛[m␛[38;5;252m2m␛[m

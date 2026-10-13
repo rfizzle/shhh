@@ -12,7 +12,7 @@ import (
 func TestStore_CacheReadingUpsertKeepsTheBound(t *testing.T) {
 	db := openTestDB(t)
 	t0 := time.Date(2026, 10, 10, 14, 2, 0, 0, time.UTC)
-	key := CacheReading{Provider: "agoda", Endpoint: "default", Model: "claude-sonnet-5-5", Lease: "1h"}
+	key := CacheReading{Provider: "gateway", Endpoint: "default", Model: "claude-sonnet-5-5", Lease: "1h"}
 
 	first := key
 	first.Requests, first.WithReads, first.WithWrites = 3, 2, 3

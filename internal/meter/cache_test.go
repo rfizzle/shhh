@@ -44,8 +44,8 @@ func TestLedger_CacheReadingWorksOnOneFigure(t *testing.T) {
 		l := New(nil)
 		l.now = func() time.Time { return at }
 		l.SetCacheLease("1h")
-		l.ObserveCache("agoda", "claude-sonnet-5-5", u)
-		r := l.CacheReadingFor("agoda", "claude-sonnet-5-5")
+		l.ObserveCache("gateway", "claude-sonnet-5-5", u)
+		r := l.CacheReadingFor("gateway", "claude-sonnet-5-5")
 		if r.State() != CacheWorks || !r.LastAt.Equal(at) || r.Reports != u.Reports {
 			t.Errorf("one figure: %+v, state %q", r, r.State())
 		}
@@ -56,19 +56,19 @@ func TestLedger_CacheReadingWorksOnOneFigure(t *testing.T) {
 
 	l := New(nil)
 	l.SetCacheLease("1h")
-	l.ObserveCache("agoda", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CachedTokens: 19_000, CacheCreationTokens: 500, CacheCreation1h: 500})
-	r := l.CacheReadingFor("agoda", "claude-sonnet-5-5")
+	l.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CachedTokens: 19_000, CacheCreationTokens: 500, CacheCreation1h: 500})
+	r := l.CacheReadingFor("gateway", "claude-sonnet-5-5")
 	if r.LastShare() != 95 || r.Confirmed != "1h" || r.Downgraded() {
 		t.Errorf("an hour honoured: share %d, %+v", r.LastShare(), r)
 	}
-	l.ObserveCache("agoda", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
-	if r := l.CacheReadingFor("agoda", "claude-sonnet-5-5"); r.Confirmed != "5m" || !r.Downgraded() || r.Requests != 2 || r.LastShare() != 0 {
+	l.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
+	if r := l.CacheReadingFor("gateway", "claude-sonnet-5-5"); r.Confirmed != "5m" || !r.Downgraded() || r.Requests != 2 || r.LastShare() != 0 {
 		t.Errorf("an hour written as five minutes: %+v", r)
 	}
 	// A write that says nothing about its lease leaves the last word as it
 	// was.
-	l.ObserveCache("agoda", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CachedTokens: 20_000})
-	if r := l.CacheReadingFor("agoda", "claude-sonnet-5-5"); r.Confirmed != "5m" {
+	l.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CachedTokens: 20_000})
+	if r := l.CacheReadingFor("gateway", "claude-sonnet-5-5"); r.Confirmed != "5m" {
 		t.Errorf("a read alone revised the lease: %+v", r)
 	}
 }

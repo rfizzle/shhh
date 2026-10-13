@@ -90,10 +90,10 @@
   ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
 
   claude-sonnet-5-5
-  agoda
+  gateway
   ~20.0k of 1m · 2% full · provider-reported
   cache reads · 19.0k of 20.0k input · 95%
-  cache · works on agoda · claude-sonnet-5-5
+  cache · works on gateway · claude-sonnet-5-5
     lease 1h, confirmed 1h · 95% of the last input
 
   OCCUPANCY BY CATEGORY
@@ -190,10 +190,10 @@
   ␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
 
   ␛[1;38;5;254mclaude-sonnet-5-5␛[m
-  ␛[38;5;244magoda␛[m
+  ␛[38;5;244mgateway␛[m
   ␛[38;5;254m~20.0k␛[m␛[38;5;244m of 1m · ␛[m␛[38;5;254m2%␛[m␛[38;5;244m full␛[m␛[38;5;244m · provider-reported␛[m
   ␛[38;5;244mcache reads · ␛[m␛[38;5;254m19.0k␛[m␛[38;5;244m of 20.0k input · ␛[m␛[38;5;254m95%␛[m
-  ␛[38;5;244mcache · ␛[m␛[38;5;254mworks on agoda␛[m␛[38;5;244m · claude-sonnet-5-5␛[m
+  ␛[38;5;244mcache · ␛[m␛[38;5;254mworks on gateway␛[m␛[38;5;244m · claude-sonnet-5-5␛[m
   ␛[38;5;244m  ␛[m␛[38;5;244mlease ␛[m␛[38;5;254m1h␛[m␛[38;5;244m, confirmed ␛[m␛[38;5;254m1h␛[m␛[38;5;244m · ␛[m␛[38;5;254m95%␛[m␛[38;5;244m of the last input␛[m
 
   ␛[1;38;5;254mOCCUPANCY BY CATEGORY␛[m
