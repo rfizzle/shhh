@@ -26,8 +26,10 @@
 # one glyph: the `⏸` the mode chip wears. No monospaced face here carries
 # U+23F8, and without a face on the list that does, agg falls through to the
 # system's colour emoji and draws a blue tile in the middle of a line of text;
-# STIX Two Math ships with macOS and draws it as a glyph in the text's colour. The ground is the dark palette's own,
-# #1c1c1c, so the picture reads as the terminal did.
+# STIX Two Math ships with macOS and draws it as a glyph in the text's colour.
+# The ground is the dark palette's own screen, #0f1117, so the picture reads as
+# the terminal did; #1c1c1c is the band a card is drawn in on it, and as the
+# ground it would erase every card's edge.
 #
 #   scripts/tui/readme-pictures.sh            every picture
 #   scripts/tui/readme-pictures.sh <scene>    only the pictures from one scene
@@ -44,7 +46,7 @@ FONT_SIZE=${FONT_SIZE:-28}
 FONT="JetBrainsMono Nerd Font Mono,JetBrains Mono,Fira Code,SF Mono,Menlo,DejaVu Sans Mono,STIX Two Math"
 # agg's custom theme: the ground, the text, then the sixteen ANSI colours. The
 # interface draws in truecolor, so the sixteen are only a fallback.
-THEME=1c1c1c,d0d0d0,1c1c1c,d75f5f,87af87,d7af5f,5f87d7,af87d7,5fafaf,bcbcbc,585858,ff8787,afd7af,ffd787,87afff,d7afff,87d7d7,eeeeee
+THEME=0f1117,d0d0d0,1c1c1c,d75f5f,87af87,d7af5f,5f87d7,af87d7,5fafaf,bcbcbc,585858,ff8787,afd7af,ffd787,87afff,d7afff,87d7d7,eeeeee
 
 for need in tmux python3 agg asciinema; do
 	command -v $need >/dev/null 2>&1 || { echo "readme-pictures.sh: $need is required" >&2; exit 2; }
