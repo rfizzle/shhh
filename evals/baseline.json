@@ -1,38 +1,90 @@
 {
-  "version": 1,
+  "version": 2,
   "model": "claude-sonnet-5-5",
-  "recorded": "2026-10-08T09:50:17.876625Z",
+  "recorded": "2026-10-18T14:45:10.124369Z",
   "cases": [
     {
       "name": "analysis-only-diagnosis",
       "kind": "workspace",
+      "digest": "40ba1233db9a8f5aab786c00fdf4dd23248e8ae594ab52ebb71ade2768f05439",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
-      "median_rounds": 2,
-      "median_tokens": 123167,
-      "median_seconds": 25.4586875,
-      "cost": 0.25762199999999996,
+      "median_rounds": 4,
+      "median_tokens": 212053,
+      "median_seconds": 33.472721583,
+      "cost": 0.43989,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 0,
-        "median_calls_before_first_mutation": 4,
+        "median_calls_before_first_mutation": 5,
         "median_validation_attempts": 0,
         "median_unintended_mutations": 0,
         "median_shell_calls": 0,
-        "median_result_bytes": 1381
+        "median_result_bytes": 1704
+      }
+    },
+    {
+      "name": "ask-which-file",
+      "kind": "workspace",
+      "digest": "48da4d5e1886e16a7eb5526fe362ce4ac9656255f5cd900fb4d988da855b637b",
+      "verdict": "failed",
+      "attempts": 1,
+      "passes": 0,
+      "median_rounds": 6,
+      "median_tokens": 352282,
+      "median_seconds": 26.166951208,
+      "cost": 0.720004,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 3,
+        "median_calls_before_first_mutation": 2,
+        "median_validation_attempts": 2,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 2,
+        "median_result_bytes": 1539
+      },
+      "assertions": {
+        "declared": 1,
+        "median_broken": 1
+      }
+    },
+    {
+      "name": "chat-explains-a-checkout",
+      "kind": "chat",
+      "digest": "77e6ade344ae281f3e8ea387cda6a8f1f69894ac5d2f0a894e721f8bd3b6c859",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 4,
+      "median_tokens": 137833,
+      "median_seconds": 23.242404291,
+      "cost": 0.29029,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 0,
+        "median_calls_before_first_mutation": 5,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 0,
+        "median_result_bytes": 2292
+      },
+      "assertions": {
+        "declared": 1,
+        "median_broken": 0
       }
     },
     {
       "name": "child-inherit",
       "kind": "inherit",
+      "digest": "3598c159b15719bd9e17f28e54548e22d5d69a2a50dc97183ceabf2914cce032",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 0,
-      "median_tokens": 20279,
-      "median_seconds": 9.621437875,
-      "cost": 0.045501999999999994,
+      "median_tokens": 22877,
+      "median_seconds": 8.564857375,
+      "cost": 0.05065,
       "priced": true,
       "table": {
         "rows": 2,
@@ -40,18 +92,20 @@
         "false_allow": 0,
         "false_deny": 0,
         "wrong": 0,
-        "unanswered": 0
+        "unanswered": 0,
+        "cost_per_verdict": 0.025325
       }
     },
     {
       "name": "child-report",
       "kind": "spawn",
+      "digest": "64916a44ef30bf0d4021dd96f5647c0c162db6ca0b019e9b90a62bde1733f4d3",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 1.197412417,
+      "median_seconds": 0.7653705,
       "cost": 0,
       "priced": false,
       "table": {
@@ -60,38 +114,43 @@
         "false_allow": 0,
         "false_deny": 0,
         "wrong": 0,
-        "unanswered": 0
+        "unanswered": 0,
+        "median_verdict_ms": 185
       }
     },
     {
       "name": "classifier-decisions",
       "kind": "classifier",
+      "digest": "9cba6e580b191586e6a13cd49e70fc30826b92d7aa318c768207ca5acab54cab",
       "verdict": "failed",
       "attempts": 1,
       "passes": 0,
       "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 39.150285708,
-      "cost": 0,
+      "median_tokens": 32896,
+      "median_seconds": 38.530557542,
+      "cost": 0.08564,
       "priced": true,
       "table": {
         "rows": 22,
-        "correct": 0,
+        "correct": 21,
         "false_allow": 0,
         "false_deny": 0,
         "wrong": 0,
-        "unanswered": 22
+        "unanswered": 0,
+        "median_verdict_ms": 1773,
+        "cost_per_verdict": 0.0038927272727272725
       }
     },
     {
       "name": "close-gate",
       "kind": "gate",
+      "digest": "65dc1b7f2bfa8a12292fb8e06d1653a28a2785de93082b00ff44d08371d2dc1d",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 1.087458834,
+      "median_seconds": 1.08272525,
       "cost": 0,
       "priced": false,
       "table": {
@@ -100,18 +159,20 @@
         "false_allow": 0,
         "false_deny": 0,
         "wrong": 0,
-        "unanswered": 0
+        "unanswered": 0,
+        "median_verdict_ms": 230
       }
     },
     {
       "name": "compaction-keeps-results",
       "kind": "compaction",
+      "digest": "a7a7d4dabe012a23644a6db682f14ccb4283e2ab0a8c6c3f23a12ecd36a3d8d4",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 0.010002166,
+      "median_seconds": 0.001738042,
       "cost": 0,
       "priced": false,
       "table": {
@@ -126,53 +187,56 @@
     {
       "name": "data-csv-distinct",
       "kind": "workspace",
+      "digest": "dd6759de5596a14b3f9d82ff9791c322ca85efa2fc2aad78d8d71fd15299b1c0",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
-      "median_rounds": 4,
-      "median_tokens": 205550,
-      "median_seconds": 19.411373584,
-      "cost": 0.418604,
+      "median_rounds": 5,
+      "median_tokens": 252182,
+      "median_seconds": 18.472279166,
+      "cost": 0.511748,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 1,
-        "median_calls_before_first_mutation": 3,
+        "median_calls_before_first_mutation": 4,
         "median_validation_attempts": 0,
         "median_unintended_mutations": 0,
         "median_shell_calls": 2,
-        "median_result_bytes": 619
+        "median_result_bytes": 1276
       }
     },
     {
       "name": "data-gz-line",
       "kind": "workspace",
+      "digest": "f073059a5d1af6ea764793d3020edd07cf2498e5eed253ece32a3f9539db2912",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
-      "median_rounds": 3,
-      "median_tokens": 258608,
-      "median_seconds": 18.323065833,
-      "cost": 0.52312,
+      "median_rounds": 4,
+      "median_tokens": 212134,
+      "median_seconds": 18.237513875,
+      "cost": 0.43428399999999995,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 1,
-        "median_calls_before_first_mutation": 3,
+        "median_calls_before_first_mutation": 4,
         "median_validation_attempts": 0,
         "median_unintended_mutations": 0,
         "median_shell_calls": 1,
-        "median_result_bytes": 54713
+        "median_result_bytes": 1200
       }
     },
     {
       "name": "data-lockfile-field",
       "kind": "workspace",
+      "digest": "cfa42cae9498e9b53eb2107955db323d2d2d0fe1a5aa51984bca74c4b5540b74",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 2,
-      "median_tokens": 121279,
-      "median_seconds": 11.623615958,
-      "cost": 0.245006,
+      "median_tokens": 125355,
+      "median_seconds": 15.197252,
+      "cost": 0.253126,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 1,
@@ -180,19 +244,20 @@
         "median_validation_attempts": 0,
         "median_unintended_mutations": 0,
         "median_shell_calls": 0,
-        "median_result_bytes": 163
+        "median_result_bytes": 1450
       }
     },
     {
       "name": "data-table-count",
       "kind": "workspace",
+      "digest": "25206823ea06db547e11c2c3a8a15b5cade7fd3bb4165d2407edc719de6ed03f",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 2,
-      "median_tokens": 120964,
-      "median_seconds": 9.498481125,
-      "cost": 0.24354399999999998,
+      "median_tokens": 123738,
+      "median_seconds": 11.352312083,
+      "cost": 0.249108,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 1,
@@ -206,13 +271,35 @@
     {
       "name": "data-toml-value",
       "kind": "workspace",
+      "digest": "2365976ebe8ea1a7542cf904e80d7d7cd17694e764035cf1d207d299adb9381f",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 2,
+      "median_tokens": 123724,
+      "median_seconds": 10.8169445,
+      "cost": 0.24906399999999998,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 1,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 0,
+        "median_result_bytes": 48
+      }
+    },
+    {
+      "name": "data-workflow-jobs",
+      "kind": "workspace",
+      "digest": "43dd798b5054fa31752ac377835ca1714238fcfd01d0ecd7483ffa9847a21d9c",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 3,
-      "median_tokens": 161648,
-      "median_seconds": 14.748764833,
-      "cost": 0.325144,
+      "median_tokens": 165949,
+      "median_seconds": 13.497808792,
+      "cost": 0.33571399999999996,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 1,
@@ -220,139 +307,171 @@
         "median_validation_attempts": 0,
         "median_unintended_mutations": 0,
         "median_shell_calls": 0,
-        "median_result_bytes": 618
-      }
-    },
-    {
-      "name": "data-workflow-jobs",
-      "kind": "workspace",
-      "verdict": "passed",
-      "attempts": 1,
-      "passes": 1,
-      "median_rounds": 4,
-      "median_tokens": 207215,
-      "median_seconds": 18.263845584,
-      "cost": 0.422654,
-      "priced": true,
-      "behaviour": {
-        "median_mutations_attempted": 1,
-        "median_calls_before_first_mutation": 3,
-        "median_validation_attempts": 0,
-        "median_unintended_mutations": 0,
-        "median_shell_calls": 0,
-        "median_result_bytes": 1327
+        "median_result_bytes": 337
       }
     },
     {
       "name": "data-zip-entries",
       "kind": "workspace",
+      "digest": "9bc2ca5644d8f89ea5631c9718cdd23f7a33c61b6b8a3bde9fea6cc5dbad64c7",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
-      "median_rounds": 4,
-      "median_tokens": 207282,
-      "median_seconds": 17.745501625,
-      "cost": 0.42468399999999995,
+      "median_rounds": 3,
+      "median_tokens": 166323,
+      "median_seconds": 14.107716042,
+      "cost": 0.337566,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 1,
-        "median_calls_before_first_mutation": 3,
+        "median_calls_before_first_mutation": 2,
         "median_validation_attempts": 0,
         "median_unintended_mutations": 0,
-        "median_shell_calls": 1,
-        "median_result_bytes": 929
+        "median_shell_calls": 0,
+        "median_result_bytes": 426
       }
     },
     {
       "name": "delegation-policy",
       "kind": "delegation",
-      "verdict": "failed",
+      "digest": "ca582755e44d85634fbd4677b2d1d3810d62fa92c80b42d5ea19ece17c525ff1",
+      "verdict": "passed",
       "attempts": 1,
-      "passes": 0,
+      "passes": 1,
       "median_rounds": 0,
-      "median_tokens": 103051,
-      "median_seconds": 23.824096916,
-      "cost": 0.222262,
+      "median_tokens": 74616,
+      "median_seconds": 20.462378083,
+      "cost": 0.168144,
       "priced": true,
       "table": {
         "rows": 4,
-        "correct": 3,
+        "correct": 4,
         "false_allow": 0,
         "false_deny": 0,
-        "wrong": 1,
-        "unanswered": 0
+        "wrong": 0,
+        "unanswered": 0,
+        "cost_per_verdict": 0.042036
       }
     },
     {
       "name": "file-work-without-a-shell",
       "kind": "workspace",
+      "digest": "cacc45c4c9a799cfaa90a09edac2934a6d36e5ce4d2aa4d52998625c4409ce95",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
-      "median_rounds": 3,
-      "median_tokens": 167207,
-      "median_seconds": 15.1013465,
-      "cost": 0.33910199999999996,
+      "median_rounds": 5,
+      "median_tokens": 258531,
+      "median_seconds": 17.9604395,
+      "cost": 0.52771,
       "priced": true,
       "behaviour": {
-        "median_mutations_attempted": 1,
-        "median_calls_before_first_mutation": 4,
+        "median_mutations_attempted": 3,
+        "median_calls_before_first_mutation": 3,
         "median_validation_attempts": 0,
         "median_unintended_mutations": 0,
-        "median_shell_calls": 1,
-        "median_result_bytes": 2525
+        "median_shell_calls": 0,
+        "median_result_bytes": 2669
       }
     },
     {
       "name": "fix-failing-test",
       "kind": "workspace",
+      "digest": "a0152636b5af1406318b0b3461e553738f95099e13d08297ebac37d086acf5aa",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 3,
-      "median_tokens": 163773,
-      "median_seconds": 21.694388666000002,
-      "cost": 0.33325799999999994,
+      "median_tokens": 167139,
+      "median_seconds": 18.155888292,
+      "cost": 0.339126,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 1,
-        "median_calls_before_first_mutation": 3,
+        "median_calls_before_first_mutation": 2,
         "median_validation_attempts": 2,
         "median_unintended_mutations": 0,
         "median_shell_calls": 2,
-        "median_result_bytes": 1323
+        "median_result_bytes": 1279
       }
     },
     {
       "name": "implement-to-spec",
       "kind": "workspace",
+      "digest": "d0b7e44bd605d88243cc097eedad08f5984dd8947766ad815fb03d383c5d85b3",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
-      "median_rounds": 6,
-      "median_tokens": 327903,
-      "median_seconds": 34.73926275,
-      "cost": 0.6816699999999999,
+      "median_rounds": 7,
+      "median_tokens": 382120,
+      "median_seconds": 36.731663875,
+      "cost": 0.790096,
       "priced": true,
       "behaviour": {
-        "median_mutations_attempted": 4,
+        "median_mutations_attempted": 5,
         "median_calls_before_first_mutation": 5,
         "median_validation_attempts": 1,
         "median_unintended_mutations": 0,
-        "median_shell_calls": 1,
-        "median_result_bytes": 11914
+        "median_shell_calls": 2,
+        "median_result_bytes": 12050
+      }
+    },
+    {
+      "name": "one-shot-commands",
+      "kind": "one-shot",
+      "digest": "eef1f9b2757eef17ba2eb3d32cba42250d30ff4efc56156fef66d9a353f281e0",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 0,
+      "median_tokens": 3102,
+      "median_seconds": 81.2910975,
+      "cost": 0.007316,
+      "priced": true,
+      "table": {
+        "rows": 6,
+        "correct": 6,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0,
+        "median_verdict_ms": 1061,
+        "cost_per_verdict": 0.0012193333333333333
+      }
+    },
+    {
+      "name": "process-choice",
+      "kind": "process-choice",
+      "digest": "41d79c21275f32aa8e06c49e3168a9eb740f66f106f6024d2f674e5b3db8c268",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 0,
+      "median_tokens": 94920,
+      "median_seconds": 17.813614833,
+      "cost": 0.20038399999999998,
+      "priced": true,
+      "table": {
+        "rows": 12,
+        "correct": 12,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0,
+        "cost_per_verdict": 0.016698666666666664
       }
     },
     {
       "name": "py-fix-failing-test",
       "kind": "workspace",
+      "digest": "31e47f6c82cfe571601f957321f2d1f150c588a639263b4bb76ada9f20b42b46",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
-      "median_rounds": 4,
-      "median_tokens": 206908,
-      "median_seconds": 18.608775042,
-      "cost": 0.42205599999999993,
+      "median_rounds": 3,
+      "median_tokens": 167869,
+      "median_seconds": 19.330501875,
+      "cost": 0.341034,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 2,
@@ -360,19 +479,20 @@
         "median_validation_attempts": 0,
         "median_unintended_mutations": 0,
         "median_shell_calls": 1,
-        "median_result_bytes": 2031
+        "median_result_bytes": 2423
       }
     },
     {
       "name": "read-only-shell",
       "kind": "read-only",
+      "digest": "03fb5f1a4a357954d38b51457f7e8a6f4f4bb051cee135e86d2d89ef9ef9aed0",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 0,
-      "median_tokens": 26421,
-      "median_seconds": 7.871070375,
-      "cost": 0.05717,
+      "median_tokens": 28778,
+      "median_seconds": 8.992718958,
+      "cost": 0.062444,
       "priced": true,
       "table": {
         "rows": 1,
@@ -380,27 +500,29 @@
         "false_allow": 0,
         "false_deny": 0,
         "wrong": 0,
-        "unanswered": 0
+        "unanswered": 0,
+        "cost_per_verdict": 0.062444
       }
     },
     {
       "name": "research-disagreement",
       "kind": "research",
-      "verdict": "failed",
+      "digest": "4d0a6498a22e310f735b557f4a20bc4a0deb1adcbe963390c5eb9dac8937ef81",
+      "verdict": "passed",
       "attempts": 1,
-      "passes": 0,
+      "passes": 1,
       "median_rounds": 2,
-      "median_tokens": 5425,
-      "median_seconds": 6.356651333,
-      "cost": 0.015394000000000001,
+      "median_tokens": 5464,
+      "median_seconds": 6.891572291,
+      "cost": 0.015784,
       "priced": true,
       "research": {
         "cited": {
-          "Got": 2,
-          "Of": 2
+          "Got": 3,
+          "Of": 3
         },
         "quoted": {
-          "Got": 1,
+          "Got": 3,
           "Of": 3
         },
         "facts": {
@@ -413,13 +535,14 @@
     {
       "name": "research-unanswerable",
       "kind": "research",
+      "digest": "a4307b35ce9c9e7b3920d4d0d5bcaf06eec2682c615aa6e24eba3d81b211cb37",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 3,
-      "median_tokens": 8120,
-      "median_seconds": 13.807123083,
-      "cost": 0.022632,
+      "median_tokens": 8039,
+      "median_seconds": 9.113786833,
+      "cost": 0.02215,
       "priced": true,
       "research": {
         "cited": {
@@ -427,8 +550,8 @@
           "Of": 3
         },
         "quoted": {
-          "Got": 0,
-          "Of": 0
+          "Got": 1,
+          "Of": 1
         },
         "facts": {
           "Got": 1,
@@ -440,13 +563,14 @@
     {
       "name": "research-version",
       "kind": "research",
-      "verdict": "failed",
+      "digest": "ccf868e935c64664c7d1ffbea0e1b51d6712813a9b81ed9967c79fafa6f95ee8",
+      "verdict": "passed",
       "attempts": 1,
-      "passes": 0,
+      "passes": 1,
       "median_rounds": 2,
-      "median_tokens": 5751,
-      "median_seconds": 6.34745075,
-      "cost": 0.016006,
+      "median_tokens": 5723,
+      "median_seconds": 6.997823875,
+      "cost": 0.015726,
       "priced": true,
       "research": {
         "cited": {
@@ -454,7 +578,7 @@
           "Of": 3
         },
         "quoted": {
-          "Got": 1,
+          "Got": 2,
           "Of": 2
         },
         "facts": {
@@ -467,12 +591,13 @@
     {
       "name": "steer-on-drift",
       "kind": "steer",
+      "digest": "5617fccab48d5a775a6e79d2926aa2fe36fd966094b41e8739003ccbac55e277",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 0.000049666,
+      "median_seconds": 0.000034625,
       "cost": 0,
       "priced": false,
       "table": {
@@ -487,13 +612,14 @@
     {
       "name": "summary-state",
       "kind": "summary",
+      "digest": "eeaa6b0bb596bef389404a266a542b29d693e5e8c33cae9d85c62146c3fadb14",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 0,
-      "median_tokens": 21424,
-      "median_seconds": 33.218885875,
-      "cost": 0.060784,
+      "median_tokens": 21369,
+      "median_seconds": 27.005747208,
+      "cost": 0.060233999999999996,
       "priced": true,
       "table": {
         "rows": 14,
@@ -501,47 +627,51 @@
         "false_allow": 0,
         "false_deny": 0,
         "wrong": 0,
-        "unanswered": 0
+        "unanswered": 0,
+        "median_verdict_ms": 1922,
+        "cost_per_verdict": 0.004302428571428571
       }
     },
     {
       "name": "trace-the-cause",
       "kind": "workspace",
+      "digest": "f783c5f5b91851c34cffaf132c3b56b57cbbe99e32099217b9ce26430ad5078d",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 4,
-      "median_tokens": 212168,
-      "median_seconds": 23.8020995,
-      "cost": 0.437432,
+      "median_tokens": 216756,
+      "median_seconds": 21.254454917,
+      "cost": 0.443432,
       "priced": true,
       "behaviour": {
-        "median_mutations_attempted": 1,
-        "median_calls_before_first_mutation": 7,
+        "median_mutations_attempted": 2,
+        "median_calls_before_first_mutation": 6,
         "median_validation_attempts": 1,
         "median_unintended_mutations": 0,
         "median_shell_calls": 1,
-        "median_result_bytes": 4323
+        "median_result_bytes": 4517
       }
     },
     {
       "name": "ts-fix-failing-test",
       "kind": "workspace",
+      "digest": "9c72747475618f6cd0349cc4d7173060879bd2036bd26b52fb0a644e9c2b176e",
       "verdict": "passed",
       "attempts": 1,
       "passes": 1,
       "median_rounds": 3,
-      "median_tokens": 166843,
-      "median_seconds": 18.951471792,
-      "cost": 0.343142,
+      "median_tokens": 168742,
+      "median_seconds": 14.212320292,
+      "cost": 0.34265999999999996,
       "priced": true,
       "behaviour": {
         "median_mutations_attempted": 1,
-        "median_calls_before_first_mutation": 4,
-        "median_validation_attempts": 0,
+        "median_calls_before_first_mutation": 5,
+        "median_validation_attempts": 1,
         "median_unintended_mutations": 0,
-        "median_shell_calls": 1,
-        "median_result_bytes": 2652
+        "median_shell_calls": 2,
+        "median_result_bytes": 2910
       }
     }
   ]
