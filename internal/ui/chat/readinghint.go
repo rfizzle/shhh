@@ -218,16 +218,6 @@ func seg(b keys.Binding) hintSeg { return segAs(b, keys.Words(b)) }
 // where every row's offers are made (components.OfferAs).
 func segAs(b keys.Binding, label string) hintSeg { return components.OfferAs(b, label) }
 
-// twoPress is the segment for a key that acts on its second press, with the
-// count stated before the first press rather than after it. A row that says
-// `×2` only once the window is open has taught the reader nothing until they
-// have already pressed the key once without meaning to, and the two keys this
-// applies to are the two that end a turn and a session
-// (docs/interface/surfaces.md#the-input-frame).
-func twoPress(b keys.Binding, label string) hintSeg {
-	return hintSeg{Key: keys.Bracket(b), Label: "×2 " + label}
-}
-
 // The reading bar's order of giving things up, written as the priority each
 // segment is built with (components.Shed): `[?]` goes first, then a key
 // stated absent with its reason, then [/], then [c], then [n/N], then a live

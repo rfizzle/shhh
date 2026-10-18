@@ -537,23 +537,19 @@ func (m Model) keyListHint() hintSeg {
 	return segAs(keys.Draft.KeyList, keys.Words(keys.Screen.List))
 }
 
-// ctrlCHint is the foot row's one offer for the one quit chord, whatever the
-// press would do now: cancel a held turn, stop a working run, clear a draft,
-// or (idle and empty) arm the quit, whose count is stated before the first
-// press because the first press is silent by design (cancel.go). It is the
-// single place the chord's wording is decided, so a re-ranking of the rail
-// moves the segment's givesUp where it is placed and never the words.
+// ctrlCHint is the foot row's one offer for the one quit chord on the three
+// feet that draw it: a held turn (cancel it), a working run or a waiting
+// decision (stop the run). The idle foot does not draw it: the quit is named
+// in the key list, and `[ctrl+c] again quits` shows once the first press has
+// opened its window (armedHint, cancel.go). It is the single place the
+// chord's wording is decided, so a re-ranking of the rail moves the
+// segment's givesUp where it is placed and never the words.
 func (m Model) ctrlCHint() hintSeg {
-	chord := quitChord()
-	switch {
-	case m.heldAtBoundary():
-		return hintSeg{Key: keys.Bracketed(chord), Label: "cancel it"}
-	case m.working() || m.decisionUngated():
-		return hintSeg{Key: keys.Bracketed(chord), Label: "stop the run"}
-	case strings.TrimSpace(m.input.Value()) != "":
-		return hintSeg{Key: keys.Bracketed(chord), Label: "clear"}
+	label := "stop the run"
+	if m.heldAtBoundary() {
+		label = "cancel it"
 	}
-	return twoPress(keys.Draft.Cancel, "quit")
+	return hintSeg{Key: keys.Bracketed(quitChord()), Label: label}
 }
 
 // promptGutter is the input's leading glyph. The glyph is ▸ and only the
