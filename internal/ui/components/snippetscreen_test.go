@@ -152,7 +152,7 @@ func TestSnippetScreen_FilterMatchesTheCommandAndSaysSo(t *testing.T) {
 	if !strings.Contains(head, `filtered by "xargs"`) {
 		t.Fatalf("the header does not state the filter: %q", head)
 	}
-	if !strings.Contains(ansi.Strip(s.View(130)), "hidden by the filter") {
+	if !strings.Contains(ansi.Strip(s.View(130)), "hidden") {
 		t.Fatal("the screen does not count what the filter hid")
 	}
 }

@@ -234,10 +234,18 @@ func (l *listScreen[T]) hiddenRows(total int, hidden func(n int) string, width i
 	if n <= 0 {
 		return nil
 	}
-	row := sty.dim.Render(hidden(n)+" hidden by the filter · ") +
-		sty.key.Render(keys.Bracket(keys.Screen.Quit)) + sty.dim.Render(" clear it")
+	// esc is the safe answer and stays whole: a narrow pane first says the
+	// count in fewer words, and only then lets it go, so the row is fitted
+	// through Fit rather than clipped through the clear-it offer.
+	clear := keyOfferAs(keys.Screen.Quit, "clear it")
+	tones := liveTones()
+	row := tones.Fit([]KeyOffer{{Label: hidden(n) + " hidden"}, clear}, width)
+	full := []KeyOffer{{Label: hidden(n) + " hidden by the filter"}, clear}
+	if tones.Width(full) <= width {
+		row = tones.Join(full)
+	}
 
-	return []string{screenRule(width), Clip(row, width)}
+	return []string{screenRule(width), row}
 }
 
 // movedShown walks the pointer over the rows showing and reports whether the

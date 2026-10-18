@@ -14,7 +14,7 @@ snap 02-moved "du -ah . | sort -rh | head -10" "the ten biggest files here"
 keys /
 snap 03-filter-open "type to filter by name or by command"
 keys "xargs"
-snap 04-filtered "1 of 3 match" "2 snippets hidden by the filter" "filtered by \"xargs\""
+snap 04-filtered "1 of 3 match" "2 snippets hidden" "filtered by \"xargs\""
 keys Escape
 snap 05-cleared "3 of 3 match"
 keys Escape

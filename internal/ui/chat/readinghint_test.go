@@ -726,3 +726,25 @@ func TestReading_EscClosesBeforeItLeaves(t *testing.T) {
 		t.Fatal("the second esc, with nothing open, should leave reading mode")
 	}
 }
+
+// A budget that cannot hold every row of the stacked run gives up the rows
+// before esc, never esc: the safe answer is named at every width.
+func TestStackSegs_TheBudgetNeverDropsTheEscRow(t *testing.T) {
+	segs := []hintSeg{
+		segAs(keys.Screen.Delete, "remove this row now"),
+		segAs(keys.Screen.Copy, "copy this row whole"),
+		segAs(keys.Select.Cancel, "nothing"),
+	}
+	for _, width := range goldenWidths {
+		for budget := 1; budget <= 3; budget++ {
+			lines := stackSegs(segs, "▎", width, budget)
+			if len(lines) == 0 || len(lines) > budget {
+				t.Fatalf("width %d budget %d: %d rows", width, budget, len(lines))
+			}
+			last := ansi.Strip(lines[len(lines)-1])
+			if !strings.Contains(last, "[esc] nothing") {
+				t.Errorf("width %d budget %d: the last row is %q, want it to end on the esc offer", width, budget, last)
+			}
+		}
+	}
+}

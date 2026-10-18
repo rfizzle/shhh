@@ -645,7 +645,9 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 		lines = append(lines, clipRow(rail+row, width))
 	}
 	if len(lines) > budget {
-		lines = lines[:budget]
+		// The run ends on esc, the safe answer, and a budget that cannot hold
+		// every row gives up the rows before it, never that one.
+		lines = append(lines[:budget-1], lines[len(lines)-1])
 	}
 	return lines
 }
