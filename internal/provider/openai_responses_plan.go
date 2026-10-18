@@ -22,32 +22,52 @@ import (
 
 const (
 	chatGPTName = "chatgpt"
-	// chatGPTKeyEnv is what the auth row offers in place of a variable to
-	// set: the plan has no key, and the one remedy for a refused token is to
-	// sign in again.
-	chatGPTKeyEnv = "shhh providers login chatgpt"
 	// chatGPTResolveWait bounds the token asked for while the provider is
 	// built. A source that has to refresh first waits on a lock another
 	// process may hold and then on the sign-in server; a minute is twice
 	// the lock's own bound, and past it the session is better told it could
 	// not start than left at a blank screen.
 	chatGPTResolveWait = time.Minute
-	// planToolNamespace is the one group shhh's tools travel in on this
-	// route, and planToolNamespaceDescription what the model reads about the
-	// group itself. The description says nothing about any tool: each
-	// function inside keeps its own name and description, so the model is
-	// told about the tools exactly what it is told on every other route.
-	planToolNamespace            = "shhh"
+	// planToolNamespaceDescription is what the model reads about the one
+	// group the caller's tools travel in on this route (planToolNamespace).
+	// The description says nothing about any tool: each function inside
+	// keeps its own name and description, so the model is told about the
+	// tools exactly what it is told on every other route.
 	planToolNamespaceDescription = "The tools this session can call."
 	// maxPlanCatalog bounds the model list read off the wire. The catalog is
 	// a few dozen entries; a body past a megabyte is not one.
 	maxPlanCatalog = 1 << 20
 )
 
+// chatGPTKeyEnv is what the auth row offers in place of a variable to set:
+// the plan has no key, and the one remedy for a refused token is to sign in
+// again. It is the caller's own sign-in command.
+func chatGPTKeyEnv() string {
+	if hint := caller().SignInHint; hint != "" {
+		return hint
+	}
+	return "sign in to ChatGPT"
+}
+
+// planToolNamespace is the group the caller's tools travel in: its name.
+func planToolNamespace() string { return caller().Name }
+
+// signedOut is the error behind ErrChatGPTSignedOut. It is a comparable value
+// so that errors.Is matches it, and its words are read when it is printed,
+// not when the program starts, so they name the caller set by SetApp.
+type signedOut struct{}
+
+func (signedOut) Error() string {
+	if hint := caller().SignInHint; hint != "" {
+		return "not signed in to ChatGPT; run `" + hint + "`"
+	}
+	return "not signed in to ChatGPT"
+}
+
 // ErrChatGPTSignedOut is the resolution failure of a plan session with no
 // credential to send. It names the command, because the setup that fixes it
 // is a sign-in in a browser, not a key anybody can paste.
-var ErrChatGPTSignedOut = errors.New("not signed in to ChatGPT; run `shhh providers login chatgpt`")
+var ErrChatGPTSignedOut error = signedOut{}
 
 // NewChatGPT builds the plan route. It reads no key from anywhere — not the
 // flag, the environment or the config file — and points at OpenAI's own
@@ -89,7 +109,7 @@ func NewChatGPT(opts ResolveOpts) (*OpenAIResponses, error) {
 		name:     chatGPTName,
 		route:    routeChatGPTPlan,
 		tokens:   opts.TokenSource,
-		classify: newClassifier(chatGPTName, chatGPTKeyEnv, ""),
+		classify: newClassifier(chatGPTName, chatGPTKeyEnv(), ""),
 	}
 	p.SetStreamIdle(opts.StreamIdleSeconds)
 	return p, nil
@@ -108,7 +128,7 @@ func (o *OpenAIResponses) tokenFailure(err error) error {
 		Class:    ClassAuth,
 		Provider: o.name,
 		Message:  bound(err.Error()),
-		KeyEnv:   chatGPTKeyEnv,
+		KeyEnv:   chatGPTKeyEnv(),
 		err:      err,
 	}
 	record(f)
@@ -118,7 +138,7 @@ func (o *OpenAIResponses) tokenFailure(err error) error {
 // shapeForPlan holds a built request to the plan route's limits, and is the
 // only place that does: each limit is one line here, so a limit OpenAI
 // lifts is a line deleted. It returns how a call's wire name maps back to
-// shhh's, or nil when the request carries no tools.
+// the caller's, or nil when the request carries no tools.
 //
 // Three kinds of line. The docs require store off and streaming on, the
 // history whole in input and the system prompt in instructions, which the
@@ -160,7 +180,7 @@ func shapeForPlan(req *responsesRequest) toolNamer {
 	// documents and the one that keeps tools where every request puts them.
 	req.Tools = []responsesTool{{
 		Type:        "namespace",
-		Name:        planToolNamespace,
+		Name:        planToolNamespace(),
 		Description: planToolNamespaceDescription,
 		Tools:       req.Tools,
 	}}
@@ -168,7 +188,7 @@ func shapeForPlan(req *responsesRequest) toolNamer {
 	// way the model's own call item named it.
 	for i := range req.Input {
 		if req.Input[i].Type == "function_call" {
-			req.Input[i].Namespace = planToolNamespace
+			req.Input[i].Namespace = planToolNamespace()
 		}
 	}
 	return rename
@@ -212,8 +232,8 @@ func hasAudioPart(parts []responseContent) bool {
 
 // planToolNames maps a call back to the tool shhh registered. The docs'
 // shape keeps the function's own name and says the group beside it, so the
-// name is usually already shhh's; a model that writes the group into the
-// name instead ("shhh.read_file") is mapped back too, and only to a tool
+// name is usually already the caller's; a model that writes the group into the
+// name instead ("group.read_file") is mapped back too, and only to a tool
 // this request carried. Anything else is passed through as it came, and the
 // session refuses it as an unknown tool the way it would on any route.
 func planToolNames(tools []responsesTool) toolNamer {
@@ -225,7 +245,7 @@ func planToolNames(tools []responsesTool) toolNamer {
 		if known[name] {
 			return name
 		}
-		if local, ok := strings.CutPrefix(name, planToolNamespace+"."); ok && known[local] {
+		if local, ok := strings.CutPrefix(name, planToolNamespace()+"."); ok && known[local] {
 			return local
 		}
 		return name
@@ -257,7 +277,7 @@ func (o *OpenAIResponses) planAttachments(messages []Message) error {
 // is not written to the failure log: no request was refused by anybody but
 // shhh, and the reason is on the screen.
 func (o *OpenAIResponses) refuse(class Class, param, message string) *Failure {
-	return &Failure{Class: class, Provider: o.name, Message: message, Param: param, KeyEnv: chatGPTKeyEnv}
+	return &Failure{Class: class, Provider: o.name, Message: message, Param: param, KeyEnv: chatGPTKeyEnv()}
 }
 
 // planHTTPError reads a refusal on the plan route, which comes in two

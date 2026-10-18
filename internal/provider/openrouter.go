@@ -35,13 +35,13 @@ type OpenRouter struct {
 }
 
 func NewOpenRouter(opts ResolveOpts) (*OpenRouter, error) {
-	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("OPENROUTER_API_KEY"), opts.ConfigAPIKey)
+	key := first(opts.APIKey, os.Getenv(apiKeyVar()), os.Getenv("OPENROUTER_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
-		return nil, fmt.Errorf("SHHH_API_KEY or OPENROUTER_API_KEY is not set")
+		return nil, fmt.Errorf("%s is not set", keyVars("OPENROUTER_API_KEY"))
 	}
 
 	model := first(opts.Model, defaultOpenRouterModel)
-	baseURL := first(opts.BaseURL, os.Getenv("SHHH_BASE_URL"), opts.ConfigBaseURL, defaultOpenRouterBaseURL)
+	baseURL := first(opts.BaseURL, os.Getenv(baseURLVar()), opts.ConfigBaseURL, defaultOpenRouterBaseURL)
 
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = baseURL
@@ -55,7 +55,7 @@ func NewOpenRouter(opts ResolveOpts) (*OpenRouter, error) {
 		client:       openai.NewClientWithConfig(cfg),
 		model:        model,
 		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
-		classify:     newClassifier("openrouter", "SHHH_API_KEY or OPENROUTER_API_KEY", key),
+		classify:     newClassifier("openrouter", keyVars("OPENROUTER_API_KEY"), key),
 	}, nil
 }
 
@@ -74,8 +74,11 @@ type openRouterTransport struct {
 
 func (t *openRouterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req = req.Clone(req.Context())
-	req.Header.Set("HTTP-Referer", "https://github.com/rfizzle/shhh")
-	req.Header.Set("X-Title", "shhh")
+	a := caller()
+	if a.URL != "" {
+		req.Header.Set("HTTP-Referer", a.URL)
+	}
+	req.Header.Set("X-Title", a.Name)
 	if sessionID, ok := req.Context().Value(openRouterSessionContextKey{}).(string); ok && sessionID != "" {
 		req.Header.Set("X-Session-Id", sessionID)
 	}
@@ -90,7 +93,7 @@ type openRouterSessionContextKey struct{}
 // upstream provider. The content itself never reaches the gateway as a header.
 func openRouterSessionID(messages []Message) string {
 	h := sha256.New()
-	_, _ = h.Write([]byte("shhh-openrouter-session\x00"))
+	_, _ = h.Write([]byte(caller().Name + "-openrouter-session\x00"))
 	for _, message := range messages {
 		switch message.Role {
 		case RoleSystem:
@@ -100,10 +103,10 @@ func openRouterSessionID(messages []Message) string {
 		case RoleUser:
 			_, _ = h.Write([]byte("user\x00"))
 			_, _ = h.Write([]byte(message.Content))
-			return fmt.Sprintf("shhh-%x", h.Sum(nil)[:16])
+			return fmt.Sprintf("%s-%x", caller().Name, h.Sum(nil)[:16])
 		}
 	}
-	return fmt.Sprintf("shhh-%x", h.Sum(nil)[:16])
+	return fmt.Sprintf("%s-%x", caller().Name, h.Sum(nil)[:16])
 }
 
 func NewOpenRouterWith(client *openai.Client, model string) *OpenRouter {
@@ -113,7 +116,7 @@ func NewOpenRouterWith(client *openai.Client, model string) *OpenRouter {
 	return &OpenRouter{
 		client:   client,
 		model:    model,
-		classify: newClassifier("openrouter", "SHHH_API_KEY or OPENROUTER_API_KEY", ""),
+		classify: newClassifier("openrouter", keyVars("OPENROUTER_API_KEY"), ""),
 	}
 }
 

@@ -39,9 +39,9 @@ type Anthropic struct {
 }
 
 func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
-	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("ANTHROPIC_API_KEY"), opts.ConfigAPIKey)
+	key := first(opts.APIKey, os.Getenv(apiKeyVar()), os.Getenv("ANTHROPIC_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
-		return nil, fmt.Errorf("SHHH_API_KEY or ANTHROPIC_API_KEY is not set")
+		return nil, fmt.Errorf("%s is not set", keyVars("ANTHROPIC_API_KEY"))
 	}
 
 	clientOpts := []option.RequestOption{option.WithAPIKey(key)}
@@ -54,7 +54,7 @@ func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
 		model:        first(opts.Model, defaultAnthropicModel),
 		cacheTTL:     cacheTTLOrDefault(opts.CacheTTL),
 		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
-		classify:     newClassifier("anthropic", "SHHH_API_KEY or ANTHROPIC_API_KEY", key),
+		classify:     newClassifier("anthropic", keyVars("ANTHROPIC_API_KEY"), key),
 	}, nil
 }
 
@@ -80,7 +80,7 @@ func NewAnthropicNamed(client anthropic.Client, model, name, cacheTTL string) *A
 		client:   client,
 		model:    first(model, defaultAnthropicModel),
 		cacheTTL: cacheTTLOrDefault(cacheTTL),
-		classify: newClassifier(name, "SHHH_API_KEY or ANTHROPIC_API_KEY", ""),
+		classify: newClassifier(name, keyVars("ANTHROPIC_API_KEY"), ""),
 	}
 }
 
@@ -317,7 +317,7 @@ func anthropicUsage(u anthropic.Usage) *Usage {
 	return usage
 }
 
-// anthropicStop maps this dialect's stop reason onto shhh's closed set. The
+// anthropicStop maps this dialect's stop reason onto the caller's closed set. The
 // three it names that the set does not — a stop sequence, a paused turn, a
 // conversation past the model's window — are endings nothing above acts on
 // differently; the last of them arrives as a classified failure rather than

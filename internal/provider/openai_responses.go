@@ -72,11 +72,11 @@ const (
 )
 
 func NewOpenAIResponses(opts ResolveOpts) (*OpenAIResponses, error) {
-	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("OPENAI_API_KEY"), opts.ConfigAPIKey)
+	key := first(opts.APIKey, os.Getenv(apiKeyVar()), os.Getenv("OPENAI_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
-		return nil, fmt.Errorf("SHHH_API_KEY or OPENAI_API_KEY is not set")
+		return nil, fmt.Errorf("%s is not set", keyVars("OPENAI_API_KEY"))
 	}
-	baseURL := first(opts.BaseURL, os.Getenv("SHHH_BASE_URL"), opts.ConfigBaseURL, defaultResponsesBaseURL)
+	baseURL := first(opts.BaseURL, os.Getenv(baseURLVar()), opts.ConfigBaseURL, defaultResponsesBaseURL)
 	p := NewOpenAIResponsesWith(nil, key, baseURL, first(opts.Model, defaultResponsesModel), "openai-responses")
 	p.SetStreamIdle(opts.StreamIdleSeconds)
 	return p, nil
@@ -94,7 +94,7 @@ func NewOpenAIResponsesWith(client *http.Client, apiKey, baseURL, model, name st
 		baseURL:  strings.TrimSuffix(first(baseURL, defaultResponsesBaseURL), "/"),
 		model:    first(model, defaultResponsesModel),
 		name:     first(name, "openai-responses"),
-		classify: newClassifier(first(name, "openai-responses"), "SHHH_API_KEY or OPENAI_API_KEY", apiKey),
+		classify: newClassifier(first(name, "openai-responses"), keyVars("OPENAI_API_KEY"), apiKey),
 	}
 }
 
@@ -255,7 +255,7 @@ type responsesTool struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description,omitempty"`
 	Parameters  json.RawMessage `json:"parameters,omitempty"`
-	// Strict is sent explicitly on every function: shhh's tool schemas are
+	// Strict is sent explicitly on every function: the caller's tool schemas are
 	// permissive, and strict mode rejects a schema that does not close
 	// every object. It is a pointer so that a namespace, which has no
 	// schema of its own, carries no such field.
@@ -462,10 +462,10 @@ func responseCacheKey(model, instructions string, tools []Tool) string {
 		_, _ = h.Write([]byte{0})
 		_, _ = h.Write(tool.Parameters)
 	}
-	return fmt.Sprintf("shhh-%x", h.Sum(nil)[:16])
+	return fmt.Sprintf("%s-%x", caller().Name, h.Sum(nil)[:16])
 }
 
-// toResponseItems flattens shhh's messages into the Responses input list,
+// toResponseItems flattens the caller's messages into the Responses input list,
 // lifting the system prompt into `instructions` where the API expects it.
 // replayReasoning says whether the assistant turns' thinking goes back with
 // them, which is the caller's judgement because it depends on the model

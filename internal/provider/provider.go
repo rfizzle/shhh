@@ -261,7 +261,7 @@ type StreamEvent struct {
 	Stop StopReason
 }
 
-// StopReason is why a response ended, in shhh's own words rather than any
+// StopReason is why a response ended, in the caller's own words rather than any
 // dialect's. It is a closed set of five: the four endings a caller acts on
 // differently and one for everything else.
 //

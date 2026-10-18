@@ -300,7 +300,7 @@ func terminalOpenAIEvent(toolCalls *toolCallSet, usage *Usage, stop StopReason) 
 	return StreamEvent{ToolCalls: calls, Usage: usage, Stop: stop, Done: true}
 }
 
-// openAIStop maps this dialect's finish reason onto shhh's closed set. The
+// openAIStop maps this dialect's finish reason onto the caller's closed set. The
 // legacy `function_call` spelling is here because a gateway speaking an older
 // revision of this API still sends it, and a round of tools read as a
 // finished answer would close the turn owing results.

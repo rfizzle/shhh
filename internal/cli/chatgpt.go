@@ -204,13 +204,11 @@ func hideChatGPTTokens(v *secret.Vault) {
 	chatGPTRelay.learn(cred.AccessToken, cred.RefreshToken, cred.IDToken)
 }
 
-// The sentences the setup report says about the sign-in. The signed-out one
-// is the plan route's own error, so a run that fails to resolve and the
-// report that explains it say the same words.
-var (
-	chatGPTNotSignedIn = provider.ErrChatGPTSignedOut.Error()
-	chatGPTNoPlan      = "signed in to ChatGPT, but plan use was not granted — run `shhh providers login chatgpt --consent`"
-)
+// chatGPTNoPlan is the sentence the setup report says about a sign-in that
+// was not granted plan use. The signed-out sentence is the plan route's own
+// error (provider.ErrChatGPTSignedOut), read where it is said, so a run that
+// fails to resolve and the report that explains it say the same words.
+var chatGPTNoPlan = "signed in to ChatGPT, but plan use was not granted — run `shhh providers login chatgpt --consent`"
 
 // chatGPTSurveyLine is what the provider report names as the way in when
 // the session resolved to chatgpt, or empty for any other provider and for a
@@ -224,16 +222,16 @@ func chatGPTSurveyLine(providerName string) string {
 		return ""
 	}
 	if !chatgpt.HasRecord(chatGPTStore()) {
-		return chatGPTNotSignedIn
+		return provider.ErrChatGPTSignedOut.Error()
 	}
 	a, err := chatGPTAccount()
 	if err != nil {
-		return chatGPTNotSignedIn
+		return provider.ErrChatGPTSignedOut.Error()
 	}
 	cred, err := a.Credential()
 	switch {
 	case err != nil || !cred.SignedIn():
-		return chatGPTNotSignedIn
+		return provider.ErrChatGPTSignedOut.Error()
 	case !cred.PlanGranted():
 		return chatGPTNoPlan
 	}

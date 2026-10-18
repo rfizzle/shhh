@@ -41,12 +41,12 @@ type decisionsEndpoint struct {
 const defaultOpenAIBaseURL = "https://api.openai.com/v1"
 
 func NewOpenAI(opts ResolveOpts) (*OpenAI, error) {
-	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("OPENAI_API_KEY"), opts.ConfigAPIKey)
+	key := first(opts.APIKey, os.Getenv(apiKeyVar()), os.Getenv("OPENAI_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
-		return nil, fmt.Errorf("SHHH_API_KEY or OPENAI_API_KEY is not set")
+		return nil, fmt.Errorf("%s is not set", keyVars("OPENAI_API_KEY"))
 	}
 	model := first(opts.Model, defaultOpenAIModel)
-	baseURL := first(opts.BaseURL, os.Getenv("SHHH_BASE_URL"), opts.ConfigBaseURL, defaultOpenAIBaseURL)
+	baseURL := first(opts.BaseURL, os.Getenv(baseURLVar()), opts.ConfigBaseURL, defaultOpenAIBaseURL)
 
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = baseURL
@@ -56,7 +56,7 @@ func NewOpenAI(opts ResolveOpts) (*OpenAI, error) {
 		client:       openai.NewClientWithConfig(cfg),
 		model:        model,
 		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
-		classify:     newClassifier("openai", "SHHH_API_KEY or OPENAI_API_KEY", key),
+		classify:     newClassifier("openai", keyVars("OPENAI_API_KEY"), key),
 		decisions:    decisionsEndpoint{client: &http.Client{}, baseURL: baseURL, apiKey: key},
 	}, nil
 }

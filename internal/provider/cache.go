@@ -502,5 +502,5 @@ func chatPromptCacheKey(model string, messages, tools json.RawMessage) string {
 		}
 	}
 	_, _ = h.Write(tools)
-	return "shhh-" + fmt.Sprintf("%x", h.Sum(nil))
+	return caller().Name + "-" + fmt.Sprintf("%x", h.Sum(nil))
 }

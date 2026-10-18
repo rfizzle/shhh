@@ -88,7 +88,7 @@ type DecisionResult struct {
 	// Usage is the input the request is billed for. The API bills input
 	// tokens only, so CompletionTokens is always zero.
 	Usage Usage
-	// Counted reports that Usage is shhh's own count of the input it sent
+	// Counted reports that Usage is the caller's own count of the input it sent
 	// rather than the provider's figure. The guide documents no usage block
 	// on a response, so a response without one is billed at the estimate
 	// rather than at nothing.
@@ -190,7 +190,7 @@ const estimatedBytesPerToken = 4
 // the key as a bearer token, and names any failure the way every dialect
 // names one, under the provider called name.
 func PostDecisions(ctx context.Context, client *http.Client, baseURL, apiKey, name string, req DecisionRequest) (DecisionResult, error) {
-	classify := newClassifier(name, "SHHH_API_KEY or OPENAI_API_KEY", apiKey)
+	classify := newClassifier(name, keyVars("OPENAI_API_KEY"), apiKey)
 	res, err := postDecisions(ctx, client, baseURL, apiKey, req)
 	if err != nil {
 		return DecisionResult{}, classify(err)

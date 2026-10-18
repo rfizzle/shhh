@@ -117,7 +117,7 @@ type responseError struct {
 // every route that sends its tools ungrouped.
 type toolNamer func(namespace, name string) string
 
-// streamResponses converts the SSE body into shhh's stream events.
+// streamResponses converts the SSE body into the caller's stream events.
 func streamResponses(body io.ReadCloser, classify func(error) error, watch *idleWatch, rename toolNamer) <-chan StreamEvent {
 	ch := make(chan StreamEvent)
 	go func() {
@@ -244,7 +244,7 @@ func streamResponses(body io.ReadCloser, classify func(error) error, watch *idle
 	return ch
 }
 
-// responsesStop maps a terminal response event onto shhh's closed set. A
+// responsesStop maps a terminal response event onto the caller's closed set. A
 // completed response ended; an incomplete one says why in a field of its own,
 // and the one reason that is not a refusal is the output budget.
 func responsesStop(ev responseEvent) StopReason {

@@ -320,7 +320,7 @@ func TestChatGPT_ASourceThatCannotAnswerIsClassified(t *testing.T) {
 			if requests.Load() != 0 {
 				t.Fatal("nothing is sent without a token")
 			}
-			if c.want == ClassAuth && (f.KeyEnv != chatGPTKeyEnv || !strings.Contains(f.Message, "sign-in has expired")) {
+			if c.want == ClassAuth && (f.KeyEnv != chatGPTKeyEnv() || !strings.Contains(f.Message, "sign-in has expired")) {
 				t.Fatalf("the source's own words and the sign-in offer should survive: %+v", f)
 			}
 		})

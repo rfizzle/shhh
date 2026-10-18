@@ -32,9 +32,9 @@ type Gemini struct {
 }
 
 func NewGemini(opts ResolveOpts) (*Gemini, error) {
-	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("GEMINI_API_KEY"), opts.ConfigAPIKey)
+	key := first(opts.APIKey, os.Getenv(apiKeyVar()), os.Getenv("GEMINI_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
-		return nil, fmt.Errorf("SHHH_API_KEY or GEMINI_API_KEY is not set")
+		return nil, fmt.Errorf("%s is not set", keyVars("GEMINI_API_KEY"))
 	}
 
 	model := first(opts.Model, defaultGeminiModel)
@@ -52,7 +52,7 @@ func NewGemini(opts ResolveOpts) (*Gemini, error) {
 		model:        model,
 		cache:        newGeminiContextCache(cacheTTLDuration(cacheTTLOrDefault(opts.CacheTTL)), client.Caches.Create),
 		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
-		classify:     newClassifier("gemini", "SHHH_API_KEY or GEMINI_API_KEY", key),
+		classify:     newClassifier("gemini", keyVars("GEMINI_API_KEY"), key),
 	}, nil
 }
 
@@ -208,7 +208,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 }
 
 // Gemini charges to create and retain explicit cached content. A small
-// instruction is cheaper to send normally, while shhh's system prompt and
+// instruction is cheaper to send normally, while the caller's system prompt and
 // tool catalogue comfortably clear this floor and are reused on every round.
 const minGeminiCachedTokens = 4096
 
@@ -330,7 +330,7 @@ func isGemini3(model string) bool {
 	return strings.HasPrefix(model, "gemini-3")
 }
 
-// geminiStop maps this dialect's finish reason onto shhh's closed set. It
+// geminiStop maps this dialect's finish reason onto the caller's closed set. It
 // names more blocked endings than anything else shhh speaks — safety,
 // recitation, protected identifiers, a per-modality copy of each — and they
 // are one thing to a caller: the model declined. The rest, including a call

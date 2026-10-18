@@ -36,9 +36,9 @@ type OpenAICompat struct {
 }
 
 func NewOpenAICompat(opts ResolveOpts) (*OpenAICompat, error) {
-	baseURL := first(opts.BaseURL, os.Getenv("SHHH_BASE_URL"), opts.ConfigBaseURL, defaultCompatBaseURL)
+	baseURL := first(opts.BaseURL, os.Getenv(baseURLVar()), opts.ConfigBaseURL, defaultCompatBaseURL)
 	model := first(opts.Model, defaultCompatModel)
-	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), opts.ConfigAPIKey)
+	key := first(opts.APIKey, os.Getenv(apiKeyVar()), opts.ConfigAPIKey)
 
 	name := first(opts.Name, opts.ConfigName, "openai-compatible")
 
@@ -52,7 +52,7 @@ func NewOpenAICompat(opts ResolveOpts) (*OpenAICompat, error) {
 		baseURL:      baseURL,
 		name:         name,
 		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
-		classify:     newClassifier(name, "SHHH_API_KEY", key),
+		classify:     newClassifier(name, apiKeyVar(), key),
 	}, nil
 }
 
@@ -69,7 +69,7 @@ func NewOpenAICompatWith(client *openai.Client, model, baseURL string) *OpenAICo
 	if model == "" {
 		model = defaultCompatModel
 	}
-	return &OpenAICompat{client: client, model: model, baseURL: baseURL, name: "openai-compatible", classify: newClassifier("openai-compatible", "SHHH_API_KEY", "")}
+	return &OpenAICompat{client: client, model: model, baseURL: baseURL, name: "openai-compatible", classify: newClassifier("openai-compatible", apiKeyVar(), "")}
 }
 
 // NewOpenAICompatNamed builds a compat provider over an already-configured
@@ -82,7 +82,7 @@ func NewOpenAICompatNamed(client *openai.Client, model, baseURL, name string) *O
 		// say which gateway, and the profile's name is the only
 		// place that is known.
 		p.name = name
-		p.classify = newClassifier(name, "SHHH_API_KEY", "")
+		p.classify = newClassifier(name, apiKeyVar(), "")
 	}
 	return p
 }

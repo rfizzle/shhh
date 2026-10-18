@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/profile"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/update"
@@ -201,6 +202,7 @@ func NewRootCmd() *cobra.Command {
 			// a session is about to borrow. It opens nothing: a command that
 			// logs nothing leaves no file behind.
 			openLog()
+			provider.SetApp(shhhApp)
 			configStarted := time.Now()
 
 			// A file that will not load stops every command here, the way
