@@ -1584,3 +1584,37 @@ func TestDiagnostics_AnEarlierCleanReportIsNotThisContentsVerdict(t *testing.T) 
 		t.Fatalf("the late answer must still arrive, got %q", held)
 	}
 }
+
+// A model-named path into shhh's own data directory is refused before any
+// server is asked, whatever the request.
+func TestManager_RefusesShhhsOwnFiles(t *testing.T) {
+	data := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", data)
+	dir := filepath.Join(data, "shhh", "chatgpt")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cred := filepath.Join(dir, "credentials.json")
+	if err := os.WriteFile(cred, []byte(`{"token":"x"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m, _ := testManager(t, &fakeLS{caps: allCapabilities}, Options{})
+
+	check := func(name string, err error) {
+		t.Helper()
+		if err == nil || !strings.Contains(err.Error(), "shhh's own data directory") {
+			t.Errorf("%s: want the data-directory refusal, got %v", name, err)
+		}
+	}
+	_, err := m.DocumentSymbol(cred)
+	check("document_symbol", err)
+	_, err = m.Diagnostics(cred)
+	check("diagnostics", err)
+	_, err = m.Hover(cred, 1, "token")
+	check("hover", err)
+	_, err = m.Definition(cred, 1, "token")
+	check("definition", err)
+	if got := m.DiagnosticsAfterChange(cred); got != "" {
+		t.Errorf("DiagnosticsAfterChange = %q, want silence", got)
+	}
+}

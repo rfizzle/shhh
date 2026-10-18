@@ -15,6 +15,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // transport is a started server process's stdio plus lifecycle hooks; tests
@@ -251,6 +252,9 @@ func (s *server) publishSeq() int64 {
 // Measured from the push the content actually went out on, an answer that has
 // already arrived comes back at once and one still in flight is waited for.
 func (s *server) syncFile(path string) (since int64, err error) {
+	if err := tools.RefuseSecret(path); err != nil {
+		return 0, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return 0, err

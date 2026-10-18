@@ -320,6 +320,9 @@ func (m *Manager) rel(path string) string {
 // See docs/capabilities/coding-agent.md#diagnostics-that-arrive-late-still-arrive.
 func (m *Manager) DiagnosticsAfterChange(path string) string {
 	path = m.abs(path)
+	if tools.RefuseSecret(path) != nil {
+		return ""
+	}
 	srv, name := m.serverFor(path)
 	if srv == nil {
 		return ""
@@ -457,6 +460,9 @@ func (m *Manager) Diagnostics(path string) (string, error) {
 		return m.workspaceDiagnostics()
 	}
 	abs := m.abs(path)
+	if err := tools.RefuseSecret(abs); err != nil {
+		return "", err
+	}
 	srv, name := m.serverFor(abs)
 	if srv == nil {
 		return "", fmt.Errorf("no language server available for %s", filepath.Ext(abs))
@@ -732,6 +738,9 @@ func severityLabel(severity int) string {
 //
 // See docs/capabilities/coding-agent.md#six-questions-for-the-language-server.
 func (m *Manager) resolvePosition(path string, line int, symbol string) (Position, error) {
+	if err := tools.RefuseSecret(path); err != nil {
+		return Position{}, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Position{}, fmt.Errorf("cannot read file: %w", err)
@@ -854,6 +863,9 @@ func (m *Manager) References(path string, line int, symbol string) (string, erro
 
 func (m *Manager) navigate(path string, line int, symbol string, kind string) (string, error) {
 	path = m.abs(path)
+	if err := tools.RefuseSecret(path); err != nil {
+		return "", err
+	}
 	srv, name := m.serverFor(path)
 	if srv == nil {
 		return "", fmt.Errorf("no language server available for %s", filepath.Ext(path))
@@ -971,6 +983,9 @@ func (m *Manager) WorkspaceSymbol(ctx context.Context, query string) (string, er
 // kind and line, nested as the server nests it.
 func (m *Manager) DocumentSymbol(path string) (string, error) {
 	path = m.abs(path)
+	if err := tools.RefuseSecret(path); err != nil {
+		return "", err
+	}
 	srv, name := m.serverFor(path)
 	if srv == nil {
 		return "", fmt.Errorf("no language server available for %s", filepath.Ext(path))
@@ -1010,6 +1025,9 @@ func (m *Manager) DocumentSymbol(path string) (string, error) {
 // line of path, flattened out of the server's markdown and bounded by lines.
 func (m *Manager) Hover(path string, line int, name string) (string, error) {
 	path = m.abs(path)
+	if err := tools.RefuseSecret(path); err != nil {
+		return "", err
+	}
 	srv, serverName := m.serverFor(path)
 	if srv == nil {
 		return "", fmt.Errorf("no language server available for %s", filepath.Ext(path))
