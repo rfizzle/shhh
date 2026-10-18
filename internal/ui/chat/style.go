@@ -123,14 +123,14 @@ type readingStyles struct {
 	Rule  lipgloss.Style
 }
 
-func newReadingStyles(p components.ColorTokens) readingStyles {
+func newReadingStyles(p components.ColorTokens, t components.SharedStyles) readingStyles {
 	return readingStyles{
 		// The label is info and bold, as DRAFT, DECISION and READING all are
 		// in guidelines/invariant-inert-keys; the rule it sits on is chrome,
 		// so it is dim like every other divider. The accent belongs to the
 		// rows.
 		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		Rule:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Rule:  t.Border,
 	}
 }
 
@@ -166,23 +166,23 @@ type frameStyles struct {
 	PasteBody lipgloss.Style
 }
 
-func newFrameStyles(p components.ColorTokens) frameStyles {
+func newFrameStyles(p components.ColorTokens, t components.SharedStyles) frameStyles {
 	return frameStyles{
-		Border:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Idle:       lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Border:     t.Border,
+		Idle:       t.Dim,
 		GutterIdle: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
 		GutterWork: lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
 		// The bang draft's glyph carries the gated accent: what enter does
 		// next is ask, on the confirm card.
 		GutterBang:    lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
-		NoticeInfo:    lipgloss.NewStyle().Foreground(p.Info.Color()),
-		NoticeAlert:   lipgloss.NewStyle().Foreground(p.Del.Color()),
-		DraftHeld:     lipgloss.NewStyle().Foreground(p.Body.Color()),
+		NoticeInfo:    t.Info,
+		NoticeAlert:   t.Del,
+		DraftHeld:     t.Body,
 		WaitingChip:   lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
-		Identity:      lipgloss.NewStyle().Foreground(p.Status.Color()),
-		IdentityChild: lipgloss.NewStyle().Foreground(p.Info.Color()),
-		PasteFold:     lipgloss.NewStyle().Foreground(p.Info.Color()),
-		PasteBody:     lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
+		Identity:      t.Status,
+		IdentityChild: t.Info,
+		PasteFold:     t.Info,
+		PasteBody:     t.Dimmer,
 	}
 }
 
@@ -195,7 +195,7 @@ type completeStyles struct {
 	Hint lipgloss.Style
 }
 
-func newCompleteStyles(p components.ColorTokens) completeStyles {
+func newCompleteStyles(p components.ColorTokens, t components.SharedStyles) completeStyles {
 	return completeStyles{
 		// The unlit row's command name. It went out unpainted until the menu
 		// started greying what it cannot offer: the terminal's own foreground
@@ -203,16 +203,16 @@ func newCompleteStyles(p components.ColorTokens) completeStyles {
 		// terminals side by side, so a grey row beside it was a difference
 		// from nothing rather than a state
 		// (docs/interface/principles.md#one-grid).
-		Name: lipgloss.NewStyle().Foreground(p.Body.Color()),
-		Args: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Desc: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Name: t.Body,
+		Args: t.Dim,
+		Desc: t.Dim,
 		// A row the running turn has put out of reach, in the grey the
 		// selector greys an unavailable option in — the two menus are one
 		// answer to "why is /compact missing" and say it the same way. The ⊘
 		// in front of the name is what carries it on a terminal with no
 		// colour at all (invariant 1).
-		Off:  lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
-		Hint: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Off:  t.Dimmer,
+		Hint: t.Hint,
 	}
 }
 
@@ -224,12 +224,12 @@ type searchStyles struct {
 	Hint  lipgloss.Style
 }
 
-func newSearchStyles(p components.ColorTokens) searchStyles {
+func newSearchStyles(p components.ColorTokens, t components.SharedStyles) searchStyles {
 	return searchStyles{
 		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		Query: lipgloss.NewStyle().Foreground(p.Body.Color()),
-		State: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Query: t.Body,
+		State: t.Dim,
+		Hint:  t.Hint,
 	}
 }
 
@@ -245,12 +245,12 @@ type hintStyles struct {
 	MutationRail lipgloss.Style
 }
 
-func newHintStyles(p components.ColorTokens) hintStyles {
+func newHintStyles(p components.ColorTokens, t components.SharedStyles) hintStyles {
 	return hintStyles{
-		Key:          lipgloss.NewStyle().Foreground(p.Key.Color()),
-		Safe:         lipgloss.NewStyle().Foreground(p.Add.Color()),
-		Dim:          lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		MutationRail: lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		Key:          t.Key,
+		Safe:         t.Add,
+		Dim:          t.Dim,
+		MutationRail: t.Accent,
 	}
 }
 
@@ -259,7 +259,7 @@ type paneStyles struct {
 	Divider lipgloss.Style
 }
 
-func newPaneStyles(p components.ColorTokens) paneStyles {
+func newPaneStyles(p components.ColorTokens, t components.SharedStyles) paneStyles {
 	return paneStyles{Divider: lipgloss.NewStyle().Foreground(p.Dim.Color())}
 }
 
@@ -278,59 +278,59 @@ func init() {
 // the diff body's syntax register with them (highlight.go) — it is the same
 // palette read in a different register, so it swaps on the same signal.
 func applyPalette() {
-	sty = newStyles(components.Palette)
+	sty = newStyles(components.Palette, components.Shared)
 	applySyntaxTones(components.Palette)
 }
 
 // newStyles builds the whole set from one token set, composing the groups the
 // files that draw with them own. It reads its argument and no global, so a
 // theme can be rendered in a test without swapping the session's.
-func newStyles(p components.ColorTokens) Styles {
+func newStyles(p components.ColorTokens, t components.SharedStyles) Styles {
 	return Styles{
-		PromptMark: lipgloss.NewStyle().Foreground(p.Info.Color()),
-		PromptRule: lipgloss.NewStyle().Foreground(p.Status.Color()),
-		Error:      lipgloss.NewStyle().Foreground(p.Del.Color()),
-		SystemMsg:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		PromptMark: t.Info,
+		PromptRule: t.Status,
+		Error:      t.Del,
+		SystemMsg:  t.Dim,
 		Header:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
-		HeaderHint: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Welcome:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		HeaderHint: t.Hint,
+		Welcome:    t.Dim,
 
 		// On their own, because they are the only italics in the file.
 		CompactSummary: lipgloss.NewStyle().Foreground(p.Dimmer.Color()).Italic(true),
 		Checkpoint:     lipgloss.NewStyle().Foreground(p.Dimmer.Color()).Italic(true),
 		Thinking:       lipgloss.NewStyle().Foreground(p.Dimmer.Color()).Italic(true),
 
-		Tool:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		ToolArgs:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		StatusBar: lipgloss.NewStyle().Foreground(p.Status.Color()),
-		Divider:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Tool:      t.Accent,
+		ToolArgs:  t.Dim,
+		StatusBar: t.Status,
+		Divider:   t.Border,
 		Viewport:  lipgloss.NewStyle(),
 
-		ModePermissive: lipgloss.NewStyle().Foreground(p.Add.Color()),
-		ModeGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		ModePermissive: t.Add,
+		ModeGated:      t.Accent,
 		CtxAlert:       lipgloss.NewStyle().Bold(true).Foreground(p.Del.Color()),
-		UpdateNotice:   lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		UpdateNotice:   t.Accent,
 
 		// The reading cursor is info, as the pointer is on every artboard
 		// that draws one; the accent belongs to the mutation rail beside it.
-		FocusMarker: lipgloss.NewStyle().Foreground(p.Info.Color()),
+		FocusMarker: t.Info,
 
 		Step: stepStyles{
-			Title:     lipgloss.NewStyle().Foreground(p.Body.Color()),
-			LiveTitle: lipgloss.NewStyle().Foreground(p.Bright.Color()),
-			Rule:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
-			Stats:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
-			Dim:       lipgloss.NewStyle().Foreground(p.Dim.Color()),
-			Done:      lipgloss.NewStyle().Foreground(p.Add.Color()),
-			Fail:      lipgloss.NewStyle().Foreground(p.Del.Color()),
-			Run:       lipgloss.NewStyle().Foreground(p.Spin.Color()),
+			Title:     t.Body,
+			LiveTitle: t.Bright,
+			Rule:      t.Border,
+			Stats:     t.Dim,
+			Dim:       t.Dim,
+			Done:      t.Add,
+			Fail:      t.Del,
+			Run:       t.Spin,
 		},
 
-		Reading:  newReadingStyles(p),
-		Frame:    newFrameStyles(p),
-		Complete: newCompleteStyles(p),
-		Search:   newSearchStyles(p),
-		Hint:     newHintStyles(p),
-		Pane:     newPaneStyles(p),
+		Reading:  newReadingStyles(p, t),
+		Frame:    newFrameStyles(p, t),
+		Complete: newCompleteStyles(p, t),
+		Search:   newSearchStyles(p, t),
+		Hint:     newHintStyles(p, t),
+		Pane:     newPaneStyles(p, t),
 	}
 }

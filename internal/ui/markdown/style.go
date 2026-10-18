@@ -53,7 +53,7 @@ func newStyles(mono bool, prose ProseTone) styles {
 	if mono {
 		return styles{mono: true}
 	}
-	p := components.Palette
+	p, t := components.Palette, components.Shared
 	body := p.Body
 	if prose == ProseBright {
 		body = p.Bright
@@ -64,12 +64,12 @@ func newStyles(mono bool, prose ProseTone) styles {
 		bold:    lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
 		italic:  lipgloss.NewStyle().Italic(true),
 		strike:  lipgloss.NewStyle().Strikethrough(true).Foreground(p.Dim.Color()),
-		code:    lipgloss.NewStyle().Foreground(p.Code.Color()),
-		link:    lipgloss.NewStyle().Foreground(p.Info.Color()),
-		url:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		rule:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		marker:  lipgloss.NewStyle().Foreground(p.Info.Color()),
-		faint:   lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
-		fence:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		code:    t.Code,
+		link:    t.Info,
+		url:     t.Dim,
+		rule:    t.Dim,
+		marker:  t.Info,
+		faint:   t.Dimmer,
+		fence:   t.Dim,
 	}
 }

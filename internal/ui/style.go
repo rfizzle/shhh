@@ -58,31 +58,31 @@ var (
 )
 
 // newStyles builds the whole set from one token set, reading no global.
-func newStyles(p components.ColorTokens) Styles {
+func newStyles(p components.ColorTokens, t components.SharedStyles) Styles {
 	return Styles{
 		// Add used to carry the command, which made the answer the same
 		// green as the key that runs it and left the screen with two
 		// primaries. The command is now the screen's only bold bright run
 		// and Add is the key row's alone.
 		// See docs/interface/surfaces.md#the-one-shot-result.
-		CommandGlyph: lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		CommandGlyph: t.Accent,
 		Command:      lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
-		Error:        lipgloss.NewStyle().Foreground(p.Del.Color()),
+		Error:        t.Del,
 
 		Label:       lipgloss.NewStyle().Foreground(p.Status.Color()).MarginTop(1),
-		ExplainBody: lipgloss.NewStyle().Foreground(p.Body.Color()),
+		ExplainBody: t.Body,
 
 		// Every key the interface offers is Key; the default and the
 		// deliberate one carry their tone as well, and both say it in words
 		// too.
-		Key:        lipgloss.NewStyle().Foreground(p.Key.Color()),
-		KeyLabel:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		PrimaryKey: lipgloss.NewStyle().Foreground(p.Add.Color()),
-		DangerKey:  lipgloss.NewStyle().Foreground(p.Del.Color()),
-		Reach:      lipgloss.NewStyle().Foreground(p.Status.Color()),
-		Risk:       lipgloss.NewStyle().Foreground(p.Del.Color()),
-		Caution:    lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		Dim:        lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Key:        t.Key,
+		KeyLabel:   t.Dim,
+		PrimaryKey: t.Add,
+		DangerKey:  t.Del,
+		Reach:      t.Status,
+		Risk:       t.Del,
+		Caution:    t.Accent,
+		Dim:        t.Dim,
 		// Subtle rather than Dim, which is where the rung was drawn while
 		// the token was spent on labels the surface no longer has. What is
 		// above the answer is the command the reader is comparing it
@@ -92,7 +92,7 @@ func newStyles(p components.ColorTokens) Styles {
 		// the ladder's rung for exactly that: one step under the body, well
 		// clear of the bold bright run the current command is.
 		// See docs/interface/principles.md#a-colour-is-three-values-and-a-ground.
-		PastCommand: lipgloss.NewStyle().Foreground(p.Subtle.Color()),
+		PastCommand: t.Subtle,
 	}
 }
 
@@ -145,7 +145,7 @@ func applyPalette() {
 	}
 	Narrow = width < 40
 
-	sty = newStyles(components.Palette)
+	sty = newStyles(components.Palette, components.Shared)
 }
 
 func init() {

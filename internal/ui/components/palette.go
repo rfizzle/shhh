@@ -1132,6 +1132,11 @@ func (t Token) Color() color.Color {
 // comments are the argument for the assignment; the palette is the table they
 // answer to.
 type styles struct {
+	// shared is the one-colour set the other packages read (Shared). The
+	// fields below that carry one colour alias it, so a colour written once
+	// is one style, not a copy per name.
+	shared SharedStyles
+
 	border   lipgloss.Style
 	headline lipgloss.Style
 	// hint is what a surface says about itself — the keys it offers, the fold
@@ -1213,51 +1218,98 @@ type styles struct {
 // , but it left the catalog's own contract alone.
 var sty = newStyles(Palette)
 
+// SharedStyles is the one-colour styles every package draws with: a style that
+// is only a token's foreground. This package builds them once per palette swap
+// and the hosts (chat, the generate UI, markdown) read them rather than
+// writing the same NewStyle call again, keeping only the styles that carry more
+// than one colour or an attribute of their own. A hint is Dim and upright; the
+// two names say different things and are the same value.
+type SharedStyles struct {
+	Border lipgloss.Style
+	Hint   lipgloss.Style
+	Dim    lipgloss.Style
+	Dimmer lipgloss.Style
+	Status lipgloss.Style
+	Body   lipgloss.Style
+	Bright lipgloss.Style
+	Accent lipgloss.Style
+	Info   lipgloss.Style
+	Key    lipgloss.Style
+	Add    lipgloss.Style
+	Del    lipgloss.Style
+	Spin   lipgloss.Style
+	Subtle lipgloss.Style
+	Code   lipgloss.Style
+}
+
+// Shared is the live shared set, rebuilt by applyPalette before any host's
+// OnPaletteChange callback runs, so a host reading it in its callback sees the
+// palette that was just installed.
+var Shared = sty.shared
+
+// styleBuilds counts newStyles calls; a palette swap must make exactly one.
+var styleBuilds int
+
+func newShared(p ColorTokens) SharedStyles {
+	fg := func(t Token) lipgloss.Style { return lipgloss.NewStyle().Foreground(t.Color()) }
+	return SharedStyles{
+		Border: fg(p.Dim), Hint: fg(p.Dim), Dim: fg(p.Dim), Dimmer: fg(p.Dimmer),
+		Status: fg(p.Status), Body: fg(p.Body), Bright: fg(p.Bright),
+		Accent: fg(p.Accent), Info: fg(p.Info), Key: fg(p.Key),
+		Add: fg(p.Add), Del: fg(p.Del), Spin: fg(p.Spin),
+		Subtle: fg(p.Subtle), Code: fg(p.Code),
+	}
+}
+
 // newStyles builds the whole style set from one token set. It reads its
 // argument and no global, so a theme can be rendered in a test without
 // swapping the one the session is using.
 func newStyles(p ColorTokens) styles {
+	styleBuilds++
+	t := newShared(p)
 	return styles{
-		border:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		shared: t,
+
+		border:   t.Border,
 		headline: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		hint:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		warn:     lipgloss.NewStyle().Foreground(p.Del.Color()),
-		shield:   lipgloss.NewStyle().Foreground(p.Status.Color()),
-		dim:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		dimmer:   lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
-		status:   lipgloss.NewStyle().Foreground(p.Status.Color()),
-		body:     lipgloss.NewStyle().Foreground(p.Body.Color()),
-		bright:   lipgloss.NewStyle().Foreground(p.Bright.Color()),
-		accent:   lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		info:     lipgloss.NewStyle().Foreground(p.Info.Color()),
-		key:      lipgloss.NewStyle().Foreground(p.Key.Color()),
-		err:      lipgloss.NewStyle().Foreground(p.Del.Color()),
-		spinText: lipgloss.NewStyle().Foreground(p.Spin.Color()),
+		hint:     t.Hint,
+		warn:     t.Del,
+		shield:   t.Status,
+		dim:      t.Dim,
+		dimmer:   t.Dimmer,
+		status:   t.Status,
+		body:     t.Body,
+		bright:   t.Bright,
+		accent:   t.Accent,
+		info:     t.Info,
+		key:      t.Key,
+		err:      t.Del,
+		spinText: t.Spin,
 
 		focusRow:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()).Background(p.FocusBg.Color()),
 		litText:      lipgloss.NewStyle().Foreground(p.Bright.Color()).Background(p.FocusBg.Color()),
-		focusPointer: lipgloss.NewStyle().Foreground(p.Info.Color()),
+		focusPointer: t.Info,
 
-		add:     lipgloss.NewStyle().Foreground(p.Add.Color()),
-		del:     lipgloss.NewStyle().Foreground(p.Del.Color()),
+		add:     t.Add,
+		del:     t.Del,
 		addEmph: lipgloss.NewStyle().Foreground(p.Add.Color()).Background(p.addBg.Color()),
 		delEmph: lipgloss.NewStyle().Foreground(p.Del.Color()).Background(p.delBg.Color()),
 		hunk:    lipgloss.NewStyle().Foreground(p.Hunk.Color()),
-		context: lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
+		context: t.Dimmer,
 
-		queryText: lipgloss.NewStyle().Foreground(p.Bright.Color()),
+		queryText: t.Bright,
 
 		// One token, the same Dim the frame's own rules are drawn in: the
 		// gutter is chrome, and it has nothing in its column to be told apart
 		// from, so a second rung would be a distinction with nothing on the
 		// other side of it. What the mark says is said by its stroke and its
 		// length, both of which survive a terminal with no colour at all.
-		scrollThumb: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		scrollThumb: t.Dim,
 
-		animCrest: lipgloss.NewStyle().Foreground(p.Bright.Color()),
+		animCrest: t.Bright,
 
-		textArea:  textAreaStyles(p),
-		textInput: textInputStyles(p),
+		textArea:  textAreaStyles(p, t),
+		textInput: textInputStyles(p, t),
 	}
 }
 
@@ -1281,19 +1333,19 @@ func newStyles(p ColorTokens) styles {
 // field either draws it only while it has the keyboard or echoes it as plain
 // text when it does not, so a dimmer blurred table would be a colour making
 // a distinction the surface has already made in words.
-func textAreaStyles(p ColorTokens) textarea.Styles {
+func textAreaStyles(p ColorTokens, t SharedStyles) textarea.Styles {
 	state := textarea.StyleState{
 		Base:        lipgloss.NewStyle(),
-		Text:        lipgloss.NewStyle().Foreground(p.Body.Color()),
-		Placeholder: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Prompt:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Text:        t.Body,
+		Placeholder: t.Dim,
+		Prompt:      t.Dim,
 		Selection:   lipgloss.NewStyle().Background(p.FocusBg.Color()),
 		// No field shhh builds shows line numbers (input.go), so neither of
 		// these draws. They are written anyway, because a token is cheaper
 		// than a field that turns them on and arrives in grey 249.
-		LineNumber:       lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		CursorLineNumber: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		CursorLine:       lipgloss.NewStyle().Foreground(p.Body.Color()),
+		LineNumber:       t.Dim,
+		CursorLineNumber: t.Dim,
+		CursorLine:       t.Body,
 		EndOfBuffer:      lipgloss.NewStyle(),
 	}
 	return textarea.Styles{Focused: state, Blurred: state, Cursor: fieldCursor(p)}
@@ -1302,12 +1354,12 @@ func textAreaStyles(p ColorTokens) textarea.Styles {
 // textInputStyles is the one-line field's table, the same assignments over
 // the smaller record. A suggestion is chrome for the same reason a
 // placeholder is: neither is text the reader typed.
-func textInputStyles(p ColorTokens) textinput.Styles {
+func textInputStyles(p ColorTokens, t SharedStyles) textinput.Styles {
 	state := textinput.StyleState{
-		Text:        lipgloss.NewStyle().Foreground(p.Body.Color()),
-		Placeholder: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Suggestion:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Prompt:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Text:        t.Body,
+		Placeholder: t.Dim,
+		Suggestion:  t.Dim,
+		Prompt:      t.Dim,
 	}
 	return textinput.Styles{Focused: state, Blurred: state, Cursor: cursorStyle(p)}
 }
@@ -1334,5 +1386,6 @@ func fieldCursor(p ColorTokens) textarea.CursorStyle {
 // the session just left.
 func applyPalette() {
 	sty = newStyles(Palette)
+	Shared = sty.shared
 	clearAnimCache()
 }
