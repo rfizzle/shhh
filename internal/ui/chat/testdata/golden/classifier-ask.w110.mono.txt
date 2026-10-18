@@ -17,8 +17,8 @@
 │ ⚠ medium · shhh can't tell what it changes                                                             │
 │ classifier: the task asked for a release check, and this publishes one                                 │
 │                                                                                                        │
-│ touches   unknown — shhh cannot tell what npm writes                                                   │
-│ undo      unknown — shhh could not resolve what this writes                                            │
+│ touches   unknown                                                                                      │
+│ undo      unknown                                                                                      │
 │ network   open                                                                                         │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [enter] full view · [e] edit the command · [?] keys                       │
@@ -33,8 +33,8 @@
 │ classifier: the task asked for a release check, and this publishes one                                 │
 │                                                                                                        │
 │ lands in  the agent's worktree — an isolated checkout; your files change only when you apply its patch │
-│ touches   unknown — shhh cannot tell what npm writes                                                   │
-│ undo      unknown — shhh could not resolve what this writes                                            │
+│ touches   unknown                                                                                      │
+│ undo      unknown                                                                                      │
 │ network   open                                                                                         │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [g] attach to writer-1 · [f12] agents · [?] keys                          │
@@ -50,8 +50,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mclassifier:␛[m␛[38;5;254m the task asked for a release check, and this publishes one␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                                                                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                       ␛[38;5;254m│␛[m
@@ -66,8 +66,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mclassifier:␛[m␛[38;5;254m the task asked for a release check, and this publishes one␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m␛[38;5;244m — an isolated checkout; your files change only when you apply its patch␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                                                                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                          ␛[38;5;254m│␛[m

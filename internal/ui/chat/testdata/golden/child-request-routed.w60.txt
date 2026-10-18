@@ -63,7 +63,7 @@
 │ ⚠ medium · shhh can't tell what it changes           │
 │                                                      │
 │ lands in  the agent's worktree                       │
-│ touches   unknown — shhh cannot tell what go writes  │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   closed                                     │
 │ sandbox   bwrap · workspace                          │
@@ -81,7 +81,7 @@
 │ ⚠ medium · shhh can't tell what it changes           │
 │                                                      │
 │ lands in  the agent's worktree                       │
-│ touches   unknown — shhh cannot tell what go writes  │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   closed                                     │
 │ sandbox   bwrap · workspace                          │
@@ -99,7 +99,7 @@
 │ ⚠ medium · shhh can't tell what it changes           │
 │                                                      │
 │ lands in  the agent's worktree                       │
-│ touches   unknown — shhh cannot tell what go writes  │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   closed                                     │
 │ sandbox   bwrap · workspace                          │
@@ -235,7 +235,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;245m · shhh can't tell what it changes␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mlands in  ␛[m␛[92mthe agent's worktree␛[m                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m␛[38;5;248m — shhh cannot tell what go writes␛[m  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mnetwork   ␛[m␛[92mclosed␛[m                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246msandbox   ␛[m␛[38;5;246mbwrap · workspace␛[m                          ␛[38;5;214m│␛[m
@@ -253,7 +253,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;245m · shhh can't tell what it changes␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mlands in  ␛[m␛[92mthe agent's worktree␛[m                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m␛[38;5;248m — shhh cannot tell what go writes␛[m  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mnetwork   ␛[m␛[92mclosed␛[m                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246msandbox   ␛[m␛[38;5;246mbwrap · workspace␛[m                          ␛[38;5;214m│␛[m
@@ -271,7 +271,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;245m · shhh can't tell what it changes␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mlands in  ␛[m␛[92mthe agent's worktree␛[m                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m␛[38;5;248m — shhh cannot tell what go writes␛[m  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mnetwork   ␛[m␛[92mclosed␛[m                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246msandbox   ␛[m␛[38;5;246mbwrap · workspace␛[m                          ␛[38;5;214m│␛[m

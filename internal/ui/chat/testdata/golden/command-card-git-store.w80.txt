@@ -16,8 +16,8 @@
 │ $ go test ./...                                                          │
 │ ⚠ medium · shhh can't tell what it changes                               │
 │                                                                          │
-│ touches   unknown — shhh cannot tell what go writes                      │
-│ undo      unknown — shhh could not resolve what this writes              │
+│ touches   unknown                                                        │
+│ undo      unknown                                                        │
 │ network   closed                                                         │
 │ sandbox   bwrap · workspace · read-only git hooks and config             │
 ├──────────────────────────────────────────────────────────────────────────┤
@@ -31,8 +31,8 @@
 │ $ go test ./...                                                          │
 │ ⚠ medium · shhh can't tell what it changes                               │
 │                                                                          │
-│ touches   unknown — shhh cannot tell what go writes                      │
-│ undo      unknown — shhh could not resolve what this writes              │
+│ touches   unknown                                                        │
+│ undo      unknown                                                        │
 │ network   closed                                                         │
 │ sandbox   bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
@@ -47,8 +47,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./...␛[m                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;245m · shhh can't tell what it changes␛[m                               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m␛[38;5;248m — shhh cannot tell what go writes␛[m                      ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m␛[38;5;248m — shhh could not resolve what this writes␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m                                                        ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mnetwork   ␛[m␛[92mclosed␛[m                                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246msandbox   ␛[m␛[38;5;246mbwrap · workspace · read-only git hooks and config␛[m             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m
@@ -62,8 +62,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./...␛[m                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;245m · shhh can't tell what it changes␛[m                               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m␛[38;5;248m — shhh cannot tell what go writes␛[m                      ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m␛[38;5;248m — shhh could not resolve what this writes␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m                                                        ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mnetwork   ␛[m␛[92mclosed␛[m                                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246msandbox   ␛[m␛[38;5;246mbwrap · workspace␛[m                                              ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m

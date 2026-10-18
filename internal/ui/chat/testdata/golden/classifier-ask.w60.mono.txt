@@ -18,7 +18,7 @@
 │ classifier: the task asked for a release check, and  │
 │ this publishes one                                   │
 │                                                      │
-│ touches   unknown — shhh cannot tell what npm writes │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   open                                       │
 ├──────────────────────────────────────────────────────┤
@@ -37,7 +37,7 @@
 │ this publishes one                                   │
 │                                                      │
 │ lands in  the agent's worktree                       │
-│ touches   unknown — shhh cannot tell what npm writes │
+│ touches   unknown                                    │
 │ … 2 more lines · [shift+↓]                           │
 ├──────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [g] attach to writer-1  │
@@ -56,7 +56,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mclassifier:␛[m␛[38;5;254m the task asked for a release check, and␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mthis publishes one␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
@@ -75,7 +75,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254mthis publishes one␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m  ␛[38;5;254m│␛[m

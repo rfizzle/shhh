@@ -762,7 +762,7 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 		if len(body) > 1 {
 			body = append(body, "")
 		}
-		for _, f := range c.Fields {
+		for _, f := range c.fieldsSayingUnknownOnce() {
 			body = append(body, f.render(inner))
 		}
 	}
@@ -1584,6 +1584,30 @@ func (c *ApprovalCard) chips() []string {
 		chips = append(chips, word)
 	}
 	return chips
+}
+
+// fieldsSayingUnknownOnce returns the fields to draw. Where two or more are
+// "unknown" the severity line already says shhh cannot tell, so the rows keep
+// the red word and lose their glosses: the card says it once. One unknown
+// field keeps its gloss, as nothing else says it.
+func (c *ApprovalCard) fieldsSayingUnknownOnce() []CardField {
+	n := 0
+	for _, f := range c.Fields {
+		if f.Value == "unknown" {
+			n++
+		}
+	}
+	if n < 2 {
+		return c.Fields
+	}
+	out := make([]CardField, len(c.Fields))
+	copy(out, c.Fields)
+	for i := range out {
+		if out[i].Value == "unknown" {
+			out[i].Detail = ""
+		}
+	}
+	return out
 }
 
 // render lays one blast-radius field into its label column. The detail is

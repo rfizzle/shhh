@@ -63,7 +63,7 @@
 │ ⚠ medium · shhh can't tell what it changes           │
 │                                                      │
 │ lands in  the agent's worktree                       │
-│ touches   unknown — shhh cannot tell what go writes  │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   closed                                     │
 │ sandbox   bwrap · workspace                          │
@@ -81,7 +81,7 @@
 │ ⚠ medium · shhh can't tell what it changes           │
 │                                                      │
 │ lands in  the agent's worktree                       │
-│ touches   unknown — shhh cannot tell what go writes  │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   closed                                     │
 │ sandbox   bwrap · workspace                          │
@@ -99,7 +99,7 @@
 │ ⚠ medium · shhh can't tell what it changes           │
 │                                                      │
 │ lands in  the agent's worktree                       │
-│ touches   unknown — shhh cannot tell what go writes  │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   closed                                     │
 │ sandbox   bwrap · workspace                          │
@@ -235,7 +235,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
@@ -253,7 +253,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
@@ -271,7 +271,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m

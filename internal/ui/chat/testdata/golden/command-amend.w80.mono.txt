@@ -16,8 +16,8 @@
 │ $ npm test                                                               │
 │ ⚠ medium · shhh can't tell what it changes                               │
 │                                                                          │
-│ touches   unknown — shhh cannot tell what npm writes                     │
-│ undo      unknown — shhh could not resolve what this writes              │
+│ touches   unknown                                                        │
+│ undo      unknown                                                        │
 │ network   open                                                           │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow "npm test" without asking         │
@@ -34,8 +34,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mnpm test␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[a] allow "npm test" without asking␛[m         ␛[38;5;254m│␛[m

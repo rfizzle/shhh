@@ -17,8 +17,8 @@
 │ ⚠ medium · shhh can't tell what it changes                               │
 │ classifier: the task asked for a release check, and this publishes one   │
 │                                                                          │
-│ touches   unknown — shhh cannot tell what npm writes                     │
-│ undo      unknown — shhh could not resolve what this writes              │
+│ touches   unknown                                                        │
+│ undo      unknown                                                        │
 │ network   open                                                           │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [enter] full view · [e] edit the command    │
@@ -33,8 +33,8 @@
 │ classifier: the task asked for a release check, and this publishes one   │
 │                                                                          │
 │ lands in  the agent's worktree                                           │
-│ touches   unknown — shhh cannot tell what npm writes                     │
-│ undo      unknown — shhh could not resolve what this writes              │
+│ touches   unknown                                                        │
+│ undo      unknown                                                        │
 │ network   open                                                           │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [g] attach to writer-1 · [f12] agents       │
@@ -50,8 +50,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;245m · shhh can't tell what it changes␛[m                               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mclassifier:␛[m␛[91m the task asked for a release check, and this publishes one␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m␛[38;5;248m — shhh cannot tell what npm writes␛[m                     ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m␛[38;5;248m — shhh could not resolve what this writes␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m                                                        ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mnetwork   ␛[m␛[38;5;214mopen␛[m                                                           ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m ␛[38;5;252mfull view␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m    ␛[38;5;214m│␛[m
@@ -66,8 +66,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;246mclassifier:␛[m␛[91m the task asked for a release check, and this publishes one␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mlands in  ␛[m␛[92mthe agent's worktree␛[m                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m␛[38;5;248m — shhh cannot tell what npm writes␛[m                     ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m␛[38;5;248m — shhh could not resolve what this writes␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m                                                        ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;246mnetwork   ␛[m␛[38;5;214mopen␛[m                                                           ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;245m · ␛[m␛[38;5;103m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;245m · ␛[m␛[38;5;103m[f12]␛[m ␛[38;5;252magents␛[m       ␛[38;5;214m│␛[m

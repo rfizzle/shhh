@@ -16,7 +16,7 @@
 │ $ go test ./...                                      │
 │ ⚠ medium · shhh can't tell what it changes           │
 │                                                      │
-│ touches   unknown — shhh cannot tell what go writes  │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   closed                                     │
 │ sandbox   bwrap · workspace · read-only git hooks a… │
@@ -33,7 +33,7 @@
 │ $ go test ./...                                      │
 │ ⚠ medium · shhh can't tell what it changes           │
 │                                                      │
-│ touches   unknown — shhh cannot tell what go writes  │
+│ touches   unknown                                    │
 │ undo      unknown                                    │
 │ network   closed                                     │
 │ sandbox   bwrap · workspace                          │
@@ -51,7 +51,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mgo test ./...␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace · read-only git hooks a␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
@@ -68,7 +68,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mgo test ./...␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
