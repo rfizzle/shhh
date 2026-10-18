@@ -81,7 +81,7 @@ func newProvidersCmd() *cobra.Command {
 // never a token — the row is printed, piped and pasted into bug reports.
 func chatGPTRow() report.Row {
 	row := report.Row{Name: "chatgpt"}
-	if !chatgpt.HasRecord(chatGPTOptions().Dir) {
+	if !chatgpt.HasRecord(chatGPTStore()) {
 		row.State, row.Subject, row.Detail = report.Fail, "not signed in", "shhh providers login chatgpt"
 		return row
 	}

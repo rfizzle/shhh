@@ -155,7 +155,7 @@ func TestTokenRelay_ReadsTheRecordOnlyWhenItChanged(t *testing.T) {
 		}
 	}
 	r := &tokenRelay{}
-	before := chatgpt.StatRecord(dir)
+	before := chatgpt.StatRecord(chatgpt.FileStore{Dir: dir})
 	r.refresh()
 	if !before.Same(chatgpt.RecordStamp{}) || len(r.seen) != 0 {
 		t.Fatal("an absent record is learned as nothing")
@@ -195,7 +195,7 @@ func TestTokenRelay_AMalformedRecordIsRememberedAsAVersion(t *testing.T) {
 	}
 	rl := &tokenRelay{}
 	rl.refresh()
-	if !rl.stamp.Same(chatgpt.StatRecord(dir)) {
+	if !rl.stamp.Same(chatgpt.StatRecord(chatgpt.FileStore{Dir: dir})) {
 		t.Error("the corrupt record would be read and parsed again at the next scrub")
 	}
 }

@@ -10,10 +10,11 @@
 // another client, a different account answering, two processes spending one
 // refresh token — is checked here, before anything is written.
 //
-// The record lives in shhh's data directory, beside the store and never in
-// the config directory a person commits with their dotfiles, and its tokens
-// leave this package only as the bearer a request is sent with and through
-// the callback that hides them from the model. Nothing here logs a URL, a
-// body or a token: the log carries event names and the server's error codes.
+// The record lives in a FileStore the app supplies: shhh passes a directory in
+// its data directory, never the config directory a person commits with their
+// dotfiles. The tokens leave this package only as the bearer a request is sent
+// with and through the callback that hides them from the model. Nothing here
+// logs a URL, a body or a token: the log carries event names and the server's
+// error codes.
 // See docs/capabilities/chatgpt-plan.md.
 package chatgpt

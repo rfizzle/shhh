@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/chatgpt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
 
 // chatGPT is the process's one account, opened on first need. It is one per
@@ -26,9 +28,16 @@ var chatGPT struct {
 	account *chatgpt.Account
 }
 
-// chatGPTOptions is what the account is opened with; a test points it at a
-// temporary directory and an in-memory server.
-var chatGPTOptions = func() chatgpt.Options { return chatgpt.Options{} }
+// chatGPTStore is where the sign-in lives: <datadir>/chatgpt, beside the
+// store and never in the config directory. A data directory that cannot be
+// found is an empty store, which opens with an error and holds no record.
+func chatGPTStore() chatgpt.FileStore {
+	data, err := datadir.Dir()
+	if err != nil {
+		return chatgpt.FileStore{}
+	}
+	return chatgpt.FileStore{Dir: filepath.Join(data, "chatgpt")}
+}
 
 // chatGPTRelay hides every token the account learns in every session vault.
 var chatGPTRelay = &tokenRelay{}
@@ -41,7 +50,7 @@ func chatGPTAccount() (*chatgpt.Account, error) {
 	if chatGPT.account != nil {
 		return chatGPT.account, nil
 	}
-	o := chatGPTOptions()
+	o := chatgpt.Options{Store: chatGPTStore()}
 	relay := chatGPTRelay
 	o.OnTokens = func(access, refresh, id string) { relay.learn(access, refresh, id) }
 	a, err := chatgpt.Open(o)
@@ -101,15 +110,15 @@ type tokenRelay struct {
 // parse is remembered as the version it is.
 // See docs/capabilities/chatgpt-plan.md#what-keeps-the-tokens-from-the-model.
 func (r *tokenRelay) refresh() {
-	dir := chatGPTOptions().Dir
-	now := chatgpt.StatRecord(dir)
+	store := chatGPTStore()
+	now := chatgpt.StatRecord(store)
 	r.mu.Lock()
 	same := now.Same(r.stamp)
 	r.mu.Unlock()
 	if same {
 		return
 	}
-	cred, err := chatgpt.ReadRecord(dir)
+	cred, err := chatgpt.ReadRecord(store)
 	if err != nil && !chatgpt.IsMalformed(err) {
 		return
 	}
@@ -179,7 +188,7 @@ func (r *tokenRelay) attach(v *secret.Vault) {
 // model reads. A host that never signed in is left without a directory.
 func hideChatGPTTokens(v *secret.Vault) {
 	chatGPTRelay.attach(v)
-	if !chatgpt.HasRecord(chatGPTOptions().Dir) {
+	if !chatgpt.HasRecord(chatGPTStore()) {
 		return
 	}
 	a, err := chatGPTAccount()
@@ -214,7 +223,7 @@ func chatGPTSurveyLine(providerName string) string {
 	if providerName != "chatgpt" {
 		return ""
 	}
-	if !chatgpt.HasRecord(chatGPTOptions().Dir) {
+	if !chatgpt.HasRecord(chatGPTStore()) {
 		return chatGPTNotSignedIn
 	}
 	a, err := chatGPTAccount()

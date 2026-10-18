@@ -10,15 +10,12 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
 
 // The contract's fixed values, from OpenAI's sign-in documentation. Only the
@@ -70,13 +67,6 @@ type signInExpired struct{}
 
 func (signInExpired) Error() string { return "the ChatGPT sign-in has expired — run " + loginCommand }
 func (signInExpired) Unwrap() error { return provider.ErrChatGPTSignedOut }
-
-// File names inside the account directory.
-const (
-	credentialsFile = "credentials.json"
-	hostIDFile      = "host-id"
-	lockFileName    = "credentials.lock"
-)
 
 // Credential is the record kept in credentials.json, with the fields
 // OpenAI's documentation lists. HostID is recorded as the docs ask, but the
@@ -134,8 +124,9 @@ func (c Credential) cleared(now time.Time) Credential {
 
 // Options is how an Account is opened.
 type Options struct {
-	// Dir is the account directory; empty is <datadir>/chatgpt.
-	Dir string
+	// Store is where the record, the host ID and the lock live. The app
+	// supplies it: nothing here knows where an app keeps its data.
+	Store FileStore
 	// Client sends every request to the authorization server; nil is a
 	// plain client with a timeout.
 	Client *http.Client
@@ -153,7 +144,7 @@ type Options struct {
 // one at a time: a refresh token is spent by using it, and a second process
 // presenting the spent one is answered as a replay and signs the person out.
 type Account struct {
-	dir      string
+	store    FileStore
 	client   *http.Client
 	now      func() time.Time
 	onTokens func(access, refresh, id string)
@@ -188,23 +179,11 @@ const requestTimeout = 30 * time.Second
 // Open opens the account directory, creating it owner-only. It reads
 // nothing: a host that never signs in pays for a directory and no more.
 func Open(o Options) (*Account, error) {
-	dir := o.Dir
-	if dir == "" {
-		var err error
-		if dir, err = defaultDir(); err != nil {
-			return nil, err
-		}
-	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, err
-	}
-	// A directory that was already there keeps nobody else's read on it:
-	// the record inside is a credential.
-	if err := os.Chmod(dir, 0o700); err != nil {
+	if err := o.Store.ensure(); err != nil {
 		return nil, err
 	}
 	a := &Account{
-		dir: dir, client: o.Client, now: o.Now, onTokens: o.OnTokens,
+		store: o.Store, client: o.Client, now: o.Now, onTokens: o.OnTokens,
 		lockWait: 30 * time.Second, lockPoll: 50 * time.Millisecond, sleep: sleepCtx,
 	}
 	// Redirects are never followed. A 307 or 308 from the token endpoint
@@ -223,46 +202,27 @@ func Open(o Options) (*Account, error) {
 	return a, nil
 }
 
-// HasRecord reports whether the account directory holds a credential
-// record, creating nothing: a caller that only wants to hide tokens that
-// exist must not leave a directory behind on a host that never signed in.
-// An empty dir is the default one.
-func HasRecord(dir string) bool {
-	if dir == "" {
-		var err error
-		if dir, err = defaultDir(); err != nil {
-			return false
-		}
-	}
-	_, err := os.Stat(filepath.Join(dir, credentialsFile))
-	return err == nil
-}
-
-// defaultDir is <datadir>/chatgpt.
-func defaultDir() (string, error) {
-	data, err := datadir.Dir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(data, "chatgpt"), nil
-}
+// HasRecord reports whether the store holds a credential record, creating
+// nothing: a caller that only wants to hide tokens that exist must not leave a
+// directory behind on a host that never signed in.
+func HasRecord(s FileStore) bool { return s.has() }
 
 // Dir is the account directory, for a sentence that names where the record
 // is.
-func (a *Account) Dir() string { return a.dir }
+func (a *Account) Dir() string { return a.store.Dir }
 
 // CredentialsPath is the record's path.
-func (a *Account) CredentialsPath() string { return filepath.Join(a.dir, credentialsFile) }
+func (a *Account) CredentialsPath() string { return a.store.CredentialsPath() }
 
 // Credential reads the record as it is on disk. No record is the zero
 // Credential and no error. The read takes no lock: the record is only ever
 // replaced whole, so a read sees one writer's file or the other's.
 func (a *Account) Credential() (Credential, error) { return a.read() }
 
-func (a *Account) read() (Credential, error) { return readRecord(a.CredentialsPath()) }
+func (a *Account) read() (Credential, error) { return readRecord(a.store) }
 
-func readRecord(path string) (Credential, error) {
-	data, err := os.ReadFile(path)
+func readRecord(store FileStore) (Credential, error) {
+	data, err := store.readCredential()
 	if errors.Is(err, fs.ErrNotExist) {
 		return Credential{}, nil
 	}
@@ -273,7 +233,7 @@ func readRecord(path string) (Credential, error) {
 	if err := json.Unmarshal(data, &c); err != nil {
 		// The decoder's error names a character or a type, never the text
 		// around it, so it cannot carry a token into the message.
-		return Credential{}, fmt.Errorf("%s is not a ChatGPT credential record: %w", path, errMalformed{err})
+		return Credential{}, fmt.Errorf("%s is not a ChatGPT credential record: %w", store.CredentialsPath(), errMalformed{err})
 	}
 	return c, nil
 }
@@ -298,21 +258,13 @@ func (a *Account) current() (Credential, error) {
 	return c, nil
 }
 
-// write replaces the record whole and owner-only. ReplaceFile keeps the
-// mode of a file already there, so a record copied in with a looser mode is
-// narrowed first rather than rewritten as readable as it arrived.
+// write replaces the record whole and owner-only.
 func (a *Account) write(c Credential) error {
 	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
-	path := a.CredentialsPath()
-	if info, err := os.Stat(path); err == nil && info.Mode().Perm() != 0o600 {
-		if err := os.Chmod(path, 0o600); err != nil {
-			return err
-		}
-	}
-	return config.ReplaceFile(path, string(data)+"\n", 0o600)
+	return a.store.writeCredential(append(data, '\n'))
 }
 
 // report tells OnTokens about a set it has not been told about yet.
@@ -333,7 +285,7 @@ func (a *Account) report(c Credential) {
 // held on the record would be on the old file the moment the first writer
 // renamed over it, and the second writer would take a lock on the new one.
 func (a *Account) withLock(ctx context.Context, fn func() error) error {
-	f, err := os.OpenFile(filepath.Join(a.dir, lockFileName), os.O_RDWR|os.O_CREATE, 0o600)
+	f, err := a.store.openLock()
 	if err != nil {
 		return err
 	}
@@ -377,23 +329,21 @@ func (a *Account) HostID() (string, error) {
 // both locks held, so two processes signing in for the first time agree on
 // one ID.
 func (a *Account) ensureHostID() (string, error) {
-	path := filepath.Join(a.dir, hostIDFile)
-	data, err := os.ReadFile(path)
+	id, err := a.store.readHostID()
 	if err == nil {
-		id := strings.TrimSpace(string(data))
 		if !validHostID(id) {
-			return "", fmt.Errorf("%s does not hold a host ID; delete it to have a new one made", path)
+			return "", a.store.errHostID()
 		}
 		return id, nil
 	}
 	if !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
-	id, err := newHostID()
+	id, err = newHostID()
 	if err != nil {
 		return "", err
 	}
-	if err := config.ReplaceFile(path, id+"\n", 0o600); err != nil {
+	if err := a.store.writeHostID(id); err != nil {
 		return "", err
 	}
 	return id, nil

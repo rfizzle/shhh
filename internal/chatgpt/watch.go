@@ -3,7 +3,6 @@ package chatgpt
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -29,42 +28,24 @@ func (s RecordStamp) Same(o RecordStamp) bool {
 	return s.size == o.size && s.mod.Equal(o.mod) && os.SameFile(s.info, o.info)
 }
 
-// StatRecord stamps the record in dir (empty is the default directory),
-// creating nothing. An absent record, or one that cannot be statted, is the
-// zero stamp; a caller learns what the record holds from ReadRecord.
-func StatRecord(dir string) RecordStamp {
-	path, err := recordPath(dir)
-	if err != nil {
+// StatRecord stamps the record in the store, creating nothing. An absent
+// record, or one that cannot be statted, is the zero stamp; a caller learns
+// what the record holds from ReadRecord.
+func StatRecord(store FileStore) RecordStamp {
+	if store.Dir == "" {
 		return RecordStamp{}
 	}
-	info, err := os.Stat(path)
+	info, err := os.Stat(store.CredentialsPath())
 	if err != nil {
 		return RecordStamp{}
 	}
 	return RecordStamp{info: info, size: info.Size(), mod: info.ModTime()}
 }
 
-// ReadRecord reads the record in dir (empty is the default directory) the
-// way an Account does, without opening one: no directory is created, no lock
-// is taken, and nothing is logged. A record that is not there is the zero
-// Credential and no error.
-func ReadRecord(dir string) (Credential, error) {
-	path, err := recordPath(dir)
-	if err != nil {
-		return Credential{}, err
-	}
-	return readRecord(path)
-}
-
-func recordPath(dir string) (string, error) {
-	if dir == "" {
-		var err error
-		if dir, err = defaultDir(); err != nil {
-			return "", err
-		}
-	}
-	return filepath.Join(dir, credentialsFile), nil
-}
+// ReadRecord reads the record in the store the way an Account does, without
+// opening one: no directory is created, no lock is taken, and nothing is
+// logged. A record that is not there is the zero Credential and no error.
+func ReadRecord(store FileStore) (Credential, error) { return readRecord(store) }
 
 // errMalformed marks a record that was read and did not parse.
 type errMalformed struct{ error }

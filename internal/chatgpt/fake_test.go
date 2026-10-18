@@ -268,7 +268,7 @@ func mintRS256(t *testing.T, key *rsa.PrivateKey, kid string, claims map[string]
 // openTest opens an account on a temporary directory against the fake.
 func openTest(t *testing.T, dir string, client *http.Client, clock *heldClock, onTokens func(a, r, i string)) *Account {
 	t.Helper()
-	a, err := Open(Options{Dir: dir, Client: client, Now: clock.Now, OnTokens: onTokens})
+	a, err := Open(Options{Store: FileStore{Dir: dir}, Client: client, Now: clock.Now, OnTokens: onTokens})
 	if err != nil {
 		t.Fatal(err)
 	}
