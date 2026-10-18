@@ -145,7 +145,6 @@ func (c QueueCard) View(width int) string {
 	for _, l := range Wrap("steering joins the turn at its next round; a follow-up goes when it ends", inner) {
 		rows = append(rows, sty.dim.Render(l))
 	}
-	rows = append(rows, cardRule)
 	var sel QueuedMessage
 	if c.Selected >= 0 && c.Selected < len(c.Messages) {
 		sel = c.Messages[c.Selected]
@@ -158,6 +157,5 @@ func (c QueueCard) View(width int) string {
 		offers = append(offers, Offer(keys.Queue.Cancel))
 	}
 	offers = append(offers, OfferAs(keys.Queue.Back, EscBack))
-	rows = append(rows, CardHintRows(withKeyListOffer(offers), width)...)
-	return card.Render(rows, width)
+	return card.Build(rows, CardHintRows(withKeyListOffer(offers), width), width)
 }

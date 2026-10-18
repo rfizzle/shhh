@@ -373,8 +373,9 @@ func (c ProviderCard) View(width int) string {
 	if c.Likely != "" {
 		rows = append(rows, "", sty.dim.Render(c.Likely))
 	}
+	var foot []string
 	if len(c.Keys) > 0 {
-		rows = append(rows, cardRule, keyOffers(c.Keys))
+		foot = []string{keyOffers(c.Keys)}
 	}
 	// Accent, not the default gray: this is the one card that stops the
 	// session, and an accent border is a card's weight — a decision waiting
@@ -385,7 +386,7 @@ func (c ProviderCard) View(width int) string {
 	return Card{
 		Title: "No model provider configured",
 		style: &border,
-	}.Render(rows, width)
+	}.Build(rows, foot, width)
 }
 
 // lookedIn is the card's first line, counting the places rather than naming

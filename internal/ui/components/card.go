@@ -137,6 +137,23 @@ func (c Card) Render(rows []string, width int) string {
 	return b.String()
 }
 
+// Build frames a card from its parts: the body rows, then, when there is a
+// foot, the rule and the foot rows under it. It is how every framed card is
+// drawn, so the rule between a card's content and its keys is placed here
+// once and a card with no foot has no rule to forget to leave out.
+func (c Card) Build(body, foot []string, width int) string {
+	return c.Render(append(body[:len(body):len(body)], footRows(foot)...), width)
+}
+
+// footRows is the foot as it sits in the frame: the rule, then the rows. A
+// card with nothing to put under the rule has no rule.
+func footRows(foot []string) []string {
+	if len(foot) == 0 {
+		return nil
+	}
+	return append([]string{cardRule}, foot...)
+}
+
 // cardLeadIn is the run of border between the corner and the title. It is
 // three cells wide whatever the title is, which is what lets the title be
 // clipped without the frame losing its corner.

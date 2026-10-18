@@ -95,14 +95,15 @@ func (c *PlanCard) View(width int) string {
 	// The plan card's options are its three or four decisions and never
 	// scroll; here it is the step list that shrinks, so the options
 	// render whole rather than through a window.
-	tail := c.tailRows(width, inner, sel.optionRows(width, true, 0, len(c.Options)))
-	rows := c.bodyRows(inner, c.bodyBudget(len(tail)))
+	summary, foot := c.tailRows(width, inner, sel.optionRows(width, true, 0, len(c.Options)))
+	rows := c.bodyRows(inner, c.bodyBudget(len(summary)+len(footRows(foot))))
+	rows = append(rows, summary...)
 	// The frame is Info: the plan card has no severity to colour itself with
 	// — a plan is a proposal and not an act — and a card waiting for an
 	// answer drawn in the chrome grey a viewer wears says nothing about which
 	// of the two it is (cardTone).
 	return Card{Title: c.Title, chips: c.chips(), tone: CardDecision}.
-		Render(append(rows, tail...), width)
+		Build(rows, foot, width)
 }
 
 // chips is the step count on the title rail, which is the one thing about the
@@ -114,16 +115,14 @@ func (c *PlanCard) chips() []string {
 	return []string{c.Chip}
 }
 
-// tailRows is everything below the steps: the summary, the rule, the options
-// and the keys. It is fixed height, so it is measured first and the body gets
+// tailRows is everything below the steps: the summary, which stays in the
+// body, and the options and the keys, which are the foot. It is fixed height, so it is measured first and the body gets
 // what is left.
-func (c *PlanCard) tailRows(width, inner int, options []string) []string {
-	var rows []string
+func (c *PlanCard) tailRows(width, inner int, options []string) (summary, rows []string) {
 	if line := c.summaryRow(inner); line != "" {
-		rows = append(rows, "", line)
+		summary = []string{"", line}
 	}
-	rows = append(rows, cardRule)
-	rows = append(rows, options...)
+	rows = options
 	switch {
 	case c.NotYetLive:
 		// A plan that arrived while a sentence was half-typed offers what an
@@ -138,7 +137,7 @@ func (c *PlanCard) tailRows(width, inner int, options []string) []string {
 		}
 		rows = append(rows, hintRows(offers, width)...)
 	}
-	return rows
+	return summary, rows
 }
 
 // bodyBudget is how many rows the step list may have once the tail and the

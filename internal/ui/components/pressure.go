@@ -194,22 +194,22 @@ func (c PressureCard) View(width int) string {
 			rows = append(rows, wrapSpans(line, width-cardFrameWidth)...)
 		}
 	}
+	var foot []string
 	if len(c.Keys) > 0 {
 		// None of the three is truncated away: a narrow terminal gets more
 		// rows, not fewer answers, and the one that would clip here is the
 		// one that keeps going.
-		rows = append(rows, cardRule)
 		offers := c.Keys
 		if c.KeyList {
 			offers = withKeyListOffer(offers)
 		}
-		rows = append(rows, packOffers(offers, width-cardFrameWidth)...)
+		foot = packOffers(offers, width-cardFrameWidth)
 	}
 	return Card{
 		Title: pressureTitle,
 		chips: []string{c.chip()},
 		style: &style,
-	}.Render(rows, width)
+	}.Build(rows, foot, width)
 }
 
 // chip is the occupancy on the title rail: the percentage, then the two

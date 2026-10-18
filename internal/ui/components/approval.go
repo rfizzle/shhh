@@ -599,14 +599,14 @@ func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result ApprovalDe
 // under the rule never moves.
 func (c *ApprovalCard) View(width int) string {
 	body, hints := c.buildRows(width)
-	rows := append(c.windowBody(body, len(hints), width), hints...)
+	rows := c.windowBody(body, len(footRows(hints)), width)
 
 	title := c.Title
 	if c.QueuePos != "" {
 		title += " (" + c.QueuePos + ")"
 	}
 	style := c.tone()
-	return Card{Title: title, chips: c.chips(), style: &style}.Render(rows, width)
+	return Card{Title: title, chips: c.chips(), style: &style}.Build(rows, hints, width)
 }
 
 // tone is the card's own colour, which its three statements of the severity
@@ -788,7 +788,7 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 
 	hints = c.hintRowsFor(width, inner)
 	// The keys sit below a rule so they never blend into the body.
-	return body, append([]string{cardRule}, hints...)
+	return body, hints
 }
 
 // filesBody is the edit variant's body for an edit across several files: a
@@ -900,7 +900,7 @@ func panRows(rows []string, x, inner int) []string {
 // against these, so fifty presses past the end cost one press back.
 func (c *ApprovalCard) ScrollBounds(width int) (maxBody, maxPan int) {
 	body, hints := c.buildRows(width)
-	if visible := c.visibleBody(len(hints)); visible > 0 && len(body) > visible {
+	if visible := c.visibleBody(len(footRows(hints))); visible > 0 && len(body) > visible {
 		maxBody = len(body) - visible
 	}
 	inner := Card{}.Inner(width)
@@ -1379,7 +1379,7 @@ func (c *ApprovalCard) FieldOrigin(width int) (x, y int, ok bool) {
 		return 0, 0, false
 	}
 	body, hints := c.buildRows(width)
-	rows := append(c.windowBody(body, len(hints), width), hints...)
+	rows := append(c.windowBody(body, len(footRows(hints)), width), footRows(hints)...)
 	// The field is the row after its ┄ label — the run above it may have
 	// wrapped to two rows, and the body above that is whatever fits.
 	at := -1

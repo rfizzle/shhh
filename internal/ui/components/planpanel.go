@@ -46,10 +46,10 @@ func (p PlanPanel) View(width int) string {
 		}
 		rows = append(rows, wrapSpans([]styledSpan{{para, sty.body}}, inner)...)
 	}
+	var foot []string
 	if len(p.Offers) > 0 {
-		rows = append(rows, cardRule)
-		rows = append(rows, packOffers(p.Offers, inner)...)
+		foot = packOffers(p.Offers, inner)
 	}
 	border := sty.accent
-	return Card{Title: p.Title, style: &border}.Render(rows, width)
+	return Card{Title: p.Title, style: &border}.Build(rows, foot, width)
 }

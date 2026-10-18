@@ -864,7 +864,7 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 	keyBlock := func(c *ApprovalCard, width int) []string {
 		_, hints := c.buildRows(width)
 		var rows []string
-		for _, r := range hints[1:] {
+		for _, r := range hints {
 			rows = append(rows, ansi.Strip(r))
 		}
 		return rows

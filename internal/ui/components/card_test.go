@@ -64,6 +64,19 @@ func TestCard_FillNeverEatsTheTitleOrTheChips(t *testing.T) {
 	}
 }
 
+// The builder puts the rule between the body and the foot, and only when
+// there is a foot: a card with nothing under it has no divider to end on.
+func TestCardBuild_TheRuleSitsBetweenBodyAndFootOnlyWhenThereIsAFoot(t *testing.T) {
+	card := Card{Title: "t"}
+	got := ansi.Strip(card.Build([]string{"body"}, []string{"keys"}, 30))
+	if want := ansi.Strip(card.Render([]string{"body", cardRule, "keys"}, 30)); got != want {
+		t.Fatalf("body, rule, foot:\ngot  %q\nwant %q", got, want)
+	}
+	if bare := ansi.Strip(card.Build([]string{"body"}, nil, 30)); strings.Contains(bare, "├") {
+		t.Fatalf("a card with no foot drew a rule: %q", bare)
+	}
+}
+
 // A card is drawn from the same kit the input frame is, so the two shapes on
 // screen read as one material at two weights rather than as two kinds of
 // object with nothing to learn from the difference. The chip run keeps a rule

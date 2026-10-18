@@ -94,15 +94,15 @@ func (c CommitCard) View(width int) string {
 	if c.Failure != "" {
 		rows = append(rows, "", sty.err.Render(Clip("✗ "+c.Failure, inner)))
 	}
-	rows = append(rows, cardRule)
+	var foot []string
 	if c.Running {
-		rows = append(rows, deadRows(plainCommitRun(), nil, committingWords, width)...)
+		foot = deadRows(plainCommitRun(), nil, committingWords, width)
 	} else {
-		rows = append(rows, runRows(commitRun(), inner)...)
+		foot = runRows(commitRun(), inner)
 		if c.Override {
-			rows = append(rows, commitOverrideRow(inner))
+			foot = append(foot, commitOverrideRow(inner))
 		}
-		rows = append(rows, commitEscRow(inner))
+		foot = append(foot, commitEscRow(inner))
 	}
 	// The tone is the mutation rail's, the same Accent the changed-files row
 	// that offered this key is drawn in, and the chip says the level in
@@ -115,7 +115,7 @@ func (c CommitCard) View(width int) string {
 		Title: commitTitle,
 		chips: []string{SeverityLow.Word()},
 		style: &style,
-	}.Render(rows, width)
+	}.Build(rows, foot, width)
 }
 
 // messageRow is the first body row, in the shape every card's first row has:
@@ -240,13 +240,14 @@ func (c CommitMessage) View(width int) string {
 		rows = append(rows, sty.info.Render("· ")+r)
 	}
 	tones := cardTones()
-	rows = append(rows, cardRule,
+	foot := []string{
 		tones.Paint(keyOfferAs(keys.Select.Take, "commit with this")),
-		Clip(tones.Paint(safeOffer(keys.Select.Cancel, EscWaits+escClause+"edits kept", inner)), inner))
+		Clip(tones.Paint(safeOffer(keys.Select.Cancel, EscWaits+escClause+"edits kept", inner)), inner),
+	}
 	// The frame is Add rather than the decision tone: what is inside it is
 	// the text that will be written, and the surface is the one place in
 	// this flow where nothing is being decided — the decision was taken on
 	// the card and comes back to it.
 	style := sty.add
-	return Card{Title: c.budgetTitle(), style: &style}.Render(rows, width)
+	return Card{Title: c.budgetTitle(), style: &style}.Build(rows, foot, width)
 }
