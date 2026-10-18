@@ -942,6 +942,23 @@ func SetGround(dark bool) bool {
 	return true
 }
 
+// PaletteForGround is the table that would be drawn if the terminal's
+// background were dark or light. Under the auto theme that is the table the
+// ground chooses; under mono or a theme asked for by name the ground has no
+// say, and it is the live palette. A page drawn before any terminal has been
+// asked (the help text) takes both rungs from here and lets its own writer
+// pick one.
+func PaletteForGround(dark bool) ColorTokens {
+	if mono || themeName != ThemeAuto {
+		return Palette
+	}
+	name := ThemeLight
+	if dark {
+		name = ThemeDark
+	}
+	return withOverrides(themes[name].tokens, overrides)
+}
+
 // PaintGround turns the theme's own background on or off for the whole
 // screen, and reports whether that changed anything. An answer that is the
 // theme's own default is no answer at all, so the default stands again for

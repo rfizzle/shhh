@@ -242,3 +242,40 @@ func TestHelp_ThreeFlagsSayWhatTheyDo(t *testing.T) {
 func TestRootHelpGolden(t *testing.T) {
 	assertReportGolden(t, "help.w80", strings.TrimRight(renderHelp(t), "\n"))
 }
+
+// The page takes the terminal's ground: each role resolves to the light or
+// the dark rung of the palette, as the TUI's table does. The ground is
+// injected as fang would hand it, so no terminal is asked. A code block is
+// never filled, on either.
+func TestHelpColorsFollowTheGround(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		dark bool
+		want components.ColorTokens
+	}{
+		{"dark", true, components.PaletteForGround(true)},
+		{"light", false, components.PaletteForGround(false)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cs := helpColors(lipgloss.LightDark(tc.dark))
+			for role, c := range map[string][2]color.Color{
+				"title":   {cs.Title, tc.want.Info.Color()},
+				"base":    {cs.Base, tc.want.Body.Color()},
+				"program": {cs.Program, tc.want.Bright.Color()},
+				"help":    {cs.Help, tc.want.Dim.Color()},
+				"quoted":  {cs.QuotedString, tc.want.Accent.Color()},
+				"error":   {cs.ErrorHeader[0], tc.want.Del.Color()},
+			} {
+				if c[0] != c[1] {
+					t.Errorf("%s on a %s ground is %v, want %v", role, tc.name, c[0], c[1])
+				}
+			}
+			if _, ok := cs.Codeblock.(lipgloss.NoColor); !ok {
+				t.Errorf("the code block is filled with %v, want NoColor", cs.Codeblock)
+			}
+		})
+	}
+	if components.PaletteForGround(true).Body == components.PaletteForGround(false).Body {
+		t.Fatal("the control is wrong: both grounds resolve to the same body token")
+	}
+}

@@ -88,7 +88,7 @@ func ExitCode(err error) int {
 // so a test can render a page exactly as the binary prints it rather than
 // against cobra's undressed template.
 func execute(ctx context.Context, cmd *cobra.Command) error {
-	return fang.Execute(ctx, cmd, fang.WithVersion(version), fang.WithColorSchemeFunc(helpColors), fang.WithErrorHandler(errorLine))
+	return fang.Execute(ctx, cmd, fang.WithVersion(version), fang.WithColorSchemeFunc(helpColorsOnTerminal), fang.WithErrorHandler(errorLine))
 }
 
 // errorLine is how a failed command's error is printed. On a terminal it is
@@ -108,6 +108,17 @@ func errorLine(w io.Writer, styles fang.Styles, err error) {
 	fang.DefaultErrorHandler(w, styles, err)
 }
 
+// helpColorsOnTerminal is helpColors for the stream fang writes to. fang hands
+// the light rung to anything that is not a terminal, because nothing was
+// asked; the rest of the product treats an unanswered ground as dark
+// (components.SetGround), so a page that no terminal answered for does too.
+func helpColorsOnTerminal(ld lipgloss.LightDarkFunc) fang.ColorScheme {
+	if !isTerminal(os.Stdout) {
+		ld = lipgloss.LightDark(true)
+	}
+	return helpColors(ld)
+}
+
 // helpColors is the dressing in the product's own palette rather than fang's.
 // `--help` and a failed command's exit are the first things somebody reads of
 // shhh, and a page in somebody else's colours is a page that does not read as
@@ -115,14 +126,37 @@ func errorLine(w io.Writer, styles fang.Styles, err error) {
 // The roles follow the listings': headings in info, what you type in info,
 // prose in body, everything that is chrome in dim, and a failure in del. No
 // code block is filled: the palette has no fill for one, and a slab of a
-// colour it never issued is the one thing on the page it would disown.
-func helpColors(lipgloss.LightDarkFunc) fang.ColorScheme {
-	p := components.Palette
+// colour it never issued is the one thing on the page it would disown. Each
+// role takes the light or dark rung of the palette the way the TUI's table
+// does, so the page is drawn for the terminal's own ground.
+func helpColors(ld lipgloss.LightDarkFunc) fang.ColorScheme {
+	l, d := helpScheme(components.PaletteForGround(false)), helpScheme(components.PaletteForGround(true))
+	return fang.ColorScheme{
+		Base:           ld(l.Base, d.Base),
+		Title:          ld(l.Title, d.Title),
+		Description:    ld(l.Description, d.Description),
+		Codeblock:      lipgloss.NoColor{},
+		Program:        ld(l.Program, d.Program),
+		DimmedArgument: ld(l.DimmedArgument, d.DimmedArgument),
+		Comment:        ld(l.Comment, d.Comment),
+		Flag:           ld(l.Flag, d.Flag),
+		FlagDefault:    ld(l.FlagDefault, d.FlagDefault),
+		Command:        ld(l.Command, d.Command),
+		QuotedString:   ld(l.QuotedString, d.QuotedString),
+		Argument:       ld(l.Argument, d.Argument),
+		Help:           ld(l.Help, d.Help),
+		Dash:           ld(l.Dash, d.Dash),
+		ErrorHeader:    [2]color.Color{ld(l.ErrorHeader[0], d.ErrorHeader[0]), lipgloss.NoColor{}},
+		ErrorDetails:   ld(l.ErrorDetails, d.ErrorDetails),
+	}
+}
+
+// helpScheme is one rung: each role's token out of one table.
+func helpScheme(p components.ColorTokens) fang.ColorScheme {
 	return fang.ColorScheme{
 		Base:           p.Body.Color(),
 		Title:          p.Info.Color(),
 		Description:    p.Body.Color(),
-		Codeblock:      lipgloss.NoColor{},
 		Program:        p.Bright.Color(),
 		DimmedArgument: p.Dim.Color(),
 		Comment:        p.Dim.Color(),
