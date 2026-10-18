@@ -110,6 +110,46 @@ func TestReadBeforeEditExemptsNewFilesAndAppends(t *testing.T) {
 	}
 }
 
+// A read that came back as an error taught the session nothing of the file, so
+// an edit that follows it is still blind; a write that failed likewise.
+func TestReadBeforeEditCountsOnlyAReadThatSucceeded(t *testing.T) {
+	a := Assertion{Word: wordReadBefore}
+	failedRead := func(id, tool string) map[string]any {
+		l := resultLine(1, id, tool, "error: permission denied")
+		l["class"] = "permission"
+		return l
+	}
+	edit := callLine(2, "2", "edit_file", `{"path":"a.go","old_text":"x","new_text":"y"}`)
+	broken := map[string]trace{
+		"failed read": streamOf(t, callLine(1, "1", "read_file", `{"path":"a.go"}`), failedRead("1", "read_file"), edit),
+		"failed write": streamOf(t,
+			callLine(1, "1", "write_file", `{"path":"a.go","content":"x"}`), failedRead("1", "write_file"), edit),
+	}
+	for name, tr := range broken {
+		if f := finding(t, a, tr); f.Held {
+			t.Errorf("%s should break it: %+v", name, f)
+		}
+	}
+	ok := streamOf(t, callLine(1, "1", "read_file", `{"path":"a.go"}`), resultLine(1, "1", "read_file", "package a"), edit)
+	if f := finding(t, a, ok); !f.Held {
+		t.Errorf("a read that succeeded should hold: %+v", f)
+	}
+}
+
+func TestLoadRefusesABudgetOnAToolNoSessionOffers(t *testing.T) {
+	err := writeAssertCase(t, `budget = ["read_fiel 3"]`)
+	for _, want := range []string{"budget", CaseFile, "read_fiel"} {
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Fatalf("err = %v, want it to name %q", err, want)
+		}
+	}
+	for _, tool := range []string{"read_file", "execute_command", "ask", "process", "spawn_agent", "git_write", "web_fetch", "hover", "calls"} {
+		if _, err := parseAssertions([]string{tool + " 1"}, nil, "case.toml", false); err != nil {
+			t.Errorf("%s is a tool a session offers: %v", tool, err)
+		}
+	}
+}
+
 func TestNoMutationCountsAnUnknownTool(t *testing.T) {
 	a := Assertion{Word: wordNoMutation}
 	reads := streamOf(t, callLine(1, "1", "read_file", `{}`), resultLine(1, "1", "read_file", "x"))

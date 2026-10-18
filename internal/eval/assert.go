@@ -27,9 +27,17 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
+	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe/record"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // The assertion words. wordBudget is the one that takes a tool and a limit.
@@ -92,6 +100,9 @@ func parseAssertions(budget, assert []string, path string, hasPersona bool) ([]A
 			return nil, fmt.Errorf(`%s: budget %q needs a count of zero or more after the tool — "<tool> N"`, path, line)
 		}
 		a := Assertion{Word: wordBudget, Tool: fields[0], Limit: limit}
+		if a.Tool != budgetAllCalls && !sessionTools()[a.Tool] {
+			return nil, fmt.Errorf(`%s: budget %q names %s, which no session offers — a tool the registry defines, or "calls" for every call`, path, line, a.Tool)
+		}
 		if seen[a.Tool+"\x00budget"] {
 			return nil, fmt.Errorf("%s: budget names %s twice — one limit per tool", path, a.Tool)
 		}
@@ -113,6 +124,37 @@ func parseAssertions(budget, assert []string, path string, hasPersona bool) ([]A
 		out = append(out, Assertion{Word: word})
 	}
 	return out, nil
+}
+
+// sessionTools is every tool name a session can be offered, read off the
+// definitions each package registers rather than listed a second time here.
+// A budget on a name outside it could never be spent, so it would hold for
+// the wrong reason. A tool an MCP server brings is the reader's own
+// configuration, and a case measures what ships.
+func sessionTools() map[string]bool {
+	defs := slices.Concat(
+		tools.DefinitionsFull(),
+		structural.Registrable(),
+		subagent.Definitions(nil, subagent.Offer{}),
+		notebook.Definitions(),
+		[]provider.Tool{ask.ToolDefinition(), process.Definition(), quality.ToolDefinition(), evidence.ToolDefinition()},
+	)
+	names := map[string]bool{
+		web.FetchToolName: true, web.SearchToolName: true,
+		lsp.DefinitionToolName: true, lsp.ReferencesToolName: true, lsp.WorkspaceSymbolToolName: true,
+		lsp.HoverToolName: true, lsp.DiagnosticsToolName: true,
+	}
+	for _, d := range defs {
+		names[d.Name] = true
+	}
+	return names
+}
+
+// failed says the call's answer was an error, by the class the stream
+// recorded for it. A search that found nothing is a successful one, and a
+// call with no answer is not known to have failed.
+func (c call) failed() bool {
+	return c.answered && c.Class != "" && c.Class != record.ClassEmpty
 }
 
 // fixture is the files a workspace held when the session started, which is
@@ -266,8 +308,13 @@ func unreadEdits(calls []call, fx fixture) (int, string) {
 	counts := map[string]int{}
 	n := 0
 	for _, c := range calls {
+		// A read or write that came back as an error taught the session
+		// nothing of the file, so it makes no path known.
 		switch c.Tool {
 		case tools.ReadFileName:
+			if c.failed() {
+				continue
+			}
 			var args struct {
 				Path string `json:"path"`
 			}
