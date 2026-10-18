@@ -25,7 +25,7 @@ func (d *todoDriver) sprint(ctx context.Context, max int) bool {
 		sp.Bound(d.costCapFlag, d.costCap)
 		fmt.Fprintln(d.out, "continuing the sprint from its checkpoint — "+sp.Summary())
 	default:
-		sp = run.StartSprint(d.session, "", max, d.noCommit)
+		sp = run.StartSprint(d.session, max, d.noCommit)
 		sp.Bound(d.costCapFlag, d.costCap)
 	}
 	for {
@@ -238,14 +238,14 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 		// An item left in progress by something that wrote no checkpoint is
 		// not a run to continue and not one to start over either: starting
 		// over would redo work that may be in the tree already.
-		st := run.Start(it, d.session, "", 0, opt)
+		st := run.Start(it, d.session, 0, opt)
 		return st, st.Block("the item is in progress with no checkpoint to continue from; `/todo open " + it.Slug + "` puts it back to open and a run can start over")
 	}
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
-		st := run.Start(it, d.session, "", 0, opt)
+		st := run.Start(it, d.session, 0, opt)
 		return st, st.Block("the item could not be marked in progress: " + err.Error())
 	}
-	st := run.Start(it, d.session, "", 0, opt)
+	st := run.Start(it, d.session, 0, opt)
 	// The baseline is the tree as this item found it, and it is taken here
 	// — once, where the item starts — rather than at every process that
 	// works it. A sprint asked for without commits leaves each item's work

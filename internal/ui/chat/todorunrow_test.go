@@ -55,7 +55,7 @@ func stripWords(r *todoRunRow) []string {
 // in different files, and a row that invented a sixth word would read as a
 // stage the record has never heard of.
 func TestTodoRunRow_StageWordsAreTheRecordsWords(t *testing.T) {
-	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "M"}}, "s", "manual", 1, run.Options{})
+	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "M"}}, "s", 1, run.Options{})
 	got := stripWords(newTodoRunRow(st))
 	if len(got) != len(run.BuiltinCode().Strip()) {
 		t.Fatalf("the strip draws %d stages, the machine has %d: %v", len(got), len(run.BuiltinCode().Strip()), got)
@@ -134,7 +134,7 @@ func TestTodoRunRow_ContinuedDrawsRestoredNotPassed(t *testing.T) {
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
 		t.Fatal(err)
 	}
-	st := run.Start(it, "an earlier session", "manual", 1, run.Options{Repo: true})
+	st := run.Start(it, "an earlier session", 1, run.Options{Repo: true})
 	st.Stage, st.Plan, st.Steps = run.StageVerify, runPlan, []string{"Change a.go"}
 	if err := st.Save(root); err != nil {
 		t.Fatal(err)
@@ -226,7 +226,7 @@ func TestTodoRunRow_BlockedNamesTheFollowUpAndReopens(t *testing.T) {
 // round says so after it finishes — so it says which round is in flight only
 // while one is. `round 1 of 2` beside a finished run would claim one still was.
 func TestTodoRunRow_RoundNoteSaysSpentOnceTheStageIsPast(t *testing.T) {
-	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "M"}}, "s", "manual", 1, run.Options{})
+	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "M"}}, "s", 1, run.Options{})
 	st.Round, st.Stage = 1, run.StageRemediate
 	r := newTodoRunRow(st)
 	if got := noteText(r); !strings.Contains(got, "remediate  round 1 of 2") {
@@ -242,7 +242,7 @@ func TestTodoRunRow_RoundNoteSaysSpentOnceTheStageIsPast(t *testing.T) {
 // verify's output runs to forty lines and already has a row of its own; the
 // row that opens must not become the wall of text it replaced.
 func TestTodoRunRow_OpenedAnswersAreBounded(t *testing.T) {
-	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "M"}}, "s", "manual", 1, run.Options{})
+	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "M"}}, "s", 1, run.Options{})
 	lines := make([]string, 40)
 	for i := range lines {
 		lines[i] = fmt.Sprintf("--- FAIL: TestCase%d", i)

@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -30,6 +31,62 @@ import (
 // Commands flagged by safety.Check always prompt, in every mode except plan
 // (which refuses them like everything else).
 
+// flowPolicy is the policy a flow holds over the session's mode while it
+// runs, and the flow's name for the sentences that say so; ok is false when
+// none does. A backlog run holds its current step's policy, and a grooming
+// reading and a sprint plan hold plan. It is read off the flows' own state
+// rather than stored, so a flow that ends by any path — its natural end,
+// `/todo stop`, a cancel, a displaced turn, the session boundary — leaves
+// nothing behind to clear: a stored policy whose release was missed would
+// be auto left standing, which is failing open.
+// See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
+func (m Model) flowPolicy() (mode agent.Mode, flow string, ok bool) {
+	if st := m.todo.runner.state; st != nil && !st.Over() {
+		if st.Mode() == run.ModeAuto {
+			return agent.ModeAuto, "the backlog run", true
+		}
+		return agent.ModePlan, "the backlog run", true
+	}
+	if m.todo.groomer.going() {
+		return agent.ModePlan, "the reading", true
+	}
+	if m.todo.planner.going {
+		return agent.ModePlan, "the sprint plan", true
+	}
+	return 0, "", false
+}
+
+// gateMode is the mode every door reads — the verdict on a call, the
+// containment refusal, the paragraph the model is sent, the classifier, the
+// batch and the inbound hold: a flow's policy while one holds, the session's
+// mode otherwise. The session's mode is the person's, and only the surfaces
+// that show or move it read it. A flow's policy stands in for the mode
+// rather than being ranked against it, because the reading flows are
+// narrower than an auto session as often as a build is broader than a
+// manual one. What it may not do is widen a session the person bounded to
+// read-only: such a session is not let start a writing flow, and one put
+// there while a flow is going reads its own bound.
+// See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
+func (m Model) gateMode() agent.Mode {
+	flow, _, ok := m.flowPolicy()
+	if !ok || (m.policy.mode.ReadOnly() && !flow.ReadOnly()) {
+		return m.policy.mode
+	}
+	return flow
+}
+
+// flowPolicyLine is the sentence `/permissions` and the help's policy
+// section add under the mode while a flow answers in another one, and empty
+// while none does: the mode those lines name is the person's, and without
+// it a reader told "manual" would be watching edits apply unasked.
+func (m Model) flowPolicyLine() string {
+	_, flow, ok := m.flowPolicy()
+	if gate := m.gateMode(); ok && gate != m.policy.mode {
+		return fmt.Sprintf("While %s is going it answers under %s; the mode above is yours, and it is what stands when the flow ends.", flow, gate)
+	}
+	return ""
+}
+
 // modePolicy assembles the agent-level policy state the mode machine decides
 // with. The session's own command grants join the config allowlist, because
 // they are the same kind of thing — leading words that pre-approve a command
@@ -38,7 +95,7 @@ import (
 // reads and the rules the queue asks first are the same lists.
 func (m Model) modePolicy() agent.ModePolicy {
 	return m.rules().Policy(agent.ModePolicy{
-		Mode:             m.policy.mode,
+		Mode:             m.gateMode(),
 		AllowEdits:       m.policy.allEdits,
 		AllowCommands:    m.policy.allCommands,
 		EditDirs:         m.policy.editDirs,
@@ -60,7 +117,7 @@ func (m Model) modePolicy() agent.ModePolicy {
 // See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
 func (m Model) rules() approval.Router {
 	refusal := m.containment.Refusal
-	if refusal == "" && m.policy.mode.ReadOnly() {
+	if refusal == "" && m.gateMode().ReadOnly() {
 		refusal = m.containment.ReadOnlyRefusal
 	}
 	return approval.Router{
@@ -344,6 +401,9 @@ func (m Model) modeStatus() string {
 	}
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Mode: %s — %s.\n", m.policy.mode, m.policy.mode.Describe())
+	if line := m.flowPolicyLine(); line != "" {
+		sb.WriteString(line + "\n")
+	}
 	sb.WriteString("Cycle (Shift+Tab): " + strings.Join(names, " → ") + "\n")
 	sb.WriteString("Set with /permissions <manual|accept-edits|auto|read-only|plan>; /permissions why shows the latest auto-mode denial.\n")
 	sb.WriteString("/permissions grants lists what this session has stopped asking about; /permissions revoke takes it back.")
@@ -422,6 +482,9 @@ func (m Model) policySection() helpSection {
 		s.rows = append(s.rows, r)
 	}
 	row("mode", fmt.Sprintf("%s (%s)", m.policy.mode, m.policy.mode.Describe()))
+	if line := m.flowPolicyLine(); line != "" {
+		row("", line)
+	}
 	live := m.liveGrants()
 	row("edits", status(live.AllEdits)+scopeSuffix(len(live.EditDirs)+len(live.EditPaths), "place", "places"))
 	row("commands", status(live.AllCommands)+scopeSuffix(len(live.Commands)+len(live.ExactCommands), "command shape", "command shapes"))

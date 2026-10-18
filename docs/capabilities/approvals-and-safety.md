@@ -114,6 +114,36 @@ A conversation has none of the five. Its toolset is the bound, so the one
 policy it runs in is fixed, and it reads the web without a card
 ([`chat.md`](chat.md#a-conversation-has-one-mode)).
 
+## A flow runs under its own policy
+
+A backlog run, a grooming reading and a sprint plan each run under a policy
+of their own, and while one is going that policy is what every call is
+answered under, in place of the mode. A reading and a plan are read-only. A
+run's policy is its current step's: auto where the step changes the tree,
+plan where it reads — the research, the split, the review and the commit
+message — and a fan-out's writers are held to the step's policy as children
+are held to their parent.
+
+The policy is not the session's mode. The mode is the person's, set by
+shift+tab, `/permissions`, the settings screen or the plan card, and no flow
+writes it: nothing is changed at the start, so nothing has to be put back at
+the end, and a flow that ends by any road — finished, stopped, cancelled,
+displaced or let go of at a new session — leaves the mode exactly as it was
+set. The frame names both while they differ, the person's mode and then the
+flow's ([the input frame](../interface/surfaces.md#the-input-frame)), and
+`/permissions` says which one is answering.
+
+The flow stands in for the mode rather than being ranked against it. The
+readings are narrower than an auto session as often as a build is broader
+than a manual one, so taking the more permissive of the two would let a
+reading edit files, and taking the stricter would let no build write. What a
+flow may not do is widen a session past read-only: in read-only or plan mode
+a run whose steps write is refused before anything is written, and a session
+put into either mode while a run is going is answered under its own bound.
+The deny lists, the working scope and the containment refusal are answered
+before a flow's policy exactly as they are before a mode
+([below](#a-deny-list-is-answered-before-anything-can-allow)).
+
 ## A deny list is answered before anything can allow
 
 Two lists of command prefixes belong to the person and to nobody else. The

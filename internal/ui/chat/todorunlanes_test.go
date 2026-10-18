@@ -44,7 +44,7 @@ func TestTodoSprint_ParallelHandsTheSprintToTheRunner(t *testing.T) {
 // its checkpoint underneath it.
 func TestTodoSprint_AParallelSprintIsAskedToStop(t *testing.T) {
 	m, root := runModel(t)
-	sp := run.StartSprint("runner", "", 0, false)
+	sp := run.StartSprint("runner", 0, false)
 	sp.Parallel = 2
 	sp.Lanes = []run.SprintLane{{Slug: "do-it", Stage: run.StageImplement}}
 	must(t, sp.Save(root))
@@ -77,7 +77,7 @@ func TestTodoSprint_TheRailAndTheBoardReadTheLanes(t *testing.T) {
 	}
 	must(t, os.WriteFile(filepath.Join(dir, "sprint.md"),
 		[]byte("---\nname: lanes\n---\nThree at once.\n\n## Items\n- do-it\n- b-two\n- c-three\n"), 0o644))
-	sp := run.StartSprint("runner", "", 0, false)
+	sp := run.StartSprint("runner", 0, false)
 	sp.Parallel, sp.Turns, sp.Cost, sp.CapCents = 3, 4, 1, 2000
 	sp.Lanes = []run.SprintLane{
 		{Slug: "do-it", Stage: run.StageImplement, Turns: 2, Cost: 0.5},
@@ -125,7 +125,7 @@ func TestTodoSprint_ASessionOpenedBesideLanesFollowsThem(t *testing.T) {
 	for _, slug := range []string{"b-two", "c-three"} {
 		must(t, os.WriteFile(filepath.Join(dir, slug+".md"), []byte("---\ntitle: "+slug+"\nsize: S\n---\n"), 0o644))
 	}
-	sp := run.StartSprint("elsewhere", "", 0, false)
+	sp := run.StartSprint("elsewhere", 0, false)
 	sp.Parallel = 3
 	sp.Lanes = []run.SprintLane{
 		{Slug: "do-it", Stage: run.StageImplement},
@@ -176,7 +176,7 @@ func TestTodoSprint_ABacklogEventArmsTheReReadOnce(t *testing.T) {
 	if m.todo.runner.following {
 		t.Fatal("nothing is followed while no sprint is going")
 	}
-	sp := run.StartSprint("elsewhere", "", 0, false)
+	sp := run.StartSprint("elsewhere", 0, false)
 	sp.Parallel = 2
 	sp.Lanes = []run.SprintLane{{Slug: "do-it", Stage: run.StageImplement}}
 	must(t, sp.Save(root))

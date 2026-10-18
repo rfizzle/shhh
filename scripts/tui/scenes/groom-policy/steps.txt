@@ -1,0 +1,19 @@
+# program test: TestProgram_AGroomingReadingShowsItsPolicyBesideTheMode
+#
+# A grooming reading in a manual session, at the width the frame's rail is
+# read at. The reading runs under plan, which is its own policy and not the
+# session's mode: the frame's mode segment keeps the person's word and draws
+# the reading's mark and word after an arrow for as long as the pass holds
+# it — through the card the reading leaves — and the accepted card takes the
+# chip off, leaving the mode as the person set it.
+setup mkdir -p .shhh/todo
+setup printf -- '---\ntitle: Give the cache a lifetime\npriority: high\nsize: M\n---\n\n## Acceptance criteria\n- [ ] internal/cache/store.go:88 takes the lifetime from the config\n- [ ] The reader drops an entry past its age\n\n## Notes\nToday the reader serves a stale entry rather than refusing.\n' > .shhh/todo/cache-ttl.md
+snap 01-start "Some things worth doing first"
+keys "/todo groom cache-ttl" Enter
+# The card is up and the pass still holds plan: the person's mode, then the
+# reading's.
+snap 02-card "cache-ttl read · 2 changes proposed" "⏸ manual → ⏸ plan"
+sleep 1
+keys Enter
+# The accepted card ends the pass, and the chip goes with it.
+snap 03-accepted "wrote 3 lines to" "⏸ manual · context"

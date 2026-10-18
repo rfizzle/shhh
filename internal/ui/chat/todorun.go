@@ -29,7 +29,6 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
@@ -99,6 +98,20 @@ func (m Model) todoRunCan(repo bool) run.Can {
 func (m Model) todoProjectNamesChecks() bool {
 	_, err := quality.LoadConfig(m.todo.wiring.Root)
 	return !os.IsNotExist(err)
+}
+
+// todoRunReadOnly is the refusal a session the person bounded to read-only
+// gives a run whose steps write, and false where it gives none. A run's
+// policy stands in for the session's mode while it goes, and a writing step
+// would otherwise widen the one bound the person set that says nothing is
+// written: a flow's policy may narrow a session, never widen it past that.
+// It is asked before anything is written, the item's status included.
+// See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
+func (m Model) todoRunReadOnly(steps run.Pipeline) (string, bool) {
+	if !m.policy.mode.ReadOnly() || !steps.Writes() {
+		return "", false
+	}
+	return fmt.Sprintf("this session is in %s mode, which writes nothing, and the run's steps write. /permissions changes the mode; a run then works under a policy of its own and leaves yours as you set it", m.policy.mode), true
 }
 
 // todoRunRefusal is the sentence a session is turned away with. What the step
@@ -188,6 +201,9 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	if !opt.Steps().Runs() {
 		return m.systemNotice(fmt.Sprintf("the %s profile has no run: its items are worked by hand. /todo done %s files this one", m.todo.wiring.Profile.Name, it.Slug))
 	}
+	if note, refused := m.todoRunReadOnly(opt.Steps()); refused {
+		return m.systemNotice(note)
+	}
 	// What this session must be able to do is what the run's steps ask for,
 	// step by step: a pipeline that never writes wants no changeset and one
 	// that never commits wants no repository.
@@ -202,7 +218,6 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 		if st, err := run.Load(m.todo.wiring.Root, it.Slug); err == nil && !st.Over() {
 			from := st.Session
 			st.Session = m.sessionName
-			st.PrevMode = m.policy.mode.String()
 			st.Turn = int(m.turnCount) + 1
 			st.Reviewer = ""
 			// The invocation's answer stands over the checkpoint's, the
@@ -224,7 +239,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
 		return m.systemNotice("could not mark the item in progress: " + err.Error())
 	}
-	m.todo.runner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1, opt)
+	m.todo.runner.state = run.Start(it, m.sessionName, int(m.turnCount)+1, opt)
 	// The tree as this item found it. Only what moves after this is the
 	// run's to commit — a file somebody left modified is not the run's work
 	// — and it is taken here, once, because everything after this point is
@@ -247,17 +262,18 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 		m.appendEntry(entry{kind: entrySystem, text: "the run's checkpoint could not be written — " + err.Error()})
 	}
 	m.sprintRunning()
+	// The run's policy is the step it now stands at, and the children's
+	// ceiling follows it before anything below spawns one: the fan-out and
+	// the review spawn inside this same Update, ahead of its tail.
+	m.syncParentMode()
 	// One vocabulary for the record and for the row: the stage where the
 	// step is a turn in one, and the action everywhere else (run.Step.Name).
 	m.signal(observe.SignalRun, step.Name())
 	m.observeTodoRunRow(step)
 	switch step.Action {
 	case run.ActionPrompt:
-		mode := agent.ModeAuto
-		if step.Mode == run.ModePlan {
-			mode = agent.ModePlan
-		}
-		m.applyMode(mode)
+		// The turn is sent under the step's policy without the session's
+		// mode being touched: the gate reads the run's state (gateMode).
 		m.todo.runner.mark = len(m.transcript)
 		m.todo.runner.turn = int(m.turnCount) + 1
 		// Every stage gets its own continuation, and this is the stage
@@ -442,14 +458,13 @@ func (m Model) todoStageAnswer() string {
 	return m.todo.runner.carried
 }
 
-// endTodoRun restores the session's mode and retires the checkpoint.
+// endTodoRun retires the checkpoint. The session's mode was never the run's
+// to change, so there is nothing to put back: the run's policy ends with its
+// state.
 func (m *Model) endTodoRun() {
 	st := m.todo.runner.state
 	if st == nil {
 		return
-	}
-	if prev, err := agent.ParseMode(st.PrevMode); err == nil {
-		m.applyMode(prev)
 	}
 	// A reviewer still reading, or a writer still building, is spending on
 	// a run that is over.
@@ -482,9 +497,6 @@ func (m Model) stopTodoRunKeeping(why string) (tea.Model, tea.Cmd) {
 // (model.go).
 func (m *Model) keepTodoRun(why string) string {
 	st, it := m.todo.runner.state, m.todo.runner.item
-	if prev, err := agent.ParseMode(st.PrevMode); err == nil {
-		m.applyMode(prev)
-	}
 	m.killTodoAgents(st)
 	st.Reviewer = ""
 	for i := range st.Lanes {

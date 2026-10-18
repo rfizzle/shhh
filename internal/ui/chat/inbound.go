@@ -102,7 +102,7 @@ func (m Model) inboundPolicy() string {
 	case InboundAccept, InboundHold, InboundRefuse:
 		return p
 	}
-	if !m.wiring.Conversation && m.policy.mode == agent.ModeAuto {
+	if !m.wiring.Conversation && m.gateMode() == agent.ModeAuto {
 		return InboundHold
 	}
 	return InboundAccept

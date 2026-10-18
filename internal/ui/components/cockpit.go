@@ -23,6 +23,14 @@ const (
 type Cockpit struct {
 	Mode     string
 	ModeKind cockpitMode
+	// Flow is the mode a flow's policy answers under while it differs from
+	// the session's — a backlog run's build under a manual session, a
+	// reading under an auto one — and FlowKind its class; empty draws no
+	// chip. It follows the mode inside the same segment, so no width sheds
+	// it: it is the one thing saying the gate is not answering as the word
+	// before it says.
+	Flow     string
+	FlowKind cockpitMode
 	// Round is the tool-round counter segment ("round 7 of 25"); empty hides it.
 	Round string
 	// CtxPct drives the 8-cell context meter; negative hides it.
@@ -53,16 +61,31 @@ type Cockpit struct {
 	Extra []string
 }
 
-// modeSegment renders the always-present permission-mode segment.
+// modeSegment renders the always-present permission-mode segment: the
+// session's mark and word, and while a flow answers under another mode, an
+// arrow and that mode's own mark and word after it — `⏸ manual → ⏵⏵ auto`.
+// The flow's half is mark and word again, never a word or a colour alone,
+// because the mark is what carries the class. `✦ deciding` replaces the
+// whole segment, chip included: for that moment neither mode is the answer.
+// See docs/interface/departures.md#the-mode-segment-names-the-mode-not-its-class.
 func (c Cockpit) modeSegment() string {
-	switch c.ModeKind {
-	case CockpitChecking:
+	if c.ModeKind == CockpitChecking {
 		return sty.spinText.Render("✦ " + c.Mode)
-	case CockpitPermissive:
-		return sty.add.Render("⏵⏵ " + c.Mode)
-	default:
-		return sty.accent.Render("⏸ " + c.Mode)
 	}
+	seg := modeMarked(c.ModeKind, c.Mode)
+	if c.Flow != "" {
+		seg += sty.status.Render(" → ") + modeMarked(c.FlowKind, c.Flow)
+	}
+	return seg
+}
+
+// modeMarked is one mode as the segment draws it: its class's mark and its
+// word, in the class's tone.
+func modeMarked(kind cockpitMode, word string) string {
+	if kind == CockpitPermissive {
+		return sty.add.Render("⏵⏵ " + word)
+	}
+	return sty.accent.Render("⏸ " + word)
 }
 
 // CtxMeter is a vitals rail's context segment: the shared eight-cell Meter

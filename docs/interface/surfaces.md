@@ -1284,6 +1284,11 @@ in it. The word is the name the picker lists, `/permissions` takes and the
 settings row shows — written as the two words `accept edits` where the file
 hyphenates them, and one speller does that for every surface, so no mode is
 written two ways.
+While a flow — a backlog run, a reading, a sprint plan — answers under a mode
+other than the session's, the segment carries that mode after the person's,
+mark and word again behind an arrow, `⏸ manual → ⏵⏵ auto`, and it sheds with
+the segment, which is to say never
+([approvals](../capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy)).
 While the classifier is deciding a call the segment says `✦ deciding` instead,
 because for that moment the mode is not the answer.
 

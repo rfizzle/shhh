@@ -674,6 +674,29 @@ func TestGolden_ModeWord(t *testing.T) {
 	})
 }
 
+// TestGolden_FlowPolicyChip captures the frame while a flow answers under a
+// mode other than the session's: the person's word stays, and the flow's
+// mark and word follow it after an arrow — a manual session under a backlog
+// run's writing step, and an auto session under a grooming reading.
+func TestGolden_FlowPolicyChip(t *testing.T) {
+	captureGolden(t, "flow-policy-chip", "the mode segment while a flow holds a policy", goldenWidths, func(width int) []golden.Panel {
+		building := goldenModel(t, width)
+		building.policy.mode = agent.ModeManual
+		st := run.Start(todo.Item{Slug: "cache-ttl", Profile: todo.BuiltinCode()}, "amber-lake", 1, run.Options{})
+		st.Stage = run.StageImplement
+		building.todo.runner.state = st
+		building.invalidateRenderCache()
+		reading := goldenModel(t, width)
+		reading.policy.mode = agent.ModeAuto
+		reading.todo.groomer.slug = "cache-ttl"
+		reading.invalidateRenderCache()
+		return []golden.Panel{
+			{Label: "manual, under a run's implement step", View: promptSurface(building)},
+			{Label: "auto, under a grooming reading", View: promptSurface(reading)},
+		}
+	})
+}
+
 // TestGolden_ModePicker captures the picker bare /permissions opens: one row
 // per mode of the session's cycle, each with the one sentence that says what
 // it will and will not stop for, focused on the mode the session is in. It is
@@ -3969,7 +3992,7 @@ func TestGolden_TodoNoRepository(t *testing.T) {
 			Priority: todo.PriorityHigh,
 			Path:     ".shhh/todo/cache-ttl.md",
 		}
-		st := run.Start(it, "amber-lake", "manual", 1, run.Options{NoCommit: true})
+		st := run.Start(it, "amber-lake", 1, run.Options{NoCommit: true})
 		st.Paths = []string{"internal/provider/cache.go", "internal/provider/cache_test.go"}
 		st.Stage = run.StageReview
 		st.Observe(it, "verdict: clean")
@@ -4006,7 +4029,7 @@ func TestGolden_NewSessionRow(t *testing.T) {
 			Priority: todo.PriorityHigh,
 			Path:     ".shhh/todo/cache-ttl.md",
 		}
-		st := run.Start(it, "amber-lake", "manual", 1, run.Options{})
+		st := run.Start(it, "amber-lake", 1, run.Options{})
 		st.Stage = run.StageImplement
 		const slot, resume = "2026-09-04 11:20:07", "shhh code --continue"
 		boundary := entry{kind: entrySystem, notice: newSessionRow(slot, resume)}
@@ -4945,7 +4968,7 @@ func goldenRunPlan(size, questions string) string {
 // same string on every machine, and hands it back with its item.
 func goldenRun(size string) (todo.Item, *run.State) {
 	it := goldenRunItem(size)
-	st := run.Start(it, "2026-09-04 10:00:00", "manual", 1, run.Options{Repo: true})
+	st := run.Start(it, "2026-09-04 10:00:00", 1, run.Options{Repo: true})
 	st.Started = time.Date(2026, 9, 4, 10, 0, 0, 0, time.UTC)
 	return it, st
 }

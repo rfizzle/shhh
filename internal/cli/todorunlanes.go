@@ -159,7 +159,7 @@ func (d *todoDriver) sprintParallel(ctx context.Context, maxItems, n int) bool {
 		sp.Bound(d.costCapFlag, d.costCap)
 		fmt.Fprintln(d.out, "continuing the sprint from its checkpoint — "+sp.Summary())
 	} else {
-		sp = run.StartSprint(d.session, "", maxItems, d.noCommit)
+		sp = run.StartSprint(d.session, maxItems, d.noCommit)
 		sp.Bound(d.costCapFlag, d.costCap)
 	}
 	sp.Parallel = n

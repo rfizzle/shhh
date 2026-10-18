@@ -4,6 +4,7 @@ package chat
 // for).
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/todo"
@@ -69,4 +70,32 @@ func TestProgram_TheSprintTabListsTheLanesAtWork(t *testing.T) {
 	waitForText(t, tm, "working · 3 at once")
 
 	frameHas(t, finalFrame(t, tm), "cache-ttl", "implement", "cache-evict", "verify", "cache-report", "research", "checkpoint · tui · 94/94")
+}
+
+// A grooming reading under a manual session: `/todo groom` puts the
+// reading's plan beside the person's mode on the frame for as long as the
+// pass holds it — through the card — and the accepted card takes it off,
+// leaving the mode as it was.
+func TestProgram_AGroomingReadingShowsItsPolicyBesideTheMode(t *testing.T) {
+	root := fixtureDir(t, map[string]string{".shhh/todo/cache-ttl.md": groomItem})
+	m, _ := scriptedSession(programTurn{text: groomAnswer})
+	m.wiring.Workspace = root
+	m.todo.wiring = Todos{
+		Profile: todo.BuiltinCode(), Root: root,
+		Manage: func([]string) string { return "" },
+	}
+	m.loadTodos()
+	tm := runProgramAt(t, m, 110, 40)
+
+	send(tm, "/todo groom cache-ttl")
+	waitForText(t, tm, "cache-ttl read · 2 changes proposed")
+	waitForText(t, tm, "⏸ manual → ⏸ plan")
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "wrote 3 lines to")
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "⏸ manual")
+	if strings.Contains(frame, "→ ⏸ plan") {
+		t.Fatalf("the reading's policy outlived the pass:\n%s", frame)
+	}
 }

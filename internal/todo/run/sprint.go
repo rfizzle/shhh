@@ -72,11 +72,10 @@ type Sprint struct {
 	// Max is how many items the sprint may start, 0 for as many as are
 	// ready.
 	Max int `json:"max,omitempty"`
-	// NoCommit and PrevMode are the answers the sprint was asked for, kept
-	// because every item after the first is started from this file rather
-	// than from the command that is no longer on screen.
-	NoCommit bool   `json:"no_commit,omitempty"`
-	PrevMode string `json:"prev_mode,omitempty"`
+	// NoCommit is the answer the sprint was asked for, kept because every
+	// item after the first is started from this file rather than from the
+	// command that is no longer on screen.
+	NoCommit bool `json:"no_commit,omitempty"`
 	// Turns and Cost are what the set has spent so far. They are added up
 	// here rather than read back from a ledger because a sprint crosses a
 	// session boundary between every two items and the ledger is reset at
@@ -186,13 +185,12 @@ func (l SprintLane) Where() string {
 	return string(l.Stage)
 }
 
-// StartSprint begins a sprint. prevMode is the mode to put the session back
-// into when the last item is finished.
-func StartSprint(session, prevMode string, max int, noCommit bool) *Sprint {
+// StartSprint begins a sprint.
+func StartSprint(session string, max int, noCommit bool) *Sprint {
 	now := time.Now()
 	return &Sprint{
 		Session: session, Started: now, Updated: now,
-		Max: max, NoCommit: noCommit, PrevMode: prevMode,
+		Max: max, NoCommit: noCommit,
 	}
 }
 

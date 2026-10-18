@@ -274,7 +274,7 @@ func (m *Model) adoptChildren() {
 		return
 	}
 	m.childViews = map[string]*childView{}
-	sup.SetParentMode(m.policy.mode)
+	sup.SetParentMode(m.gateMode())
 	sup.SetParentGrants(m.liveGrants())
 	sup.SetAttended()
 	if m.wiring.Conversation {

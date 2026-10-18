@@ -1,6 +1,7 @@
 package run
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -16,7 +17,7 @@ const planText = "## Plan: do x\n\n1. Read the thing\n   files: a.go\n   action:
 
 func TestRun_HappyPathSmall(t *testing.T) {
 	it := item("M")
-	s := Start(it, "sess", "manual", 3, Options{Repo: true})
+	s := Start(it, "sess", 3, Options{Repo: true})
 	first := s.First(it, "")
 	if first.Action != ActionPrompt || first.Mode != ModePlan || !strings.Contains(first.Prompt, "RESEARCH") || !strings.Contains(first.Prompt, "BACKLOG ITEM x") {
 		t.Fatalf("first = %+v", first)
@@ -56,7 +57,7 @@ func TestRun_RemediationRoundsBySize(t *testing.T) {
 		rounds int
 	}{{"S", 1}, {"M", 2}, {"L", 2}, {"", 2}} {
 		it := item(c.size)
-		s := Start(it, "", "", 0, Options{Repo: true})
+		s := Start(it, "", 0, Options{Repo: true})
 		s.First(it, "")
 		s.Observe(it, strings.Replace(planText, "size: S", "size: "+c.size, 1))
 		s.Observe(it, "done")
@@ -80,7 +81,7 @@ func TestRun_RemediationRoundsBySize(t *testing.T) {
 
 func TestRun_ReviewFindingsThenClean(t *testing.T) {
 	it := item("M")
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, strings.Replace(planText, "size: S", "size: M", 1))
 	s.Observe(it, "done")
@@ -105,14 +106,14 @@ func TestRun_ResearchGates(t *testing.T) {
 	}
 	for name, text := range cases {
 		it := item("S")
-		s := Start(it, "", "", 0, Options{Repo: true})
+		s := Start(it, "", 0, Options{Repo: true})
 		s.First(it, "")
 		if step := s.Observe(it, text); step.Action != ActionBlocked || s.Blocked == "" {
 			t.Errorf("%s: %+v", name, step)
 		}
 	}
 	it := item("S")
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, "## Plan: x\n\n1. a\n\nsize: L\nquestions: none\n")
 	if s.Grade != "L" || s.GradeBefore != "S" || !strings.Contains(s.Summary(), "size L (was S)") {
@@ -145,7 +146,7 @@ func TestParsers(t *testing.T) {
 func TestTestCommands_SnapshotAtStart(t *testing.T) {
 	it := item("S")
 	it.Body = "## Tests\n- `go test ./a`\n- go vet ./...\n-\n\n## Notes\n- not a test"
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	if got := strings.Join(s.Tests, "|"); got != "go test ./a|go vet ./..." {
 		t.Errorf("tests = %q", got)
 	}
@@ -153,15 +154,24 @@ func TestTestCommands_SnapshotAtStart(t *testing.T) {
 
 func TestCheckpoint_RoundTrips(t *testing.T) {
 	root := t.TempDir()
-	s := Start(item("S"), "sess", "manual", 2, Options{Repo: true})
+	s := Start(item("S"), "sess", 2, Options{Repo: true})
 	s.Stage = StageVerify
 	s.Round = 1
 	if err := s.Save(root); err != nil {
 		t.Fatal(err)
 	}
 	back, err := Load(root, "x")
-	if err != nil || back.Stage != StageVerify || back.Round != 1 || back.PrevMode != "manual" || back.Turn != 2 {
+	if err != nil || back.Stage != StageVerify || back.Round != 1 || back.Turn != 2 {
 		t.Fatalf("loaded = %+v, %v", back, err)
+	}
+	// A checkpoint written when the run still carried the session's mode
+	// to put back loads all the same: nothing reads the key any more.
+	old := `{"slug": "x", "stage": "verify", "turn": 2, "prev_mode": "manual"}`
+	if err := os.WriteFile(path(root, "x"), []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if back, err := Load(root, "x"); err != nil || back.Stage != StageVerify || back.Turn != 2 {
+		t.Fatalf("an old checkpoint = %+v, %v", back, err)
 	}
 	Discard(root, "x")
 	if _, err := Load(root, "x"); err == nil {
@@ -191,7 +201,7 @@ func TestRun_PauseGatesBySize(t *testing.T) {
 	}
 	for _, c := range cases {
 		it := item(c.before)
-		s := Start(it, "", "", 0, Options{Repo: true})
+		s := Start(it, "", 0, Options{Repo: true})
 		s.First(it, "")
 		step := s.Observe(it, c.text)
 		if step.Action != c.action || !strings.Contains(s.Paused, c.pausedContain) {
@@ -205,7 +215,7 @@ func TestRun_PauseGatesBySize(t *testing.T) {
 
 func TestRun_ResumeAndReplan(t *testing.T) {
 	it := item("L")
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.First(it, "")
 	large := strings.Replace(planText, "size: S", "size: L", 1)
 	if step := s.Observe(it, large); step.Action != ActionPause {
@@ -229,7 +239,7 @@ func TestRun_ResumeAndReplan(t *testing.T) {
 
 func TestRun_ReviewBySize(t *testing.T) {
 	it := item("M")
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, strings.Replace(planText, "size: S", "size: M", 1))
 	s.Observe(it, "done")
@@ -257,7 +267,7 @@ func TestRun_ReviewBySize(t *testing.T) {
 		t.Fatalf("the second review is a new child: %q", s.Reviewer)
 	}
 	small := item("S")
-	ss := Start(small, "", "", 0, Options{Repo: true})
+	ss := Start(small, "", 0, Options{Repo: true})
 	ss.First(small, "")
 	ss.Observe(small, planText)
 	ss.Observe(small, "done")
@@ -269,7 +279,7 @@ func TestRun_ReviewBySize(t *testing.T) {
 func TestContinue_ReentersEachStage(t *testing.T) {
 	it := item("M")
 	for stage, want := range map[Stage]Action{StageResearch: ActionPrompt, StageImplement: ActionPrompt, StageRemediate: ActionPrompt, StageVerify: ActionVerify, StageReview: ActionReview, StageCommit: ActionPrompt, StageDone: ActionBlocked, StageBlocked: ActionBlocked} {
-		s := Start(it, "", "", 0, Options{Repo: true})
+		s := Start(it, "", 0, Options{Repo: true})
 		s.Stage, s.Plan, s.Grade, s.Message = stage, "## Plan: x\n\n1. a", "M", "stale"
 		step := s.Continue(it)
 		if step.Action != want {
@@ -283,7 +293,7 @@ func TestContinue_ReentersEachStage(t *testing.T) {
 
 func TestContinue_AtAPauseReshowsTheCard(t *testing.T) {
 	it := item("L")
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.Stage, s.Paused, s.Plan = StageResearch, "a large item pauses", "## Plan: x\n\n1. a"
 	if step := s.Continue(it); step.Action != ActionPause || s.Paused == "" {
 		t.Fatalf("continue at a pause = %+v", step)
@@ -292,7 +302,7 @@ func TestContinue_AtAPauseReshowsTheCard(t *testing.T) {
 
 func TestReview_NamesAreNeverReused(t *testing.T) {
 	it := item("M")
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.Grade = "M"
 	first := s.reading(it).Shown
 	s.Reviewer = ""
@@ -307,7 +317,7 @@ func TestReview_NamesAreNeverReused(t *testing.T) {
 // rather than going on to a commit turn with nothing to commit into.
 func TestRun_WithoutACommitEndsAfterTheReview(t *testing.T) {
 	it := item("M")
-	s := Start(it, "sess", "manual", 1, Options{NoCommit: true})
+	s := Start(it, "sess", 1, Options{NoCommit: true})
 	s.First(it, "")
 	s.Observe(it, planText)
 	s.Observe(it, "Changed a.go.")
@@ -338,7 +348,7 @@ func TestRun_WithoutACommitEndsAfterTheReview(t *testing.T) {
 // clean review, as it always did.
 func TestRun_ACommitIsStillTheDefaultEnd(t *testing.T) {
 	it := item("M")
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, planText)
 	s.Observe(it, "Changed a.go.")
@@ -383,7 +393,7 @@ func TestReviewTask_WithoutARepositorySaysTheDiffIsAllThereIs(t *testing.T) {
 	it := item("M")
 	const patch = "diff --git a/a.go b/a.go\n+++ b/a.go\n+x\n"
 
-	s := Start(it, "", "", 0, Options{NoCommit: true})
+	s := Start(it, "", 0, Options{NoCommit: true})
 	task := s.ReviewTask(it, patch)
 	if !strings.Contains(task, patch) {
 		t.Errorf("the task should carry the changeset diff:\n%s", task)
@@ -392,7 +402,7 @@ func TestReviewTask_WithoutARepositorySaysTheDiffIsAllThereIs(t *testing.T) {
 		t.Errorf("the task should say there is no history behind it:\n%s", task)
 	}
 
-	inRepo := Start(it, "", "", 0, Options{Repo: true})
+	inRepo := Start(it, "", 0, Options{Repo: true})
 	if got := inRepo.ReviewTask(it, patch); strings.Contains(got, "not a git repository") {
 		t.Errorf("a task inside a repository should not carry the note:\n%s", got)
 	}
@@ -404,7 +414,7 @@ func TestReviewTask_WithoutARepositorySaysTheDiffIsAllThereIs(t *testing.T) {
 // just said not to make.
 func TestRun_ContinueAtCommitHonoursANoCommitRun(t *testing.T) {
 	it := item("M")
-	s := Start(it, "sess", "manual", 1, Options{Repo: true})
+	s := Start(it, "sess", 1, Options{Repo: true})
 	s.Stage = StageCommit
 	s.Paths = []string{"a.go"}
 
@@ -414,7 +424,7 @@ func TestRun_ContinueAtCommitHonoursANoCommitRun(t *testing.T) {
 
 	// A run asked for without a commit is a run whose finish is the archive,
 	// which is what the flag and the setting both amount to.
-	s = Start(it, "sess", "manual", 1, Options{Repo: true, NoCommit: true})
+	s = Start(it, "sess", 1, Options{Repo: true, NoCommit: true})
 	s.Stage = StageCommit
 	s.Paths = []string{"a.go"}
 	step := s.Continue(it)
@@ -432,7 +442,7 @@ func TestRun_ContinueAtCommitHonoursANoCommitRun(t *testing.T) {
 func TestRun_ResearchCarriesTheSprintGoal(t *testing.T) {
 	const goal = "Make the provider cache trustworthy end to end."
 	it := item("M")
-	s := Start(it, "sess", "manual", 1, Options{Repo: true, Sprint: goal})
+	s := Start(it, "sess", 1, Options{Repo: true, Sprint: goal})
 	for _, step := range []Step{s.First(it, ""), s.Continue(it), s.Replan(it, "answer")} {
 		if !strings.Contains(step.Prompt, "SPRINT") || !strings.Contains(step.Prompt, goal) {
 			t.Fatalf("research prompt lacks the sprint goal:\n%s", step.Prompt)
@@ -445,7 +455,7 @@ func TestRun_ResearchCarriesTheSprintGoal(t *testing.T) {
 		t.Fatalf("the implement prompt repeats the sprint goal:\n%s", implement.Prompt)
 	}
 
-	bare := Start(it, "sess", "manual", 1, Options{Repo: true})
+	bare := Start(it, "sess", 1, Options{Repo: true})
 	if step := bare.First(it, ""); strings.Contains(step.Prompt, "SPRINT") {
 		t.Fatalf("a session with no sprint sent a sprint heading:\n%s", step.Prompt)
 	}
@@ -453,7 +463,7 @@ func TestRun_ResearchCarriesTheSprintGoal(t *testing.T) {
 
 func TestClosesWithGate_IsTheImplementStageAndNoOther(t *testing.T) {
 	it := item("M")
-	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
+	s := Start(it, "", 0, Options{Repo: true, CloseGate: true})
 	if s.ClosesWithGate() {
 		t.Error("research closes with the gate")
 	}
@@ -476,7 +486,7 @@ func TestClosesWithGate_IsTheImplementStageAndNoOther(t *testing.T) {
 
 func TestClosesWithGate_IsOffWhereTheWorkspaceNamesNoSuite(t *testing.T) {
 	it := item("M")
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, planText)
 	if s.ClosesWithGate() {
@@ -486,7 +496,7 @@ func TestClosesWithGate_IsOffWhereTheWorkspaceNamesNoSuite(t *testing.T) {
 
 func TestChecks_CarriesOnlyAPassAndIsSpentByTheVerify(t *testing.T) {
 	it := item("M")
-	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
+	s := Start(it, "", 0, Options{Repo: true, CloseGate: true})
 	s.Checks(quality.ClosingFailed)
 	if s.Checked {
 		t.Error("a failing verdict was carried to the verify stage")
@@ -507,7 +517,7 @@ func TestChecks_CarriesOnlyAPassAndIsSpentByTheVerify(t *testing.T) {
 
 func TestContinue_DropsAVerdictReachedInAnotherSitting(t *testing.T) {
 	it := item("M")
-	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
+	s := Start(it, "", 0, Options{Repo: true, CloseGate: true})
 	s.Stage, s.Checked, s.Plan = StageVerify, true, planText
 	if step := s.Continue(it); step.Action != ActionVerify {
 		t.Fatalf("continue at verify = %+v", step)
@@ -578,7 +588,7 @@ func TestStripStagesArePlacedAndNameable(t *testing.T) {
 // answer and a run picked up in another session has no other way to know it.
 func TestReviewVerdictIsRecorded(t *testing.T) {
 	it := todo.Item{Slug: "x", Fields: map[string]string{"size": "S"}, Profile: todo.BuiltinCode()}
-	s := Start(it, "sess", "manual", 1, Options{})
+	s := Start(it, "sess", 1, Options{})
 	s.Plan = "## Plan\n\n1. a\n"
 	s.reading(it)
 	if step := s.ReviewResult(it, "verdict: findings\n- the flag is never read"); step.Stage != StageRemediate {
@@ -606,7 +616,7 @@ func TestHeldBy(t *testing.T) {
 		t.Error("an item with no checkpoint reads as held")
 	}
 
-	s := Start(item("S"), "sess-a", "", 0, Options{})
+	s := Start(item("S"), "sess-a", 0, Options{})
 	s.Stage = StageImplement
 	if err := s.Save(root); err != nil {
 		t.Fatal(err)
@@ -627,7 +637,7 @@ func TestHeldBy(t *testing.T) {
 	}
 
 	Discard(root, "x")
-	sp := StartSprint("sess-b", "", 0, false)
+	sp := StartSprint("sess-b", 0, false)
 	sp.Current = "x"
 	if err := sp.Save(root); err != nil {
 		t.Fatal(err)
@@ -687,7 +697,7 @@ func TestRun_TheGroomingPromptChecksWhatTheProfileNames(t *testing.T) {
 func TestRun_ResearchCarriesTheAcceptedGrooming(t *testing.T) {
 	it := item("M")
 	const block = "GROOMING — this item was read against the tree on 2026-09-04"
-	s := Start(it, "sess", "manual", 1, Options{Repo: true, Groomed: block})
+	s := Start(it, "sess", 1, Options{Repo: true, Groomed: block})
 	if first := s.First(it, ""); !strings.Contains(first.Prompt, block) {
 		t.Fatalf("research prompt = %q", first.Prompt)
 	}
@@ -698,7 +708,7 @@ func TestRun_ResearchCarriesTheAcceptedGrooming(t *testing.T) {
 	// A run continued from a checkpoint taken at the research stage states
 	// the reading it was started with, which is the reason the block is in
 	// the checkpoint at all.
-	kept := Start(it, "sess", "manual", 1, Options{Repo: true, Groomed: block})
+	kept := Start(it, "sess", 1, Options{Repo: true, Groomed: block})
 	if again := kept.Continue(it); !strings.Contains(again.Prompt, block) {
 		t.Errorf("continued research = %q", again.Prompt)
 	}
@@ -707,7 +717,7 @@ func TestRun_ResearchCarriesTheAcceptedGrooming(t *testing.T) {
 // A run with no accepted reading says nothing about one.
 func TestRun_ResearchSaysNothingWithoutAGrooming(t *testing.T) {
 	it := item("M")
-	s := Start(it, "sess", "manual", 1, Options{Repo: true})
+	s := Start(it, "sess", 1, Options{Repo: true})
 	if first := s.First(it, ""); strings.Contains(first.Prompt, "GROOMING") {
 		t.Fatalf("research prompt = %q", first.Prompt)
 	}
@@ -789,7 +799,7 @@ func TestWordings_TheAnswerShapeIsAppendedWhateverTheWordingSays(t *testing.T) {
 		"remediate": "Fix it.",
 		"commit":    "Say what you did.",
 	}
-	s := Start(it, "sess", "manual", 1, Options{Repo: true, Wordings: w})
+	s := Start(it, "sess", 1, Options{Repo: true, Wordings: w})
 	first := s.First(it, "")
 	for _, want := range []string{"size: S|M|L", "questions: none", "blocked: <why>"} {
 		if !strings.Contains(first.Prompt, want) {
@@ -865,7 +875,7 @@ func TestWordings_DigestMovesWithAnEdit(t *testing.T) {
 // whose stages were asked different things is not one run's worth of work.
 func TestWordings_AContinuedRunSaysTheWordsMoved(t *testing.T) {
 	it := item("M")
-	s := Start(it, "sess", "manual", 1, Options{Repo: true, Wordings: Wordings{"research": "as written"}})
+	s := Start(it, "sess", 1, Options{Repo: true, Wordings: Wordings{"research": "as written"}})
 	if step := s.Continue(it); strings.Contains(step.Shown, "wordings changed") {
 		t.Fatalf("an unedited set must say nothing: %q", step.Shown)
 	}
@@ -956,7 +966,7 @@ func graded(p todo.Profile, grade string) todo.Item {
 func TestRun_GatesReadTheRankAndNotTheWord(t *testing.T) {
 	p := researchProfile()
 	quick := graded(p, "quick")
-	s := Start(quick, "", "", 0, Options{Repo: true})
+	s := Start(quick, "", 0, Options{Repo: true})
 	if s.Rounds() != 1 {
 		t.Errorf("the smallest grade should spend one round, got %d", s.Rounds())
 	}
@@ -970,7 +980,7 @@ func TestRun_GatesReadTheRankAndNotTheWord(t *testing.T) {
 	}
 
 	deep := graded(p, "deep")
-	d := Start(deep, "", "", 0, Options{Repo: true})
+	d := Start(deep, "", 0, Options{Repo: true})
 	if d.Rounds() != 2 {
 		t.Errorf("a grade above the smallest should spend two rounds, got %d", d.Rounds())
 	}

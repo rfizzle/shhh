@@ -47,15 +47,33 @@ func (m *Model) syncGrants() {
 	}
 }
 
-// applyMode changes the session's permission mode, keeping the sub-agent
-// ceiling in sync (children are never more permissive than the parent).
+// applyMode changes the session's permission mode. Only the person's own
+// writers call it — shift+tab, `/permissions`, its picker, the settings
+// screen and the plan card's rows, which name the mode they put the session
+// in. A flow never does: its policy is read beside the mode (gateMode), so
+// there is no mode to put back when it ends. The children's ceiling follows
+// in the Update tail (syncParentMode).
+// See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
 func (m *Model) applyMode(mode agent.Mode) {
 	if mode != m.policy.mode {
 		m.signal(observe.SignalMode, mode.String())
 	}
 	m.policy.mode = mode
-	if m.wiring.Subagents != nil {
-		m.wiring.Subagents.SetParentMode(mode)
+}
+
+// syncParentMode pushes the gate's mode to the supervisor as the ceiling
+// children are clamped to, where it moved: a child is never more permissive
+// than what its parent is answering under, which is a flow's policy while
+// one holds. It is idempotent, and it is called from the Update tail, which
+// sees every transition, and at the top of a run's step, because the
+// fan-out spawns its writers inside the same Update and a writer spawned
+// under the split's plan ceiling is a writer that cannot write.
+func (m Model) syncParentMode() {
+	if m.wiring.Subagents == nil {
+		return
+	}
+	if gate := m.gateMode(); gate != m.wiring.Subagents.ParentMode() {
+		m.wiring.Subagents.SetParentMode(gate)
 	}
 }
 

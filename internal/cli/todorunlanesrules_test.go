@@ -98,7 +98,7 @@ func laneAtItsCommitOnCount(t *testing.T, tests, laneText string) (*todoDriver, 
 	if err := os.WriteFile(filepath.Join(wt.Root(), "count.txt"), []byte(laneText), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	sp := run.StartSprint("s", "", 0, false)
+	sp := run.StartSprint("s", 0, false)
 	set := &todoLanes{root: root, out: d.out, sp: sp, top: todoRepoTop(root)}
 	lane := &todoLane{set: set, slug: "b-two", wt: wt}
 	d.lane, d.tree = lane, wt.Root()
@@ -109,7 +109,7 @@ func laneAtItsCommitOnCount(t *testing.T, tests, laneText string) (*todoDriver, 
 	commitCount(t, root, "x\nn = 3\ny\n", "Build a-one")
 	set.landings = append(set.landings, todoLanding{slug: "a-one", patch: patch})
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("b-two")
-	st := run.Start(it, "s", "", 0, run.Options{Pipeline: d.pipeline, Repo: true})
+	st := run.Start(it, "s", 0, run.Options{Pipeline: d.pipeline, Repo: true})
 	st.Stage, st.Verified = run.StageCommit, true
 	st.Tests = []string{tests}
 	st.Message = "Build b-two\n\nBecause."

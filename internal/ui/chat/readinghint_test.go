@@ -225,7 +225,7 @@ func TestReadingHint_RowKeysAreASecondLineUnderTheRowsOwnRail(t *testing.T) {
 // offering a key, so the bar says nothing about it, blocked or not.
 func TestReadingHint_ABlockedRunsRowOffersNoKey(t *testing.T) {
 	m := readingModel(t, 130)
-	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "S"}}, "s", "manual", 1, run.Options{})
+	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "S"}}, "s", 1, run.Options{})
 	st.Stage = run.StageBlocked
 	m.transcript = append(m.transcript, entry{kind: entryTodoRun, todorun: newTodoRunRow(st)})
 	m.focusIdx = len(m.transcript) - 1

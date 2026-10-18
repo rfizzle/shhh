@@ -23,7 +23,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -47,9 +46,6 @@ type todoPlanState struct {
 	budget     todo.SprintBudget
 	candidates []todo.Item
 	turn, mark int
-	// prevMode is the session's mode before the turn, restored at the end
-	// the way a run and a reading restore it.
-	prevMode string
 }
 
 // startTodoSprintPlan proposes a sprint. The proposal is a reading rather
@@ -100,7 +96,7 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	// it to instruct the turn.
 	if unread := m.planReadingsNeeded(candidates); m.todo.wiring.Profile.Grooms() && len(unread) > 0 {
 		m.todo.groomer = todoGroomState{
-			queue: unread, prevMode: m.policy.mode.String(), stale: m.todo.groomer.stale,
+			queue: unread, stale: m.todo.groomer.stale,
 			planAfter: &sprintPlanRequest{budget: budget},
 		}
 		next, _ := m.systemNotice(fmt.Sprintf("reading %s against the tree first; the proposal comes after the readings", plural(len(unread), "item")))
@@ -143,9 +139,9 @@ func (m Model) planReadingsNeeded(candidates []todo.Item) []string {
 	return out
 }
 
-// startSprintPlanTurn sends the planning turn. It runs in plan mode, like
-// the reading before it: the whole pass changes nothing until the card is
-// taken.
+// startSprintPlanTurn sends the planning turn. It runs under plan, like the
+// reading before it — the planner going is that policy (flowPolicy) — and
+// the whole pass changes nothing until the card is taken.
 func (m Model) startSprintPlanTurn(budget todo.SprintBudget) (tea.Model, tea.Cmd) {
 	m.reloadTodos()
 	s := m.todo.store
@@ -155,9 +151,8 @@ func (m Model) startSprintPlanTurn(budget todo.SprintBudget) (tea.Model, tea.Cmd
 	}
 	m.todo.planner = todoPlanState{
 		going: true, budget: budget, candidates: candidates,
-		turn: int(m.turnCount) + 1, mark: len(m.transcript), prevMode: m.policy.mode.String(),
+		turn: int(m.turnCount) + 1, mark: len(m.transcript),
 	}
-	m.applyMode(agent.ModePlan)
 	return m.sendUserMessageAs(s.PlanPrompt(candidates, budget.String()), "plan the sprint")
 }
 
@@ -198,11 +193,8 @@ func (m Model) planAnswer() string {
 	return ""
 }
 
-// endSprintPlan closes the planning turn and puts the mode back.
+// endSprintPlan closes the planning turn, and its plan policy with it.
 func (m Model) endSprintPlan(why string) (tea.Model, tea.Cmd) {
-	if prev, err := agent.ParseMode(m.todo.planner.prevMode); err == nil {
-		m.applyMode(prev)
-	}
 	m.todo.planner = todoPlanState{}
 	return m.systemNotice(why)
 }
@@ -213,9 +205,6 @@ func (m Model) endSprintPlan(why string) (tea.Model, tea.Cmd) {
 // way to tell a planner that reads the backlog from one that agrees with
 // whoever is holding the keyboard.
 func (m Model) openPlanCard(plan todo.Plan) (tea.Model, tea.Cmd) {
-	if prev, err := agent.ParseMode(m.todo.planner.prevMode); err == nil {
-		m.applyMode(prev)
-	}
 	budget := m.todo.planner.budget
 	titles := map[string]string{}
 	for _, it := range m.todo.planner.candidates {
@@ -269,14 +258,10 @@ func sprintFileGoal(p *components.SprintPlan) string {
 }
 
 // dropTodoPlan retires a planning turn in flight, so a card cannot come up
-// for a conversation that is gone — and the mode goes back with it, the way
-// a reading let go of at the boundary puts it back.
+// for a conversation that is gone; its plan policy goes with it.
 func (m *Model) dropTodoPlan() {
 	if !m.todo.planner.going {
 		return
-	}
-	if prev, err := agent.ParseMode(m.todo.planner.prevMode); err == nil {
-		m.applyMode(prev)
 	}
 	m.todo.planner = todoPlanState{}
 }

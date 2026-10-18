@@ -173,8 +173,6 @@ type State struct {
 	// Turn is the session turn the run started at; every changeset turn
 	// from here on belongs to it.
 	Turn int `json:"turn"`
-	// PrevMode is the session's mode before the run, restored after.
-	PrevMode string `json:"prev_mode"`
 
 	// GradeBefore is the grade the item carried when the run started and
 	// Grade the one it is being worked at, which the reading may raise.
@@ -379,12 +377,12 @@ func (o Options) Steps() Pipeline {
 }
 
 // Start begins a run on an item.
-func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State {
+func Start(it todo.Item, session string, turn int, opt Options) *State {
 	now := time.Now()
 	pipeline := opt.Steps()
 	return &State{
 		Slug: it.Slug, Session: session, Started: now, Updated: now,
-		Stage: StageResearch, Turn: turn, PrevMode: prevMode,
+		Stage: StageResearch, Turn: turn,
 		GradeBefore: it.Grade(), Grade: it.Grade(), Profile: it.Profile,
 		Tests: testCommands(it.Body),
 		// A run makes no commit where the person asked for none and where
@@ -651,6 +649,20 @@ func (s *State) Checks(c quality.Closing) { s.Checked = c == quality.ClosingPass
 
 // Over reports whether the run has reached an end state.
 func (s *State) Over() bool { return s.Stage == StageDone || s.Stage == StageBlocked }
+
+// Mode is the policy the run's current step runs under: auto where the step
+// changes the tree — a writing turn, and the fan-out whose writers are
+// clamped to it — and plan everywhere else, which is what every reading
+// step is sent in and what the review and the finish are read in. It is
+// read off the stage rather than remembered, so a run that has ended holds
+// no policy and there is nothing to put back.
+// See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
+func (s *State) Mode() Mode {
+	if ps, ok := s.Shape().At(s.Stage); ok {
+		return ps.Access.Mode()
+	}
+	return ModePlan
+}
 
 // First is the run's first step.
 func (s *State) First(it todo.Item, context string) Step {

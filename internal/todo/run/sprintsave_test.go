@@ -9,7 +9,7 @@ import (
 // whole: the file is renamed into place, never truncated and refilled.
 func TestSprintSave_IsAtomic(t *testing.T) {
 	root := t.TempDir()
-	sp := StartSprint("s", "build", 0, false)
+	sp := StartSprint("s", 0, false)
 	sp.Attempts = []string{"a-one", "b-two"}
 	if err := sp.Save(root); err != nil {
 		t.Fatal(err)

@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -46,9 +45,6 @@ type todoGroomState struct {
 	// the transcript it began, so an answer is read off the turn that was
 	// asked for rather than off whatever ended last.
 	turn, mark int
-	// prevMode is the session's mode before the pass, restored at the end
-	// the way a run restores it.
-	prevMode string
 	// reading is the answer as parsed, while its card is up.
 	reading todo.Reading
 	// lines and items are what the pass has accepted so far, for the
@@ -65,7 +61,9 @@ type todoGroomState struct {
 	stale map[string]int
 }
 
-// going reports a grooming pass in flight.
+// going reports a grooming pass in flight, and so the pass holding plan as
+// its policy (flowPolicy): from the reading's turn until its card is
+// answered.
 func (g todoGroomState) going() bool { return g.slug != "" }
 
 // startTodoGroom is /todo groom. A pass is a queue of items and a card each,
@@ -95,7 +93,7 @@ func (m Model) startTodoGroom(args []string) (tea.Model, tea.Cmd) {
 	if note != "" {
 		return m.systemNotice(note)
 	}
-	m.todo.groomer = todoGroomState{queue: queue, prevMode: m.policy.mode.String(), stale: m.todo.groomer.stale}
+	m.todo.groomer = todoGroomState{queue: queue, stale: m.todo.groomer.stale}
 	return m.groomNext()
 }
 
@@ -142,18 +140,15 @@ func (m Model) groomNext() (tea.Model, tea.Cmd) {
 		g.slug, g.item = slug, it
 		g.turn = int(m.turnCount) + 1
 		g.mark = len(m.transcript)
-		m.applyMode(agent.ModePlan)
 		return m.sendUserMessageAs(run.GroomPrompt(m.todo.wiring.Pipeline, it), "groom "+slug)
 	}
 	return m.endTodoGroom("")
 }
 
-// endTodoGroom closes the pass, restores the mode and says what came of it.
+// endTodoGroom closes the pass and says what came of it. The pass's plan
+// policy ends with it; the session's mode was never changed.
 func (m Model) endTodoGroom(why string) (tea.Model, tea.Cmd) {
 	g := m.todo.groomer
-	if prev, err := agent.ParseMode(g.prevMode); err == nil {
-		m.applyMode(prev)
-	}
 	m.todo.groomer = todoGroomState{stale: g.stale}
 	m.reloadTodos()
 	var b strings.Builder
@@ -469,15 +464,11 @@ func orLine(now, claim string) string {
 }
 
 // dropTodoGroom retires a pass in flight. The session boundary calls it, so
-// a card cannot come up for a conversation that is gone — and the mode goes
-// back with it, the way a run let go of at the boundary puts it back: plan
-// mode was the reading's, and the reading is over.
+// a card cannot come up for a conversation that is gone; the reading's plan
+// policy goes with it.
 func (m *Model) dropTodoGroom() {
 	if !m.todo.groomer.going() && m.todo.groom == nil {
 		return
-	}
-	if prev, err := agent.ParseMode(m.todo.groomer.prevMode); err == nil {
-		m.applyMode(prev)
 	}
 	if m.todo.groom != nil {
 		m.todo.groom = nil

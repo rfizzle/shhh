@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
@@ -27,10 +26,10 @@ func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
 	if m.wiring.Subagents == nil {
 		return m.todoRunStep(st.NoLanes(it, "no agent supervisor; building in this session"))
 	}
-	// The split turn left the session read-only, and a child's mode is
-	// clamped to its parent's: writers spawned now would be writers that
-	// cannot write. The fan-out is the working stage.
-	m.applyMode(agent.ModeAuto)
+	// The fan-out is a writing stage, so the run's policy is auto here and
+	// the children's ceiling follows it: todoRunStep pushed it before this
+	// was called, and a writer spawned under the split's plan ceiling would
+	// be a writer that cannot write.
 	m.wiring.Subagents.BeginBatch()
 	var spawned []string
 	for _, lane := range st.Lanes {

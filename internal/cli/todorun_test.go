@@ -265,7 +265,7 @@ func TestTodoRunHeadless_ContinuesACheckpoint(t *testing.T) {
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
 		t.Fatal(err)
 	}
-	st := run.Start(it, "earlier", "", 0, run.Options{Repo: true})
+	st := run.Start(it, "earlier", 0, run.Options{Repo: true})
 	st.Stage, st.Grade, st.Plan = run.StageCommit, "S", headlessPlan
 	st.Paths = []string{"a.go"}
 	if err := os.WriteFile(filepath.Join(root, "a.go"), []byte("package a\n"), 0o644); err != nil {
@@ -733,7 +733,7 @@ func TestTodoRunHeadless_AContinuedReadingKeepsItsOwnSteps(t *testing.T) {
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
 		t.Fatal(err)
 	}
-	st := run.Start(it, "earlier", "", 0, run.Options{Pipeline: pipeline})
+	st := run.Start(it, "earlier", 0, run.Options{Pipeline: pipeline})
 	st.Stage, st.Grade, st.Plan = "gather", "quick", "## Plan: read it\n\n1. Read the paper\n"
 	if err := st.Save(root); err != nil {
 		t.Fatal(err)
@@ -1001,7 +1001,7 @@ func TestTodoRunHeadless_WithNoRepositoryTheRunReadsItsOwnWork(t *testing.T) {
 	}
 	store := todo.Load(todo.BuiltinCode(), root)
 	it, _ := store.Find("a-one")
-	step := d.review(context.Background(), time.Time{}, run.Start(it, "s", "", 0, run.Options{}),
+	step := d.review(context.Background(), time.Time{}, run.Start(it, "s", 0, run.Options{}),
 		it, run.Step{Stage: run.StageReview})
 	if step.Action != run.ActionPrompt || !strings.Contains(step.Shown, "no reviewer agent") {
 		t.Fatalf("the run should read its own work and say so: %+v", step)
@@ -1385,7 +1385,7 @@ func TestTodoRunHeadless_AContinuedRunKeepsTheBaselineItStartedWith(t *testing.T
 	// The checkpoint of a process that died at the commit step, over a tree
 	// that was clean when the item started — so it holds no baseline — with
 	// its own work in the tree and not yet in its paths.
-	st := run.Start(it, "earlier", "", 0, run.Options{Repo: true})
+	st := run.Start(it, "earlier", 0, run.Options{Repo: true})
 	st.Stage, st.Grade, st.Plan = run.StageCommit, "S", headlessPlan
 	if len(st.Prestart) != 0 {
 		t.Fatalf("a clean tree should have left an empty baseline: %v", st.Prestart)

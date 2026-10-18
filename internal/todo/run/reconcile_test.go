@@ -11,7 +11,7 @@ import (
 func verifiedAt(t *testing.T, size string) *State {
 	t.Helper()
 	it := item(size)
-	s := Start(it, "", "", 0, Options{Repo: true})
+	s := Start(it, "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, strings.Replace(planText, "size: S", "size: "+size, 1))
 	s.Observe(it, "done")

@@ -645,6 +645,17 @@ func (m Model) renderStatusBar(width int) string {
 // docs/interface/departures.md#the-mode-segment-names-the-mode-not-its-class).
 func modeWord(mode agent.Mode) string { return mode.Word() }
 
+// modeMarked is a mode as the cockpit takes it: its word, and the class its
+// mark and tone come from — the modes that let work through, and the ones
+// that ask first or write nothing.
+func modeMarked(mode agent.Mode) components.Cockpit {
+	c := components.Cockpit{Mode: modeWord(mode), ModeKind: components.CockpitGated}
+	if mode == agent.ModeAcceptEdits || mode == agent.ModeAuto {
+		c.ModeKind = components.CockpitPermissive
+	}
+	return c
+}
+
 // cockpitData assembles the cockpit segments. The frame's vitals rail
 // omits the queued-steering extra — the notice rail carries it — so
 // includeQueued is false there.
@@ -660,15 +671,18 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if m.turnState() == stateClassifying {
 		c.Mode, c.ModeKind = "deciding", components.CockpitChecking
 	} else {
-		c.Mode = modeWord(m.policy.mode)
+		session := modeMarked(m.policy.mode)
+		c.Mode, c.ModeKind = session.Mode, session.ModeKind
 		if m.wiring.Conversation {
 			c.Mode = conversationModeWord
-		}
-		switch m.policy.mode {
-		case agent.ModeAcceptEdits, agent.ModeAuto:
-			c.ModeKind = components.CockpitPermissive
-		default:
-			c.ModeKind = components.CockpitGated
+		} else if gate := m.gateMode(); gate != m.policy.mode {
+			// The word is the person's mode, and while a flow answers under
+			// another one the segment says that one too, beside it: a reader
+			// told `manual` and watching edits apply unasked has been lied
+			// to by the one segment read before every keystroke
+			// (docs/interface/departures.md#the-mode-segment-names-the-mode-not-its-class).
+			flow := modeMarked(gate)
+			c.Flow, c.FlowKind = flow.Mode, flow.ModeKind
 		}
 	}
 	// The round counter stands as soon as there is one to state, idle

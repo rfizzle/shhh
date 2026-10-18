@@ -616,7 +616,7 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// confirmation: no mode, session grant, or classifier can wave one
 	// through. A read-only mode falls through to the policy below, which
 	// refuses the write like any other.
-	if req.kind == approvalMemory && !m.policy.mode.ReadOnly() {
+	if req.kind == approvalMemory && !m.gateMode().ReadOnly() {
 		if m.memoryDeclinedBefore(req) {
 			return m.refuseDeclinedMemory(req)
 		}
@@ -698,12 +698,12 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// human, short of the one the rules prove is a clean-up of untracked
 	// scratch inside the workspace
 	// (docs/capabilities/approvals-and-safety.md#severity-moves-the-default).
-	if m.policy.mode == agent.ModeAuto && m.classifier.judge != nil {
+	if m.gateMode() == agent.ModeAuto && m.classifier.judge != nil {
 		if act := m.approvalAction(req); act.SafetyFlagged && !act.ScopeSensitive {
 			req.scratch = m.rules().Scratch(ruleCall(req))
 		}
 	}
-	if act := m.approvalAction(req); m.policy.mode == agent.ModeAuto && m.classifier.judge != nil &&
+	if act := m.approvalAction(req); m.gateMode() == agent.ModeAuto && m.classifier.judge != nil &&
 		(!act.SafetyFlagged || agent.ClassifierClearsScratch(act)) && !act.ScopeSensitive {
 		return m.startClassifierCheck(req)
 	}

@@ -26,7 +26,7 @@ func declared(t *testing.T, root, slug string, paths ...string) {
 }
 
 func laned(n int) *Sprint {
-	sp := StartSprint("s1", "", 0, false)
+	sp := StartSprint("s1", 0, false)
 	sp.Parallel = n
 	return sp
 }

@@ -428,7 +428,7 @@ func TestTodoJSON_SprintRoundTripsTheFile(t *testing.T) {
 // the run can be stopped.
 func TestTodoVerb_RefusesAHeldItem(t *testing.T) {
 	root := todoFixture(t)
-	st := run.Start(todo.Item{Slug: "first"}, "todo-run-19700101-000000", "", 0, run.Options{})
+	st := run.Start(todo.Item{Slug: "first"}, "todo-run-19700101-000000", 0, run.Options{})
 	st.Stage = run.StageImplement
 	must(t, st.Save(root))
 
@@ -464,7 +464,7 @@ func TestTodoVerb_RefusesAHeldItem(t *testing.T) {
 // and the gap is exactly where a second terminal would find it unheld.
 func TestTodoVerb_RefusesAnItemTheSprintHolds(t *testing.T) {
 	root := todoFixture(t)
-	sp := run.StartSprint("todo-run-19700101-000000", "", 0, false)
+	sp := run.StartSprint("todo-run-19700101-000000", 0, false)
 	sp.Current = "first"
 	must(t, sp.Save(root))
 

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -50,6 +49,11 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 	if ref, refused := steps.Refuse(m.todoRunCan(project.InRepo(m.todo.wiring.Root))); refused {
 		return m.systemNotice(m.todoRunRefusal(ref, ""))
 	}
+	// Asked of the whole set, the parallel one included: each of its runs
+	// writes, and the person who bounded this session typed the command.
+	if note, refused := m.todoRunReadOnly(steps); refused {
+		return m.systemNotice(note)
+	}
 	if sp, live := run.Live(m.todo.wiring.Root); live && sp.Laned() {
 		return m.systemNotice("a sprint working several items at once is going — " + sp.Summary() +
 			". /todo stop ends it; if the process working it has gone, `shhh todo run --all` picks it up")
@@ -62,7 +66,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		// a continued run's do: asking for the sprint again is asking for it
 		// under the answers given now, and the session it is picked up in is
 		// this one.
-		sp.Session, sp.PrevMode, sp.NoCommit = m.sessionName, m.policy.mode.String(), noCommit
+		sp.Session, sp.NoCommit = m.sessionName, noCommit
 		if opt.max > 0 {
 			sp.Max = opt.max
 		}
@@ -77,7 +81,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		}
 		return next.sprintNext(sp)
 	}
-	sp := run.StartSprint(m.sessionName, m.policy.mode.String(), opt.max, noCommit)
+	sp := run.StartSprint(m.sessionName, opt.max, noCommit)
 	sp.Bound(opt.costCap, m.todo.wiring.SprintCostCap)
 	m.signal(observe.SignalRun, "sprint")
 	model, _ := m.systemNotice(todoSprintStartNote(sp, len(m.todo.store.Ready())))
@@ -270,9 +274,10 @@ func sprintNextNote(sp *run.Sprint, store *todo.Store) string {
 	return "nothing is left that the sprint can start; it ends here"
 }
 
-// endTodoSprint retires the sprint: the mode the session was in before it
-// goes back, the checkpoint is removed, and the row says which of the closed
-// reasons stopped it.
+// endTodoSprint retires the sprint: the checkpoint is removed, and the row
+// says which of the closed reasons stopped it. A sprint holds no policy of
+// its own — its runs do, each while it goes — so there is no mode to put
+// back.
 //
 // The checkpoint goes rather than being kept with its ending in it. A sprint
 // that has stopped has nothing left to continue — the item it stopped on
@@ -284,9 +289,6 @@ func (m Model) endTodoSprint(sp *run.Sprint) (tea.Model, tea.Cmd) {
 		sp.Stop()
 	}
 	run.DiscardSprint(m.todo.wiring.Root)
-	if prev, err := agent.ParseMode(sp.PrevMode); err == nil {
-		m.applyMode(prev)
-	}
 	m.signal(observe.SignalRun, "sprint-"+sp.Ended)
 	return m.systemNotice(todoSprintEndNote(sp))
 }

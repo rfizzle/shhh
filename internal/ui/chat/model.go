@@ -1980,6 +1980,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if mm.wiring.Subagents != nil && len(mm.steering) != len(m.steering) {
 		mm.wiring.Subagents.SessionSteering(len(mm.steering))
 	}
+	// And the children's ceiling, which is the gate's mode: a flow starting
+	// or ending, a run moving between a reading step and a writing one, and
+	// the person's own writers all move it, and each of those is a
+	// transition read here rather than a push any one of them remembers.
+	mm.syncParentMode()
 	// And a line another session sent that is waiting on its card
 	// (inbound.go): whatever was in front of it — a decision, a surface, a
 	// sentence in the draft — goes away in a transition, and this is where

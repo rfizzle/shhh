@@ -81,12 +81,12 @@ func laneAtItsCommit(t *testing.T, tests string) (*todoDriver, *todoLane, *run.S
 	if err := os.WriteFile(filepath.Join(wt.Root(), "b-two.go"), []byte("package btwo\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	sp := run.StartSprint("s", "", 0, false)
+	sp := run.StartSprint("s", 0, false)
 	set := &todoLanes{root: root, out: d.out, sp: sp, top: todoRepoTop(root)}
 	lane := &todoLane{set: set, slug: "b-two", wt: wt}
 	d.lane, d.tree = lane, wt.Root()
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("b-two")
-	st := run.Start(it, "s", "", 0, run.Options{Pipeline: d.pipeline, Repo: true})
+	st := run.Start(it, "s", 0, run.Options{Pipeline: d.pipeline, Repo: true})
 	st.Stage, st.Verified = run.StageCommit, true
 	st.Tests = []string{tests}
 	st.Message = "Build b-two\n\nBecause."

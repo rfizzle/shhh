@@ -75,7 +75,7 @@ func groom(t *testing.T, m Model, command, answerText string) Model {
 	m.input.SetValue(command)
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if !m.working() || m.policy.mode != agent.ModePlan {
+	if !m.working() || m.gateMode() != agent.ModePlan || m.policy.mode != agent.ModeManual {
 		t.Fatalf("the reading should be in flight in plan mode: mode=%s working=%t", m.policy.mode, m.working())
 	}
 	return answer(t, m, answerText)
@@ -291,8 +291,8 @@ func TestTodoGroom_AllTalliesWhatThePassWrote(t *testing.T) {
 	}
 }
 
-// The session boundary takes the pass with the conversation, and puts the
-// mode back: plan mode was the reading's and the reading is gone.
+// The session boundary takes the pass with the conversation, and its plan
+// policy with it: the mode is the one the person set.
 func TestTodoGroom_TheSessionBoundaryDropsThePass(t *testing.T) {
 	m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
 	m = groom(t, m, "/todo groom cache-ttl", groomAnswer)

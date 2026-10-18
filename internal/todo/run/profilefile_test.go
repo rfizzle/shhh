@@ -195,7 +195,7 @@ func TestBuiltinProfile_AReadingIsWorkedWithoutARepository(t *testing.T) {
 		t.Fatalf("a run whose steps only read asked a session for something: %+v", ref)
 	}
 
-	s := Start(it, "sess", "manual", 1, Options{Pipeline: p, Notebook: true})
+	s := Start(it, "sess", 1, Options{Pipeline: p, Notebook: true})
 	step := s.First(it, "")
 	if step.Stage != "scope" || !strings.Contains(step.Prompt, "depth: quick|deep") {
 		t.Fatalf("the first step asks for %+v", step)

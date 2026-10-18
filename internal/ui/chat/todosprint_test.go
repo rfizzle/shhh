@@ -152,7 +152,7 @@ func TestSprintPlan_TurnAnswersWithTheSetAndTheRecordSaysSo(t *testing.T) {
 	m.input.SetValue("/todo sprint plan")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if !m.working() || m.policy.mode != agent.ModePlan || !m.todo.planner.going {
+	if !m.working() || m.gateMode() != agent.ModePlan || m.policy.mode != agent.ModeManual || !m.todo.planner.going {
 		t.Fatalf("the planning turn should be in flight in plan mode: mode=%s working=%t", m.policy.mode, m.working())
 	}
 	m = answer(t, m, planAnswerForFixture)
@@ -378,7 +378,7 @@ func TestTodoRunDone_ClosesAFinishedSprint(t *testing.T) {
 	}
 	it, _ := m.todo.store.Find("do-it")
 	m.todo.runner.item = it
-	m.todo.runner.state = run.Start(it, "sess", "manual", 1, run.Options{NoCommit: true})
+	m.todo.runner.state = run.Start(it, "sess", 1, run.Options{NoCommit: true})
 	m.todo.runner.state.Report = "## Report\nSummary: done.\n"
 	m.todo.runner.state.Stage = run.StageDone
 	updated, _ := m.todoRunDone()
@@ -543,7 +543,7 @@ func TestSprintTitle_SaysTheCountAndTheItem(t *testing.T) {
 		t.Fatalf("title with no run = %q", got)
 	}
 	it, _ := m.todo.store.Find("a-high")
-	m.todo.runner.state = run.Start(it, "sess", "manual", 1, run.Options{Sprint: "goal", InSprint: true})
+	m.todo.runner.state = run.Start(it, "sess", 1, run.Options{Sprint: "goal", InSprint: true})
 	m.todo.runner.state.Stage = run.StageImplement
 	if got := m.sprintTitle(); got != "sprint 0/3 · a-high" {
 		t.Fatalf("title = %q", got)
@@ -561,9 +561,9 @@ func TestSprintTitle_SaysTheCountAndTheItem(t *testing.T) {
 func TestSprintCloseWords_NameTheItemThatFinished(t *testing.T) {
 	m, root := sprintModel(t, "---\nname: caching\n---\ngoal\n\n## Items\n- a-high\n")
 	it, _ := m.todo.store.Find("a-high")
-	m.todo.runner.state = run.Start(it, "sess", "manual", 1, run.Options{InSprint: true})
+	m.todo.runner.state = run.Start(it, "sess", 1, run.Options{InSprint: true})
 	m.todo.runner.state.Stage = run.StageDone
-	sp := run.StartSprint("sess", "manual", 0, true)
+	sp := run.StartSprint("sess", 0, true)
 	sp.Finished("a-high")
 	must(t, sp.Save(root))
 	if got := m.sprintCloseWords(); got != "finished a-high · sprint 1 item done" {
@@ -575,11 +575,11 @@ func TestSprintCloseWords_NameTheItemThatFinished(t *testing.T) {
 // next, because everything else the boundary carried is gone by design.
 func TestSprintNextNote_NamesTheItemComingUp(t *testing.T) {
 	m, _ := sprintModel(t, "")
-	sp := run.StartSprint("sess", "manual", 0, true)
+	sp := run.StartSprint("sess", 0, true)
 	if got := sprintNextNote(sp, m.todo.store); !strings.Contains(got, "next in the sprint: a-high · High one") {
 		t.Fatalf("note = %q", got)
 	}
-	capped := run.StartSprint("sess", "manual", 1, true)
+	capped := run.StartSprint("sess", 1, true)
 	capped.Attempts = []string{"a-high"}
 	if got := sprintNextNote(capped, m.todo.store); !strings.Contains(got, "nothing is left") {
 		t.Fatalf("capped note = %q", got)

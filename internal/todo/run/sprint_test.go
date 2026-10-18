@@ -31,7 +31,7 @@ func backlog(t *testing.T, items ...string) string {
 func TestSprint_TakesEachReadyItemOnce(t *testing.T) {
 	root := backlog(t, "a-one", "b-two")
 	store := todo.Load(todo.BuiltinCode(), root)
-	sp := StartSprint("s1", "manual", 0, false)
+	sp := StartSprint("s1", 0, false)
 
 	first, ok := sp.Next(store)
 	if !ok || first.Slug != "a-one" {
@@ -57,7 +57,7 @@ func TestSprint_TakesEachReadyItemOnce(t *testing.T) {
 func TestSprint_MaxStopsIt(t *testing.T) {
 	root := backlog(t, "a-one", "b-two")
 	store := todo.Load(todo.BuiltinCode(), root)
-	sp := StartSprint("s1", "manual", 1, false)
+	sp := StartSprint("s1", 1, false)
 	if _, ok := sp.Next(store); !ok {
 		t.Fatal("the first item should be taken")
 	}
@@ -79,7 +79,7 @@ func TestSprint_TakesTheSprintFilesSetInItsOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := todo.Load(todo.BuiltinCode(), root)
-	sp := StartSprint("s1", "manual", 0, false)
+	sp := StartSprint("s1", 0, false)
 	var got []string
 	for {
 		it, ok := sp.Next(store)
@@ -94,7 +94,7 @@ func TestSprint_TakesTheSprintFilesSetInItsOrder(t *testing.T) {
 }
 
 func TestSprint_BlocksAndStopsAreEndings(t *testing.T) {
-	sp := StartSprint("s1", "manual", 0, false)
+	sp := StartSprint("s1", 0, false)
 	sp.Blocks("a-one", "verify failed\nsecond line")
 	if sp.Ended != SprintBlocked || !strings.Contains(sp.Reason, "a-one blocked — verify failed") {
 		t.Fatalf("blocks = %+v", sp)
@@ -112,7 +112,7 @@ func TestSprint_BlocksAndStopsAreEndings(t *testing.T) {
 
 func TestSprint_CheckpointSurvivesTheProcess(t *testing.T) {
 	root := backlog(t, "a-one")
-	sp := StartSprint("s1", "manual", 2, true)
+	sp := StartSprint("s1", 2, true)
 	store := todo.Load(todo.BuiltinCode(), root)
 	if _, ok := sp.Next(store); !ok {
 		t.Fatal("an item should be taken")
@@ -145,7 +145,7 @@ func TestSprint_CheckpointSurvivesTheProcess(t *testing.T) {
 // An ended sprint on disk is not one the next command picks up.
 func TestSprint_AnEndedCheckpointIsNotLive(t *testing.T) {
 	root := backlog(t)
-	sp := StartSprint("s1", "manual", 0, false)
+	sp := StartSprint("s1", 0, false)
 	sp.Stop()
 	if err := sp.Save(root); err != nil {
 		t.Fatal(err)
@@ -156,7 +156,7 @@ func TestSprint_AnEndedCheckpointIsNotLive(t *testing.T) {
 }
 
 func TestSprint_ExpiredNeedsACapAndAnItem(t *testing.T) {
-	sp := StartSprint("s1", "manual", 0, false)
+	sp := StartSprint("s1", 0, false)
 	sp.Current, sp.ItemStarted = "a-one", time.Now().Add(-time.Hour)
 	if sp.Expired(0) {
 		t.Fatal("no cap is no expiry")
@@ -175,7 +175,7 @@ func TestSprint_ExpiredNeedsACapAndAnItem(t *testing.T) {
 
 func TestSprint_SummaryStatesWhereItIs(t *testing.T) {
 	root := backlog(t, "a-one", "b-two")
-	sp := StartSprint("s1", "manual", 0, false)
+	sp := StartSprint("s1", 0, false)
 	store := todo.Load(todo.BuiltinCode(), root)
 	sp.Next(store)
 	if got := sp.Summary(); !strings.Contains(got, "0 items done") || !strings.Contains(got, "on a-one") {
@@ -194,7 +194,7 @@ func TestSprint_SummaryStatesWhereItIs(t *testing.T) {
 func TestSprint_CostCapRefusesTheNextItem(t *testing.T) {
 	root := backlog(t, "a-one", "b-two")
 	store := todo.Load(todo.BuiltinCode(), root)
-	sp := StartSprint("s1", "manual", 0, false)
+	sp := StartSprint("s1", 0, false)
 	sp.CapCents = 2000
 
 	if _, ok := sp.Next(store); !ok {
@@ -227,7 +227,7 @@ func TestSprint_CostCapRefusesTheNextItem(t *testing.T) {
 // is held to the ceiling it was started with.
 func TestSprint_CostCapSurvivesTheProcess(t *testing.T) {
 	root := backlog(t, "a-one")
-	sp := StartSprint("s1", "manual", 0, false)
+	sp := StartSprint("s1", 0, false)
 	sp.CapCents = 1550
 	sp.Spent(2, 4.1)
 	if err := sp.Save(root); err != nil {
@@ -280,7 +280,7 @@ func TestSprint_Bound(t *testing.T) {
 // takes the dead session's figure into the total, and the picking-up
 // session's own figure waits for the item's end.
 func TestSprint_TheItemInFlightIsCountedOnce(t *testing.T) {
-	sp := StartSprint("dead", "", 0, false)
+	sp := StartSprint("dead", 0, false)
 	sp.Current = "a-one"
 	sp.Running("dead", 1, 0.5)
 	sp.Running("dead", 2, 1.25)

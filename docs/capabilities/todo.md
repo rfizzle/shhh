@@ -649,11 +649,14 @@ the session's own turn; anything larger goes to a reader that did not write
 it, and where none can be had the session reviews and the record says so
 ([below](#the-reading-is-done-by-somebody-else)).
 
-The run works in the mode that asks only when the classifier cannot
-decide, whatever mode the session was in, and puts the session's mode
-back afterwards. The review and the commit message are written in the
-read-only mode, so nothing can change between the verification that
-passed and the commit. While a run is going the input takes commands
+The run builds under a policy of its own that asks only when the
+classifier cannot decide, whatever mode the session is in, and the
+session's mode is never touched: the frame shows the run's policy beside
+it while the two differ
+([approvals](approvals-and-safety.md#a-flow-runs-under-its-own-policy)).
+A session in read-only or plan mode does not start a run whose steps
+write. The review and the commit message are written read-only, so
+nothing can change between the verification that passed and the commit. While a run is going the input takes commands
 only: a sentence typed mid-step would steer the model out of its step,
 and one typed between steps would start work the run would then commit
 as its own. Stopping the run is a command, and cancelling a step's turn

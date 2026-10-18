@@ -1655,6 +1655,20 @@ three: work goes through, work is asked about, nothing is written. The
 departure is closed by the palette row taking the five names, at which point
 the artboard and the binary say the same thing.
 
+A flow's policy extends the segment rather than replacing its word. While a
+backlog run, a reading or a sprint plan answers under a mode other than the
+session's, the segment draws the session's mark and word, an arrow, and the
+flow's mark and word — `⏸ manual → ⏵⏵ auto`, `⏵⏵ auto → ⏸ plan` — and where
+the two are the same it draws nothing more. The flow's half is mark and word
+again and never the word alone, so the class is still carried by a mark and
+not by a colour; the arrow is `→` because `▸` already means a fold and a
+running row. The segment still names the mode: the first word is the
+person's, which is the one shift+tab moves, and the second is what is
+answering until the flow ends
+([approvals](../capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy)).
+The artboard has not drawn the chip yet and follows the binary when it is
+next synced.
+
 ## The frame's border is chrome, and the mode segment carries the mode
 
 _Filed 2026-09-27 · closed_

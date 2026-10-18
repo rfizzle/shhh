@@ -87,7 +87,7 @@ func TestTodoRun_StagesInOrder(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageResearch || m.policy.mode != agent.ModePlan || !m.working() {
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageResearch || m.gateMode() != agent.ModePlan || m.policy.mode != agent.ModeManual || !m.working() {
 		t.Fatalf("research should be in flight in plan mode: run=%+v mode=%s", m.todo.runner.state, m.policy.mode)
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusInProgress {
@@ -101,7 +101,7 @@ func TestTodoRun_StagesInOrder(t *testing.T) {
 	}
 
 	m = answer(t, m, runPlan)
-	if m.todo.runner.state.Stage != run.StageImplement || m.policy.mode != agent.ModeAuto || !m.working() || m.state == statePlanApprove {
+	if m.todo.runner.state.Stage != run.StageImplement || m.gateMode() != agent.ModeAuto || m.policy.mode != agent.ModeManual || !m.working() || m.state == statePlanApprove {
 		t.Fatalf("implement should follow research in auto mode, no plan card: stage=%s mode=%s state=%d", m.todo.runner.state.Stage, m.policy.mode, m.state)
 	}
 	if m.todo.runner.state.Grade != "S" {
@@ -562,7 +562,7 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 	}
 	m = press(t, m, "enter")
 	// A large item is divided before it is built; the split reads only.
-	if m.todo.runner.state.Stage != run.StageSplit || !m.working() || m.policy.mode != agent.ModePlan {
+	if m.todo.runner.state.Stage != run.StageSplit || !m.working() || m.gateMode() != agent.ModePlan || m.policy.mode != agent.ModeManual {
 		t.Fatalf("go ahead on L should split in plan mode: stage=%s mode=%s", m.todo.runner.state.Stage, m.policy.mode)
 	}
 
@@ -871,7 +871,7 @@ func TestTodoRun_ContinuesFromCheckpointAndDisplacementPauses(t *testing.T) {
 	m2.input.SetValue("/todo run do-it")
 	updated, _ = m2.submitInput()
 	m2 = updated.(Model)
-	if m2.todo.runner.state == nil || m2.todo.runner.state.Stage != run.StageImplement || !m2.working() || m2.policy.mode != agent.ModeAuto {
+	if m2.todo.runner.state == nil || m2.todo.runner.state.Stage != run.StageImplement || !m2.working() || m2.gateMode() != agent.ModeAuto || m2.policy.mode != agent.ModeManual {
 		t.Fatalf("should continue at implement in auto: %+v", m2.todo.runner.state)
 	}
 	if len(m2.todo.runner.state.Steps) != 1 {
@@ -1100,7 +1100,7 @@ func TestTodoRun_LargeItemLanesLandAndIntegrate(t *testing.T) {
 	if len(paths) != 2 {
 		t.Fatalf("paths = %v", paths)
 	}
-	if m.policy.mode != agent.ModeAuto {
+	if m.gateMode() != agent.ModeAuto || m.policy.mode != agent.ModeManual {
 		t.Fatalf("integration runs in auto mode, got %v", m.policy.mode)
 	}
 	// The reports reached the integration prompt.
@@ -1924,7 +1924,7 @@ func TestTodoRun_AWriteStepIsRefusedInAConversation(t *testing.T) {
 // back to the role that reads changes there.
 func TestTodoRun_APersonaStepFallsBackToTheRole(t *testing.T) {
 	m, _ := conversationModel(t, readingPipeline())
-	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode()}, "s", "manual", 1,
+	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode()}, "s", 1,
 		run.Options{Pipeline: readingPipeline(), Notebook: true})
 	st.Stage = "review"
 	if got := m.todoReviewRole(st); got != string(subagent.RoleReviewer) {

@@ -66,9 +66,9 @@ func (k Kind) Known() bool {
 }
 
 // Access is what a step may do to the tree: read it, or change it. It is the
-// step's mode as a profile states it, and Mode is what a session is put into
-// for it — a write step runs in auto, because there is nobody to approve each
-// edit for it, and the session's own mode is restored when the run ends.
+// step's mode as a profile states it, and Mode is the policy the step runs
+// under — a write step runs in auto, because there is nobody to approve each
+// edit for it. The session's own mode is never changed for it.
 type Access string
 
 const (

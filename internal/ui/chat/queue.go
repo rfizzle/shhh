@@ -734,7 +734,7 @@ func (m *Model) takeQueueAnswer(req *approvalRequest) (allow, answered bool) {
 	// A claim is answered on its own card: a tick on a list row stood for
 	// the call's summary, and the claim's rows are what is being asked.
 	// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
-	if m.policy.mode.ReadOnly() || act.SafetyFlagged || len(act.OutOfScope) > 0 || len(act.Claims) > 0 {
+	if m.gateMode().ReadOnly() || act.SafetyFlagged || len(act.OutOfScope) > 0 || len(act.Claims) > 0 {
 		return false, false
 	}
 	return true, true

@@ -116,7 +116,7 @@ func (m Model) safetySubject() string {
 	if contained == "" {
 		contained = "unconfined"
 	}
-	return m.policy.mode.String() + " · " + contained
+	return m.gateMode().String() + " · " + contained
 }
 
 // safetySections is the boundary in the order a person checks it: what runs

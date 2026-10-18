@@ -47,7 +47,7 @@ func TestPipeline_AShortRunFinishesWithoutARepository(t *testing.T) {
 		t.Fatalf("the pipeline does not validate: %v", err)
 	}
 	it := note()
-	s := Start(it, "sess", "manual", 1, Options{Pipeline: p})
+	s := Start(it, "sess", 1, Options{Pipeline: p})
 	if strip := s.Shape().Strip(); len(strip) != 3 {
 		t.Fatalf("the row draws %v, want three stages", strip)
 	}
@@ -212,7 +212,7 @@ func TestPipeline_RefusesPerStepAndNotPerSession(t *testing.T) {
 // carried on: the work already done was planned for a shape that is gone.
 func TestPipeline_AContinuedRunRefusesADifferentShape(t *testing.T) {
 	it := item("M")
-	s := Start(it, "sess", "manual", 1, Options{Repo: true})
+	s := Start(it, "sess", 1, Options{Repo: true})
 	s.Stage = StageImplement
 	if step := s.Continue(it); step.Action != ActionPrompt {
 		t.Fatalf("an unchanged pipeline must continue: %+v", step)
@@ -310,7 +310,7 @@ func TestFinish_EveryEndingIsCarriedOut(t *testing.T) {
 		if err := p.Validate(); err != nil {
 			t.Fatalf("%s: %v", f, err)
 		}
-		s := Start(it, "sess", "manual", 1, Options{Repo: true, Pipeline: p, Notebook: true})
+		s := Start(it, "sess", 1, Options{Repo: true, Pipeline: p, Notebook: true})
 		s.First(it, "")
 		s.Paths = []string{"a.md"}
 		return s, s.Observe(it, "did it")
@@ -361,7 +361,7 @@ func TestFinish_ANoteWithNoNotebookIsAnArchive(t *testing.T) {
 		{Name: "do", Kind: KindTurn, Access: Write, Builtin: "DO."},
 		{Name: "end", Kind: KindFinish, Access: Read, Finish: FinishNote, Builtin: "END."},
 	}}
-	s := Start(it, "sess", "manual", 1, Options{Repo: true, Pipeline: p})
+	s := Start(it, "sess", 1, Options{Repo: true, Pipeline: p})
 	s.First(it, "")
 	s.Paths = []string{"a.md"}
 	if step := s.Observe(it, "did it"); step.Action != ActionDone || !s.Over() {

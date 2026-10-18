@@ -22,7 +22,7 @@ task: Wire the command (step 3).
 func largeAtSplit(t *testing.T) (*State, todo.Item) {
 	t.Helper()
 	it := item("L")
-	s := Start(it, "sess", "manual", 1, Options{Repo: true})
+	s := Start(it, "sess", 1, Options{Repo: true})
 	s.First(it, "")
 	if step := s.Observe(it, strings.Replace(planText, "size: S", "size: L", 1)); step.Action != ActionPause {
 		t.Fatalf("L should pause first: %+v", step)
@@ -221,4 +221,47 @@ func TestContinue_FanOutRespawnsOnlyUnlandedLanes(t *testing.T) {
 	if step := s.Continue(it); step.Stage != StageSplit || step.Mode != ModePlan {
 		t.Fatalf("continue at split = %+v", step)
 	}
+}
+
+// The run's policy is its step's, read off the stage it stands at. Every
+// prompt the machine hands back is sent in the mode the run says it is
+// under, the fan-out is auto because its writers are clamped to it, and the
+// reading steps around a writing one — the split, the review, the finish —
+// are plan.
+func TestState_ModeIsTheCurrentStepsPolicy(t *testing.T) {
+	check := func(t *testing.T, s *State, step Step, want Mode) {
+		t.Helper()
+		if step.Action == ActionPrompt && s.Mode() != step.Mode {
+			t.Errorf("%s: the run says %s and the prompt is sent in %s", step.Stage, s.Mode(), step.Mode)
+		}
+		if s.Mode() != want {
+			t.Errorf("%s (%s): mode %s, want %s", s.Stage, step.Action, s.Mode(), want)
+		}
+	}
+	t.Run("small", func(t *testing.T) {
+		it := item("M")
+		s := Start(it, "sess", 1, Options{Repo: true})
+		check(t, s, s.First(it, ""), ModePlan)
+		check(t, s, s.Observe(it, planText), ModeAuto)
+		check(t, s, s.Observe(it, "Changed a.go."), ModePlan)
+		check(t, s, s.VerifyResult(it, true, ""), ModePlan)
+		check(t, s, s.Observe(it, "verdict: clean\n"), ModePlan)
+	})
+	t.Run("large", func(t *testing.T) {
+		s, it := largeAtSplit(t)
+		if s.Mode() != ModePlan {
+			t.Fatalf("the split reads, and is under %s", s.Mode())
+		}
+		check(t, s, s.Observe(it, lanesText), ModeAuto)
+		s.LanePatched("tw1-rail")
+		check(t, s, s.LaneDone(it, "tw1-rail", true, "Built the rail."), ModeAuto)
+		s.LanePatched("tw1-command")
+		check(t, s, s.LaneDone(it, "tw1-command", true, "Wired it."), ModeAuto)
+		check(t, s, s.Observe(it, "Integrated."), ModePlan)
+		step := s.VerifyResult(it, true, "")
+		if step.Action != ActionReview {
+			t.Fatalf("a large item is read by a child: %+v", step)
+		}
+		check(t, s, step, ModePlan)
+	})
 }

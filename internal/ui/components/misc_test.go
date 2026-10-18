@@ -6,6 +6,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -32,6 +33,45 @@ func TestCockpit_Segments(t *testing.T) {
 	checking := Cockpit{Mode: "deciding", ModeKind: CockpitChecking, CtxPct: -1}
 	if !strings.Contains(checking.View(80), "✦ deciding") {
 		t.Fatal("classifier checks render ✦")
+	}
+}
+
+// TestGolden_CockpitFlowChip captures the mode segment with a flow's mode
+// beside the session's, which no width sheds: the session's mark and word,
+// an arrow, and the flow's mark and word, with nothing drawn where the two
+// are equal and `✦ deciding` standing in for the whole segment.
+func TestGolden_CockpitFlowChip(t *testing.T) {
+	captureGolden(t, "cockpit-flow-chip", "the mode segment with a flow's mode", goldenWidths, func(width int) []golden.Panel {
+		seg := func(c Cockpit) string {
+			c.Round, c.CtxPct, c.CtxWord, c.Spend = "round 3 of 25", 12, "context", "$0.14"
+			return FitRail(c.RailSegments(), sty.status.Render(" · "), width)
+		}
+		return []golden.Panel{
+			{Label: "a manual session, no flow", View: seg(Cockpit{Mode: "manual", ModeKind: CockpitGated})},
+			{Label: "a manual session under a run's writing step", View: seg(Cockpit{Mode: "manual", ModeKind: CockpitGated, Flow: "auto", FlowKind: CockpitPermissive})},
+			{Label: "an auto session under a reading", View: seg(Cockpit{Mode: "auto", ModeKind: CockpitPermissive, Flow: "plan", FlowKind: CockpitGated})},
+			{Label: "the classifier deciding while a flow holds", View: seg(Cockpit{Mode: "deciding", ModeKind: CockpitChecking, Flow: "auto", FlowKind: CockpitPermissive})},
+		}
+	})
+}
+
+// The chip is mark and word again, after an arrow, and never the flow's word
+// alone; and the segment carrying it is the one no width sheds.
+func TestCockpit_FlowChipFollowsTheMode(t *testing.T) {
+	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, Flow: "auto", FlowKind: CockpitPermissive, CtxPct: 40, Spend: "$1.00", Round: "round 1 of 25"}
+	if got := ansi.Strip(c.View(120)); !strings.HasPrefix(got, "⏸ manual → ⏵⏵ auto · ") {
+		t.Fatalf("segment = %q", got)
+	}
+	if got := ansi.Strip(FitRail(c.RailSegments(), " · ", 20)); !strings.HasPrefix(got, "⏸ manual → ⏵⏵ auto") {
+		t.Fatalf("a narrow rail shed the chip: %q", got)
+	}
+	plan := Cockpit{Mode: "auto", ModeKind: CockpitPermissive, Flow: "plan", FlowKind: CockpitGated, CtxPct: -1}
+	if got := ansi.Strip(plan.View(80)); !strings.HasPrefix(got, "⏵⏵ auto → ⏸ plan") {
+		t.Fatalf("segment = %q", got)
+	}
+	checking := Cockpit{Mode: "deciding", ModeKind: CockpitChecking, Flow: "auto", FlowKind: CockpitPermissive, CtxPct: -1}
+	if got := ansi.Strip(checking.View(80)); strings.Contains(got, "→") {
+		t.Fatalf("deciding should replace the whole segment: %q", got)
 	}
 }
 
