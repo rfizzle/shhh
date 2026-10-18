@@ -32,13 +32,13 @@ instruction = "Start the full release build with `make release` (about twenty mi
 name = "a static file server is a process"
 why = "python -m http.server serves until it is stopped, and the model needs to stop it when the person is done"
 expect = ["process"]
-instruction = "Serve the docs folder over http with `python3 -m http.server 8000` so I can read it in the browser, and stop it when I say so."
+instruction = "Serve the docs folder (the `docs/` directory at the project root, it already exists) over http with `python3 -m http.server 8000` so I can read it in the browser, and stop it when I say so."
 
 [[row]]
 name = "an attached compose stack is a process"
 why = "docker compose up without -d stays attached and prints for as long as the stack is up"
 expect = ["process"]
-instruction = "Bring the stack up with `docker compose up` and watch its logs while I test the login flow."
+instruction = "Bring the stack up with `docker compose up` (the compose file is `docker-compose.yml` at the project root, so no need to look for it) and watch its logs while I test the login flow."
 
 [[row]]
 name = "a test watcher to keep is a process"
