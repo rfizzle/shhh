@@ -3,7 +3,7 @@ package cli
 import (
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/chatgpt"
+	"github.com/rfizzle/llm/chatgpt"
 )
 
 // The one-time panel is recorded in the credential record: shown once, and

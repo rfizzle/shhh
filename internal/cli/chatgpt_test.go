@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/chatgpt"
+	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/resolve"

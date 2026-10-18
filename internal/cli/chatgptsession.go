@@ -10,7 +10,7 @@ package cli
 import (
 	"context"
 
-	"github.com/rfizzle/shhh/internal/chatgpt"
+	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 

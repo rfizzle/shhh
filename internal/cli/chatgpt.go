@@ -15,7 +15,7 @@ import (
 	"sync"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/chatgpt"
+	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
@@ -30,13 +30,20 @@ var chatGPT struct {
 
 // chatGPTStore is where the sign-in lives: <datadir>/chatgpt, beside the
 // store and never in the config directory. A data directory that cannot be
-// found is an empty store, which opens with an error and holds no record.
+// found is an empty store that holds no record; opening an account says why.
 func chatGPTStore() chatgpt.FileStore {
+	store, _ := chatGPTStoreOrErr()
+	return store
+}
+
+// chatGPTStoreOrErr is chatGPTStore with the reason a data directory was not
+// found, which is what a person needs to hear when the account will not open.
+func chatGPTStoreOrErr() (chatgpt.FileStore, error) {
 	data, err := datadir.Dir()
 	if err != nil {
-		return chatgpt.FileStore{}
+		return chatgpt.FileStore{}, err
 	}
-	return chatgpt.FileStore{Dir: filepath.Join(data, "chatgpt")}
+	return chatgpt.FileStore{Dir: filepath.Join(data, "chatgpt")}, nil
 }
 
 // chatGPTRelay hides every token the account learns in every session vault.
@@ -50,7 +57,11 @@ func chatGPTAccount() (*chatgpt.Account, error) {
 	if chatGPT.account != nil {
 		return chatGPT.account, nil
 	}
-	o := chatgpt.Options{Store: chatGPTStore()}
+	store, err := chatGPTStoreOrErr()
+	if err != nil {
+		return nil, err
+	}
+	o := chatgpt.Options{App: shhhApp, Store: store}
 	relay := chatGPTRelay
 	o.OnTokens = func(access, refresh, id string) { relay.learn(access, refresh, id) }
 	a, err := chatgpt.Open(o)

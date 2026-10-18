@@ -16,7 +16,7 @@ import (
 	"syscall"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/chatgpt"
+	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/storage"
