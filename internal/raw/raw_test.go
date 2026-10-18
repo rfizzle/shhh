@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/provider"
@@ -148,6 +149,38 @@ func TestRun_ContextInPrompt(t *testing.T) {
 	}
 	if userMsg.Content != prompt {
 		t.Errorf("expected context in user message, got %q", userMsg.Content)
+	}
+}
+
+// Run prints exactly what Generate returns, so the widget and the eval suite,
+// which ask through Generate, read the answer shhh cmd --raw prints.
+func TestRunPrintsWhatGenerateReturns(t *testing.T) {
+	events := []provider.StreamEvent{{Token: "```sh\nls -la\n```\n"}, {Done: true}}
+
+	got, err := Generate(context.Background(), Opts{Provider: &mockProvider{events: events}, Prompt: "list files"})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	var stdout bytes.Buffer
+	if err := Run(context.Background(), Opts{Provider: &mockProvider{events: events}, Prompt: "list files", Stdout: &stdout}); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got != "ls -la" || stdout.String() != got+"\n" {
+		t.Errorf("Generate = %q, Run printed %q", got, stdout.String())
+	}
+}
+
+// A caller that names a shell gets a prompt that names it, whatever the
+// machine's own is.
+func TestGenerateNamesThePinnedShell(t *testing.T) {
+	t.Setenv("SHELL", "/usr/bin/fish")
+	p := &capturingProvider{events: []provider.StreamEvent{{Token: "ls"}, {Done: true}}}
+	if _, err := Generate(context.Background(), Opts{Provider: p, Prompt: "list files", Shell: "bash"}); err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	sys := p.messages[0].Content
+	if !strings.Contains(sys, "bash") || strings.Contains(sys, "fish") {
+		t.Errorf("the prompt should name bash and not the detected fish:\n%s", sys)
 	}
 }
 
