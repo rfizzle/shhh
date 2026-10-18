@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -162,6 +163,25 @@ func seedModelData(tb testing.TB, cacheHome string) {
 	}
 }
 
+// priceSnapshot is the document the llm module ships inside pricing. It is
+// read once, in TestMain and before the home moves, because finding the module
+// asks the Go tool, and the tool finds its caches under the real home.
+var priceSnapshot []byte
+
+// locatePriceSnapshot reads pricing/models.json from the llm module the build
+// resolved, so the seeded cache is the same document the binary embeds.
+func locatePriceSnapshot() error {
+	out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "github.com/rfizzle/llm").Output()
+	if err != nil {
+		return fmt.Errorf("find the llm module: %w", err)
+	}
+	priceSnapshot, err = os.ReadFile(filepath.Join(strings.TrimSpace(string(out)), "pricing", "models.json"))
+	if err != nil {
+		return fmt.Errorf("read the price snapshot: %w", err)
+	}
+	return nil
+}
+
 // writeModelData is seedModelData with the error handed back, for TestMain,
 // which has no testing.TB to fail.
 //
@@ -171,10 +191,10 @@ func seedModelData(tb testing.TB, cacheHome string) {
 // own built-in list, which does not move under the suite the way a
 // downloaded ranking would.
 func writeModelData(cacheHome string) error {
-	snapshot, err := os.ReadFile(filepath.Join("..", "pricing", "models.json"))
-	if err != nil {
-		return fmt.Errorf("read the price snapshot: %w", err)
+	if priceSnapshot == nil {
+		return errors.New("the price snapshot was not located before the home moved (TestMain)")
 	}
+	snapshot := priceSnapshot
 	if err := os.MkdirAll(filepath.Join(cacheHome, "shhh", "hosts"), 0o700); err != nil {
 		return err
 	}

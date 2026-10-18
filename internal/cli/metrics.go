@@ -30,8 +30,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
+	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/cli/report"
-	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"

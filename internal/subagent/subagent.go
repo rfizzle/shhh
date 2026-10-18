@@ -12,10 +12,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/pricing"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 

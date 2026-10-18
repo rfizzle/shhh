@@ -15,12 +15,14 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage/datadir"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/update"
@@ -203,6 +205,7 @@ func NewRootCmd() *cobra.Command {
 			// logs nothing leaves no file behind.
 			openLog()
 			provider.SetApp(shhhApp)
+			pricing.SetCacheDir(datadir.CacheDir)
 			configStarted := time.Now()
 
 			// A file that will not load stops every command here, the way

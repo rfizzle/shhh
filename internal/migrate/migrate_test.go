@@ -18,7 +18,7 @@ import (
 // fakeHome builds a home directory with the given files in it, relative to
 // the home root, and points $HOME at it. Every helper in this package reads
 // $HOME through os.UserHomeDir, and so do config.Paths, storage.Dir and
-// pricing.CacheDir — so one Setenv moves the whole layout.
+// datadir.CacheDir — so one Setenv moves the whole layout.
 func fakeHome(t *testing.T, files ...string) string {
 	t.Helper()
 	home := t.TempDir()

@@ -17,13 +17,26 @@ import (
 // See docs/capabilities/configuration.md#one-layout-everywhere. A machine
 // still holding the old directory is detected by `shhh doctor`, which offers
 // to move it (internal/migrate).
-func Dir() (string, error) {
-	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
+func Dir() (string, error) { return xdgDir("XDG_DATA_HOME", ".local", "share") }
+
+// CacheDir is where shhh caches what it can download again: XDG_CACHE_HOME if
+// it is set, then ~/.cache/shhh, the same rule the config and data
+// directories follow (docs/capabilities/configuration.md#one-layout-everywhere).
+// It holds only the price table and the host lists, which are fetched when
+// they are missing, so a Mac that still has the old ~/Library/Caches/shhh
+// loses nothing by ignoring it. The price table's package asks for it by
+// way of pricing.SetCacheDir.
+func CacheDir() (string, error) { return xdgDir("XDG_CACHE_HOME", ".cache") }
+
+// xdgDir is the one rule both follow: shhh under the XDG variable when it is
+// set, otherwise under the home-relative default.
+func xdgDir(env string, home ...string) (string, error) {
+	if xdg := os.Getenv(env); xdg != "" {
 		return filepath.Join(xdg, "shhh"), nil
 	}
-	home, err := os.UserHomeDir()
+	dir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".local", "share", "shhh"), nil
+	return filepath.Join(append(append([]string{dir}, home...), "shhh")...), nil
 }

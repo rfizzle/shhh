@@ -12,9 +12,10 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
-	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
+	"github.com/rfizzle/shhh/internal/storage/datadir"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -50,6 +51,7 @@ import (
 // in UTC. Pinning makes the checked-in text mean the same thing everywhere.
 func TestMain(m *testing.M) {
 	provider.SetApp(shhhApp)
+	pricing.SetCacheDir(datadir.CacheDir)
 	// The sandbox command helper, which the stand-in engine runs as the far
 	// end of an exec (sandboxsession_test.go): this binary is shhh there.
 	if len(os.Args) > 1 && os.Args[1] == sandbox.ExecArg {
@@ -79,6 +81,9 @@ func TestMain(m *testing.M) {
 	// one: a link that cannot find it compiles the module from scratch every
 	// time this package runs (buildShhhBinary, print_integration_test.go).
 	prepareContractTier(dir)
+	if err := locatePriceSnapshot(); err != nil {
+		panic(err)
+	}
 	for _, key := range []string{"HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME"} {
 		if err := os.Setenv(key, dir); err != nil {
 			panic(err)

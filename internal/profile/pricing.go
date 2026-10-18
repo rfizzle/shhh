@@ -9,7 +9,7 @@ package profile
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 

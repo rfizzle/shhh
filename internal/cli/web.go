@@ -10,8 +10,8 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/storage/datadir"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -106,7 +106,7 @@ func openReputation(cfg config.Config) *web.Reputation {
 // hostListsDir is where the host lists are cached, and "" where there is no
 // cache directory. The doctor's row names the same directory by asking here.
 func hostListsDir() string {
-	dir, err := pricing.CacheDir()
+	dir, err := datadir.CacheDir()
 	if err != nil {
 		return ""
 	}

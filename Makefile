@@ -60,7 +60,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check third-party-licenses tui-shot tui-check tui-longpath design golden-summary help
+.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check host-lists host-lists-check third-party-licenses tui-shot tui-check tui-longpath design golden-summary help
 
 all: help
 
@@ -310,9 +310,7 @@ cache-check: ## Verify prompt caching against live endpoints (costs real request
 	@echo "${MAGENTA}Checking prompt caching against the live endpoints...${RESET}"
 	@$(GOTEST) -tags=integration -count=1 -v -run CacheIntegration ./internal/provider
 
-model-data: ## Regenerate the built-in model-data snapshot from the public table
-	@echo "${MAGENTA}Regenerating internal/pricing/models.json...${RESET}"
-	@python3 scripts/model-data.py > internal/pricing/models.json
+# model-data, the generator of the built-in price snapshot, lives in the llm module.
 
 host-lists: ## Regenerate the built-in host-list snapshots from the public lists
 	@echo "${MAGENTA}Regenerating internal/web/hosts/...${RESET}"

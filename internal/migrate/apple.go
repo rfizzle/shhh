@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
 
 // The macOS `~/Library` layout, retired.
@@ -109,7 +109,7 @@ func currentDirs() (configDir, dataDir, cacheDir string, ok bool) {
 	if err != nil {
 		return "", "", "", false
 	}
-	cacheDir, err = pricing.CacheDir()
+	cacheDir, err = datadir.CacheDir()
 	if err != nil {
 		return "", "", "", false
 	}
