@@ -78,7 +78,7 @@ func (k Kind) Labels() []string {
 	case KindInherit:
 		return []string{LabelActed, LabelReread, LabelMissed}
 	case KindDelegation:
-		return []string{LabelAlone, LabelSpawned, LabelDivided}
+		return []string{LabelAlone, LabelSpawned, LabelDivided, LabelDividedInPlace}
 	case KindReadOnly:
 		return []string{LabelListed, LabelOffList}
 	case KindProcessChoice:
@@ -167,6 +167,10 @@ type Row struct {
 	// Delegation is the agents.delegation policy a delegation row's
 	// instruction is put under (delegation.go); Files is its workspace too.
 	Delegation string
+	// Parts are the names of a delegation row's independent parts, each a
+	// directory name in its workspace. A round whose reads reach two or more
+	// of them is the work divided in place.
+	Parts []string
 	// Config is the gate configuration the row's workspace is given, and
 	// Suite the suite the gate is asked for.
 	Config string

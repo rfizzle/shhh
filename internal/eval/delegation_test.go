@@ -27,6 +27,7 @@ func (m *delegationModel) StreamCompletion(ctx context.Context, msgs []provider.
 func delegationRow(policy string) Row {
 	return Row{
 		Name: "three packages", Expect: []string{LabelDivided}, Delegation: policy,
+		Parts:       []string{"a", "b"},
 		Instruction: "go through each package under pkg/",
 		Files:       map[string]string{"pkg/a/a.go": "package a\n", "pkg/b/b.go": "package b\n"},
 	}
@@ -61,6 +62,43 @@ func TestAskDelegation_LabelsWhatTheModelAskedFor(t *testing.T) {
 			}
 			if a.Label != c.want {
 				t.Fatalf("label %q (%s), want %q", a.Label, a.Reason, c.want)
+			}
+		})
+	}
+}
+
+// A round of reads that reaches two parts is the work divided in place; a
+// glob is not a read, one part is not two, and the parts one to a round are
+// still one agent working through them.
+func TestAskDelegation_ReadsAcrossPartsInOneRoundAreDividedInPlace(t *testing.T) {
+	read := func(id, path string) provider.ToolCall {
+		return provider.ToolCall{ID: id, Name: "read_file", Arguments: `{"path":"` + path + `"}`}
+	}
+	glob := provider.ToolCall{ID: "g", Name: "glob", Arguments: `{"pattern":"pkg/**/*.go"}`}
+	done := provider.StreamEvent{Token: "none.", Done: true}
+	cases := []struct {
+		name    string
+		replies []provider.StreamEvent
+		want    string
+	}{
+		{"two parts at once", []provider.StreamEvent{
+			{ToolCalls: []provider.ToolCall{glob, read("1", "pkg/a/a.go"), read("2", "pkg/b/b.go")}, Done: true}}, LabelDividedInPlace},
+		{"one part", []provider.StreamEvent{
+			{ToolCalls: []provider.ToolCall{read("1", "pkg/a/a.go"), read("2", "pkg/a/a.go")}, Done: true}, done}, LabelAlone},
+		{"a glob alone", []provider.StreamEvent{{ToolCalls: []provider.ToolCall{glob}, Done: true}, done}, LabelAlone},
+		{"one part per round", []provider.StreamEvent{
+			{ToolCalls: []provider.ToolCall{read("1", "pkg/a/a.go")}, Done: true},
+			{ToolCalls: []provider.ToolCall{read("2", "pkg/b/b.go")}, Done: true}, done}, LabelAlone},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			m := &delegationModel{inheritModel: inheritModel{replies: c.replies}}
+			a := askDelegation(context.Background(), m, "scripted", delegationRow("proactive"))
+			if a.Label != c.want {
+				t.Fatalf("label %q (%s), want %q", a.Label, a.Reason, c.want)
+			}
+			if c.want == LabelDividedInPlace && a.Went != "glob, read_file×2" {
+				t.Errorf("went = %q", a.Went)
 			}
 		})
 	}
@@ -139,6 +177,9 @@ func TestDelegationRowsNeedARequestAndAPolicy(t *testing.T) {
 		"no instruction": func(r *Row) { r.Instruction = "" },
 		"no policy":      func(r *Row) { r.Delegation = "" },
 		"not a policy":   func(r *Row) { r.Delegation = "sometimes" },
+		"in place without parts": func(r *Row) {
+			r.Expect, r.Parts = []string{LabelDividedInPlace}, nil
+		},
 	} {
 		r := delegationRow("explicit")
 		broken(&r)

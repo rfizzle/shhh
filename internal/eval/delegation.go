@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/config"
@@ -47,6 +48,11 @@ const (
 	// LabelDivided is a round that asked for two or more children at once,
 	// which is the work divided rather than handed off whole.
 	LabelDivided = "divided"
+	// LabelDividedInPlace is a round of reads, with no child asked for, that
+	// reaches two or more of the row's independent parts at once: the parts
+	// taken together by one agent, which is as much the work divided as
+	// children are.
+	LabelDividedInPlace = "divided in place"
 )
 
 // delegationRounds bounds how long a row may read before deciding. A model
@@ -118,6 +124,11 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 			return a
 		}
 		rounds = append(rounds, roundTools(calls))
+		if n := partsRead(calls, row.Parts); n >= 2 {
+			a.Label, a.Reason = LabelDividedInPlace, fmt.Sprintf("read %d parts in one round", n)
+			a.Went = clipRunes(strings.Join(rounds, " · "), maxWent)
+			return a
+		}
 		msgs = append(msgs, provider.Message{Role: provider.RoleAssistant, Content: reply, ToolCalls: calls})
 		for _, c := range calls {
 			out, err := exec(ctx, c.Name, json.RawMessage(c.Arguments))
@@ -130,6 +141,36 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 	a.Label, a.Reason = LabelAlone, fmt.Sprintf("read for %d rounds without asking for a child", delegationRounds)
 	a.Went = clipRunes(strings.Join(rounds, " · "), maxWent)
 	return a
+}
+
+// partsRead is how many of the parts one round's calls read. A call reads a
+// part when it is a reader of file contents and a path it names has the
+// part's name as one of its segments; a glob lists names and reads nothing,
+// so a round of globs is not a read of any part.
+func partsRead(calls []provider.ToolCall, parts []string) int {
+	seen := map[string]bool{}
+	for _, c := range calls {
+		switch c.Name {
+		case tools.ReadFileName, "search", "query":
+		default:
+			continue
+		}
+		var args struct {
+			Path  string   `json:"path"`
+			Paths []string `json:"paths"`
+		}
+		if json.Unmarshal([]byte(c.Arguments), &args) != nil {
+			continue
+		}
+		for _, p := range append([]string{args.Path}, args.Paths...) {
+			for _, seg := range strings.Split(filepath.ToSlash(p), "/") {
+				if slices.Contains(parts, seg) {
+					seen[seg] = true
+				}
+			}
+		}
+	}
+	return len(seen)
 }
 
 // maxWent bounds the per-round tool list a report line carries.

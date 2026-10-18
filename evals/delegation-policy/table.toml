@@ -1,9 +1,10 @@
 [[row]]
 name = "off never spawns, however the request is worded"
 why = "off registers no orchestration tools; a model that reaches for spawn_agent anyway is calling a tool it was never shown"
-expect = ["alone"]
+expect = ["alone", "divided in place"]
 delegation = "off"
-instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
+parts = ["alpha", "beta", "gamma"]
+instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported functions have no doc comment."
 [row.files]
 "pkg/alpha/open.go" = '''
 package alpha
@@ -314,10 +315,11 @@ func Free() int {
 
 [[row]]
 name = "explicit does not read a request for depth as a request to delegate"
-why = "the explicit line says thoroughness is not a licence to spawn; the same divisible request that proactive divides is answered alone here"
-expect = ["alone"]
+why = "the explicit line says thoroughness is not a licence to spawn; the same divisible request that proactive divides is answered without children here, by one agent reading alone or across the parts at once"
+expect = ["alone", "divided in place"]
 delegation = "explicit"
-instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
+parts = ["alpha", "beta", "gamma"]
+instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported functions have no doc comment."
 [row.files]
 "pkg/alpha/open.go" = '''
 package alpha
@@ -631,7 +633,8 @@ name = "explicit spawns when the person asks for agents"
 why = "explicit is a policy about asking, not a refusal: a request that names sub-agents is the request the policy waits for"
 expect = ["spawned", "divided"]
 delegation = "explicit"
-instruction = "Use sub-agents for this: for each of the three packages under pkg/, find which exported function has no doc comment."
+parts = ["alpha", "beta", "gamma"]
+instruction = "Use sub-agents for this: for each of the three packages under pkg/, find which exported functions have no doc comment."
 [row.files]
 "pkg/alpha/open.go" = '''
 package alpha
@@ -942,10 +945,11 @@ func Free() int {
 
 [[row]]
 name = "proactive divides work that divides, unasked"
-why = "proactive says independent parts are to be divided; three packages read separately are three children asked for at once, not one handed the lot"
-expect = ["divided"]
+why = "proactive says independent parts are to be divided; three packages taken at once, as children or as one round of reads across them, are divided, and read one after another by one agent they are not"
+expect = ["divided", "divided in place"]
 delegation = "proactive"
-instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
+parts = ["alpha", "beta", "gamma"]
+instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported functions have no doc comment."
 [row.files]
 "pkg/alpha/open.go" = '''
 package alpha

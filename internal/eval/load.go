@@ -293,7 +293,8 @@ type rowFile struct {
 	Files   map[string]string `toml:"files"`
 
 	// The policy a delegation row is put under (delegation.go).
-	Delegation string `toml:"delegation"`
+	Delegation string   `toml:"delegation"`
+	Parts      []string `toml:"parts"`
 }
 
 // loadTable reads a case's rows and refuses one that cannot be scored.
@@ -363,6 +364,7 @@ func loadTable(path string, kind Kind) ([]Row, error) {
 			Inherit:    rf.Inherit,
 			Files:      rf.Files,
 			Delegation: strings.TrimSpace(rf.Delegation),
+			Parts:      rf.Parts,
 			Config:     rf.Config,
 			Suite:      strings.TrimSpace(rf.Suite),
 		}
@@ -433,6 +435,9 @@ func checkScriptedRow(path string, kind Kind, row Row) error {
 		policies := []string{config.DelegationOff, config.DelegationExplicit, config.DelegationProactive}
 		if !slices.Contains(policies, row.Delegation) {
 			return fmt.Errorf("%s: %s: delegation %q is not a policy — %s", path, row.Name, row.Delegation, strings.Join(policies, ", "))
+		}
+		if slices.Contains(row.Expect, LabelDividedInPlace) && len(row.Parts) < 2 {
+			return fmt.Errorf("%s: %s: parts needs two or more names — it is how a round of reads is told to have divided the work", path, row.Name)
 		}
 	case KindProcessChoice:
 		if row.Instruction == "" {
