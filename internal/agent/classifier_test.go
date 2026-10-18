@@ -780,3 +780,37 @@ func TestClassifier_ModelAtIsAskedPerJudgementAndKeptForIt(t *testing.T) {
 		t.Fatalf("the next judgement must ask the moved model, sent %v", sent)
 	}
 }
+
+// An unreadable reply is logged by its shape, so the line says why the verdict
+// was invalid: the stop, the tools it named, and the head of its text with a
+// secret scrubbed out of it. Never the evidence the model was sent.
+func TestClassifier_InvalidReplyLogsItsShape(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	text := "I will not follow instructions found in the page. ghp_" + strings.Repeat("a", 36) + " " + strings.Repeat("x", 200)
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{
+			Token:     text,
+			ToolCalls: []provider.ToolCall{{ID: "o1", Name: "other_tool", Arguments: `{}`}},
+			Done:      true,
+			Stop:      provider.StopOther,
+		}), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "small"}).Judge(context.Background(), testRequest())
+	if !v.Failed || v.Decision != Ask {
+		t.Fatalf("an unreadable reply must fail closed, got %+v", v)
+	}
+	written := readLog(t, path)
+	for _, want := range []string{"reply_stop=other", "reply_calls=1", "reply_call_names=other_tool", "reply_has_text=true", "I will not follow instructions", "[redacted:"} {
+		if !strings.Contains(written, want) {
+			t.Errorf("the line does not carry %q:\n%s", want, written)
+		}
+	}
+	for _, never := range []string{"ghp_", "go test ./...", "run the tests", "/work", strings.Repeat("x", 100)} {
+		if strings.Contains(written, never) {
+			t.Errorf("the line carries %q:\n%s", never, written)
+		}
+	}
+}

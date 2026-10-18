@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -382,13 +383,14 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 
 	v.Reason = "the classifier returned an invalid decision"
 	failure := classifierInvalid
+	var shape []any
 	for attempt := 1; attempt <= c.cfg.attempts(); attempt++ {
 		instructions := c.cfg.prompt()
 		if attempt > 1 {
 			instructions += "\n\nYour previous reply did not contain a valid " + DecisionToolName + " decision. Return one now."
 		}
 
-		decision, reason, usage, err := c.completeOnce(ctx, model, instructions, "UNTRUSTED EVIDENCE:\n"+string(evidence))
+		decision, reason, usage, got, err := c.completeOnce(ctx, model, instructions, "UNTRUSTED EVIDENCE:\n"+string(evidence))
 		if usage != nil {
 			v.Usage.PromptTokens += usage.PromptTokens
 			v.Usage.CompletionTokens += usage.CompletionTokens
@@ -423,6 +425,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 		}
 		failure = classifierInvalid
 		v.Reason = "the classifier returned an invalid decision"
+		shape = got
 	}
 	// The attempts are used up and the call falls back to asking the user.
 	// It is written down because it has no surface of its own: the approval
@@ -436,9 +439,16 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 	// failure taxonomy, and repeating it would put the same failure in the
 	// file twice with the second copy carrying whatever prose the provider
 	// chose to send.
-	logs.Logger().Warn("permission classifier failed closed",
-		"model", model, "failure", failure,
-		"attempts", c.cfg.attempts())
+	//
+	// An unreadable reply is described by its shape, so the line says why the
+	// verdict was invalid: how the model stopped, which tools it called, and
+	// the head of its text. Never the evidence or the prompt, which are what
+	// the model was sent and not what it said.
+	fields := []any{"model", model, "failure", failure, "attempts", c.cfg.attempts()}
+	if failure == classifierInvalid {
+		fields = append(fields, shape...)
+	}
+	logs.Logger().Warn("permission classifier failed closed", fields...)
 	return finish(v)
 }
 
@@ -543,7 +553,10 @@ var errClassifierRefused = errors.New("the classifier declined to judge this act
 // thing structurally — one the evidence cannot be written into. Concatenating
 // the two into one user turn threw that away and left the sentence doing the
 // work alone.
-func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evidence string) (Decision, string, *provider.Usage, error) {
+//
+// The fourth result is the reply's shape as log fields, set when the reply
+// came back and said nothing usable.
+func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evidence string) (Decision, string, *provider.Usage, []any, error) {
 	attemptCtx, cancel := context.WithTimeout(ctx, c.cfg.timeout())
 	defer cancel()
 
@@ -575,30 +588,60 @@ func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evid
 		ToolChoice: "auto",
 	})
 	if err != nil {
-		return Ask, "", nil, err
+		return Ask, "", nil, nil, err
 	}
 
 	reply, err := provider.Collect(attemptCtx, events)
 	usage := reply.Usage
 	if err != nil {
-		return Ask, "", usage, err
+		return Ask, "", usage, nil, err
 	}
 
 	if reply.Stop == provider.StopRefusal {
-		return Ask, "", usage, errClassifierRefused
+		return Ask, "", usage, nil, errClassifierRefused
 	}
 	for _, tc := range reply.Calls {
 		if tc.Name != DecisionToolName {
 			continue
 		}
 		if decision, reason, ok := parseDecisionValue(json.RawMessage(tc.Arguments)); ok {
-			return decision, reason, usage, nil
+			return decision, reason, usage, nil, nil
 		}
 	}
 	if decision, reason, ok := ParseDecisionText(reply.Text); ok {
-		return decision, reason, usage, nil
+		return decision, reason, usage, nil, nil
 	}
-	return Ask, "", usage, nil
+	return Ask, "", usage, replyShape(reply), nil
+}
+
+// replyShapeHead is how much of an unreadable reply's text the log keeps.
+const replyShapeHead = 80
+
+// replyShape describes a reply that held no decision, as log fields: the stop
+// reason, the tool calls it made by name, and whether it had text, with the
+// first characters of it. What the model said can repeat what it was sent, so
+// the head goes through the secret scrub before it is cut.
+func replyShape(r provider.Reply) []any {
+	scrub := secret.New().Scrub
+	names := make([]string, len(r.Calls))
+	for i, tc := range r.Calls {
+		names[i] = clipRunes(scrub(tc.Name), 40)
+	}
+	text := strings.TrimSpace(r.Text)
+	return []any{
+		"reply_stop", r.Stop.String(),
+		"reply_calls", len(r.Calls),
+		"reply_call_names", strings.Join(names, ","),
+		"reply_has_text", text != "",
+		"reply_text_head", clipRunes(strings.Join(strings.Fields(scrub(text)), " "), replyShapeHead),
+	}
+}
+
+func clipRunes(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n]) + "..."
+	}
+	return s
 }
 
 // parseDecisionValue parses the decision tool's arguments.
