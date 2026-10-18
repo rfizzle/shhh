@@ -311,9 +311,8 @@ func (l *Ledger) RecordOn(providerName string, o Origin, model string, u llm.Usa
 		// billed: what a session saves by caching its prompt has to show up
 		// here or the saving is invisible and the total is wrong.
 		// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
-		tk := pricing.Tokens{Input: in - cached - created, Cached: cached, Created: created, Output: out}
-		if inCost, outCost, found := l.prices.CostTokens(model, tk); found {
-			e.Cost += inCost + outCost
+		if cost, found := l.prices.Price(model, in, out, cached, created); found {
+			e.Cost += cost
 			e.Priced = true
 		}
 	}

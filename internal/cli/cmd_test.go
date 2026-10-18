@@ -9,16 +9,15 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -168,17 +167,10 @@ func seedModelData(tb testing.TB, cacheHome string) {
 // asks the Go tool, and the tool finds its caches under the real home.
 var priceSnapshot []byte
 
-// locatePriceSnapshot reads pricing/models.json from the llm module the build
-// resolved, so the seeded cache is the same document the binary embeds.
+// locatePriceSnapshot takes the document the llm module embeds, so the seeded
+// cache is the same one the binary carries.
 func locatePriceSnapshot() error {
-	out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "github.com/rfizzle/llm").Output()
-	if err != nil {
-		return fmt.Errorf("find the llm module: %w", err)
-	}
-	priceSnapshot, err = os.ReadFile(filepath.Join(strings.TrimSpace(string(out)), "pricing", "models.json"))
-	if err != nil {
-		return fmt.Errorf("read the price snapshot: %w", err)
-	}
+	priceSnapshot = pricing.SnapshotJSON()
 	return nil
 }
 
