@@ -92,6 +92,7 @@ func tryProvider(cfg config.Config, req providerRequest) (provider.Provider, err
 		APIKey:            req.APIKey,
 		Model:             req.Model,
 		BaseURL:           req.BaseURL,
+		TokenSource:       providerTokens(req.Provider),
 		ConfigAPIKey:      cfg.ProviderAPIKey(),
 		ConfigBaseURL:     cfg.ProviderBaseURL(),
 		ConfigName:        cfg.ProviderDisplayName(),
@@ -99,6 +100,24 @@ func tryProvider(cfg config.Config, req providerRequest) (provider.Provider, err
 		StreamIdleSeconds: cfg.ProviderStreamIdle(),
 	})
 }
+
+// providerTokens is the token source a provider name is built with: the
+// ChatGPT plan's credential for `chatgpt`, and nil for every name that sends
+// a key, so no key route is ever handed the plan's token.
+func providerTokens(name string) provider.TokenSource {
+	if name != "chatgpt" {
+		return nil
+	}
+	return chatGPTTokens()
+}
+
+// chatGPTTokens is this process's ChatGPT credential as a token source. It
+// answers nil while no sign-in store is wired into this build, and the
+// `chatgpt` provider then fails to resolve with the sign-in error rather
+// than reaching for a key. A store that answers through a typed nil must be
+// turned into a plain nil here, or the provider would hold a source that
+// panics on its first request.
+func chatGPTTokens() provider.TokenSource { return nil }
 
 // resolveProvider resolves the request, and on failure asks the card. It
 // returns the provider, the request that built it (the model may have moved,
@@ -141,6 +160,7 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 		APIKey:            next.APIKey,
 		Model:             next.Model,
 		BaseURL:           next.BaseURL,
+		TokenSource:       providerTokens(next.Provider),
 		ConfigAPIKey:      cfg.ProviderAPIKey(),
 		ConfigBaseURL:     cfg.ProviderBaseURL(),
 		ConfigName:        cfg.ProviderDisplayName(),

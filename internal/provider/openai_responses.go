@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -50,7 +51,25 @@ type OpenAIResponses struct {
 	// forever.
 	idleDeadline
 	classify func(error) error
+	// route is which bearer this provider sends and which request shape it
+	// is held to: an API key, or a ChatGPT plan's access token. tokens is
+	// the plan's source and nil on the key route.
+	route  responsesRoute
+	tokens TokenSource
+	// labels are the plan catalog's display names by slug, kept from the
+	// last listing for the picker to draw; nil on the key route.
+	labelsMu sync.Mutex
+	labels   map[string]string
 }
+
+// responsesRoute is the bearer a provider sends and the shape its requests
+// take on the way out.
+type responsesRoute int
+
+const (
+	routeAPIKey responsesRoute = iota
+	routeChatGPTPlan
+)
 
 func NewOpenAIResponses(opts ResolveOpts) (*OpenAIResponses, error) {
 	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("OPENAI_API_KEY"), opts.ConfigAPIKey)
@@ -84,11 +103,25 @@ func (o *OpenAIResponses) Name() string { return o.name }
 // OffersDecisions answers from the floor, as the chat dialect does: built by
 // its own constructor this is OpenAI's endpoint. A gateway profile built over
 // it answers from what the profile declares instead (internal/profile).
-func (o *OpenAIResponses) OffersDecisions(model string) bool { return DecisionsOnFloor(model) }
+//
+// The plan route offers it for no model. The plan's token is good for
+// /v1/responses and /v1/models and nothing else the docs name, and they say
+// in so many words that other routes are not permitted by analogy.
+func (o *OpenAIResponses) OffersDecisions(model string) bool {
+	if o.route == routeChatGPTPlan {
+		return false
+	}
+	return DecisionsOnFloor(model)
+}
 
 // Decide sends one Decisions API request over this provider's client, so a
 // gateway profile's headers and rewrites apply to it as they do to a turn.
 func (o *OpenAIResponses) Decide(ctx context.Context, req DecisionRequest) (DecisionResult, error) {
+	if o.route == routeChatGPTPlan {
+		// Never sent: a caller that skipped OffersDecisions is refused here
+		// rather than spending the plan's token on a route it does not cover.
+		return DecisionResult{}, o.refuse(ClassNotEligible, "", "the Decisions API is not available on a ChatGPT plan")
+	}
 	if req.Model == "" {
 		req.Model = o.model
 	}
@@ -96,8 +129,12 @@ func (o *OpenAIResponses) Decide(ctx context.Context, req DecisionRequest) (Deci
 }
 
 // ListModels enumerates the endpoint's catalog. The models endpoint is the
-// same one the chat dialects use, so it goes through the shared client.
+// same one the chat dialects use, so it goes through the shared client —
+// except on the plan route, whose catalog is another shape (planModels).
 func (o *OpenAIResponses) ListModels(ctx context.Context) ([]string, error) {
+	if o.route == routeChatGPTPlan {
+		return o.planModels(ctx)
+	}
 	cfg := openai.DefaultConfig(o.apiKey)
 	cfg.BaseURL = o.baseURL
 	cfg.HTTPClient = o.client
@@ -179,6 +216,9 @@ type responseItem struct {
 	Name      string            `json:"name,omitempty"`
 	Arguments string            `json:"arguments,omitempty"`
 	Output    string            `json:"output,omitempty"`
+	// Namespace is the tool group a replayed call was made from, on the one
+	// route that groups its tools (shapeForPlan).
+	Namespace string `json:"namespace,omitempty"`
 	// Summary and EncryptedContent are a reasoning item's two halves. shhh
 	// asks for no summary, so the readable half goes back as the empty list
 	// the item's shape still requires, and the sealed half goes back as it
@@ -208,22 +248,31 @@ type responseInputAudio struct {
 	Format string `json:"format"`
 }
 
-// responsesTool is a function tool. The Responses API flattens what chat
-// completions nests under "function".
+// responsesTool is a function tool, or a namespace grouping some. The
+// Responses API flattens what chat completions nests under "function".
 type responsesTool struct {
 	Type        string          `json:"type"`
 	Name        string          `json:"name"`
 	Description string          `json:"description,omitempty"`
 	Parameters  json.RawMessage `json:"parameters,omitempty"`
-	// Strict is sent explicitly: shhh's tool schemas are permissive, and
-	// strict mode rejects a schema that does not close every object.
-	Strict bool `json:"strict"`
+	// Strict is sent explicitly on every function: shhh's tool schemas are
+	// permissive, and strict mode rejects a schema that does not close
+	// every object. It is a pointer so that a namespace, which has no
+	// schema of its own, carries no such field.
+	Strict *bool `json:"strict,omitempty"`
+	// Tools is a namespace's functions (shapeForPlan).
+	Tools []responsesTool `json:"tools,omitempty"`
 }
 
 func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error) {
 	model := o.model
 	if opts.Model != "" {
 		model = opts.Model
+	}
+	if o.route == routeChatGPTPlan {
+		if err := o.planAttachments(messages); err != nil {
+			return nil, o.classify(err)
+		}
 	}
 	// Fitted to the model: a rung it lacks becomes the highest it has, and
 	// a model with no reasoning gets no field.
@@ -279,6 +328,10 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		req.Reasoning = &responsesReasoning{Effort: effort}
 		req.Include = []string{includeEncryptedReasoning}
 	}
+	var rename toolNamer
+	if o.route == routeChatGPTPlan {
+		rename = shapeForPlan(&req)
+	}
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -290,18 +343,7 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 	// there is to time out (idle.go).
 	ctx, watch := o.guard(ctx)
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/responses", bytes.NewReader(body))
-	if err != nil {
-		watch.stop()
-		return nil, err
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Accept", "text/event-stream")
-	if o.apiKey != "" {
-		httpReq.Header.Set("Authorization", "Bearer "+o.apiKey)
-	}
-
-	resp, err := o.client.Do(httpReq)
+	resp, err := o.send(ctx, http.MethodPost, "/responses", body, "text/event-stream")
 	if err != nil {
 		defer watch.stop()
 		return nil, o.classify(watch.err(err))
@@ -312,9 +354,85 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		// request is what the status says and never the wire going quiet.
 		defer watch.stop()
 		defer resp.Body.Close()
-		return nil, o.classify(responsesHTTPError(resp))
+		return nil, o.classify(o.httpError(resp))
 	}
-	return streamResponses(resp.Body, o.classify, watch), nil
+	return streamResponses(resp.Body, o.classify, watch, rename), nil
+}
+
+// httpError reads a refusal in the shape this route's endpoint writes it.
+func (o *OpenAIResponses) httpError(resp *http.Response) error {
+	if o.route == routeChatGPTPlan {
+		return planHTTPError(resp)
+	}
+	return responsesHTTPError(resp)
+}
+
+// send makes one request with this route's bearer. On the plan route a 401
+// is answered once: the source is told which token was refused, and if it
+// hands back a different one the same body goes again under it. A source
+// that hands back the refused token could not refresh, and the 401 stands
+// for the caller to classify. Once is the bound because a second refusal of
+// a token minted a moment ago is not something a third attempt fixes, and a
+// loop here would be a refresh storm against the sign-in server.
+//
+// A failure to get a token at all comes back already classified; any other
+// error is the transport's, for the caller to classify with its deadline.
+func (o *OpenAIResponses) send(ctx context.Context, method, path string, body []byte, accept string) (*http.Response, error) {
+	bearer, err := o.bearer(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	resp, err := o.do(ctx, method, path, body, accept, bearer)
+	if err != nil || resp.StatusCode != http.StatusUnauthorized || o.route != routeChatGPTPlan {
+		return resp, err
+	}
+	next, err := o.bearer(ctx, bearer)
+	if err != nil {
+		resp.Body.Close()
+		return nil, err
+	}
+	if next == bearer {
+		return resp, nil
+	}
+	resp.Body.Close()
+	return o.do(ctx, method, path, body, accept, next)
+}
+
+// bearer is the token a request goes under: the key on the key route, the
+// source's answer on the plan route.
+func (o *OpenAIResponses) bearer(ctx context.Context, refused string) (string, error) {
+	if o.route != routeChatGPTPlan {
+		return o.apiKey, nil
+	}
+	tok, err := o.tokens.Token(ctx, refused)
+	if err != nil {
+		return "", o.tokenFailure(err)
+	}
+	if tok == "" {
+		return "", o.tokenFailure(ErrChatGPTSignedOut)
+	}
+	return tok, nil
+}
+
+// do sends one request. body is re-read from the start on every call, which
+// is what lets send repeat a request after a refresh.
+func (o *OpenAIResponses) do(ctx context.Context, method, path string, body []byte, accept, bearer string) (*http.Response, error) {
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, method, o.baseURL+path, reader)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
+		httpReq.Header.Set("Content-Type", "application/json")
+	}
+	httpReq.Header.Set("Accept", accept)
+	if bearer != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+bearer)
+	}
+	return o.client.Do(httpReq)
 }
 
 // responsesExplicitCache is deliberately narrower than the generic GPT-5
@@ -484,12 +602,14 @@ func toResponsesTools(tools []Tool) []responsesTool {
 		return nil
 	}
 	out := make([]responsesTool, len(tools))
+	notStrict := false
 	for i, t := range tools {
 		out[i] = responsesTool{
 			Type:        "function",
 			Name:        t.Name,
 			Description: t.Description,
 			Parameters:  t.Parameters,
+			Strict:      &notStrict,
 		}
 	}
 	return out
@@ -527,4 +647,20 @@ func init() {
 		CheapModel: cheapResponsesModel,
 	})
 	RegisterDecisions("openai-responses", DecisionsOnFloor)
+
+	// The ChatGPT plan is its own provider name over this wire code rather
+	// than a mode of the one above, because the name is what every surface
+	// already keys on and what only the person's own switch changes: moving
+	// billing between the plan and a key is a provider switch, never a
+	// fallback taken on their behalf.
+	// See docs/capabilities/chatgpt-plan.md#what-a-plan-session-cannot-do.
+	Register(chatGPTName, func(opts ResolveOpts) (Provider, error) {
+		return NewChatGPT(opts)
+	})
+	RegisterDefaults(chatGPTName, ProviderDefaults{
+		Model:      defaultResponsesModel,
+		BaseURL:    defaultResponsesBaseURL,
+		CheapModel: cheapResponsesModel,
+	})
+	RegisterDecisions(chatGPTName, func(string) bool { return false })
 }

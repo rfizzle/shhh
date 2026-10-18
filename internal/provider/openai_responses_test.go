@@ -254,7 +254,7 @@ func TestOpenAIResponses_BuildsTheInputList(t *testing.T) {
 	if len(got.Tools) != 1 || got.Tools[0].Type != "function" || got.Tools[0].Name != "bash" {
 		t.Fatalf("tools are flattened in this dialect: %+v", got.Tools)
 	}
-	if got.Tools[0].Strict {
+	if got.Tools[0].Strict == nil || *got.Tools[0].Strict {
 		t.Fatal("strict mode would reject shhh's permissive schemas")
 	}
 }

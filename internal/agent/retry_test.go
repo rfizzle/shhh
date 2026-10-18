@@ -77,6 +77,12 @@ func TestBackoff_OnlyWhatWaitingCanFix(t *testing.T) {
 	}{
 		{"a rejected key", &provider.Failure{Class: provider.ClassAuth}},
 		{"a request that did not fit", &provider.Failure{Class: provider.ClassContextLength}},
+		// The ChatGPT plan's three: a spent allowance names no reset, and an
+		// ineligible account or an unsupported request is refused the same
+		// way however long anybody waits.
+		{"a spent plan allowance", &provider.Failure{Class: provider.ClassUsageLimit, Status: 429}},
+		{"an account the plan will not serve", &provider.Failure{Class: provider.ClassNotEligible, Status: 403}},
+		{"a request the plan does not serve", &provider.Failure{Class: provider.ClassUnsupported, Status: 400}},
 		{"an unclassified error", errors.New("connection reset")},
 	} {
 		var b Backoff

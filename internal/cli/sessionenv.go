@@ -326,6 +326,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			APIKey:            key,
 			Model:             model,
 			BaseURL:           baseURL,
+			TokenSource:       providerTokens(name),
 			ConfigAPIKey:      cfg.ProviderAPIKey(),
 			ConfigBaseURL:     cfg.ProviderBaseURL(),
 			ConfigName:        cfg.ProviderDisplayName(),

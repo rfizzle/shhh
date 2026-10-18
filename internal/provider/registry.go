@@ -14,6 +14,10 @@ type ResolveOpts struct {
 	// HTTPClient replaces the network transport for a caller that owns an
 	// endpoint boundary, such as an embedded gateway or an in-memory fixture.
 	HTTPClient *http.Client
+	// TokenSource is the ChatGPT plan route's bearer, and nil everywhere
+	// else. Only the `chatgpt` factory reads it; every dialect that takes a
+	// key ignores it, so a key route can never be handed the plan's token.
+	TokenSource TokenSource
 
 	ConfigAPIKey  string
 	ConfigBaseURL string

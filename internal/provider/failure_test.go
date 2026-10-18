@@ -318,7 +318,7 @@ func TestFailure_HeadlineAndRecoverable(t *testing.T) {
 			t.Errorf("%q should be recoverable", class)
 		}
 	}
-	for _, class := range []Class{ClassAuth, ClassQuota, ClassContextLength, ClassMalformed, ClassCancelled, ClassUnclassified} {
+	for _, class := range []Class{ClassAuth, ClassQuota, ClassContextLength, ClassMalformed, ClassCancelled, ClassUnclassified, ClassUsageLimit, ClassNotEligible, ClassUnsupported} {
 		if (&Failure{Class: class}).Recoverable() {
 			t.Errorf("%q should not be recoverable", class)
 		}

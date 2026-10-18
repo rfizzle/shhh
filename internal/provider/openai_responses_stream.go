@@ -20,7 +20,6 @@ package provider
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"io"
 	"strings"
 )
@@ -73,6 +72,10 @@ type responseOutputItem struct {
 	CallID    string `json:"call_id"`
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
+	// Namespace is the tool group a call was made from, on a request that
+	// grouped its tools (the ChatGPT plan route). The name beside it is the
+	// function's own name inside the group.
+	Namespace string `json:"namespace"`
 	// EncryptedContent is a reasoning item's thinking, sealed. A response
 	// the endpoint stores keeps its reasoning server-side and this field is
 	// empty; shhh stores none, so it asks for the sealed form by name and
@@ -109,8 +112,13 @@ type responseError struct {
 	Code    string `json:"code"`
 }
 
+// toolNamer maps a call's wire name, and the group it was made from, back
+// to the name shhh registered the tool under. Nil is the identity, which is
+// every route that sends its tools ungrouped.
+type toolNamer func(namespace, name string) string
+
 // streamResponses converts the SSE body into shhh's stream events.
-func streamResponses(body io.ReadCloser, classify func(error) error, watch *idleWatch) <-chan StreamEvent {
+func streamResponses(body io.ReadCloser, classify func(error) error, watch *idleWatch, rename toolNamer) <-chan StreamEvent {
 	ch := make(chan StreamEvent)
 	go func() {
 		defer close(ch)
@@ -175,7 +183,7 @@ func streamResponses(body io.ReadCloser, classify func(error) error, watch *idle
 				}
 
 			case eventItemDone, eventArgsDone:
-				if call, ok := toolCallFrom(ev.Item); ok {
+				if call, ok := toolCallFrom(ev.Item, rename); ok {
 					if _, exists := seen[call.ID]; !exists {
 						order = append(order, call.ID)
 					}
@@ -190,7 +198,7 @@ func streamResponses(body io.ReadCloser, classify func(error) error, watch *idle
 				if ev.Response.Usage != nil {
 					usage = ev.Response.Usage.usage()
 				}
-				calls := toolCallsFromOutput(ev.Response.Output)
+				calls := toolCallsFromOutput(ev.Response.Output, rename)
 				if len(calls) == 0 {
 					calls = orderedCalls(seen, order)
 				}
@@ -274,11 +282,19 @@ func sseData(line string) (string, bool) {
 	return payload, true
 }
 
-func toolCallFrom(item *responseOutputItem) (ToolCall, bool) {
+// toolCallFrom reads one call item. The name is mapped back here, on every
+// item, because the item events and the terminal output list are two copies
+// of the same call and a session that answered under the wire name would be
+// answering a tool it never registered.
+func toolCallFrom(item *responseOutputItem, rename toolNamer) (ToolCall, bool) {
 	if item == nil || item.Type != "function_call" || item.CallID == "" {
 		return ToolCall{}, false
 	}
-	return ToolCall{ID: item.CallID, Name: item.Name, Arguments: item.Arguments}, true
+	name := item.Name
+	if rename != nil {
+		name = rename(item.Namespace, item.Name)
+	}
+	return ToolCall{ID: item.CallID, Name: name, Arguments: item.Arguments}, true
 }
 
 // reasoningFrom reads a reasoning item. There is nothing readable on one:
@@ -310,10 +326,10 @@ func reasoningFromOutput(output []responseOutputItem) []ReasoningBlock {
 
 // toolCallsFromOutput reads the finished response's output list, which holds
 // every call the model made, in order.
-func toolCallsFromOutput(output []responseOutputItem) []ToolCall {
+func toolCallsFromOutput(output []responseOutputItem, rename toolNamer) []ToolCall {
 	var calls []ToolCall
 	for i := range output {
-		if call, ok := toolCallFrom(&output[i]); ok {
+		if call, ok := toolCallFrom(&output[i], rename); ok {
 			calls = append(calls, call)
 		}
 	}
@@ -332,14 +348,21 @@ func orderedCalls(seen map[string]ToolCall, order []string) []ToolCall {
 }
 
 // responseFailure turns a failure event into an error, preferring the API's
-// own message.
+// own message. The code travels with it: the ChatGPT plan route ends a
+// stream that has already begun on a spent allowance this way, with no
+// status to read, and the code is the only thing that says so.
 func responseFailure(ev responseEvent) error {
+	failure := &apiError{Code: ev.Code}
+	if ev.Response.Error != nil && ev.Response.Error.Code != "" {
+		failure.Code = ev.Response.Error.Code
+	}
 	switch {
 	case ev.Response.Error != nil && ev.Response.Error.Message != "":
-		return fmt.Errorf("%s", ev.Response.Error.Message)
+		failure.Message = ev.Response.Error.Message
 	case ev.Message != "":
-		return fmt.Errorf("%s", ev.Message)
+		failure.Message = ev.Message
 	default:
-		return fmt.Errorf("the response failed without a message")
+		failure.Message = "the response failed without a message"
 	}
+	return failure
 }

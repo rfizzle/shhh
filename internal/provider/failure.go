@@ -67,6 +67,19 @@ const (
 	// class, not an error path: the row still renders on the grid and the
 	// provider's own message goes in the detail body.
 	ClassUnclassified Class = "unclassified"
+	// ClassUsageLimit — a ChatGPT plan's allowance, or the app's share of
+	// it, is spent. It is not a rate limit: waiting a few seconds does not
+	// help, the plan names no reset, and the remedy is the person's (their
+	// usage settings, or a provider they pay for some other way).
+	ClassUsageLimit Class = "usage limit"
+	// ClassNotEligible — the plan route will not serve this account,
+	// workspace or operation. Neither a retry nor another sign-in changes
+	// the answer, so it is neither a stall nor a rejected credential.
+	ClassNotEligible Class = "not eligible"
+	// ClassUnsupported — the request asked the plan route for something it
+	// does not serve: an input, a tool, a model. The same body is refused
+	// the same way every time; the failure names the part (Param).
+	ClassUnsupported Class = "unsupported"
 )
 
 // The sentinels errors.Is matches a Failure against, one per class. Callers
@@ -83,6 +96,9 @@ var (
 	ErrMalformed     = errors.New(string(ClassMalformed))
 	ErrCancelled     = errors.New(string(ClassCancelled))
 	ErrUnclassified  = errors.New(string(ClassUnclassified))
+	ErrUsageLimit    = errors.New(string(ClassUsageLimit))
+	ErrNotEligible   = errors.New(string(ClassNotEligible))
+	ErrUnsupported   = errors.New(string(ClassUnsupported))
 )
 
 var sentinels = map[Class]error{
@@ -96,6 +112,9 @@ var sentinels = map[Class]error{
 	ClassMalformed:     ErrMalformed,
 	ClassCancelled:     ErrCancelled,
 	ClassUnclassified:  ErrUnclassified,
+	ClassUsageLimit:    ErrUsageLimit,
+	ClassNotEligible:   ErrNotEligible,
+	ClassUnsupported:   ErrUnsupported,
 }
 
 // maxMessage bounds the provider's own words. The detail body is bounded on
@@ -125,6 +144,15 @@ type Failure struct {
 	KeyTail string
 	// RetryAfter is the wait the provider asked for, when it named one.
 	RetryAfter time.Duration
+	// Code, Param and RequestID are the endpoint's own machine-readable
+	// account of the refusal, where it gave one: the error code, the part
+	// of the request it named, and the id it filed the request under. The
+	// ChatGPT plan route asks for all three to be kept, because its codes
+	// are what tell a spent allowance from a refused account and the
+	// request id is what a report about the refusal needs.
+	Code      string
+	Param     string
+	RequestID string
 
 	err error
 }
@@ -179,6 +207,15 @@ func (f *Failure) Detail() []string {
 			out = append(out, line)
 		}
 	}
+	// The part the endpoint refused is the one thing an unsupported request
+	// can be fixed by, and the request id the one thing a report about it
+	// needs; neither is in the message, so each gets a line of its own.
+	if f.Param != "" {
+		out = append(out, "param: "+f.Param)
+	}
+	if f.RequestID != "" {
+		out = append(out, "request: "+f.RequestID)
+	}
 	return out
 }
 
@@ -230,7 +267,11 @@ func (c classifier) classify(err error) error {
 		KeyTail:  keyTail(c.key),
 		err:      err,
 	}
-	f.Class = classOf(err, status, message)
+	var coded *apiError
+	if errors.As(err, &coded) {
+		f.Code, f.Param, f.RequestID = coded.Code, coded.Param, coded.RequestID
+	}
+	f.Class = classOf(err, status, f.Code, message)
 	f.RetryAfter = retryAfter(message)
 	record(f)
 	return f
@@ -258,17 +299,20 @@ func record(f *Failure) {
 	// the session did not.
 	logs.Logger().Error("provider request refused",
 		"provider", f.Provider, "class", string(f.Class),
-		"status", f.Status, "detail", f.Message)
+		"status", f.Status, "code", f.Code, "request_id", f.RequestID,
+		"detail", f.Message)
 }
 
 // classOf is the mapping itself, and the only place it lives. A stream that
 // went quiet comes first, ahead of the cancellation the deadline is enforced
 // with (idle.go); cancellation comes next because a cancelled request often
 // surfaces as a transport error that would otherwise read as a network
-// failure; the status is asked after that because a provider that answered at
-// all is more authoritative than its prose; the prose is last, for the
+// failure; a code the endpoint named is asked before the status, because the
+// plan route's codes split one status into answers that need different
+// remedies; the status is asked after that because a provider that answered
+// at all is more authoritative than its prose; the prose is last, for the
 // dialects that hand back nothing else.
-func classOf(err error, status int, message string) Class {
+func classOf(err error, status int, code, message string) Class {
 	if errors.Is(err, ErrStreamIdle) {
 		// The connection died on the way back, which is what the class
 		// already says — and it is one of the three the retry schedule waits
@@ -278,6 +322,9 @@ func classOf(err error, status int, message string) Class {
 	}
 	if errors.Is(err, context.Canceled) {
 		return ClassCancelled
+	}
+	if class, ok := classFromCode(code); ok {
+		return class
 	}
 	if status > 0 {
 		if class, ok := classFromStatus(status, message); ok {
@@ -337,6 +384,34 @@ func classFromStatus(status int, message string) (Class, bool) {
 		return "", false
 	case 500, 502, 503, 504, 529:
 		return ClassOverloaded, true
+	}
+	return "", false
+}
+
+// classFromCode maps the ChatGPT plan route's error codes, which arrive on
+// statuses the table below would misread: a 403 that is an ineligible
+// account rather than a rejected key, where offering another key or another
+// sign-in would loop; a 429 that is a spent allowance with no reset to wait
+// for, where the retry schedule would sit out a limit that is not lifting.
+// The same codes arrive mid-stream with no status at all, which is the other
+// reason they are read here rather than through the status. The list is the
+// docs' structured-errors table and nothing more.
+// See docs/capabilities/chatgpt-plan.md#what-a-plan-session-cannot-do.
+func classFromCode(code string) (Class, bool) {
+	switch code {
+	case "subscription_sharing_usage_limit_exceeded":
+		return ClassUsageLimit, true
+	case "subscription_sharing_usage_unavailable", "subscription_sharing_user_unavailable":
+		// Temporary on OpenAI's side, and the docs ask for bounded backoff,
+		// which is what this class is waited out with.
+		return ClassOverloaded, true
+	case "subscription_sharing_user_not_eligible", "subscription_sharing_route_not_supported",
+		"chatpass_v2_scope_not_authorized", "chatpass_v2_invalid_authorization_context":
+		return ClassNotEligible, true
+	case "subscription_sharing_unsupported_capability":
+		return ClassUnsupported, true
+	case "subscription_sharing_invalid_user":
+		return ClassAuth, true
 	}
 	return "", false
 }
@@ -492,6 +567,10 @@ func retryAfter(message string) time.Duration {
 // the Anthropic one dereferences the request it was built from, which a
 // synthetic error in a test does not have.
 func errorShape(err error) (int, string) {
+	var coded *apiError
+	if errors.As(err, &coded) {
+		return coded.Status, coded.Message
+	}
 	var apiErr *openai.APIError
 	if errors.As(err, &apiErr) {
 		return apiErr.HTTPStatusCode, apiErr.Message
@@ -514,6 +593,21 @@ func errorShape(err error) (int, string) {
 	}
 	return 0, err.Error()
 }
+
+// apiError is a refusal as the endpoint wrote it, for the dialect that reads
+// the wire itself rather than through an SDK's error type: the status (zero
+// for a failure that arrived on an open stream), the message, and the code,
+// param and request id the classifier keeps on the Failure.
+type apiError struct {
+	Status    int
+	Message   string
+	Code      string
+	Param     string
+	RequestID string
+}
+
+// Error is the endpoint's own message; the classified Failure says the rest.
+func (e *apiError) Error() string { return e.Message }
 
 // anthropicMessage reads the message out of the Messages API's error
 // envelope, falling back to the error type it names — `overloaded_error` is a

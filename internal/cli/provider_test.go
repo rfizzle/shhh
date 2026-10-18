@@ -2,12 +2,14 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 )
 
@@ -143,5 +145,22 @@ func TestOneShotRecordsTheModelItsOwnKeyNamed(t *testing.T) {
 	}
 	if got := sessions[0].Model; got != "cmd-model" {
 		t.Fatalf("the one-shot's row says it ran on %q, want cmd-model", got)
+	}
+}
+
+// A session resolved to the ChatGPT plan with nothing signed in fails with
+// the sign-in's words, and a key in every place a key route looks is not a
+// way round it: moving the bill to a key is the person's switch to make.
+func TestTryProvider_ChatGPTWithoutASignInIsTheSignInError(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "sk-env")
+	t.Setenv("SHHH_API_KEY", "sk-env")
+	var cfg config.Config
+	cfg.Provider.APIKey = "sk-config"
+	_, err := tryProvider(cfg, providerRequest{Provider: "chatgpt", APIKey: "sk-flag"})
+	if !errors.Is(err, provider.ErrChatGPTSignedOut) {
+		t.Fatalf("want the sign-in error, got %v", err)
+	}
+	if providerTokens("openai-responses") != nil || providerTokens("openai") != nil {
+		t.Fatal("no key route is handed a token source")
 	}
 }
