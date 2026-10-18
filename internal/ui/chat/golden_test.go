@@ -4474,7 +4474,7 @@ func TestGolden_ItemDraft(t *testing.T) {
 // tests; what is captured here is what a report cannot be — a proposal on
 // the tab it is about, at the two widths it lays itself out across.
 func TestGolden_TodoSprint(t *testing.T) {
-	captureGolden(t, "todo-sprint", "the sprint plan card", []int{80, 110}, func(width int) []golden.Panel {
+	captureGolden(t, "todo-sprint", "the sprint plan card", []int{60, 80, 110}, func(width int) []golden.Panel {
 		root := t.TempDir()
 		dir := todo.Dir(root)
 		if err := os.MkdirAll(filepath.Join(dir, todo.DoneSubdir), 0o755); err != nil {

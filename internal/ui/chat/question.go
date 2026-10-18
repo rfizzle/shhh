@@ -286,6 +286,7 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 		c.sel.FoldNote = true
 		c.sel.Select.MaxLines = body
 		c.sel.Select.CancelLabel = questionWayOut
+		c.sel.Select.Stack = true
 		c.sel.Actions = c.offers()
 	case ask.ShapeChooseMany:
 		c.rows = questionRows(q.Options)

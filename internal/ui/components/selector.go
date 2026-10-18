@@ -254,6 +254,13 @@ type Select struct {
 	// else the description is a property of the option, which is a thing you
 	// read across the list.
 	FocusDesc bool
+	// Stack lets a row below CardFloor give up its right column before it
+	// gives up its words: the description wraps in the column it already
+	// has and the meta field moves under it, instead of the description
+	// being clipped to a stub beside the meta. A card whose rows are
+	// sentences the reader decides on sets it; a menu of short names does not
+	// need to.
+	Stack bool
 	// QueryHint is the placeholder the query row draws while nothing has been
 	// typed into it. A row opened by a key names what it is for; a surface
 	// that is a query line from the start (the palette) does not need telling.
@@ -317,6 +324,13 @@ type Select struct {
 	// A filter that shortened the list clamps it and a Focus outside it pulls
 	// it back, so no host has to reset it.
 	list List[SelectOption]
+
+	// laidWidth and laidNumbered are the width and numbering the rows were
+	// last laid out at, kept so the list can ask how many screen rows an
+	// option takes: a stacked option takes more than one, and the window
+	// cannot know that from the option.
+	laidWidth    int
+	laidNumbered bool
 }
 
 // pointer aims the shared list at this card's own fields and hands it back.
@@ -341,6 +355,16 @@ func (s *Select) pointer() *List[SelectOption] {
 	s.list.rows = func(i int) int {
 		if s.FocusDesc && i == s.Focus && !s.Options[i].passive() && s.Options[i].Desc != "" {
 			return 2
+		}
+		if s.Stack && s.laidWidth > 0 && !s.Options[i].passive() {
+			g, inner := s.gridAt(s.laidWidth, s.laidNumbered)
+			leftW := g.label
+			if g.num > 0 {
+				leftW += g.num + 1
+			}
+			if d, m, ok := s.stackText(s.Options[i], leftW, g, inner); ok {
+				return max(len(d)+len(m), 1)
+			}
 		}
 		return 1
 	}
@@ -922,11 +946,9 @@ func (opt SelectOption) metaText() string {
 	return recommendedWord + " · " + opt.Meta
 }
 
-// optionRows renders Options[lo:hi] with the ❯ pointer on the focused row.
-// Numbering counts from the start of the list rather than from the window,
-// because the number keys address the list and not what happens to be on
-// screen.
-func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
+// gridAt is the grid a card of this width lays its options on, and the width
+// inside its frame.
+func (s *Select) gridAt(width int, numbered bool) (optionGrid, int) {
 	inner := width - cardFrameWidth
 	numWidth := 0
 	if numbered {
@@ -938,7 +960,15 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 	if own := s.ownNumberWidth(); own > numWidth {
 		numWidth = own
 	}
-	g := s.grid(numWidth, inner)
+	return s.grid(numWidth, inner), inner
+}
+
+// optionRows renders Options[lo:hi] with the ❯ pointer on the focused row.
+// Numbering counts from the start of the list rather than from the window,
+// because the number keys address the list and not what happens to be on
+// screen.
+func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
+	g, inner := s.gridAt(width, numbered)
 	var rows []string
 	n := 0
 	for i, opt := range s.Options {
@@ -963,7 +993,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 		if i < lo || i >= hi {
 			continue
 		}
-		rows = append(rows, s.optionRow(opt, n, i == s.Focus && !s.idle, g, inner))
+		rows = append(rows, strings.Split(s.optionRow(opt, n, i == s.Focus && !s.idle, g, inner), "\n")...)
 		if s.FocusDesc && i == s.Focus && opt.Desc != "" {
 			rows = append(rows, sty.dim.Render(Clip("    "+opt.Desc, inner)))
 		}
@@ -1015,6 +1045,10 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	}
 	label := opt.labelText()
 	left := number + padRight(label, g.label)
+
+	if d, m, ok := s.stackText(opt, lipgloss.Width(left), g, inner); ok {
+		return s.stackedRow(opt, number, label, d, m, focused, g, inner)
+	}
 
 	meta, value, desc := "", "", ""
 	metaWanted := opt.metaText()
@@ -1181,6 +1215,7 @@ func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, i
 	if s.Filtering && s.selectable() == 0 {
 		return s.noMatchRows(width), 0, -1
 	}
+	s.laidWidth, s.laidNumbered = width, numbered
 	l := s.pointer()
 	lo, hi := l.Range(budget)
 	rows := s.optionRows(width, numbered, lo, hi)
@@ -1258,4 +1293,104 @@ func boundRows(rows []string, maxLines int) []string {
 	}
 	keep := max(budget-1, 1)
 	return append(rows[:keep:keep], sty.dim.Render("…"))
+}
+
+// stackText is what an option says when its row is below CardFloor and
+// cannot hold its description and its meta field on one line: the
+// description wrapped in the column it would have had, and the meta field
+// wrapped in the same column under it. ok is false for a row that fits, a
+// card at or above the floor, and a row with no column worth wrapping in; the
+// row is then laid out as ever.
+//
+// A row that carries a value or a detail is not stacked: those are fields the
+// row reads across, and moving one under the label would put it in the
+// description's place.
+func (s *Select) stackText(opt SelectOption, leftW int, g optionGrid, inner int) (desc, meta []string, ok bool) {
+	if !s.Stack || s.FocusDesc || opt.passive() || opt.Value != "" || len(opt.Detail) > 0 {
+		return nil, nil, false
+	}
+	if inner+cardFrameWidth >= CardFloor {
+		return nil, nil, false
+	}
+	room := max(inner-GridPointerWidth, 0)
+	descW, metaW := lipgloss.Width(opt.Desc), lipgloss.Width(opt.metaText())
+	if descW+metaW == 0 {
+		return nil, nil, false
+	}
+	need := leftW
+	if descW > 0 {
+		need += 2 + descW
+	}
+	if metaW > 0 {
+		need += 2 + metaW
+	}
+	wrapW := room - (leftW + 2)
+	if need <= room || wrapW < minDescWidth {
+		return nil, nil, false
+	}
+	wrap := func(text string) []string {
+		if text == "" {
+			return nil
+		}
+		return strings.Split(lipgloss.Wrap(text, wrapW, ""), "\n")
+	}
+	return wrap(opt.Desc), wrap(opt.metaText()), true
+}
+
+// stackedRow lays an option out over several rows: the label and the first
+// of its description on the first, the rest of the description and then the
+// meta field in the description's column under it. A focused row is lit on
+// every one of its rows, so the reader sees it is one answer.
+func (s *Select) stackedRow(opt SelectOption, number, label string, desc, meta []string, focused bool, g optionGrid, inner int) string {
+	left := number + padRight(label, g.label)
+	pad := strings.Repeat(" ", lipgloss.Width(left)+2)
+	room := max(inner-GridPointerWidth, 0)
+	type line struct {
+		text string
+		meta bool
+	}
+	var lines []line
+	for _, d := range desc {
+		lines = append(lines, line{text: d})
+	}
+	for _, m := range meta {
+		lines = append(lines, line{text: m, meta: true})
+	}
+	rows := make([]string, 0, max(len(lines), 1))
+	for i := 0; i == 0 || i < len(lines); i++ {
+		tail, isMeta := "", false
+		if i < len(lines) {
+			tail, isMeta = lines[i].text, lines[i].meta
+		}
+		if focused {
+			head := pad
+			if i == 0 {
+				head = left + "  "
+			}
+			if i == 0 {
+				rows = append(rows, LitOption(head+tail, inner))
+			} else {
+				rows = append(rows, PointerColumn()+sty.focusRow.Render(padRight(Clip(head+tail, room), room)))
+			}
+			continue
+		}
+		body, num, tone := emphasizeMatch(label, s.Query, sty.body), sty.dim, sty.dim
+		if isMeta {
+			tone = opt.metaTone.style()
+		}
+		if opt.Dim {
+			body, num, tone = sty.dimmer.Render(label), sty.dimmer, sty.dimmer
+		}
+		row := PointerColumn()
+		if i == 0 {
+			if number != "" {
+				row += num.Render(number)
+			}
+			row += padRight(body, g.label) + "  "
+		} else {
+			row += pad
+		}
+		rows = append(rows, Clip(row+tone.Render(tail), inner))
+	}
+	return strings.Join(rows, "\n")
 }

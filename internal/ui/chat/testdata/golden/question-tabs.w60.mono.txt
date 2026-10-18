@@ -15,8 +15,10 @@
 ╭─ Question ────────────────────────────────── 1 of 3 ─╮
 │ Which store should the cache use?                    │
 │                                                      │
-│ ❯ 1. SQLite            in th…  recommended · 3 files │
-│   2. Postgres          one more service to…  9 files │
+│ ❯ 1. SQLite            in the checkout already       │
+│                        recommended · 3 files         │
+│   2. Postgres          one more service to run       │
+│                        9 files                       │
 │   3. Something else …  answer in your own words      │
 │ [tab] note or list · [enter] confirm                 │
 │ [v] the full answer · [←→] the next question         │
@@ -68,8 +70,10 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mQuestion ␛[m␛[38;5;254m────────────────────────────────── 1 of 3 ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mWhich store should the cache use?␛[m                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. SQLite            in th…  recommended · 3 files␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mPostgres␛[m          ␛[38;5;244mone more service to…␛[m  ␛[38;5;254m9 files␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. SQLite            in the checkout already      ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[1;38;5;254;48;5;237m                     recommended · 3 files        ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mPostgres␛[m          ␛[38;5;244mone more service to run␛[m       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                        ␛[38;5;254m9 files␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[←→]␛[m␛[38;5;244m the next question␛[m         ␛[38;5;254m│␛[m

@@ -28,8 +28,8 @@
 
 
   ∗ worked 3m 29s · 13 tools · $1.15 · done 10:00 AM
- ▎✎ 1 file changed +41 −0 · all new to git · /undo 1
-    takes it back
+ ▎✎ 1 file changed +41 −0 · all new to git
+    /undo 1 takes it back
 
 
 · failed · what it got through, and that it changed no file
@@ -87,8 +87,8 @@
 
 
   ␛[38;5;244m∗␛[m ␛[38;5;244mworked 3m 29s · 13 tools · $1.15 · done 10:00 AM␛[m
- ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+41␛[m ␛[38;5;254m−0␛[m␛[38;5;244m · all new to git · /undo 1␛[m
-    ␛[38;5;244mtakes it back␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+41␛[m ␛[38;5;254m−0␛[m␛[38;5;244m · all new to git␛[m
+    ␛[38;5;244m/undo 1 takes it back␛[m
 
 
 · failed · what it got through, and that it changed no file

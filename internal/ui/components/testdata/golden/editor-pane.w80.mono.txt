@@ -112,8 +112,8 @@ wrote 58 lines to internal/agent/loop.go                                   41:16
 
 · the close row · the save counted as yours
   ∗ worked 41.2s · 9 tools · $0.22
- ▎✎ 2 files changed +14 −3 · 1 changed by you · all tracked in git · /undo 1
-    takes it back
+ ▎✎ 2 files changed +14 −3 · 1 changed by you · all tracked in git
+    /undo 1 takes it back
 
 ── ansi ────────────────────────────────────────────────────
 · open · the cursor's line bright, the outline on its declaration
@@ -218,5 +218,5 @@ wrote 58 lines to internal/agent/loop.go                                   41:16
 
 · the close row · the save counted as yours
   ␛[38;5;244m∗␛[m ␛[38;5;244mworked 41.2s · 9 tools · $0.22␛[m
- ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m2 files changed ␛[m␛[38;5;254m+14␛[m ␛[38;5;254m−3␛[m␛[38;5;244m · 1 changed by you␛[m␛[38;5;244m · all tracked in git · /undo 1␛[m
-    ␛[38;5;244mtakes it back␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m2 files changed ␛[m␛[38;5;254m+14␛[m ␛[38;5;254m−3␛[m␛[38;5;244m · 1 changed by you␛[m␛[38;5;244m · all tracked in git␛[m
+    ␛[38;5;244m/undo 1 takes it back␛[m

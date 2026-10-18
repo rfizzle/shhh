@@ -11,6 +11,14 @@ import (
 // width ("│ " + " │").
 const cardFrameWidth = 4
 
+// CardFloor is the card width below which a card gives up its right column
+// before it gives up its words: a field on the right (`recommended · 3
+// files`) moves under the row it belongs to, and the row's words wrap where
+// they were clipped to a stub. One number for the question, the approval and
+// the rewind card; transcript rows are not cards and keep the grid rule that
+// only their target grows.
+const CardFloor = 64
+
 // minCardWidth is the narrowest card worth framing; below it rows render
 // bare.
 const minCardWidth = 12

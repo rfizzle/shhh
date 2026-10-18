@@ -633,36 +633,67 @@ func (c TurnClose) View(width int) string {
 
 // closeRunOn lays out a row whose statement is followed by a run of dim
 // words: on the line where they fit, and wrapped at the words' column under
-// it where they do not.
+// it where they do not. A clause that is a command (`/undo 1 takes it back`)
+// moves whole to the next line and is never broken inside the command: a
+// reader copying the line would copy half of it.
 func closeRunOn(lead, stated, tail string, width int) []string {
 	left := lead + stated
 	if tail == "" {
 		return []string{strings.TrimRight(Clip(left, width), " ")}
 	}
-	sep := " · "
-	room := width - lipgloss.Width(left) - lipgloss.Width(sep)
-	words := strings.Fields(tail)
-	first := ""
-	for len(words) > 0 {
-		next := strings.TrimSpace(first + " " + words[0])
-		if lipgloss.Width(next) > room {
-			break
-		}
-		first, words = next, words[1:]
+	const sep = " · "
+	// A unit is a piece a line may break before; clause marks the ones that
+	// begin a clause, so that a break between clauses is ` · ` and a break
+	// between words is a space.
+	type unit struct {
+		text   string
+		clause bool
 	}
+	var units []unit
+	for _, c := range strings.Split(tail, sep) {
+		if c = strings.TrimSpace(c); strings.HasPrefix(c, "/") {
+			units = append(units, unit{c, true})
+			continue
+		}
+		for i, w := range strings.Fields(c) {
+			units = append(units, unit{w, i == 0})
+		}
+	}
+	// take is the longest run of units that fits room, and the units left.
+	take := func(units []unit, room int) (string, []unit) {
+		run := ""
+		for len(units) > 0 {
+			u, next := units[0], run+" "+units[0].text
+			switch {
+			case run == "":
+				next = u.text
+			case u.clause:
+				next = run + sep + u.text
+			}
+			if lipgloss.Width(next) > room {
+				break
+			}
+			run, units = next, units[1:]
+		}
+		return run, units
+	}
+	first, units := take(units, width-lipgloss.Width(left)-lipgloss.Width(sep))
 	if first == "" {
 		left = strings.TrimRight(Clip(left, width), " ")
 	} else {
 		left += sty.dim.Render(sep + first)
 	}
 	lines := []string{left}
-	if len(words) == 0 {
-		return lines
-	}
 	under := closeLead("", " ")
 	inner := max(width-lipgloss.Width(under), 1)
-	for _, l := range strings.Split(lipgloss.Wrap(strings.Join(words, " "), inner, ""), "\n") {
-		lines = append(lines, under+sty.dim.Render(Clip(strings.TrimRight(l, " "), inner)))
+	for len(units) > 0 {
+		var run string
+		run, units = take(units, inner)
+		if run == "" {
+			// One unit wider than the row: clipped, as every row is.
+			run, units = Clip(units[0].text, inner), units[1:]
+		}
+		lines = append(lines, under+sty.dim.Render(run))
 	}
 	return lines
 }
