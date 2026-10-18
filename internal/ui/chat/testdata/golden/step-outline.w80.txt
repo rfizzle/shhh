@@ -27,7 +27,7 @@
 
   ∗ worked 24.7s · 6 tools · $0.14
  ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back
-  ✗ go test ./internal/agent/... failing · exit 1 · 21s
+  ✗ failed
 
 
 · verbosity · normal, step 1 opened by the reader (its groups under the body)
@@ -53,7 +53,7 @@
 
   ∗ worked 24.7s · 6 tools · $0.14
  ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back
-  ✗ go test ./internal/agent/... failing · exit 1 · 21s
+  ✗ failed
 
 
 · /step · step 1's detail, the card open on its calls
@@ -89,7 +89,7 @@
 
   ∗ worked 24.7s · 6 tools · $0.14
  ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back
-  ✗ go test ./internal/agent/... failing · exit 1 · 21s
+  ✗ failed
 
 
 · verbosity · high (every card open, every row with detail)
@@ -131,7 +131,7 @@
 
   ∗ worked 24.7s · 6 tools · $0.14
  ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back
-  ✗ go test ./internal/agent/... failing · exit 1 · 21s
+  ✗ failed
 
 
 · verbosity · low (each card its header alone)
@@ -144,7 +144,7 @@
 
   ∗ worked 24.7s · 6 tools · $0.14
  ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back
-  ✗ go test ./internal/agent/... failing · exit 1 · 21s
+  ✗ failed
 
 
 · row by row · a notice, then a batch with no prose over it, in one live card
@@ -211,7 +211,7 @@
 
   ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo 1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 21s␛[m
+  ␛[91m✗␛[m ␛[38;5;252mfailed␛[m
 
 
 · verbosity · normal, step 1 opened by the reader (its groups under the body)
@@ -237,7 +237,7 @@
 
   ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo 1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 21s␛[m
+  ␛[91m✗␛[m ␛[38;5;252mfailed␛[m
 
 
 · /step · step 1's detail, the card open on its calls
@@ -273,7 +273,7 @@
 
   ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo 1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 21s␛[m
+  ␛[91m✗␛[m ␛[38;5;252mfailed␛[m
 
 
 · verbosity · high (every card open, every row with detail)
@@ -315,7 +315,7 @@
 
   ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo 1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 21s␛[m
+  ␛[91m✗␛[m ␛[38;5;252mfailed␛[m
 
 
 · verbosity · low (each card its header alone)
@@ -328,7 +328,7 @@
 
   ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo 1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 21s␛[m
+  ␛[91m✗␛[m ␛[38;5;252mfailed␛[m
 
 
 · row by row · a notice, then a batch with no prose over it, in one live card

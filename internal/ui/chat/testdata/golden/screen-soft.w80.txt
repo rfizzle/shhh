@@ -29,7 +29,7 @@
                                                                                 
     ∗ worked 24.7s · 6 tools · $0.14                                            
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back        
-    ✗ go test ./internal/agent/... failing · exit 1 · 21s                       
+    ✗ failed                                                                    
                                                                                 
                                                                                 
                                                                                 
@@ -62,7 +62,7 @@
 ␛[48;5;233m                                                                                ␛[m
 ␛[48;5;233m    ␛[38;5;102m∗␛[39m ␛[38;5;102mworked 24.7s · 6 tools · $0.14␛[39m                                            ␛[m
 ␛[48;5;233m   ␛[38;5;179m▎✎␛[39m ␛[38;5;249m1 file changed ␛[38;5;107m+12␛[39m ␛[38;5;167m−4␛[38;5;102m · all tracked in git · /undo 1 takes it back␛[39m        ␛[m
-␛[48;5;233m    ␛[38;5;167m✗␛[39m ␛[38;5;249mgo test ./internal/agent/... failing␛[38;5;102m · exit 1 · 21s␛[39m                       ␛[m
+␛[48;5;233m    ␛[38;5;167m✗␛[39m ␛[38;5;249mfailed␛[39m                                                                    ␛[m
 ␛[48;5;233m                                                                                ␛[m
 ␛[48;5;233m                                                                                ␛[m
 ␛[48;5;233m                                                                                ␛[m

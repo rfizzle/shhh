@@ -570,6 +570,11 @@ again`, in the note column where there is room — and only where there is a
 suite. A command the turn happened to run is a line nobody is looking at any
 more, and suggesting it again would be shhh choosing to execute it.
 
+When the one standing verdict is the command the last failed row above already
+names, the checks row says only `✗ failed`. The row above carries the command,
+its exit and its time, and the close's job is the judgement, not a second
+account of the same run.
+
 A turn that watched the tests fail, fixed the code and ran the repository's
 own suite again has one true answer about the tree it leaves behind, and it is
 the last one. A passing suite run supersedes every check the turn made before

@@ -30,7 +30,7 @@
     ∗ worked 24.7s · 6 tools · $0.14                        
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo    
       1 takes it back                                       
-    ✗ go test ./internal/agent/... failing · exit 1 · 2…    
+    ✗ failed                                                
                                                             
                                                             
                                                             
@@ -62,7 +62,7 @@
     ∗ worked 24.7s · 6 tools · $0.14                        
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo    
       1 takes it back                                       
-    ✗ go test ./internal/agent/... failing · exit 1 · 2…    
+    ✗ failed                                                
                                                             
                                                             
                                                             
@@ -95,7 +95,7 @@
     ∗ worked 24.7s · 6 tools · $0.14                    ┃   
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo┃   
       1 takes it back                                   ┃   
-    ✗ go test ./internal/agent/... failing · exit 1 · 2…┃   
+    ✗ failed                                            ┃   
                                                         ┃   
   ⚠ researcher-1 · Say where the rou…  waiting approval: r  
   └⚠ researcher-4 · Say who calls the…  waiting approval:   
@@ -121,7 +121,7 @@
     ∗ worked 24.7s · 6 tools · $0.14                    ┃   
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo┃   
       1 takes it back                                   ┃   
-    ✗ go test ./internal/agent/... failing · exit 1 · 2…┃   
+    ✗ failed                                            ┃   
                                                         ┃   
   ────────────────────────────────────────────────────────  
   ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · ◇4                  
@@ -158,7 +158,7 @@
     ∗ worked 24.7s · 6 tools · $0.14                        
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo    
       1 takes it back                                       
-    ✗ go test ./internal/agent/... failing · exit 1 · 2…    
+    ✗ failed                                                
                                                             
                                                             
                                                             
@@ -190,7 +190,7 @@
     ∗ worked 24.7s · 6 tools · $0.14                        
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo    
       1 takes it back                                       
-    ✗ go test ./internal/agent/... failing · exit 1 · 2…    
+    ✗ failed                                                
                                                             
                                                             
                                                             
@@ -222,7 +222,7 @@
     ∗ worked 24.7s · 6 tools · $0.14                        
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo    
       1 takes it back                                       
-    ✗ go test ./internal/agent/... failing · exit 1 · 2…    
+    ✗ failed                                                
                                                             
     ≡ Rewriting the README instead of the   off target      
       round-limit pause.                                    
@@ -287,7 +287,7 @@
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                        
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo␛[m    
       ␛[38;5;244m1 takes it back␛[m                                       
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 2…␛[m    
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                                
                                                             
                                                             
                                                             
@@ -319,7 +319,7 @@
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                        
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo␛[m    
       ␛[38;5;244m1 takes it back␛[m                                       
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 2…␛[m    
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                                
                                                             
                                                             
                                                             
@@ -352,7 +352,7 @@
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                    ␛[38;5;244m┃␛[m   
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo┃␛[m   
       ␛[38;5;244m1 takes it back␛[m                                   ␛[38;5;244m┃␛[m   
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 2…┃␛[m   
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                            ␛[38;5;244m┃␛[m   
                                                         ␛[38;5;244m┃␛[m   
   ␛[38;5;254m⚠␛[m researcher-1␛[38;5;244m · Say where the rou…␛[m  ␛[38;5;254mwaiting approval: r␛[m  
   ␛[38;5;244m└␛[38;5;254m⚠␛[m researcher-4␛[38;5;244m · Say who calls the…␛[m  ␛[38;5;254mwaiting approval: ␛[m  
@@ -378,7 +378,7 @@
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                    ␛[38;5;244m┃␛[m   
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo┃␛[m   
       ␛[38;5;244m1 takes it back␛[m                                   ␛[38;5;244m┃␛[m   
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 2…┃␛[m   
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                            ␛[38;5;244m┃␛[m   
                                                         ␛[38;5;244m┃␛[m   
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
   ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51 · ␛[38;5;254m◇4␛[m                  
@@ -415,7 +415,7 @@
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                        
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo␛[m    
       ␛[38;5;244m1 takes it back␛[m                                       
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 2…␛[m    
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                                
                                                             
                                                             
                                                             
@@ -447,7 +447,7 @@
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                        
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo␛[m    
       ␛[38;5;244m1 takes it back␛[m                                       
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 2…␛[m    
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                                
                                                             
                                                             
                                                             
@@ -479,7 +479,7 @@
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                        
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo␛[m    
       ␛[38;5;244m1 takes it back␛[m                                       
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 2…␛[m    
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                                
                                                             
     ␛[38;5;244m≡␛[m ␛[38;5;244;3mRewriting the README instead of the␛[m   ␛[38;5;254moff target␛[m      
       ␛[38;5;244;3mround-limit pause.␛[m                                    

@@ -323,6 +323,21 @@ func TestTurnChecksRow_ReadsATestCommandsExitCode(t *testing.T) {
 	}
 }
 
+func TestTurnChecksRow_ANamedFailureIsJudgedNotRestated(t *testing.T) {
+	failed := entry{kind: entryCommand, text: "go test ./...", exitCode: 1}
+	if c := turnChecksRow([]entry{failed}, false); c == nil || !c.Named {
+		t.Fatalf("the failed row above names the command, so the verdict should not, got %+v", c)
+	}
+	passing := entry{kind: entryCommand, text: "go test ./..."}
+	if c := turnChecksRow([]entry{passing}, false); c == nil || c.Named {
+		t.Fatalf("a passing verdict is not named by any failed row, got %+v", c)
+	}
+	gate := &quality.Summary{Suite: "default", Passed: 0, Total: 1}
+	if c := turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, gate: gate}}, false); c == nil || c.Named {
+		t.Fatalf("a gate run names no command row, got %+v", c)
+	}
+}
+
 func TestTurnChecksRow_SeveralRunsCollapseToOneTally(t *testing.T) {
 	c := turnChecksRow([]entry{
 		{kind: entryCommand, text: "go test ./internal/agent/..."},

@@ -184,7 +184,7 @@ func goldenTranscript() []entry {
 				Back: "/undo 1 takes it back",
 			},
 			Checks: &components.TurnChecks{
-				Failed: true, Label: "go test ./internal/agent/...", Counts: "exit 1 · 21s",
+				Failed: true, Label: "go test ./internal/agent/...", Counts: "exit 1 · 21s", Named: true,
 			},
 		}},
 	}

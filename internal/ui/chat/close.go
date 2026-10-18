@@ -497,6 +497,7 @@ func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
 	if len(standing) == 1 {
 		row.Failed = standing[0].outcome == checkFailed
 		row.Label, row.Counts = standing[0].label, standing[0].counts
+		row.Named = row.Failed && !standing[0].suite && lastFailedCommand(es) == row.Label
 		return &row
 	}
 	passed := 0
@@ -509,6 +510,17 @@ func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
 	row.Label = "checks"
 	row.Counts = fmt.Sprintf("%d of %d passing", passed, len(standing))
 	return &row
+}
+
+// lastFailedCommand is the command the turn's last failed command row ran,
+// which is the row the transcript already reports the failure on.
+func lastFailedCommand(es []entry) string {
+	for i := len(es) - 1; i >= 0; i-- {
+		if e := es[i]; e.kind == entryCommand && (e.exitCode != 0 || e.end.outcome != "") {
+			return firstLine(e.text)
+		}
+	}
+	return ""
 }
 
 // suiteOfTurn is the suite the verdict on a turn's close row came from, read

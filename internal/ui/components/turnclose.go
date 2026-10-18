@@ -131,6 +131,12 @@ type TurnChecks struct {
 	// note column, beside what the verdict answered. Empty on a first flake
 	// and on a run with none.
 	Flakes string
+	// Named says the failed row above already names this command, with its
+	// exit and its time, so the verdict keeps the word and drops the label
+	// and the counts rather than reporting one event twice with two
+	// durations (docs/interface/surfaces.md#the-turns-close). It has no
+	// effect on a passing verdict.
+	Named bool
 }
 
 // TurnList is the session's working list as a turn's close reads it: its
@@ -596,6 +602,9 @@ func (c TurnClose) View(width int) string {
 		text := sty.body.Render(ck.Label + verdict)
 		if ck.Counts != "" {
 			text += sty.dim.Render(" · " + ck.Counts)
+		}
+		if ck.Failed && ck.Named {
+			glyph, text = sty.del.Render(StateFailed.Glyph()), sty.body.Render(StateFailed.Word())
 		}
 		// What the verdict answered, and what to type to run it again, ride
 		// in the note column, where they are the first thing a narrow

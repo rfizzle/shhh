@@ -121,7 +121,7 @@ Should the migration be reversible?
                                                                                             │                                                   
     ∗ worked 24.7s · 6 tools · $0.14                                                        │                                                   
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back                    │                                                   
-    ✗ go test ./internal/agent/... failing · exit 1 · 21s                                   │                                                   
+    ✗ failed                                                                                │                                                   
                                                                                             │                                                   
                                                                                             │                                                   
                                                                                             │                                                   
@@ -151,7 +151,7 @@ Should the migration be reversible?
                                                                                           ┃ │  session total · $0.51                            
     ∗ worked 24.7s · 6 tools · $0.14                                                      ┃ │                                                   
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back                  ┃ │                                                   
-    ✗ go test ./internal/agent/... failing · exit 1 · 21s                                 ┃ │                                                   
+    ✗ failed                                                                              ┃ │                                                   
                                                                                           ┃ │                                                   
   ╭─ Question ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮  
   │ What should the flag be called?                                                                                                          │  
@@ -183,7 +183,7 @@ Should the migration be reversible?
                                                                                                                                             ┃   
     ∗ worked 24.7s · 6 tools · $0.14                                                                                                        ┃   
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back                                                                    ┃   
-    ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                                                   ┃   
+    ✗ failed                                                                                                                                ┃   
                                                                                                                                             ┃   
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   ⏸ manual · round 1 of 150 · context 32% ▰▰▱▱▱▱▱▱ · $0.51                                                                                      
@@ -310,7 +310,7 @@ Should the migration be reversible?
                                                                                             ␛[38;5;244m│␛[m                                                   
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                                                        ␛[38;5;244m│␛[m                                                   
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo 1 takes it back␛[m                    ␛[38;5;244m│␛[m                                                   
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                                   ␛[38;5;244m│␛[m                                                   
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                                                                ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m                                                   
@@ -340,7 +340,7 @@ Should the migration be reversible?
                                                                                           ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;244msession total · $0.51␛[m                            
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                                                      ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                   
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo 1 takes it back␛[m                  ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                   
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                                 ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                   
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                                                              ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                   
                                                                                           ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                   
   ␛[38;5;254m╭─ ␛[1mQuestion ␛[22m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;254mWhat should the flag be called?␛[m                                                                                                          ␛[38;5;254m│␛[m  
@@ -372,7 +372,7 @@ Should the migration be reversible?
                                                                                                                                             ␛[38;5;244m┃␛[m   
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                                                                                                        ␛[38;5;244m┃␛[m   
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo 1 takes it back␛[m                                                                    ␛[38;5;244m┃␛[m   
-    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                                                                                   ␛[38;5;244m┃␛[m   
+    ␛[38;5;254m✗␛[m ␛[38;5;254mfailed␛[m                                                                                                                                ␛[38;5;244m┃␛[m   
                                                                                                                                             ␛[38;5;244m┃␛[m   
   ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[38;5;254m⏸ manual␛[38;5;244m · round 1 of 150 · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m                                                                                      

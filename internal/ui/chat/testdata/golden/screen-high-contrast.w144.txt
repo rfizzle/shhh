@@ -29,7 +29,7 @@
                                                                                             │                                                   
     ∗ worked 24.7s · 6 tools · $0.14                                                        │                                                   
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back                    │                                                   
-    ✗ go test ./internal/agent/... failing · exit 1 · 21s                                   │                                                   
+    ✗ failed                                                                                │                                                   
                                                                                             │                                                   
                                                                                             │                                                   
                                                                                             │                                                   
@@ -62,7 +62,7 @@
 ␛[48;5;16m                                                                                            ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m    ␛[38;5;248m∗␛[39m ␛[38;5;248mworked 24.7s · 6 tools · $0.14␛[39m                                                        ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m   ␛[38;5;214m▎✎␛[39m ␛[38;5;254m1 file changed ␛[38;5;120m+12␛[39m ␛[38;5;210m−4␛[38;5;248m · all tracked in git · /undo 1 takes it back␛[39m                    ␛[38;5;248m│␛[39m                                                   ␛[m
-␛[48;5;16m    ␛[38;5;210m✗␛[39m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;248m · exit 1 · 21s␛[39m                                   ␛[38;5;248m│␛[39m                                                   ␛[m
+␛[48;5;16m    ␛[38;5;210m✗␛[39m ␛[38;5;254mfailed␛[39m                                                                                ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m                                                                                            ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m                                                                                            ␛[38;5;248m│␛[39m                                                   ␛[m
 ␛[48;5;16m                                                                                            ␛[38;5;248m│␛[39m                                                   ␛[m
