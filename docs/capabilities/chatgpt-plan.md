@@ -96,10 +96,13 @@ model reads, whole, encoded, or in pieces, and stands as a placeholder that
 names the kind and no variable (see
 [Secrets](secrets.md#the-value-is-scrubbed-at-every-door)). The last of the
 three has no shape anything could recognise it by, which is why it is
-scrubbed by value; the other two are scrubbed by everything after their
-common header, so another service's token printed in the same session is
-still recognised by its shape. A rotated-out token stays scrubbed for the
-rest of the session.
+scrubbed by value. The other two are JWTs, which the shape pass already
+recognises whole; what is scrubbed by value is their signature, the random
+part without which neither works. Their header and claims are left to the
+shape pass, because they are shared with other services' tokens, and
+scrubbing them by value would cut those tokens apart until they no longer
+looked like tokens at all. A rotated-out token stays scrubbed for the rest
+of the session.
 
 The scrub covers what a session has learned, and no more. A refresh token
 another shhh process writes while this session runs is scrubbed here only

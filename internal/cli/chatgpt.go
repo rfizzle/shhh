@@ -104,15 +104,17 @@ func (r *tokenRelay) learn(values ...string) {
 }
 
 // hiddenPart is what of a token the vault is given. A JWT is hidden by its
-// payload and signature and not its header: every RS256 token anyone issues
-// starts with the same header, and the vault scrubs every eight-byte run of
-// what it hides before the shape pass runs, so a hidden header would cut the
-// front off an unrelated JWT in a command's output — and what was left would
-// no longer look like a JWT, and would reach the model whole. The header is
-// the algorithm's name and a key ID, not the secret.
+// signature alone. The vault scrubs every eight-byte run of what it hides
+// before the shape pass runs, and headers and claims are shared: every RS256
+// token starts with the same header, and a payload opening `{"iss":"https://`
+// encodes the same way whoever issued it. Hiding either would cut a run out
+// of an unrelated JWT in a command's output, what was left would no longer
+// look like a JWT, and it would reach the model whole. The signature is
+// random, so it shares a run with nothing, and a JWT without its signature
+// is not a credential: the header and payload are claims.
 func hiddenPart(token string) string {
 	if strings.HasPrefix(token, "eyJ") && strings.Count(token, ".") == 2 {
-		return token[strings.IndexByte(token, '.')+1:]
+		return token[strings.LastIndexByte(token, '.')+1:]
 	}
 	return token
 }

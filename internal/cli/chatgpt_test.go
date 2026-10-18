@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -124,37 +125,56 @@ func TestSecrets_HideRelayReplays(t *testing.T) {
 	mustNotCarry(t, "the prompt block", secret.PromptBlock(vault, true))
 }
 
-// The plan's JWTs are hidden by payload and signature, never by the header
-// every RS256 token shares: an unrelated JWT a command prints after a
-// sign-in still scrubs whole by its shape, and the plan's own tokens still
-// leave nothing of their secret part behind.
+// The plan's JWTs are hidden by their signature alone. Headers and claims
+// are shared with other services' tokens — every RS256 header, every payload
+// opening {"iss":"https:// — so an unrelated JWT a command prints after a
+// sign-in still scrubs whole by its shape, while nothing of the plan's own
+// signatures survives.
 func TestSecrets_AHiddenJWTLeavesOtherJWTsWhole(t *testing.T) {
 	resetChatGPT(t)
 	header := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9"
 	seg := func(s string) string { return base64.RawURLEncoding.EncodeToString([]byte(s)) }
-	access := header + "." + seg(`{"iss":"https://auth.openai.com","aud":"https://api.openai.com/v1","scp":"resource.invoke"}`) +
-		"." + seg("access-signature-bytes-0123456789-abcdefghij")
-	id := header + "." + seg(`{"iss":"https://auth.openai.com","email":"person@example.com","nonce":"n"}`) +
-		"." + seg("idtoken-signature-bytes-9876543210-zyxwvutsrq")
+	random := func() string {
+		b := make([]byte, 256)
+		if _, err := rand.Read(b); err != nil {
+			t.Fatal(err)
+		}
+		return base64.RawURLEncoding.EncodeToString(b)
+	}
+	access := header + "." + seg(`{"iss":"https://auth.openai.com","aud":"https://api.openai.com/v1","scp":"resource.invoke"}`) + "." + random()
+	id := header + "." + seg(`{"iss":"https://auth.openai.com","email":"person@example.com","nonce":"n"}`) + "." + random()
 	v := secret.New()
 	chatGPTRelay.attach(v)
 	chatGPTRelay.learn(access, testChatGPT.RefreshToken, id)
 
-	unrelated := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0." +
+	// Another service's tokens: the jwt.io example, and one whose header and
+	// first claim are the plan token's own.
+	jwtIO := header + ".eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0." +
 		"NHVaYe26MbtOYhSKkoKYdFVomg4i8ZJd8_-RU8VNbftc4TSMb4bXP3l3YlNWACwyXPGffz5aXHc6lxZu7UjdZRaaT0NlZbS1xLf0kmMdW1c1KJ8T7b4Q"
-	if got := v.Scrub("token: " + unrelated); got != "token: "+secret.Redacted("jwt") {
-		t.Errorf("an unrelated JWT scrubbed to %q", got)
-	}
-	for _, tok := range []string{access, id} {
-		tail := tok[strings.IndexByte(tok, '.')+1:]
-		got := v.Scrub("out: " + tok + " and " + tail[10:30])
-		if strings.Contains(got, tail) {
-			t.Errorf("the plan's token survived whole: %q", got)
+	sameIssuer := header + "." + seg(`{"iss":"https://auth.openai.com","sub":"someone-else","aud":"another-app"}`) + "." + random()
+	for name, tok := range map[string]string{"jwt.io": jwtIO, "same first claim": sameIssuer} {
+		if got := v.Scrub("token: " + tok); got != "token: "+secret.Redacted("jwt") {
+			t.Errorf("%s: an unrelated JWT scrubbed to %q", name, got)
 		}
-		for i := 0; i+8 <= len(tail); i++ {
-			if strings.Contains(got, tail[i:i+8]) {
-				t.Errorf("an eight-byte run of the plan's token survived: %q in %q", tail[i:i+8], got)
-				break
+	}
+
+	for _, tok := range []string{access, id} {
+		sig := tok[strings.LastIndexByte(tok, '.')+1:]
+		// The whole token never leaves with its signature intact.
+		if got := v.Scrub("out: " + tok); strings.Contains(got, sig) {
+			t.Errorf("the plan's token survived with its signature: %q", got)
+		}
+		// Nor does any run of the signature, raw or in base64.
+		for _, text := range []string{sig[17:61], base64.StdEncoding.EncodeToString([]byte(sig))} {
+			got := v.Scrub("out: " + text)
+			for i := 0; i+8 <= len(sig); i++ {
+				if strings.Contains(got, sig[i:i+8]) {
+					t.Errorf("an eight-byte run of the plan's signature survived: %q in %q", sig[i:i+8], got)
+					break
+				}
+			}
+			if strings.Contains(got, base64.StdEncoding.EncodeToString([]byte(sig))) {
+				t.Errorf("the signature survived in base64: %q", got)
 			}
 		}
 	}
