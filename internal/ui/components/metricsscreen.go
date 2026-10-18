@@ -412,9 +412,9 @@ func (m *MetricsScreen) modelRow(model MetricsModel, cols []metricsColumn) strin
 // up, everything else to the left.
 func align(cell string, width int, numeric bool) string {
 	if numeric {
-		return padLeft(cell, width)
+		return PadLeft(cell, width)
 	}
-	return padRight(cell, width)
+	return PadRight(cell, width)
 }
 
 // blockRows is one meter block: its title with a right-hand field, and a bar
@@ -479,7 +479,7 @@ func (m *MetricsScreen) barGeometry(block MetricsBlock, width int) (label int, n
 // never does.
 func barRow(bar MetricsBar, label int, notes bool, width int) string {
 	meter := Meter{pctValue: bar.Pct, cellCount: meterCellsRail, tone: bar.Tone, Text: bar.Text}
-	left := sty.dim.Render(padRight(Clip(bar.Label, label), label)) + "  " + meter.View()
+	left := sty.dim.Render(PadRight(Clip(bar.Label, label), label)) + "  " + meter.View()
 	if bar.Note == "" || !notes {
 		return Clip(left, width)
 	}

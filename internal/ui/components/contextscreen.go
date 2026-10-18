@@ -633,9 +633,9 @@ func (c ContextCache) lifetimeRows() []string {
 func (c *ContextScreen) categoryRow(cat ContextCategory) string {
 	style := cat.Tone.style()
 	return style.Render(cat.Tone.glyph()+" ") +
-		style.Render(padRight(cat.Label, contextLabelWidth)) +
-		style.Render(padLeft(cat.Tokens, contextTokensWidth)) +
-		sty.dim.Render(padLeft(cat.Pct, contextPctWidth))
+		style.Render(PadRight(cat.Label, contextLabelWidth)) +
+		style.Render(PadLeft(cat.Tokens, contextTokensWidth)) +
+		sty.dim.Render(PadLeft(cat.Pct, contextPctWidth))
 }
 
 // foldRows is the run of groups under the two panels: the folded row for each,
@@ -677,7 +677,7 @@ func (c *ContextScreen) groupRow(g ContextGroup, lit bool, width int) string {
 	}
 	key := keys.Bracket(keys.Context.Expand) + " " + foldVerb(g.Open)
 	room := width - contextIndent - 2
-	line := padRight(body, max(room-lipgloss.Width(key)-1, 0)) + key
+	line := PadRight(body, max(room-lipgloss.Width(key)-1, 0)) + key
 	return Clip(pad+pointer+LitRow(line, 0, max(room, 0)), width)
 }
 
@@ -697,9 +697,9 @@ func foldVerb(open bool) string {
 // crossed no threshold anybody set.
 func (c *ContextScreen) itemRow(item ContextItem, width int) string {
 	pad := strings.Repeat(" ", contextItemIndent)
-	label := sty.body.Render(padRight(Clip(item.Label, contextLabelWidth), contextLabelWidth))
-	numbers := sty.body.Render(padLeft(item.Tokens, contextTokensWidth)) +
-		sty.dim.Render(padLeft(item.Pct, contextPctWidth))
+	label := sty.body.Render(PadRight(Clip(item.Label, contextLabelWidth), contextLabelWidth))
+	numbers := sty.body.Render(PadLeft(item.Tokens, contextTokensWidth)) +
+		sty.dim.Render(PadLeft(item.Pct, contextPctWidth))
 	bar := Meter{pctValue: item.Share, cellCount: meterCellsRail, tone: MeterCategory}.bar()
 	// The bar is the first thing to go when the terminal cannot hold the
 	// row: a number that has lost its bar is still a number.

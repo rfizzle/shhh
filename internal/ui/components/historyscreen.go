@@ -400,43 +400,13 @@ func gridRows(act ActivityRow, target string, width int) []string {
 	// its verb and its outcome, and the whole command goes underneath, where
 	// there is room for it. Nothing is dropped at any width (invariant 4).
 	if head < minGridTarget {
-		act.Detail = wrapPlain(target, rest)
+		act.Detail = Wrap(target, rest)
 		return strings.Split(act.View(width), "\n")
 	}
-	lines := wrapPlain(target, min(head, rest))
+	lines := Wrap(target, min(head, rest))
 	act.Target = lines[0]
 	act.Detail = lines[1:]
 	return strings.Split(act.View(width), "\n")
-}
-
-// wrapPlain breaks text into unstyled lines no wider than width, on word
-// boundaries. A word wider than the line is left whole for the grid to clip,
-// the same reading wrapSpans makes: a break inside one would be a hyphen the
-// interface invented.
-func wrapPlain(text string, width int) []string {
-	if width <= 0 {
-		return []string{text}
-	}
-	var lines []string
-	line := ""
-	for _, word := range strings.Fields(text) {
-		switch {
-		case line == "":
-			line = word
-		case lipgloss.Width(line)+1+lipgloss.Width(word) <= width:
-			line += " " + word
-		default:
-			lines = append(lines, line)
-			line = word
-		}
-	}
-	if line != "" {
-		lines = append(lines, line)
-	}
-	if len(lines) == 0 {
-		return []string{""}
-	}
-	return lines
 }
 
 // header names the command and what it is over.

@@ -547,7 +547,7 @@ func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
 // fullView is the full-screen rendering: header, scrollable body,
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
-	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + paintCounts(d.statsLabel(), sty.dim)
+	header := PadRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + paintCounts(d.statsLabel(), sty.dim)
 	// Fitted to the screen it is drawn on: a key row wider than the
 	// terminal wraps onto the body's last line and takes a line of the diff
 	// with it, which costs the reader more than an offer costs. The screen's
@@ -734,7 +734,7 @@ func sideBySideHunks(hunks []diff.Hunk, width int, syntax Syntax) []string {
 	for _, h := range hunks {
 		out = append(out, sty.hunk.Render(Clip(h.Header(), width)))
 		for _, row := range pairHunkRows(h) {
-			out = append(out, padRight(sideCell(row.old, pane, true, syntax), pane)+divider+sideCell(row.new, pane, false, syntax))
+			out = append(out, PadRight(sideCell(row.old, pane, true, syntax), pane)+divider+sideCell(row.new, pane, false, syntax))
 		}
 	}
 	return out

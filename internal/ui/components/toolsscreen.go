@@ -238,7 +238,7 @@ func (s *ToolsScreen) previewRows(width int) []string {
 	}
 	if len(src.Tools) > 0 {
 		rows = append(rows, "", "  "+sty.status.Render(plural(len(src.Tools), "tool")))
-		for _, line := range wrapPlain(strings.Join(src.Tools, ", "), max(width-4, 8)) {
+		for _, line := range Wrap(strings.Join(src.Tools, ", "), max(width-4, 8)) {
 			rows = append(rows, Clip("    "+sty.body.Render(line), width))
 		}
 	}
@@ -252,7 +252,7 @@ func (s *ToolsScreen) previewRows(width int) []string {
 			// comments with runs of spaces, and wrapping would fold them.
 			parts := []string{line}
 			if lipgloss.Width(line) > width-4 {
-				parts = wrapPlain(line, max(width-4, 8))
+				parts = Wrap(line, max(width-4, 8))
 			}
 			for _, part := range parts {
 				rows = append(rows, Clip("    "+sty.dim.Render(part), width))
@@ -261,7 +261,7 @@ func (s *ToolsScreen) previewRows(width int) []string {
 	}
 	if s.Said != "" {
 		rows = append(rows, "")
-		for _, line := range wrapPlain(s.Said, max(width-2, 8)) {
+		for _, line := range Wrap(s.Said, max(width-2, 8)) {
 			rows = append(rows, Clip("  "+sty.body.Render(line), width))
 		}
 	}
@@ -275,7 +275,7 @@ func toolsField(label, value string, width int) []string {
 	lead := "  " + sty.status.Render(fmt.Sprintf("%-*s", toolsLabelWidth, label))
 	indent := strings.Repeat(" ", 2+toolsLabelWidth)
 	var rows []string
-	for i, part := range wrapPlain(value, max(width-len(indent), 8)) {
+	for i, part := range Wrap(value, max(width-len(indent), 8)) {
 		if i == 0 {
 			rows = append(rows, Clip(lead+sty.body.Render(part), width))
 			continue

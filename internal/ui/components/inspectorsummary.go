@@ -110,7 +110,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 	}
 	b.collapsedHeading = railHeading("SUMMARY", collapsed, metaStyle, width)
 
-	lines := wrapPlain(s.Text, width-inspectorIndent)
+	lines := Wrap(s.Text, width-inspectorIndent)
 	if len(lines) > summaryLines {
 		lines = lines[:summaryLines]
 		lines[summaryLines-1] = Clip(lines[summaryLines-1], width-inspectorIndent-1) + "…"
@@ -132,7 +132,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 	// is the whole content of a departure, and at 46 columns a suffix is a
 	// reason clipped mid-word. It follows its state the way an alert's note
 	// follows its alert in CHANGES — one indent further in, dim, bounded.
-	for i, line := range wrapPlain(s.Reason, width-inspectorIndent-2) {
+	for i, line := range Wrap(s.Reason, width-inspectorIndent-2) {
 		if s.Reason == "" || i >= summaryReasonLines {
 			break
 		}

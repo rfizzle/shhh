@@ -71,7 +71,7 @@ func (p *profileReview) originalBeside(original string, width int, sections func
 		if i > 0 {
 			line = sty.dim.Render(line)
 		}
-		blocks[i] = padRight(blocks[i], left) + sty.dimmer.Render("│ ") + line
+		blocks[i] = PadRight(blocks[i], left) + sty.dimmer.Render("│ ") + line
 	}
 	return blocks, starts
 }
@@ -83,7 +83,7 @@ func (p *profileReview) originalLines(original string, width int) []string {
 		if i > 0 {
 			out = append(out, "")
 		}
-		out = append(out, wrapPlain(para, width)...)
+		out = append(out, Wrap(para, width)...)
 	}
 	return out
 }

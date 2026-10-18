@@ -548,33 +548,12 @@ func (m Model) wrapAfterHead(text string, width int) string {
 		len(words) == 0 || lead >= width {
 		return m.wordWrap(text, width)
 	}
-	var b strings.Builder
-	b.WriteString(head + actGap)
-	lineLen := lead
-	for i, word := range words {
-		wLen := lipgloss.Width(word)
-		sep := 1
-		if i == 0 {
-			sep = 0
-		}
-		switch {
-		case lineLen+sep+wLen > width:
-			b.WriteByte('\n')
-			lineLen = 0
-		case sep == 1:
-			b.WriteByte(' ')
-			lineLen++
-		}
-		b.WriteString(word)
-		lineLen += wLen
-	}
+	rows := components.WrapHang(detail, width-lead, width)
+	rows[0] = head + actGap + rows[0]
 	// A first word that did not fit beside the head left the gap at the end
 	// of the head's line, where nothing follows it.
-	first, rest, wrapped := strings.Cut(b.String(), "\n")
-	if !wrapped {
-		return first
-	}
-	return strings.TrimRight(first, " ") + "\n" + rest
+	rows[0] = strings.TrimRight(rows[0], " ")
+	return strings.Join(rows, "\n")
 }
 
 // marginPaint is one line on the content column: the gutter, then the words.
@@ -908,34 +887,15 @@ func (m Model) wordWrap(text string, width int) string {
 	if width <= 0 {
 		return text
 	}
-	var result strings.Builder
+	var rows []string
 	for _, line := range strings.Split(text, "\n") {
 		if lipgloss.Width(line) <= width {
-			result.WriteString(line)
-			result.WriteByte('\n')
+			rows = append(rows, line)
 			continue
 		}
-		words := strings.Fields(line)
-		if len(words) == 0 {
-			result.WriteByte('\n')
-			continue
-		}
-		lineLen := 0
-		for i, word := range words {
-			wLen := lipgloss.Width(word)
-			if i > 0 && lineLen+1+wLen > width {
-				result.WriteByte('\n')
-				lineLen = 0
-			} else if i > 0 {
-				result.WriteByte(' ')
-				lineLen++
-			}
-			result.WriteString(word)
-			lineLen += wLen
-		}
-		result.WriteByte('\n')
+		rows = append(rows, components.Wrap(line, width)...)
 	}
-	return strings.TrimRight(result.String(), "\n")
+	return strings.TrimRight(strings.Join(rows, "\n"), "\n")
 }
 
 // promptMarked writes the ❯ into the first row of a sent message, in the two

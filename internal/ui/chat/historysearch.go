@@ -22,6 +22,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -191,5 +192,5 @@ func (m Model) historySearchLines() []string {
 		segAs(keys.Search.Keep, "keep"),
 		seg(keys.Search.Cancel),
 	}, width)
-	return []string{clipRow(row, width), hint}
+	return []string{components.Clip(row, width), hint}
 }

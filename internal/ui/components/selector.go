@@ -1041,10 +1041,10 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		if opt.Number > 0 {
 			n = opt.Number
 		}
-		number = padLeft(strconv.Itoa(n)+".", g.num) + " "
+		number = PadLeft(strconv.Itoa(n)+".", g.num) + " "
 	}
 	label := opt.labelText()
-	left := number + padRight(label, g.label)
+	left := number + PadRight(label, g.label)
 
 	if d, m, ok := s.stackText(opt, lipgloss.Width(left), g, inner); ok {
 		return s.stackedRow(opt, number, label, d, m, focused, g, inner)
@@ -1089,7 +1089,7 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 			row += gap + desc
 		}
 		if meta != "" {
-			row = padRight(row, room-lipgloss.Width(meta)) + meta
+			row = PadRight(row, room-lipgloss.Width(meta)) + meta
 		}
 		return LitOption(row, inner)
 	}
@@ -1133,7 +1133,7 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	if number != "" {
 		row += num.Render(number)
 	}
-	row += padRight(body, g.label)
+	row += PadRight(body, g.label)
 	if lipgloss.Width(value) > 0 {
 		row += "  " + value
 	}
@@ -1144,7 +1144,7 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		row += gap + desc
 	}
 	if lipgloss.Width(meta) > 0 {
-		row = padRight(row, inner-lipgloss.Width(meta)) + meta
+		row = PadRight(row, inner-lipgloss.Width(meta)) + meta
 	}
 	return Clip(row, inner)
 }
@@ -1342,7 +1342,7 @@ func (s *Select) stackText(opt SelectOption, leftW int, g optionGrid, inner int)
 // meta field in the description's column under it. A focused row is lit on
 // every one of its rows, so the reader sees it is one answer.
 func (s *Select) stackedRow(opt SelectOption, number, label string, desc, meta []string, focused bool, g optionGrid, inner int) string {
-	left := number + padRight(label, g.label)
+	left := number + PadRight(label, g.label)
 	pad := strings.Repeat(" ", lipgloss.Width(left)+2)
 	room := max(inner-GridPointerWidth, 0)
 	type line struct {
@@ -1370,7 +1370,7 @@ func (s *Select) stackedRow(opt SelectOption, number, label string, desc, meta [
 			if i == 0 {
 				rows = append(rows, LitOption(head+tail, inner))
 			} else {
-				rows = append(rows, PointerColumn()+sty.focusRow.Render(padRight(Clip(head+tail, room), room)))
+				rows = append(rows, PointerColumn()+sty.focusRow.Render(PadRight(Clip(head+tail, room), room)))
 			}
 			continue
 		}
@@ -1386,7 +1386,7 @@ func (s *Select) stackedRow(opt SelectOption, number, label string, desc, meta [
 			if number != "" {
 				row += num.Render(number)
 			}
-			row += padRight(body, g.label) + "  "
+			row += PadRight(body, g.label) + "  "
 		} else {
 			row += pad
 		}

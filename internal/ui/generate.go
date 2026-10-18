@@ -1250,7 +1250,7 @@ func (m GenerateModel) explanationView() string {
 	case m.shown == ExplainNone:
 		return ""
 	case m.shown == ExplainLong && text != "":
-		return "\n" + sty.Label.Render("explanation:") + "\n" + renderLines(sty.ExplainBody, wrapWords(text, m.width))
+		return "\n" + sty.Label.Render("explanation:") + "\n" + renderLines(sty.ExplainBody, wrapped(text, m.width))
 	case text == "":
 		return ""
 	}
@@ -1331,7 +1331,7 @@ func (m GenerateModel) dryRunView() string {
 // they break in the same place and read as one column rather than three
 // paragraphs that happen to be stacked.
 func (m GenerateModel) prose(style lipgloss.Style, text string) string {
-	return indent(renderLines(style, wrapWords(text, m.width-indentWidth)))
+	return indent(renderLines(style, wrapped(text, m.width-indentWidth)))
 }
 
 // indentWidth is the two columns everything under the command is drawn in,
@@ -1342,43 +1342,13 @@ const indentWidth = 2
 func indent(s string) string  { return prefixLines(s, "  ") }
 func indent2(s string) string { return prefixLines(s, "    ") }
 
-// wrapWords breaks a sentence between words so that it reads the same at
-// every width. It is what the explanation gets, and what a command never
-// gets: a command reflowed between words is a different command.
-//
-// Nothing inside a word is a break, which is the one thing ansi.Wordwrap
-// would not promise — it treats a hyphen as a breakpoint, and a sentence
-// about ports from 8000-9999 comes back with `8000-` ending one row and
-// `9999.` opening the next. A word with no room for it at all is left whole
-// here and broken at the column by the frame, which is where something that
-// cannot be wrapped belongs.
-func wrapWords(s string, room int) string {
-	if room < 1 {
-		return s
-	}
-	var out []string
-	for _, para := range strings.Split(s, "\n") {
-		var (
-			b    strings.Builder
-			used int
-		)
-		for _, word := range strings.Fields(para) {
-			w := ansi.StringWidth(word)
-			switch {
-			case used == 0:
-			case used+1+w <= room:
-				b.WriteString(" ")
-				used++
-			default:
-				b.WriteString("\n")
-				used = 0
-			}
-			b.WriteString(word)
-			used += w
-		}
-		out = append(out, b.String())
-	}
-	return strings.Join(out, "\n")
+// wrapped breaks a sentence between words so that it reads the same at every
+// width. It is what the explanation gets, and what a command never gets: a
+// command reflowed between words is a different command. A word with no room
+// for it at all is left whole here and broken at the column by the frame,
+// which is where something that cannot be wrapped belongs.
+func wrapped(s string, room int) string {
+	return strings.Join(components.WrapParagraphs(s, room), "\n")
 }
 
 // foldToWidth breaks whatever is left at the column, keeping every character
@@ -1393,31 +1363,6 @@ func foldToWidth(s string, width int) string {
 		return s
 	}
 	return ansi.Hardwrap(s, width, true)
-}
-
-// padToWidth carries every row out to the terminal's own width. Folding says
-// no row is wider than the terminal; this says none is narrower, and the two
-// together are the frame owning every cell of every row it draws.
-//
-// It is what a frame drawn inline has to do for itself. The renderer holds
-// the cells the last frame wrote and repaints the ones that changed, so a
-// row the new frame ends early is a row whose tail is still the old frame's:
-// the alternatives card is as wide as it wants to be or as wide as there is
-// room for, and opening it in a terminal wider than the card left the result
-// surface's own tail on screen beside it. A row that reaches the last column
-// leaves nothing to show through
-// (docs/interface/surfaces.md#the-one-shot-result).
-func padToWidth(s string, width int) string {
-	if width < 1 {
-		return s
-	}
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		if pad := width - ansi.StringWidth(line); pad > 0 {
-			lines[i] = line + strings.Repeat(" ", pad)
-		}
-	}
-	return strings.Join(lines, "\n")
 }
 
 func prefixLines(s, pad string) string {
@@ -1444,7 +1389,7 @@ func (m GenerateModel) View() tea.View {
 	if m.phase == phaseDone {
 		return tea.NewView(frame)
 	}
-	return tea.NewView(padToWidth(frame, m.width))
+	return tea.NewView(components.PadLines(frame, m.width))
 }
 
 // fieldView is a one-shot field's render, in the palette as it stands now.

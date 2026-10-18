@@ -315,7 +315,7 @@ func (m Model) transcriptSearchLines(width int) []string {
 	}
 	row := m.transcriptSearchHead() + sty.Search.State.Render(" · "+state)
 	hint := hintTones().Fit([]hintSeg{seg(keys.Find.Keep), seg(keys.Find.Clear)}, width)
-	lines := []string{clipRow(row, width)}
+	lines := []string{components.Clip(row, width)}
 	if empty {
 		lines = append(lines, m.noMatchLines(width)...)
 	}
@@ -336,8 +336,8 @@ func (m Model) noMatchLines(width int) []string {
 	said := fmt.Sprintf("no match in this session · %d %s searched, folds and pastes included", rows, noun)
 	across := "shhh history finds it across sessions: "
 	return []string{
-		sty.Search.State.Render(clipRow(said, width)),
-		clipRow(sty.Search.State.Render(across)+
+		sty.Search.State.Render(components.Clip(said, width)),
+		components.Clip(sty.Search.State.Render(across)+
 			sty.Search.Query.Render("shhh history --grep "+m.viewport.SearchQuery()), width),
 	}
 }

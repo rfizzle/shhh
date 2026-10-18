@@ -414,7 +414,7 @@ func (p *profileSections) sectionBody(sec ProfileSection, width int) []string {
 		// row: on the tools block it is the sentence that says the agent can
 		// change things.
 		rows := []string{Clip(row, width)}
-		for _, line := range wrapPlain(sec.Detail, width-profileBodyIndent-2) {
+		for _, line := range Wrap(sec.Detail, width-profileBodyIndent-2) {
 			rows = append(rows, Clip(bodyIndent(sty.dim.Render(line)), width))
 		}
 		return rows
@@ -426,7 +426,7 @@ func (p *profileSections) sectionBody(sec ProfileSection, width int) []string {
 		return nil
 	}
 	var rows []string
-	for _, line := range wrapBlock(body, width-profileBodyIndent-2) {
+	for _, line := range WrapParagraphs(body, width-profileBodyIndent-2) {
 		rows = append(rows, Clip(bodyIndent(sty.status.Render(line)), width))
 	}
 	return rows
@@ -443,7 +443,7 @@ func (p *profileSections) refineRows(sec ProfileSection, width int) []string {
 	// Wrapped rather than clipped: the half a clip would cut is the half that
 	// says what else goes with the note.
 	var rows []string
-	for _, line := range wrapPlain(label, inner) {
+	for _, line := range Wrap(label, inner) {
 		rows = append(rows, Clip(bodyIndent(sty.dim.Render(line)), width))
 	}
 	for _, line := range strings.Split(p.field.View(), "\n") {
@@ -475,7 +475,7 @@ func (p *profileSections) wholeRows(width int, f profileFlow) []string {
 	// Wrapped rather than clipped: the half a clip would cut is the half that
 	// says which of the person's own sections the note may touch.
 	rows := []string{""}
-	for _, line := range wrapPlain(label, inner) {
+	for _, line := range Wrap(label, inner) {
 		rows = append(rows, Clip(indent(sty.dim.Render(line)), width))
 	}
 	if p.refining {
@@ -486,7 +486,7 @@ func (p *profileSections) wholeRows(width int, f profileFlow) []string {
 		}
 		return rows
 	}
-	for _, line := range wrapPlain(p.sent, inner) {
+	for _, line := range Wrap(p.sent, inner) {
 		rows = append(rows, Clip(indent("  "+sty.dimmer.Render(line)), width))
 	}
 	return append(rows, "", Clip(indent(f.label("")), width))

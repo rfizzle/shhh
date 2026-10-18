@@ -366,11 +366,11 @@ func (m Model) safetyTools() components.SafetySection {
 		{"read-only", read}, {"execute", exec}, {"mutating", write}, {"asks", asks},
 	} {
 		if len(tier.names) > 0 {
-			sec.Lines = append(sec.Lines, "  "+padRight(tier.name, 10)+" "+strings.Join(tier.names, ", "))
+			sec.Lines = append(sec.Lines, "  "+components.PadRight(tier.name, 10)+" "+strings.Join(tier.names, ", "))
 		}
 	}
 	if served > 0 {
-		sec.Lines = append(sec.Lines, "  "+padRight("servers", 10)+" "+plural(served, "tool")+" — see mcp above")
+		sec.Lines = append(sec.Lines, "  "+components.PadRight("servers", 10)+" "+plural(served, "tool")+" — see mcp above")
 	}
 	return sec
 }
@@ -402,12 +402,4 @@ func lines(text string) []string {
 		return nil
 	}
 	return strings.Split(text, "\n")
-}
-
-// padRight pads a column label to its width.
-func padRight(s string, n int) string {
-	if len(s) >= n {
-		return s
-	}
-	return s + strings.Repeat(" ", n-len(s))
 }

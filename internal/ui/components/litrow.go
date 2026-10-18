@@ -111,7 +111,7 @@ func rearm(s, bg string) string {
 func LitOption(row string, width int) string {
 	inner := max(width-GridPointerWidth, 0)
 	return sty.focusPointer.Render("❯") + " " +
-		sty.focusRow.Render(padRight(Clip(row, inner), inner))
+		sty.focusRow.Render(PadRight(Clip(row, inner), inner))
 }
 
 // PointerColumn is the pointer's own cells on a row that is not the one the

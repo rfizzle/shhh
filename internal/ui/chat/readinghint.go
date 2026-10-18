@@ -632,7 +632,7 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 	room := width - lipgloss.Width(rail)
 	var lines []string
 	for _, row := range hintTones().Pack(segs, room) {
-		lines = append(lines, clipRow(rail+row, width))
+		lines = append(lines, components.Clip(rail+row, width))
 	}
 	if len(lines) > budget {
 		// The run ends on esc, the safe answer, and a budget that cannot hold

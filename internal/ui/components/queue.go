@@ -142,7 +142,7 @@ func (c QueueCard) View(width int) string {
 	if end < len(c.Messages) {
 		rows = append(rows, sty.dim.Render(fmt.Sprintf("  %d more below", len(c.Messages)-end)))
 	}
-	for _, l := range wrapPlain("steering joins the turn at its next round; a follow-up goes when it ends", inner) {
+	for _, l := range Wrap("steering joins the turn at its next round; a follow-up goes when it ends", inner) {
 		rows = append(rows, sty.dim.Render(l))
 	}
 	rows = append(rows, cardRule)

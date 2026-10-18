@@ -71,10 +71,10 @@ func (m Model) todoPauseLines() []string {
 	room := m.maxConfirmPanelHeight() - len(lines) - len(card) - len(st.Questions) - len(st.Lanes)
 	lines = append(lines, m.todoPlanChecklist(st.Steps, room, width)...)
 	for _, q := range st.Questions {
-		lines = append(lines, clipRow(sty.Step.Stats.Render("? "+q), width))
+		lines = append(lines, components.Clip(sty.Step.Stats.Render("? "+q), width))
 	}
 	for _, lane := range st.Lanes {
-		lines = append(lines, clipRow(sty.Step.Stats.Render("lane "+lane.Name+"  "+strings.Join(lane.Paths, ", ")), width))
+		lines = append(lines, components.Clip(sty.Step.Stats.Render("lane "+lane.Name+"  "+strings.Join(lane.Paths, ", ")), width))
 	}
 	return append(lines, card...)
 }
@@ -93,11 +93,11 @@ func (m Model) todoPlanChecklist(steps []string, room, width int) []string {
 	}
 	lines := make([]string, 0, room)
 	for i, step := range shown {
-		lines = append(lines, clipRow(sty.Step.Dim.Render("○ ")+
+		lines = append(lines, components.Clip(sty.Step.Dim.Render("○ ")+
 			sty.Step.Stats.Render(fmt.Sprintf("%d. %s", i+1, step)), width))
 	}
 	if n := len(steps) - len(shown); n > 0 {
-		lines = append(lines, clipRow(sty.Step.Dim.Render(fmt.Sprintf("… %d more", n)), width))
+		lines = append(lines, components.Clip(sty.Step.Dim.Render(fmt.Sprintf("… %d more", n)), width))
 	}
 	return lines
 }

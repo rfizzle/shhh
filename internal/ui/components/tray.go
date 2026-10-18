@@ -94,7 +94,7 @@ func (r TrayRow) View(width int) string {
 		handleTone = sty.bright
 	}
 	return band(sty.dim).Render(lead) +
-		band(handleTone).Render(padRight(handle, slot)) +
+		band(handleTone).Render(PadRight(handle, slot)) +
 		band(sty.bright).Render(name) +
 		band(sty.dim).Render(tail+strings.Repeat(" ", fill)+right)
 }

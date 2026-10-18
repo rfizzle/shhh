@@ -137,7 +137,7 @@ func (c CommitCard) messageRow(inner int) string {
 // others but with its counts in the diff's own two colours rather than in one
 // tone — the counts are the whole of what a reader checks this row for.
 func (c CommitCard) stagesRow(inner int) string {
-	label := sty.status.Render(padRight("stages", fieldLabelWidth-1) + " ")
+	label := sty.status.Render(PadRight("stages", fieldLabelWidth-1) + " ")
 	head := label + sty.body.Render(plural(c.Files, "file")+" ") + DiffStat(c.Added, c.Removed)
 	if c.StagesNote == "" {
 		return head

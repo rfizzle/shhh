@@ -213,7 +213,7 @@ func boundProse(prose []string, inner, budget int) []string {
 // then the paths beneath. The intent is dropped before the title is clipped —
 // a title cut in half says less than a missing label does.
 func (s PlanStep) rows(inner int) []string {
-	head := sty.dim.Render(padRight(strconv.Itoa(s.Number), 2)) + sty.body.Render(s.Title)
+	head := sty.dim.Render(PadRight(strconv.Itoa(s.Number), 2)) + sty.body.Render(s.Title)
 	if s.Kind != "" {
 		kind := s.KindTone.style().Render(s.Kind)
 		if gap := inner - lipgloss.Width(head) - lipgloss.Width(kind); gap >= 1 {

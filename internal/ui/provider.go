@@ -266,7 +266,7 @@ func (m ProviderSetup) View() tea.View {
 	if m.quitting {
 		return tea.NewView(m.screen())
 	}
-	return tea.NewView(padToWidth(m.screen(), m.width))
+	return tea.NewView(components.PadLines(m.screen(), m.width))
 }
 
 func (m ProviderSetup) screen() string {
@@ -328,7 +328,7 @@ func PlainProviderReport(s resolve.Survey) string {
 		if p.Found {
 			mark = "  ✓ "
 		}
-		line := mark + padLabel(string(p.Kind)) + p.Finding
+		line := mark + components.PadRight(string(p.Kind), 10) + p.Finding
 		if p.Detail != "" {
 			if p.Finding != "" {
 				line += " — "
@@ -347,11 +347,4 @@ func PlainProviderReport(s resolve.Survey) string {
 	b.WriteString("\nRun shhh in a terminal for the setup wizard, or export SHHH_API_KEY — " +
 		"`shhh config set --global provider.api_key_env SHHH_API_KEY` makes the file read it.\n")
 	return b.String()
-}
-
-func padLabel(label string) string {
-	for len(label) < 10 {
-		label += " "
-	}
-	return label
 }

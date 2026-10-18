@@ -273,7 +273,7 @@ func joinReviewPanes(list, pane []string, listWidth, rows int) []string {
 		}
 		// The divider runs the full height of the surface, so the panes stay
 		// framed rather than trailing off into blank rows.
-		out = append(out, strings.TrimRight(padRight(l, listWidth)+sty.dim.Render(reviewDivider)+r, " "))
+		out = append(out, strings.TrimRight(PadRight(l, listWidth)+sty.dim.Render(reviewDivider)+r, " "))
 	}
 	return out
 }
@@ -288,7 +288,7 @@ func reviewLine(text, note string, width int) string {
 		return Clip(text, width)
 	}
 	text = Clip(text, width-noteW-1)
-	return padRight(text, width-noteW) + note
+	return PadRight(text, width-noteW) + note
 }
 
 // listRows is the whole left pane: the file list, the verdict and the shield
@@ -344,7 +344,7 @@ func (v *ReviewView) fileRows(width int) []string {
 		if budget-lipgloss.Width(tail) < reviewMinStatement {
 			tail = ""
 		}
-		path := clipLeft(f.Path, budget-lipgloss.Width(tail))
+		path := ClipLeft(f.Path, budget-lipgloss.Width(tail))
 		row := reviewLine(lead+sty.body.Render(path)+sty.dim.Render(tail), note, inner)
 		rows = append(rows, reviewRow(row, lipgloss.Width(lead), i == v.file, inner))
 	}
@@ -364,21 +364,6 @@ func reviewRow(row string, marks int, lit bool, width int) string {
 		return PointerColumn() + row
 	}
 	return sty.focusPointer.Render("❯") + " " + litRowKeeping(row, 0, marks, width)
-}
-
-// clipLeft trims s to width from the front, keeping its tail.
-func clipLeft(s string, width int) string {
-	if width <= 0 {
-		return ""
-	}
-	r := []rune(s)
-	if len(r) <= width {
-		return s
-	}
-	if width == 1 {
-		return "…"
-	}
-	return "…" + string(r[len(r)-(width-1):])
 }
 
 // pinnedRows are what sits under the file list whatever else is on screen:

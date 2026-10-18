@@ -1501,7 +1501,7 @@ func (c *ApprovalCard) fieldsSayingUnknownOnce() []CardField {
 // is the furniture the value beside it is read against, which is the job
 // Status exists for (docs/interface/principles.md#colour-never-carries-meaning-alone).
 func (f CardField) render(inner int) string {
-	label := padRight(f.Label, fieldLabelWidth-1) + " "
+	label := PadRight(f.Label, fieldLabelWidth-1) + " "
 	value := f.Tone.style().Render(f.Value)
 	head := sty.status.Render(label) + value
 	if f.Detail == "" || f.Standing() {

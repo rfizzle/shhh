@@ -18,7 +18,6 @@ import (
 	"sync"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -538,7 +537,7 @@ func completionRow(c completionItem, focused bool, nameW, width int) string {
 		tail = c.off
 		avail -= lipgloss.Width(tail) + 2
 	}
-	desc := clipRow(c.desc, avail)
+	desc := components.Clip(c.desc, avail)
 	gap := ""
 	if tail != "" {
 		gap = strings.Repeat(" ", max(width-lipgloss.Width(lead+desc+tail), 0))
@@ -552,13 +551,13 @@ func completionRow(c completionItem, focused bool, nameW, width int) string {
 	case c.off != "":
 		// One run across the whole row. Split into three it would say the row
 		// is three things, when what it says is that none of it can be had yet.
-		return clipRow(sty.Complete.Off.Render(lead+desc+gap+tail), width)
+		return components.Clip(sty.Complete.Off.Render(lead+desc+gap+tail), width)
 	}
 	label := sty.Complete.Name.Render(c.name)
 	if c.args != "" {
 		label += " " + sty.Complete.Args.Render(c.args)
 	}
-	return clipRow(head+label+pad+"  "+sty.Complete.Desc.Render(desc), width)
+	return components.Clip(head+label+pad+"  "+sty.Complete.Desc.Render(desc), width)
 }
 
 // plainCommandLabel is the unstyled name+args column used for alignment,
@@ -575,17 +574,6 @@ func plainCommandLabel(c completionItem) string {
 		return "⊘ " + label
 	}
 	return label
-}
-
-// clipRow truncates a possibly-styled row to the given display width.
-func clipRow(s string, width int) string {
-	if width <= 0 {
-		return ""
-	}
-	if lipgloss.Width(s) <= width {
-		return s
-	}
-	return ansi.Truncate(s, width, "…")
 }
 
 // completionState is the open completion menu. It is one struct rather than

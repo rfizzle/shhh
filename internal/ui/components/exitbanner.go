@@ -156,7 +156,7 @@ func SuspendLine(words string) string {
 // card's field label is, and the value in
 // the tone the row is read for.
 func (b ExitBanner) row(label, value string, style lipgloss.Style) string {
-	return sty.status.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
+	return sty.status.Render(PadRight(label, exitLabelWidth)) + "  " + style.Render(value)
 }
 
 // spendLine is what the sitting cost and whose spend that is. The scope

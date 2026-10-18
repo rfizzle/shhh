@@ -404,21 +404,3 @@ func handoverRow(key string, inner int) string {
 	}
 	return head + tail
 }
-
-// padRight pads s with spaces to the given display width.
-func padRight(s string, width int) string {
-	if pad := width - lipgloss.Width(s); pad > 0 {
-		return s + strings.Repeat(" ", pad)
-	}
-	return s
-}
-
-// padLeft right-aligns s in the given display width. It is what a numbering
-// column is made of: `24.` and ` 7.` end in the same place, so the labels
-// beside them start in the same place.
-func padLeft(s string, width int) string {
-	if pad := width - lipgloss.Width(s); pad > 0 {
-		return strings.Repeat(" ", pad) + s
-	}
-	return s
-}

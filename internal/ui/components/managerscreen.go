@@ -436,7 +436,7 @@ func managerField(label, value string, width int) []string {
 	lead := "  " + sty.status.Render(fmt.Sprintf("%-*s", managerLabelWidth+1, label))
 	indent := strings.Repeat(" ", 3+managerLabelWidth)
 	var rows []string
-	for i, part := range wrapPlain(value, max(width-len(indent), 8)) {
+	for i, part := range Wrap(value, max(width-len(indent), 8)) {
 		if i == 0 {
 			rows = append(rows, Clip(lead+sty.body.Render(part), width))
 			continue

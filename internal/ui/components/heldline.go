@@ -31,7 +31,7 @@ func (h HeldLine) View(width int) string {
 	inner := card.Inner(width)
 	var rows []string
 	for _, para := range strings.Split(strings.TrimSpace(h.Text), "\n") {
-		for _, l := range wrapPlain(para, inner) {
+		for _, l := range Wrap(para, inner) {
 			rows = append(rows, sty.body.Render(l))
 		}
 	}

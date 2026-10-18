@@ -361,7 +361,7 @@ func (s StartScreen) noteRows(width int) []string {
 	indent := strings.Repeat(" ", label+2)
 	rows := make([]string, 0, len(s.Notes))
 	for _, n := range s.Notes {
-		head := sty.status.Render(padRight(n.Label, label)) + "  " + sty.body.Render(n.Value)
+		head := sty.status.Render(PadRight(n.Label, label)) + "  " + sty.body.Render(n.Value)
 		if n.Detail == "" {
 			rows = append(rows, Clip(head, width))
 			continue

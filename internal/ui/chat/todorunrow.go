@@ -240,7 +240,7 @@ func (r *todoRunRow) headerLine(width int, folded bool) string {
 		titleStyle = sty.Step.LiveTitle
 	}
 	fixed := leadW + statsW + components.GridDurationGap + components.GridDurationWidth + 3
-	title := clipRow(r.title(), width-fixed)
+	title := components.Clip(r.title(), width-fixed)
 	rule := width - leadW - lipgloss.Width(title) - statsW - components.GridDurationGap - components.GridDurationWidth - 2
 	if rule < 1 {
 		rule = 1
@@ -488,7 +488,7 @@ func (m Model) todoRunRowView(e entry, width int, sel rowSel) string {
 	indent := strings.Repeat(" ", components.GridDetailIndent)
 	inner := max(width-components.GridDetailIndent, 1)
 	lines := []string{r.headerLine(width, !e.expanded)}
-	clipped := func(s string) { lines = append(lines, indent+clipRow(s, inner)) }
+	clipped := func(s string) { lines = append(lines, indent+components.Clip(s, inner)) }
 	// Wrapped rather than clipped, for the reason the notices with bodies
 	// wrap: these are sentences and paths, and half of either is worse than
 	// a line that costs two.

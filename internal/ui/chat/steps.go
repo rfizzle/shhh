@@ -527,7 +527,7 @@ func (h stepHeader) View(width int) string {
 	// The rule takes what the title leaves; the title clips before the rule
 	// disappears, because the stats are the reason to read the header.
 	fixed := leadW + statsW + components.GridDurationGap + components.GridDurationWidth + 3
-	title := clipRow(h.Title, width-fixed)
+	title := components.Clip(h.Title, width-fixed)
 	rule := width - leadW - lipgloss.Width(title) - statsW - components.GridDurationGap - components.GridDurationWidth - 2
 	if rule < 1 {
 		rule = 1
@@ -546,7 +546,7 @@ func stepDurationField(d string, style lipgloss.Style) string {
 	if d == "" {
 		return strings.Repeat(" ", w)
 	}
-	d = clipRow(d, w)
+	d = components.Clip(d, w)
 	return strings.Repeat(" ", w-lipgloss.Width(d)) + style.Render(d)
 }
 

@@ -229,7 +229,7 @@ func (p *profileBrief) askRows(width int) []string {
 		return nil
 	}
 	var rows []string
-	for _, line := range wrapBlock(p.ask, width-profileIndent) {
+	for _, line := range WrapParagraphs(p.ask, width-profileIndent) {
 		rows = append(rows, Clip(indent(sty.body.Render(line)), width))
 	}
 	return append(rows, "")

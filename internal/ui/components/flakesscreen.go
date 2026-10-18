@@ -126,7 +126,7 @@ func (s *FlakesScreen) previewRows(width int) []string {
 		line(sty.dim.Render("last in session " + r.Session))
 	}
 	rows = append(rows, "")
-	for _, l := range wrapPlain(r.Command, max(width-2, 1)) {
+	for _, l := range Wrap(r.Command, max(width-2, 1)) {
 		line(sty.dimmer.Render("  " + l))
 	}
 	return rows

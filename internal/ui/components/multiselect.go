@@ -245,7 +245,7 @@ func (s *MultiSelect) View(width int) string {
 	if s.Warning != "" {
 		// Wrapped rather than clipped: the refusal is the loader's sentence,
 		// and the part a clip would cut is the part that says what to change.
-		for i, line := range wrapPlain(s.Warning, max(inner-2, 8)) {
+		for i, line := range Wrap(s.Warning, max(inner-2, 8)) {
 			mark := "  "
 			if i == 0 {
 				mark = "⚠ "
@@ -370,7 +370,7 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 	if right := s.rightRun(i, opt); right != "" {
 		if room := body - lipgloss.Width(box) - 1 - lipgloss.Width(right) - 2; room > 0 {
 			row = box + " " + Clip(label, room)
-			row = padRight(row, body-lipgloss.Width(right)) + right
+			row = PadRight(row, body-lipgloss.Width(right)) + right
 		}
 	}
 	row = Clip(row, max(body, 0))
@@ -429,9 +429,9 @@ func (s *MultiSelect) columnsText(opt SelectOption, c multiColumns) string {
 		label, value, desc = sty.dimmer, sty.dimmer, sty.dimmer
 		why = strings.TrimSpace("⊘ " + why)
 	}
-	text := label.Render(padRight(opt.Label, c.label))
+	text := label.Render(PadRight(opt.Label, c.label))
 	if c.value > 0 {
-		text += "  " + value.Render(padRight(opt.Value, c.value))
+		text += "  " + value.Render(PadRight(opt.Value, c.value))
 	}
 	if why != "" {
 		text += "  " + desc.Render(why)
@@ -450,7 +450,7 @@ func (s *MultiSelect) headerRow(opt SelectOption, c multiColumns, inner int) str
 	if opt.Label == "" {
 		return Clip(PointerColumn()+sty.dim.Render(opt.Desc), inner)
 	}
-	text := sty.dim.Render(padRight(opt.Label, c.label))
+	text := sty.dim.Render(PadRight(opt.Label, c.label))
 	if c.value > 0 {
 		text += "  " + strings.Repeat(" ", c.value)
 	}

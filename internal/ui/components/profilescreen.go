@@ -868,7 +868,7 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 		// Wrapped rather than clipped: the warning is the loader's sentence
 		// about why the save was refused, and the part a clip would cut is
 		// the part that says what to change.
-		for i, line := range wrapPlain(p.warning, width-profileIndent-2) {
+		for i, line := range Wrap(p.warning, width-profileIndent-2) {
 			mark := "  "
 			if i == 0 {
 				mark = "⚠ "
@@ -952,21 +952,6 @@ func (p *ProfileScreen) scrollPane(by int) {
 		return
 	}
 	p.sections.scroll(by)
-}
-
-// wrapBlock wraps text to a width, keeping the breaks the text already has:
-// a profile written in paragraphs is read in paragraphs, and joining them
-// would be the surface editing what the drafter wrote.
-func wrapBlock(text string, width int) []string {
-	var lines []string
-	for _, para := range strings.Split(text, "\n") {
-		if strings.TrimSpace(para) == "" {
-			lines = append(lines, "")
-			continue
-		}
-		lines = append(lines, wrapPlain(para, width)...)
-	}
-	return lines
 }
 
 // indent puts a row in the body's column.

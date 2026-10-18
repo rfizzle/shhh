@@ -99,7 +99,7 @@ func (v *OutputView) bodyHeight() int {
 // View renders header, visible body and footer at the given width.
 func (v *OutputView) View(width int) string {
 	stats := plural(len(v.Lines), "line")
-	header := padRight(Clip(" "+v.Title, max(0, width-lipgloss.Width(stats))),
+	header := PadRight(Clip(" "+v.Title, max(0, width-lipgloss.Width(stats))),
 		max(0, width-lipgloss.Width(stats))) + sty.dim.Render(stats)
 	offers := []KeyOffer{keyOffer(keys.Output.Scroll), keyOffer(keys.Output.PageUp), keyOffer(keys.Output.PageDown)}
 	if !v.Rowless {

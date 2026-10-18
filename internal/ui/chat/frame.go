@@ -276,13 +276,13 @@ func (m Model) frameActivity(width int) string {
 	// A turn paused on a decision is not working, and what the rail should
 	// say is how many answers it is waiting for.
 	if n := m.waitingCount(); n > 0 {
-		return sty.Frame.WaitingChip.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
+		return sty.Frame.WaitingChip.Render(components.Clip(fmt.Sprintf("⏸ %d waiting", n), width))
 	}
 	// A turn asked to hold, and a turn parked at the boundary, are the next
 	// thing the slot says: a phase would be the wrong answer to both, since
 	// the first is still in one and the second is in none (hold.go).
 	if chip := m.holdChip(); chip != "" {
-		return sty.Frame.WaitingChip.Render(clipRow(chip, width))
+		return sty.Frame.WaitingChip.Render(components.Clip(chip, width))
 	}
 	// Attached, the frame is scoped to the child, and the slot says what the
 	// child is doing in the same closed vocabulary a turn of this session's
@@ -305,7 +305,7 @@ func (m Model) frameActivity(width int) string {
 		if m.frameWorking() {
 			return components.TurnStatus{Frame: m.spinFrame, Phase: m.attachedReading().phase}.View(width)
 		}
-		return sty.Frame.Idle.Render(clipRow("idle", width))
+		return sty.Frame.Idle.Render(components.Clip("idle", width))
 	}
 	// A session that has just been rewound says where it stands, and says it
 	// ahead of the last turn's summary: after a rewind that summary is about
@@ -318,14 +318,14 @@ func (m Model) frameActivity(width int) string {
 		if *m.rewoundTo > 0 {
 			at = fmt.Sprintf("at turn %d", *m.rewoundTo)
 		}
-		return sty.Frame.Idle.Render(clipRow(at, width))
+		return sty.Frame.Idle.Render(components.Clip(at, width))
 	}
 	if s, ok := m.turnStatus(); ok {
 		if line := s.View(width); line != "" {
 			return line
 		}
 	}
-	return sty.Frame.Idle.Render(clipRow("idle", width))
+	return sty.Frame.Idle.Render(components.Clip("idle", width))
 }
 
 // frameHints is the contextual bottom-rail hint set, swapped by state; it
@@ -948,7 +948,7 @@ func fitNotice(parts []noticePart, room int) string {
 		b.WriteString(glue(i) + p.text)
 	}
 	if room <= 0 || lipgloss.Width(b.String()) <= room {
-		return clipRow(b.String(), room)
+		return components.Clip(b.String(), room)
 	}
 	budget := room - (lipgloss.Width(noticeMore) - 1)
 	// A part that can be drawn narrower is charged its narrowest drawing, so
@@ -1003,7 +1003,7 @@ func fitNotice(parts []noticePart, room int) string {
 			}
 		}
 	}
-	return clipRow(line, room)
+	return components.Clip(line, room)
 }
 
 // railSlots splits a border row into the five rectangles it is drawn from:
@@ -1340,7 +1340,7 @@ func (m Model) draftView() string {
 	// wrapped so the box stays the size an empty draft is
 	// (docs/capabilities/chat.md#the-next-step-is-offered-not-typed).
 	if m.suggestionShown() {
-		return m.input.Styles().Focused.Placeholder.Render(clipRow(m.suggest.text, m.input.Width()))
+		return m.input.Styles().Focused.Placeholder.Render(components.Clip(m.suggest.text, m.input.Width()))
 	}
 	if m.suggestAsking() {
 		return m.input.Styles().Focused.Placeholder.Render(suggestAskingWord)

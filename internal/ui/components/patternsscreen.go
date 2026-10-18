@@ -118,14 +118,14 @@ func (s *PatternsScreen) previewRows(width int) []string {
 		return []string{sty.dim.Render(Clip("no proposal selected", width))}
 	}
 	rows := []string{paneTitle(brightStyle().Render(r.Kind), sty.dim.Render(patternSessions(r.Sessions)), width), ""}
-	for _, l := range wrapPlain(r.Pattern, max(width, 1)) {
+	for _, l := range Wrap(r.Pattern, max(width, 1)) {
 		rows = append(rows, Clip(sty.body.Render(l), width))
 	}
 	if r.What != "" {
 		rows = append(rows, Clip(sty.dim.Render(r.What+" in "+patternSessions(r.Sessions)), width))
 	}
 	rows = append(rows, "")
-	for _, l := range wrapPlain(r.Becomes, max(width, 1)) {
+	for _, l := range Wrap(r.Becomes, max(width, 1)) {
 		rows = append(rows, Clip(sty.dim.Render(l), width))
 	}
 	return rows

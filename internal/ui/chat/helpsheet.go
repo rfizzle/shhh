@@ -148,7 +148,7 @@ func (sec helpSection) lines(width int, paint bool) []string {
 // plainStyle renders a string as it is: the sheet laid out as text.
 var plainStyle = lipgloss.NewStyle()
 
-func pad(n int) string { return strings.Repeat(" ", max(n, 0)) }
+func pad(n int) string { return components.PadRight("", n) }
 
 // wrapHanging wraps one paragraph to width. A paragraph's leading spaces are
 // its indent, kept on every line of it; a paragraph whose first words are
@@ -176,24 +176,10 @@ func wrapHanging(p string, width int) []string {
 	if len(words) == 0 {
 		return []string{strings.TrimRight(pad(lead)+term, " ")}
 	}
-	var out []string
-	line := pad(lead) + term
-	col := hang
-	fresh := true
-	for _, w := range words {
-		ww := lipgloss.Width(w)
-		if !fresh && col+1+ww > width {
-			out = append(out, line)
-			line, col = pad(hang), hang
-			fresh = true
-		}
-		if !fresh {
-			line += " "
-			col++
-		}
-		line += w
-		col += ww
-		fresh = false
+	rows := components.WrapHang(body, width-hang, width-hang)
+	rows[0] = pad(lead) + term + rows[0]
+	for i := 1; i < len(rows); i++ {
+		rows[i] = pad(hang) + rows[i]
 	}
-	return append(out, line)
+	return rows
 }
