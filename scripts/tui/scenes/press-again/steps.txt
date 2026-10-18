@@ -9,7 +9,7 @@
 # clear (esc leaves it, ctrl+c records it in the history and clears it), the first press arms and the second quits; and over a card waiting
 # in a running turn the first press stops the turn and arms nothing, so the
 # session is still open after a different key. The call the card was asking
-# about goes with the turn: its row reads stopped, not denied, because nobody
+# about goes with the turn: its row reads cancelled, not denied, because nobody
 # answered it (docs/interface/surfaces.md#the-approval-card). ctrl+d is not
 # pressed anywhere: it quits nowhere.
 snap 01-idle "Some things worth doing first" "[ctrl+c] ×2 quit"
@@ -27,7 +27,7 @@ keys "run the checks" Enter
 snap 04-card "[y] run it once"
 sleep 1
 keys C-c
-snap 05-over-a-card "⊘" "stopped" "[ctrl+c] ×2 quit"
+snap 05-over-a-card "⊘" "cancelled" "[ctrl+c] ×2 quit"
 
 keys x
 # A stop ends the turn, so the model is not asked again; the draft taking

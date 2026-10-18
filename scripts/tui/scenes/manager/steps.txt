@@ -22,8 +22,8 @@
 # fetch with the agent manager's two answers; at 08 y has stopped the fetch
 # alone — the tools section reads `nothing running` and the ticker still
 # runs; at 09 d asks about the ticker, and at 10 y has stopped it and its row
-# reads stopped; at 11, out of the manager with the turn still running, the
-# fetch's row in the transcript reads stopped and the process's stop is said
+# reads cancelled; at 11, out of the manager with the turn still running, the
+# fetch's row in the transcript reads cancelled and the process's stop is said
 # under it; at 12 the turn finishes on its last reply.
 #
 # Each esc is followed by a pause: an esc and the next key inside the
@@ -56,10 +56,10 @@ snap 08-call-stopped "tools · nothing running" "1 process running"
 keys d
 snap 09-stop-process-asks "stop the process ticker?"
 keys y
-snap 10-process-stopped "⊘ ticker" "stopped"
+snap 10-process-stopped "⊘ ticker" "cancelled"
 keys Escape
 sleep 0.5
-snap 11-both-stopped "process ticker: exited" "stopped"
+snap 11-both-stopped "process ticker: exited" "cancelled"
 snap 12-turn-finished "The page did not come back"
 keys C-c
 sleep 0.6

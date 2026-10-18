@@ -35,10 +35,10 @@ snap 03-mid-turn "CONTEXT" "THIS TURN" "% of 32k"
 snap 04-running "acting…" "running · "
 keys C-c
 # A command the reader stopped is not a command that failed, and a process a
-# signal ended has no exit status to print — so the row says `stopped` in the
+# signal ended has no exit status to print — so the row says `cancelled` in the
 # grey a person's own decision takes, not `exit -1` in the del of a break
 # (docs/interface/principles.md#closed-vocabularies).
-snap 05-stopped "stopped" "stopped · "
+snap 05-stopped "cancelled" "cancelled · "
 snap 06-answered "The limit is counted in one place"
 # The answer arrives a word at a time and the turn closes after it, so the
 # frame offering to send again is what says the turn is over — a cancel before
