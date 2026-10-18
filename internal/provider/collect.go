@@ -15,6 +15,9 @@ type Reply struct {
 	// Usage is the last usage the stream reported, and nil when it reported
 	// none: zero would read as a free request.
 	Usage *Usage
+	// Stop is why the stream ended, as its terminal event said; empty when
+	// it never said.
+	Stop StopReason
 }
 
 // Collect reads events until the terminal event, a closed channel, an error
@@ -49,6 +52,7 @@ func Collect(ctx context.Context, events <-chan StreamEvent) (Reply, error) {
 				r.Usage = ev.Usage
 			}
 			if ev.Done {
+				r.Stop = ev.Stop
 				r.Text = text.String()
 				return r, nil
 			}

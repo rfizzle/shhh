@@ -216,6 +216,9 @@ type Answer struct {
 	// Exactly one of them is set.
 	Reason string
 	Err    string
+	// Refused is set, with Err, when the model declined to judge the row.
+	// It is a fourth outcome: not a label, and not an outage either.
+	Refused bool
 	// Usage is what this row cost, summed into the attempt.
 	Usage   provider.Usage
 	Elapsed time.Duration
@@ -228,6 +231,17 @@ type Answer struct {
 
 // Answered reports whether a label came back at all.
 func (a Answer) Answered() bool { return a.Label != "" }
+
+// Got is what the row came back with, in the words a table line uses.
+func (a Answer) Got() string {
+	switch {
+	case a.Answered():
+		return a.Label
+	case a.Refused:
+		return "refused"
+	}
+	return "no answer"
+}
 
 // Correct reports whether the label came back and the row accepts it.
 func (a Answer) Correct() bool { return a.Answered() && a.Row.Accepts(a.Label) }
@@ -264,11 +278,22 @@ func (s Score) Wrong() int {
 	return n
 }
 
-// Unanswered is how many rows produced no label at all.
+// Unanswered is how many rows produced no label at all and were not refused.
 func (s Score) Unanswered() int {
 	n := 0
 	for _, a := range s.Answers {
-		if !a.Answered() {
+		if !a.Answered() && !a.Refused {
+			n++
+		}
+	}
+	return n
+}
+
+// Refused is how many rows the model declined to judge.
+func (s Score) Refused() int {
+	n := 0
+	for _, a := range s.Answers {
+		if a.Refused {
 			n++
 		}
 	}
@@ -377,7 +402,7 @@ func askClassifier(ctx context.Context, p provider.Provider, model string, row R
 	})
 	a := Answer{Row: row, Usage: v.Usage, Elapsed: v.Elapsed}
 	if v.Failed {
-		a.Err = v.Reason
+		a.Err, a.Refused = v.Reason, v.Refused
 		return a
 	}
 	a.Reason = v.Reason

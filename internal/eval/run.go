@@ -347,7 +347,7 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 	case ctx.Err() != nil:
 		a.Err = ctx.Err()
 	default:
-		a.Passed = a.Score.Wrong() == 0 && a.Score.Unanswered() == 0
+		a.Passed = a.Score.Wrong() == 0 && a.Score.Unanswered() == 0 && a.Score.Refused() == 0
 	}
 	a.Elapsed = time.Since(start)
 	return a

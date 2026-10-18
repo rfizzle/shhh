@@ -187,6 +187,9 @@ func TestClassifier_DecisionsBackendFailsClosed(t *testing.T) {
 			if v.Decision != Ask || !v.Failed || !strings.Contains(v.Reason, c.reason) {
 				t.Fatalf("verdict = %+v", v)
 			}
+			if v.Refused != (c.name == "refusal") {
+				t.Errorf("Refused = %v on %s", v.Refused, c.name)
+			}
 			if d.decided != c.attempts {
 				t.Fatalf("attempts = %d, want %d", d.decided, c.attempts)
 			}

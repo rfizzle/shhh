@@ -589,6 +589,9 @@ func tableConsequence(score eval.Score) string {
 	if n := score.Unanswered(); n > 0 {
 		parts = append(parts, fmt.Sprintf("%d with no answer", n))
 	}
+	if n := score.Refused(); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d refused", n))
+	}
 	if len(parts) == 0 {
 		return ""
 	}
@@ -637,10 +640,7 @@ func tableBody(score eval.Score) []string {
 	seen := map[string]bool{}
 	left := 0
 	for _, a := range score.Misses() {
-		got := "no answer"
-		if a.Answered() {
-			got = a.Label
-		}
+		got := a.Got()
 		line := fmt.Sprintf("%s — wanted %s, got %s", a.Row.Name, strings.Join(a.Row.Expect, " or "), got)
 		if a.Row.Why != "" {
 			line += ": " + a.Row.Why
@@ -673,7 +673,7 @@ func evalDetail(res eval.Result) string {
 		// the table's own wall clock is these times the rows.
 		if took := score.MedianVerdict(); took > 0 && res.Case.Kind == eval.KindClassifier {
 			median := verdictTime(float64(took.Milliseconds())) + " a verdict"
-			if n := score.Unanswered(); n > 0 {
+			if n := score.Unanswered() + score.Refused(); n > 0 {
 				median += fmt.Sprintf(" (%d failed)", n)
 			}
 			parts = append(parts, median)

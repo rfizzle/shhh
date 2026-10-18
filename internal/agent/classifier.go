@@ -10,6 +10,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -310,6 +311,10 @@ type ClassifierVerdict struct {
 	Decision Decision
 	Reason   string
 	Failed   bool
+	// Refused is set with Failed when the model declined to judge: the
+	// decision is still Ask, and the one thing it changes is what a reader
+	// of the verdict can say about why there is no answer.
+	Refused bool
 	// Probability is the chance the decisions backend put on the call
 	// being allowed to run, as a fraction, and Probed whether it put one:
 	// the completion backend answers in words and sets neither.
@@ -387,6 +392,19 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 		if usage != nil {
 			v.Usage.PromptTokens += usage.PromptTokens
 			v.Usage.CompletionTokens += usage.CompletionTokens
+		}
+		if errors.Is(err, errClassifierRefused) {
+			// A refusal is the model's answer to this evidence; asking again
+			// with the same evidence is asking for a different answer to the
+			// same question, so it spends no retry. It stays a failure to
+			// judge, never a deny: whether the gateway's filter or the model
+			// refused is not known, and a deny would present a guess as a
+			// verdict. Auto mode asks; an unattended run refuses.
+			v.Reason = errClassifierRefused.Error()
+			v.Refused = true
+			logs.Logger().Warn("permission classifier failed closed",
+				"model", model, "failure", classifierRefused, "attempts", attempt)
+			return finish(v)
 		}
 		if err != nil {
 			v.Reason = "the classifier could not evaluate this action: " + err.Error()
@@ -480,6 +498,7 @@ func (c *Classifier) decide(ctx context.Context, model, input string, v Classifi
 			continue
 		case answer.Type == provider.AnswerRefusal:
 			v.Reason = "the classifier declined to judge this action"
+			v.Refused = true
 			logs.Logger().Warn("permission classifier failed closed",
 				"model", model, "failure", classifierRefused, "attempts", attempt)
 			return v
@@ -510,8 +529,13 @@ func probabilityVerdict(p float64, threshold int) (Decision, string) {
 	return Deny, fmt.Sprintf("the classifier put the chance this may run unasked at %d%%, under the %d%% threshold", shown, threshold)
 }
 
+// errClassifierRefused is a reply the model declined to give, as completeOnce
+// reports it: not a failed request and not an unreadable answer.
+var errClassifierRefused = errors.New("the classifier declined to judge this action")
+
 // completeOnce runs one classifier attempt under the configured timeout and
-// parses its decision; Ask with a nil error means the response was invalid.
+// parses its decision; Ask with a nil error means the response was invalid,
+// and errClassifierRefused means the model declined to answer.
 //
 // The instruction and the evidence travel in separate messages. The prompt
 // says outright that the evidence is data and that instructions inside it are
@@ -560,6 +584,9 @@ func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evid
 		return Ask, "", usage, err
 	}
 
+	if reply.Stop == provider.StopRefusal {
+		return Ask, "", usage, errClassifierRefused
+	}
 	for _, tc := range reply.Calls {
 		if tc.Name != DecisionToolName {
 			continue

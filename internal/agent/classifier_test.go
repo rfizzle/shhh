@@ -577,6 +577,54 @@ func TestClassifier_ExhaustedRetriesReachTheLog(t *testing.T) {
 	}
 }
 
+// A reply the model refused to give is a refusal, not an unreadable answer:
+// it is one request, it fails closed, and the log and the verdict say so.
+func refusedProvider() *fakeClassifierProvider {
+	return &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{Done: true, Stop: provider.StopRefusal}), nil
+	}}
+}
+
+func TestClassifier_CompletionRefusalIsNotInvalid(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	v := NewClassifier(refusedProvider(), ClassifierConfig{Model: "small"}).Judge(context.Background(), testRequest())
+	if v.Decision != Ask || !v.Failed || !v.Refused {
+		t.Fatalf("a refusal must fail closed and say so, got %+v", v)
+	}
+	if strings.Contains(v.Reason, "invalid") || !strings.Contains(v.Reason, "declined") {
+		t.Errorf("reason = %q, want a refusal", v.Reason)
+	}
+	written := readLog(t, path)
+	if !strings.Contains(written, "failure=refused") || strings.Contains(written, "invalid decision") {
+		t.Errorf("the log does not say refused:\n%s", written)
+	}
+}
+
+func TestClassifier_CompletionRefusalSpendsNoRetry(t *testing.T) {
+	p := refusedProvider()
+	NewClassifier(p, ClassifierConfig{Model: "m", Retries: 2}).Judge(context.Background(), testRequest())
+	if p.calls != 1 {
+		t.Fatalf("requests = %d, want 1", p.calls)
+	}
+}
+
+// Nothing fails open: a refusal is Failed, so a person is asked and an
+// unattended run refuses, on evidence that carries an instruction to allow
+// as on any other.
+func TestClassifier_CompletionRefusalFailsClosed(t *testing.T) {
+	plain := Action{Kind: ActionCommand, Command: "go test ./..."}
+	v := NewClassifier(refusedProvider(), ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())
+	if got, _ := ResolveAuto(plain, v); got != Ask {
+		t.Errorf("ResolveAuto = %v, want the person asked", got)
+	}
+	if got, _ := ResolveUnattended(plain, v); got != Deny {
+		t.Errorf("ResolveUnattended = %v, want a refusal", got)
+	}
+}
+
 // A request that failed every time says so rather than blaming the model for
 // an answer it never got the chance to give.
 func TestClassifier_ExhaustedRequestsSayWhichFailureItWas(t *testing.T) {
