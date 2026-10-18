@@ -134,6 +134,45 @@ turn 3                                                                    paused
 
 [enter] open the turn · [?] keys · [esc] back
 
+· on the plan · the total says the cost is on the plan, and where it is managed
+/stats · 1 model · 1 turn                                      ~152.2k tok spent
+────────────────────────────────────────────────────────────────────────────────
+
+❯ session total                                                      ~152.2k tok
+by model
+  gpt-5.6-terra · main · classifier                                  ~152.2k tok
+by turn
+  ✓ turn 1  done                                                      ~38.0k tok
+────────────────────────────────────────────────────────────────────────────────
+session total                                                     the whole bill
+
+  spent        ~152.2k tok
+  tokens       ↑140.2k ↓12.0k
+  requests     18
+  cost         on your ChatGPT plan
+  manage usage https://chatgpt.com/settings/usage
+
+… (+3 more rows)
+
+[enter] open the turn · [?] keys · [esc] back
+
+· on the plan · a turn is tokens, never a dollar figure
+/stats · 1 model · 1 turn                                      ~152.2k tok spent
+────────────────────────────────────────────────────────────────────────────────
+
+  session total                                                      ~152.2k tok
+by model
+  gpt-5.6-terra · main · classifier                                  ~152.2k tok
+by turn
+❯ ✓ turn 1  done                                                      ~38.0k tok
+────────────────────────────────────────────────────────────────────────────────
+turn 1                                                                      done
+
+  spent        ~38.0k tok
+  took         1m 02s
+
+[enter] open the turn · [?] keys · [esc] back
+
 · empty · a session that has spent nothing
 /stats
 ────────────────────────────────────────────────────────────────────────────────
@@ -266,6 +305,45 @@ nothing selected
   ␛[38;5;246mspent        ␛[m␛[38;5;252m$0.0410␛[m
   ␛[38;5;246mtook         ␛[m␛[38;5;252m4m 12s␛[m
   ␛[38;5;246mrounds       ␛[m␛[38;5;252m50 of 50 used␛[m
+
+␛[38;5;103m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+
+· on the plan · the total says the cost is on the plan, and where it is managed
+␛[1;97m/stats␛[m␛[38;5;245m · 1 model␛[m␛[38;5;245m · 1 turn␛[m                                      ␛[38;5;245m~152.2k tok spent␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[94m❯␛[m ␛[1;97;48;5;61msession total                                                      ~152.2k tok␛[m
+␛[1;94mby model␛[m
+  ␛[38;5;252mgpt-5.6-terra␛[m␛[38;5;245m · ␛[m␛[38;5;245mmain · classifier␛[m                                  ␛[38;5;245m~152.2k tok␛[m
+␛[1;94mby turn␛[m
+  ␛[38;5;252m✓ turn 1␛[m  ␛[92mdone␛[m                                                      ␛[38;5;245m~38.0k tok␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97msession total␛[m                                                     ␛[38;5;245mthe whole bill␛[m
+
+  ␛[38;5;246mspent        ␛[m␛[38;5;252m~152.2k tok␛[m
+  ␛[38;5;246mtokens       ␛[m␛[38;5;252m↑140.2k ↓12.0k␛[m
+  ␛[38;5;246mrequests     ␛[m␛[38;5;252m18␛[m
+  ␛[38;5;246mcost         ␛[m␛[38;5;252mon your ChatGPT plan␛[m
+  ␛[38;5;246mmanage usage ␛[m␛[38;5;252mhttps://chatgpt.com/settings/usage␛[m
+
+␛[38;5;245m… (+3 more rows)␛[m
+
+␛[38;5;248m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+
+· on the plan · a turn is tokens, never a dollar figure
+␛[1;97m/stats␛[m␛[38;5;245m · 1 model␛[m␛[38;5;245m · 1 turn␛[m                                      ␛[38;5;245m~152.2k tok spent␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;252msession total␛[m                                                      ␛[38;5;245m~152.2k tok␛[m
+␛[1;94mby model␛[m
+  ␛[38;5;252mgpt-5.6-terra␛[m␛[38;5;245m · ␛[m␛[38;5;245mmain · classifier␛[m                                  ␛[38;5;245m~152.2k tok␛[m
+␛[1;94mby turn␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✓ turn 1  done                                                      ~38.0k tok␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mturn 1␛[m                                                                      ␛[38;5;245mdone␛[m
+
+  ␛[38;5;246mspent        ␛[m␛[38;5;252m~38.0k tok␛[m
+  ␛[38;5;246mtook         ␛[m␛[38;5;252m1m 02s␛[m
 
 ␛[38;5;103m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 

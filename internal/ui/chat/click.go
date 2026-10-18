@@ -682,7 +682,7 @@ func (m Model) entryOffers(e entry) []components.KeyOffer {
 // takes it, so that one is read by its opening rather than its whole.
 func offerLetter(o components.KeyOffer) (string, bool) {
 	for _, b := range []keys.Binding{keys.Row.Retry, keys.Row.Continue, keys.Row.Resume, keys.Row.Key,
-		keys.Row.Provider, keys.Row.Rounds, keys.Row.Uncap} {
+		keys.Row.Provider, keys.Row.ChatGPT, keys.Row.Usage, keys.Row.Rounds, keys.Row.Uncap} {
 		if o.Key == keys.Bracket(b) {
 			return keys.Shown(b), true
 		}

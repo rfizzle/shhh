@@ -84,6 +84,9 @@ type sessionEnv struct {
 	// session untouched when the rebuild fails.
 	replaceKey     func(string) error
 	switchProvider func(string) error
+	// activeProvider is the provider the stream is on now, which a switch
+	// replaces; the picker's display names are read from it.
+	activeProvider func() provider.Provider
 	// flows holds the models the config screen took for this session alone
 	// (summarizer.go). Its zero value holds none, which is every surface but
 	// the interactive session.
@@ -452,6 +455,11 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			name := currentProvider
 			sessionMu.Unlock()
 			return rebuild(name, key)
+		},
+		activeProvider: func() provider.Provider {
+			sessionMu.Lock()
+			defer sessionMu.Unlock()
+			return p
 		},
 		switchProvider: func(name string) error {
 			sessionMu.Lock()

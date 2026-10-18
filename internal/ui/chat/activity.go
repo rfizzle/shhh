@@ -716,7 +716,7 @@ func (m Model) runningCommandRow(width int) string {
 // window is called, and what the terminal itself can do.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("verbosity: %s\ntheme: %s\nscreen ground: %s\nmonochrome: %s\nmouse reporting: %s\ndesktop notifications: %s\nsession titles: %s\nnext-step suggestions: %s\nwindow title: %s\nlayout: %s\nterminal: %s\n"+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.suggestStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
+		return fmt.Sprintf("verbosity: %s\ntheme: %s\nscreen ground: %s\nmonochrome: %s\nmouse reporting: %s\ndesktop notifications: %s\nsession titles: %s\nnext-step suggestions: %s\nwindow title: %s\nlayout: %s\nterminal: %s\n"+m.planUsageLine()+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.suggestStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
 	}
 	switch parts[1] {
 	case "verbosity":

@@ -175,6 +175,48 @@ command says so: the app may still be connected to the account until it is
 disconnected in ChatGPT Settings. The host's registration and ID are kept, so
 signing in again is one approval in the browser.
 
+## In a session
+
+A session that cannot reach a model offers the plan beside the key: the first-run
+card offers **Continue with ChatGPT** next to pasting one, and an auth failure
+offers it next to entering a new key. On a session already on the plan the
+failure offers the sign-in and no paste prompt, since a plan has no key to
+replace.
+
+Choosing it signs in from inside the session, with the same account and the
+same browser step as `shhh providers login chatgpt`. The panel says it is
+waiting on `127.0.0.1` and the port, and what Esc does: it cancels the
+sign-in, closes the listener and changes nothing. When the browser does not
+open, the address is in the panel for the person to open, and nowhere else: it
+is not a transcript row, so it is never a message the model reads. A sign-in
+that comes back with plan use leaves the session on ChatGPT; one that comes
+back without it says so in the panel and names `shhh providers login chatgpt
+--consent`, and the session stays where it was. Moving a session to the plan
+from the provider switch waits on a token for up to a minute, so it runs behind
+the screen, which stays live.
+
+The first plan sign-in on a host shows one panel, **You're using your ChatGPT
+plan**, saying what that means and where usage is managed. It is recorded in
+the credential record and never shows again on that host, signing out
+included.
+
+While the plan pays, the header says **ChatGPT plan** beside the model: a word,
+not a colour. The model picker names each model by the name the plan gives it,
+and `/ui` and the spend screen give the usage address in text, since a link
+needs a terminal that can follow one. The plan is not billed per token, so the
+ledger counts a plan request's tokens and never prices it: the spend screen
+shows the tokens and says the cost is on the plan, and no budget warning is
+drawn for it.
+
+A spent allowance leads with **Manage usage**, then the provider switch, and
+says the limit may be the plan's or shhh's own weekly cap. An account the plan
+will not serve offers the switch and no retry. A request the route does not
+serve names the part it refused.
+
+`/logout chatgpt` signs out from inside the session, says when the revocation
+was not confirmed, and leaves the session on the provider with no credential,
+so the next request offers the sign-in again.
+
 ## What a plan session cannot do
 
 OpenAI serves the plan route under preview limits, and a request that breaks

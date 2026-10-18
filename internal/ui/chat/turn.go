@@ -536,6 +536,15 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// can open on every message, and this one exists to be a message.
 		return m, nil, true
 
+	case planEventMsg:
+		return answered(m.handlePlanEvent(msg))
+
+	case providerSwitchedMsg:
+		return answered(m.handleProviderSwitched(msg))
+
+	case logoutDoneMsg:
+		return answered(m.handleLogout(msg))
+
 	case streamErrMsg:
 		// Classified, never raw: the failure is a row on the
 		// activity grid with the provider's own words in its detail body and

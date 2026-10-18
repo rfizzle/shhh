@@ -1,0 +1,28 @@
+package meter
+
+import (
+	"testing"
+
+	"github.com/rfizzle/shhh/internal/provider"
+)
+
+// A request the ChatGPT plan answered is counted and never priced, so no
+// surface shows a dollar figure nobody was charged, and the entry says who
+// answered.
+func TestRecordOnThePlanCountsTokensAndPricesNothing(t *testing.T) {
+	l := New(cachedPrices())
+	u := provider.Usage{PromptTokens: 1000, CompletionTokens: 10}
+	l.RecordOn(PlanProvider, Origin{Source: SourceAgent}, "cached", u)
+	l.RecordOn("openai", Origin{Source: SourceAgent}, "cached", u)
+	entries := l.Entries()
+	if len(entries) != 2 {
+		t.Fatalf("entries = %d, want one per provider", len(entries))
+	}
+	plan, billed := entries[0], entries[1]
+	if plan.Provider != PlanProvider || plan.Priced || plan.Cost != 0 || plan.In != 1000 {
+		t.Errorf("plan entry = %+v", plan)
+	}
+	if billed.Provider != "openai" || !billed.Priced || billed.Cost == 0 {
+		t.Errorf("billed entry = %+v", billed)
+	}
+}

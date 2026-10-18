@@ -57,6 +57,29 @@ func pausedSpendScreen() *SpendScreen {
 	return s
 }
 
+// planSpendScreen is the screen over a session the ChatGPT plan paid for: no
+// dollar figure anywhere, the tokens and requests in place of one, and where
+// the allowance is managed.
+func planSpendScreen(focus int) *SpendScreen {
+	const usage = "https://chatgpt.com/settings/usage"
+	s := &SpendScreen{MaxLines: 24, Rows: []SpendRow{
+		{Kind: SpendTotal, Cost: "~152.2k tok", Tokens: "↑140.2k ↓12.0k", Requests: 18, OnPlan: true, PlanUsage: usage,
+			Parts: []SpendPart{
+				{Word: "main", Cost: "~148.0k tok", Tokens: "↑140.2k ↓7.8k", Requests: 14},
+				{Word: "classifier", Cost: "~4.2k tok", Tokens: "↑4.1k ↓120", Requests: 4},
+			}},
+		{Kind: SpendModel, Name: "gpt-5.6-terra", Cost: "~152.2k tok", Tokens: "↑140.2k ↓12.0k", Requests: 18,
+			OnPlan: true, PlanUsage: usage,
+			Parts: []SpendPart{
+				{Word: "main", Cost: "~148.0k tok", Tokens: "↑140.2k ↓7.8k", Requests: 14},
+				{Word: "classifier", Cost: "~4.2k tok", Tokens: "↑4.1k ↓120", Requests: 4},
+			}},
+		{Kind: SpendTurn, Cost: "~38.0k tok", Turn: &TurnsItem{N: 1, Close: &TurnClose{Spend: "~38.0k tok", Elapsed: "1m 02s"}}},
+	}}
+	s.Focus = focus
+	return s
+}
+
 // A turn stopped at its round limit is on the bill under the pause row's
 // mark and word, at the figure it kept, and its account says how long it ran
 // and the rounds it used.
@@ -161,6 +184,8 @@ func TestGolden_SpendScreen(t *testing.T) {
 			{Label: "a child · its share by name, and the model it ran on", View: spendScreen(3).View(width)},
 			{Label: "a turn · its cost as its close states it, enter opens it on the turns screen", View: spendScreen(6).View(width)},
 			{Label: "a paused turn · the figure its pause row kept, the time and rounds it used", View: pausedSpendScreen().View(width)},
+			{Label: "on the plan · the total says the cost is on the plan, and where it is managed", View: planSpendScreen(0).View(width)},
+			{Label: "on the plan · a turn is tokens, never a dollar figure", View: planSpendScreen(2).View(width)},
 			{Label: "empty · a session that has spent nothing", View: (&SpendScreen{MaxLines: 12}).View(width)},
 		}
 	})

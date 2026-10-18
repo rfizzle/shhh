@@ -189,6 +189,11 @@ func (m Model) headerFacts() []headerFact {
 	}
 	if m.modelName != "" {
 		facts = append(facts, headerFact{text: m.modelName, model: true})
+		// A word and not a colour: whether the plan or a key is paying is
+		// the one thing a person on both would most want to see at a glance.
+		if m.onPlan() {
+			facts = append(facts, headerFact{text: planWord, model: true})
+		}
 	}
 	if level := m.reasoningSegment(); level != "" {
 		facts = append(facts, headerFact{text: level})

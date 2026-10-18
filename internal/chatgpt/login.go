@@ -41,6 +41,9 @@ type LoginOptions struct {
 	// Consent asks the server to show the permission page again, for a
 	// sign-in that came back without plan use.
 	Consent bool
+	// StopWords is what the wait says stops it; "" is "Ctrl+C stops", right
+	// for a terminal and wrong for a screen with a key of its own.
+	StopWords string
 }
 
 // Result is what a finished sign-in says.
@@ -214,6 +217,10 @@ func (a *Account) awaitCallback(ctx context.Context, o LoginOptions, at attempt,
 	if wait <= 0 {
 		wait = DefaultWait
 	}
+	stop := o.StopWords
+	if stop == "" {
+		stop = "Ctrl+C stops"
+	}
 	page := at.authorizeURL()
 	opened := false
 	if !o.NoBrowser {
@@ -228,11 +235,11 @@ func (a *Account) awaitCallback(ctx context.Context, o LoginOptions, at attempt,
 		}
 	}
 	if opened {
-		fmt.Fprintf(say, "Opened your browser to sign in to ChatGPT. Waiting on %s for up to %s; Ctrl+C stops.\n", host, wait)
+		fmt.Fprintf(say, "Opened your browser to sign in to ChatGPT. Waiting on %s for up to %s; %s.\n", host, wait, stop)
 	} else {
 		// The address goes to the person's terminal and nowhere else: a
 		// returning sign-in's carries the previous ID token as a hint.
-		fmt.Fprintf(say, "Open this address in a browser on a machine whose browser can reach this host's %s:\n\n  %s\n\nWaiting for up to %s; Ctrl+C stops.\n", host, page, wait)
+		fmt.Fprintf(say, "Open this address in a browser on a machine whose browser can reach this host's %s:\n\n  %s\n\nWaiting for up to %s; %s.\n", host, page, wait, stop)
 	}
 	timer := time.NewTimer(wait)
 	defer timer.Stop()

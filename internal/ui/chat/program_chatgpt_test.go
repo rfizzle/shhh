@@ -1,0 +1,27 @@
+package chat
+
+// The ChatGPT plan's offer, reached through the real program: a provider
+// that refuses the key draws a failure row, and the row offers the sign-in
+// beside the key. The scene `chatgpt-offer` is the same route in a terminal.
+
+import (
+	"testing"
+
+	"github.com/rfizzle/shhh/internal/provider"
+)
+
+func TestProgram_AnAuthFailureOffersTheSignInBesideTheKey(t *testing.T) {
+	p := refusingProvider{fail: &provider.Failure{
+		Class: provider.ClassAuth, Status: 401, Provider: "openai",
+		Message: "Incorrect API key provided",
+	}}
+	w := Wiring{
+		ReplaceKey:    func(string) error { return nil },
+		SignInChatGPT: (&fakeSignIn{}).run,
+	}
+	tm := runProgramAt(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), w), 110, 40)
+
+	tm.Type("why does the loop stop")
+	tm.Send(programEnter)
+	waitForText(t, tm, "[t] continue with ChatGPT")
+}

@@ -178,7 +178,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Backlog", Backlog.All()},
 		{"Sprint", Sprint.All()},
 		{"Row", []Binding{Row.Withdraw, Row.Retry, Row.Continue, Row.Resume,
-			Row.Key, Row.Provider, Row.Rounds, Row.Uncap}},
+			Row.Key, Row.Provider, Row.ChatGPT, Row.Usage, Row.Rounds, Row.Uncap}},
 		{"Commit", Commit.All()},
 		{"Decision", []Binding{Decision.Allow, Decision.Deny, Decision.Refuse,
 			Decision.Always, Decision.Full,

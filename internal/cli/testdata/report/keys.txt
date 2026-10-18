@@ -104,6 +104,8 @@
   · resume    g · continue from here  [shipped]
   · key       e · enter a new key  [shipped]
   · provider  p · switch provider  [shipped]
+  · chat_gpt  t · continue with ChatGPT  [shipped]
+  · usage     m · manage usage  [shipped]
   · rounds    + · more rounds  [shipped]
   · uncap     ! · let it run  [shipped]
 
@@ -228,6 +230,7 @@
   · keep_going   esc · back  [shipped]
   · use_key      enter · use it for this session  [shipped]
   · keep_key     esc · back  [shipped]
+  · got_it       enter · got it  [shipped]
 
   DIFF
 
@@ -330,8 +333,9 @@
 
   SETUP
 
-  · wizard  enter · setup wizard  [shipped]
-  · paste   p · paste a key  [shipped]
-  · local   o · a local model  [shipped]
+  · wizard    enter · setup wizard  [shipped]
+  · paste     p · paste a key  [shipped]
+  · local     o · a local model  [shipped]
+  · chat_gpt  t · continue with ChatGPT  [shipped]
 
-  235 keys · 1 moved
+  239 keys · 1 moved

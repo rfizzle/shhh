@@ -590,6 +590,12 @@ func buildOverlays(screens []screenSpec) map[state]*mode {
 			lines:   panelRows((Model).keyEntryLines),
 			answer:  (*Model).answerKeyEntry,
 		},
+		stateChatGPT: {
+			place:   placePanel,
+			borrows: true,
+			lines:   panelRows((Model).planLines),
+			answer:  (*Model).answerPlan,
+		},
 		stateFocus: {
 			place:   placePanel,
 			borrows: true,

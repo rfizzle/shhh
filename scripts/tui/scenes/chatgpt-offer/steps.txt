@@ -1,0 +1,10 @@
+# program test: TestProgram_AnAuthFailureOffersTheSignInBesideTheKey
+#
+# A provider that refuses the key. The failure card offers Continue with
+# ChatGPT beside entering a new key and switching provider
+# (docs/capabilities/chatgpt-plan.md#in-a-session). The scene stops at the
+# offer: pressing it opens the sign-in, which reaches OpenAI, and no scene
+# may. Read the cells for the offers on the card's footer.
+snap 01-start "Some things worth doing first"
+keys "why does the loop stop" Enter
+snap 02-refused "401 unauthorized" "[t] continue with ChatGPT"

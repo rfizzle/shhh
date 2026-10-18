@@ -151,6 +151,15 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 		os.Exit(1)
 	}
 
+	// A plan has no key to resolve with: the card ended on the choice, and the
+	// sign-in runs here, on the terminal the card drew on, before anything
+	// is resolved. Declining it leaves the failure the card came in with.
+	if choice.Provider == "chatgpt" {
+		if err := setupSignIn(ctx, os.Stderr); err != nil {
+			return nil, req, err
+		}
+	}
+
 	next := req
 	next.Provider = choice.Provider
 	next.APIKey = choice.APIKey

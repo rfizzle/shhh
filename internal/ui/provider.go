@@ -121,6 +121,10 @@ func setupKeys(s resolve.Survey) []components.KeyOffer {
 		}
 		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Setup.Local), Label: label})
 	}
+	// Beside the paste, not behind the wizard: a person with a ChatGPT plan
+	// has no key to paste, and this is the shorter way in for them.
+	// See docs/capabilities/chatgpt-plan.md#signing-in.
+	offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Setup.ChatGPT), Label: keys.Words(keys.Setup.ChatGPT)})
 	return offers
 }
 
@@ -167,6 +171,13 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 			m.step = stepPasteKey
 			return m, nil
+		case components.ProviderChatGPT:
+			// The sign-in itself runs after the card has ended, on the
+			// terminal it drew on; the card only records the choice.
+			m.choice = ProviderChoice{Provider: "chatgpt", Chosen: true}
+			m.save = components.Confirm{Prompt: "Make ChatGPT the default for new sessions?"}
+			m.step = stepSave
+			return m, nil
 		case components.ProviderLocal:
 			// A local runtime needs no key and no wizard: it is already
 			// answering, which is the whole of the offer.
@@ -189,6 +200,14 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		if res.Canceled || res.Index < 0 || res.Index >= len(m.providers) {
 			m.step = stepCard
+			return m, nil
+		}
+		if m.providers[res.Index] == "chatgpt" {
+			// A plan reads no key: asking for one, and saving what was pasted,
+			// would write a secret for a provider that never uses it.
+			m.choice = ProviderChoice{Provider: "chatgpt", Chosen: true}
+			m.save = components.Confirm{Prompt: "Make ChatGPT the default for new sessions?"}
+			m.step = stepSave
 			return m, nil
 		}
 		m.choice.Provider = m.providers[res.Index]

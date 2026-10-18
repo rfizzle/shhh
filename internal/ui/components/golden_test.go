@@ -2701,6 +2701,9 @@ func TestGolden_ProviderCard(t *testing.T) {
 		}
 		return []golden.Panel{
 			{Label: "a local runtime is answering · the likely fix is named", View: card(func(c *ProviderCard) {})},
+			{Label: "Continue with ChatGPT stands beside the paste · a plan has no key to paste", View: card(func(c *ProviderCard) {
+				c.Keys = append(c.Keys[:2:2], KeyOffer{Key: "[t]", Label: "continue with ChatGPT"})
+			})},
 			{Label: "nothing anywhere · no fix to point at, and no local offer", View: card(func(c *ProviderCard) {
 				c.Places[3] = ProviderPlace{Label: "local", Detail: "localhost:11434 — nothing listening"}
 				c.Likely = ""

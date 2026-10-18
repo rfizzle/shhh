@@ -927,6 +927,8 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `row.resume` | `g` | continue from here | yes |
 | `row.key` | `e` | enter a new key | yes |
 | `row.provider` | `p` | switch provider | yes |
+| `row.chat_gpt` | `t` | continue with ChatGPT | yes |
+| `row.usage` | `m` | manage usage | yes |
 | `row.rounds` | `+` | more rounds | yes |
 | `row.uncap` | `!` | let it run | yes |
 | `decision.allow` | `y` | allow | yes |
@@ -1018,6 +1020,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `wait.keep_going` | `esc` | back | yes |
 | `wait.use_key` | `enter` | use it for this session | yes |
 | `wait.keep_key` | `esc` | back | yes |
+| `wait.got_it` | `enter` | got it | yes |
 | `diff.scroll` | `up`, `down`, `k`, `j` | move | yes |
 | `diff.side_by_side` | `s` | side-by-side | yes |
 | `diff.hunk` | `N`, `n` | hunk | yes |
@@ -1087,6 +1090,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `setup.wizard` | `enter` | setup wizard | yes |
 | `setup.paste` | `p` | paste a key | yes |
 | `setup.local` | `o` | a local model | yes |
+| `setup.chat_gpt` | `t` | continue with ChatGPT | yes |
 
 <!-- END generated keymap reference -->
 

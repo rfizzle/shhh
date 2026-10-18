@@ -295,7 +295,7 @@ func register() [surfaceCount]Surface {
 			Reached:  Shown(Draft.Answer) + " on a selected recovery or round-limit row, or " + Shown(Draft.Reading) + " and the cursor on the row",
 			Bindings: []Binding{
 				Row.Withdraw, Row.Retry, Row.Continue, Row.Resume,
-				Row.Key, Row.Provider, Row.Rounds, Row.Uncap,
+				Row.Key, Row.Provider, Row.ChatGPT, Row.Usage, Row.Rounds, Row.Uncap,
 			},
 		},
 		OnCommitCard: {
@@ -812,7 +812,7 @@ func Programs() []Surface {
 			Section:  "docs/interface/surfaces.md#the-start-screen",
 			Position: Takeover,
 			Reached:  "a session with no key to run on",
-			Bindings: []Binding{Setup.Wizard, Setup.Paste, Setup.Local},
+			Bindings: []Binding{Setup.Wizard, Setup.Paste, Setup.Local, Setup.ChatGPT},
 		},
 		{
 			Name:     "shhh snippets",

@@ -7,6 +7,8 @@ package cli
 
 import (
 	"context"
+	"errors"
+	"io"
 	"slices"
 	"strings"
 	"sync"
@@ -227,4 +229,24 @@ func chatGPTSurveyLine(providerName string) string {
 		return chatGPTNoPlan
 	}
 	return ""
+}
+
+// setupSignIn is the sign-in the first-run card's "continue with ChatGPT"
+// runs: the browser opens through the account's own opener, the address is
+// said on the terminal if it does not, and a sign-in that comes back without
+// plan use is an error that names the way to ask for it, since a session on
+// it would be refused on its first request. A test replaces it.
+var setupSignIn = func(ctx context.Context, say io.Writer) error {
+	a, err := chatGPTAccount()
+	if err != nil {
+		return err
+	}
+	res, err := a.Login(ctx, chatgpt.LoginOptions{Say: say})
+	if err != nil {
+		return err
+	}
+	if !res.PlanGranted {
+		return errors.New(chatGPTNoPlan)
+	}
+	return nil
 }

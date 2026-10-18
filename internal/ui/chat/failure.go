@@ -120,6 +120,9 @@ func failureSentence(f *provider.Failure) string {
 	}
 	switch f.Class {
 	case provider.ClassAuth:
+		if f.Provider == planName {
+			return "The ChatGPT sign-in is missing or has expired, so the plan refused the request."
+		}
 		if f.KeyTail == "" {
 			return "No key was sent, so the provider refused the request."
 		}
@@ -143,6 +146,15 @@ func failureSentence(f *provider.Failure) string {
 		return "The provider's reply could not be read."
 	case provider.ClassCancelled:
 		return "You stopped the request."
+	case provider.ClassUsageLimit:
+		return "The ChatGPT plan's allowance is spent, or the app's share of it is: the limit may be the plan's or shhh's own weekly cap. Manage usage at " + planUsageURL + "."
+	case provider.ClassNotEligible:
+		return "The plan will not serve this account, workspace or request. A retry or another sign-in changes nothing."
+	case provider.ClassUnsupported:
+		if f.Param != "" {
+			return "The plan route does not serve part of this request: " + f.Param + "."
+		}
+		return "The plan route does not serve part of this request."
 	}
 	return "The provider refused the request; its own words are below."
 }
@@ -201,6 +213,9 @@ func (m Model) failureSubject(f *provider.Failure) string {
 func failureOutcome(f *provider.Failure) string {
 	switch f.Class {
 	case provider.ClassAuth:
+		if f.Provider == planName {
+			return "sign-in needed"
+		}
 		if f.KeyTail == "" {
 			return "no key was sent"
 		}
@@ -224,6 +239,15 @@ func failureOutcome(f *provider.Failure) string {
 		return "unreadable reply"
 	case provider.ClassCancelled:
 		return components.OutcomeCancelled
+	case provider.ClassUsageLimit:
+		return "the plan, not the rate"
+	case provider.ClassNotEligible:
+		return "not on this account"
+	case provider.ClassUnsupported:
+		if f.Param != "" {
+			return f.Param + " not served"
+		}
+		return "not served by the plan"
 	}
 	return "message below"
 }
@@ -241,6 +265,8 @@ func failureNote(f *provider.Failure) string {
 		return "compacting keeps the plan and the recent turns"
 	case provider.ClassModelNotFound:
 		return "/model lists what this provider serves"
+	case provider.ClassUsageLimit:
+		return "waiting will not clear this one"
 	}
 	return "nothing in the turn was lost"
 }
@@ -256,9 +282,27 @@ func (m Model) failureKeys(f *provider.Failure) []components.KeyOffer {
 	}
 	switch f.Class {
 	case provider.ClassAuth:
-		if m.wiring.ReplaceKey != nil {
+		// A plan has no key to paste: on it the sign-in replaces the paste
+		// prompt, and elsewhere it stands beside it.
+		// See docs/capabilities/chatgpt-plan.md#in-a-session.
+		if m.wiring.ReplaceKey != nil && !m.onPlan() {
 			add(keys.Row.Key, "enter a new key")
 		}
+		if m.canSignInChatGPT() {
+			add(keys.Row.ChatGPT, "continue with ChatGPT")
+		}
+		if m.canSwitchProvider() {
+			add(keys.Row.Provider, "switch provider")
+		}
+	case provider.ClassUsageLimit:
+		// Where the allowance is managed leads, because it is the one thing
+		// that can end the limit; the switch is second and is the person's.
+		add(keys.Row.Usage, "manage usage")
+		if m.canSwitchProvider() {
+			add(keys.Row.Provider, "switch provider")
+		}
+	case provider.ClassNotEligible:
+		// Neither a retry nor another sign-in changes it.
 		if m.canSwitchProvider() {
 			add(keys.Row.Provider, "switch provider")
 		}
@@ -348,6 +392,12 @@ func (m Model) failureKey(key string) (tea.Model, tea.Cmd, bool) {
 	case keys.Shown(keys.Row.Provider):
 		next, cmd := m.openProviderPick()
 		return next, cmd, true
+	case keys.Shown(keys.Row.ChatGPT):
+		next, cmd := m.startPlanSignIn()
+		return next, cmd, true
+	case keys.Shown(keys.Row.Usage):
+		next, cmd := m.usageNotice()
+		return next, cmd, true
 	}
 	return m, nil, false
 }
@@ -411,19 +461,24 @@ func (m Model) openProviderPick() (tea.Model, tea.Cmd) {
 		}
 		opts[i] = components.SelectOption{Label: label, Desc: providerDesc(name)}
 	}
-	updated, cmd := m.openPicker("Switch provider", opts, focus, func(m *Model, idx int) string {
+	updated, cmd := m.openPickerWith("Switch provider", opts, focus, pickerAlt{}, false, func(m *Model, idx int, _ bool) (string, tea.Cmd) {
 		name := choices[idx]
 		if name == m.providerName {
-			return "Already on " + name + "."
+			return "Already on " + name + ".", nil
+		}
+		if name == planName {
+			// Building the plan's provider takes a token under a bound of a
+			// minute; it runs as a command and the session goes on.
+			return "switching to " + name + "…", m.switchProviderCmd(name)
 		}
 		if err := m.wiring.SwitchProvider(name); err != nil {
-			return "Could not switch to " + name + ": " + err.Error()
+			return "Could not switch to " + name + ": " + err.Error(), nil
 		}
 		m.providerName = name
 		if model := provider.Defaults(name).Model; model != "" {
 			m.modelName = model
 		}
-		return "switched to " + name + " on " + m.modelName + ". Ask again to use it"
+		return "switched to " + name + " on " + m.modelName + ". Ask again to use it", nil
 	})
 	// Esc leaves the session on the provider it is on, and says which one
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer); a session

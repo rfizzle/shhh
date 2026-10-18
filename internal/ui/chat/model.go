@@ -117,6 +117,10 @@ const (
 	// stateKeyEntry: the masked key prompt an auth failure's [k] opens
 	//. It borrows the bottom panel; esc keeps the old key.
 	stateKeyEntry
+	// stateChatGPT: the ChatGPT plan's panel — waiting on the browser, a
+	// sign-in that came back without plan use, or the one-time confirmation
+	// that the plan is paying (chatgpt.go). It borrows the bottom panel.
+	stateChatGPT
 	// statePressure: the context-pressure card is up — the
 	// occupancy, where the window went, and the three answers. It borrows
 	// the bottom panel; esc keeps going.
@@ -1416,6 +1420,8 @@ type Model struct {
 	// offer, which is why they are checked rather than assumed.
 	providerName string
 	keyAsk       *components.SecretPrompt
+	// plan is the ChatGPT sign-in in flight, or the panel that follows it.
+	plan *planFlow
 	// retry is the bounded wait between a failed request and the next one
 	//; retrySeq fences its timer, so a cancelled or superseded wait
 	// is never advanced by a tick that outlived it.

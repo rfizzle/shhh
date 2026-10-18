@@ -91,6 +91,11 @@ type SpendRow struct {
 	// have cost for the same writes and pauses, a line each. Empty where
 	// nothing was written under a lease or the model has no price.
 	Cache []string
+	// OnPlan is that a ChatGPT plan answered some of the requests behind the
+	// row: the figure is tokens, the cost is on the plan, and PlanUsage is
+	// where the allowance is managed, said in text.
+	OnPlan    bool
+	PlanUsage string
 	// Turn is a turn row's turn, as the turns screen holds it — its number,
 	// how it ended and how long it took are that screen's words for it.
 	Turn *TurnsItem
@@ -205,6 +210,9 @@ func (s *SpendScreen) previewRows(width int) []string {
 		if r.Requests > 0 {
 			fields = append(fields, field{"requests", fmt.Sprint(r.Requests)})
 		}
+	}
+	if r.OnPlan {
+		fields = append(fields, field{"cost", "on your ChatGPT plan"}, field{"manage usage", r.PlanUsage})
 	}
 	for i, line := range r.Cache {
 		label := ""

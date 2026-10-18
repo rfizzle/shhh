@@ -481,7 +481,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// the scroll to wherever it was standing.
 		m.halfPageFocus(pressed)
 		return m, nil
-	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Resume, keys.Row.Key, keys.Row.Provider):
+	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Resume, keys.Row.Key, keys.Row.Provider, keys.Row.ChatGPT, keys.Row.Usage):
 		// A provider failure's own offers and a dropped stream's. Every one
 		// is answered on the row under the cursor, so the input keeps all
 		// four letters for typing.

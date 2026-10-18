@@ -874,6 +874,11 @@ type RowKeys struct {
 	// own.
 	Key      Binding
 	Provider Binding
+	// ChatGPT is `[t]`: sign in with a ChatGPT plan instead of pasting a key
+	// (docs/capabilities/chatgpt-plan.md#signing-in). Usage is `[m]`: where the
+	// plan's allowance is managed, offered first on a spent one.
+	ChatGPT Binding
+	Usage   Binding
 
 	// Rounds is the tool-round checkpoint's pair. The row draws the
 	// grant as the block it grants (`[+50]`); the hint bar names the literal
@@ -890,6 +895,8 @@ var Row = RowKeys{
 	Resume:   bind("g", "continue from here", "g"),
 	Key:      bind("e", "enter a new key", "e"),
 	Provider: bind("p", "switch provider", "p"),
+	ChatGPT:  bind("t", "continue with ChatGPT", "t"),
+	Usage:    bind("m", "manage usage", "m"),
 
 	Rounds: bind("+", "more rounds", "+"),
 	Uncap:  bind("!", "let it run", "!"),
@@ -1345,6 +1352,10 @@ type WaitKeys struct {
 
 	UseKey  Binding
 	KeepKey Binding
+
+	// GotIt is enter on the one-time panel that follows a first plan
+	// sign-in. The waiting panel's esc is the family's own, worded there.
+	GotIt Binding
 }
 
 var Wait = WaitKeys{
@@ -1357,6 +1368,8 @@ var Wait = WaitKeys{
 
 	UseKey:  bind("enter", "use it for this session", "enter"),
 	KeepKey: bind("esc", "back", "esc"),
+
+	GotIt: bind("enter", "got it", "enter"),
 }
 
 // DiffKeys are the full-screen viewer's.
@@ -1623,15 +1636,18 @@ var Query = QueryKeys{
 
 // SetupKeys are first contact's and the provider card's.
 type SetupKeys struct {
-	Wizard Binding
-	Paste  Binding
-	Local  Binding
+	Wizard  Binding
+	Paste   Binding
+	Local   Binding
+	ChatGPT Binding
 }
 
 var Setup = SetupKeys{
 	Wizard: bind("enter", "setup wizard", "enter"),
 	Paste:  bind("p", "paste a key", "p"),
 	Local:  bind("o", "a local model", "o"),
+
+	ChatGPT: bind("t", "continue with ChatGPT", "t"),
 }
 
 // RewindKeys are the rewind scope card's — the card the /rewind picker opens

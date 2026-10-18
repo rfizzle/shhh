@@ -895,6 +895,8 @@ type spendShare struct {
 	sources  []meter.Source
 	parts    []meter.Totals
 	children meter.Totals
+	// plan is that the plan answered some of this model's requests.
+	plan bool
 }
 
 // spendShares divides the ledger by model, in the order /stats lists them
@@ -927,6 +929,7 @@ func (m Model) spendShares() []spendShare {
 			if e.Model != model.Model {
 				continue
 			}
+			share.plan = share.plan || e.Provider == planName
 			t := meter.Totals{In: e.In, Out: e.Out, Cached: e.Cached, Cost: e.Cost, Priced: e.Priced, Requests: e.Requests}
 			if e.Origin.Source == meter.SourceSubagent {
 				share.children = share.children.Plus(t)
@@ -1007,6 +1010,11 @@ func (m Model) totalsLabel(t meter.Totals) string {
 	}
 	if t.Priced {
 		return formatCost(t.Cost)
+	}
+	if m.onPlan() {
+		// The plan is not billed per token, so the session model's fresh rate
+		// would be a figure nobody was charged.
+		return "~" + formatTokenCount(t.In+t.Out) + " tok"
 	}
 	return m.freshRateLabel(t.In, t.Out)
 }

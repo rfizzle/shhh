@@ -98,8 +98,12 @@ func (o Origin) String() string {
 // once, so a single figure priced against "the" model is a number nobody can
 // reconcile.
 type Entry struct {
-	Origin   Origin
-	Model    string
+	Origin Origin
+	Model  string
+	// Provider names the dialect that answered, where the request went
+	// through the gate; empty for spend recorded without one. It is what
+	// tells a request paid for by a ChatGPT plan from one billed to a key.
+	Provider string
 	In       int64
 	Out      int64
 	Cached   int64
@@ -267,6 +271,17 @@ func ReadCap(text string) (*CapError, bool) {
 // model that actually answered rather than whichever model the session
 // happens to be on when someone asks.
 func (l *Ledger) Record(o Origin, model string, u provider.Usage) {
+	l.RecordOn("", o, model, u)
+}
+
+// PlanProvider is the provider whose requests are paid for by a plan and not
+// billed: the ledger counts their tokens and never prices them, so no surface
+// shows a dollar figure nobody was charged.
+// See docs/capabilities/chatgpt-plan.md#what-it-costs.
+const PlanProvider = "chatgpt"
+
+// RecordOn is Record for a request the named provider answered.
+func (l *Ledger) RecordOn(providerName string, o Origin, model string, u provider.Usage) {
 	if l == nil {
 		return
 	}
@@ -278,12 +293,12 @@ func (l *Ledger) Record(o Origin, model string, u provider.Usage) {
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	e := l.entry(o, model)
+	e := l.entry(o, model, providerName)
 	e.In += in
 	e.Out += out
 	e.Cached += cached
 	e.Requests++
-	if l.prices != nil && model != "" {
+	if l.prices != nil && model != "" && providerName != PlanProvider {
 		// The input is charged in three parts, because that is how it is
 		// billed: what a session saves by caching its prompt has to show up
 		// here or the saving is invisible and the total is wrong.
@@ -302,13 +317,13 @@ func (l *Ledger) Record(o Origin, model string, u provider.Usage) {
 
 // entry returns the running total for an origin and model, creating it in
 // first-use order. The caller holds the lock.
-func (l *Ledger) entry(o Origin, model string) *Entry {
+func (l *Ledger) entry(o Origin, model, providerName string) *Entry {
 	for i := range l.entries {
-		if l.entries[i].Origin == o && l.entries[i].Model == model {
+		if l.entries[i].Origin == o && l.entries[i].Model == model && l.entries[i].Provider == providerName {
 			return &l.entries[i]
 		}
 	}
-	l.entries = append(l.entries, Entry{Origin: o, Model: model})
+	l.entries = append(l.entries, Entry{Origin: o, Model: model, Provider: providerName})
 	return &l.entries[len(l.entries)-1]
 }
 

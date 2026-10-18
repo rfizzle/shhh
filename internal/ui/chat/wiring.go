@@ -69,6 +69,22 @@ type Wiring struct {
 	ProviderName   string
 	ReplaceKey     func(string) error
 	SwitchProvider func(string) error
+	// SignInChatGPT runs the ChatGPT plan sign-in from inside the session:
+	// the browser opens, say is told what the sign-in says (including the
+	// address, when it has to be opened by hand), and the screen moves the
+	// session to chatgpt through SwitchProvider, only while its panel is open. Cancelling ctx closes the
+	// listener and changes nothing. SignOutChatGPT revokes the sign-in and
+	// reports whether the revocation was confirmed. PlanWelcomed and
+	// MarkPlanWelcomed are the credential record's one-time panel. A hook left
+	// nil is an offer the session does not make.
+	// See docs/capabilities/chatgpt-plan.md#in-a-session.
+	SignInChatGPT    func(ctx context.Context, say func(string)) (ChatGPTSignIn, error)
+	SignOutChatGPT   func(ctx context.Context) (revoked bool, err error)
+	PlanWelcomed     func() bool
+	MarkPlanWelcomed func()
+	// ModelLabels is the display name of each model slug the provider the
+	// session is on has one for; nil or empty labels nothing.
+	ModelLabels func() map[string]string
 	// ModelName is the model the session opened on.
 	ModelName string
 	// Defaults is the persisted-defaults surface.
@@ -375,4 +391,13 @@ type Wiring struct {
 	// through, and a screen built without it offers nothing, so a test never
 	// reaches the system clipboard.
 	ClipboardRead func() (attachment.Clipboard, error)
+}
+
+// ChatGPTSignIn is what a finished plan sign-in says.
+type ChatGPTSignIn struct {
+	// Email is the account signed in.
+	Email string
+	// PlanGranted is false for a sign-in that was kept without plan use, which
+	// leaves the session where it was.
+	PlanGranted bool
 }

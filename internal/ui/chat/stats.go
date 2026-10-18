@@ -133,13 +133,14 @@ func (m Model) spendScreenData() components.SpendScreen {
 	rows := []components.SpendRow{{
 		Kind: components.SpendTotal, Cost: m.totalsLabel(total),
 		Parts: m.billParts(), Tokens: tokensLabel(total), Requests: total.Requests,
-		Cache: m.leaseLines(),
+		Cache: m.leaseLines(), OnPlan: m.planSpend(), PlanUsage: planUsageURL,
 	}}
 	for _, share := range m.spendShares() {
 		row := components.SpendRow{
 			Kind: components.SpendModel, Name: share.model,
 			Cost: shareLabel(share.own), Children: shareLabel(share.children),
 			Tokens: tokensLabel(share.own), Requests: share.own.Requests,
+			OnPlan: share.plan, PlanUsage: planUsageURL,
 		}
 		if row.Name == "" {
 			row.Name = "(unnamed)"

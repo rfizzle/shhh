@@ -387,6 +387,10 @@ func (m Model) modelPickFor(t modelTarget) modelPick {
 		current = flow.Model
 	}
 	choices := m.choicesWith(current)
+	var labels map[string]string
+	if m.wiring.ModelLabels != nil {
+		labels = m.wiring.ModelLabels()
+	}
 	pick := modelPick{opts: make([]components.SelectOption, len(choices)), keep: current}
 	for i, name := range choices {
 		label := name
@@ -395,10 +399,15 @@ func (m Model) modelPickFor(t modelTarget) modelPick {
 			pick.focus = i
 		}
 		desc := ""
-		if m.wiring.Prices != nil {
+		if m.wiring.Prices != nil && !m.onPlan() {
 			if in, out, ok := m.wiring.Prices.Cost(name, 1_000_000, 1_000_000); ok {
 				desc = fmt.Sprintf("$%.2f in / $%.2f out per Mtok", in, out)
 			}
+		}
+		// Where the provider has a display name for a slug, the slug is
+		// labelled with it: the name is what a person knows the model by.
+		if label := labels[name]; label != "" && label != name {
+			desc = label
 		}
 		pick.opts[i] = components.SelectOption{Label: label, Desc: desc}
 	}

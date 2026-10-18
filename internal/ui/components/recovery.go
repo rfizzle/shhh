@@ -327,6 +327,8 @@ const (
 	// ProviderLocal takes the local runtime that answered, which needs
 	// neither a key nor the wizard.
 	ProviderLocal
+	// ProviderChatGPT signs in with a ChatGPT plan, which needs no key.
+	ProviderChatGPT
 	// providerDismiss declines the card — esc, and any offer that is none of
 	// the three above. Nothing is set up.
 	providerDismiss
@@ -352,6 +354,8 @@ func (c *ProviderCard) Update(msg tea.KeyPressMsg) (done bool, result providerAc
 			return true, ProviderPaste
 		case keys.Is(pressed, keys.Setup.Local):
 			return true, ProviderLocal
+		case keys.Is(pressed, keys.Setup.ChatGPT):
+			return true, ProviderChatGPT
 		}
 		// An offer with no action of its own dismisses the card, which is
 		// where a fourth offer would land until it was given one here.

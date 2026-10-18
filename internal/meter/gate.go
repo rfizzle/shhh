@@ -139,7 +139,7 @@ func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Messag
 // record bills one response and reads what it said about the cache of the
 // endpoint that answered it.
 func (g *gated) record(model string, req GapRequest, u provider.Usage) {
-	g.ledger.Record(g.origin, model, u)
+	g.ledger.RecordOn(g.inner.Name(), g.origin, model, u)
 	g.ledger.ObserveCache(g.inner.Name(), model, u)
 	g.ledger.ObserveGap(g.origin, g.inner.Name(), model, req, u)
 }
@@ -168,7 +168,7 @@ func (g *gated) decide(ctx context.Context, req provider.DecisionRequest) (provi
 	if model == "" {
 		model = g.fallbackModel
 	}
-	g.ledger.Record(g.origin, model, provider.Usage{PromptTokens: res.Usage.PromptTokens})
+	g.ledger.RecordOn(g.inner.Name(), g.origin, model, provider.Usage{PromptTokens: res.Usage.PromptTokens})
 	return res, nil
 }
 
