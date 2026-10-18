@@ -18,8 +18,6 @@
 │   2. Postgres          one more service to run                   9 files │
 │   3. ⊘ Redis                                   no client in this project │
 │   4. Something else …  answer in your own words                          │
-│ ┄ note (optional)                                                        │
-│   (none)                                                                 │
 │ [tab] note or list · [enter] confirm · [v] the full answer · [?] keys    │
 │ [esc] back to the draft — the question waits                             │
 ╰──────────────────────────────────────────────────────────────────────────╯
@@ -38,7 +36,7 @@
 │ [esc] back to the draft — the question waits                             │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
-· pick several · the boxes, with the same field under them
+· pick several · the boxes, and the note only once its key opens it
 ╭─ Question ────────────────────────────────────────────────────── 1 of 1 ─╮
 │ Which packages should the flag reach?                                    │
 │                                                                          │
@@ -46,8 +44,6 @@
 │   [ ] internal/cli                                                       │
 │   [ ] internal/ui/chat                                                   │
 │   [ ] Something else …                                                   │
-│ ┄ note (optional)                                                        │
-│   (none)                                                                 │
 │ [tab] note or list · [space] toggle · [a] all/none · [v] the full answer │
 │ [enter] choose (0) · [?] keys                                            │
 │ [esc] back to the draft — the question waits                             │
@@ -64,8 +60,6 @@
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
 Should the migration be reversible?  [y/N]
-┄ note (optional)
-  (none)
 [y] yes · [N] no — the default · [tab] note · [?] keys
 
 · landing on a half-typed sentence · one key, and it is the handover
@@ -76,15 +70,11 @@ Should the migration be reversible?  [y/N]
 │   2. Postgres          one more service to run                   9 files │
 │   3. ⊘ Redis                                   no client in this project │
 │   4. Something else …  answer in your own words                          │
-│ ┄ note (optional)                                                        │
-│   (none)                                                                 │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · the yes-or-no on the same sentence · the answer pair goes with the letters
 Should the migration be reversible?
-┄ note (optional)
-  (none)
 [ctrl+space/ctrl+y] answer it · other keys type into the draft
 
 · the free answer on the same sentence · the field draws no cursor until the handover
@@ -124,8 +114,6 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mPostgres␛[m          ␛[38;5;244mone more service to run␛[m                   ␛[38;5;254m9 files␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;244m⊘ Redis␛[m                                   ␛[38;5;244mno client in this project␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
@@ -144,7 +132,7 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
-· pick several · the boxes, with the same field under them
+· pick several · the boxes, and the note only once its key opens it
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mQuestion ␛[m␛[38;5;254m────────────────────────────────────────────────────── 1 of 1 ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mWhich packages should the flag reach?␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
@@ -152,8 +140,6 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m internal/cli                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m internal/ui/chat                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m choose (0)␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m                             ␛[38;5;254m│␛[m
@@ -170,8 +156,6 @@ Should the migration be reversible?
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
 ␛[38;5;254mShould the migration be reversible?␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
-␛[38;5;244m┄ note (optional)␛[m
-  ␛[38;5;244m(none)␛[m
 ␛[38;5;254m[y]␛[m␛[38;5;244m yes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m␛[38;5;244m no — the default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
 
 · landing on a half-typed sentence · one key, and it is the handover
@@ -182,15 +166,11 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mPostgres␛[m          ␛[38;5;244mone more service to run␛[m                   ␛[38;5;254m9 files␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;244m⊘ Redis␛[m                                   ␛[38;5;244mno client in this project␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m · other keys type into the draft␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the yes-or-no on the same sentence · the answer pair goes with the letters
 ␛[38;5;254mShould the migration be reversible?␛[m
-␛[38;5;244m┄ note (optional)␛[m
-  ␛[38;5;244m(none)␛[m
 ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m · other keys type into the draft␛[m
 
 · the free answer on the same sentence · the field draws no cursor until the handover

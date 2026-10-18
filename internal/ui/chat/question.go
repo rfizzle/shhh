@@ -283,6 +283,7 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 	case ask.ShapeChoose:
 		c.rows = questionRows(q.Options)
 		c.sel = components.NewNoteSelect(questionTitle, selectRows(c.rows))
+		c.sel.FoldNote = true
 		c.sel.Select.MaxLines = body
 		c.sel.Select.CancelLabel = questionWayOut
 		c.sel.Actions = c.offers()
@@ -290,6 +291,7 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 		c.rows = questionRows(q.Options)
 		c.multi = components.NewMultiSelect(questionTitle, selectRows(c.rows))
 		c.multi.Note = components.NewNoteBox()
+		c.multi.Note.Fold = true
 		c.multi.MaxLines = body
 		c.multi.CancelLabel = questionWayOut
 		c.multi.TakeVerb = "choose"
@@ -297,6 +299,7 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 	case ask.ShapeConfirm:
 		c.conf = &components.Confirm{Prompt: firstLine(q.Question)}
 		c.note = components.NewNoteBox()
+		c.note.Fold = true
 	case ask.ShapeText:
 		// No options above the field: the answer is the note, so the card
 		// opens with the keyboard already in it.

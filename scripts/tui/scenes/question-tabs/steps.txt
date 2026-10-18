@@ -28,6 +28,14 @@ keys v
 snap 05-long "in the checkout already"
 keys Escape
 snap 06-back "1 of 3"
+# The note is not drawn until its key opens it: the foot's `[tab] note or list`
+# is the only trace of it above, and pressing it draws the field. Pressing it
+# again hands the keyboard back to the list and, the field being empty, folds
+# it away again (docs/interface/principles.md#fold-never-hide).
+keys Tab
+snap 06a-note "┄ note (optional)"
+keys Tab
+snap 06b-folded "1 of 3" "[tab] note or list"
 # Answering steps to the next question still open, so a reader working through
 # three of them presses no movement key at all. The mark on the first turns and
 # the word follows it.

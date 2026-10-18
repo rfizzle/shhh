@@ -18,8 +18,6 @@
 │   2. Postgres          one more service to run                                                                                   9 files │
 │   3. ⊘ Redis                                                                                                   no client in this project │
 │   4. Something else …  answer in your own words                                                                                          │
-│ ┄ note (optional)                                                                                                                        │
-│   (none)                                                                                                                                 │
 │ [tab] note or list · [enter] confirm · [v] the full answer · [?] keys · [esc] back to the draft — the question waits                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -36,7 +34,7 @@
 │ [tab] note or list · [enter] confirm · [v] the full answer · [esc] back to the draft — the question waits                                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-· pick several · the boxes, with the same field under them
+· pick several · the boxes, and the note only once its key opens it
 ╭─ Question ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮
 │ Which packages should the flag reach?                                                                                                    │
 │                                                                                                                                          │
@@ -44,8 +42,6 @@
 │   [ ] internal/cli                                                                                                                       │
 │   [ ] internal/ui/chat                                                                                                                   │
 │   [ ] Something else …                                                                                                                   │
-│ ┄ note (optional)                                                                                                                        │
-│   (none)                                                                                                                                 │
 │ [tab] note or list · [space] toggle · [a] all/none · [v] the full answer · [enter] choose (0) · [?] keys                                 │
 │ [esc] back to the draft — the question waits                                                                                             │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -61,8 +57,6 @@
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
 Should the migration be reversible?  [y/N]
-┄ note (optional)
-  (none)
 [y] yes · [N] no — the default · [tab] note · [?] keys
 
 · landing on a half-typed sentence · one key, and it is the handover
@@ -73,15 +67,11 @@ Should the migration be reversible?  [y/N]
 │   2. Postgres          one more service to run                                                                                   9 files │
 │   3. ⊘ Redis                                                                                                   no client in this project │
 │   4. Something else …  answer in your own words                                                                                          │
-│ ┄ note (optional)                                                                                                                        │
-│   (none)                                                                                                                                 │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the yes-or-no on the same sentence · the answer pair goes with the letters
 Should the migration be reversible?
-┄ note (optional)
-  (none)
 [ctrl+space/ctrl+y] answer it · other keys type into the draft
 
 · the free answer on the same sentence · the field draws no cursor until the handover
@@ -134,9 +124,9 @@ Should the migration be reversible?
     ✗ go test ./internal/agent/... failing · exit 1 · 21s                                   │                                                   
                                                                                             │                                                   
                                                                                             │                                                   
+                                                                                            │                                                   
+                                                                                            │                                                   
   Should the migration be reversible?  [y/N]                                                                                                    
-  ┄ note (optional)                                                                                                                             
-    (none)                                                                                                                                      
   [y] yes · [N] no — the default · [tab] note · [?] keys                                                                                        
   ──── DECISION 1/1 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
@@ -179,10 +169,12 @@ Should the migration be reversible?
 · pick one · the same terminal, and the card has all of it
    shhh chat · gpt-4o                                                                                                                           
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
-    ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit                                                                        1.2s      
-      Locate the round accounting                                                                                                               
                                                                                                                                                 
                                                                                                                                                 
+    ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit                                                                        1.2s  ┃   
+      Locate the round accounting                                                                                                           ┃   
+                                                                                                                                            ┃   
+                                                                                                                                            ┃   
                                                                                                                                             ┃   
    ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...                                                         exit 1 · 22s  ┃   
       Thread the sentinel through the loop                                                                                                  ┃   
@@ -203,8 +195,6 @@ Should the migration be reversible?
   │   2. Postgres          one more service to run                                                                                   9 files │  
   │   3. ⊘ Redis                                                                                                   no client in this project │  
   │   4. Something else …  answer in your own words                                                                                          │  
-  │ ┄ note (optional)                                                                                                                        │  
-  │   (none)                                                                                                                                 │  
   │ [tab] note or list · [enter] confirm · [v] the full answer · [?] keys · [esc] back to the draft — the question waits                     │  
   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  
 
@@ -217,8 +207,6 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mPostgres␛[m          ␛[38;5;244mone more service to run␛[m                                                                                   ␛[38;5;254m9 files␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;244m⊘ Redis␛[m                                                                                                   ␛[38;5;244mno client in this project␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m                                                                                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m                     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -235,7 +223,7 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m                                ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-· pick several · the boxes, with the same field under them
+· pick several · the boxes, and the note only once its key opens it
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mQuestion ␛[m␛[38;5;254m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mWhich packages should the flag reach?␛[m                                                                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                                                          ␛[38;5;254m│␛[m
@@ -243,8 +231,6 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m internal/cli                                                                                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m internal/ui/chat                                                                                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m choose (0)␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m                                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
@@ -260,8 +246,6 @@ Should the migration be reversible?
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
 ␛[38;5;254mShould the migration be reversible?␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
-␛[38;5;244m┄ note (optional)␛[m
-  ␛[38;5;244m(none)␛[m
 ␛[38;5;254m[y]␛[m␛[38;5;244m yes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m␛[38;5;244m no — the default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
 
 · landing on a half-typed sentence · one key, and it is the handover
@@ -272,15 +256,11 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mPostgres␛[m          ␛[38;5;244mone more service to run␛[m                                                                                   ␛[38;5;254m9 files␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;244m⊘ Redis␛[m                                                                                                   ␛[38;5;244mno client in this project␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m                                                                                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m · other keys type into the draft␛[m                                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the yes-or-no on the same sentence · the answer pair goes with the letters
 ␛[38;5;254mShould the migration be reversible?␛[m
-␛[38;5;244m┄ note (optional)␛[m
-  ␛[38;5;244m(none)␛[m
 ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m · other keys type into the draft␛[m
 
 · the free answer on the same sentence · the field draws no cursor until the handover
@@ -333,9 +313,9 @@ Should the migration be reversible?
     ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                                   ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m                                                   
+                                                                                            ␛[38;5;244m│␛[m                                                   
+                                                                                            ␛[38;5;244m│␛[m                                                   
   ␛[38;5;254mShould the migration be reversible?␛[m  ␛[38;5;244m[y/␛[38;5;254;1mN␛[38;5;244;22m]␛[m                                                                                                    
-  ␛[38;5;244m┄ note (optional)␛[m                                                                                                                             
-    ␛[38;5;244m(none)␛[m                                                                                                                                      
   ␛[38;5;254m[y]␛[38;5;244m yes · ␛[38;5;254m[N]␛[38;5;244m no — the default · ␛[38;5;254m[tab]␛[38;5;244m note · ␛[38;5;254m[?]␛[38;5;244m keys␛[m                                                                                        
   ␛[38;5;244m────␛[m ␛[38;5;254;1mDECISION 1/1␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[38;5;244m╭─␛[m ␛[38;5;254;1m⏸ 1 waiting␛[m ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
@@ -378,10 +358,12 @@ Should the migration be reversible?
 · pick one · the same terminal, and the card has all of it
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · gpt-4o␛[m                                                                                                                           
   ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
-    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m 3 files in internal/agent/ · searched ErrRoundLimit␛[m                                                                        ␛[38;5;244m1.2s␛[m      
-      ␛[38;5;254mLocate the round accounting␛[m                                                                                                               
                                                                                                                                                 
                                                                                                                                                 
+    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m 3 files in internal/agent/ · searched ErrRoundLimit␛[m                                                                        ␛[38;5;244m1.2s␛[m  ␛[38;5;244m┃␛[m   
+      ␛[38;5;254mLocate the round accounting␛[m                                                                                                           ␛[38;5;244m┃␛[m   
+                                                                                                                                            ␛[38;5;244m┃␛[m   
+                                                                                                                                            ␛[38;5;244m┃␛[m   
                                                                                                                                             ␛[38;5;244m┃␛[m   
    ␛[38;5;254m▎✗␛[m ␛[38;5;254mwrote␛[m ␛[38;5;244minternal/agent/loop.go · ran go test ./internal/agent/...␛[m                                                         ␛[38;5;254mexit 1␛[38;5;244m · 22s␛[m  ␛[38;5;244m┃␛[m   
       ␛[38;5;254mThread the sentinel through the loop␛[m                                                                                                  ␛[38;5;244m┃␛[m   
@@ -402,7 +384,5 @@ Should the migration be reversible?
   ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[38;5;254mPostgres␛[m          ␛[38;5;244mone more service to run␛[m                                                                                   ␛[38;5;254m9 files␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m   ␛[38;5;244m3. ⊘ Redis␛[m                                                                                                   ␛[38;5;244mno client in this project␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m                                                                                          ␛[38;5;254m│␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                                                        ␛[38;5;254m│␛[m  
-  ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                                 ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[38;5;244m note or list · ␛[38;5;254m[enter]␛[38;5;244m confirm · ␛[38;5;254m[v]␛[38;5;244m the full answer · ␛[38;5;254m[?]␛[38;5;244m keys · ␛[38;5;254m[esc]␛[38;5;244m back to the draft — the question waits␛[m                     ␛[38;5;254m│␛[m  
   ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  

@@ -24,6 +24,8 @@ type NoteSelect struct {
 	Select    Select
 	Note      textarea.Model
 	FocusNote bool
+	// FoldNote draws nothing for an empty note the reader has not opened.
+	FoldNote bool
 	// Require refuses an empty note whatever row the pointer is on, for a
 	// card whose whole answer is the note — a question asked as free text
 	// has no rows for RequireNote to sit on, and one that says a note is
@@ -142,7 +144,7 @@ func (s *NoteSelect) View(width int) string {
 	// goes while the draft holds the keyboard, so it draws as a blurred one
 	// until the handover: two cursors on one screen claim one keyboard twice
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-	tail := noteFieldRows(&s.Note, "", s.FocusNote && !s.NotYetLive, s.noteMissing, s.Require, inner)
+	tail := noteFieldRows(&s.Note, "", s.FocusNote && !s.NotYetLive, s.FocusNote, s.FoldNote, s.noteMissing, s.Require, inner)
 	tail = append(tail, s.hintRowsFor(width)...)
 
 	// The query line is pinned above the list exactly as it is on a plain

@@ -18,8 +18,6 @@
 │ ❯ 1. SQLite            in th…  recommended · 3 files │
 │   2. Postgres          one more service to…  9 files │
 │   3. Something else …  answer in your own words      │
-│ ┄ note (optional)                                    │
-│   (none)                                             │
 │ [tab] note or list · [enter] confirm                 │
 │ [v] the full answer · [←→] the next question         │
 │ [?] keys                                             │
@@ -29,8 +27,6 @@
 · one answered · the mark turns and the tail counts what is still open
 ✓ 1  ▸ 2  · 3  · submit  2 of 3 · 2 unanswered
 Should the migration be reversible?  [y/N]
-┄ note (optional)
-  (none)
 [y] yes · [N] no — the default · [tab] note
 [←→] the next question · [?] keys
 
@@ -62,8 +58,6 @@ Should the migration be reversible?  [y/N]
 │ ❯ [ ] internal/agent                                 │
 │   [ ] internal/cli                                   │
 │   [ ] Something else …                               │
-│ ┄ note (optional)                                    │
-│   (none)                                             │
 │ [tab] note or list · [space] toggle · [a] all/none   │
 │ [v] the full answer · [←→] the next question         │
 │ [enter] choose (0) · [?] keys                        │
@@ -79,8 +73,6 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. SQLite            in th…  recommended · 3 files␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mPostgres␛[m          ␛[38;5;244mone more service to…␛[m  ␛[38;5;254m9 files␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[←→]␛[m␛[38;5;244m the next question␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m                                             ␛[38;5;254m│␛[m
@@ -90,8 +82,6 @@ Should the migration be reversible?  [y/N]
 · one answered · the mark turns and the tail counts what is still open
 ␛[38;5;254m✓ 1␛[m  ␛[1;38;5;254;48;5;237m▸ 2␛[m  ␛[38;5;244m· 3␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  2 of 3 · 2 unanswered␛[m
 ␛[38;5;254mShould the migration be reversible?␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
-␛[38;5;244m┄ note (optional)␛[m
-  ␛[38;5;244m(none)␛[m
 ␛[38;5;254m[y]␛[m␛[38;5;244m yes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m␛[38;5;244m no — the default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m note␛[m
 ␛[38;5;254m[←→]␛[m␛[38;5;244m the next question␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
 
@@ -123,8 +113,6 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m[ ]␛[m␛[48;5;237m ␛[38;5;254;48;5;237minternal/agent                                ␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m internal/cli                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[←→]␛[m␛[38;5;244m the next question␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m choose (0)␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m                        ␛[38;5;254m│␛[m

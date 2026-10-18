@@ -28,10 +28,20 @@ import (
 // neither the act nor its target. The refusal still outranks it — that is the
 // field reporting on itself, which no host's word replaces.
 //
+// A host that folds an empty field draws nothing for it until the reader has
+// opened it or it holds words: the foot's note key is the trace, and nothing
+// is hidden because an empty note swallowed nothing. A required note, and one
+// the confirm was refused for, are never folded — the first is what the label
+// says up front, the second is the refusal itself
+// (docs/interface/principles.md#fold-never-hide).
+//
 // Unfocused it is a plain-text echo rather than the textarea's own view: the
 // widget paints a cursor wherever it is drawn, and a cursor on a field the
 // keyboard is not in would say the next character goes there.
-func noteFieldRows(field *textarea.Model, own string, focused, missing, required bool, inner int) []string {
+func noteFieldRows(field *textarea.Model, own string, focused, held, fold, missing, required bool, inner int) []string {
+	if fold && !held && !missing && !required && field.Value() == "" {
+		return nil
+	}
 	label, style := "note (optional)", sty.dim
 	if required {
 		label = "note (required)"
@@ -84,6 +94,8 @@ type NoteBox struct {
 	// not it. Empty is the note every other host opens.
 	label   string
 	missing bool
+	// Fold draws nothing for an empty field the reader has not opened.
+	Fold bool
 }
 
 // NewNoteBox builds the field blurred, with the same single-line shape and
@@ -141,5 +153,5 @@ func (n *NoteBox) rows(inner int) []string { return n.RowsLive(inner, true) }
 // the draft's cursor is the only one on screen
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (n *NoteBox) RowsLive(inner int, live bool) []string {
-	return noteFieldRows(&n.Field, n.label, n.Focused && live, n.missing, n.Required, inner)
+	return noteFieldRows(&n.Field, n.label, n.Focused && live, n.Focused, n.Fold, n.missing, n.Required, inner)
 }

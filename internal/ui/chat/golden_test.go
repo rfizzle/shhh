@@ -5464,7 +5464,7 @@ func TestGolden_QuestionCard(t *testing.T) {
 					m.question.openNote()
 					return m
 				})},
-			{Label: "pick several · the boxes, with the same field under them",
+			{Label: "pick several · the boxes, and the note only once its key opens it",
 				View: build(`{"question":"Which packages should the flag reach?","shape":"choose_many","options":[
 					{"label":"internal/agent"},{"label":"internal/cli"},{"label":"internal/ui/chat"}]}`, nil)},
 			{Label: "a short answer in your own words · the field and no rows above it",
