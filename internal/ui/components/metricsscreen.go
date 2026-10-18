@@ -34,8 +34,8 @@ import (
 
 const (
 	// metricsIndent is the column the table and the blocks start at, the same
-	// one the config screen's settings list uses.
-	metricsIndent = 2
+	// one every screen's body starts at (screenMargin).
+	metricsIndent = screenMargin
 	// metricsGap is the gutter between two columns of the table. Two spaces is
 	// what keeps a right-aligned number from touching the one before it.
 	metricsGap = 2
@@ -162,12 +162,10 @@ func (m *MetricsScreen) SetSize(_, height int) { m.maxLines = height }
 // View renders the screen: the shared chrome, with the model table and the
 // meter blocks in the rows it leaves.
 //
-// The footer is the one the other eight have. This screen went without one on
-// the reading that a surface with a single key has nothing to put at its
-// foot, and what that cost was a reader crossing the family: eight screens
-// state the way out on the bottom row and this one stated it only at the top,
-// so the row the eye had learned to go to was blank on exactly the screen
-// with the least else on it
+// The footer is the one the other screens have. A surface with a single key
+// still states it at the foot: that is where the family states the way out,
+// and the row the eye has learned to go to would otherwise be blank on exactly
+// the screen with the least else on it
 // (docs/interface/surfaces.md#the-supporting-screens).
 func (m *MetricsScreen) View(width int) string {
 	if width <= 0 {
@@ -179,14 +177,12 @@ func (m *MetricsScreen) View(width int) string {
 		view(width, func(budget int) []string { return m.bodyRows(width, budget) })
 }
 
-// header names the command and what it is over, with the total spend beside
-// the keys the screen has. The spend sits with the key rather than in the
-// subject because it is the answer the reader came for, and this is where the
+// header names the command and what it is over, with the total spend at the
+// right end. The spend sits there rather than in the subject because it is the answer the reader came for, and this is where the
 // eye already goes for the state of a surface.
 func (m *MetricsScreen) header() screenHeader {
 	h := screenHeader{
 		left:  []RailSegment{screenTitle("shhh metrics")},
-		keys:  screenHeaderKeys(),
 		tally: sty.body.Render(m.Spend),
 	}
 	if m.Subject != "" {

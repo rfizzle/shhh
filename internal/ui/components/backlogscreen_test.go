@@ -335,11 +335,20 @@ func TestBacklogScreen_StateKeysAreInertWhileATurnWorks(t *testing.T) {
 	}
 }
 
-// The foot is one row at every width, and `[?]` is where the rest are: the
-// row carries the keys pressed every time, the header keeps the way out, and
-// the register still lists every key the screen answers.
+// The foot is one row at every golden width, and `[?]` is where the rest are:
+// the row carries the keys pressed every time and the way out, and the
+// register still lists every key the screen answers. Narrower than the
+// goldens the row wraps and sheds neither the pointer's keys nor esc.
 func TestBacklogScreen_FootIsOneRow(t *testing.T) {
-	for _, width := range append([]int{40}, goldenWidths...) {
+	narrowScreen := goldenBacklogScreen()
+	narrowScreen.sync()
+	narrow := ansi.Strip(strings.Join(narrowScreen.foot().rows(40), "\n"))
+	for _, want := range []string{"[↑↓/jk] move", "[enter] read", "[?] keys", "[esc] back"} {
+		if !strings.Contains(narrow, want) {
+			t.Errorf("at 40 columns the foot sheds %q:\n%s", want, narrow)
+		}
+	}
+	for _, width := range goldenWidths {
 		b := goldenBacklogScreen()
 		b.sync()
 		rows := b.foot().rows(width)
@@ -347,13 +356,13 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 			t.Fatalf("at %d columns the foot is %d rows:\n%s", width, len(rows), strings.Join(rows, "\n"))
 		}
 		foot := ansi.Strip(rows[0])
-		for _, want := range []string{"[↑↓/jk] move", "[enter] read"} {
+		for _, want := range []string{"[↑↓/jk] move", "[enter] read", "[?] keys", "[esc] back"} {
 			if !strings.Contains(foot, want) {
 				t.Errorf("at %d columns the foot sheds %q: %s", width, want, foot)
 			}
 		}
-		if width >= 80 {
-			for _, want := range []string{"[/] filter", "[e] edit", "[n] new", "[esc] back"} {
+		if width >= 110 {
+			for _, want := range []string{"[/] filter", "[e] edit", "[n] new", "[?] keys", "[esc] back"} {
 				if !strings.Contains(foot, want) {
 					t.Errorf("at %d columns the foot sheds %q: %s", width, want, foot)
 				}
@@ -364,7 +373,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 	// The archive's row carries its own verb in the editor's place, and at
 	// every width: its words shorten before anything but the way out and the
 	// new item gives ground.
-	for _, width := range append([]int{40}, goldenWidths...) {
+	for _, width := range goldenWidths {
 		b := goldenBacklogScreen()
 		b.Update(key("tab"))
 		rows := b.foot().rows(width)
@@ -373,7 +382,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 		}
 		foot := ansi.Strip(rows[0])
 		want := "[s] put it back"
-		if width >= 80 {
+		if width >= 110 {
 			want = "[s] put it back in the backlog"
 		}
 		if width > 40 && !strings.Contains(foot, want) {

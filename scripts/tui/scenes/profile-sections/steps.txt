@@ -54,7 +54,7 @@ snap 11b-on-restrictions "❯ Restrictions"
 keys e
 snap 12-mine "Restrictions · edited by you"
 keys R
-snap 13-whole-note "a note on the whole draft" "you edited, is kept" "[R] again to include the sections you edited"
+snap 13-whole-note "a note on the whole draft" "edited, is kept" "[R] again to include the sections you edited"
 keys "terser throughout"
 keys Enter
 snap 14-whole "Whole draft · redrafted on your note" "Restrictions kept as you" "[esc] take it back from every section it changed"

@@ -27,16 +27,14 @@ func headerOf(view string) string {
 	return ansi.Strip(strings.SplitN(view, "\n", 2)[0])
 }
 
-// The drop order, asserted once for the whole family rather than once per
-// screen. Every take-over screen's header gives the same ground in the same
-// order as the terminal narrows: the reading it is counting goes, and the
-// stated way out of the surface stays (invariant 5). Three of these screens
-// used to do the opposite, and nothing in their own tests could see it — each
-// was self-consistent, and only the family side by side showed the
-// disagreement. Two more joined it from a chrome of their own, and the reason
-// this list is the thing to add a screen to is that they arrived keeping the
-// order without anyone checking.
-func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
+// The chrome, asserted once for the whole family rather than once per screen.
+// Every take-over screen's header is its name and its state and carries no
+// key; the keys are offered once, in the foot, and the stated way out of the
+// surface is there at every width (invariant 5). The reason this list is the
+// thing to add a screen to is that a screen which drew its own header keys
+// would be self-consistent, and only the family side by side shows the
+// disagreement.
+func TestScreenChrome_TheHeaderCarriesNoKeysAndTheFootKeepsTheWayOut(t *testing.T) {
 	profile := func() *ProfileScreen {
 		p := NewProfileScreen("/agents new")
 		p.Subject = "a coding agent · reviewer tester"
@@ -60,11 +58,11 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 	}{
 		{"doctor", 44, "[esc] back", "6 checks", func(w int) string { return doctorScreen().View(w) }},
 		{"metrics", 44, "[esc] back", "3 models", func(w int) string { return metricsScreen().View(w) }},
-		{"config", 44, "[esc] back", "config.toml", func(w int) string { return configFixture().View(w) }},
+		{"config", 44, "[esc] leave", "config.toml", func(w int) string { return configFixture().View(w) }},
 		{"history", 44, "[esc] back", "4 entries", func(w int) string { return historyScreen().View(w) }},
-		{"rate", 30, "[esc] back", "1 of 3", func(w int) string { return rateScreen().View(w) }},
+		{"rate", 30, "[esc] stop", "1 of 3", func(w int) string { return rateScreen().View(w) }},
 		{"context", 44, "[esc] back", "this session", func(w int) string { return context.View(w) }},
-		{"profile", 44, "[esc] leave", "reviewer tester", func(w int) string { return profile().View(w) }},
+		{"profile", 44, "[esc] nothing is drafted", "reviewer tester", func(w int) string { return profile().View(w) }},
 		{"snippets", 44, "[esc] back", "3 snippets", func(w int) string { return snippetScreen().View(w) }},
 		{"chats", 44, "[esc] back", "3 conversations", func(w int) string { return chatScreen().View(w) }},
 		{"safety", 36, "[esc] back", "sandbox-exec", func(w int) string {
@@ -78,15 +76,19 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 		{"tools", 30, "[esc] back", "2 of 4 up", func(w int) string { return toolsScreen(0).View(w) }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			head := headerOf(tc.view(tc.narrow))
-			if !strings.Contains(head, tc.wayOut) {
-				t.Fatalf("a narrow header dropped the way out: %q", head)
+			narrow := tc.view(tc.narrow)
+			if head := headerOf(narrow); strings.Contains(head, "[") {
+				t.Fatalf("a header carries a key: %q", head)
 			}
-			if strings.Contains(head, tc.tally) {
-				t.Fatalf("a narrow header kept the tally instead: %q", head)
+			if !strings.Contains(ansi.Strip(narrow), tc.wayOut) {
+				t.Fatalf("a narrow screen dropped the way out:\n%s", ansi.Strip(narrow))
 			}
-			if wide := headerOf(tc.view(130)); !strings.Contains(wide, tc.tally) {
-				t.Fatalf("a wide header is missing the tally: %q", wide)
+			wide := tc.view(130)
+			if head := headerOf(wide); !strings.Contains(head, tc.tally) {
+				t.Fatalf("a wide header is missing %q: %q", tc.tally, head)
+			}
+			if head := headerOf(wide); strings.Contains(head, "[") {
+				t.Fatalf("a wide header carries a key: %q", head)
 			}
 		})
 	}
@@ -96,8 +98,8 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 // header that has given up its own name has stopped being one.
 func TestScreenHeader_TheTitleIsClippedRatherThanDropped(t *testing.T) {
 	h := screenHeader{
-		left: []RailSegment{screenTitle("shhh doctor"), screenField("10 checks")},
-		keys: "[esc] back",
+		left:  []RailSegment{screenTitle("shhh doctor"), screenField("10 checks")},
+		tally: sty.dim.Render("0.4s"),
 	}
 	row := ansi.Strip(h.row(24))
 	if !strings.HasPrefix(row, "shhh d") {
@@ -116,25 +118,23 @@ func TestScreenHeader_TheTitleIsClippedRatherThanDropped(t *testing.T) {
 func TestScreenHeader_ADroppedFieldTakesItsSeparator(t *testing.T) {
 	h := screenHeader{
 		left: []RailSegment{screenTitle("shhh config"), screenField("~/.config/shhh/config.toml")},
-		keys: "[?] keys · [esc] back",
 	}
-	row := ansi.Strip(h.row(40))
+	row := ansi.Strip(h.row(30))
 	if strings.Contains(row, "shhh config ·") {
 		t.Fatalf("the dropped field left its separator behind: %q", row)
 	}
 }
 
-// A screen with nothing to count states its keys and nothing else — a style
+// A screen with nothing to count states its name and nothing else — a style
 // renders a pair of escapes around an empty string, and a header that read
-// the tally as "present" would draw the separator anyway.
-func TestScreenHeader_AnEmptyTallyDrawsNoSeparator(t *testing.T) {
+// the tally as "present" would draw a gap anyway.
+func TestScreenHeader_AnEmptyTallyDrawsNoGap(t *testing.T) {
 	h := screenHeader{
 		left:  []RailSegment{screenTitle("shhh metrics")},
-		keys:  "[esc] back",
 		tally: sty.body.Render(""),
 	}
-	if row := ansi.Strip(h.row(80)); !strings.HasSuffix(row, "[esc] back") {
-		t.Fatalf("an empty tally left a separator on the row: %q", row)
+	if row := ansi.Strip(h.row(80)); row != "shhh metrics" {
+		t.Fatalf("an empty tally left a gap on the row: %q", row)
 	}
 }
 

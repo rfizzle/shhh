@@ -304,7 +304,7 @@ func alertGlyph(a AlertsItem) string {
 // header names the surface and what it counts: the standing and the answered,
 // two fields because they are two facts, as the rail's marker says them.
 func (s *AlertsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/alerts")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
+	h := screenHeader{left: []RailSegment{screenTitle("/alerts")}}
 	standing := 0
 	for _, a := range s.Alerts {
 		if !a.Alert.Superseded {

@@ -292,7 +292,7 @@ func (s *StepsScreen) header() screenHeader {
 	if s.Plan {
 		title = "/plan"
 	}
-	h := screenHeader{left: []RailSegment{screenTitle(title)}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
+	h := screenHeader{left: []RailSegment{screenTitle(title)}}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}

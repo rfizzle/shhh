@@ -65,6 +65,9 @@ func (b backlogFoot) rows(width int) []string {
 		showing:  b.keys,
 		legend:   b.lettersLegend(),
 	}
+	// `?` is a letter on a row being typed into and a picker answers its own
+	// keys.
+	f.inert = b.filtering || b.picker != nil
 	if b.confirm != nil {
 		f.taken = b.confirm.View(width)
 	}
@@ -147,19 +150,20 @@ func filterOffers(width int) []KeyOffer {
 	return rungs[len(rungs)-1]
 }
 
-// listOffers is the list's key row, and it is one row at every width: the
-// keys a reader presses every time the screen is open — move, read, filter,
-// edit, a new item and the way out. Every other key is behind the header's
-// `[?] keys`, which the header keeps at every width, so a foot that also
-// listed the tabs and every verb was offering the register twice
+// listOffers is the list's key row, and it is one row down to sixty columns:
+// the keys a reader presses every time the screen is open — move, read,
+// filter, edit, a new item and the way out. Every other key is behind the
+// foot's `[?] keys`, so a foot that also listed the tabs and every verb was
+// offering the register twice
 // (docs/interface/departures.md#the-backlog-screens-layout-was-decided-in-the-binary).
 //
 // Where even those will not fit, whole segments give ground, the way the
-// history browser's row does (invariant 4): the way out first, because the
-// header states it at every width; then the two verbs, which `[?]` carries in
-// full, then the filter. On the archive the row's verb is putting an item
-// back, and its words shorten before it is shed, since it is the one thing
-// that tab is for. The pointer's keys and reading the item are never shed.
+// history browser's row does (invariant 4): the two verbs, which `[?]`
+// carries in full, then the filter. On the archive the row's verb is putting
+// an item back, and its words shorten before it is shed, since it is the one
+// thing that tab is for: there the filter goes first, then the pointer's
+// reminder. Reading the item and the way out are never shed; below sixty
+// columns the row wraps instead of losing one.
 func (b backlogFoot) listOffers(width int) []KeyOffer {
 	out := []KeyOffer{keyOffer(keys.Backlog.Move)}
 	if b.row != nil {
@@ -179,19 +183,26 @@ func (b backlogFoot) listOffers(width int) []KeyOffer {
 		out = append(out, wayOut("back"))
 	}
 
-	way := keys.Bracket(keys.Select.Cancel)
 	edit, fresh := keys.Bracket(keys.Backlog.Edit), keys.Bracket(keys.Backlog.New)
 	status := keys.Bracket(keys.Backlog.Status)
+	filter, move := keys.Bracket(keys.Backlog.Filter), keys.Bracket(keys.Backlog.Move)
+	short := reworded(without(out, fresh), status, "put it back")
 	rungs := [][]KeyOffer{
 		out,
-		without(out, way),
-		without(out, way, fresh),
-		reworded(without(out, way, fresh), status, "put it back"),
-		without(out, way, fresh, edit, status),
-		without(out, way, fresh, edit, status, keys.Bracket(keys.Backlog.Filter)),
+		without(out, fresh),
+		short,
+		without(out, fresh, edit, status),
+		without(out, fresh, edit, status, filter),
 	}
+	if b.archived {
+		// The tab's one verb outlasts the filter and then the pointer's
+		// reminder, which `[?]` carries in full.
+		rungs = append(rungs[:3], without(short, filter), without(short, filter, move))
+	}
+	// The row is measured with the `[?] keys` the foot adds in front of the
+	// way out. No rung sheds esc: it is the last thing the row gives up.
 	for _, rung := range rungs {
-		if lipgloss.Width(keyOffers(rung)) <= width {
+		if lipgloss.Width(keyOffers(withKeysOffer(rung))) <= width {
 			return rung
 		}
 	}

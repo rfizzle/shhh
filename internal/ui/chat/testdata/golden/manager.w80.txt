@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · as it opens · the pointer on the first process running
-/ps · 2 processes running · 0 calls running            [?] keys · [esc] back
+/ps · 2 processes running · 0 calls running
 ────────────────────────────────────────────────────────────────────────────
 
 processes
@@ -27,10 +27,10 @@ web                                                                 running…
   runs on     host
   last line   GET / 200 4ms
 
-[↑↓/jk] move · [enter] open · [d] stop · [esc] back
+[↑↓/jk] move · [enter] open · [d] stop · [?] keys · [esc] back
 
 · d · the stop's question
-/ps · 2 processes running · 0 calls running            [?] keys · [esc] back
+/ps · 2 processes running · 0 calls running
 ────────────────────────────────────────────────────────────────────────────
 
 processes
@@ -49,7 +49,7 @@ web                                                                 running…
 stop the process web?  [y] stop · [k] kill
 
 · esc, then enter · the process opened onto its output and its errors
-/ps · 2 processes running · 0 calls running            [?] keys · [esc] back
+/ps · 2 processes running · 0 calls running
 ────────────────────────────────────────────────────────────────────────────
 
 web                                                                 running…
@@ -67,10 +67,10 @@ web                                                                 running…
     process web (stderr): bytes 0-31 of 31 (running)
     warn: a deprecated option
 
-[↑↓/jk] scroll · [d] stop · [esc] back to the list
+[↑↓/jk] scroll · [d] stop · [?] keys · [esc] back to the list
 
 · a round's two calls · the search stopped by you, the command running
-/ps · 2 processes running · 1 call running             [?] keys · [esc] back
+/ps · 2 processes running · 1 call running
 ────────────────────────────────────────────────────────────────────────────
 
 processes
@@ -87,10 +87,10 @@ search                                                      cancelled by you
   ran for     41s
   runs on     host
 
-[enter] open · [esc] back
+[enter] open · [?] keys · [esc] back
 
 · the command opened · its arguments whole and its output so far
-/ps · 2 processes running · 1 call running             [?] keys · [esc] back
+/ps · 2 processes running · 1 call running
 ────────────────────────────────────────────────────────────────────────────
 
 execute_command                                                     running…
@@ -107,7 +107,7 @@ execute_command                                                     running…
   output so far
     ok      internal/agent    3.2s
 
-[↑↓/jk] scroll · [d] stop · [esc] back to the list
+[↑↓/jk] scroll · [d] stop · [?] keys · [esc] back to the list
 
 · the panel it leaves · the way out, on one row
 ────────────────────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ ps · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the first process running
-␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 0 calls running␛[m            ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 0 calls running␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94mprocesses␛[m
@@ -132,10 +132,10 @@ ps · [esc] back
   ␛[38;5;246mruns on     ␛[m␛[38;5;252mhost␛[m
   ␛[38;5;246mlast line   ␛[m␛[38;5;252mGET / 200 4ms␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m stop␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m stop␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · d · the stop's question
-␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 0 calls running␛[m            ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 0 calls running␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94mprocesses␛[m
@@ -154,7 +154,7 @@ ps · [esc] back
 ␛[38;5;252mstop the process web?␛[m  ␛[38;5;245m[y]␛[m stop␛[38;5;245m · ␛[m␛[38;5;245m[k]␛[m kill
 
 · esc, then enter · the process opened onto its output and its errors
-␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 0 calls running␛[m            ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 0 calls running␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;97mweb␛[m                                                                 ␛[38;5;245mrunning…␛[m
@@ -172,10 +172,10 @@ ps · [esc] back
     ␛[38;5;252mprocess web (stderr): bytes 0-31 of 31 (running)␛[m
     ␛[38;5;252mwarn: a deprecated option␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m stop␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m stop␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
 
 · a round's two calls · the search stopped by you, the command running
-␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 1 call running␛[m             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 1 call running␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94mprocesses␛[m
@@ -192,10 +192,10 @@ ps · [esc] back
   ␛[38;5;246mran for     ␛[m␛[38;5;252m41s␛[m
   ␛[38;5;246mruns on     ␛[m␛[38;5;252mhost␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · the command opened · its arguments whole and its output so far
-␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 1 call running␛[m             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 1 call running␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;97mexecute_command␛[m                                                     ␛[38;5;245mrunning…␛[m
@@ -212,7 +212,7 @@ ps · [esc] back
   ␛[38;5;246moutput so far␛[m
     ␛[38;5;252mok      internal/agent    3.2s␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m stop␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m stop␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
 
 · the panel it leaves · the way out, on one row
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m

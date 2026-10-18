@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · every section in force · each ends on the command that changes it
-/safety · manual · sandbox-exec        [?] keys · [esc] back
+/safety · manual · sandbox-exec
 ────────────────────────────────────────────────────────────
 
 MODE AND POLICY
@@ -83,10 +83,10 @@ TOOLS
     asks       fetch, spawn_agent
   changed with /permissions, which decides which tiers ask
 
-[esc] back               a reading · nothing here changes it
+[?] keys · [esc] back    a reading · nothing here changes it
 
 · a pane shorter than the reading · the ends name the sections they fold
-/safety · manual · sandbox-exec        [?] keys · [esc] back
+/safety · manual · sandbox-exec
 ────────────────────────────────────────────────────────────
 
 ↑ 1 more · mode and policy
@@ -109,10 +109,10 @@ CONTAINMENT
 
 ↓ 5 more · web · what the checkout was let load · mcp · sec…
 
-[↑↓/jk] scroll · [esc] back
+[↑↓/jk] scroll · [?] keys · [esc] back
 
 · containment unavailable, trust withheld, no servers · stated, not left out
-/safety · manual · unconfined          [?] keys · [esc] back
+/safety · manual · unconfined
 ────────────────────────────────────────────────────────────
 
 MODE AND POLICY
@@ -181,11 +181,11 @@ TOOLS
     asks       fetch, spawn_agent
   changed with /permissions, which decides which tiers ask
 
-[esc] back               a reading · nothing here changes it
+[?] keys · [esc] back    a reading · nothing here changes it
 
 ── ansi ────────────────────────────────────────────────────
 · every section in force · each ends on the command that changes it
-␛[1;97m/safety␛[m␛[38;5;245m · manual · sandbox-exec␛[m        ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/safety␛[m␛[38;5;245m · manual · sandbox-exec␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;246mMODE AND POLICY␛[m
@@ -257,10 +257,10 @@ TOOLS
 ␛[38;5;252m    asks       fetch, spawn_agent␛[m
 ␛[38;5;245m  changed with /permissions, which decides which tiers ask␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back␛[m               ␛[38;5;245ma reading · nothing here changes it␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m    ␛[38;5;245ma reading · nothing here changes it␛[m
 
 · a pane shorter than the reading · the ends name the sections they fold
-␛[1;97m/safety␛[m␛[38;5;245m · manual · sandbox-exec␛[m        ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/safety␛[m␛[38;5;245m · manual · sandbox-exec␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;245m↑ 1 more · mode and policy␛[m
@@ -283,10 +283,10 @@ TOOLS
 ␛[38;5;252m␛[m
 ␛[38;5;245m↓ 5 more · web · what the checkout was let load · mcp · sec…␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · containment unavailable, trust withheld, no servers · stated, not left out
-␛[1;97m/safety␛[m␛[38;5;245m · manual · unconfined␛[m          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/safety␛[m␛[38;5;245m · manual · unconfined␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;246mMODE AND POLICY␛[m
@@ -355,4 +355,4 @@ TOOLS
 ␛[38;5;252m    asks       fetch, spawn_agent␛[m
 ␛[38;5;245m  changed with /permissions, which decides which tiers ask␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back␛[m               ␛[38;5;245ma reading · nothing here changes it␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m    ␛[38;5;245ma reading · nothing here changes it␛[m

@@ -376,8 +376,8 @@ func TestReadingKeyListCountsWhatDoesNotFit(t *testing.T) {
 	if len(lines) != 8 {
 		t.Fatalf("the list ignored its bound: %d lines", len(lines))
 	}
-	if last := ansi.Strip(lines[len(lines)-1]); !strings.Contains(last, "more") {
-		t.Errorf("the last row does not say what it swallowed: %q", last)
+	if all := ansi.Strip(strings.Join(lines, "\n")); !strings.Contains(all, "more") {
+		t.Errorf("the list does not say what it swallowed: %q", all)
 	}
 }
 

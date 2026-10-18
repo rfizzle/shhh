@@ -100,14 +100,14 @@ func TestListScreen_DrawsTheFrame(t *testing.T) {
 		t.Fatal("no width draws nothing")
 	}
 	view := ansi.Strip(s.View(80))
-	for _, want := range []string{"/test", "[?] keys · [esc] back", "❯ one", "the row is one", "[esc] back"} {
+	for _, want := range []string{"/test", "❯ one", "the row is one", "[?] keys · [esc] back"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the frame is missing %q:\n%s", want, view)
 		}
 	}
 	s.keys = true
-	if head := ansi.Strip(strings.SplitN(s.View(80), "\n", 2)[0]); !strings.Contains(head, "[?] hide the keys") {
-		t.Fatalf("the open register should offer to hide itself: %q", head)
+	if foot := ansi.Strip(s.View(80)); !strings.Contains(foot, "[?] hide the keys") {
+		t.Fatalf("the open register should offer to hide itself:\n%s", foot)
 	}
 	if rows := (&testListScreen{}).listRows(nil, "nothing here", 40, 0); len(rows) != 1 || ansi.Strip(rows[0]) != "nothing here" {
 		t.Fatalf("an empty list should say its sentence: %q", rows)
@@ -134,7 +134,7 @@ func (s *testListScreen) sync() {
 func (s *testListScreen) chrome(width int) screenChrome {
 	offers := offersBeside(keyOffer(keys.Screen.Move), []KeyOffer{wayOut(backToPrompt)}, "", width)
 	return screenChrome{
-		header: screenHeader{left: []RailSegment{screenTitle("/test")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)},
+		header: screenHeader{left: []RailSegment{screenTitle("/test")}},
 		foot:   s.footer(offers, offers, "").rows(width),
 	}
 }

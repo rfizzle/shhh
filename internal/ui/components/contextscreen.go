@@ -53,8 +53,8 @@ const (
 	// row and read as part of the meter.
 	contextGridGap = 3
 	// contextIndent is the column both panels start at, the same one the
-	// metrics screen's table and blocks use.
-	contextIndent = 2
+	// every other screen's body does (screenMargin).
+	contextIndent = screenMargin
 	// contextLabelWidth is the legend's label column. It fits the longest
 	// category name the host has ("tool definitions") with a space after it.
 	contextLabelWidth = 18
@@ -68,7 +68,7 @@ const (
 	contextSwatchWidth = 2
 	// contextItemIndent is where an opened group's items start: far enough
 	// in that the run of them reads as belonging to the row above.
-	contextItemIndent = 6
+	contextItemIndent = screenMargin + 4
 )
 
 // ContextTone is which of the palette's existing jobs a category is drawn in.
@@ -311,17 +311,16 @@ func (c *ContextScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	return screenChrome{header: c.header(), maxLines: c.maxLines}.
+	return screenChrome{header: c.header(), foot: c.footer().rows(width), maxLines: c.maxLines}.
 		view(width, func(budget int) []string { return c.bodyRows(width, budget) })
 }
 
 // header names the surface and what it is a reading of, with the occupancy
-// beside the keys because it is the answer the reader came for, and this is
+// at the right end because it is the answer the reader came for, and this is
 // where the eye already goes for the state of a surface.
 func (c *ContextScreen) header() screenHeader {
 	h := screenHeader{
 		left:  []RailSegment{screenTitle("/context")},
-		keys:  headerKeyPair(keys.Context.List, keys.Context.Back, c.showKeys),
 		tally: c.pctStyle().Render(c.Tokens),
 	}
 	if c.Window != "" {
@@ -339,8 +338,6 @@ func (c *ContextScreen) bodyRows(width, budget int) []string {
 		rows = append(rows, "")
 		rows = append(rows, folds...)
 	}
-	rows = append(rows, "")
-	rows = append(rows, c.keyRows(width)...)
 	if budget <= 0 || len(rows) <= budget {
 		return rows
 	}
@@ -712,50 +709,19 @@ func (c *ContextScreen) itemRow(item ContextItem, width int) string {
 	return Clip(pad+label+bar+numbers, width)
 }
 
-// keyRows is the foot of the screen: the compact key row, or the whole
-// register in its place once `?` has been pressed.
-func (c *ContextScreen) keyRows(width int) []string {
-	if !c.showKeys {
-		return []string{Clip(contextKeyRow(width), width)}
-	}
-	offers := make([]KeyOffer, 0, len(keys.Context.All())+1)
+// footer is the keys the screen offers, or the whole register in their place
+// once `?` has been pressed. The way out answers to esc as well as to the
+// letter, and the register is where a key the compact row spells one way is
+// spelled both.
+func (c *ContextScreen) footer() keyFooter {
+	cancel := keyOfferAs(keys.Select.Cancel, backToPrompt)
+	register := make([]KeyOffer, 0, len(keys.Context.All())+1)
 	for _, b := range keys.Context.All() {
-		offers = append(offers, keyOffer(b))
+		register = append(register, keyOffer(b))
 	}
-	// The way out answers to esc as well as to the letter, and the register
-	// is where a key the compact row spells one way is spelled both.
-	offers = append(offers, keyOfferAs(keys.Select.Cancel, backToPrompt))
-	rows := make([]string, 0, len(offers))
-	for _, o := range offers {
-		for _, row := range packOffers([]KeyOffer{o}, max(width-2, 1)) {
-			rows = append(rows, "  "+row)
-		}
+	return keyFooter{
+		offers:   []KeyOffer{keyOffer(keys.Context.Move), keyOffer(keys.Context.Expand), cancel},
+		register: append(register, cancel),
+		showing:  c.showKeys,
 	}
-	return rows
-}
-
-// contextKeyRow is the surface's keys as one line, in the order the register
-// declares them, giving ground from the left as the terminal narrows. The way
-// out is the last thing on it and so the last thing to go: a takeover that
-// clipped its own exit would be holding the keyboard with nothing saying how
-// to give it back (invariant 5).
-//
-// `[?]` and the letter are not on it. The header already carries both, and a
-// frame that repeats a key row verbatim two rows down has spent a row saying
-// nothing — so the foot states the act in the phrase and under the key a
-// reader reaches for, which is what every other screen in the family does
-// (docs/interface/surfaces.md#the-supporting-screens).
-func contextKeyRow(width int) string {
-	parts := []KeyOffer{
-		keyOffer(keys.Context.Move),
-		keyOffer(keys.Context.Expand),
-		keyOfferAs(keys.Select.Cancel, backToPrompt),
-	}
-	for len(parts) > 1 {
-		if lipgloss.Width(keyOffers(parts)) <= width {
-			break
-		}
-		parts = parts[1:]
-	}
-	return keyOffers(parts)
 }

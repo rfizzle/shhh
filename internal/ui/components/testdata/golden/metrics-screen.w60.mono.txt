@@ -11,116 +11,116 @@
 
 ── layout ──────────────────────────────────────────────────
 · the surface · the table, the spend split, and the ratios under it
-shhh metrics                  $18.42 · [?] keys · [esc] back
+shhh metrics                                          $18.42
 ────────────────────────────────────────────────────────────
 
-  MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
-  gpt-5.2                 184   2.9M   318k  $12.80  640ms
-  claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms
-  gemini-3-flash           12    88k     7k  <$0.01  310ms
-  house-model               9    42k     3k       —   1.2s
+MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
+gpt-5.2                 184   2.9M   318k  $12.80  640ms
+claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms
+gemini-3-flash           12    88k     7k  <$0.01  310ms
+house-model               9    42k     3k       —   1.2s
 
-  where the money went                          last 30 days
-  $ run              ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ $9.94 · 54%
-  copied             ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $5.11 · 28%
-  ⊘ dismissed        ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $2.41 · 13%
-  ✗ no answer        ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $0.96 · 5%
+where the money went                            last 30 days
+$ run              ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ $9.94 · 54%
+copied             ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $5.11 · 28%
+⊘ dismissed        ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $2.41 · 13%
+✗ no answer        ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $0.96 · 5%
 
-  how the answers came back                     251 requests
-  gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱ 94% answered
-  claude-sonnet-4.6  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
-  gemini-3-flash     ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ 75% answered
-  house-model        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
+how the answers came back                       251 requests
+gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱ 94% answered
+claude-sonnet-4.6  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
+gemini-3-flash     ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ 75% answered
+house-model        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
 
-  how the commands ran                              203 runs
-  gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0
+how the commands ran                                203 runs
+gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0
 
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 
 · nothing priced · the split is over tokens and says so
-shhh metrics                           [?] keys · [esc] back
+shhh metrics · last 30 days · 251 requests · 4 models
 ────────────────────────────────────────────────────────────
 
-  MODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT
-  gpt-5.2                 184   2.9M   318k      —  640ms
-  claude-sonnet-4.6        46   1.1M    96k      —  910ms
-  gemini-3-flash           12    88k     7k      —  310ms
-  house-model               9    42k     3k      —   1.2s
+MODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT
+gpt-5.2                 184   2.9M   318k      —  640ms
+claude-sonnet-4.6        46   1.1M    96k      —  910ms
+gemini-3-flash           12    88k     7k      —  310ms
+house-model               9    42k     3k      —   1.2s
 
-  where the tokens went                         last 30 days
-  $ run              ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 2.1M · 54%
-  copied             ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1.1M · 28%
-  ⊘ dismissed        ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 504k · 13%
-  ✗ no answer        ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 194k · 5%
+where the tokens went                           last 30 days
+$ run              ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 2.1M · 54%
+copied             ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1.1M · 28%
+⊘ dismissed        ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 504k · 13%
+✗ no answer        ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 194k · 5%
 
-  how the answers came back                     251 requests
-  gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱ 94% answered
-  claude-sonnet-4.6  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
-  gemini-3-flash     ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ 75% answered
-  house-model        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
+how the answers came back                       251 requests
+gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱ 94% answered
+claude-sonnet-4.6  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
+gemini-3-flash     ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ 75% answered
+house-model        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
 
-  how the commands ran                              203 runs
-  gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0
+how the commands ran                                203 runs
+gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0
 
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 
 · a short terminal · what fits is drawn, what went is named
-shhh metrics                  $18.42 · [?] keys · [esc] back
+shhh metrics                                          $18.42
 ────────────────────────────────────────────────────────────
 
-  MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
-  gpt-5.2                 184   2.9M   318k  $12.80  640ms
-  claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms
-  gemini-3-flash           12    88k     7k  <$0.01  310ms
-  house-model               9    42k     3k       —   1.2s
-  ↓ 3 more · where the money went · how the answers came ba…
+MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
+gpt-5.2                 184   2.9M   318k  $12.80  640ms
+claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms
+gemini-3-flash           12    88k     7k  <$0.01  310ms
+house-model               9    42k     3k       —   1.2s
+↓ 3 more · where the money went · how the answers came back…
 
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 
 · a shorter one · the table windows last and says what it holds back
-shhh metrics                  $18.42 · [?] keys · [esc] back
+shhh metrics                                          $18.42
 ────────────────────────────────────────────────────────────
 
-  MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
-  gpt-5.2                 184   2.9M   318k  $12.80  640ms
-  ↓ 3 more models
-  ↓ 3 more · where the money went · how the answers came ba…
+MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
+gpt-5.2                 184   2.9M   318k  $12.80  640ms
+↓ 3 more models
+↓ 3 more · where the money went · how the answers came back…
 
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 
 · nothing recorded · a heading over nothing says so
-shhh metrics                           [?] keys · [esc] back
+shhh metrics · all time · 0 requests · 0 models
 ────────────────────────────────────────────────────────────
 
-  MODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d
-  no models to show
+MODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d
+no models to show
 
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 
 · [?] · the screen's keys and the glyph legend in the foot
-shhh metrics                  $18.42 · [?] keys · [esc] back
+shhh metrics                                          $18.42
 ────────────────────────────────────────────────────────────
 
-  MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
-  gpt-5.2                 184   2.9M   318k  $12.80  640ms
-  claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms
-  gemini-3-flash           12    88k     7k  <$0.01  310ms
-  house-model               9    42k     3k       —   1.2s
+MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
+gpt-5.2                 184   2.9M   318k  $12.80  640ms
+claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms
+gemini-3-flash           12    88k     7k  <$0.01  310ms
+house-model               9    42k     3k       —   1.2s
 
-  where the money went                          last 30 days
-  $ run              ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ $9.94 · 54%
-  copied             ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $5.11 · 28%
-  ⊘ dismissed        ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $2.41 · 13%
-  ✗ no answer        ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $0.96 · 5%
+where the money went                            last 30 days
+$ run              ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ $9.94 · 54%
+copied             ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $5.11 · 28%
+⊘ dismissed        ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $2.41 · 13%
+✗ no answer        ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $0.96 · 5%
 
-  how the answers came back                     251 requests
-  gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱ 94% answered
-  claude-sonnet-4.6  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
-  gemini-3-flash     ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ 75% answered
-  house-model        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
+how the answers came back                       251 requests
+gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱ 94% answered
+claude-sonnet-4.6  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
+gemini-3-flash     ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ 75% answered
+house-model        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered
 
-  how the commands ran                              203 runs
-  gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0
+how the commands ran                                203 runs
+gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0
 
 [esc] back to the shell
 
@@ -150,116 +150,116 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the surface · the table, the spend split, and the ratios under it
-␛[1;38;5;254mshhh metrics␛[m                  ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh metrics␛[m                                          ␛[38;5;254m$18.42␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
-  ␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
-  ␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms␛[m
-  ␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms␛[m
-  ␛[38;5;254mhouse-model               9    42k     3k       —   1.2s␛[m
+␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
+␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
+␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms␛[m
+␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms␛[m
+␛[38;5;254mhouse-model               9    42k     3k       —   1.2s␛[m
 
-  ␛[38;5;244mwhere the money went␛[m                          ␛[38;5;244mlast 30 days␛[m
-  ␛[38;5;244m$ run            ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$9.94 · 54%␛[m
-  ␛[38;5;244mcopied           ␛[m  ␛[38;5;254m▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$5.11 · 28%␛[m
-  ␛[38;5;244m⊘ dismissed      ␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$2.41 · 13%␛[m
-  ␛[38;5;244m✗ no answer      ␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$0.96 · 5%␛[m
+␛[38;5;244mwhere the money went␛[m                            ␛[38;5;244mlast 30 days␛[m
+␛[38;5;244m$ run            ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$9.94 · 54%␛[m
+␛[38;5;244mcopied           ␛[m  ␛[38;5;254m▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$5.11 · 28%␛[m
+␛[38;5;244m⊘ dismissed      ␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$2.41 · 13%␛[m
+␛[38;5;244m✗ no answer      ␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$0.96 · 5%␛[m
 
-  ␛[38;5;244mhow the answers came back␛[m                     ␛[38;5;244m251 requests␛[m
-  ␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m94% answered␛[m
-  ␛[38;5;244mclaude-sonnet-4.6␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
-  ␛[38;5;244mgemini-3-flash   ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254m75% answered␛[m
-  ␛[38;5;244mhouse-model      ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
+␛[38;5;244mhow the answers came back␛[m                       ␛[38;5;244m251 requests␛[m
+␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m94% answered␛[m
+␛[38;5;244mclaude-sonnet-4.6␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
+␛[38;5;244mgemini-3-flash   ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254m75% answered␛[m
+␛[38;5;244mhouse-model      ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
 
-  ␛[38;5;244mhow the commands ran␛[m                              ␛[38;5;244m203 runs␛[m
-  ␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱␛[m ␛[38;5;254m81% exited 0␛[m
+␛[38;5;244mhow the commands ran␛[m                                ␛[38;5;244m203 runs␛[m
+␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱␛[m ␛[38;5;254m81% exited 0␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · nothing priced · the split is over tokens and says so
-␛[1;38;5;254mshhh metrics␛[m                           ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT␛[m
-  ␛[38;5;254mgpt-5.2                 184   2.9M   318k      —  640ms␛[m
-  ␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k      —  910ms␛[m
-  ␛[38;5;254mgemini-3-flash           12    88k     7k      —  310ms␛[m
-  ␛[38;5;254mhouse-model               9    42k     3k      —   1.2s␛[m
+␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT␛[m
+␛[38;5;254mgpt-5.2                 184   2.9M   318k      —  640ms␛[m
+␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k      —  910ms␛[m
+␛[38;5;254mgemini-3-flash           12    88k     7k      —  310ms␛[m
+␛[38;5;254mhouse-model               9    42k     3k      —   1.2s␛[m
 
-  ␛[38;5;244mwhere the tokens went␛[m                         ␛[38;5;244mlast 30 days␛[m
-  ␛[38;5;244m$ run            ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m2.1M · 54%␛[m
-  ␛[38;5;244mcopied           ␛[m  ␛[38;5;254m▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1.1M · 28%␛[m
-  ␛[38;5;244m⊘ dismissed      ␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m504k · 13%␛[m
-  ␛[38;5;244m✗ no answer      ␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m194k · 5%␛[m
+␛[38;5;244mwhere the tokens went␛[m                           ␛[38;5;244mlast 30 days␛[m
+␛[38;5;244m$ run            ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m2.1M · 54%␛[m
+␛[38;5;244mcopied           ␛[m  ␛[38;5;254m▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1.1M · 28%␛[m
+␛[38;5;244m⊘ dismissed      ␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m504k · 13%␛[m
+␛[38;5;244m✗ no answer      ␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m194k · 5%␛[m
 
-  ␛[38;5;244mhow the answers came back␛[m                     ␛[38;5;244m251 requests␛[m
-  ␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m94% answered␛[m
-  ␛[38;5;244mclaude-sonnet-4.6␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
-  ␛[38;5;244mgemini-3-flash   ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254m75% answered␛[m
-  ␛[38;5;244mhouse-model      ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
+␛[38;5;244mhow the answers came back␛[m                       ␛[38;5;244m251 requests␛[m
+␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m94% answered␛[m
+␛[38;5;244mclaude-sonnet-4.6␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
+␛[38;5;244mgemini-3-flash   ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254m75% answered␛[m
+␛[38;5;244mhouse-model      ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
 
-  ␛[38;5;244mhow the commands ran␛[m                              ␛[38;5;244m203 runs␛[m
-  ␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱␛[m ␛[38;5;254m81% exited 0␛[m
+␛[38;5;244mhow the commands ran␛[m                                ␛[38;5;244m203 runs␛[m
+␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱␛[m ␛[38;5;254m81% exited 0␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · a short terminal · what fits is drawn, what went is named
-␛[1;38;5;254mshhh metrics␛[m                  ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh metrics␛[m                                          ␛[38;5;254m$18.42␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
-  ␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
-  ␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms␛[m
-  ␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms␛[m
-  ␛[38;5;254mhouse-model               9    42k     3k       —   1.2s␛[m
-  ␛[38;5;244m↓ 3 more · where the money went · how the answers came ba…␛[m
+␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
+␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
+␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms␛[m
+␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms␛[m
+␛[38;5;254mhouse-model               9    42k     3k       —   1.2s␛[m
+␛[38;5;244m↓ 3 more · where the money went · how the answers came back…␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · a shorter one · the table windows last and says what it holds back
-␛[1;38;5;254mshhh metrics␛[m                  ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh metrics␛[m                                          ␛[38;5;254m$18.42␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
-  ␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
-  ␛[38;5;244m↓ 3 more models␛[m
-  ␛[38;5;244m↓ 3 more · where the money went · how the answers came ba…␛[m
+␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
+␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
+␛[38;5;244m↓ 3 more models␛[m
+␛[38;5;244m↓ 3 more · where the money went · how the answers came back…␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · nothing recorded · a heading over nothing says so
-␛[1;38;5;254mshhh metrics␛[m                           ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · all time · 0 requests · 0 models␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;38;5;254mMODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d␛[m
-  ␛[38;5;244mno models to show␛[m
+␛[1;38;5;254mMODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d␛[m
+␛[38;5;244mno models to show␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · [?] · the screen's keys and the glyph legend in the foot
-␛[1;38;5;254mshhh metrics␛[m                  ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh metrics␛[m                                          ␛[38;5;254m$18.42␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
-  ␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
-  ␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms␛[m
-  ␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms␛[m
-  ␛[38;5;254mhouse-model               9    42k     3k       —   1.2s␛[m
+␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
+␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
+␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms␛[m
+␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms␛[m
+␛[38;5;254mhouse-model               9    42k     3k       —   1.2s␛[m
 
-  ␛[38;5;244mwhere the money went␛[m                          ␛[38;5;244mlast 30 days␛[m
-  ␛[38;5;244m$ run            ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$9.94 · 54%␛[m
-  ␛[38;5;244mcopied           ␛[m  ␛[38;5;254m▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$5.11 · 28%␛[m
-  ␛[38;5;244m⊘ dismissed      ␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$2.41 · 13%␛[m
-  ␛[38;5;244m✗ no answer      ␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$0.96 · 5%␛[m
+␛[38;5;244mwhere the money went␛[m                            ␛[38;5;244mlast 30 days␛[m
+␛[38;5;244m$ run            ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$9.94 · 54%␛[m
+␛[38;5;244mcopied           ␛[m  ␛[38;5;254m▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$5.11 · 28%␛[m
+␛[38;5;244m⊘ dismissed      ␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$2.41 · 13%␛[m
+␛[38;5;244m✗ no answer      ␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$0.96 · 5%␛[m
 
-  ␛[38;5;244mhow the answers came back␛[m                     ␛[38;5;244m251 requests␛[m
-  ␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m94% answered␛[m
-  ␛[38;5;244mclaude-sonnet-4.6␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
-  ␛[38;5;244mgemini-3-flash   ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254m75% answered␛[m
-  ␛[38;5;244mhouse-model      ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
+␛[38;5;244mhow the answers came back␛[m                       ␛[38;5;244m251 requests␛[m
+␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m94% answered␛[m
+␛[38;5;244mclaude-sonnet-4.6␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
+␛[38;5;244mgemini-3-flash   ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254m75% answered␛[m
+␛[38;5;244mhouse-model      ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m
 
-  ␛[38;5;244mhow the commands ran␛[m                              ␛[38;5;244m203 runs␛[m
-  ␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱␛[m ␛[38;5;254m81% exited 0␛[m
+␛[38;5;244mhow the commands ran␛[m                                ␛[38;5;244m203 runs␛[m
+␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱␛[m ␛[38;5;254m81% exited 0␛[m
 
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 

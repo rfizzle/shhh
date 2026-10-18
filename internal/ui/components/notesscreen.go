@@ -280,7 +280,7 @@ func notesStamp(row NotesRow) string {
 
 // header names the surface and what it is over.
 func (s *NotesScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/notes")}, keys: headerKeyPair(keys.Notes.List, keys.Notes.Back, s.keys)}
+	h := screenHeader{left: []RailSegment{screenTitle("/notes")}}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}

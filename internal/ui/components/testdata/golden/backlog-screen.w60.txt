@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the list · slug, grade, state and title, with the item beside it
-backlog                      6 items · [?] keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
@@ -30,10 +30,10 @@ story · high · size M · in progress · written 2026-08-28 · …
 **As a** reader, **I want** the queue beside the turn.
 … (+5 more rows)
 
-[↑↓/jk] move · [enter] read · [/] filter · [e] edit
+[↑↓/jk] move · [enter] read · [?] keys · [esc] back
 
 · a waiting item · both ends of the edge on its header row
-backlog                      6 items · [?] keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
   ▸ rail-todo-block  HM  in progress  The backlog block on …
@@ -52,10 +52,10 @@ waits on rail-todo-block, prose-renderer
 
 … (+4 more rows)
 
-[↑↓/jk] move · [enter] read · [/] filter · [e] edit
+[↑↓/jk] move · [enter] read · [?] keys · [esc] back
 
 · a file that will not parse · a row in warning tone, the reason as its body
-backlog                      6 items · [?] keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
   ▸ rail-todo-block  HM  in progress  The backlog block on …
@@ -71,10 +71,10 @@ half-written
 no title in the header
 .shhh/todo/half-written.md is still on disk; [e] opens it
 
-[↑↓/jk] move · [enter] read · [/] filter
+[↑↓/jk] move · [enter] read · [?] keys · [esc] back
 
 · [/] · the query row, with the header saying what it left
-backlog                 1 of 6 items · [?] keys · [esc] back
+backlog · matching sprint · the cockpit sprint  1 of 6 items
 ────────────────────────────────────────────────────────────
 
 ▸ sprint█
@@ -95,7 +95,7 @@ Waiting on a decision about where the file lives.
 [↑↓] move · [enter] keep it · [esc] clear, then close
 
 · [/] ready p:low [enter] · the words held over the list, and what they hid under it
-backlog                 2 of 6 items · [?] keys · [esc] back
+backlog · matching ready p:low                  2 of 6 items
 ────────────────────────────────────────────────────────────
 
 ❯ · drop-loses-the-file  L-  ready  Dropping an item says w…
@@ -110,10 +110,11 @@ bug · low · ungraded · open
 
 The verb deletes the file and the sentence should say so.
 
-[↑↓/jk] move · [enter] read · [/] filter · [e] edit
+[↑↓/jk] move · [enter] read · [?] keys
+[esc] clear the filter
 
 · [s] · the status picker beside the list, where the item stands now marked
-backlog                      6 items · [?] keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
   ▸ rail-todo-block  HM  in progress  The backlog block on …
@@ -133,7 +134,7 @@ set the status of sprint-file
 [esc] back to the list
 
 · [r] · the run picker: run it, or groom it
-backlog                      6 items · [?] keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
@@ -152,7 +153,7 @@ run rail-todo-block
 [esc] back to the list
 
 · [enter] · the body with the surface to itself
-backlog                      6 items · [?] keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
 rail-todo-block
@@ -168,11 +169,11 @@ story · high · size M · in progress · written 2026-08-28 · …
 - [x] four rows and a count
 - [ ] the running item first
 
-[↑↓/jk] scroll · [pgup/pgdn] page the body
+[↑↓/jk] scroll · [pgup/pgdn] page the body · [?] keys
 [esc] back to the list
 
 · [tab] · the archive, each item's report as its body
-backlog · done               2 items · [?] keys · [esc] back
+backlog · done                                       2 items
 ────────────────────────────────────────────────────────────
 
 ❯ ✓ keys-are-declared-once  HM  done  Every key is declared…
@@ -186,10 +187,10 @@ chore · high · size M · done · written 2026-08-20
 Sixty-eight literals came out of twenty files; the register
 is the one place a key is written down.
 
-[↑↓/jk] move · [enter] read · [/] filter · [s] put it back
+[enter] read · [s] put it back · [?] keys · [esc] back
 
 · [d] · the one confirm that names what it loses
-backlog                      6 items · [?] keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
@@ -211,7 +212,7 @@ story · high · size M · in progress · written 2026-08-28 · …
 Drop rail-todo-block? The file is deleted, not archived.  […
 
 · a turn is running · the keys that change a file are grey, and the row says why
-backlog                      6 items · [?] keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
@@ -228,13 +229,13 @@ story · high · size M · in progress · written 2026-08-28 · …
 ────────────────────────────────────────────────────────────
 … (+7 more rows)
 
-[↑↓/jk] move · [enter] read · [/] filter · [esc] back
+[↑↓/jk] move · [enter] read · [?] keys · [esc] back
 the turn is running; these change the files it may be worki…
 [e] edit · [r] run it · [s] set its status · [d] delete
 [space] drop it from the cockpit sprint · [n] new item
 
 · [?] · every key the screen has
-backlog             6 items · [?] hide the keys · [esc] back
+backlog · the cockpit sprint                         6 items
 ────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
@@ -283,7 +284,7 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the list · slug, grade, state and title, with the item beside it
-␛[1;97mbacklog␛[m                      ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
@@ -302,10 +303,10 @@ $  a shell command
 ␛[38;5;245m**As a** reader, **I want** the queue beside the turn.␛[m
 ␛[38;5;245m… (+5 more rows)␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a waiting item · both ends of the edge on its header row
-␛[1;97mbacklog␛[m                      ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  in progress  The backlog block on …␛[m
@@ -324,10 +325,10 @@ $  a shell command
 
 ␛[38;5;245m… (+4 more rows)␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a file that will not parse · a row in warning tone, the reason as its body
-␛[1;97mbacklog␛[m                      ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  in progress  The backlog block on …␛[m
@@ -343,10 +344,10 @@ $  a shell command
 ␛[91mno title in the header␛[m
 ␛[38;5;245m.shhh/todo/half-written.md is still on disk; [e] opens it␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · [/] · the query row, with the header saying what it left
-␛[1;97mbacklog␛[m                 ␛[38;5;245m1 of 6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · matching sprint␛[m␛[38;5;245m · the cockpit sprint␛[m  ␛[38;5;245m1 of 6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m▸ ␛[m␛[97msprint█␛[m
@@ -367,7 +368,7 @@ $  a shell command
 ␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m keep it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear, then close␛[m
 
 · [/] ready p:low [enter] · the words held over the list, and what they hid under it
-␛[1;97mbacklog␛[m                 ␛[38;5;245m2 of 6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · matching ready p:low␛[m                  ␛[38;5;245m2 of 6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;245m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m·␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mdrop-loses-the-file  L-  ready  Dropping an item says w…␛[m␛[m
@@ -382,10 +383,11 @@ $  a shell command
 
 ␛[38;5;245mThe verb deletes the file and the sentence should say so.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
+␛[92m[esc]␛[m␛[38;5;245m clear the filter␛[m
 
 · [s] · the status picker beside the list, where the item stands now marked
-␛[1;97mbacklog␛[m                      ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  in progress  The backlog block on …␛[m
@@ -405,7 +407,7 @@ $  a shell command
 ␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
 
 · [r] · the run picker: run it, or groom it
-␛[1;97mbacklog␛[m                      ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
@@ -424,7 +426,7 @@ $  a shell command
 ␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
 
 · [enter] · the body with the surface to itself
-␛[1;97mbacklog␛[m                      ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[1;97mrail-todo-block␛[m
@@ -440,11 +442,11 @@ $  a shell command
 ␛[38;5;245m- [x] four rows and a count␛[m
 ␛[38;5;245m- [ ] the running item first␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[pgup/pgdn]␛[m␛[38;5;245m page the body␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[pgup/pgdn]␛[m␛[38;5;245m page the body␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
 ␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
 
 · [tab] · the archive, each item's report as its body
-␛[1;97mbacklog␛[m␛[38;5;245m · done␛[m               ␛[38;5;245m2 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · done␛[m                                       ␛[38;5;245m2 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m✓␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mkeys-are-declared-once  HM  done  Every key is declared…␛[m␛[m
@@ -458,10 +460,10 @@ $  a shell command
 ␛[38;5;245mSixty-eight literals came out of twenty files; the register␛[m
 ␛[38;5;245mis the one place a key is written down.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;245m put it back␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;245m put it back␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · [d] · the one confirm that names what it loses
-␛[1;97mbacklog␛[m                      ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
@@ -483,7 +485,7 @@ $  a shell command
 ␛[38;5;252m␛[38;5;252mDrop rail-todo-block? The file is deleted, not archived.␛[m␛[m  ␛[38;5;245m[␛[m␛[38;5;245m…␛[m␛[38;5;245m␛[m␛[1;97m␛[m␛[38;5;245m␛[m
 
 · a turn is running · the keys that change a file are grey, and the row says why
-␛[1;97mbacklog␛[m                      ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
@@ -500,13 +502,13 @@ $  a shell command
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 ␛[38;5;245m… (+7 more rows)␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 ␛[38;5;245mthe turn is running; these change the files it may be worki…␛[m
 ␛[38;5;248m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;248m[r]␛[m␛[38;5;245m run it␛[m␛[38;5;245m · ␛[m␛[38;5;248m[s]␛[m␛[38;5;245m set its status␛[m␛[38;5;245m · ␛[m␛[38;5;248m[d]␛[m␛[38;5;245m delete␛[m
 ␛[38;5;248m[space]␛[m␛[38;5;245m drop it from the cockpit sprint␛[m␛[38;5;245m · ␛[m␛[38;5;248m[n]␛[m␛[38;5;245m new item␛[m
 
 · [?] · every key the screen has
-␛[1;97mbacklog␛[m             ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] hide the keys · [esc] back␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                         ␛[38;5;245m6 items␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m

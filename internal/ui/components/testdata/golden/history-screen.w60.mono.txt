@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the list · every row says what became of the command
-shhh history · 6 entries · 2 run       [?] keys · [esc] back
+shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
 
 ❯ $ delete every log file older than a week  exit 0     1.4s
@@ -30,10 +30,10 @@ shhh history · 6 entries · 2 run       [?] keys · [esc] back
 
 [↑↓/jk] move · [enter] re-run it · [c] copy
 [ctrl+s] write it as a snippet · [d] delete · [/] filter
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 
 · the pointer moved · the preview follows, and has no cursor of its own
-shhh history · 6 entries · 2 run       [?] keys · [esc] back
+shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
 
   $ delete every log file older than a week  exit 0     1.4s
@@ -52,10 +52,10 @@ tue · anthropic/claude-sonnet-4.6                        run
 
 [↑↓/jk] move · [enter] re-run it · [c] copy
 [ctrl+s] write it as a snippet · [d] delete · [/] filter
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 
 · a long command · continued under the row, never clipped away
-shhh history · 6 entries · 2 run       [?] keys · [esc] back
+shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
 
   $ delete every log file older than a week  exit 0     1.4s
@@ -74,10 +74,10 @@ mon · openai/gpt-5.2                                    save
 
 [↑↓/jk] move · [enter] re-run it · [c] copy
 [ctrl+s] write it as a snippet · [d] delete · [/] filter
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 
 · filtered · both counts on the query row, and what it hid under the list
-shhh history · 6 entries · 2 run       [?] keys · [esc] back
+shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
 
 ▸ log█                                          2 of 6 match
@@ -98,7 +98,7 @@ shhh history · 6 entries · 2 run       [?] keys · [esc] back
 [esc] clear the filter, then close it
 
 · a filter that matched nothing · a row, not an empty pane
-shhh history · 6 entries · 2 run       [?] keys · [esc] back
+shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
 
 ▸ kubectl█                                      0 of 6 match
@@ -112,7 +112,7 @@ no entry selected
 [↑↓/jk] move · [esc] clear the filter, then close it
 
 · [d] · the inline confirm, naming what it would take, defaulting to no
-shhh history · 6 entries · 2 run       [?] keys · [esc] back
+shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
 
 ❯ $ delete every log file older than a week  exit 0     1.4s
@@ -132,7 +132,7 @@ shhh history · 6 entries · 2 run       [?] keys · [esc] back
 Delete the entry for "delete every log file older than a we…
 
 · a command carried out · the notice the host left behind
-shhh history · 6 entries · 2 run       [?] keys · [esc] back
+shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
 
   $ delete every log file older than a week  exit 0     1.4s
@@ -150,11 +150,11 @@ yesterday · openai/gpt-5.2                              copy
 
 [↑↓/jk] move · [enter] re-run it · [c] copy
 [ctrl+s] write it as a snippet · [d] delete · [/] filter
-[esc] back to the shell
+[?] keys · [esc] back to the shell
 copied the command to the clipboard
 
 · [?] · every key the screen has, including the ones the row sheds
-shhh history · 6 entries · 2 run       [?] keys · [esc] back
+shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
 
 ❯ $ delete every log file older than a week  exit 0     1.4s
@@ -195,7 +195,7 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the list · every row says what became of the command
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m$ delete every log file older than a week  exit 0     1.4s␛[m
@@ -214,10 +214,10 @@ $  a shell command
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m
 ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write it as a snippet␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · the pointer moved · the preview follows, and has no cursor of its own
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m$ delete every log file older than a week␛[m  ␛[38;5;254mexit 0␛[m     ␛[38;5;254m1.4s␛[m
@@ -236,10 +236,10 @@ $  a shell command
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m
 ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write it as a snippet␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · a long command · continued under the row, never clipped away
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m$ delete every log file older than a week␛[m  ␛[38;5;254mexit 0␛[m     ␛[38;5;254m1.4s␛[m
@@ -258,10 +258,10 @@ $  a shell command
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m
 ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write it as a snippet␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · filtered · both counts on the query row, and what it hid under the list
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m▸ ␛[m␛[38;5;254mlog█␛[m                                          ␛[38;5;244m2 of 6 match␛[m
@@ -282,7 +282,7 @@ $  a shell command
 ␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
 
 · a filter that matched nothing · a row, not an empty pane
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m▸ ␛[m␛[38;5;254mkubectl█␛[m                                      ␛[38;5;244m0 of 6 match␛[m
@@ -296,7 +296,7 @@ $  a shell command
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
 
 · [d] · the inline confirm, naming what it would take, defaulting to no
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m$ delete every log file older than a week  exit 0     1.4s␛[m
@@ -316,7 +316,7 @@ $  a shell command
 ␛[38;5;254m␛[38;5;254mDelete the entry for "delete every log file older than a we…␛[m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m
 
 · a command carried out · the notice the host left behind
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m$ delete every log file older than a week␛[m  ␛[38;5;254mexit 0␛[m     ␛[38;5;254m1.4s␛[m
@@ -334,11 +334,11 @@ $  a shell command
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m
 ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write it as a snippet␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 ␛[38;5;244mcopied the command to the clipboard␛[m
 
 · [?] · every key the screen has, including the ones the row sheds
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m$ delete every log file older than a week  exit 0     1.4s␛[m

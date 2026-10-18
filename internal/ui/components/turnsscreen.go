@@ -348,7 +348,7 @@ func turnDetail(t TurnsItem) []DetailSpan {
 
 // header names the surface, what it counts and what the session has spent.
 func (s *TurnsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/turns")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
+	h := screenHeader{left: []RailSegment{screenTitle("/turns")}}
 	for _, f := range []string{s.Subject, s.Tools} {
 		if f != "" {
 			h.left = append(h.left, screenField(f))

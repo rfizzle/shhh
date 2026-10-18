@@ -441,17 +441,18 @@ func wrapPlain(text string, width int) []string {
 
 // header names the command and what it is over.
 func (h *HistoryScreen) header() screenHeader {
-	head := screenHeader{left: []RailSegment{screenTitle("shhh history")}, keys: screenHeaderKeys()}
+	head := screenHeader{left: []RailSegment{screenTitle("shhh history")}}
 	if h.Subject != "" {
 		head.left = append(head.left, screenField(h.Subject))
 	}
 	return head
 }
 
-// fits reports whether a run of offers leaves room beside it for the field
+// fitsBeside reports whether a run of offers, with the `[?] keys` the foot adds
+// to it, leaves room beside it for the field
 // that annotates them.
 func fitsBeside(offers []KeyOffer, field string, width int) bool {
-	return lipgloss.Width(keyOffers(offers))+lipgloss.Width(field)+2 <= width
+	return lipgloss.Width(keyOffers(withKeysOffer(offers)))+lipgloss.Width(field)+2 <= width
 }
 
 // offers is the key row for whichever surface holds the keyboard. While the

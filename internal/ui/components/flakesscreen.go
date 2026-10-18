@@ -142,7 +142,7 @@ func flakeTimes(n int) string {
 
 // header names the surface and what it counts.
 func (s *FlakesScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/gate flakes")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
+	h := screenHeader{left: []RailSegment{screenTitle("/gate flakes")}}
 	if len(s.Rows) > 0 {
 		total := 0
 		for _, r := range s.Rows {

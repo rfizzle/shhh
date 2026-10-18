@@ -85,11 +85,11 @@ func metricsColumnEnd(line, field string) int {
 	return lipgloss.Width(line[:at]) + lipgloss.Width(field)
 }
 
-// The header names the command, what it is over, what it cost, and the one
-// key the screen has.
-func TestMetricsScreen_HeaderStatesTheSpendAndTheKey(t *testing.T) {
+// The header names the command, what it is over and what it cost; the key is
+// the foot's.
+func TestMetricsScreen_HeaderStatesTheSpend(t *testing.T) {
 	head := metricsLines(metricsScreen(), 130)[0]
-	for _, want := range []string{"shhh metrics", "242 requests", "$18.42", "[esc] back"} {
+	for _, want := range []string{"shhh metrics", "242 requests", "$18.42"} {
 		if !strings.Contains(head, want) {
 			t.Fatalf("the header %q does not state %q", head, want)
 		}

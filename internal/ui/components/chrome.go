@@ -69,6 +69,14 @@ func ruleRun(width int) string {
 	return strings.Repeat(plainMark, width)
 }
 
+// screenMargin is the column every screen's body starts at: the column the
+// header's title stands in. A list's pointer lives in it, and a reading
+// screen's panels start in it, so a reader who moves from `/ps` to `/context`
+// finds the left edge where it was. It is zero because the pointer's gutter is
+// already two columns, and a margin in front of that spends four on a terminal
+// that is narrow at sixty.
+const screenMargin = 0
+
 // screenRule is the horizontal rule a screen's panes and sections are divided
 // by.
 func screenRule(width int) string { return sty.dim.Render(ruleRun(width)) }
@@ -98,7 +106,13 @@ func screenField(text string) RailSegment {
 }
 
 // screenHeader is the row every take-over screen opens with: what the surface
-// is on the left, what it offers on the right.
+// is on the left, and the reading it is counting on the right.
+//
+// The header carries the screen's name and state and nothing else. The keys
+// are the foot's (keyFooter): a screen that offered them in the header and
+// again under its body said the same thing twice, in two places a reader has
+// to look. The one exception is the editor pane, which is a panel and not a
+// take-over screen and has no foot to move them to.
 //
 // The left half is a rail, so the two ways these headers used to differ are
 // one thing now — a drop rank. A field that must survive its neighbours is
@@ -107,25 +121,18 @@ func screenField(text string) RailSegment {
 // name has stopped being one.
 //
 // The right half is fitted first and the left into what is left of the row.
-// That is the rule the three screens which clipped the other way had wrong:
-// the tally goes before the keys do, on every screen, because a reading the
-// header is counting is something a narrow terminal can do without and a
-// stated way out of a take-over is not
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard,
-// invariant 5).
 type screenHeader struct {
 	// left is the surface's name and the fields that continue it, in reading
 	// order. screenTitle and screenField build the two ordinary shapes.
 	left []RailSegment
-	// keys is the run of keys the header ends with, unpainted — the header
-	// paints it dim, along with the separator that joins the tally to it, so
-	// the run reads as one field however much of it is showing.
-	keys string
-	// tally is the reading that rides in front of the keys, already painted:
-	// the elapsed clock, the spend, the occupancy. It is where the eye
-	// already goes for the state of a surface, and it is what the row gives
-	// up first.
+	// tally is the reading that ends the row, already painted: the elapsed
+	// clock, the spend, the occupancy, the count of what is kept. It is where
+	// the eye already goes for the state of a surface, and it is what the row
+	// gives up first.
 	tally string
+	// keys is a run of keys the row ends with, unpainted, for the editor pane
+	// alone (see above). A take-over screen leaves it empty.
+	keys string
 }
 
 // row renders the header at the given width.
@@ -135,18 +142,44 @@ func (h screenHeader) row(width int) string {
 	// and a style renders a pair of escapes around an empty string, so a
 	// screen with nothing to count would otherwise draw the separator anyway.
 	if lipgloss.Width(h.tally) > 0 {
-		if tallied := h.tally + sty.dim.Render(" · "+h.keys); lipgloss.Width(tallied) <= width {
+		tallied := h.tally
+		if h.keys != "" {
+			tallied += sty.dim.Render(" · " + h.keys)
+		}
+		// The tally never costs the title its place: a terminal too narrow
+		// for both loses the tally.
+		if lipgloss.Width(tallied) <= width && (h.keys != "" || width-lipgloss.Width(tallied)-2 >= h.titleWidth()) {
 			right = tallied
 		}
+	}
+	if lipgloss.Width(right) == 0 {
+		return FitRail(h.left, "", width)
 	}
 	// Two columns of gap, so the two halves never read as one run.
 	room := width - lipgloss.Width(right) - 2
 	if room < 1 {
-		return Clip(right, width)
+		return h.leftOnly(right, width)
 	}
 	left := FitRail(h.left, "", room)
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + right
+	}
+	return h.leftOnly(right, width)
+}
+
+// titleWidth is the width of the header's first field, the surface's name.
+func (h screenHeader) titleWidth() int {
+	if len(h.left) == 0 {
+		return 0
+	}
+	return lipgloss.Width(h.left[0].Text)
+}
+
+// leftOnly is the row when the two halves will not share it: the keys of the
+// editor pane, which a terminal must never lose, or the title of a screen.
+func (h screenHeader) leftOnly(right string, width int) string {
+	if h.keys == "" {
+		return FitRail(h.left, "", width)
 	}
 	return Clip(right, width)
 }
@@ -245,6 +278,10 @@ type keyFooter struct {
 	// so a letter is never parted from the word it stands for. Empty draws
 	// nothing.
 	legend []string
+	// inert says `?` is a letter where the surface stands — a query line or a
+	// value being typed into — so the foot does not offer it: a key that
+	// cannot act is not an offer (invariant 5).
+	inert bool
 	// taken is the footer a sub-surface has taken over — an armed confirm,
 	// which is the only thing the keyboard is answering while it is up.
 	taken string
@@ -269,19 +306,20 @@ func (f keyFooter) rows(width int) []string {
 		}
 		return append(rows, packOffers([]KeyOffer{hideKeysOffer()}, width)...)
 	}
+	offers := f.offered()
 	if f.lead != "" {
 		if len(f.offers) == 0 {
 			return []string{f.lead}
 		}
 		// The keys annotate the lead where both fit, and take a row of their
 		// own where they do not.
-		run := keyOffers(f.offers)
+		run := keyOffers(offers)
 		if pad := width - lipgloss.Width(f.lead) - lipgloss.Width(run); pad >= 2 {
 			return []string{f.lead + strings.Repeat(" ", pad) + run}
 		}
-		return append([]string{f.lead}, packOffers(f.offers, width)...)
+		return append([]string{f.lead}, packOffers(offers, width)...)
 	}
-	rows := packOffers(f.offers, width)
+	rows := packOffers(offers, width)
 	if len(rows) == 0 || f.field == "" {
 		return rows
 	}
@@ -292,6 +330,34 @@ func (f keyFooter) rows(width int) []string {
 		rows = append(rows, painted)
 	}
 	return rows
+}
+
+// offered is the offers as the foot draws them: with `[?] keys` in front of
+// the way out, for a surface that has a register to open. The foot is where
+// the keys are offered, once; the header no longer carries them. A run with no
+// safe offer in it (a confirm's answers) takes `[?]` last.
+func (f keyFooter) offered() []KeyOffer {
+	if len(f.register) == 0 || f.showing || f.inert {
+		return f.offers
+	}
+	return withKeysOffer(f.offers)
+}
+
+// withKeysOffer puts `[?] keys` in front of the last safe offer, so the row
+// ends on the answer that changes nothing, and the way out is the last thing
+// a narrow row gives up.
+func withKeysOffer(offers []KeyOffer) []KeyOffer {
+	at := len(offers)
+	for i := len(offers) - 1; i >= 0; i-- {
+		if offers[i].Safe {
+			at = i
+			break
+		}
+	}
+	out := make([]KeyOffer, 0, len(offers)+1)
+	out = append(out, offers[:at]...)
+	out = append(out, keysOffer())
+	return append(out, offers[at:]...)
 }
 
 // legendRows packs a legend's clauses into as few rows as the width allows,

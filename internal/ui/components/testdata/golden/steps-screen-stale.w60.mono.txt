@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the header · the count, then how long the list has stood
-/steps · 1 of 7 · unchanged 25 rounds  [?] keys · [esc] back
+/steps · 1 of 7 · unchanged 25 rounds
 ────────────────────────────────────────────────────────────
 
   1. ✓ Read the loop                 done            2 tools
@@ -26,11 +26,11 @@
           internal/agent/round_test.go
 … (+4 more rows)
 
-[↑↓/jk] move · [esc] back   the agent's own list, not a plan
+[?] keys · [esc] back       the agent's own list, not a plan
 
 ── ansi ────────────────────────────────────────────────────
 · the header · the count, then how long the list has stood
-␛[1;38;5;254m/steps␛[m␛[38;5;244m · 1 of 7␛[m␛[38;5;244m · unchanged 25 rounds␛[m  ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/steps␛[m␛[38;5;244m · 1 of 7␛[m␛[38;5;244m · unchanged 25 rounds␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m1. ␛[m␛[38;5;254m✓ Read the loop␛[m                 ␛[38;5;254mdone␛[m            ␛[38;5;254m2 tools␛[m
@@ -45,4 +45,4 @@
           ␛[38;5;254minternal/agent/round_test.go␛[m
 ␛[38;5;244m… (+4 more rows)␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m   ␛[38;5;244mthe agent's own list, not a plan␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m       ␛[38;5;244mthe agent's own list, not a plan␛[m

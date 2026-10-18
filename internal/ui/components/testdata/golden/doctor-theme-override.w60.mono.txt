@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · an override under 4.5:1 · applied as written and named
-shhh doctor · 1 check           0.2s · [?] keys · [esc] back
+shhh doctor · 1 check                                   0.2s
 ────────────────────────────────────────────────────────────
 
 ❯  ⚠ theme   ~/.config/shhh/theme.toml…  low contrast       
@@ -19,10 +19,11 @@ shhh doctor · 1 check           0.2s · [?] keys · [esc] back
     [enter] lift the colour
 
   ⚠ 1 warning
-[c] copy the report · [r] retry · [esc] back to the shell
+[c] copy the report · [r] retry · [?] keys
+[esc] back to the shell
 
 · the fix open · each token named with its ratio and the surface it falls short on
-shhh doctor · 1 check           0.2s · [?] keys · [esc] back
+shhh doctor · 1 check                                   0.2s
 ────────────────────────────────────────────────────────────
 
 ❯  ⚠ theme   ~/.config/shhh/theme.toml…  low contrast       
@@ -32,20 +33,22 @@ shhh doctor · 1 check           0.2s · [?] keys · [esc] back
     [enter] hide it
 
   ⚠ 1 warning
-[c] copy the report · [r] retry · [esc] back to the shell
+[c] copy the report · [r] retry · [?] keys
+[esc] back to the shell
 
 · the same file with the override clear of the floor · ok, and says how many tokens it changes
-shhh doctor · 1 check           0.2s · [?] keys · [esc] back
+shhh doctor · 1 check                                   0.2s
 ────────────────────────────────────────────────────────────
 
    ✓ theme   ~/.config/shhh/theme.toml · dark · …  ok
 
   ✓ 1 passed
-[c] copy the report · [r] retry · [esc] back to the shell
+[c] copy the report · [r] retry · [?] keys
+[esc] back to the shell
 
 ── ansi ────────────────────────────────────────────────────
 · an override under 4.5:1 · applied as written and named
-␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 1 check␛[m           ␛[38;5;244m0.2s␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 1 check␛[m                                   ␛[38;5;244m0.2s␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m⚠␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mtheme   ~/.config/shhh/theme.toml…  low contrast       ␛[m␛[m
@@ -53,10 +56,11 @@ shhh doctor · 1 check           0.2s · [?] keys · [esc] back
     ␛[38;5;254m[enter]␛[m␛[38;5;244m lift the colour␛[m
 
   ␛[38;5;254m⚠␛[m ␛[38;5;254m1 warning␛[m
-␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · the fix open · each token named with its ratio and the surface it falls short on
-␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 1 check␛[m           ␛[38;5;244m0.2s␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 1 check␛[m                                   ␛[38;5;244m0.2s␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m⚠␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mtheme   ~/.config/shhh/theme.toml…  low contrast       ␛[m␛[m
@@ -66,13 +70,15 @@ shhh doctor · 1 check           0.2s · [?] keys · [esc] back
     ␛[38;5;254m[enter]␛[m␛[38;5;244m hide it␛[m
 
   ␛[38;5;254m⚠␛[m ␛[38;5;254m1 warning␛[m
-␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · the same file with the override clear of the floor · ok, and says how many tokens it changes
-␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 1 check␛[m           ␛[38;5;244m0.2s␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 1 check␛[m                                   ␛[38;5;244m0.2s␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mtheme␛[m   ␛[38;5;254m~/.config/shhh/theme.toml␛[m␛[38;5;244m · dark · …␛[m  ␛[38;5;244mok␛[m
 
   ␛[38;5;254m✓␛[m ␛[38;5;254m1 passed␛[m
-␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m

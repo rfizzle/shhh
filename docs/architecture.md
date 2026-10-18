@@ -660,7 +660,7 @@ The flags that cross:
   reads it to decide whether a heading is lit and whether its key row is
   drawn, and the viewer's diff is up only while it holds.
 - **Whether a note is open** is the section editor's. The wizard reads it for
-  the way out the header states and for whether the register's key is a key,
+  the way out the foot states and for whether the register's key is a key,
   and closes it when a wait starts or a draft lands.
 - **Whether the note is about the whole draft, and whether it includes the
   person's own sections**, are the section editor's. The wizard reads the

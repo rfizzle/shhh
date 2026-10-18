@@ -540,8 +540,8 @@ func TestConfigScreen_IsATakeoverNotACard(t *testing.T) {
 	if !strings.HasPrefix(lines[0], "shhh config") {
 		t.Fatalf("the header names the command and its subject: %q", lines[0])
 	}
-	if !strings.Contains(lines[0], "[?] keys · [esc] back") {
-		t.Fatalf("the header carries the two keys every one of these screens has: %q", lines[0])
+	if strings.Contains(lines[0], "[") {
+		t.Fatalf("the header carries no key; the foot offers them: %q", lines[0])
 	}
 }
 

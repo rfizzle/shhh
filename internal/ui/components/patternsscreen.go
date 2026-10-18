@@ -139,7 +139,7 @@ func patternSessions(n int) string {
 }
 
 func (s *PatternsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/patterns")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
+	h := screenHeader{left: []RailSegment{screenTitle("/patterns")}}
 	if n := len(s.Rows); n > 0 {
 		word := "proposals"
 		if n == 1 {

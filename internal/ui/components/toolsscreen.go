@@ -330,7 +330,7 @@ func (src ToolsSource) option() SelectOption {
 // block draws — so the figure on the screen and the figure on the rail are
 // one. A session with no servers has no block, and no ratio either.
 func (s *ToolsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/mcp")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
+	h := screenHeader{left: []RailSegment{screenTitle("/mcp")}}
 	servers, counted, up := 0, 0, 0
 	for _, src := range s.Sources {
 		if src.Group != ToolsBuiltin && src.Group != ToolsServers {

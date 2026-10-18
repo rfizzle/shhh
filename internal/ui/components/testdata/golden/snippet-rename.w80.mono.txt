@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the rename row under the panes, holding the name
-shhh snippets · 3 snippets                                 [?] keys · [esc] back
+shhh snippets · 3 snippets
 ────────────────────────────────────────────────────────────────────────────────
 
 ❯ ports      what is listening on this machine                            4m ago
@@ -28,7 +28,7 @@ rename ▸ ports█
 
 ── ansi ────────────────────────────────────────────────────
 · the rename row under the panes, holding the name
-␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m                                 ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mports      what is listening on this machine                            4m ago␛[m

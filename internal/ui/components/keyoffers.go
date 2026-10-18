@@ -124,24 +124,11 @@ const (
 // screen in this family answers it.
 func wayOut(phrase string) KeyOffer { return keyOfferAs(keys.Select.Cancel, phrase) }
 
-// screenHeaderKeys is the pair every supporting TUI puts at the right end of
-// its header: the key that shows the whole register, and the way out in the
-// one word a header field is. The phrase belongs to the footer and to `[?]`;
-// a header states what the key is for, not what it will do to the screen
+// keysOffer is the key that opens a screen's whole register, as the foot
+// offers it. Every register opens on the same key, so a screen does not choose
+// one: its foot gets this from keyFooter, once, in front of the way out
 // (docs/interface/surfaces.md#the-supporting-screens).
-func screenHeaderKeys() string {
-	return keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List) +
-		" · " + keys.Bracket(keys.Screen.Quit) + " " + keys.Words(keys.Screen.Quit)
-}
-
-// screenBackKeys is the same pair for a screen a session opened rather than a
-// command line. One word differs, and it is the one word that is not true of
-// both: what is underneath is a prompt to go back to and not a shell to quit
-// to (docs/interface/surfaces.md#the-supporting-screens).
-func screenBackKeys() string {
-	return keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List) +
-		" · " + words(keys.Screen.Quit, "back")
-}
+func keysOffer() KeyOffer { return keyOffer(keys.Screen.List) }
 
 // hideKeysOffer is the same key again, once the list it opened is showing.
 func hideKeysOffer() KeyOffer {

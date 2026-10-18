@@ -11,26 +11,26 @@
 
 ── layout ──────────────────────────────────────────────────
 · a coding profile · the draft's grant ticked, the gate refused beside write
-/agents new · a coding agent · researcher                [esc] leave it as it is
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ⊘ questions   ● draft
+✓ brief   ⊘ questions   ● draft
 
-  test-writer — adds tests
+test-writer — adds tests
 
-  ⋮ 2 more sections above · [shift+↑] scroll up
+⋮ 2 more sections above · [shift+↑] scroll up
   Restrictions
-    Never delete a test.
+  Never delete a test.
 
   Method
-    Read, then write.
+  Read, then write.
 
   Report
-    The cases added.
+  The cases added.
 
 ❯ Tools
-    read + write + execute · it can change things, in its own copy of the tree
-  ⋮ 2 more sections · [shift+↓] scroll the profile
+  read + write + execute · it can change things, in its own copy of the tree
+⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ What may test-writer do? ───────────────────────────────────────────────────╮
 │  tiers                                                                       │
@@ -53,31 +53,31 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a chat profile · no tier that writes on offer
-/agents new · a chat colleague · researcher              [esc] leave it as it is
+/agents new · a chat colleague · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ⊘ questions   ● draft
+✓ brief   ⊘ questions   ● draft
 
-  test-writer — adds tests
+test-writer — adds tests
 
   Purpose
-    Add tests.
+  Add tests.
 
   Scope
-    One package.
+  One package.
 
   Restrictions
-    Never delete a test.
+  Never delete a test.
 
   Method
-    Read, then write.
+  Read, then write.
 
   Report
-    The cases added.
+  The cases added.
 
 ❯ Tools
-    read + web · it reads and reports
-  ⋮ 2 more sections · [shift+↓] scroll the profile
+  read + web · it reads and reports
+⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ What may test-writer do? ───────────────────────────────────────────────────╮
 │  tiers                                                                       │
@@ -95,24 +95,24 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a refused pick · a tool ticked without its tier, the loader's sentence under the list
-/agents new · a coding agent · researcher                [esc] leave it as it is
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ⊘ questions   ● draft
+✓ brief   ⊘ questions   ● draft
 
-  test-writer — adds tests
+test-writer — adds tests
 
-  ⋮ 3 more sections above · [shift+↑] scroll up
+⋮ 3 more sections above · [shift+↑] scroll up
 
   Method
-    Read, then write.
+  Read, then write.
 
   Report
-    The cases added.
+  The cases added.
 
 ❯ Tools
-    read + write + execute · it can change things, in its own copy of the tree
-  ⋮ 2 more sections · [shift+↓] scroll the profile
+  read + write + execute · it can change things, in its own copy of the tree
+⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ What may test-writer do? ───────────────────────────────────────────────────╮
 │  tiers                                                                       │
@@ -138,26 +138,26 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a coding profile · the draft's grant ticked, the gate refused beside write
-␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m                ␛[38;5;245m[esc] leave it as it is␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
+␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
-  ␛[38;5;252mtest-writer — adds tests␛[m
+␛[38;5;252mtest-writer — adds tests␛[m
 
-  ␛[38;5;245m⋮ 2 more sections above · [shift+↑] scroll up␛[m
+␛[38;5;245m⋮ 2 more sections above · [shift+↑] scroll up␛[m
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;246mNever delete a test.␛[m
+  ␛[38;5;246mNever delete a test.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;246mRead, then write.␛[m
+  ␛[38;5;246mRead, then write.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;246mThe cases added.␛[m
+  ␛[38;5;246mThe cases added.␛[m
 
 ␛[94m❯␛[m ␛[94mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
-  ␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+  ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;245m───────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m  ␛[38;5;245mtiers␛[m                                                                       ␛[94m│␛[m
@@ -180,31 +180,31 @@
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a chat profile · no tier that writes on offer
-␛[1;97m/agents new␛[m␛[38;5;245m · a chat colleague · researcher␛[m              ␛[38;5;245m[esc] leave it as it is␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a chat colleague · researcher␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
+␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
-  ␛[38;5;252mtest-writer — adds tests␛[m
+␛[38;5;252mtest-writer — adds tests␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;246mAdd tests.␛[m
+  ␛[38;5;246mAdd tests.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;246mOne package.␛[m
+  ␛[38;5;246mOne package.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;246mNever delete a test.␛[m
+  ␛[38;5;246mNever delete a test.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;246mRead, then write.␛[m
+  ␛[38;5;246mRead, then write.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;246mThe cases added.␛[m
+  ␛[38;5;246mThe cases added.␛[m
 
 ␛[94m❯␛[m ␛[94mTools␛[m
-    ␛[92mread + web␛[m␛[38;5;245m · it reads and reports␛[m
-  ␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+  ␛[92mread + web␛[m␛[38;5;245m · it reads and reports␛[m
+␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;245m───────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m  ␛[38;5;245mtiers␛[m                                                                       ␛[94m│␛[m
@@ -222,24 +222,24 @@
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a refused pick · a tool ticked without its tier, the loader's sentence under the list
-␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m                ␛[38;5;245m[esc] leave it as it is␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
+␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
-  ␛[38;5;252mtest-writer — adds tests␛[m
+␛[38;5;252mtest-writer — adds tests␛[m
 
-  ␛[38;5;245m⋮ 3 more sections above · [shift+↑] scroll up␛[m
+␛[38;5;245m⋮ 3 more sections above · [shift+↑] scroll up␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;246mRead, then write.␛[m
+  ␛[38;5;246mRead, then write.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;246mThe cases added.␛[m
+  ␛[38;5;246mThe cases added.␛[m
 
 ␛[94m❯␛[m ␛[94mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
-  ␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+  ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;245m───────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m  ␛[38;5;245mtiers␛[m                                                                       ␛[94m│␛[m

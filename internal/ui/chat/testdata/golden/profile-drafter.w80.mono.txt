@@ -11,91 +11,91 @@
 
 ── layout ──────────────────────────────────────────────────
 · the brief · the roles this session already has are on the header
-/agents new · a coding agent · researcher                            [esc] leave
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ● brief   · questions   · draft
+● brief   · questions   · draft
 
-  What should this agent do? Say the job however you like — what it changes,
-  what it checks, what it must leave alone.
+What should this agent do? Say the job however you like — what it changes, what
+it checks, what it must leave alone.
 
-  ┄ in your own words
-    ┃ what it is for                                                            
+┄ in your own words
+  ┃ what it is for                                                              
 
-  or start from one of these
+or start from one of these
   a test writer who adds table-driven tests for a package and runs them
   a reviewer who reads a diff for security problems and reports by severity
   a docs keeper who updates the documentation a change made stale, and nothing …
   a migrator who applies one mechanical refactor across the tree and verifies t…
 
-  [enter] draft from what you typed · [↑↓] the field or a starting point
-  [esc] nothing is drafted
+[enter] draft from what you typed · [↑↓] the field or a starting point
+[esc] nothing is drafted
 
 · the drafter's first question, asked on its own
-/agents new · a coding agent · researcher                            [esc] leave
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ● questions   · draft
+✓ brief   ● questions   · draft
 
-  question 1 of 2
-  Which package should it start from?
+question 1 of 2
+Which package should it start from?
 
-  ┄ your answer
-    ┃ enter alone says you have no preference                                   
+┄ your answer
+  ┃ enter alone says you have no preference                                     
 
-  [enter] answer it · [esc] nothing is drafted
+[enter] answer it · [esc] nothing is drafted
 
 · the second, with the first answer still above it
-/agents new · a coding agent · researcher                      [esc] back a step
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ● questions   · draft
+✓ brief   ● questions   · draft
 
-  ✓ Which package should it start from?
-    internal/agent
+✓ Which package should it start from?
+  internal/agent
 
-  question 2 of 2
-  Should it run the tests as well as write them?
+question 2 of 2
+Should it run the tests as well as write them?
 
-  ┄ your answer
-    ┃ enter alone says you have no preference                                   
+┄ your answer
+  ┃ enter alone says you have no preference                                     
 
-  [enter] answer it · [esc] back to the last answer
+[enter] answer it · [esc] back to the last answer
 
 · the draft in sections · Purpose selected, the one the drafter left empty marked
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ✓ questions   ● draft
+✓ brief   ✓ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
 ❯ Purpose
-    Add table-driven tests for one package at a time. Done when every exported
-    function has a case in its table and the package's tests pass.
+  Add table-driven tests for one package at a time. Done when every exported
+  function has a case in its table and the package's tests pass.
 
   Scope
-    The package you were pointed at and its _test.go files. Leave the exported
-    API and every other package alone.
+  The package you were pointed at and its _test.go files. Leave the exported
+  API and every other package alone.
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
   Method
-    Read the package, then its tests, then write the cases the table is
-    missing. Run the package's tests after each file.
+  Read the package, then its tests, then write the cases the table is missing.
+  Run the package's tests after each file.
 
   Report ⚠ empty · the drafter left it; a report is required
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
   Commands
-    none stated · the session's own command lists apply
-  ⋮ 1 more section · [shift+↓] scroll the profile
+  none stated · the session's own command lists apply
+⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-  [d] clear it · [R] all · [tab] the card · [esc] discard the draft
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself
+[d] clear it · [R] all · [tab] the card · [?] keys · [esc] discard the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -105,39 +105,39 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · one selected further down · its keys on the row under the sections
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ✓ questions   ● draft
+✓ brief   ✓ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time. Done when every exported
-    function has a case in its table and the package's tests pass.
+  Add table-driven tests for one package at a time. Done when every exported
+  function has a case in its table and the package's tests pass.
 
   Scope
-    The package you were pointed at and its _test.go files. Leave the exported
-    API and every other package alone.
+  The package you were pointed at and its _test.go files. Leave the exported
+  API and every other package alone.
 
 ❯ Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
   Method
-    Read the package, then its tests, then write the cases the table is
-    missing. Run the package's tests after each file.
+  Read the package, then its tests, then write the cases the table is missing.
+  Run the package's tests after each file.
 
   Report ⚠ empty · the drafter left it; a report is required
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
   Commands
-    none stated · the session's own command lists apply
-  ⋮ 1 more section · [shift+↓] scroll the profile
+  none stated · the session's own command lists apply
+⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-  [d] clear it · [R] all · [tab] the card · [esc] discard the draft
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself
+[d] clear it · [R] all · [tab] the card · [?] keys · [esc] discard the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -147,39 +147,39 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a section refining · the note under it, the other seven sent as fixed context
-/agents new · a coding agent · researcher                [esc] leave it as it is
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ✓ questions   ● draft
+✓ brief   ✓ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time. Done when every exported
-    function has a case in its table and the package's tests pass.
+  Add table-driven tests for one package at a time. Done when every exported
+  function has a case in its table and the package's tests pass.
 
   Scope
-    The package you were pointed at and its _test.go files. Leave the exported
-    API and every other package alone.
+  The package you were pointed at and its _test.go files. Leave the exported
+  API and every other package alone.
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
 ❯ Method
-    Read the package, then its tests, then write the cases the table is
-    missing. Run the package's tests after each file.
+  Read the package, then its tests, then write the cases the table is missing.
+  Run the package's tests after each file.
 
-    ┄ what to change in Method — the other seven are sent as fixed context
-    ┃ run go vet as well, and stop at the first failing file                  
+  ┄ what to change in Method — the other seven are sent as fixed context
+  ┃ run go vet as well, and stop at the first failing file                    
 
   Report ⚠ empty · the drafter left it; a report is required
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
-  ⋮ 2 more sections · [shift+↓] scroll the profile
+⋮ 2 more sections · [shift+↓] scroll the profile
 
-  [enter] refine it · [esc] leave it as it is
+[enter] refine it · [esc] leave it as it is
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -189,75 +189,75 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · the wait, on that section · the other sections stand
-/agents new · a coding agent · researcher         [?] keys · [esc] stop drafting
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ✓ questions   ● draft
+✓ brief   ✓ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time. Done when every exported
-    function has a case in its table and the package's tests pass.
+  Add table-driven tests for one package at a time. Done when every exported
+  function has a case in its table and the package's tests pass.
 
   Scope
-    The package you were pointed at and its _test.go files. Leave the exported
-    API and every other package alone.
+  The package you were pointed at and its _test.go files. Leave the exported
+  API and every other package alone.
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
 ❯ Method
-    Read the package, then its tests, then write the cases the table is
-    missing. Run the package's tests after each file.
+  Read the package, then its tests, then write the cases the table is missing.
+  Run the package's tests after each file.
 
-    ⠙ redrafting Method  0.0s · the other sections stand
+  ⠙ redrafting Method  0.0s · the other sections stand
 
   Report ⚠ empty · the drafter left it; a report is required
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
   Commands
-    none stated · the session's own command lists apply
+  none stated · the session's own command lists apply
 
   Model
-    inherited from this session · 8.0k tokens
+  inherited from this session · 8.0k tokens
 
-  [esc] stop drafting · the section keeps its last text
+[?] keys · [esc] stop drafting · the section keeps its last text
 
 · the section refined · marked, and esc now takes it back
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ✓ questions   ● draft
+✓ brief   ✓ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time. Done when every exported
-    function has a case in its table and the package's tests pass.
+  Add table-driven tests for one package at a time. Done when every exported
+  function has a case in its table and the package's tests pass.
 
   Scope
-    The package you were pointed at and its _test.go files. Leave the exported
-    API and every other package alone.
+  The package you were pointed at and its _test.go files. Leave the exported
+  API and every other package alone.
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
 ❯ Method · refined once
-    Read the package, then its tests, then write the missing cases. Run the
-    tests and go vet after each file, and stop at the first that fails.
+  Read the package, then its tests, then write the missing cases. Run the
+  tests and go vet after each file, and stop at the first that fails.
 
   Report ⚠ empty · the drafter left it; a report is required
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
-  ⋮ 2 more sections · [shift+↓] scroll the profile
+  read + write + execute · it can change things, in its own copy of the tree
+⋮ 2 more sections · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-  [d] clear it · [R] all · [tab] the card
-  [esc] take back its last revision
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself
+[d] clear it · [R] all · [tab] the card · [?] keys
+[esc] take back its last revision
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -267,39 +267,39 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a section written in the editor · marked as the person's own
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ✓ questions   ● draft
+✓ brief   ✓ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time. Done when every exported
-    function has a case in its table and the package's tests pass.
+  Add table-driven tests for one package at a time. Done when every exported
+  function has a case in its table and the package's tests pass.
 
 ❯ Scope
-    The package you were pointed at and its _test.go files. Leave the exported
-    API and every other package alone.
+  The package you were pointed at and its _test.go files. Leave the exported
+  API and every other package alone.
 
   Restrictions · edited by you
-    Never change an expected value to make a case pass. Never delete a test.
+  Never change an expected value to make a case pass. Never delete a test.
 
   Method · refined once
-    Read the package, then its tests, then write the missing cases. Run the
-    tests and go vet after each file, and stop at the first that fails.
+  Read the package, then its tests, then write the missing cases. Run the
+  tests and go vet after each file, and stop at the first that fails.
 
   Report ⚠ empty · the drafter left it; a report is required
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
   Commands
-    none stated · the session's own command lists apply
-  ⋮ 1 more section · [shift+↓] scroll the profile
+  none stated · the session's own command lists apply
+⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-  [d] clear it · [R] all · [tab] the card · [esc] discard the draft
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself
+[d] clear it · [R] all · [tab] the card · [?] keys · [esc] discard the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -309,38 +309,38 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a save the loader refused · the draft stays, the refusal over it
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ✓ questions   ● draft
+✓ brief   ✓ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
-  ⚠ Could not save the profile — agent profile
-    /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000.
-    Revise a section, or Discard it.
+⚠ Could not save the profile — agent profile
+  /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000.
+  Revise a section, or Discard it.
 
   Purpose
-    Add table-driven tests for one package at a time. Done when every exported
-    function has a case in its table and the package's tests pass.
+  Add table-driven tests for one package at a time. Done when every exported
+  function has a case in its table and the package's tests pass.
 
   Scope
-    The package you were pointed at and its _test.go files. Leave the exported
-    API and every other package alone.
+  The package you were pointed at and its _test.go files. Leave the exported
+  API and every other package alone.
 
   Restrictions · edited by you
-    Never change an expected value to make a case pass. Never delete a test.
+  Never change an expected value to make a case pass. Never delete a test.
 
   Method · refined once
-    Read the package, then its tests, then write the missing cases. Run the
-    tests and go vet after each file, and stop at the first that fails.
+  Read the package, then its tests, then write the missing cases. Run the
+  tests and go vet after each file, and stop at the first that fails.
 
   Report ⚠ empty · the drafter left it; a report is required
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
-  ⋮ 2 more sections · [shift+↓] scroll the profile
+⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                │
@@ -351,22 +351,22 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · [?] on the draft · the drafter's keys and the glyph legend
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ✓ questions   ● draft
+✓ brief   ✓ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
-  ⚠ Could not save the profile — agent profile
-    /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000.
-    Revise a section, or Discard it.
+⚠ Could not save the profile — agent profile
+  /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000.
+  Revise a section, or Discard it.
 
   Purpose
-    Add table-driven tests for one package at a time. Done when every exported
-    function has a case in its table and the package's tests pass.
+  Add table-driven tests for one package at a time. Done when every exported
+  function has a case in its table and the package's tests pass.
 
-  ⋮ 7 more sections · [shift+↓] scroll the profile
+⋮ 7 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                │
@@ -414,91 +414,91 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the brief · the roles this session already has are on the header
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m                            ␛[38;5;244m[esc] leave␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;254m● brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m· questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
+␛[38;5;254m● brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m· questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
 
-  ␛[38;5;254mWhat should this agent do? Say the job however you like — what it changes,␛[m
-  ␛[38;5;254mwhat it checks, what it must leave alone.␛[m
+␛[38;5;254mWhat should this agent do? Say the job however you like — what it changes, what␛[m
+␛[38;5;254mit checks, what it must leave alone.␛[m
 
-  ␛[38;5;244m┄ in your own words␛[m
-    ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mw␛[m␛[m␛[38;5;254m␛[38;5;244mhat it is for␛[m␛[m␛[38;5;254m                                                            ␛[m
+␛[38;5;244m┄ in your own words␛[m
+  ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mw␛[m␛[m␛[38;5;254m␛[38;5;244mhat it is for␛[m␛[m␛[38;5;254m                                                              ␛[m
 
-  ␛[38;5;244mor start from one of these␛[m
+␛[38;5;244mor start from one of these␛[m
   ␛[38;5;244ma test writer who adds table-driven tests for a package and runs them␛[m
   ␛[38;5;244ma reviewer who reads a diff for security problems and reports by severity␛[m
   ␛[38;5;244ma docs keeper who updates the documentation a change made stale, and nothing …␛[m
   ␛[38;5;244ma migrator who applies one mechanical refactor across the tree and verifies t…␛[m
 
-  ␛[38;5;254m[enter]␛[m␛[38;5;244m draft from what you typed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m the field or a starting point␛[m
-  ␛[38;5;254m[esc]␛[m␛[38;5;244m nothing is drafted␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m draft from what you typed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m the field or a starting point␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m nothing is drafted␛[m
 
 · the drafter's first question, asked on its own
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m                            ␛[38;5;244m[esc] leave␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;254m● questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;254m● questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
 
-  ␛[38;5;244mquestion 1 of 2␛[m
-  ␛[38;5;254mWhich package should it start from?␛[m
+␛[38;5;244mquestion 1 of 2␛[m
+␛[38;5;254mWhich package should it start from?␛[m
 
-  ␛[38;5;244m┄ your answer␛[m
-    ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237me␛[m␛[m␛[38;5;254m␛[38;5;244mnter alone says you have no preference␛[m␛[m␛[38;5;254m                                   ␛[m
+␛[38;5;244m┄ your answer␛[m
+  ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237me␛[m␛[m␛[38;5;254m␛[38;5;244mnter alone says you have no preference␛[m␛[m␛[38;5;254m                                     ␛[m
 
-  ␛[38;5;254m[enter]␛[m␛[38;5;244m answer it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m nothing is drafted␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m answer it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m nothing is drafted␛[m
 
 · the second, with the first answer still above it
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m                      ␛[38;5;244m[esc] back a step␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;254m● questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;254m● questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
 
-  ␛[38;5;244m✓ Which package should it start from?␛[m
-  ␛[38;5;244m  internal/agent␛[m
+␛[38;5;244m✓ Which package should it start from?␛[m
+␛[38;5;244m  internal/agent␛[m
 
-  ␛[38;5;244mquestion 2 of 2␛[m
-  ␛[38;5;254mShould it run the tests as well as write them?␛[m
+␛[38;5;244mquestion 2 of 2␛[m
+␛[38;5;254mShould it run the tests as well as write them?␛[m
 
-  ␛[38;5;244m┄ your answer␛[m
-    ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237me␛[m␛[m␛[38;5;254m␛[38;5;244mnter alone says you have no preference␛[m␛[m␛[38;5;254m                                   ␛[m
+␛[38;5;244m┄ your answer␛[m
+  ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237me␛[m␛[m␛[38;5;254m␛[38;5;244mnter alone says you have no preference␛[m␛[m␛[38;5;254m                                     ␛[m
 
-  ␛[38;5;254m[enter]␛[m␛[38;5;244m answer it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the last answer␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m answer it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the last answer␛[m
 
 · the draft in sections · Purpose selected, the one the drafter left empty marked
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m     ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
 
-  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mPurpose␛[m
-    ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
-    ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
+  ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
+  ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
 
   ␛[38;5;254mScope␛[m
-    ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
-    ␛[38;5;244mAPI and every other package alone.␛[m
+  ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
+  ␛[38;5;244mAPI and every other package alone.␛[m
 
   ␛[38;5;254mRestrictions␛[m
-    ␛[38;5;244mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;244mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;254mMethod␛[m
-    ␛[38;5;244mRead the package, then its tests, then write the cases the table is␛[m
-    ␛[38;5;244mmissing. Run the package's tests after each file.␛[m
+  ␛[38;5;244mRead the package, then its tests, then write the cases the table is missing.␛[m
+  ␛[38;5;244mRun the package's tests after each file.␛[m
 
   ␛[38;5;254mReport␛[m ␛[38;5;254m⚠ empty · the drafter left it; a report is required␛[m
 
   ␛[38;5;254mTools␛[m
-    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
+  ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
 
   ␛[38;5;254mCommands␛[m
-    ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
-  ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+  ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
+␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
-  ␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
@@ -508,39 +508,39 @@ $  a shell command
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one selected further down · its keys on the row under the sections
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m     ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
 
-  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;254mPurpose␛[m
-    ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
-    ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
+  ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
+  ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
 
   ␛[38;5;254mScope␛[m
-    ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
-    ␛[38;5;244mAPI and every other package alone.␛[m
+  ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
+  ␛[38;5;244mAPI and every other package alone.␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mRestrictions␛[m
-    ␛[38;5;244mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;244mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;254mMethod␛[m
-    ␛[38;5;244mRead the package, then its tests, then write the cases the table is␛[m
-    ␛[38;5;244mmissing. Run the package's tests after each file.␛[m
+  ␛[38;5;244mRead the package, then its tests, then write the cases the table is missing.␛[m
+  ␛[38;5;244mRun the package's tests after each file.␛[m
 
   ␛[38;5;254mReport␛[m ␛[38;5;254m⚠ empty · the drafter left it; a report is required␛[m
 
   ␛[38;5;254mTools␛[m
-    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
+  ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
 
   ␛[38;5;254mCommands␛[m
-    ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
-  ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+  ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
+␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
-  ␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
@@ -550,39 +550,39 @@ $  a shell command
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a section refining · the note under it, the other seven sent as fixed context
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m                ␛[38;5;244m[esc] leave it as it is␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
 
-  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;254mPurpose␛[m
-    ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
-    ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
+  ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
+  ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
 
   ␛[38;5;254mScope␛[m
-    ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
-    ␛[38;5;244mAPI and every other package alone.␛[m
+  ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
+  ␛[38;5;244mAPI and every other package alone.␛[m
 
   ␛[38;5;254mRestrictions␛[m
-    ␛[38;5;244mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;244mNever change an expected value to make a case pass.␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mMethod␛[m
-    ␛[38;5;244mRead the package, then its tests, then write the cases the table is␛[m
-    ␛[38;5;244mmissing. Run the package's tests after each file.␛[m
+  ␛[38;5;244mRead the package, then its tests, then write the cases the table is missing.␛[m
+  ␛[38;5;244mRun the package's tests after each file.␛[m
 
-    ␛[38;5;244m┄ what to change in Method — the other seven are sent as fixed context␛[m
-    ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254mrun go vet as well, and stop at the first failing file␛[m␛[38;5;254m␛[7;38;5;237m ␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m                 ␛[m
+  ␛[38;5;244m┄ what to change in Method — the other seven are sent as fixed context␛[m
+  ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254mrun go vet as well, and stop at the first failing file␛[m␛[38;5;254m␛[7;38;5;237m ␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m                   ␛[m
 
   ␛[38;5;254mReport␛[m ␛[38;5;254m⚠ empty · the drafter left it; a report is required␛[m
 
   ␛[38;5;254mTools␛[m
-    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
+  ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
 
-  ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[enter]␛[m␛[38;5;244m refine it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave it as it is␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m refine it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave it as it is␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
@@ -592,75 +592,75 @@ $  a shell command
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the wait, on that section · the other sections stand
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m         ␛[38;5;244m[?] keys · [esc] stop drafting␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
 
-  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;254mPurpose␛[m
-    ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
-    ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
+  ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
+  ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
 
   ␛[38;5;254mScope␛[m
-    ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
-    ␛[38;5;244mAPI and every other package alone.␛[m
+  ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
+  ␛[38;5;244mAPI and every other package alone.␛[m
 
   ␛[38;5;254mRestrictions␛[m
-    ␛[38;5;244mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;244mNever change an expected value to make a case pass.␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mMethod␛[m
-    ␛[38;5;244mRead the package, then its tests, then write the cases the table is␛[m
-    ␛[38;5;244mmissing. Run the package's tests after each file.␛[m
+  ␛[38;5;244mRead the package, then its tests, then write the cases the table is missing.␛[m
+  ␛[38;5;244mRun the package's tests after each file.␛[m
 
-    ␛[38;5;254m⠙ redrafting Method␛[m␛[38;5;244m  0.0s · the other sections stand␛[m
+  ␛[38;5;254m⠙ redrafting Method␛[m␛[38;5;244m  0.0s · the other sections stand␛[m
 
   ␛[38;5;254mReport␛[m ␛[38;5;254m⚠ empty · the drafter left it; a report is required␛[m
 
   ␛[38;5;254mTools␛[m
-    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
+  ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
 
   ␛[38;5;254mCommands␛[m
-    ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
+  ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
 
   ␛[38;5;254mModel␛[m
-    ␛[38;5;254minherited from this session␛[m␛[38;5;244m · 8.0k tokens␛[m
+  ␛[38;5;254minherited from this session␛[m␛[38;5;244m · 8.0k tokens␛[m
 
-  ␛[38;5;254m[esc]␛[m␛[38;5;244m stop drafting · the section keeps its last text␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop drafting · the section keeps its last text␛[m
 
 · the section refined · marked, and esc now takes it back
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m     ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
 
-  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;254mPurpose␛[m
-    ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
-    ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
+  ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
+  ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
 
   ␛[38;5;254mScope␛[m
-    ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
-    ␛[38;5;244mAPI and every other package alone.␛[m
+  ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
+  ␛[38;5;244mAPI and every other package alone.␛[m
 
   ␛[38;5;254mRestrictions␛[m
-    ␛[38;5;244mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;244mNever change an expected value to make a case pass.␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mMethod␛[m ␛[38;5;244m· refined once␛[m
-    ␛[38;5;244mRead the package, then its tests, then write the missing cases. Run the␛[m
-    ␛[38;5;244mtests and go vet after each file, and stop at the first that fails.␛[m
+  ␛[38;5;244mRead the package, then its tests, then write the missing cases. Run the␛[m
+  ␛[38;5;244mtests and go vet after each file, and stop at the first that fails.␛[m
 
   ␛[38;5;254mReport␛[m ␛[38;5;254m⚠ empty · the drafter left it; a report is required␛[m
 
   ␛[38;5;254mTools␛[m
-    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
-  ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+  ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
+␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
-  ␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
-  ␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
@@ -670,39 +670,39 @@ $  a shell command
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a section written in the editor · marked as the person's own
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m     ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
 
-  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;254mPurpose␛[m
-    ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
-    ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
+  ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
+  ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mScope␛[m
-    ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
-    ␛[38;5;244mAPI and every other package alone.␛[m
+  ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
+  ␛[38;5;244mAPI and every other package alone.␛[m
 
   ␛[38;5;254mRestrictions␛[m ␛[38;5;254m· edited by you␛[m
-    ␛[38;5;244mNever change an expected value to make a case pass. Never delete a test.␛[m
+  ␛[38;5;244mNever change an expected value to make a case pass. Never delete a test.␛[m
 
   ␛[38;5;254mMethod␛[m ␛[38;5;244m· refined once␛[m
-    ␛[38;5;244mRead the package, then its tests, then write the missing cases. Run the␛[m
-    ␛[38;5;244mtests and go vet after each file, and stop at the first that fails.␛[m
+  ␛[38;5;244mRead the package, then its tests, then write the missing cases. Run the␛[m
+  ␛[38;5;244mtests and go vet after each file, and stop at the first that fails.␛[m
 
   ␛[38;5;254mReport␛[m ␛[38;5;254m⚠ empty · the drafter left it; a report is required␛[m
 
   ␛[38;5;254mTools␛[m
-    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
+  ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
 
   ␛[38;5;254mCommands␛[m
-    ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
-  ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+  ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
+␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
-  ␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
@@ -712,38 +712,38 @@ $  a shell command
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a save the loader refused · the draft stays, the refusal over it
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m     ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
 
-  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
-  ␛[38;5;254m⚠ Could not save the profile — agent profile␛[m
-  ␛[38;5;254m  /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000.␛[m
-  ␛[38;5;254m  Revise a section, or Discard it.␛[m
+␛[38;5;254m⚠ Could not save the profile — agent profile␛[m
+␛[38;5;254m  /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000.␛[m
+␛[38;5;254m  Revise a section, or Discard it.␛[m
 
   ␛[38;5;254mPurpose␛[m
-    ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
-    ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
+  ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
+  ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
 
   ␛[38;5;254mScope␛[m
-    ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
-    ␛[38;5;244mAPI and every other package alone.␛[m
+  ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported␛[m
+  ␛[38;5;244mAPI and every other package alone.␛[m
 
   ␛[38;5;254mRestrictions␛[m ␛[38;5;254m· edited by you␛[m
-    ␛[38;5;244mNever change an expected value to make a case pass. Never delete a test.␛[m
+  ␛[38;5;244mNever change an expected value to make a case pass. Never delete a test.␛[m
 
   ␛[38;5;254mMethod␛[m ␛[38;5;244m· refined once␛[m
-    ␛[38;5;244mRead the package, then its tests, then write the missing cases. Run the␛[m
-    ␛[38;5;244mtests and go vet after each file, and stop at the first that fails.␛[m
+  ␛[38;5;244mRead the package, then its tests, then write the missing cases. Run the␛[m
+  ␛[38;5;244mtests and go vet after each file, and stop at the first that fails.␛[m
 
   ␛[38;5;254mReport␛[m ␛[38;5;254m⚠ empty · the drafter left it; a report is required␛[m
 
   ␛[38;5;254mTools␛[m
-    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
+  ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
 
-  ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                               ␛[m ␛[38;5;244m│␛[m
@@ -754,22 +754,22 @@ $  a shell command
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · [?] on the draft · the drafter's keys and the glyph legend
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m     ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
 
-  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
-  ␛[38;5;254m⚠ Could not save the profile — agent profile␛[m
-  ␛[38;5;254m  /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000.␛[m
-  ␛[38;5;254m  Revise a section, or Discard it.␛[m
+␛[38;5;254m⚠ Could not save the profile — agent profile␛[m
+␛[38;5;254m  /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000.␛[m
+␛[38;5;254m  Revise a section, or Discard it.␛[m
 
   ␛[38;5;254mPurpose␛[m
-    ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
-    ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
+  ␛[38;5;244mAdd table-driven tests for one package at a time. Done when every exported␛[m
+  ␛[38;5;244mfunction has a case in its table and the package's tests pass.␛[m
 
-  ␛[38;5;244m⋮ 7 more sections · [shift+↓] scroll the profile␛[m
+␛[38;5;244m⋮ 7 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                               ␛[m ␛[38;5;244m│␛[m

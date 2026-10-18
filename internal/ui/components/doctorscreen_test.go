@@ -62,10 +62,10 @@ func doctorIndent(line string) int {
 }
 
 // The header names the command, how many checks it is over, how long the run
-// has taken and the two keys every supporting screen offers.
-func TestDoctorScreen_HeaderStatesTheRunAndTheKeys(t *testing.T) {
+// has taken; the keys are the foot's.
+func TestDoctorScreen_HeaderStatesTheRun(t *testing.T) {
 	head := doctorLines(doctorScreen(), 110)[0]
-	for _, want := range []string{"shhh doctor", "6 checks", "0.4s", "[?] keys", "[esc] back"} {
+	for _, want := range []string{"shhh doctor", "6 checks", "0.4s"} {
 		if !strings.Contains(head, want) {
 			t.Fatalf("the header %q does not state %q", head, want)
 		}

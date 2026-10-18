@@ -182,7 +182,7 @@ func (r *RateScreen) View(width int) string {
 // header names the command and says how far through the entries the reader
 // is.
 func (r *RateScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("shhh rate")}, keys: screenHeaderKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("shhh rate")}}
 	if subject := r.subject(); subject != "" {
 		h.left = append(h.left, screenField(subject))
 	}

@@ -223,6 +223,7 @@ func (s *SnippetScreen) View(width int) string { return s.view(width, s) }
 func (s *SnippetScreen) chrome(width int) screenChrome {
 	field := s.footField()
 	foot := s.footer(s.offers(width, field), s.keyList(), field)
+	foot.inert = foot.inert || s.rename != nil
 	if s.confirm != nil {
 		foot.taken = s.confirm.View(width)
 	}
@@ -287,7 +288,7 @@ func (s *SnippetScreen) previewRows(width int) []string {
 
 // header names the command and what it is over.
 func (s *SnippetScreen) header() screenHeader {
-	head := screenHeader{left: []RailSegment{screenTitle("shhh snippets")}, keys: screenHeaderKeys()}
+	head := screenHeader{left: []RailSegment{screenTitle("shhh snippets")}}
 	if s.Subject != "" {
 		head.left = append(head.left, screenField(s.Subject))
 	}

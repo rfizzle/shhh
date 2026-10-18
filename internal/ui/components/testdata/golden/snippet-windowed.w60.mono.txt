@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · more snippets than the screen holds
-shhh snippets · 12 snippets            [?] keys · [esc] back
+shhh snippets · 12 snippets
 ────────────────────────────────────────────────────────────
 
 ↑ 3 more
@@ -22,11 +22,11 @@ shhh snippets · 12 snippets            [?] keys · [esc] back
 ↓ 5 more
 
 [↑↓/jk] move · [enter] run it · [c] copy · [e] rename
-[d] delete · [/] filter · [esc] back to the shell
+[d] delete · [/] filter · [?] keys · [esc] back to the shell
 
 ── ansi ────────────────────────────────────────────────────
 · more snippets than the screen holds
-␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 12 snippets␛[m            ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 12 snippets␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m↑ 3 more␛[m
@@ -37,4 +37,4 @@ shhh snippets · 12 snippets            [?] keys · [esc] back
 ␛[38;5;244m↓ 5 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m
-␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m

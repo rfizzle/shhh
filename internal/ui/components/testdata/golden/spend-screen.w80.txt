@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the total · the whole bill by kind of request
-/stats · 2 models · 2 children · 3 turns   $0.4210 spent · [?] keys · [esc] back
+/stats · 2 models · 2 children · 3 turns                           $0.4210 spent
 ────────────────────────────────────────────────────────────────────────────────
 
 ❯ session total                                                          $0.4210
@@ -34,10 +34,10 @@ session total                                                     the whole bill
   main         $0.3620 · ↑140.2k ↓7.8k · 96.0k cached · 14 requests
 … (+3 more rows)
 
-[enter] open the turn · [esc] back
+[enter] open the turn · [?] keys · [esc] back
 
 · a model · its own kinds of request, and its children's share after the ◇
-/stats · 2 models · 2 children · 3 turns   $0.4210 spent · [?] keys · [esc] back
+/stats · 2 models · 2 children · 3 turns                           $0.4210 spent
 ────────────────────────────────────────────────────────────────────────────────
 
   session total                                                          $0.4210
@@ -60,10 +60,10 @@ claude-opus-5-5                                                            model
   main         $0.3620 · ↑140.2k ↓7.8k · 96.0k cached · 14 requests
 … (+2 more rows)
 
-[enter] open the turn · [esc] back
+[enter] open the turn · [?] keys · [esc] back
 
 · a child · its share by name, and the model it ran on
-/stats · 2 models · 2 children · 3 turns   $0.4210 spent · [?] keys · [esc] back
+/stats · 2 models · 2 children · 3 turns                           $0.4210 spent
 ────────────────────────────────────────────────────────────────────────────────
 
   session total                                                          $0.4210
@@ -85,10 +85,10 @@ by turn
   tokens       ↑20.0k ↓600
   requests     2
 
-[enter] open the turn · [esc] back
+[enter] open the turn · [?] keys · [esc] back
 
 · a turn · its cost as its close states it, enter opens it on the turns screen
-/stats · 2 models · 2 children · 3 turns   $0.4210 spent · [?] keys · [esc] back
+/stats · 2 models · 2 children · 3 turns                           $0.4210 spent
 ────────────────────────────────────────────────────────────────────────────────
 
   session total                                                          $0.4210
@@ -108,10 +108,10 @@ turn 2                                                                      done
   spent        $0.2870
   took         2m 10s
 
-[enter] open the turn · [esc] back
+[enter] open the turn · [?] keys · [esc] back
 
 · a paused turn · the figure its pause row kept, the time and rounds it used
-/stats · 2 models · 2 children · 3 turns   $0.4210 spent · [?] keys · [esc] back
+/stats · 2 models · 2 children · 3 turns                           $0.4210 spent
 ────────────────────────────────────────────────────────────────────────────────
 
   session total                                                          $0.4210
@@ -132,21 +132,21 @@ turn 3                                                                    paused
   took         4m 12s
   rounds       50 of 50 used
 
-[enter] open the turn · [esc] back
+[enter] open the turn · [?] keys · [esc] back
 
 · empty · a session that has spent nothing
-/stats                                                     [?] keys · [esc] back
+/stats
 ────────────────────────────────────────────────────────────────────────────────
 
 the session has not been billed for anything yet
 ────────────────────────────────────────────────────────────────────────────────
 nothing selected
 
-[↑↓/jk] move · [esc] back
+[↑↓/jk] move · [?] keys · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · the total · the whole bill by kind of request
-␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m   ␛[38;5;245m$0.4210 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m                           ␛[38;5;245m$0.4210 spent␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[1;97;48;5;61msession total                                                          $0.4210␛[m
@@ -169,10 +169,10 @@ nothing selected
   ␛[38;5;246mmain         ␛[m␛[38;5;252m$0.3620 · ↑140.2k ↓7.8k · 96.0k cached · 14 requests␛[m
 ␛[38;5;245m… (+3 more rows)␛[m
 
-␛[38;5;248m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;248m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a model · its own kinds of request, and its children's share after the ◇
-␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m   ␛[38;5;245m$0.4210 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m                           ␛[38;5;245m$0.4210 spent␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252msession total␛[m                                                          ␛[38;5;245m$0.4210␛[m
@@ -195,10 +195,10 @@ nothing selected
   ␛[38;5;246mmain         ␛[m␛[38;5;252m$0.3620 · ↑140.2k ↓7.8k · 96.0k cached · 14 requests␛[m
 ␛[38;5;245m… (+2 more rows)␛[m
 
-␛[38;5;248m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;248m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a child · its share by name, and the model it ran on
-␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m   ␛[38;5;245m$0.4210 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m                           ␛[38;5;245m$0.4210 spent␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252msession total␛[m                                                          ␛[38;5;245m$0.4210␛[m
@@ -220,10 +220,10 @@ nothing selected
   ␛[38;5;246mtokens       ␛[m␛[38;5;252m↑20.0k ↓600␛[m
   ␛[38;5;246mrequests     ␛[m␛[38;5;252m2␛[m
 
-␛[38;5;248m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;248m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a turn · its cost as its close states it, enter opens it on the turns screen
-␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m   ␛[38;5;245m$0.4210 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m                           ␛[38;5;245m$0.4210 spent␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252msession total␛[m                                                          ␛[38;5;245m$0.4210␛[m
@@ -243,10 +243,10 @@ nothing selected
   ␛[38;5;246mspent        ␛[m␛[38;5;252m$0.2870␛[m
   ␛[38;5;246mtook         ␛[m␛[38;5;252m2m 10s␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a paused turn · the figure its pause row kept, the time and rounds it used
-␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m   ␛[38;5;245m$0.4210 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m                           ␛[38;5;245m$0.4210 spent␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252msession total␛[m                                                          ␛[38;5;245m$0.4210␛[m
@@ -267,14 +267,14 @@ nothing selected
   ␛[38;5;246mtook         ␛[m␛[38;5;252m4m 12s␛[m
   ␛[38;5;246mrounds       ␛[m␛[38;5;252m50 of 50 used␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · empty · a session that has spent nothing
-␛[1;97m/stats␛[m                                                     ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/stats␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;245mthe session has not been billed for anything yet␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;245mnothing selected␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

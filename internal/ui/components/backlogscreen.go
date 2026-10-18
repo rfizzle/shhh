@@ -325,7 +325,7 @@ func (b *BacklogScreen) View(width int) string {
 // header names the surface, which tab it is on, what the filters left and
 // how much of the list that is.
 func (b *BacklogScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("backlog")}, keys: b.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("backlog")}}
 	switch {
 	case b.archived():
 		h.left = append(h.left, screenField("done"))
@@ -353,20 +353,6 @@ func (b *BacklogScreen) header() screenHeader {
 	}
 	h.tally = sty.dim.Render(b.count())
 	return h
-}
-
-// headerKeys is the pair a takeover ends its header with: the whole register
-// and the way out. A surface holding the keyboard with nothing saying how to
-// give it back is the thing invariant 5 exists to stop.
-func (b *BacklogScreen) headerKeys() string {
-	list := keys.Bracket(keys.Backlog.List) + " " + keys.Words(keys.Backlog.List)
-	if b.keys {
-		list = keys.Bracket(keys.Backlog.List) + " hide the keys"
-	}
-	// One word, the way every screen in the family ends its header: what the
-	// key is for. What it will do is the foot's to say
-	// (docs/interface/surfaces.md#the-supporting-screens).
-	return list + " · " + words(keys.Backlog.Back, "back")
 }
 
 // count is the tally: how many rows the filters left, out of how many there

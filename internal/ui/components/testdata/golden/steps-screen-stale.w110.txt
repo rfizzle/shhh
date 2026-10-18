@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the header · the count, then how long the list has stood
-/steps · 1 of 7 · unchanged 25 rounds                                                    [?] keys · [esc] back
+/steps · 1 of 7 · unchanged 25 rounds
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   1. ✓ Read the loop              done          2 tools │ 2. Patch the round limit                     current
@@ -23,11 +23,11 @@
   7. · Write the report                     not started │   ▎✎ edit    internal/agen…  +12 −4 · 2 hunks   1.1s
                                                         │   ▎$ run     go test ./internal…  ok · 1 line   3.0s
 
-[↑↓/jk] move · [esc] back                                                     the agent's own list, not a plan
+[↑↓/jk] move · [?] keys · [esc] back                                          the agent's own list, not a plan
 
 ── ansi ────────────────────────────────────────────────────
 · the header · the count, then how long the list has stood
-␛[1;97m/steps␛[m␛[38;5;245m · 1 of 7␛[m␛[38;5;245m · unchanged 25 rounds␛[m                                                    ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/steps␛[m␛[38;5;245m · 1 of 7␛[m␛[38;5;245m · unchanged 25 rounds␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Read the loop␛[m              ␛[92mdone␛[m          ␛[38;5;252m2 tools␛[m␛[38;5;245m │ ␛[m␛[1;97m2. Patch the round limit␛[m                     ␛[38;5;245mcurrent␛[m
@@ -39,4 +39,4 @@
   ␛[38;5;245m7. ␛[m␛[38;5;252m· Write the report␛[m                     ␛[38;5;245mnot started␛[m␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agen…␛[m  ␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;248m · ␛[m␛[38;5;248m2 hunks␛[m   ␛[38;5;245m1.1s␛[m
                                                        ␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal…␛[m  ␛[92mok␛[m␛[38;5;245m · ␛[m␛[38;5;248m1 line␛[m   ␛[38;5;245m3.0s␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                                                     ␛[38;5;245mthe agent's own list, not a plan␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                                          ␛[38;5;245mthe agent's own list, not a plan␛[m

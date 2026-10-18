@@ -124,10 +124,7 @@ func railScreenMarker(arrow string, heads []int, names []string, from, to, width
 
 // header names the surface and how many blocks it holds.
 func (s *RailScreen) header(blocks int) screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/rail")}, keys: screenBackKeys()}
-	if s.showKeys {
-		h.keys = keys.Bracket(keys.Screen.List) + " hide the keys · " + words(keys.Screen.Quit, "back")
-	}
+	h := screenHeader{left: []RailSegment{screenTitle("/rail")}}
 	if blocks > 0 {
 		h.left = append(h.left, screenField("the rail in full · "+plainPlural(blocks, "1 block", fmt.Sprintf("%d blocks", blocks))))
 	}

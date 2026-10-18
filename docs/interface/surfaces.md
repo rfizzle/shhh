@@ -3386,20 +3386,28 @@ manager](#the-process-manager)), its rail in full (`/rail`, [the inspector
 rail](#the-inspector-rail)), where its tools came from (`/mcp`, below), the session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
-profile — and they are one family rather than twenty screens: the same header, the same
-ground given up in the same order as the terminal narrows, the same key row at
-the foot and the same `[?]` behind it. The two that arrived last had each been
-drawing a chrome of their own, and the way that showed was not in either of
-them: it was reading all of them side by side.
+profile — and they are one family rather than twenty screens: one chrome, drawn
+once. A title row (the surface's name, what it is a reading of, and the one
+count it keeps on the right), a rule, a body, and a foot; every screen renders
+its body into that chrome and draws no header or foot of its own. The body
+starts in the title's own column, column zero, on every screen — the
+pointer's gutter is already two columns, and a margin in front of it spent
+four on a terminal that is narrow at sixty. The same ground is given up in the
+same order as the terminal narrows, and the same `[?]` is behind the key row.
+The two that arrived last had each been drawing a chrome of their own, and the
+way that showed was not in either of them: it was reading all of them side by
+side.
 
-They say the way out in one voice, and each of them says it twice because a
-key row and a header are read at different moments — not because there are two
-facts. The header ends with the register's key and then esc, with the act in
-its one word, `back`, wherever the screen was opened from. The foot ends with the same act
+The header carries a name and a state and no key. The keys are offered once,
+at the foot, and the foot ends `[?] keys · [esc] back`: the register's key,
+then the way out, which is the last segment a narrow terminal takes from the
+row. Where a surface is typing into something, and `?` is a letter, the foot
+does not offer it (invariant 5).
 
-under the key a reader reaches for without thinking:
+They say the way out in one voice. The foot ends with the act under the key a
+reader reaches for without thinking:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
-browser, and **back**, the header's own word, on the context reading, the sources ledger, the
+browser, and **back** on the context reading, the sources ledger, the
 working list, the readings, the turns, the alerts, the flakes, the bill, the process manager, the tools, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
@@ -3411,8 +3419,9 @@ asking* when it is not; rating *stops*; and the drafting flow unwinds one exchan
 so what its esc says is which of the four things it is about to do — leave,
 go back a step, stop the drafting turn, or drop the draft
 ([the profile drafter](#the-profile-drafter)). That flow is also the one
-header here with no register key to put in front of the way out, so esc is
-the whole of its right-hand run.
+screen here whose key row is in its body, under the step it belongs to, and
+it has no `[?]` on a step with a field in front of the reader, so esc is the
+whole of that row.
 
 One of them is reached both ways. The settings screen is `shhh config` from a
 shell and `/config` from inside a session, and it is the same screen either
@@ -3423,8 +3432,7 @@ running, and what a write leaves behind is a row in that transcript saying
 what reached the file — and, for every setting the session cannot take as it
 is staged, that the running session keeps the settings it started on, because
 a screen that changed the file is not a screen that changed the conversation. Two words differ and they are the two that say where
-the reader is: what the screen calls itself, and the one word its header ends
-with. The four settings that made this worth having are the ones a person
+the reader is: what the screen calls itself, and the word its foot's esc ends with. The four settings that made this worth having are the ones a person
 reaches for in the middle of the work rather than before it — how often the
 harness checks in, what its steering says, which model summarises, and which
 profile the backlog is read under.
@@ -3453,11 +3461,11 @@ session sends — the one-shot's description, and the compaction an unattended
 run makes — stages and writes the same way and changes nothing in the
 session. `shhh config` has no session, so its flows rows only stage.
 
-Neither row repeats the other. The header carries the register's key and the
-letter; the foot carries what the screen can do and, last, the way out. A
-surface that put `[?]` and the letter on both rows spent its bottom row saying
-what its top row had already said, which on the narrowest terminal is the row
-that had least to give.
+Neither row repeats the other. The header carries the name and the count; the
+foot carries what the screen can do and, last, the register's key and the way
+out. A surface that put `[?]` and the letter on both rows spent its bottom row
+saying what its top row had already said, which on the narrowest terminal is
+the row that had least to give.
 
 Nine of them list something and preview what the pointer is on — past
 commands, saved commands, saved conversations, the pages this session

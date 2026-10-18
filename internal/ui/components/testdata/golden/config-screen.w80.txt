@@ -11,343 +11,343 @@
 
 ── layout ──────────────────────────────────────────────────
 · the list · every row states where its value came from
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-    model              gpt-5.2                                user · 6 available
-    api key            ···4f9c                                            global
-    base url           (the provider's own)                              default
-    sub-agent model    inherit                                           default
+MODEL
+  provider           openai                                               global
+  model              gpt-5.2                                  user · 6 available
+  api key            ···4f9c                                              global
+  base url           (the provider's own)                                default
+  sub-agent model    inherit                                             default
 
-  WORKSPACE
-    sandbox            ⛨ workspace-write                unavailable on this host
-    network            private hosts reachable — intranet and localhost…  global
-  ↓ 3 more
+WORKSPACE
+  sandbox            ⛨ workspace-write                  unavailable on this host
+↓ 4 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [esc] leave
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys
+[esc] leave
 
 · changing one · the picker opens under the row, not over the screen
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-  ❯ model              gpt-5.2                                user · 6 available
-    ❯ gpt-5.2            current default                             $1.25 / $10
-      gpt-5.2-mini       ⅕ the price                                  $0.25 / $2
-      claude-opus-4.6    deepest reasoning                             $15 / $75
-      claude-sonnet-4.6  better diffs · 200k ctx                        $3 / $15
-      gemini-3-flash     1M ctx                                    $0.30 / $2.50
-      ⊘ deepseek-r2      local via ollama                        not usable here
-    api key            ···4f9c                                            global
-  ↓ 7 more
+MODEL
+  provider           openai                                               global
+❯ model              gpt-5.2                                  user · 6 available
+  ❯ gpt-5.2            current default                               $1.25 / $10
+    gpt-5.2-mini       ⅕ the price                                    $0.25 / $2
+    claude-opus-4.6    deepest reasoning                               $15 / $75
+    claude-sonnet-4.6  better diffs · 200k ctx                          $3 / $15
+    gemini-3-flash     1M ctx                                      $0.30 / $2.50
+    ⊘ deepseek-r2      local via ollama                          not usable here
+  api key            ···4f9c                                              global
+↓ 7 more
 
 [↑↓] move · [/] filter · [enter] set it · [esc] keep gpt-5.2
 
 · the picker filtered · the query row carries both counts
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-  ❯ model              gpt-5.2                                user · 6 available
-    ▸ claude█                                                       2 of 6 match
-    ❯ claude-opus-4.6    deepest reasoning                             $15 / $75
-      claude-sonnet-4.6  better diffs · 200k ctx                        $3 / $15
-    api key            ···4f9c                                            global
-    base url           (the provider's own)                              default
-    sub-agent model    inherit                                           default
+MODEL
+  provider           openai                                               global
+❯ model              gpt-5.2                                  user · 6 available
+  ▸ claude█                                                         2 of 6 match
+  ❯ claude-opus-4.6    deepest reasoning                               $15 / $75
+    claude-sonnet-4.6  better diffs · 200k ctx                          $3 / $15
+  api key            ···4f9c                                              global
+  base url           (the provider's own)                                default
+  sub-agent model    inherit                                             default
 
-  ↓ 5 more
+↓ 5 more
 
 [↑↓] move · [enter] set it · [esc] clear the filter, then close it
 
 · a setting with no answers to choose · a field under the row
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-  ❯ round limit        25                                                default
-    ▸ 2540█
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+❯ round limit        25                                                  default
+  ▸ 2540█
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-    model              gpt-5.2                                user · 6 available
-    api key            ···4f9c                                            global
-    base url           (the provider's own)                              default
-    sub-agent model    inherit                                           default
+MODEL
+  provider           openai                                               global
+  model              gpt-5.2                                  user · 6 available
+  api key            ···4f9c                                              global
+  base url           (the provider's own)                                default
+  sub-agent model    inherit                                             default
 
-  WORKSPACE
-    sandbox            ⛨ workspace-write                unavailable on this host
-  ↓ 4 more
+WORKSPACE
+  sandbox            ⛨ workspace-write                  unavailable on this host
+↓ 4 more
 
 [enter] set it · [esc] keep 25
 
 · a secret · the mask, never the key
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-    model              gpt-5.2                                user · 6 available
-  ❯ api key            ···4f9c                                            global
-    Paste a value for api key · replacing ···4f9c
-    ▸ ●●●●●●●●●●●● 
-    base url           (the provider's own)                              default
-    sub-agent model    inherit                                           default
+MODEL
+  provider           openai                                               global
+  model              gpt-5.2                                  user · 6 available
+❯ api key            ···4f9c                                              global
+  Paste a value for api key · replacing ···4f9c
+  ▸ ●●●●●●●●●●●● 
+  base url           (the provider's own)                                default
+  sub-agent model    inherit                                             default
 
-  WORKSPACE
-  ↓ 5 more
+WORKSPACE
+↓ 5 more
 
 [enter] use it · [esc] back
 
 · staged · the header counts it and [ctrl+s] is offered
-shhh config · 2 changes unwritten                          [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml · 2 changes unwritten
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        40                                              unwritten
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        40                                                unwritten
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-  ❯ model              claude-sonnet-4.6                               unwritten
-    api key            ···4f9c                                            global
-    base url           (the provider's own)                              default
-    sub-agent model    inherit                                           default
+MODEL
+  provider           openai                                               global
+❯ model              claude-sonnet-4.6                                 unwritten
+  api key            ···4f9c                                              global
+  base url           (the provider's own)                                default
+  sub-agent model    inherit                                             default
 
-  WORKSPACE
-  ↓ 5 more
+WORKSPACE
+↓ 5 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[ctrl+s] write 2 changes · [esc] discard, after asking
+[ctrl+s] write 2 changes · [?] keys · [esc] discard, after asking
 nothing is written until [ctrl+s]
 
 · staged in a session · a key read at the open says the next session takes it
-/config · project file · 2 changes unwritten               [?] keys · [esc] back
+/config · project file · .shhh/config.toml · 2 changes unwritten
 ────────────────────────────────────────────────────────────────────────────────
 
-  ↑ 4 more
-    compaction         gpt-5.2                                     session model
+↑ 5 more
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        40                                              unwritten
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        40                                                unwritten
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-    model              gpt-5.2                                user · 6 available
-    api key            ···4f9c                                            global
-  ❯ base url           https://gateway.internal/v1      unwritten · next session
-  ↓ 6 more
+MODEL
+  provider           openai                                               global
+  model              gpt-5.2                                  user · 6 available
+  api key            ···4f9c                                              global
+❯ base url           https://gateway.internal/v1        unwritten · next session
+↓ 6 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write global · [ctrl+s] write 2 changes · [esc] leave, after asking
+[shift+tab] write global · [ctrl+s] write 2 changes · [?] keys
+[esc] leave, after asking
 nothing is written until [ctrl+s]
 
 · after a write · the receipt on the foot row, nothing left staged
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-    model              gpt-5.2                                user · 6 available
-    api key            ···4f9c                                            global
-    base url           (the provider's own)                              default
-    sub-agent model    inherit                                           default
+MODEL
+  provider           openai                                               global
+  model              gpt-5.2                                  user · 6 available
+  api key            ···4f9c                                              global
+  base url           (the provider's own)                                default
+  sub-agent model    inherit                                             default
 
-  WORKSPACE
-    sandbox            ⛨ workspace-write                unavailable on this host
-  ↓ 4 more
+WORKSPACE
+↓ 5 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [esc] leave
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys
+[esc] leave
 wrote 2 changes to .shhh/config.toml · provider.model, behavior.command_timeout…
 
 · after a failed write · why, and the changes still staged
-shhh config · 2 changes unwritten                          [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml · 2 changes unwritten
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        40                                              unwritten
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        40                                                unwritten
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-  ❯ model              claude-sonnet-4.6                               unwritten
-    api key            ···4f9c                                            global
-    base url           (the provider's own)                              default
-    sub-agent model    inherit                                           default
+MODEL
+  provider           openai                                               global
+❯ model              claude-sonnet-4.6                                 unwritten
+  api key            ···4f9c                                              global
+  base url           (the provider's own)                                default
+  sub-agent model    inherit                                             default
 
-  ↓ 5 more
+↓ 5 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[ctrl+s] write 2 changes · [esc] discard, after asking
+[ctrl+s] write 2 changes · [?] keys · [esc] discard, after asking
 nothing is written until [ctrl+s]
 could not write .shhh/config.toml: permission denied
 
 · the way out · the same question over the same count
-shhh config · 2 changes unwritten                          [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml · 2 changes unwritten
 ────────────────────────────────────────────────────────────────────────────────
 
-  SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-    model              gpt-5.2                                user · 6 available
-    api key            ···4f9c                                            global
-    base url           (the provider's own)                              default
-    sub-agent model    inherit                                           default
+MODEL
+  provider           openai                                               global
+  model              gpt-5.2                                  user · 6 available
+  api key            ···4f9c                                              global
+  base url           (the provider's own)                                default
+  sub-agent model    inherit                                             default
 
-  WORKSPACE
-    sandbox            ⛨ workspace-write                unavailable on this host
-    network            private hosts reachable — intranet and localhost…  global
-  ↓ 3 more
+WORKSPACE
+  sandbox            ⛨ workspace-write                  unavailable on this host
+  network            private hosts reachable — intranet and localhost f…  global
+↓ 3 more
 
 Discard 2 changes?  [y/N]
 
 · reopened in the session · a value it holds reads `session`, and the header counts it unwritten
-/config · project file · 1 change unwritten                [?] keys · [esc] back
+/config · project file · .shhh/config.toml · 1 change unwritten
 ────────────────────────────────────────────────────────────────────────────────
 
-  FLOWS
-    classifier         gemini-3-flash — this session only, written to …  session
-    explanation        claude-sonnet-4.6 — behavior.explainer_model     flow key
-    reading            gpt-5.2-mini — provider.cheap_model             cheap key
-    backlog            claude-haiku-4.5                     provider small model
-    compaction         gpt-5.2                                     session model
+FLOWS
+  classifier         gemini-3-flash — this session only, written to no…  session
+  explanation        claude-sonnet-4.6 — behavior.explainer_model       flow key
+  reading            gpt-5.2-mini — provider.cheap_model               cheap key
+  backlog            claude-haiku-4.5                       provider small model
+  compaction         gpt-5.2                                       session model
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-  ❯ round limit        40                                                session
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+❯ round limit        40                                                  session
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  ↓ 10 more
+↓ 10 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write global · [ctrl+s] write 1 change
+[shift+tab] write global · [ctrl+s] write 1 change · [?] keys
 [esc] keep on this session, after asking
 nothing is written until [ctrl+s]
 
 · the way out in a session · the changes stay on it, and the question is where else they go
-/config · project file · 2 changes unwritten               [?] keys · [esc] back
+/config · project file · .shhh/config.toml · 2 changes unwritten
 ────────────────────────────────────────────────────────────────────────────────
 
-  FLOWS
-  ❯ classifier         gemini-3-flash — this session only, written to …  session
-    explanation        claude-sonnet-4.6 — behavior.explainer_model     flow key
-    reading            gpt-5.2-mini — provider.cheap_model             cheap key
-    backlog            claude-haiku-4.5                     provider small model
-    compaction         gpt-5.2                                     session model
+FLOWS
+❯ classifier         gemini-3-flash — this session only, written to no…  session
+  explanation        claude-sonnet-4.6 — behavior.explainer_model       flow key
+  reading            gpt-5.2-mini — provider.cheap_model               cheap key
+  backlog            claude-haiku-4.5                       provider small model
+  compaction         gpt-5.2                                       session model
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-    model              gpt-5.2                                user · 6 available
-  ↓ 8 more
+MODEL
+  provider           openai                                               global
+  model              gpt-5.2                                  user · 6 available
+↓ 8 more
 
 Leave 2 changes on this session only?
-[y] this session only  [ctrl+s] write first  [esc] stay
+[y] this session only · [ctrl+s] write first · [esc] stay
 
 · the way out in a session · a change it cannot take is dropped, and the count says so
-/config · project file · 3 changes unwritten               [?] keys · [esc] back
+/config · project file · .shhh/config.toml · 3 changes unwritten
 ────────────────────────────────────────────────────────────────────────────────
 
-  FLOWS
-  ❯ classifier         gemini-3-flash — this session only, written to …  session
-    explanation        claude-sonnet-4.6 — behavior.explainer_model     flow key
-    reading            gpt-5.2-mini — provider.cheap_model             cheap key
-    backlog            claude-haiku-4.5                     provider small model
-    compaction         gpt-5.2                                     session model
+FLOWS
+❯ classifier         gemini-3-flash — this session only, written to no…  session
+  explanation        claude-sonnet-4.6 — behavior.explainer_model       flow key
+  reading            gpt-5.2-mini — provider.cheap_model               cheap key
+  backlog            claude-haiku-4.5                       provider small model
+  compaction         gpt-5.2                                       session model
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-    model              gpt-5.2                                user · 6 available
-  ↓ 8 more
+MODEL
+  provider           openai                                               global
+  model              gpt-5.2                                  user · 6 available
+↓ 8 more
 
 Leave 2 changes on this session and drop 1 change?
-[y] this session only  [ctrl+s] write first  [esc] stay
+[y] this session only · [ctrl+s] write first · [esc] stay
 
 · the settings filtered · the list is the same window
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  ▸ mo█                                                            4 of 14 match
-  SESSION
-  ❯ permission mode  ⏵⏵ auto — edits apply; allowlisted commands run      global
+▸ mo█                                                              4 of 14 match
+SESSION
+❯ permission mode  ⏵⏵ auto — edits apply; allowlisted commands run        global
 
-  MODEL
-    model            gpt-5.2                                  user · 6 available
-    sub-agent model  inherit                                             default
+MODEL
+  model            gpt-5.2                                    user · 6 available
+  sub-agent model  inherit                                               default
 
-  WORKSPACE
-    memory           on — 4 entries · .shhh/memory.md                    default
+WORKSPACE
+  memory           on — 4 entries · .shhh/memory.md                      default
 
 [↑↓/jk] move · [enter] change · [esc] clear the filter, then close it
 
 · [?] · every key the screen has, including the picker's
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  …
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-  ↓ 13 more
+…
+❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+↓ 13 more
 
 [↑↓/jk] move between settings
 [enter] open the setting under the pointer, and take what is in it
@@ -384,402 +384,403 @@ $  a shell command
 [?] hide the keys
 
 · the theme row · its value is the theme file's, and a write goes there
-shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+shhh config · ~/.config/shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  APPEARANCE
-  ❯ theme      charm                                                  theme.toml
-    verbosity  normal                                                    default
+APPEARANCE
+❯ theme      charm                                                    theme.toml
+  verbosity  normal                                                      default
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [esc] leave
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys
+[esc] leave
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
-/config · project file · .shhh/config.toml                 [?] keys · [esc] back
+/config · project file · .shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  FLOWS
-  ❯ classifier         gemini-3-flash — this session only, written to …  session
-    explanation        claude-sonnet-4.6 — behavior.explainer_model     flow key
-    reading            gpt-5.2-mini — provider.cheap_model             cheap key
-    backlog            claude-haiku-4.5                     provider small model
-    compaction         gpt-5.2                                     session model
+FLOWS
+❯ classifier         gemini-3-flash — this session only, written to no…  session
+  explanation        claude-sonnet-4.6 — behavior.explainer_model       flow key
+  reading            gpt-5.2-mini — provider.cheap_model               cheap key
+  backlog            claude-haiku-4.5                       provider small model
+  compaction         gpt-5.2                                       session model
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-    safety warnings    on                                                default
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+  safety warnings    on                                                  default
 
-  MODEL
-    provider           openai                                             global
-  ↓ 9 more
+MODEL
+  provider           openai                                               global
+↓ 9 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset          19 settings
-[shift+tab] write global · [esc] leave
+[shift+tab] write global · [?] keys · [esc] leave
 
 · a flow's picker · the choice has three destinations on the key row
-/config · project file · .shhh/config.toml                 [?] keys · [esc] back
+/config · project file · .shhh/config.toml
 ────────────────────────────────────────────────────────────────────────────────
 
-  FLOWS
-    classifier         gemini-3-flash — this session only, written to …  session
-  ❯ explanation        claude-sonnet-4.6 — behavior.explainer_model     flow key
-      gpt-5.2
-      gpt-5.2-mini
-      claude-haiku-4.5
-    ❯ claude-sonnet-4.6                                                         
-      gemini-3-flash
-    reading            gpt-5.2-mini — provider.cheap_model             cheap key
-    backlog            claude-haiku-4.5                     provider small model
-    compaction         gpt-5.2                                     session model
+FLOWS
+  classifier         gemini-3-flash — this session only, written to no…  session
+❯ explanation        claude-sonnet-4.6 — behavior.explainer_model       flow key
+    gpt-5.2
+    gpt-5.2-mini
+    claude-haiku-4.5
+  ❯ claude-sonnet-4.6                                                           
+    gemini-3-flash
+  reading            gpt-5.2-mini — provider.cheap_model               cheap key
+  backlog            claude-haiku-4.5                       provider small model
+  compaction         gpt-5.2                                       session model
 
-  SESSION
-    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global
-    round limit        25                                                default
-    context budget     8000 tokens                                       default
-  ↓ 11 more
+SESSION
+  permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global
+  round limit        25                                                  default
+  context budget     8000 tokens                                         default
+↓ 11 more
 
 [↑↓] move · [/] filter · [enter] set it · [esc] keep claude-sonnet-4.6
 
 ── ansi ────────────────────────────────────────────────────
 · the list · every row states where its value came from
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                                ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[m
-    ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                ␛[91munavailable on this host␛[m
-    ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;245m— intranet and localhost…␛[m  ␛[38;5;252mglobal␛[m
-  ␛[38;5;245m↓ 3 more␛[m
+␛[1;94mWORKSPACE␛[m
+  ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                  ␛[91munavailable on this host␛[m
+␛[38;5;245m↓ 4 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
+␛[92m[esc]␛[m␛[38;5;245m leave␛[m
 
 · changing one · the picker opens under the row, not over the screen
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mmodel              gpt-5.2                                user · 6 available␛[m
-    ␛[94m❯␛[m ␛[1;97;48;5;61mgpt-5.2            current default                             $1.25 / $10␛[m
-      ␛[38;5;252mgpt-5.2-mini␛[m       ␛[38;5;245m⅕ the price␛[m                                  ␛[38;5;252m$0.25 / $2␛[m
-      ␛[38;5;252mclaude-opus-4.6␛[m    ␛[38;5;245mdeepest reasoning␛[m                             ␛[38;5;252m$15 / $75␛[m
-      ␛[38;5;252mclaude-sonnet-4.6␛[m  ␛[38;5;245mbetter diffs · 200k ctx␛[m                        ␛[38;5;252m$3 / $15␛[m
-      ␛[38;5;252mgemini-3-flash␛[m     ␛[38;5;245m1M ctx␛[m                                    ␛[38;5;252m$0.30 / $2.50␛[m
-      ␛[38;5;248m⊘ deepseek-r2␛[m      ␛[38;5;248mlocal via ollama␛[m                        ␛[38;5;248mnot usable here␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-  ␛[38;5;245m↓ 7 more␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mmodel              gpt-5.2                                  user · 6 available␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mgpt-5.2            current default                               $1.25 / $10␛[m
+    ␛[38;5;252mgpt-5.2-mini␛[m       ␛[38;5;245m⅕ the price␛[m                                    ␛[38;5;252m$0.25 / $2␛[m
+    ␛[38;5;252mclaude-opus-4.6␛[m    ␛[38;5;245mdeepest reasoning␛[m                               ␛[38;5;252m$15 / $75␛[m
+    ␛[38;5;252mclaude-sonnet-4.6␛[m  ␛[38;5;245mbetter diffs · 200k ctx␛[m                          ␛[38;5;252m$3 / $15␛[m
+    ␛[38;5;252mgemini-3-flash␛[m     ␛[38;5;245m1M ctx␛[m                                      ␛[38;5;252m$0.30 / $2.50␛[m
+    ␛[38;5;248m⊘ deepseek-r2␛[m      ␛[38;5;248mlocal via ollama␛[m                          ␛[38;5;248mnot usable here␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+␛[38;5;245m↓ 7 more␛[m
 
 ␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m set it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep gpt-5.2␛[m
 
 · the picker filtered · the query row carries both counts
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mmodel              gpt-5.2                                user · 6 available␛[m
-    ␛[94m▸ ␛[m␛[97mclaude█␛[m                                                       ␛[38;5;245m2 of 6 match␛[m
-    ␛[94m❯␛[m ␛[1;97;48;5;61mclaude-opus-4.6    deepest reasoning                             $15 / $75␛[m
-      ␛[1;38;5;252mclaude␛[m␛[38;5;252m-sonnet-4.6␛[m  ␛[38;5;245mbetter diffs · 200k ctx␛[m                        ␛[38;5;252m$3 / $15␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mmodel              gpt-5.2                                  user · 6 available␛[m
+  ␛[94m▸ ␛[m␛[97mclaude█␛[m                                                         ␛[38;5;245m2 of 6 match␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mclaude-opus-4.6    deepest reasoning                               $15 / $75␛[m
+    ␛[1;38;5;252mclaude␛[m␛[38;5;252m-sonnet-4.6␛[m  ␛[38;5;245mbetter diffs · 200k ctx␛[m                          ␛[38;5;252m$3 / $15␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                                ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
-  ␛[38;5;245m↓ 5 more␛[m
+␛[38;5;245m↓ 5 more␛[m
 
 ␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m set it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
 
 · a setting with no answers to choose · a field under the row
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mround limit        25                                                default␛[m
-    ␛[94m▸ ␛[m␛[97m2540█␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mround limit        25                                                  default␛[m
+  ␛[94m▸ ␛[m␛[97m2540█␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                                ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[m
-    ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                ␛[91munavailable on this host␛[m
-  ␛[38;5;245m↓ 4 more␛[m
+␛[1;94mWORKSPACE␛[m
+  ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                  ␛[91munavailable on this host␛[m
+␛[38;5;245m↓ 4 more␛[m
 
 ␛[38;5;103m[enter]␛[m␛[38;5;245m set it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep 25␛[m
 
 · a secret · the mask, never the key
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mapi key            ···4f9c                                            global␛[m
-    ␛[38;5;252mPaste a value for api key␛[m␛[38;5;245m · replacing ···4f9c␛[m
-    ␛[38;5;245m▸ ␛[m␛[38;5;214m●●●●●●●●●●●●␛[m␛[1;97;48;5;61m ␛[m
-    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mapi key            ···4f9c                                              global␛[m
+  ␛[38;5;252mPaste a value for api key␛[m␛[38;5;245m · replacing ···4f9c␛[m
+  ␛[38;5;245m▸ ␛[m␛[38;5;214m●●●●●●●●●●●●␛[m␛[1;97;48;5;61m ␛[m
+  ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                                ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[m
-  ␛[38;5;245m↓ 5 more␛[m
+␛[1;94mWORKSPACE␛[m
+␛[38;5;245m↓ 5 more␛[m
 
 ␛[38;5;103m[enter]␛[m␛[38;5;245m use it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · staged · the header counts it and [ctrl+s] is offered
-␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                              ␛[38;5;214munwritten␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                                ␛[38;5;214munwritten␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mmodel              claude-sonnet-4.6                               unwritten␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mmodel              claude-sonnet-4.6                                 unwritten␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                                ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[m
-  ␛[38;5;245m↓ 5 more␛[m
+␛[1;94mWORKSPACE␛[m
+␛[38;5;245m↓ 5 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard, after asking␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard, after asking␛[m
 ␛[38;5;245mnothing is written until [ctrl+s]␛[m
 
 · staged in a session · a key read at the open says the next session takes it
-␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;214m · 2 changes unwritten␛[m               ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m↑ 4 more␛[m
-    ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
+␛[38;5;245m↑ 5 more␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                              ␛[38;5;214munwritten␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                                ␛[38;5;214munwritten␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mbase url           https://gateway.internal/v1      unwritten · next session␛[m
-  ␛[38;5;245m↓ 6 more␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mbase url           https://gateway.internal/v1        unwritten · next session␛[m
+␛[38;5;245m↓ 6 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave, after asking␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
+␛[92m[esc]␛[m␛[38;5;245m leave, after asking␛[m
 ␛[38;5;245mnothing is written until [ctrl+s]␛[m
 
 · after a write · the receipt on the foot row, nothing left staged
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                                ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[m
-    ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                ␛[91munavailable on this host␛[m
-  ␛[38;5;245m↓ 4 more␛[m
+␛[1;94mWORKSPACE␛[m
+␛[38;5;245m↓ 5 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
+␛[92m[esc]␛[m␛[38;5;245m leave␛[m
 ␛[38;5;245mwrote 2 changes to .shhh/config.toml · provider.model, behavior.command_timeout…␛[m
 
 · after a failed write · why, and the changes still staged
-␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                              ␛[38;5;214munwritten␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                                ␛[38;5;214munwritten␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mmodel              claude-sonnet-4.6                               unwritten␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mmodel              claude-sonnet-4.6                                 unwritten␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                                ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
-  ␛[38;5;245m↓ 5 more␛[m
+␛[38;5;245m↓ 5 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard, after asking␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard, after asking␛[m
 ␛[38;5;245mnothing is written until [ctrl+s]␛[m
 ␛[38;5;245mcould not write .shhh/config.toml: permission denied␛[m
 
 · the way out · the same question over the same count
-␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                            ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
+  ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                                ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[m
-    ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                ␛[91munavailable on this host␛[m
-    ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;245m— intranet and localhost…␛[m  ␛[38;5;252mglobal␛[m
-  ␛[38;5;245m↓ 3 more␛[m
+␛[1;94mWORKSPACE␛[m
+  ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                  ␛[91munavailable on this host␛[m
+  ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;245m— intranet and localhost f…␛[m  ␛[38;5;252mglobal␛[m
+␛[38;5;245m↓ 3 more␛[m
 
 ␛[38;5;252m␛[38;5;252mDiscard 2 changes?␛[m␛[m  ␛[38;5;245m[␛[m␛[38;5;245my␛[m␛[38;5;245m/␛[m␛[1;97mN␛[m␛[38;5;245m]␛[m
 
 · reopened in the session · a value it holds reads `session`, and the header counts it unwritten
-␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;214m · 1 change unwritten␛[m                ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m␛[38;5;214m · 1 change unwritten␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mFLOWS␛[m
-    ␛[38;5;252mclassifier␛[m         ␛[38;5;252mgemini-3-flash␛[m ␛[38;5;245m— this session only, written to …␛[m  ␛[38;5;214msession␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
-    ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
-    ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
+␛[1;94mFLOWS␛[m
+  ␛[38;5;252mclassifier␛[m         ␛[38;5;252mgemini-3-flash␛[m ␛[38;5;245m— this session only, written to no…␛[m  ␛[38;5;214msession␛[m
+  ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m       ␛[38;5;252mflow key␛[m
+  ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m               ␛[38;5;252mcheap key␛[m
+  ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                       ␛[38;5;252mprovider small model␛[m
+  ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                       ␛[38;5;252msession model␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mround limit        40                                                session␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mround limit        40                                                  session␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[38;5;245m↓ 10 more␛[m
+␛[38;5;245m↓ 10 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 1 change␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 1 change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
 ␛[92m[esc]␛[m␛[38;5;245m keep on this session, after asking␛[m
 ␛[38;5;245mnothing is written until [ctrl+s]␛[m
 
 · the way out in a session · the changes stay on it, and the question is where else they go
-␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;214m · 2 changes unwritten␛[m               ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mFLOWS␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to …  session␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
-    ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
-    ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
+␛[1;94mFLOWS␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to no…  session␛[m
+  ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m       ␛[38;5;252mflow key␛[m
+  ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m               ␛[38;5;252mcheap key␛[m
+  ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                       ␛[38;5;252mprovider small model␛[m
+  ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                       ␛[38;5;252msession model␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-  ␛[38;5;245m↓ 8 more␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
+␛[38;5;245m↓ 8 more␛[m
 
 ␛[38;5;252mLeave 2 changes on this session only?␛[m
-␛[38;5;245m[y] this session only  [ctrl+s] write first  [esc] stay␛[m
+␛[38;5;103m[y]␛[m␛[38;5;252m this session only␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;252m write first␛[m␛[38;5;245m · ␛[m␛[92m[esc] stay␛[m
 
 · the way out in a session · a change it cannot take is dropped, and the count says so
-␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;214m · 3 changes unwritten␛[m               ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m␛[38;5;214m · 3 changes unwritten␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mFLOWS␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to …  session␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
-    ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
-    ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
+␛[1;94mFLOWS␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to no…  session␛[m
+  ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m       ␛[38;5;252mflow key␛[m
+  ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m               ␛[38;5;252mcheap key␛[m
+  ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                       ␛[38;5;252mprovider small model␛[m
+  ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                       ␛[38;5;252msession model␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-  ␛[38;5;245m↓ 8 more␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
+␛[38;5;245m↓ 8 more␛[m
 
 ␛[38;5;252mLeave 2 changes on this session and drop 1 change?␛[m
-␛[38;5;245m[y] this session only  [ctrl+s] write first  [esc] stay␛[m
+␛[38;5;103m[y]␛[m␛[38;5;252m this session only␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;252m write first␛[m␛[38;5;245m · ␛[m␛[92m[esc] stay␛[m
 
 · the settings filtered · the list is the same window
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[94m▸ ␛[m␛[97mmo█␛[m                                                            ␛[38;5;245m4 of 14 match␛[m
-  ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode  ⏵⏵ auto — edits apply; allowlisted commands run      global␛[m
+␛[94m▸ ␛[m␛[97mmo█␛[m                                                              ␛[38;5;245m4 of 14 match␛[m
+␛[1;94mSESSION␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode  ⏵⏵ auto — edits apply; allowlisted commands run        global␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[1;38;5;252mmo␛[m␛[38;5;252mdel␛[m            ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
-    ␛[38;5;252msub-agent ␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mdel␛[m  ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
+␛[1;94mMODEL␛[m
+  ␛[1;38;5;252mmo␛[m␛[38;5;252mdel␛[m            ␛[38;5;252mgpt-5.2␛[m                                    ␛[38;5;252muser · 6 available␛[m
+  ␛[38;5;252msub-agent ␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mdel␛[m  ␛[38;5;252minherit␛[m                                               ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[m
-    ␛[38;5;252mme␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mry␛[m           ␛[38;5;252mon␛[m ␛[38;5;245m— 4 entries · .shhh/memory.md␛[m                    ␛[38;5;252mdefault␛[m
+␛[1;94mWORKSPACE␛[m
+  ␛[38;5;252mme␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mry␛[m           ␛[38;5;252mon␛[m ␛[38;5;245m— 4 entries · .shhh/memory.md␛[m                      ␛[38;5;252mdefault␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
 
 · [?] · every key the screen has, including the picker's
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m…␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run    global␛[m
-  ␛[38;5;245m↓ 13 more␛[m
+␛[38;5;245m…␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      global␛[m
+␛[38;5;245m↓ 13 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move between settings␛[m
 ␛[38;5;103m[enter]␛[m␛[38;5;245m open the setting under the pointer, and take what is in it␛[m
@@ -816,59 +817,60 @@ shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] ba
 ␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m
 
 · the theme row · its value is the theme file's, and a write goes there
-␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mAPPEARANCE␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mtheme      charm                                                  theme.toml␛[m
-    ␛[38;5;252mverbosity␛[m  ␛[38;5;252mnormal␛[m                                                    ␛[38;5;252mdefault␛[m
+␛[1;94mAPPEARANCE␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mtheme      charm                                                    theme.toml␛[m
+  ␛[38;5;252mverbosity␛[m  ␛[38;5;252mnormal␛[m                                                      ␛[38;5;252mdefault␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
+␛[92m[esc]␛[m␛[38;5;245m leave␛[m
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
-␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m                 ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mFLOWS␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to …  session␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
-    ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
-    ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
+␛[1;94mFLOWS␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to no…  session␛[m
+  ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m       ␛[38;5;252mflow key␛[m
+  ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m               ␛[38;5;252mcheap key␛[m
+  ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                       ␛[38;5;252mprovider small model␛[m
+  ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                       ␛[38;5;252msession model␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+  ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                  ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[m
-    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                             ␛[38;5;252mglobal␛[m
-  ␛[38;5;245m↓ 9 more␛[m
+␛[1;94mMODEL␛[m
+  ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252mglobal␛[m
+␛[38;5;245m↓ 9 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m          ␛[38;5;245m19 settings␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
 
 · a flow's picker · the choice has three destinations on the key row
-␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m                 ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mFLOWS␛[m
-    ␛[38;5;252mclassifier␛[m         ␛[38;5;252mgemini-3-flash␛[m ␛[38;5;245m— this session only, written to …␛[m  ␛[38;5;214msession␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;61mexplanation        claude-sonnet-4.6 — behavior.explainer_model     flow key␛[m
-      ␛[38;5;252mgpt-5.2␛[m
-      ␛[38;5;252mgpt-5.2-mini␛[m
-      ␛[38;5;252mclaude-haiku-4.5␛[m
-    ␛[94m❯␛[m ␛[1;97;48;5;61mclaude-sonnet-4.6                                                         ␛[m
-      ␛[38;5;252mgemini-3-flash␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
-    ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
-    ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
+␛[1;94mFLOWS␛[m
+  ␛[38;5;252mclassifier␛[m         ␛[38;5;252mgemini-3-flash␛[m ␛[38;5;245m— this session only, written to no…␛[m  ␛[38;5;214msession␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mexplanation        claude-sonnet-4.6 — behavior.explainer_model       flow key␛[m
+    ␛[38;5;252mgpt-5.2␛[m
+    ␛[38;5;252mgpt-5.2-mini␛[m
+    ␛[38;5;252mclaude-haiku-4.5␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mclaude-sonnet-4.6                                                           ␛[m
+    ␛[38;5;252mgemini-3-flash␛[m
+  ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m               ␛[38;5;252mcheap key␛[m
+  ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                       ␛[38;5;252mprovider small model␛[m
+  ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                       ␛[38;5;252msession model␛[m
 
-  ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m    ␛[38;5;252mglobal␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-  ␛[38;5;245m↓ 11 more␛[m
+␛[1;94mSESSION␛[m
+  ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252mglobal␛[m
+  ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                  ␛[38;5;252mdefault␛[m
+  ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                         ␛[38;5;252mdefault␛[m
+␛[38;5;245m↓ 11 more␛[m
 
 ␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m set it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep claude-sonnet-4.6␛[m

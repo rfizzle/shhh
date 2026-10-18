@@ -473,7 +473,7 @@ func lastLine(text string) string {
 
 // header names the surface and counts what is running in each section.
 func (s *ManagerScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/ps")}, keys: s.headerKeys(keys.Screen.List, keys.Agent.Back)}
+	h := screenHeader{left: []RailSegment{screenTitle("/ps")}}
 	procs, calls := 0, 0
 	for _, r := range s.Rows {
 		if !r.Live() {

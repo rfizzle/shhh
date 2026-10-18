@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · over the approval card · after the handover
-keys · the approval card and the /run confirm                       [?] back
+keys · the approval card and the /run confirm
 ────────────────────────────────────────────────────────────────────────────
 
 
@@ -42,13 +42,13 @@ $  a shell command
 ✦  the classifier is deciding
 ✓  a check passed, a turn or a compaction came out well
 ∗  a turn's close
-✗  failed
-⊘  refused: dim by you, red by a rule
-↓ 5 more · [↑↓/jk] read on
+↓ 7 more · [↑↓/jk] read on
+
+[?] hide the keys
 keys · [esc] back to the approval card and the /run confirm
 
 · over reading mode · the cursor on a row with offers of its own
-keys · reading mode                                                 [?] back
+keys · reading mode
 ────────────────────────────────────────────────────────────────────────────
 
 
@@ -79,13 +79,13 @@ $  a shell command
 ▸  running
 ✦  the classifier is deciding
 ✓  a check passed, a turn or a compaction came out well
-∗  a turn's close
-✗  failed
-↓ 6 more · [↑↓/jk] read on
+↓ 8 more · [↑↓/jk] read on
+
+[?] hide the keys
 keys · [esc] back to reading mode
 
 · over reading mode · the cursor on an open card
-keys · reading mode                                                 [?] back
+keys · reading mode
 ────────────────────────────────────────────────────────────────────────────
 
 
@@ -116,13 +116,13 @@ $  a shell command
 ·  accepted, not started
 ▸  running
 ✦  the classifier is deciding
-✓  a check passed, a turn or a compaction came out well
-∗  a turn's close
-↓ 7 more · [↑↓/jk] read on
+↓ 9 more · [↑↓/jk] read on
+
+[?] hide the keys
 keys · [esc] back to reading mode
 
 · over reading mode · the cursor on the card's strip
-keys · reading mode                                                 [?] back
+keys · reading mode
 ────────────────────────────────────────────────────────────────────────────
 
 
@@ -153,14 +153,14 @@ $  a shell command
 ✓  a compaction that brought the window back
 ·  accepted, not started
 ▸  running
-✦  the classifier is deciding
-✓  a check passed, a turn or a compaction came out well
-↓ 8 more · [↑↓/jk] read on
+↓ 10 more · [↑↓/jk] read on
+
+[?] hide the keys
 keys · [esc] back to reading mode
 
 ── ansi ────────────────────────────────────────────────────
 · over the approval card · after the handover
-␛[1;38;5;254mkeys␛[m␛[38;5;244m · the approval card and the /run confirm␛[m                       ␛[38;5;244m[?] back␛[m
+␛[1;38;5;254mkeys␛[m␛[38;5;244m · the approval card and the /run confirm␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m␛[m
@@ -191,13 +191,13 @@ keys · [esc] back to reading mode
 ␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
 ␛[38;5;244m∗␛[m  ␛[38;5;244ma turn's close␛[m
-␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
-␛[38;5;244m⊘␛[m  ␛[38;5;244mrefused: dim by you, red by a rule␛[m
-␛[38;5;244m↓ 5 more · [↑↓/jk] read on␛[m
+␛[38;5;244m↓ 7 more · [↑↓/jk] read on␛[m
+
+␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 ␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the approval card and the /run confirm␛[m
 
 · over reading mode · the cursor on a row with offers of its own
-␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m                                                 ␛[38;5;244m[?] back␛[m
+␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m␛[m
@@ -228,13 +228,13 @@ keys · [esc] back to reading mode
 ␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
 ␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
-␛[38;5;244m∗␛[m  ␛[38;5;244ma turn's close␛[m
-␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
-␛[38;5;244m↓ 6 more · [↑↓/jk] read on␛[m
+␛[38;5;244m↓ 8 more · [↑↓/jk] read on␛[m
+
+␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 ␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
 
 · over reading mode · the cursor on an open card
-␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m                                                 ␛[38;5;244m[?] back␛[m
+␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m␛[m
@@ -265,13 +265,13 @@ keys · [esc] back to reading mode
 ␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
 ␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
 ␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
-␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
-␛[38;5;244m∗␛[m  ␛[38;5;244ma turn's close␛[m
-␛[38;5;244m↓ 7 more · [↑↓/jk] read on␛[m
+␛[38;5;244m↓ 9 more · [↑↓/jk] read on␛[m
+
+␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 ␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
 
 · over reading mode · the cursor on the card's strip
-␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m                                                 ␛[38;5;244m[?] back␛[m
+␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m␛[m
@@ -302,7 +302,7 @@ keys · [esc] back to reading mode
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma compaction that brought the window back␛[m
 ␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
 ␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
-␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
-␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
-␛[38;5;244m↓ 8 more · [↑↓/jk] read on␛[m
+␛[38;5;244m↓ 10 more · [↑↓/jk] read on␛[m
+
+␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 ␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m

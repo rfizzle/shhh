@@ -232,10 +232,7 @@ func plainPlural(n int, one, many string) string {
 
 // header names the surface and what it is a reading of.
 func (s *SafetyScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/safety")}, keys: screenBackKeys()}
-	if s.showKeys {
-		h.keys = keys.Bracket(keys.Screen.List) + " hide the keys · " + words(keys.Screen.Quit, "back")
-	}
+	h := screenHeader{left: []RailSegment{screenTitle("/safety")}}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}

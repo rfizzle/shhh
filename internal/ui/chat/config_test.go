@@ -115,7 +115,7 @@ func TestConfig_TheCommandOpensTheScreen(t *testing.T) {
 		"/config",                    // the surface names itself as it was reached
 		"~/.config/shhh/config.toml", // and the file it would write
 		"Check in every",             // the rows the host handed it
-		"back",                       // the way out, in the header
+		"[esc] ",                     // the way out, in the foot
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the screen is missing %q:\n%s", want, view)

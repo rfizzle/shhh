@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the step being worked · its paths and the calls that carried it out
-/plan · make the round limit recoverable · 2 of 4 done                                   [?] keys · [esc] back
+/plan · make the round limit recoverable · 2 of 4 done
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting  done         1 tool │ 3. Return it from runRound                  running…
@@ -22,10 +22,10 @@
 no drift · every step so far is one the plan named, in  │   ▎✎ edit    internal/agent/…  +6 −1 · 1 hunk   1.1s
 the order it named them                                 │ 
 
-[↑↓/jk] move · [esc] back                              the approved plan, as the transcript has carried it out
+[↑↓/jk] move · [?] keys · [esc] back                   the approved plan, as the transcript has carried it out
 
 · a failed step · finished, and not cleanly
-/plan · make the round limit recoverable · 2 of 4 done                                   [?] keys · [esc] back
+/plan · make the round limit recoverable · 2 of 4 done
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting  done         1 tool │ 2. Add a RoundsExhausted sentinel             failed
@@ -36,10 +36,10 @@ the order it named them                                 │
 no drift · every step so far is one the plan named, in  │   ▎$ run     go test ./int…  exit 1 · 4 lines   3.0s
 the order it named them                                 │ 
 
-[↑↓/jk] move · [esc] back                              the approved plan, as the transcript has carried it out
+[↑↓/jk] move · [?] keys · [esc] back                   the approved plan, as the transcript has carried it out
 
 · a step not reached · with what the run did that the plan did not say
-/plan · make the round limit recoverable · 2 of 4 done                                   [?] keys · [esc] back
+/plan · make the round limit recoverable · 2 of 4 done
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting  done         1 tool │ 4. Offer more rounds in the chat model        queued
@@ -51,11 +51,11 @@ the order it named them                                 │
 from scratch")                                          │ 
 ⚠ step 3 ran before step 2                              │ 
 
-[↑↓/jk] move · [esc] back                              the approved plan, as the transcript has carried it out
+[↑↓/jk] move · [?] keys · [esc] back                   the approved plan, as the transcript has carried it out
 
 ── ansi ────────────────────────────────────────────────────
 · the step being worked · its paths and the calls that carried it out
-␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m                                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m  ␛[92mdone␛[m         ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m␛[1;97m3. Return it from runRound␛[m                  ␛[38;5;245mrunning…␛[m
@@ -66,10 +66,10 @@ from scratch")                                          │
 ␛[38;5;245mno drift · every step so far is one the plan named, in␛[m ␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/…␛[m  ␛[92m+6␛[m ␛[91m−1␛[m␛[38;5;248m · ␛[m␛[38;5;248m1 hunk␛[m   ␛[38;5;245m1.1s␛[m
 ␛[38;5;245mthe order it named them␛[m                                ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                              ␛[38;5;245mthe approved plan, as the transcript has carried it out␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                   ␛[38;5;245mthe approved plan, as the transcript has carried it out␛[m
 
 · a failed step · finished, and not cleanly
-␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m                                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m  ␛[92mdone␛[m         ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m␛[1;97m2. Add a RoundsExhausted sentinel␛[m             ␛[38;5;245mfailed␛[m
@@ -80,10 +80,10 @@ from scratch")                                          │
 ␛[38;5;245mno drift · every step so far is one the plan named, in␛[m ␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./int…␛[m  ␛[92mexit 1␛[m␛[38;5;245m · ␛[m␛[38;5;248m4 lines␛[m   ␛[38;5;245m3.0s␛[m
 ␛[38;5;245mthe order it named them␛[m                                ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                              ␛[38;5;245mthe approved plan, as the transcript has carried it out␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                   ␛[38;5;245mthe approved plan, as the transcript has carried it out␛[m
 
 · a step not reached · with what the run did that the plan did not say
-␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m                                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m  ␛[92mdone␛[m         ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m␛[1;97m4. Offer more rounds in the chat model␛[m        ␛[38;5;245mqueued␛[m
@@ -95,4 +95,4 @@ from scratch")                                          │
 ␛[91mfrom scratch")␛[m                                         ␛[38;5;245m │ ␛[m
 ␛[91m⚠ step 3 ran before step 2␛[m                             ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                              ␛[38;5;245mthe approved plan, as the transcript has carried it out␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                   ␛[38;5;245mthe approved plan, as the transcript has carried it out␛[m

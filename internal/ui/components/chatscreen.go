@@ -258,6 +258,7 @@ func (c *ChatScreen) View(width int) string { return c.view(width, c) }
 // is up.
 func (c *ChatScreen) chrome(width int) screenChrome {
 	foot := c.footer(c.offers(), c.keyList(), c.footField())
+	foot.inert = foot.inert || c.rename != nil
 	if c.confirm != nil {
 		foot.taken = c.confirm.View(width)
 	}
@@ -331,7 +332,7 @@ func (c *ChatScreen) previewRows(width int) []string {
 
 // header names the command and what it is over.
 func (c *ChatScreen) header() screenHeader {
-	head := screenHeader{left: []RailSegment{screenTitle("shhh chats")}, keys: screenHeaderKeys()}
+	head := screenHeader{left: []RailSegment{screenTitle("shhh chats")}}
 	if c.Subject != "" {
 		head.left = append(head.left, screenField(c.Subject))
 	}

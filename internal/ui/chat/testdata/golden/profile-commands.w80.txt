@@ -11,39 +11,39 @@
 
 ── layout ──────────────────────────────────────────────────
 · Commands selected · what its commands are for and what it never runs, on one line
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ⊘ questions   ● draft
+✓ brief   ⊘ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time.
+  Add table-driven tests for one package at a time.
 
   Scope
-    The package you were pointed at and its _test.go files.
+  The package you were pointed at and its _test.go files.
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
   Method
-    Read the package, then its tests, then write the missing cases.
+  Read the package, then its tests, then write the missing cases.
 
   Report
-    The cases added, by function, and the test run's last line.
+  The cases added, by function, and the test run's last line.
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
 ❯ Commands
-    for: running the package's tests and the build · never: git push, rm -rf
+  for: running the package's tests and the build · never: git push, rm -rf
 
   Model
-    inherited from this session
+  inherited from this session
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-  [d] clear it · [R] all · [tab] the card · [esc] discard the draft
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself
+[d] clear it · [R] all · [tab] the card · [?] keys · [esc] discard the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -53,39 +53,39 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a note open under Commands · only its two fields are taken from the answer
-/agents new · a coding agent · researcher                [esc] leave it as it is
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ⊘ questions   ● draft
+✓ brief   ⊘ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time.
+  Add table-driven tests for one package at a time.
 
   Scope
-    The package you were pointed at and its _test.go files.
+  The package you were pointed at and its _test.go files.
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
   Method
-    Read the package, then its tests, then write the missing cases.
+  Read the package, then its tests, then write the missing cases.
 
   Report
-    The cases added, by function, and the test run's last line.
+  The cases added, by function, and the test run's last line.
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
 ❯ Commands
-    for: running the package's tests and the build · never: git push, rm -rf
+  for: running the package's tests and the build · never: git push, rm -rf
 
-    ┄ what to change in Commands — the other seven are sent as fixed context
-    ┃ it must never install anything                                          
-  ⋮ 1 more section · [shift+↓] scroll the profile
+  ┄ what to change in Commands — the other seven are sent as fixed context
+  ┃ it must never install anything                                            
+⋮ 1 more section · [shift+↓] scroll the profile
 
-  [enter] refine it · [esc] leave it as it is
+[enter] refine it · [esc] leave it as it is
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -95,39 +95,39 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · written in the editor · marked as the person's own
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ⊘ questions   ● draft
+✓ brief   ⊘ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time.
+  Add table-driven tests for one package at a time.
 
   Scope
-    The package you were pointed at and its _test.go files.
+  The package you were pointed at and its _test.go files.
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
   Method
-    Read the package, then its tests, then write the missing cases.
+  Read the package, then its tests, then write the missing cases.
 
   Report
-    The cases added, by function, and the test run's last line.
+  The cases added, by function, and the test run's last line.
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
 ❯ Commands · edited by you
-    for: running the package's tests · never: git push, go install
+  for: running the package's tests · never: git push, go install
 
-  ⋮ 1 more section · [shift+↓] scroll the profile
+⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-  [d] clear it · [R] all · [tab] the card
-  [esc] take back its last revision
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself
+[d] clear it · [R] all · [tab] the card · [?] keys
+[esc] take back its last revision
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -137,39 +137,39 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · an allow line refused on the card · in the loader's words
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ⊘ questions   ● draft
+✓ brief   ⊘ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
-  ⚠ Commands is as it was — allow: a profile carries no allowlist — a file that
-    lets commands run without asking would be a file granting them, and only
-    your own settings or a card may; a profile can only add to what is refused,
-    with deny
+⚠ Commands is as it was — allow: a profile carries no allowlist — a file that
+  lets commands run without asking would be a file granting them, and only your
+  own settings or a card may; a profile can only add to what is refused, with
+  deny
 
-  ⋮ 2 more sections above · [shift+↑] scroll up
+⋮ 2 more sections above · [shift+↑] scroll up
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
   Method
-    Read the package, then its tests, then write the missing cases.
+  Read the package, then its tests, then write the missing cases.
 
   Report
-    The cases added, by function, and the test run's last line.
+  The cases added, by function, and the test run's last line.
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
 ❯ Commands · edited by you
-    for: running the package's tests · never: git push, go install
-  ⋮ 1 more section · [shift+↓] scroll the profile
+  for: running the package's tests · never: git push, go install
+⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-  [d] clear it · [R] all · [tab] the card
-  [esc] take back its last revision
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself
+[d] clear it · [R] all · [tab] the card · [?] keys
+[esc] take back its last revision
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -179,39 +179,39 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · cleared · the session's own command lists apply, and esc takes it back
-/agents new · a coding agent · researcher     [?] keys · [esc] discard the draft
+/agents new · a coding agent · researcher
 ────────────────────────────────────────────────────────────────────────────────
 
-  ✓ brief   ⊘ questions   ● draft
+✓ brief   ⊘ questions   ● draft
 
-  test-writer — adds table-driven tests for a package and runs them
+test-writer — adds table-driven tests for a package and runs them
 
   Purpose
-    Add table-driven tests for one package at a time.
+  Add table-driven tests for one package at a time.
 
   Scope
-    The package you were pointed at and its _test.go files.
+  The package you were pointed at and its _test.go files.
 
   Restrictions
-    Never change an expected value to make a case pass.
+  Never change an expected value to make a case pass.
 
   Method
-    Read the package, then its tests, then write the missing cases.
+  Read the package, then its tests, then write the missing cases.
 
   Report
-    The cases added, by function, and the test run's last line.
+  The cases added, by function, and the test run's last line.
 
   Tools
-    read + write + execute · it can change things, in its own copy of the tree
+  read + write + execute · it can change things, in its own copy of the tree
 
 ❯ Commands · you cleared it
-    none stated · the session's own command lists apply
+  none stated · the session's own command lists apply
 
   Model
-    inherited from this session
+  inherited from this session
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-  [R] all · [tab] the card · [esc] take back its last revision
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself
+[R] all · [tab] the card · [?] keys · [esc] take back its last revision
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -222,39 +222,39 @@
 
 ── ansi ────────────────────────────────────────────────────
 · Commands selected · what its commands are for and what it never runs, on one line
-␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m     ␛[38;5;245m[?] keys · [esc] discard the draft␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
+␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
-  ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
+  ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
+  ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
+  ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
+  ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+  ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m
-    ␛[38;5;252mfor: running the package's tests and the build␛[m␛[38;5;245m · never: git push, rm -rf␛[m
+  ␛[38;5;252mfor: running the package's tests and the build␛[m␛[38;5;245m · never: git push, rm -rf␛[m
 
   ␛[38;5;252mModel␛[m
-    ␛[38;5;252minherited from this session␛[m
+  ␛[38;5;252minherited from this session␛[m
 
-  ␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
-  ␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard the draft␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
+␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard the draft␛[m
 
 ␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
@@ -264,39 +264,39 @@
 ␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a note open under Commands · only its two fields are taken from the answer
-␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m                ␛[38;5;245m[esc] leave it as it is␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
+␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
-  ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
+  ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
+  ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
+  ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
+  ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+  ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m
-    ␛[38;5;252mfor: running the package's tests and the build␛[m␛[38;5;245m · never: git push, rm -rf␛[m
+  ␛[38;5;252mfor: running the package's tests and the build␛[m␛[38;5;245m · never: git push, rm -rf␛[m
 
-    ␛[38;5;245m┄ what to change in Commands — the other seven are sent as fixed context␛[m
-    ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252mit must never install anything␛[m␛[38;5;252m␛[7;38;5;61m ␛[m␛[m␛[38;5;252m␛[m␛[38;5;252m                                         ␛[m
-  ␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+  ␛[38;5;245m┄ what to change in Commands — the other seven are sent as fixed context␛[m
+  ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252mit must never install anything␛[m␛[38;5;252m␛[7;38;5;61m ␛[m␛[m␛[38;5;252m␛[m␛[38;5;252m                                           ␛[m
+␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;103m[enter]␛[m␛[38;5;245m refine it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave it as it is␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m refine it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave it as it is␛[m
 
 ␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
@@ -306,39 +306,39 @@
 ␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · written in the editor · marked as the person's own
-␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m     ␛[38;5;245m[?] keys · [esc] discard the draft␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
+␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
-  ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
+  ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
+  ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
+  ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
+  ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+  ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m ␛[92m· edited by you␛[m
-    ␛[38;5;252mfor: running the package's tests␛[m␛[38;5;245m · never: git push, go install␛[m
+  ␛[38;5;252mfor: running the package's tests␛[m␛[38;5;245m · never: git push, go install␛[m
 
-  ␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
-  ␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m
-  ␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
+␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
+␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
 
 ␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
@@ -348,39 +348,39 @@
 ␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · an allow line refused on the card · in the loader's words
-␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m     ␛[38;5;245m[?] keys · [esc] discard the draft␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
+␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
-  ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
-  ␛[91m⚠ Commands is as it was — allow: a profile carries no allowlist — a file that␛[m
-  ␛[91m  lets commands run without asking would be a file granting them, and only␛[m
-  ␛[91m  your own settings or a card may; a profile can only add to what is refused,␛[m
-  ␛[91m  with deny␛[m
+␛[91m⚠ Commands is as it was — allow: a profile carries no allowlist — a file that␛[m
+␛[91m  lets commands run without asking would be a file granting them, and only your␛[m
+␛[91m  own settings or a card may; a profile can only add to what is refused, with␛[m
+␛[91m  deny␛[m
 
-  ␛[38;5;245m⋮ 2 more sections above · [shift+↑] scroll up␛[m
+␛[38;5;245m⋮ 2 more sections above · [shift+↑] scroll up␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
+  ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
+  ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+  ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m ␛[92m· edited by you␛[m
-    ␛[38;5;252mfor: running the package's tests␛[m␛[38;5;245m · never: git push, go install␛[m
-  ␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+  ␛[38;5;252mfor: running the package's tests␛[m␛[38;5;245m · never: git push, go install␛[m
+␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
-  ␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m
-  ␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
+␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
+␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
 
 ␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
@@ -390,39 +390,39 @@
 ␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · cleared · the session's own command lists apply, and esc takes it back
-␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m     ␛[38;5;245m[?] keys · [esc] discard the draft␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
+␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
-  ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
+␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
+  ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
+  ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
+  ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
+  ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
+  ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+  ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m ␛[38;5;245m· you cleared it␛[m
-    ␛[38;5;245mnone stated␛[m␛[38;5;245m · the session's own command lists apply␛[m
+  ␛[38;5;245mnone stated␛[m␛[38;5;245m · the session's own command lists apply␛[m
 
   ␛[38;5;252mModel␛[m
-    ␛[38;5;252minherited from this session␛[m
+  ␛[38;5;252minherited from this session␛[m
 
-  ␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
-  ␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
+␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
 
 ␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m

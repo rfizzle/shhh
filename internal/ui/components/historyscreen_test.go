@@ -420,10 +420,10 @@ func TestHistoryScreen_NarrowStacksThePanes(t *testing.T) {
 }
 
 // The header names the command and its subject, and offers the two keys every
-// one of these screens offers.
+// one of these screens carries; the keys are in the foot.
 func TestHistoryScreen_Header(t *testing.T) {
 	head := strings.SplitN(plainView(historyScreen(), 130), "\n", 2)[0]
-	for _, want := range []string{"shhh history", "4 entries · 2 run", "[?] keys · [esc] back"} {
+	for _, want := range []string{"shhh history", "4 entries · 2 run"} {
 		if !strings.Contains(head, want) {
 			t.Fatalf("header is missing %q: %q", want, head)
 		}

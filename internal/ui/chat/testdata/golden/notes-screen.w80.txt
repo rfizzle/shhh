@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · as it opens · the pointer on the last note written
-/notes · 4 notes · 4 agents                            [?] keys · [esc] back
+/notes · 4 notes · 4 agents
 ────────────────────────────────────────────────────────────────────────────
 
 orchestrator
@@ -28,10 +28,10 @@ The reviewer's own delegate                         researcher-1/reviewer-1a
   A grandchild signs with its spawner's name in front, so its note files
   under researcher-1.
 
-[↑↓/jk] move · [enter] open · [d] delete · [esc] back
+[↑↓/jk] move · [enter] open · [d] delete · [?] keys · [esc] back
 
 · a note from the fan-out · the preview reads it
-/notes · 4 notes · 4 agents                            [?] keys · [esc] back
+/notes · 4 notes · 4 agents
 ────────────────────────────────────────────────────────────────────────────
 
 orchestrator
@@ -48,10 +48,10 @@ The deny list is read before the tier                             reviewer-1
   policy.Decide matches on the command, so an entry refuses the verb in
   every mode.
 
-[↑↓/jk] move · [enter] open · [d] delete · [esc] back
+[↑↓/jk] move · [enter] open · [d] delete · [?] keys · [esc] back
 
 · [d] · the one key that takes something out asks first
-/notes · 4 notes · 4 agents                            [?] keys · [esc] back
+/notes · 4 notes · 4 agents
 ────────────────────────────────────────────────────────────────────────────
 
 orchestrator
@@ -71,7 +71,7 @@ The deny list is read before the tier                             reviewer-1
 Drop "The deny list is read before the tier"?  [y/N]
 
 · /notes clear · the question counts what it would take
-/notes · 4 notes · 4 agents                            [?] keys · [esc] back
+/notes · 4 notes · 4 agents
 ────────────────────────────────────────────────────────────────────────────
 
 orchestrator
@@ -97,7 +97,7 @@ notes · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the last note written
-␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m                            ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94morchestrator␛[m
@@ -114,10 +114,10 @@ notes · [esc] back
   ␛[38;5;245mA grandchild signs with its spawner's name in front, so its note files␛[m
   ␛[38;5;245munder researcher-1.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a note from the fan-out · the preview reads it
-␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m                            ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94morchestrator␛[m
@@ -134,10 +134,10 @@ notes · [esc] back
   ␛[38;5;245mpolicy.Decide matches on the command, so an entry refuses the verb in␛[m
   ␛[38;5;245mevery mode.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · [d] · the one key that takes something out asks first
-␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m                            ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94morchestrator␛[m
@@ -157,7 +157,7 @@ notes · [esc] back
 ␛[38;5;252m␛[38;5;252mDrop "The deny list is read before the tier"?␛[m␛[m  ␛[38;5;245m[␛[m␛[38;5;245my␛[m␛[38;5;245m/␛[m␛[1;97mN␛[m␛[38;5;245m]␛[m
 
 · /notes clear · the question counts what it would take
-␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m                            ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94morchestrator␛[m

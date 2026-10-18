@@ -253,7 +253,7 @@ func (s *SourcesScreen) outcomeOf(row SourcesRow) string {
 
 // header names the surface and what it is over.
 func (s *SourcesScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/sources")}, keys: s.headerKeys(keys.Sources.List, keys.Sources.Back)}
+	h := screenHeader{left: []RailSegment{screenTitle("/sources")}}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}

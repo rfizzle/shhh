@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · standing · the suite still failing, nothing has answered it
-/alerts · 2 standing · 2 superseded    [?] keys · [esc] back
+/alerts · 2 standing · 2 superseded
 ────────────────────────────────────────────────────────────
 
 ❯ ✗ make test  standing · exit 2 · 3 runs       since turn 3
@@ -26,10 +26,10 @@ make test                                           standing
   broke     turn 3
   answered  not yet
 
-[enter] show each run · [esc] back
+[enter] show each run · [?] keys · [esc] back
 
 · superseded · the linter the quality gate answered, and the turn it did
-/alerts · 2 standing · 2 superseded    [?] keys · [esc] back
+/alerts · 2 standing · 2 superseded
 ────────────────────────────────────────────────────────────
 
   ✗ make test  standing · exit 2 · 3 runs       since turn 3
@@ -44,10 +44,10 @@ golangci-lint run                                 superseded
   broke     turn 2
   answered  quality gate default passed · turn 4
 
-[enter] show each run · [esc] back
+[enter] show each run · [?] keys · [esc] back
 
 · one episode opened · each run, its ending, its time and the evidence id its output was kept under
-/alerts · 2 standing · 2 superseded    [?] keys · [esc] back
+/alerts · 2 standing · 2 superseded
 ────────────────────────────────────────────────────────────
 
 ❯ ✗ make test  standing · exit 2 · 3 runs       since turn 3
@@ -70,21 +70,21 @@ make test                                           standing
   ✗ turn 5 · killed · signal 9 · 30s     ev-7b21c0de9f8a3e44
     make test
 
-[enter] open its output · [esc] back
+[enter] open its output · [?] keys · [esc] back
 
 · empty · a session that has broken nothing
-/alerts                                [?] keys · [esc] back
+/alerts
 ────────────────────────────────────────────────────────────
 
 nothing this session ran has come back broken
 ────────────────────────────────────────────────────────────
 no alert selected
 
-[↑↓/jk] move · [esc] back
+[↑↓/jk] move · [?] keys · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · standing · the suite still failing, nothing has answered it
-␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m    ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✗ make test  standing · exit 2 · 3 runs       since turn 3␛[m
@@ -99,10 +99,10 @@ no alert selected
   ␛[38;5;244mbroke     ␛[m␛[38;5;254mturn 3␛[m
   ␛[38;5;244manswered  ␛[m␛[38;5;254mnot yet␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · superseded · the linter the quality gate answered, and the turn it did
-␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m    ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m✗ make test␛[m  ␛[38;5;254mstanding␛[m␛[38;5;244m · ␛[m␛[38;5;244mexit 2 · 3 runs␛[m       ␛[38;5;244msince turn 3␛[m
@@ -117,10 +117,10 @@ no alert selected
   ␛[38;5;244mbroke     ␛[m␛[38;5;254mturn 2␛[m
   ␛[38;5;244manswered  ␛[m␛[38;5;254mquality gate default passed · turn 4␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · one episode opened · each run, its ending, its time and the evidence id its output was kept under
-␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m    ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✗ make test  standing · exit 2 · 3 runs       since turn 3␛[m
@@ -143,14 +143,14 @@ no alert selected
   ␛[38;5;254m✗␛[m ␛[38;5;254mturn 5 · killed · signal 9 · 30s␛[m     ␛[38;5;244mev-7b21c0de9f8a3e44␛[m
     ␛[38;5;244mmake test␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m open its output␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m open its output␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · empty · a session that has broken nothing
-␛[1;38;5;254m/alerts␛[m                                ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/alerts␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244mnothing this session ran has come back broken␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 ␛[38;5;244mno alert selected␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

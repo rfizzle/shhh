@@ -38,12 +38,12 @@ import (
 
 const (
 	// profileIndent is the column the body starts at, the same one the
-	// context surface's panels and the metrics table use.
-	profileIndent = 2
+	// every other screen's body does (screenMargin).
+	profileIndent = screenMargin
 	// profileBodyIndent is the column a section's prose starts at: under its
 	// heading, two further in, so the headings are a column the eye runs
 	// down to find a section.
-	profileBodyIndent = 4
+	profileBodyIndent = screenMargin + 2
 )
 
 // profileStep is where in the flow the surface is. The four are the flow's
@@ -570,24 +570,20 @@ func (p *ProfileScreen) View(width int) string {
 		// a rail of three steps would claim exchanges that never happened.
 		chrome.head = nil
 	}
-	// The register takes the foot only while it is asked for and only where
-	// `?` is still a key: a step that has since put a field in front of the
-	// reader has taken the character back.
+	// The step's key row (hintFor) is this screen's foot, and carries the way
+	// out worded for where the flow is standing. The register takes the foot
+	// only while it is asked for and only where `?` is still a key: a step
+	// that has since put a field in front of the reader has taken the
+	// character back.
 	if p.keys && p.listLive() {
 		chrome.foot = keyFooter{register: p.keyList(), showing: true}.rows(width)
 	}
 	return chrome.view(width, func(budget int) []string { return p.bodyRows(width, budget) })
 }
 
-// header names the surface, what it is drafting into, and the way out.
+// header names the surface and what it is drafting into.
 func (p *ProfileScreen) header() screenHeader {
-	h := screenHeader{
-		left: []RailSegment{screenTitle(p.name)},
-		keys: words(keys.Profile.Back, p.wayOutWords()),
-	}
-	if p.listLive() {
-		h.keys = keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List) + " · " + h.keys
-	}
+	h := screenHeader{left: []RailSegment{screenTitle(p.name)}}
 	if p.Subject != "" {
 		h.left = append(h.left, screenField(p.Subject))
 	}
@@ -772,6 +768,11 @@ func (p *ProfileScreen) hintFor(width int) []string {
 	}
 	if len(segments) == 0 {
 		return nil
+	}
+	// `[?] keys` rides on the row, in front of the way out, where `?` is still
+	// a key. The header no longer carries it.
+	if p.listLive() {
+		segments = withKeysOffer(segments)
 	}
 	rows := hintRows(segments, width-profileIndent)
 	for i, row := range rows {

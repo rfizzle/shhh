@@ -123,29 +123,10 @@ func (l *listScreen[T]) listRows(items []T, empty string, width, budget int) []s
 	return body
 }
 
-// headerKeys is the pair the header ends with, for this screen's register.
-func (l *listScreen[T]) headerKeys(list, back keys.Binding) string {
-	return headerKeyPair(list, back, l.keys)
-}
-
-// headerKeyPair is the pair a takeover's header ends with: the key that shows
-// the whole register, or hides it while open says it is showing, and the way
-// back in the one word a header field is
-// (docs/interface/surfaces.md#the-supporting-screens). A takeover that did not
-// state its way out would be a surface holding the keyboard with nothing
-// saying how to give it back (invariant 5).
-func headerKeyPair(list, back keys.Binding, open bool) string {
-	run := keys.Bracket(list) + " " + keys.Words(list)
-	if open {
-		run = keys.Bracket(list) + " hide the keys"
-	}
-	return run + " · " + words(back, "back")
-}
-
 // footer is the key row and the field that annotates it, or the whole
 // register while it is open.
 func (l *listScreen[T]) footer(offers, register []KeyOffer, field string) keyFooter {
-	return keyFooter{offers: offers, register: register, showing: l.keys, field: field}
+	return keyFooter{offers: offers, register: register, showing: l.keys, field: field, inert: l.list.Filtering}
 }
 
 // offersBeside is a key row that gives way for the field beside it: the

@@ -65,14 +65,15 @@ func (k *KeyListScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	header := screenHeader{
-		left: []RailSegment{screenTitle("keys")},
-		keys: words(keys.Screen.List, "back"),
-	}
+	header := screenHeader{left: []RailSegment{screenTitle("keys")}}
 	if k.Surface != "" {
 		header.left = append(header.left, screenField(k.Surface))
 	}
-	return screenChrome{header: header, maxLines: k.maxLines}.
+	// The foot is what every open register ends on. The way out is the
+	// host's row beneath it, which words esc for the surface the list opened
+	// over.
+	foot := packOffers([]KeyOffer{hideKeysOffer()}, width)
+	return screenChrome{header: header, foot: foot, maxLines: k.maxLines}.
 		view(width, func(budget int) []string { return k.bodyRows(width, budget) })
 }
 

@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a server still starting · what it costs until it answers, and how long it has
-/mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
+/mcp · 3 servers · 2 of 4 up
 ────────────────────────────────────────────────────────────
 
   ✓ built-in  up · 14 tools
@@ -30,10 +30,10 @@ linear                                              starting
   costs     its tools are not in this session yet; they join
 … (+5 more rows)
 
-[esc] back
+[?] keys · [esc] back
 
 · the built-in toolset · every tool it registered
-/mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
+/mcp · 3 servers · 2 of 4 up
 ────────────────────────────────────────────────────────────
 
 ❯ ✓ built-in  up · 14 tools                                 
@@ -62,10 +62,10 @@ built-in                                                  up
     edit_file, execute_command, process, steps, question,
     remember, evidence, report, query
 
-[esc] back
+[?] keys · [esc] back
 
 · a project server · waiting on the checkout, [a] answers after asking
-/mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
+/mcp · 3 servers · 2 of 4 up
 ────────────────────────────────────────────────────────────
 
   ✓ built-in  up · 14 tools
@@ -94,10 +94,10 @@ tracker                                              blocked
     checkout
     shhh trust   # or [a] on this row
 
-[a] trust this checkout · [esc] back
+[a] trust this checkout · [?] keys · [esc] back
 
 · a server that did not start · what it costs, and /mcp's words for what would move it
-/mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
+/mcp · 3 servers · 2 of 4 up
 ────────────────────────────────────────────────────────────
 
   ✓ built-in  up · 14 tools
@@ -126,10 +126,10 @@ linear                                                 error
     the server's own output is above; check the command or
 … (+3 more rows)
 
-[esc] back
+[?] keys · [esc] back
 
 · nothing outside shhh · the session's own tools and the web
-/mcp                                   [?] keys · [esc] back
+/mcp
 ────────────────────────────────────────────────────────────
 
 ❯ ✓ built-in  up · 14 tools                                 
@@ -145,11 +145,11 @@ built-in                                                  up
 
 … (+4 more rows)
 
-[esc] back
+[?] keys · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · a server still starting · what it costs until it answers, and how long it has
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m           ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m✓ built-in␛[m  ␛[38;5;244mup␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools␛[m
@@ -168,10 +168,10 @@ built-in                                                  up
   ␛[38;5;244mcosts     ␛[m␛[38;5;254mits tools are not in this session yet; they join␛[m
 ␛[38;5;244m… (+5 more rows)␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · the built-in toolset · every tool it registered
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m           ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✓ built-in  up · 14 tools                                 ␛[m
@@ -200,10 +200,10 @@ built-in                                                  up
     ␛[38;5;254medit_file, execute_command, process, steps, question,␛[m
     ␛[38;5;254mremember, evidence, report, query␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a project server · waiting on the checkout, [a] answers after asking
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m           ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m✓ built-in␛[m  ␛[38;5;244mup␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools␛[m
@@ -232,10 +232,10 @@ built-in                                                  up
     ␛[38;5;244mcheckout␛[m
     ␛[38;5;244mshhh trust   # or [a] on this row␛[m
 
-␛[38;5;254m[a]␛[m␛[38;5;244m trust this checkout␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[a]␛[m␛[38;5;244m trust this checkout␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a server that did not start · what it costs, and /mcp's words for what would move it
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m           ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m✓ built-in␛[m  ␛[38;5;244mup␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools␛[m
@@ -264,10 +264,10 @@ built-in                                                  up
     ␛[38;5;244mthe server's own output is above; check the command or␛[m
 ␛[38;5;244m… (+3 more rows)␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · nothing outside shhh · the session's own tools and the web
-␛[1;38;5;254m/mcp␛[m                                   ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254m/mcp␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✓ built-in  up · 14 tools                                 ␛[m
@@ -283,4 +283,4 @@ built-in                                                  up
 
 ␛[38;5;244m… (+4 more rows)␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

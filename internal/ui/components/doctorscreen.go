@@ -282,7 +282,6 @@ func (d *DoctorScreen) header() screenHeader {
 	}
 	h := screenHeader{
 		left:  []RailSegment{screenTitle(title)},
-		keys:  screenHeaderKeys(),
 		tally: sty.dimmer.Render(d.Elapsed),
 	}
 	if n := len(d.Checks); n > 0 {

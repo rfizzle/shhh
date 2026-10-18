@@ -321,7 +321,7 @@ func (r SpendRow) option() SelectOption {
 
 // header names the surface, what the bill is cut into, and the total.
 func (s *SpendScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/stats")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
+	h := screenHeader{left: []RailSegment{screenTitle("/stats")}}
 	counts := map[SpendKind]int{}
 	total := ""
 	for _, r := range s.Rows {

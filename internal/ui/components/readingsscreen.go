@@ -174,7 +174,7 @@ func readingOutcome(r ReadingsItem) (string, FieldTone) {
 
 // header names the surface, what it counts and what the counting cost.
 func (s *ReadingsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/readings")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
+	h := screenHeader{left: []RailSegment{screenTitle("/readings")}}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}

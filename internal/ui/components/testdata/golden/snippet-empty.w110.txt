@@ -11,18 +11,18 @@
 
 ── layout ──────────────────────────────────────────────────
 · a store with no snippets
-shhh snippets · no snippets                                                              [?] keys · [esc] back
+shhh snippets · no snippets
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
                                              │ no snippet selected
 
-[↑↓/jk] move · [/] filter · [esc] back to the shell
+[↑↓/jk] move · [/] filter · [?] keys · [esc] back to the shell
 
 ── ansi ────────────────────────────────────────────────────
 · a store with no snippets
-␛[1;97mshhh snippets␛[m␛[38;5;245m · no snippets␛[m                                                              ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[1;97mshhh snippets␛[m␛[38;5;245m · no snippets␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
                                             ␛[38;5;245m │ ␛[m␛[38;5;245mno snippet selected␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m

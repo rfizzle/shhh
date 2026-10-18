@@ -1236,18 +1236,17 @@ stop fitting. The four were decided here, before there was an artboard:
 **The foot is one row, and `[?]` holds the rest.** The picker's own key row
 is one row — `[↑↓] choose · [enter] read it · [esc] close` — and a key hint is
 one row of at most six. The screen had more than twenty keys, and a foot that
-printed them all ran to three rows under the list while the header offered
-`[?] keys` beside it: the register twice. So the foot offers the keys pressed
-every time the screen is open — move, read, filter, edit, a new item and the
-way out — and the tabs and the other verbs are behind `[?]`.
-Where even those do not fit, whole offers give ground: the way out first,
-because the header's `[esc] back` states it at every width, then the new item
-and the editor, then the filter. The pointer's keys and reading the item
-never go. While a turn runs, the keys that change a
+printed them all ran to three rows under the list: the register twice. So the
+foot offers the keys pressed every time the screen is open — move, read,
+filter, edit, a new item, `[?] keys` and the way out — and the tabs and the
+other verbs are behind `[?]`.
+Where even those do not fit, whole offers give ground: the new item and the
+editor, then the filter. The pointer's keys, reading the item and the way out
+never go; below sixty columns the row wraps instead. While a turn runs, the keys that change a
 file leave the row and are drawn grey under the sentence saying why — that
 block is a reading of the screen's state, not the foot's offers, so it keeps
-every such key. `[esc] back` is drawn once, on the header: the frame's row
-under the screen says `backlog` and offers nothing.
+every such key. `[esc] back` is drawn once, on the foot: the header says
+`backlog` and the count, and offers nothing.
 
 
 **The row's field order, and which field gives ground.** The name and the two

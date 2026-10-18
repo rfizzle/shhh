@@ -37,8 +37,8 @@ import (
 // one level further in that an open picker sits at ("indented one level").
 // Two levels is all this screen has.
 const (
-	menuIndent   = 2
-	pickerIndent = 4
+	menuIndent   = screenMargin
+	pickerIndent = screenMargin + 2
 )
 
 // ConfigRow is one setting: what it is called, what it is set to, and where
@@ -318,8 +318,11 @@ func (c *ConfigScreen) askKeep() {
 	}
 	c.ask(prompt, ConfigResult{Canceled: true})
 	c.keeping = true
-	c.confirm.Answers = sty.dim.Render(keys.Bracket(keys.Confirm.Yes) + " this session only  " +
-		keys.Bracket(keys.Screen.Write) + " write first  " + keys.Bracket(keys.Screen.Quit) + " stay")
+	c.confirm.Answers = cardTones().Join([]KeyOffer{
+		keyOfferAs(keys.Confirm.Yes, "this session only"),
+		keyOfferAs(keys.Screen.Write, "write first"),
+		keyOfferAs(keys.Screen.Quit, "stay"),
+	})
 }
 
 // ask arms the inline confirm in front of a key, with what saying yes to it
@@ -596,11 +599,11 @@ func (c *ConfigScreen) pickerBudget(pinned int) int {
 // change that has not reached the file yet is the one thing on this row a
 // reader cannot afford to lose sight of.
 func (c *ConfigScreen) header() screenHeader {
-	title, headerKeys := "shhh config", screenHeaderKeys()
+	title := "shhh config"
 	if c.InSession {
-		title, headerKeys = "/config", screenBackKeys()
+		title = "/config"
 	}
-	h := screenHeader{left: []RailSegment{screenTitle(title)}, keys: headerKeys}
+	h := screenHeader{left: []RailSegment{screenTitle(title)}}
 	if c.Scoped {
 		// Whose file it is outlives the path: a long path is the first field
 		// this header gives up, and which of the two files the write reaches
@@ -658,7 +661,10 @@ func (c *ConfigScreen) scopeOffer() KeyOffer {
 
 // footer is the keys the screen offers and the field that annotates them.
 func (c *ConfigScreen) footer(width int) keyFooter {
-	f := keyFooter{offers: c.offers(), register: c.keyList(), showing: c.keys, field: c.footField(), keepField: c.Changed > 0}
+	// `?` is a key only on the list: a value being typed, a picker and the
+	// list's own query line all take it as a letter.
+	typing := c.edit != nil || c.secret != nil || c.picker != nil || c.list.Filtering
+	f := keyFooter{offers: c.offers(), register: c.keyList(), showing: c.keys, field: c.footField(), keepField: c.Changed > 0, inert: typing}
 	if c.confirm != nil {
 		f.taken = c.confirm.View(width)
 		// The answers are what may never be clipped away: where the question
