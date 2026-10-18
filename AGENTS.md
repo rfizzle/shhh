@@ -151,6 +151,13 @@ internal/
   rpc/             the JSON-RPC surface behind `shhh serve`
 ```
 
+The provider plumbing is moving to `github.com/rfizzle/llm`, a sibling module
+at `../llm`. While a change spans both, an untracked `go.work` at the checkout
+or worktree root (`go 1.26.9`, `use .`, `use` the absolute path of `llm`)
+joins them; an absolute path, because a worktree under `.claude/worktrees/`
+sits at a different depth. Never commit it. An item that changes `llm` commits
+and tags it there; the person pushes `llm` and its tag before pushing shhh.
+
 ## Invariants
 
 - **Three tool tiers, never merged.** `Execute` in `tools/tools.go` dispatches

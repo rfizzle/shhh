@@ -10,3 +10,7 @@
 /THIRD_PARTY_LICENSES
 /docs/design/
 /docker/sandbox/bin
+
+# A local workspace joins this module to ../llm while a change spans both.
+/go.work
+/go.work.sum
