@@ -209,7 +209,10 @@ change somebody notices.
 
 **A `conversation` line may begin `system:` or `tool:` here.** A window
 recovery keeps the system message and elides the oldest results, and neither
-can be measured against a transcript that has neither in it.
+can be measured against a transcript that has neither in it. A `call: name
+{json}` line gives the assistant message before it a tool call, which the next
+`tool:` line answers; an inherit row uses the pair so the elided result is a
+placeholder the child can read back, as in a session.
 
 ## Writing a research case
 

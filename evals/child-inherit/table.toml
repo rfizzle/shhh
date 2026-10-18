@@ -7,11 +7,12 @@ inherit = 1
 conversation = [
   "user: why do requests give up after a while?",
   "assistant: Reading limits.go to find the retry bound.",
-  "tool: package limits\n\n// MaxRetries is how many times a failed request is sent again before the session gives up.\nconst MaxRetries = 7\n",
+  "call: read_file {\"path\":\"limits.go\"}",
+  "tool: package limits\n\n// Limits for a session talking to the upstream service. Each one is read\n// once, when the session opens, and held until it closes; nothing here is\n// changed while a request is in flight.\n\n// MaxRetries is how many times a failed request is sent again before the session gives up.\nconst MaxRetries = 7\n\n// BaseWait is how long the first retry waits, in seconds. Each later retry\n// waits twice as long as the one before it, so the wait doubles every time.\nconst BaseWait = 1\n\n// MaxWait caps the doubled wait, in seconds, so a long run of failures does\n// not leave a session asleep for minutes between attempts.\nconst MaxWait = 60\n\n// RequestTimeout is how long one request may run before it counts as failed,\n// in seconds. A request that times out is retried like any other failure.\nconst RequestTimeout = 30\n",
   "assistant: limits.go sets MaxRetries = 7: a failed request is sent again seven times, with the wait doubling from one second, and then the session gives up.",
 ]
 paths = ["limits.go"]
-files = { "limits.go" = "package limits\n\n// MaxRetries is how many times a failed request is sent again before the session gives up.\nconst MaxRetries = 7\n" }
+files = { "limits.go" = "package limits\n\n// Limits for a session talking to the upstream service. Each one is read\n// once, when the session opens, and held until it closes; nothing here is\n// changed while a request is in flight.\n\n// MaxRetries is how many times a failed request is sent again before the session gives up.\nconst MaxRetries = 7\n\n// BaseWait is how long the first retry waits, in seconds. Each later retry\n// waits twice as long as the one before it, so the wait doubles every time.\nconst BaseWait = 1\n\n// MaxWait caps the doubled wait, in seconds, so a long run of failures does\n// not leave a session asleep for minutes between attempts.\nconst MaxWait = 60\n\n// RequestTimeout is how long one request may run before it counts as failed,\n// in seconds. A request that times out is retried like any other failure.\nconst RequestTimeout = 30\n" }
 needs = ["7", "limits.go"]
 
 [[row]]

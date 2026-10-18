@@ -379,12 +379,16 @@ func checkScriptedRow(path string, kind Kind, row Row) error {
 // guessing wrong there costs a label on one turn rather than a row that
 // silently vanishes from the evidence.
 //
+// `call: name {json}` gives the assistant message before it a tool call, which
+// the next `tool:` line answers.
+//
 // `system:` and `tool:` are here for the scripted kinds, which are run over a
 // conversation rather than shown one: a window recovery keeps the system
 // message and elides the oldest tool results, and neither can be measured
 // against a transcript that has neither in it.
 func conversation(lines []string) []provider.Message {
 	var out []provider.Message
+	var pending []string
 	for _, line := range lines {
 		text := strings.TrimSpace(line)
 		if text == "" {
@@ -396,16 +400,42 @@ func conversation(lines []string) []provider.Message {
 			role, text = provider.RoleAssistant, strings.TrimSpace(text[len("assistant:"):])
 		case strings.HasPrefix(strings.ToLower(text), "system:"):
 			role, text = provider.RoleSystem, strings.TrimSpace(text[len("system:"):])
+		case strings.HasPrefix(strings.ToLower(text), "call:"):
+			out, pending = withCall(out, pending, strings.TrimSpace(text[len("call:"):]))
+			continue
 		case strings.HasPrefix(strings.ToLower(text), "tool:"):
 			role, text = provider.RoleTool, strings.TrimSpace(text[len("tool:"):])
 		case strings.HasPrefix(strings.ToLower(text), "user:"):
 			text = strings.TrimSpace(text[len("user:"):])
 		}
 		if text != "" {
-			out = append(out, provider.Message{Role: role, Content: text})
+			msg := provider.Message{Role: role, Content: text}
+			if role == provider.RoleTool && len(pending) > 0 {
+				msg.ToolCallID, pending = pending[0], pending[1:]
+			}
+			out = append(out, msg)
 		}
 	}
 	return out
+}
+
+// withCall adds the call a `call: name {json}` line describes to the
+// assistant message before it, or to a new empty one when the line before is
+// not the assistant's, and queues its id for the `tool:` line that answers it.
+// A tool result with no call is an anonymous placeholder once elided; one with
+// a call is what a real session hands a child, and can be offered back.
+func withCall(out []provider.Message, pending []string, spec string) ([]provider.Message, []string) {
+	name, args, _ := strings.Cut(spec, " ")
+	if args = strings.TrimSpace(args); args == "" {
+		args = "{}"
+	}
+	if len(out) == 0 || out[len(out)-1].Role != provider.RoleAssistant {
+		out = append(out, provider.Message{Role: provider.RoleAssistant})
+	}
+	id := fmt.Sprintf("call-%d", len(out))
+	last := &out[len(out)-1]
+	last.ToolCalls = append(last.ToolCalls, provider.ToolCall{ID: id, Name: name, Arguments: args})
+	return out, append(pending, id)
 }
 
 // lookPath is the PATH probe, a variable so a test can decide what this

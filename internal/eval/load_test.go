@@ -495,3 +495,24 @@ func TestLoadCaseRefusesAFactThatIsNotAnExpression(t *testing.T) {
 		t.Errorf("the error should quote the fact: %v", err)
 	}
 }
+
+// A `call:` line gives the assistant message before it a tool call, and the
+// `tool:` line after it answers that call by id.
+func TestConversationPairsACallWithItsResult(t *testing.T) {
+	got := conversation([]string{
+		"user: look",
+		"assistant: Reading.",
+		`call: read_file {"path":"a.go"}`,
+		"tool: contents",
+	})
+	if len(got) != 3 || len(got[1].ToolCalls) != 1 {
+		t.Fatalf("conversation = %+v, want user, assistant with one call, tool", got)
+	}
+	call := got[1].ToolCalls[0]
+	if call.Name != "read_file" || call.Arguments != `{"path":"a.go"}` || call.ID == "" {
+		t.Fatalf("call = %+v", call)
+	}
+	if got[2].Role != provider.RoleTool || got[2].ToolCallID != call.ID {
+		t.Fatalf("tool message = %+v, want it to answer %q", got[2], call.ID)
+	}
+}

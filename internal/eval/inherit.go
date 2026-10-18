@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
@@ -72,7 +73,21 @@ func askInherit(ctx context.Context, p provider.Provider, model string, row Row)
 		}
 	}
 
-	child := &inheritChild{root: dir, p: p, model: model}
+	// The store a real session keeps an elided result in, so a result the
+	// turns elide is a placeholder the child can read back, as it is in a
+	// session, rather than an anonymous one. It lives beside the workspace,
+	// not in it, where the child's own listing would find it.
+	spool, err := os.MkdirTemp("", "shhh-eval-inherit-evidence-")
+	if err != nil {
+		return Answer{Row: row, Err: "cannot make an evidence store: " + err.Error()}
+	}
+	defer func() { _ = os.RemoveAll(spool) }()
+	store, err := evidence.OpenAt(spool, "inherit")
+	if err != nil {
+		return Answer{Row: row, Err: "cannot open an evidence store: " + err.Error()}
+	}
+
+	child := &inheritChild{root: dir, p: p, model: model, store: store}
 	ctx, cancel := context.WithCancel(ctx)
 	sup := subagent.New(ctx, subagent.Options{Root: dir, NewEnv: child.factory()})
 	defer sup.Close()
@@ -116,6 +131,7 @@ type inheritChild struct {
 	root  string
 	p     provider.Provider
 	model string
+	store *evidence.Store
 
 	mu    sync.Mutex
 	reads []string
@@ -125,7 +141,7 @@ type inheritChild struct {
 func (c *inheritChild) factory() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		info := shell.Info{OS: runtime.GOOS, Cwd: c.root}
-		defs := tools.Definitions()
+		defs := append(tools.Definitions(), evidence.ToolDefinition())
 		stream := func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(ctx)
 			events, err := c.p.StreamCompletion(sctx, msgs, provider.CompletionOpts{
@@ -139,7 +155,11 @@ func (c *inheritChild) factory() subagent.EnvFactory {
 		return subagent.Env{
 			SystemPrompt: prompt.Inherited(prompt.BuildResearcher(info, prompt.WebTools{}), spec.Inherit),
 			Stream:       stream,
-			Executor:     subagent.RootedExecutor(c.root, c.note(tools.Execute)),
+			Executor:     c.evidence(subagent.RootedExecutor(c.root, c.note(tools.Execute))),
+			Archive: func(tool, content string) (string, bool) {
+				id, err := c.store.Put(tool, []byte(content))
+				return id, err == nil
+			},
 			ExecuteGated: func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 				return "", errors.New(name + " is not available to this child")
 			},
@@ -147,6 +167,17 @@ func (c *inheritChild) factory() subagent.EnvFactory {
 				return tools.ExecResult{Output: "not available", ExitCode: 1, Outcome: tools.ExecExited}
 			},
 		}, nil
+	}
+}
+
+// evidence answers the evidence tool from the row's store and hands every
+// other call on.
+func (c *inheritChild) evidence(next agent.ToolExecutor) agent.ToolExecutor {
+	return func(ctx context.Context, name string, args json.RawMessage) (string, error) {
+		if name == evidence.ToolName {
+			return c.store.ExecuteTool(args)
+		}
+		return next(ctx, name, args)
 	}
 }
 

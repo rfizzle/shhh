@@ -124,3 +124,32 @@ func TestInheritRowsNeedTheirTurnsAndWhatNotToRead(t *testing.T) {
 		}
 	}
 }
+
+// A tool result in the turns, answering a call, is elided the way a session
+// elides it: the placeholder names an id the child's evidence tool reads back.
+func TestAskInherit_AnElidedResultCanBeReadBack(t *testing.T) {
+	body := "package limits\n\n" + strings.Repeat("// a long comment about the bound\n", 30) + "const MaxRetries = 7\n"
+	row := inheritRow()
+	row.Conversation = conversation([]string{
+		"user: why do requests give up?",
+		"assistant: Reading limits.go.",
+		`call: read_file {"path":"limits.go"}`,
+		"tool: " + body,
+		"assistant: limits.go sets MaxRetries = 7.",
+	})
+	m := &inheritModel{replies: []provider.StreamEvent{{Token: "7, limits.go", Done: true}}}
+	a := askInherit(context.Background(), m, "scripted", row)
+	if a.Err != "" {
+		t.Fatalf("the row did not run: %s", a.Err)
+	}
+	var opening string
+	for _, msg := range m.first {
+		if msg.Role == provider.RoleUser {
+			opening = msg.Content
+			break
+		}
+	}
+	if !strings.Contains(opening, "tool result (read_file): [result elided: ") || !strings.Contains(opening, "stored as evidence ev-") {
+		t.Fatalf("the elided result does not offer itself back:\n%s", opening)
+	}
+}
