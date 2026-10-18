@@ -93,6 +93,11 @@ type ResearchScore struct {
 	Cited  Rate
 	Quoted Rate
 	Facts  Rate
+	// WrongPage is how many of the quotations counted in Quoted are not on
+	// the page they were attributed to but are verbatim on another page the
+	// run read. It is a count beside the rates, never part of one, and it
+	// does not fail an attempt.
+	WrongPage int
 	// Misses is one line per thing that came out wrong, in the order the
 	// three checks run, because a rate says how much was missed and never
 	// which part.
@@ -110,6 +115,7 @@ func (s *ResearchScore) Add(other ResearchScore) {
 	s.Quoted.Of += other.Quoted.Of
 	s.Facts.Got += other.Facts.Got
 	s.Facts.Of += other.Facts.Of
+	s.WrongPage += other.WrongPage
 	s.Misses = append(s.Misses, other.Misses...)
 }
 
@@ -237,9 +243,16 @@ func gradeResearch(c Case, writeup string, rows []web.Source, pages map[string]s
 	}
 	for _, q := range quotations(writeup) {
 		s.Quoted.Of++
-		where, found := quotedOn(q, normalized, read)
+		where, found, wrongPage := quotedOn(q, normalized, read)
 		if found {
 			s.Quoted.Got++
+			if wrongPage {
+				// A write-up with a paragraph per source puts a quotation
+				// after the other source's URL. The sentence is real and
+				// the run read it, so it is counted apart and not failed.
+				// See docs/capabilities/evals.md#a-research-case-is-graded-against-what-it-read.
+				s.WrongPage++
+			}
 			continue
 		}
 		miss("quoted but not on %s: %q", where, clip(q.text, maxMissQuote))
@@ -395,25 +408,35 @@ func keepQuote(texts ...string) []string {
 }
 
 // quotedOn reports whether the quotation is on a page it was attributed to,
-// and names where it was looked for. The pages are already normalized.
-func quotedOn(q quotation, pages map[string]string, read map[string]bool) (where string, found bool) {
+// and names where it was looked for. The pages are already normalized. When
+// the attributed pages miss, the pages the run read are tried, and a hit
+// there is found with wrongPage set: the sentence is real, the attribution
+// is not.
+func quotedOn(q quotation, pages map[string]string, read map[string]bool) (where string, found, wrongPage bool) {
 	want := trimQuoted(normalizeQuoted(q.text))
-	targets := q.cited
-	where = strings.Join(targets, ", ")
-	if len(targets) == 0 {
+	on := func(urls []string) bool {
+		for _, u := range urls {
+			if text, ok := pages[web.CanonicalURL(u)]; ok && strings.Contains(text, want) {
+				return true
+			}
+		}
+		return false
+	}
+	var anyRead []string
+	for u := range read {
+		anyRead = append(anyRead, u)
+	}
+	if len(q.cited) == 0 {
 		// Nothing was cited near it, so the weaker question is asked: is
 		// this sentence on any page the run actually read?
-		where = "any page the run read"
-		for u := range read {
-			targets = append(targets, u)
-		}
+		return "any page the run read", on(anyRead), false
 	}
-	for _, u := range targets {
-		if text, ok := pages[web.CanonicalURL(u)]; ok && strings.Contains(text, want) {
-			return where, true
-		}
+	where = strings.Join(q.cited, ", ")
+	if on(q.cited) {
+		return where, true, false
 	}
-	return where, false
+	found = on(anyRead)
+	return where, found, found
 }
 
 // normalizeQuoted is the form a quotation and a page are compared in:

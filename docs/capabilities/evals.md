@@ -125,15 +125,22 @@ what the fetcher actually returned.
 
 That keeps the rule that nothing grades a transcript. Every comparison here is
 mechanical: a URL against the ledger's URLs, a quoted sentence against the
-bytes of the page it was attributed to, a required fact against an expression
+bytes of the pages the run read, a required fact against an expression
 the case author wrote. No judgement of the prose, and no rubric.
 
 **Three rates, and never their average.** Every URL the write-up cites has to
-be one the ledger says was read; every sentence it quotes has to be on the page
-it attributes it to; every fact the case requires has to be there. A write-up
+be one the ledger says was read; every sentence it quotes has to be on a page
+the run read; every fact the case requires has to be there. A write-up
 can carry all of the facts and cite a page it never opened, and that is exactly
 the failure this shape was built to catch — a single score would report it as a
 good run with a rounding error in it. A case passes when all three are whole.
+
+A sentence that is verbatim on a page the run read but not on the one it is
+attributed to is a wrong page, and is reported as its own count beside the
+rates rather than in any of them. A disagreement write-up has a paragraph per
+source, and a quotation that lands after the other source's URL is a real
+sentence misplaced, not an invented one. It does not fail the case by itself;
+a sentence on no page the run read does.
 
 **A fact is an expression, not a phrase.** "Could not confirm" arrives as
 "I was unable to verify" just as often, and a case written in one wording

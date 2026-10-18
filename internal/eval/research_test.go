@@ -175,3 +175,37 @@ func TestAQuotationKeepsItsOwnTerminalPunctuation(t *testing.T) {
 		t.Errorf("a changed word must still miss: %v", score.Quoted)
 	}
 }
+
+// A disagreement write-up has a paragraph per source, and a quotation that
+// sits after the other source's URL is a real sentence from a page the run
+// read. It is counted as a wrong page, beside the rates and not in them, and
+// it does not fail the attempt.
+func TestGradeResearch_QuoteAfterTheOtherSourcesURL(t *testing.T) {
+	const other = "http://127.0.0.1:9/grebe-blog.html"
+	pages := readPages()
+	pages[other] = "The blog says the old ordering was much longer before then."
+	rows := append(readLedger(), web.Source{Kind: web.KindFetch, Requested: other, FinalURL: other, Status: 200})
+	writeup := "The reference (" + readURL + ") says: \"Grebe 1.4 returns rows oldest first when a query names no order.\"\n\n" +
+		"The blog (" + other + ") disagrees. \"The old ordering was much longer before then.\"\n\n" +
+		"The reference (" + readURL + ") adds: \"The old ordering was much longer before then.\""
+
+	score := gradeResearch(gradingCase(t), writeup, rows, pages)
+	if !score.OK() {
+		t.Errorf("a quotation on a page the run read must not fail: %v", score.Misses)
+	}
+	if score.Quoted != (Rate{Got: 3, Of: 3}) {
+		t.Errorf("quoted = %v", score.Quoted)
+	}
+	if score.WrongPage != 1 {
+		t.Errorf("wrong page = %d, want the one misattributed quotation", score.WrongPage)
+	}
+}
+
+// A sentence on no page the run read still fails, whatever page it names.
+func TestGradeResearch_InventedQuotationFails(t *testing.T) {
+	writeup := "From " + readURL + ": \"Grebe 1.4 has always returned rows oldest first, in every release.\""
+	score := gradeResearch(gradingCase(t), writeup, readLedger(), readPages())
+	if score.OK() || score.WrongPage != 0 {
+		t.Errorf("score = %+v, want an invented quotation to fail and not count as a wrong page", score)
+	}
+}
