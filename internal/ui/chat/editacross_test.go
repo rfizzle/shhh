@@ -68,7 +68,9 @@ func TestEditAcrossFiles_IsOneCard(t *testing.T) {
 	// The body unbounded, so what is asserted is the card's content and not
 	// how tall the test's terminal is.
 	card.MaxLines = 0
-	view := card.View(110)
+	// Wide enough for the longest temp path a host gives, which the card
+	// shortens with an ellipsis before the hunk count.
+	view := card.View(len(paths[1]) + 40)
 	for _, want := range []string{`find      old\(\)`, "replace   renamed()", "match     regular expression", filepath.Base(paths[1]) + " · 1 hunk", "3 hunks in 3 files"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("card lacks %q:\n%s", want, view)
