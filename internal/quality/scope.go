@@ -120,6 +120,12 @@ func DirtyChanged(workspace string) []string {
 	}
 	// Porcelain names paths from the repository's top level; the workspace
 	// may sit below it.
+	// Git reports the resolved toplevel; a workspace reached through a symlink
+	// would otherwise sit "outside" it and every changed file would be dropped,
+	// widening a scoped run to the whole module.
+	if resolved, err := filepath.EvalSymlinks(workspace); err == nil {
+		workspace = resolved
+	}
 	rel, err := filepath.Rel(root, workspace)
 	if err != nil || rel == "." {
 		return paths

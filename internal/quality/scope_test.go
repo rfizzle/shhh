@@ -177,6 +177,25 @@ func TestRunner_TheDirtyTreeIsTheDefaultChangedFiles(t *testing.T) {
 	}
 }
 
+// A workspace reached through a symlink still names the dirty files below it:
+// git answers with the resolved toplevel, and the workspace is measured from
+// that, not from the path it was given.
+func TestDirtyChanged_AWorkspaceReachedThroughASymlink(t *testing.T) {
+	target := moduleFixture(t)
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("no symlinks here: %v", err)
+	}
+
+	got := strings.Join(DirtyChanged(link), " ")
+
+	for _, want := range []string{"a/a.go", "b/b.go"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("DirtyChanged = %q, lacks %q", got, want)
+		}
+	}
+}
+
 func TestScope_ExpandFillsEveryPlaceholder(t *testing.T) {
 	s := scope{pkgs: []string{"x/a", "x/b"}}
 	got := strings.Join(s.expand([]string{"test", "{packages}", "P={packages}", "-v"}), "|")
