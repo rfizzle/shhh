@@ -310,7 +310,13 @@ type Delta struct {
 // Comparison is a whole run against a whole baseline.
 type Comparison struct {
 	Before, After Baseline
-	Cases         []Delta
+	// Cases holds a Delta for each case both runs hold, and nothing else:
+	// the tally and the gate read this and so never count a case there was
+	// nothing to read against.
+	Cases []Delta
+	// NotInBaseline names the cases this run measured and the baseline does
+	// not hold, so the report can say the totals leave them out.
+	NotInBaseline []string
 }
 
 // Tally counts the deltas by direction.
@@ -361,10 +367,11 @@ func (c Comparison) Regressions() []Delta {
 
 // Compare reads one run against another, in this run's case order.
 //
-// It refuses two runs over different case sets rather than comparing the
-// overlap. A suite that gained a case is a suite whose totals moved for a
-// reason that is not the change being measured, and quietly dropping the case
-// from the comparison would hide exactly that.
+// A case the run measured and the baseline does not hold is named in
+// NotInBaseline and left out of Cases, so adding a case does not cost the
+// comparison of the rest. A case the baseline holds and the run did not
+// measure is still refused: that is a run that skipped part of the suite,
+// and totals over what is left would read as a whole.
 func Compare(before, after Baseline) (Comparison, error) {
 	byName := make(map[string]CaseBaseline, len(before.Cases))
 	for _, c := range before.Cases {
@@ -384,23 +391,24 @@ func Compare(before, after Baseline) (Comparison, error) {
 			missing = append(missing, c.Name)
 		}
 	}
-	if len(missing) > 0 || len(added) > 0 {
+	sort.Strings(added)
+	if len(missing) > 0 {
 		sort.Strings(missing)
-		sort.Strings(added)
-		var parts []string
+		parts := []string{"in the baseline and not in this run: " + strings.Join(missing, ", ")}
 		if len(added) > 0 {
 			parts = append(parts, "not in the baseline: "+strings.Join(added, ", "))
-		}
-		if len(missing) > 0 {
-			parts = append(parts, "in the baseline and not in this run: "+strings.Join(missing, ", "))
 		}
 		return Comparison{}, fmt.Errorf("the two runs measured different cases, so their totals are not comparable — %s",
 			strings.Join(parts, "; "))
 	}
 
-	cmp := Comparison{Before: before, After: after}
+	cmp := Comparison{Before: before, After: after, NotInBaseline: added}
 	for _, a := range after.Cases {
-		cmp.Cases = append(cmp.Cases, delta(byName[a.Name], a))
+		b, ok := byName[a.Name]
+		if !ok {
+			continue
+		}
+		cmp.Cases = append(cmp.Cases, delta(b, a))
 	}
 	return cmp, nil
 }

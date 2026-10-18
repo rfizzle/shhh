@@ -251,9 +251,12 @@ func newEvalCmd() *cobra.Command {
 				return nil
 			}
 			// A run narrowed to named cases is compared against those rows of
-			// the baseline alone. Nothing else narrows it: a case the run
-			// measured and the file does not hold is still refused, because
-			// there is nothing to read it against.
+			// the baseline alone. A case the run measured and the file does
+			// not hold is named in the report and left out of the totals,
+			// because the file is only ever behind the suite by the cases
+			// added since it was written. A case the file holds and the run
+			// did not measure is still refused: that is a run that skipped
+			// part of the suite.
 			if len(only) > 0 {
 				before = eval.Narrow(before, only)
 			}
@@ -817,6 +820,13 @@ func compareReport(cmp eval.Comparison, now time.Time) report.Report {
 			Text: fmt.Sprintf("the baseline asked the classifier on %s and this run on %s, so its rows carry that change too",
 				backendOrDefault(cmp.Before.ClassifierBackend), backendOrDefault(cmp.After.ClassifierBackend))})
 	}
+	// The totals below cover the cases both runs hold. Saying so beside the
+	// names left out keeps a partial tally from being read as a whole one.
+	if len(cmp.NotInBaseline) > 0 {
+		r.Notes = append(r.Notes, report.Note{State: report.Warn,
+			Text: fmt.Sprintf("not in the baseline, so not counted below: %s — --refresh-baseline writes them in",
+				strings.Join(cmp.NotInBaseline, ", "))})
+	}
 	if withheld > 0 {
 		r.Notes = append(r.Notes, report.Note{State: report.Skip,
 			Text: fmt.Sprintf("counts and no rate on %s: under %d samples a side, one sample moves a percentage "+
@@ -830,6 +840,9 @@ func compareReport(cmp eval.Comparison, now time.Time) report.Report {
 	// "0 regressed · 0 improved · 5 unchanged" makes them work it out.
 	if regressed == 0 && improved == 0 && incomparable == 0 {
 		r.Tally = "no change across " + countOf(unchanged, "case", "cases")
+		if len(cmp.NotInBaseline) > 0 {
+			r.Tally += " both runs hold"
+		}
 		return r
 	}
 	var parts []string
@@ -844,6 +857,9 @@ func compareReport(cmp eval.Comparison, now time.Time) report.Report {
 		parts = append(parts, fmt.Sprintf("%d not comparable", incomparable))
 	}
 	r.Tally = strings.Join(parts, " · ")
+	if len(cmp.NotInBaseline) > 0 {
+		r.Tally += " · of the cases both runs hold"
+	}
 	return r
 }
 

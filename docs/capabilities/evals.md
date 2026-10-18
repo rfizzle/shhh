@@ -230,10 +230,14 @@ did — a case that now fails is not redeemed by having failed in fewer rounds.
 Under an unchanged verdict a control that opened further comes next, and the
 medians last, because they are what says a kept verdict was paid for.
 
-Two runs over different case sets are refused rather than compared over what
-they share. A suite that gained a case is a suite whose totals moved for a
-reason that is not the change being measured, and quietly dropping the odd case
-out of the comparison would hide exactly that.
+A case the run measured and the baseline does not hold is named in the report
+and left out of the totals, which say they cover only the cases both runs
+hold. A suite that gained a case is behind its baseline by exactly that case,
+and refusing the whole comparison until the file is refreshed would cost the
+reader every other row. A case the baseline holds and the run did not measure
+is still refused: that is a run that skipped part of the suite, and totals over
+what is left would read as a whole. A case that could not be compared is never
+counted by `--fail-on-regression`, as a regression or as a pass.
 
 ## A suite keeps the run it is read against
 
@@ -250,9 +254,8 @@ baseline yet is not an error: the report says there was nothing to read the
 run against, and how to write one.
 
 A run narrowed to named cases is compared against those rows of the file and
-not the rest. That is not the overlap the section above refuses: the reader
-said which cases they wanted. A case that ran and is not in the file is still
-refused, because there is nothing to read it against.
+not the rest. That is not the skipped suite the section above refuses: the reader
+said which cases they wanted.
 
 A machine with no account still measures the scripted cases, and the cases
 that need a model are skipped rather than failed — the same fact as a case

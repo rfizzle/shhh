@@ -165,6 +165,29 @@ func TestCompareRefusesTwoRunsOverDifferentCases(t *testing.T) {
 	}
 }
 
+// A suite that gained a case is behind its baseline by that case alone, and
+// the rest of the comparison is still worth having.
+func TestCompare_ANewCaseDoesNotRefuseTheRest(t *testing.T) {
+	before := Summary{Results: []Result{
+		workspaceResult("fix-failing-test", []int{9}, true),
+	}}.Baseline()
+	after := Summary{Results: []Result{
+		workspaceResult("fix-failing-test", []int{9}, true),
+		workspaceResult("process-choice", []int{6}, true),
+	}}.Baseline()
+
+	cmp, err := Compare(before, after)
+	if err != nil {
+		t.Fatalf("a case added since the baseline refused the comparison: %v", err)
+	}
+	if len(cmp.Cases) != 1 || cmp.Cases[0].Name != "fix-failing-test" {
+		t.Errorf("only the case both runs hold is compared: %+v", cmp.Cases)
+	}
+	if len(cmp.NotInBaseline) != 1 || cmp.NotInBaseline[0] != "process-choice" {
+		t.Errorf("the case with nothing to read against should be named: %v", cmp.NotInBaseline)
+	}
+}
+
 // The same run against itself moved nothing, and a comparison that reported a
 // direction there would be reporting noise.
 func TestCompareOfARunAgainstItselfIsUnchanged(t *testing.T) {
