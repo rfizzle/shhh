@@ -15,7 +15,7 @@ snap 03-approval "[y] run it once"
 # discards a key typed the moment it arrives, hence the pause.
 sleep 1
 keys "?"
-snap 04-keys "keys · the approval card" "refused: dim by you, red by a rule"
+snap 04-keys "keys · the approval card" "✗  failed" "[?] hide the keys"
 keys Escape
 snap 05-card-again "[y] run it once"
 keys y
