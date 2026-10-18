@@ -4,13 +4,17 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
+	"github.com/rfizzle/shhh/internal/testhttp"
 )
 
 // surfaceModels is a settings file that names a different model for every
@@ -162,5 +166,34 @@ func TestTryProvider_ChatGPTWithoutASignInIsTheSignInError(t *testing.T) {
 	}
 	if providerTokens("openai-responses") != nil || providerTokens("openai") != nil {
 		t.Fatal("no key route is handed a token source")
+	}
+}
+
+type staticTokens string
+
+func (s staticTokens) Token(context.Context, string) (string, error) { return string(s), nil }
+
+// The plan route drops the one-token cap a keep-alive is built on, so a
+// refresh there would be a whole turn on the person's allowance: it is
+// refused before anything is sent.
+func TestRefreshCache_APlanSessionSendsNothing(t *testing.T) {
+	var reg testhttp.Registry
+	var requests atomic.Int32
+	srv := reg.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+	}))
+	srv.Alias("api.openai.com")
+	t.Cleanup(srv.Close)
+	p, err := provider.Resolve("chatgpt", provider.ResolveOpts{TokenSource: staticTokens("tok"), HTTPClient: reg.Client()})
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	_, err = refreshCache(context.Background(), meter.New(nil).For(p, meter.SourceAgent),
+		provider.CompletionOpts{Model: "gpt-5.6-terra"}, []provider.Message{{Role: provider.RoleUser, Content: "hi"}})
+	if err == nil {
+		t.Fatal("a plan keep-alive should be refused")
+	}
+	if n := requests.Load(); n != 0 {
+		t.Fatalf("a plan keep-alive sent %d requests", n)
 	}
 }

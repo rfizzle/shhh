@@ -50,6 +50,8 @@ route does not serve.
 **What is off.** The Decisions API is a different route, and the plan's
 documentation says other routes are not permitted by analogy, so the
 permission classifier on a plan session asks through an ordinary completion.
+The cache keep-alive is off too: it is a one-token request, the route takes
+no output ceiling, and each refresh would be a whole turn on the allowance.
 Hosted tools — OpenAI's own web search, file search, code interpreter and the
 like — are not sent; shhh's tools run on this machine.
 

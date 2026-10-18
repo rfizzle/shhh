@@ -72,10 +72,16 @@ func NewChatGPT(opts ResolveOpts) (*OpenAIResponses, error) {
 	if tok == "" {
 		return nil, ErrChatGPTSignedOut
 	}
-	client := opts.HTTPClient
-	if client == nil {
-		client = &http.Client{}
+	// A redirect is never followed, on the client this builds or a copy of
+	// the one it was handed. The client copies the bearer to a redirect on
+	// the same host whatever the scheme, so a 30x from https to http would
+	// send the plan's token in clear; nothing the route serves redirects.
+	client := &http.Client{}
+	if opts.HTTPClient != nil {
+		copied := *opts.HTTPClient
+		client = &copied
 	}
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	p := &OpenAIResponses{
 		client:   client,
 		baseURL:  defaultResponsesBaseURL,

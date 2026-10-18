@@ -1517,7 +1517,11 @@ func providerRefusedRequest(err error) bool {
 	}
 	switch f.Class {
 	case provider.ClassAuth, provider.ClassQuota,
-		provider.ClassContextLength, provider.ClassModelNotFound:
+		provider.ClassContextLength, provider.ClassModelNotFound,
+		// The ChatGPT plan's three: a spent allowance is the plan's quota,
+		// and an ineligible account or an unsupported request is refused the
+		// same way on every retry.
+		provider.ClassUsageLimit, provider.ClassNotEligible, provider.ClassUnsupported:
 		return true
 	}
 	return false

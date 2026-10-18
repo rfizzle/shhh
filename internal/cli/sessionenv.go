@@ -387,32 +387,8 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		opts.Effort = currentEffort
 		active := p
 		sessionMu.Unlock()
-		// A thinking budget the one-token cap leaves no room for is dropped
-		// from the request, and a request that thinks differently reads none
-		// of the conversation's cache: the refresh would write it again at
-		// the dear rate. Adaptive thinking is sent as it was.
-		if caps := provider.CapabilitiesFor(opts.Model); opts.Effort.Fit(caps).On() && !caps.Adaptive && caps.Known {
-			return provider.Usage{}, errors.New("this model's thinking budget cannot be kept at one token")
-		}
-		opts.ToolChoice = provider.ToolChoiceNone
-		opts.MaxTokens = 1
 		opts.Tools = session.requestTools(opts.Tools)
-		msgs = session.vault.ScrubMessages(msgs)
-		events, err := ledger.For(active, meter.SourceAgent).StreamCompletion(ctx, msgs, opts)
-		if err != nil {
-			return provider.Usage{}, err
-		}
-		var usage provider.Usage
-		var failed error
-		for ev := range events {
-			if ev.Usage != nil {
-				usage = *ev.Usage
-			}
-			if ev.Err != nil {
-				failed = ev.Err
-			}
-		}
-		return usage, failed
+		return refreshCache(ctx, ledger.For(active, meter.SourceAgent), opts, session.vault.ScrubMessages(msgs))
 	}
 
 	// The launch survey with its git half asked again, and whoever else is in
@@ -537,4 +513,43 @@ func toolDefTokens(defs []provider.Tool) []chat.ToolTokens {
 		out = append(out, chat.ToolTokens{Name: def.Name, Tokens: agent.EstimateTokens(string(b))})
 	}
 	return out
+}
+
+// refreshCache sends one keep-alive: the conversation again under a one-token
+// cap with no tool to call, so the provider's cache of it is read and kept
+// warm. active is the session's provider behind the ledger's gate; opts and
+// msgs are the session's, its tools and the scrub already applied.
+func refreshCache(ctx context.Context, active provider.Provider, opts provider.CompletionOpts, msgs []provider.Message) (provider.Usage, error) {
+	// The plan route drops the one-token cap and the tool choice the
+	// refresh is built on, so a refresh there would be a whole turn over
+	// the whole history, spent from the person's allowance, for a cache
+	// the route is not known to keep.
+	// See docs/capabilities/chatgpt-plan.md#what-a-plan-session-cannot-do.
+	if active.Name() == "chatgpt" {
+		return provider.Usage{}, errors.New("the ChatGPT plan takes no one-token refresh")
+	}
+	// A thinking budget the one-token cap leaves no room for is dropped
+	// from the request, and a request that thinks differently reads none
+	// of the conversation's cache: the refresh would write it again at
+	// the dear rate. Adaptive thinking is sent as it was.
+	if caps := provider.CapabilitiesFor(opts.Model); opts.Effort.Fit(caps).On() && !caps.Adaptive && caps.Known {
+		return provider.Usage{}, errors.New("this model's thinking budget cannot be kept at one token")
+	}
+	opts.ToolChoice = provider.ToolChoiceNone
+	opts.MaxTokens = 1
+	events, err := active.StreamCompletion(ctx, msgs, opts)
+	if err != nil {
+		return provider.Usage{}, err
+	}
+	var usage provider.Usage
+	var failed error
+	for ev := range events {
+		if ev.Usage != nil {
+			usage = *ev.Usage
+		}
+		if ev.Err != nil {
+			failed = ev.Err
+		}
+	}
+	return usage, failed
 }

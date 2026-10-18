@@ -709,6 +709,28 @@ func TestChatGPT_ErrorsCarryNoToken(t *testing.T) {
 	}
 }
 
+// A redirect is never followed on the plan route: the bearer would be copied
+// to it, and a redirect to plain http would carry the token in clear.
+func TestChatGPT_NeverFollowsARedirect(t *testing.T) {
+	var mu sync.Mutex
+	var seen []string
+	p := newTestChatGPT(t, &fakeTokens{tokens: []string{"tok"}}, func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		seen = append(seen, r.URL.String()+" "+r.Header.Get("Authorization"))
+		mu.Unlock()
+		http.Redirect(w, r, "http://api.openai.com/elsewhere", http.StatusTemporaryRedirect)
+	})
+	_, err := p.StreamCompletion(context.Background(), hi(), CompletionOpts{})
+	if err == nil {
+		t.Fatal("a redirect is a failed request, not a followed one")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(seen) != 1 || !strings.HasPrefix(seen[0], "https://api.openai.com/v1/responses ") {
+		t.Fatalf("the bearer should reach only the first URL, got %v", seen)
+	}
+}
+
 func ptrFloat(v float64) *float64 { return &v }
 
 func jsonString(s string) string {

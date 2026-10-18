@@ -976,6 +976,9 @@ func TestHeadlessTurnOutcome(t *testing.T) {
 		{"an account with nothing left", &provider.Failure{Class: provider.ClassQuota}, observe.TurnRejected},
 		{"a request past the window", &provider.Failure{Class: provider.ClassContextLength}, observe.TurnRejected},
 		{"an id the endpoint does not serve", &provider.Failure{Class: provider.ClassModelNotFound}, observe.TurnRejected},
+		{"a plan allowance that is spent", &provider.Failure{Class: provider.ClassUsageLimit}, observe.TurnRejected},
+		{"an account the plan will not serve", &provider.Failure{Class: provider.ClassNotEligible}, observe.TurnRejected},
+		{"a request the plan does not serve", &provider.Failure{Class: provider.ClassUnsupported}, observe.TurnRejected},
 		// A failure nothing could name is no evidence that the request was
 		// wrong, so it keeps the ending it had before the split existed.
 		{"a failure nothing could name", &provider.Failure{Class: provider.ClassUnclassified}, observe.TurnFailed},
