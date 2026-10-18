@@ -76,7 +76,7 @@ snap 05-routed "DECISION"
 # request nobody has answered is what makes a child blocked. The card arrives
 # with the keyboard quiet, so no grace window is open on it.
 keys n
-snap 06-blocked "DECISION 1/3" "waiting approval"
+snap 06-blocked "DECISION 1/3" "blocked · waitin"
 # The manager is the door for acting rather than reading:
 # one child is killed here, which is the failure the map then carries. It had
 # written something in its copy of the checkout, so the confirm says the patch
@@ -88,16 +88,18 @@ snap 06-blocked "DECISION 1/3" "waiting approval"
 # writer-3, whose clock started only once its delegation was answered — rather
 # than counting on the harness to beat the clock: on a loaded host it does
 # not, and the rows move under the pointer before the kill. Each row is named
-# by as much of its task as the manager draws at 80, where the rest is cut.
+# by its marker and name alone, which is all the manager draws at 60, where
+# the task and the state are cut.
 keys F12
-snap 07-manager "⚠ writer-3 · Say where the loop" "⚠ writer-2 · Say where the round" "[enter] attach"
+snap 07-manager "⚠ writer-3 ·" "⚠ writer-2 ·" "⚠ writer-1 ·" "[enter] attach"
 keys j
 keys d
 # The confirm is one line: the answers are drawn whole and the sentence about
 # the patch comes straight after the question, so that the cut takes the rest
-# of the prompt and never either: one snap holds for every width the scene is
-# driven at. Stopping asks, and kill is the second answer.
-snap 08-stop-asks "Stop writer-1? A kill keeps its patch." "[y] cancel · [k] kill"
+# of the sentence and never the question or the answers. At 60 it keeps only
+# the first words of the sentence, so the snap waits on those and not on the
+# whole of it. Stopping asks, and kill is the second answer.
+snap 08-stop-asks "Stop writer-1? A kill keeps" "[y] cancel · [k] kill"
 keys k
 snap 09-killed "patch kept · [enter] review"
 # Attaching to a session that is not the one asking is what puts the rail back
@@ -112,20 +114,22 @@ snap 09-killed "patch kept · [enter] review"
 # so the card gives the keyboard back and the press still moves.
 # The capture is the rail at the scene's own 130; below that the rail is gone,
 # and below the frame's 110 rung the path keeps its nearest two segments (`… ▸
-# writer-3 ▸ reader-3a`), so the snap is one per side of each and `make
-# tui-shot COLS=80` runs the scene to its end.
+# writer-3 ▸ reader-3a`), and below 80 the frame has no breadcrumb at all, so
+# the snap is one per side of each and the narrowest waits on the child's own
+# task, which the pane draws at every width.
 keys Escape
-snap 09b-back "[esc] leave it waiting"
+snap 09b-back "DECISION 1/2" "writer-3 ▸ Approve command"
 keys S-F8
-snap 10-walk "orchestrator ▸ writer-1 ·"
+snap 10-walk "❯ Say where the round counter is read."
 keys S-F8
-snap 10-walk "orchestrator ▸ writer-2 ·"
+snap 10-walk "❯ Say where the round limit is set."
 keys S-F8
-snap 10-walk "orchestrator ▸ writer-3 ·"
+snap 10-walk "❯ Say where the loop exits."
 keys S-F8
 wide 130 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
 narrow 130 wide 110 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a"
-narrow 110 snap 10-map "… ▸ writer-3 ▸ reader-3a"
+narrow 110 wide 80 snap 10-map "… ▸ writer-3 ▸ reader-3a"
+narrow 80 snap 10-map "❯ Say which package the loop's exit"
 # The chord itself, twice: it walks spawn order rather than the order the map
 # is drawn in. From the grandchild — the last thing spawned, and the deepest —
 # it wraps to the session itself, and then to the first writer spawned, which
@@ -135,16 +139,17 @@ narrow 110 snap 10-map "… ▸ writer-3 ▸ reader-3a"
 keys S-F8
 keys S-F8
 wide 130 snap 11-chord "❯ ✗ writer-1" "orchestrator ▸ writer-1"
-narrow 130 snap 11-chord "orchestrator ▸ writer-1"
+narrow 130 wide 80 snap 11-chord "orchestrator ▸ writer-1"
+narrow 80 snap 11-chord "Killed by the user." "writer-1 ▸"
 keys Escape
-snap 11b-session "[enter] add to this turn"
+snap 11b-session "spawned 3 agents" "writer-1  cancelled"
 # And the other way out of a lineage, from the deepest session again — named
 # rather than counted down a list, because the map is drawn in a different
 # order from the one the chord walks. esc pops one level of the tree rather
 # than leaving it, so a child's child is two pops from the session
 # (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
 keys "/attach reader-3a" Enter
-snap 12-attached-by-name "❯ Say which package the loop's exit condition lives in."
+snap 12-attached-by-name "❯ Say which package the loop's exit"
 keys Escape
 # The first pop: the agent that spawned it, which is the segment the
 # breadcrumb beside it has been naming all along.
@@ -161,7 +166,7 @@ keys Escape
 # routed to — which is where the second pop has just put the keyboard: the
 # card holds nothing until it is taken, so the chord that takes it comes
 # first.
-snap 14-still-waiting "[enter] add to this turn" "answer it"
+snap 14-still-waiting "spawned 3 agents" "writer-3 ▸ Approve command"
 keys C-Space
 keys n
 snap 15-next-card "writer-2 ▸ Approve command"

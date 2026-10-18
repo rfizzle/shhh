@@ -55,7 +55,7 @@ wide 130 keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 '
 wide 130 snap 06-rail-closed "more ·" "THIS TURN"
 # The key twin, from the draft, at every width.
 keys "/rail" Enter
-snap 07-rail-command "/rail · the rail in full" "nothing shed"
+snap 07-rail-command "CONTEXT" "THIS TURN" "AGENTS"
 keys Escape
 sleep 1
 wide 130 snap 08-rail-left "more ·" "THIS TURN"
