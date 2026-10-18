@@ -88,3 +88,39 @@ func TestCloseRunOn_KeepsTheUndoCommandWhole(t *testing.T) {
 		}
 	}
 }
+
+// A stacked checkbox row counts as the lines it draws, so a long list below
+// the floor stays inside its card's budget and the marker still says how many
+// options are under the window.
+func TestMultiSelect_StackedRowsCountTheirDrawnLines(t *testing.T) {
+	var opts []SelectOption
+	for range 12 {
+		opts = append(opts, SelectOption{Label: "internal/ui/components/selector", Meta: "touched by the last three rounds"})
+	}
+	s := NewMultiSelect("Question", opts)
+	s.Stack, s.MaxLines = true, 14
+	view := ansi.Strip(s.View(CardFloor - 12))
+	if got := strings.Count(view, "\n") + 1; got > s.MaxLines {
+		t.Errorf("the card drew %d lines against a budget of %d:\n%s", got, s.MaxLines, view)
+	}
+	if !strings.Contains(view, "below") && !strings.Contains(view, "↓") {
+		t.Errorf("the card does not say how many are below:\n%s", view)
+	}
+}
+
+// A stacked proposal row counts as the lines it draws, so a long plan at the
+// narrow width keeps its body inside the budget and says how many are below.
+func TestSprintPlan_StackedRowsCountTheirDrawnLines(t *testing.T) {
+	p := &SprintPlan{}
+	for range 12 {
+		p.Rows = append(p.Rows, SprintPlanRow{Slug: "a-slug", Title: "A title", Note: "a reason long enough that it wraps under the title at sixty columns wide"})
+	}
+	const width, budget = 60, 16
+	rows := p.view(width, budget)
+	if len(rows) > budget {
+		t.Errorf("the plan drew %d lines against a budget of %d:\n%s", len(rows), budget, ansi.Strip(strings.Join(rows, "\n")))
+	}
+	if out := ansi.Strip(strings.Join(rows, "\n")); !strings.Contains(out, " below") {
+		t.Errorf("the plan does not say how many are below:\n%s", out)
+	}
+}

@@ -135,6 +135,9 @@ type SprintPlan struct {
 	// for the goal row above them.
 	list  List[int]
 	focus int
+	// laidWidth is the width the rows were last laid out at, kept so the
+	// window can ask how many screen rows a stacked row takes.
+	laidWidth int
 }
 
 // kept is the slugs still in the proposal, in the order they are drawn. It
@@ -159,6 +162,12 @@ func (p *SprintPlan) sync() {
 		idx = append(idx, i)
 	}
 	p.list.Items = idx
+	p.list.rows = func(i int) int {
+		if i == 0 || p.laidWidth <= 0 || i > len(p.Rows) {
+			return 1
+		}
+		return strings.Count(p.row(i-1, p.laidWidth), "\n") + 1
+	}
 	p.list.Focus = min(max(p.focus+1, 0), len(idx)-1)
 	p.list.normalize()
 	p.focus = p.list.Focus - 1
@@ -298,6 +307,8 @@ func (p *SprintPlan) rows(width, budget int) []string {
 	if len(p.Rows) == 0 {
 		return []string{p.goalRow(width), sty.dim.Render(Clip("nothing was proposed", width))}
 	}
+	p.laidWidth = width
+	p.sync()
 	lo, hi := p.list.Range(budget)
 	if budget <= 0 {
 		lo, hi = 0, len(p.Rows)+1

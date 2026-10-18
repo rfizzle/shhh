@@ -120,6 +120,9 @@ type MultiSelect struct {
 	// its own Focus, which is why it did not come along when the movement and
 	// the window went to the selector.
 	list List[SelectOption]
+	// laidWidth is the width the rows were last laid out at, kept so the
+	// window can ask how many screen rows a stacked option takes.
+	laidWidth int
 }
 
 // pointer aims the shared list at this card's rows. Every option is one row,
@@ -128,6 +131,12 @@ type MultiSelect struct {
 func (s *MultiSelect) pointer() *List[SelectOption] {
 	s.list.Items, s.list.Focus = s.Options, s.Focus
 	s.list.skipFn = func(o SelectOption) bool { return o.Header }
+	s.list.rows = func(i int) int {
+		if !s.Stack || s.laidWidth <= 0 || s.Options[i].Header {
+			return 1
+		}
+		return strings.Count(s.optionRow(i, s.laidWidth-cardFrameWidth), "\n") + 1
+	}
 	return &s.list
 }
 
@@ -316,6 +325,7 @@ func (s *MultiSelect) hintRowsFor(width int) []string {
 func (s *MultiSelect) visibleRows(width, budget int) []string {
 	inner := width - cardFrameWidth
 	n := len(s.Options)
+	s.laidWidth = width
 	lo, hi := s.pointer().Range(budget)
 	var rows []string
 	if lo > 0 {
