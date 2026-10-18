@@ -216,6 +216,10 @@ type Answer struct {
 	// Exactly one of them is set.
 	Reason string
 	Err    string
+	// Went is a delegation row's account of how it went alone: answered in its
+	// first turn, or the tools each round called, for the report to draw
+	// beside the miss. No other kind fills it.
+	Went string
 	// Refused is set, with Err, when the model declined to judge the row.
 	// It is a fourth outcome: not a label, and not an outage either.
 	Refused bool

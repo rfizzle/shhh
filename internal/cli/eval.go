@@ -648,6 +648,9 @@ func tableBody(score eval.Score) []string {
 		if a.Row.Why != "" {
 			line += ": " + a.Row.Why
 		}
+		if a.Went != "" {
+			line += " (" + a.Reason + ": " + a.Went + ")"
+		}
 		if seen[line] {
 			continue
 		}

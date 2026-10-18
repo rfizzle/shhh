@@ -94,6 +94,41 @@ func TestAskDelegation_ThePolicyIsWhatTheSessionWouldSend(t *testing.T) {
 	}
 }
 
+// A row that read to the bound says which tools each round called, compactly
+// and clipped.
+func TestAskDelegation_AloneNamesTheToolsEachRoundCalled(t *testing.T) {
+	read := func(id string) provider.ToolCall {
+		return provider.ToolCall{ID: id, Name: "read_file", Arguments: `{"path":"pkg/a/a.go"}`}
+	}
+	glob := provider.ToolCall{ID: "g", Name: "glob", Arguments: `{"pattern":"*"}`}
+	var replies []provider.StreamEvent
+	for range delegationRounds {
+		replies = append(replies, provider.StreamEvent{ToolCalls: []provider.ToolCall{read("a"), read("b"), glob}, Done: true})
+	}
+	m := &delegationModel{inheritModel: inheritModel{replies: replies}}
+	a := askDelegation(context.Background(), m, "scripted", delegationRow("proactive"))
+	if a.Label != LabelAlone || !strings.HasPrefix(a.Reason, "read for 6 rounds") {
+		t.Fatalf("label %q (%s)", a.Label, a.Reason)
+	}
+	if !strings.HasPrefix(a.Went, "read_file×2, glob · read_file×2, glob · ") {
+		t.Errorf("went = %q", a.Went)
+	}
+	if n := len([]rune(a.Went)); n > maxWent {
+		t.Errorf("went is %d runes, over %d", n, maxWent)
+	}
+	if got := roundTools([]provider.ToolCall{read("a"), glob, read("b")}); got != "read_file×2, glob" {
+		t.Errorf("roundTools = %q", got)
+	}
+	if got := clipRunes(strings.Repeat("x", 200), 10); got != strings.Repeat("x", 9)+"…" {
+		t.Errorf("clipRunes = %q", got)
+	}
+
+	first := &delegationModel{inheritModel: inheritModel{replies: []provider.StreamEvent{{Token: "a has none.", Done: true}}}}
+	if a := askDelegation(context.Background(), first, "scripted", delegationRow("proactive")); a.Went != "answered in its first turn" {
+		t.Errorf("an answer in the first turn says so: %q", a.Went)
+	}
+}
+
 // A row with no request, or a policy the settings do not hold, is refused at
 // load rather than scored.
 func TestDelegationRowsNeedARequestAndAPolicy(t *testing.T) {

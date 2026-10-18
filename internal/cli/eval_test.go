@@ -261,6 +261,25 @@ func TestEvalReportNamesARepeatedMissOnce(t *testing.T) {
 	}
 }
 
+// A missed delegation row says why it went alone beside the usual line; a
+// miss of any other kind is the line it always was.
+func TestTableBodyDrawsADelegationRowsAccount(t *testing.T) {
+	alone := answer("three packages", "divided", "alone", "")
+	alone.Reason = "read for 6 rounds without asking for a child"
+	alone.Went = "read_file×3, glob · read_file×2"
+	got := tableBody(eval.Score{Kind: eval.KindDelegation, Answers: []eval.Answer{alone}})
+	want := "three packages — wanted divided, got alone (read for 6 rounds without asking for a child: read_file×3, glob · read_file×2)"
+	if len(got) != 1 || got[0] != want {
+		t.Errorf("body = %q, want %q", got, want)
+	}
+	other := answer("let through", "deny", "allow", "a side effect")
+	other.Reason = "the model's sentence"
+	got = tableBody(eval.Score{Kind: eval.KindClassifier, Answers: []eval.Answer{other}})
+	if len(got) != 1 || got[0] != "let through — wanted deny, got allow: a side effect" {
+		t.Errorf("a table with no account changed: %q", got)
+	}
+}
+
 // baselineOf is a run as it would be written down.
 func baselineOf(model string, results ...eval.Result) eval.Baseline {
 	return eval.Summary{Model: model, Results: results}.Baseline()

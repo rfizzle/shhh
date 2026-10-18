@@ -87,6 +87,7 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 		{Role: provider.RoleUser, Content: row.Instruction},
 	}
 	a := Answer{Row: row}
+	var rounds []string
 	for range delegationRounds {
 		reply, calls, usage, err := oneReply(ctx, p, model, msgs, defs)
 		a.Usage.PromptTokens += usage.PromptTokens
@@ -110,8 +111,13 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 			return a
 		case len(calls) == 0:
 			a.Label, a.Reason = LabelAlone, firstLine(reply)
+			a.Went = "answered in its first turn"
+			if len(rounds) > 0 {
+				a.Went = clipRunes(strings.Join(rounds, " · ")+" · then answered", maxWent)
+			}
 			return a
 		}
+		rounds = append(rounds, roundTools(calls))
 		msgs = append(msgs, provider.Message{Role: provider.RoleAssistant, Content: reply, ToolCalls: calls})
 		for _, c := range calls {
 			out, err := exec(ctx, c.Name, json.RawMessage(c.Arguments))
@@ -122,7 +128,39 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 		}
 	}
 	a.Label, a.Reason = LabelAlone, fmt.Sprintf("read for %d rounds without asking for a child", delegationRounds)
+	a.Went = clipRunes(strings.Join(rounds, " · "), maxWent)
 	return a
+}
+
+// maxWent bounds the per-round tool list a report line carries.
+const maxWent = 120
+
+// roundTools is one round's tool names in first-call order, a name called more
+// than once followed by its count: "read_file×3, glob".
+func roundTools(calls []provider.ToolCall) string {
+	var order []string
+	n := map[string]int{}
+	for _, c := range calls {
+		if n[c.Name] == 0 {
+			order = append(order, c.Name)
+		}
+		n[c.Name]++
+	}
+	for i, name := range order {
+		if n[name] > 1 {
+			order[i] = fmt.Sprintf("%s×%d", name, n[name])
+		}
+	}
+	return strings.Join(order, ", ")
+}
+
+// clipRunes cuts s to at most max runes, ending in an ellipsis when it cut.
+func clipRunes(s string, max int) string {
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return string(r[:max-1]) + "…"
 }
 
 // oneReply is one request's answer text, its whole tool calls and what it
