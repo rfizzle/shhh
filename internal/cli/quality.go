@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -96,17 +97,20 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope, 
 // returns nothing reads to the runner as no files at all.
 //
 // A path a tool was given may be absolute, and the runner wants them from the
-// workspace; one outside it is not the workspace's to scope.
+// workspace; one outside it is not the workspace's to scope. Both sides are
+// resolved first, because a path git reported is resolved and the workspace is
+// whatever the reader stood in: compared as written, a checkout reached
+// through a link would read every such path as outside it and drop it.
 func scopeGateToWrites(gate *quality.Runner, written func() []string) {
 	if gate == nil || written == nil {
 		return
 	}
-	ws := gate.Workspace
+	ws := worktree.ResolvePath(gate.Workspace)
 	gate.Changed = func() []string {
 		var out []string
 		for _, p := range written() {
 			if filepath.IsAbs(p) {
-				rel, err := filepath.Rel(ws, p)
+				rel, err := filepath.Rel(ws, worktree.ResolvePath(p))
 				if err != nil {
 					continue
 				}
