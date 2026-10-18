@@ -45,7 +45,7 @@ func newEvalCmd() *cobra.Command {
 	var timeout time.Duration
 	var only []string
 	var baselinePath, comparePath string
-	var refresh bool
+	var refresh, failOnRegression bool
 	var classifierBackend string
 	var classifierThreshold int
 
@@ -100,6 +100,17 @@ func newEvalCmd() *cobra.Command {
 
 			if refresh && len(only) > 0 {
 				return fmt.Errorf("--refresh-baseline writes the whole suite's baseline, so it cannot be taken from a run of part of it")
+			}
+
+			// The gate is refused before anything is spent: a run that could
+			// not have been gated is not worth paying for.
+			if failOnRegression {
+				if repeat < eval.MinGateAttempts {
+					return fmt.Errorf("--fail-on-regression needs --repeat of at least %d: one attempt cannot tell a flaky case from a broken one, so it would fail merges on noise", eval.MinGateAttempts)
+				}
+				if _, statErr := os.Stat(filepath.Join(dir, eval.BaselineFile)); comparePath == "" && statErr != nil {
+					return fmt.Errorf("--fail-on-regression has no baseline to compare against: there is no %s in %s and no --compare", eval.BaselineFile, dir)
+				}
 			}
 
 			cfg := ConfigFrom(cmd.Context())
@@ -250,7 +261,13 @@ func newEvalCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return report.Fprint(out, compareReport(cmp, time.Now()))
+			if err := report.Fprint(out, compareReport(cmp, time.Now())); err != nil {
+				return err
+			}
+			if failOnRegression {
+				return regressionError(cmp.Regressions())
+			}
+			return nil
 		},
 	}
 
@@ -260,10 +277,24 @@ func newEvalCmd() *cobra.Command {
 	cmd.Flags().StringArrayVar(&only, "case", nil, "run only this case, by name (repeatable)")
 	cmd.Flags().StringVar(&baselinePath, "baseline", "", "write this run's verdicts and medians to this file")
 	cmd.Flags().StringVar(&comparePath, "compare", "", "read this baseline instead of the suite's own and print the delta beneath the report")
+	cmd.Flags().BoolVar(&failOnRegression, "fail-on-regression", false, "exit non-zero when a case that passed in the baseline failed every attempt; needs --repeat of at least 3 and a baseline")
 	cmd.Flags().BoolVar(&refresh, "refresh-baseline", false, "write this run over the suite's committed baseline, so what changed in it is reviewed like code")
 	cmd.Flags().IntVar(&classifierThreshold, "classifier-threshold", 0, "the percentage the decisions backend's probability must reach for a row to be allowed, as `n` the way behavior.classifier_threshold is written; unset takes the built-in bar")
 	cmd.Flags().StringVar(&classifierBackend, "classifier-backend", "", "ask the classifier cases on `completion` (the default) or `decisions`, the Decisions API on a model that offers it")
 	return cmd
+}
+
+// regressionError is the exit status the gate asks for: nil when nothing
+// regressed, and otherwise a sentence naming every case that did.
+func regressionError(regs []eval.Delta) error {
+	if len(regs) == 0 {
+		return nil
+	}
+	names := make([]string, len(regs))
+	for i, d := range regs {
+		names[i] = d.Name
+	}
+	return fmt.Errorf("%d case(s) passed in the baseline and failed every attempt now: %s", len(regs), strings.Join(names, ", "))
 }
 
 // needsProvider reports whether anything selected asks a model from this

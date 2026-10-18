@@ -272,6 +272,30 @@ It is one rule and not an eval rule: any comparison this product prints over a
 handful of samples owes the reader the same restraint. This is the first
 surface that needed it, which is why it is written down here.
 
+## A run can fail a pipeline when asked
+
+A run's exit status says whether it ran, not whether it found anything: a
+report with five failed cases and a regression exits clean, because the report
+is the answer and a person reads it. A pipeline cannot read it, so
+`--fail-on-regression` makes the command exit non-zero and name each case that
+regressed. It is a flag and not the default because a run that exits non-zero
+on a bad result would make every local run look like a broken command, and
+because what counts as bad is the maintainer's to decide for their own gate.
+
+The rule is narrow on purpose: a case that passed in the baseline and failed on
+every attempt now. A case that is merely flaky is not a regression, and neither
+is a median that moved, since both are findings the report already makes and
+neither is a reason to refuse a merge. One attempt cannot tell flaky from
+broken, so the flag is refused below three attempts, with the sentence saying
+why, before anything is spent. It is refused too when there is no baseline to
+compare against, because a gate that passes for want of anything to read the
+run against is the failure it exists to prevent.
+
+It takes the second half of a gate — nothing that passed before fails now — and
+leaves a pass rate to a number a person sets, if they want one. The manual
+workflow does not pass the flag, and nothing schedules a run: each costs real
+requests, and what to spend them on is a decision.
+
 ## The session under measurement is a real one
 
 A case runs the actual binary, as a headless session, in a real repository. Not

@@ -330,6 +330,35 @@ func (c Comparison) Tally() (improved, regressed, unchanged, incomparable int) {
 	return improved, regressed, unchanged, incomparable
 }
 
+// MinGateAttempts is how many attempts a case needs before a failure can
+// stop a pipeline.
+//
+// One attempt cannot tell a flaky case from a broken one: a case that fails
+// once in three would fail a merge a third of the time on nothing a change
+// did. Three is the fewest at which "failed every time" says more than
+// "failed once", and it is the figure the repeat flag is refused below when
+// the reader asks for the gate.
+// See docs/capabilities/evals.md#a-run-can-fail-a-pipeline-when-asked.
+const MinGateAttempts = 3
+
+// Regressions are the cases a pipeline should stop on: passed in the
+// baseline and failed on every one of at least MinGateAttempts attempts now.
+//
+// It is narrower than what Tally calls regressed on purpose. A case that is
+// now flaky is a task this setup can lose, which the report says, but not one
+// it has stopped being able to do, and a rounds median that moved is a cost.
+// Neither is a reason to refuse a merge.
+func (c Comparison) Regressions() []Delta {
+	var out []Delta
+	for _, d := range c.Cases {
+		if d.Change == Regressed && d.Before.Verdict == Passed.String() &&
+			d.After.Verdict == Failed.String() && d.After.Passes == 0 && d.After.Attempts >= MinGateAttempts {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
 // Compare reads one run against another, in this run's case order.
 //
 // It refuses two runs over different case sets rather than comparing the
