@@ -134,6 +134,7 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 		ConfigAPIKey:    cfg.ProviderAPIKey(),
 		ConfigAPIKeyEnv: cfg.Provider.APIKeyEnv,
 		ConfigPaths:     config.Paths(),
+		ChatGPT:         chatGPTSurveyLine(req.Provider),
 	})
 	choice, ok := askProvider(survey)
 	if !ok {

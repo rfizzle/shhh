@@ -45,6 +45,7 @@ func loadSecrets(cfg config.Config, flags []string, warn io.Writer) (*secret.Vau
 			return nil, fmt.Errorf("--secret: %w", err)
 		}
 	}
+	hideChatGPTTokens(v)
 	return v, nil
 }
 

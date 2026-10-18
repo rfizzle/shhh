@@ -167,6 +167,12 @@ func newIndex(entries []entry) *index {
 type Vault struct {
 	mu      sync.RWMutex
 	entries []entry
+	// hidden are values scrubbed exactly as a declared secret is but never
+	// declared: no name the model is told, no variable a command is handed.
+	// They are kept apart from entries so that every reader of the declared
+	// set — Names, Environ, Len, the prompt block — cannot list one by
+	// accident.
+	hidden []entry
 	// idx is the fragment scrub's index over entries, rebuilt whenever
 	// entries change and never mutated after. nil is a vault nothing has
 	// been declared in.
@@ -219,12 +225,47 @@ func (v *Vault) Add(name, value string) error {
 // the write lock held, and it copies the slice rather than aliasing it:
 // Scrub reads the index without the lock, and an Add that appends in place
 // would otherwise rewrite an entry a scrub was already walking.
+//
+// The hidden values follow the declared ones, so a run both share is
+// scrubbed with the declared secret's placeholder, which names it.
 func (v *Vault) reindex() {
-	if len(v.entries) == 0 {
+	if len(v.entries) == 0 && len(v.hidden) == 0 {
 		v.idx = nil
 		return
 	}
-	v.idx = newIndex(append([]entry(nil), v.entries...))
+	all := make([]entry, 0, len(v.entries)+len(v.hidden))
+	all = append(append(all, v.entries...), v.hidden...)
+	v.idx = newIndex(all)
+}
+
+// Hide scrubs value from everything the vault scrubs, in every form a
+// declared secret is scrubbed in — whole, encoded, and as any run of it at
+// least minFragment bytes long — with Redacted(kind) as its placeholder. It
+// is for a credential shhh itself holds, which the model must never read and
+// no command may be handed: a sign-in's refresh token has no shape the
+// pattern table could know it by, so it is hidden by value or not at all.
+//
+// A hidden value is not a secret. It has no name, so the prompt block cannot
+// describe it and the model cannot ask for it; it is not in Environ, so a
+// command never inherits it; and Remove cannot forget it, so a token since
+// rotated out stays hidden for the life of the process. An empty value
+// hides nothing.
+// See docs/capabilities/chatgpt-plan.md#the-tokens-never-reach-the-model.
+func (v *Vault) Hide(kind, value string) {
+	if v == nil || value == "" {
+		return
+	}
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	for _, e := range v.hidden {
+		if e.value == value {
+			return
+		}
+	}
+	e := newEntry("", value)
+	e.ph = Redacted(kind)
+	v.hidden = append(v.hidden, e)
+	v.reindex()
 }
 
 // SetEnvMask records whether the session masks credential-shaped variables

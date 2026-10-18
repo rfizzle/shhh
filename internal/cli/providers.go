@@ -13,11 +13,16 @@ package cli
 // error printed once here and once again on the way in.
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/rfizzle/shhh/internal/chatgpt"
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -67,8 +72,218 @@ func newProvidersCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit the providers, sources and profiles as JSON")
-	cmd.AddCommand(newProvidersMigrateCmd())
+	cmd.AddCommand(newProvidersMigrateCmd(), newProvidersLoginCmd(), newProvidersLogoutCmd())
 	return cmd
+}
+
+// chatGPTRow is the plan's readiness: whether this host is signed in, as
+// whom, and whether the sign-in may spend the plan. It names the account and
+// never a token — the row is printed, piped and pasted into bug reports.
+func chatGPTRow() report.Row {
+	row := report.Row{Name: "chatgpt"}
+	if !chatgpt.HasRecord(chatGPTOptions().Dir) {
+		row.State, row.Subject, row.Detail = report.Fail, "not signed in", "shhh providers login chatgpt"
+		return row
+	}
+	a, err := chatGPTAccount()
+	var cred chatgpt.Credential
+	if err == nil {
+		cred, err = a.Credential()
+	}
+	switch {
+	case err != nil:
+		row.State, row.Subject, row.Detail = report.Fail, "sign-in unreadable", err.Error()
+	case !cred.SignedIn():
+		row.State, row.Subject, row.Detail = report.Fail, "not signed in", "shhh providers login chatgpt"
+	case !cred.PlanGranted():
+		row.State, row.Subject, row.Detail = report.Warn, "signed in as "+cred.Email,
+			"plan use not granted — shhh providers login chatgpt --consent"
+	default:
+		row.State, row.Subject, row.Detail = report.Pass, "signed in as "+cred.Email, "ChatGPT plan"
+	}
+	return row
+}
+
+// chatGPTArg is the one provider that signs in rather than taking a key.
+// It is an argument rather than an implied default so the command reads the
+// same when a second one exists.
+func chatGPTArg(cmd *cobra.Command, args []string) error {
+	if len(args) != 1 || args[0] != "chatgpt" {
+		return fmt.Errorf("%s takes one provider, and chatgpt is the one that signs in", cmd.CommandPath())
+	}
+	return nil
+}
+
+// newProvidersLoginCmd signs in with a ChatGPT plan. It is the only door to
+// the browser: nothing that resolves a provider for a session signs in on
+// its own, so a run nobody is watching never opens a listener.
+// See docs/capabilities/chatgpt-plan.md#signing-in.
+func newProvidersLoginCmd() *cobra.Command {
+	var noBrowser, consent, save bool
+	var wait time.Duration
+	cmd := &cobra.Command{
+		Use:   "login chatgpt",
+		Short: "Sign in with a ChatGPT plan, so sessions spend it instead of API credit",
+		Long: "Open the browser to sign in to ChatGPT and allow shhh to use your plan. The sign-in is kept in " +
+			"<data-dir>/chatgpt/credentials.json, owner-only, and refreshed on its own; nothing is written to the " +
+			"config file but, on a machine with no provider set up yet, provider.default.",
+		Args:      chatGPTArg,
+		ValidArgs: []string{"chatgpt"},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			a, err := chatGPTAccount()
+			if err != nil {
+				return err
+			}
+			run := chatGPTLogin{
+				login:      a.Login,
+				opts:       chatgpt.LoginOptions{NoBrowser: noBrowser, Consent: consent, Wait: wait, Say: cmd.ErrOrStderr()},
+				configured: providerConfigured(ConfigFrom(cmd.Context())),
+				save:       save,
+				proj:       ProjectConfigFrom(cmd.Context()),
+			}
+			if listChatGPTModels != nil {
+				run.models = func(ctx context.Context) ([]string, error) { return listChatGPTModels(ctx, a) }
+			}
+			return run.run(cmd.Context(), cmd.OutOrStdout())
+		},
+	}
+	cmd.Flags().BoolVar(&noBrowser, "no-browser", false, "print the sign-in address instead of opening a browser")
+	cmd.Flags().BoolVar(&consent, "consent", false, "ask ChatGPT to show the permission page again, to allow plan use")
+	cmd.Flags().DurationVar(&wait, "wait", chatgpt.DefaultWait, "how long to wait for the browser to come back")
+	cmd.Flags().BoolVar(&save, "save", false, "write the plan's default model to provider.model")
+	return cmd
+}
+
+// chatGPTLogin is the sign-in command's work, apart from the account it
+// signs in so a test can hand it a result.
+type chatGPTLogin struct {
+	login func(context.Context, chatgpt.LoginOptions) (chatgpt.Result, error)
+	opts  chatgpt.LoginOptions
+	// models lists the plan's models once signed in; nil lists none.
+	models func(context.Context) ([]string, error)
+	// configured is whether this machine already has a provider or a key,
+	// which is what decides whether the sign-in may set the default.
+	configured bool
+	// save writes the plan's default model to provider.model.
+	save bool
+	proj config.Project
+}
+
+func (l chatGPTLogin) run(ctx context.Context, out io.Writer) error {
+	res, err := l.login(ctx, l.opts)
+	if err != nil {
+		return err
+	}
+	r := report.Report{Title: "shhh providers login chatgpt"}
+	rows := []report.Row{report.Done("signed in as", res.Email)}
+	if !res.PlanGranted {
+		rows = append(rows, report.Row{State: report.Warn, Subject: "plan use was not granted",
+			Consequence: "sessions on chatgpt are refused until it is",
+			Fix:         []string{"`shhh providers login chatgpt --consent` signs in again and asks for it"}})
+	} else {
+		rows = append(rows, report.Row{State: report.Pass, Subject: "plan use granted",
+			Detail: "usage is managed at " + chatgpt.UsageURL})
+	}
+	model := ""
+	if l.models != nil && res.PlanGranted {
+		if models, err := l.models(ctx); err != nil {
+			rows = append(rows, report.Row{State: report.Warn, Subject: "could not list the plan's models"})
+		} else if len(models) > 0 {
+			rows = append(rows, report.Row{State: report.Pass, Subject: "models", Detail: strings.Join(models, ", ")})
+			model = chatGPTDefaultModel(models)
+		}
+	}
+	r.Sections = append(r.Sections, report.Section{Rows: rows})
+
+	// The default provider is written only where nothing is set up, and the
+	// model only when the person asked with --save: both are settings a
+	// working setup already made its own choice about.
+	var edits []config.Edit
+	if l.configured {
+		r.Notes = append(r.Notes, report.Note{State: report.Skip,
+			Text: "provider.default is unchanged; `shhh config set provider.default chatgpt` makes the plan the default"})
+	} else {
+		edits = append(edits, config.Edit{Key: "provider.default", Value: "chatgpt"})
+	}
+	if l.save && model != "" {
+		edits = append(edits, config.Edit{Key: "provider.model", Value: model})
+	}
+	if len(edits) == 0 {
+		return report.Fprint(out, r)
+	}
+	path := config.WritePath()
+	if _, err := writeConfigEdits(l.proj, path, edits...); err != nil {
+		r.Notes = append(r.Notes, report.Note{State: report.Warn,
+			Text: "could not save to " + path + ": " + err.Error()})
+		return report.Fprint(out, r)
+	}
+	for _, e := range edits {
+		r.Notes = append(r.Notes, report.Note{State: report.Pass, Text: e.Key + " is now " + e.Value + " in " + path})
+	}
+	return report.Fprint(out, r)
+}
+
+// providerConfigured reports whether this machine already has a way to a
+// model: a default provider, one in the environment, a key in the file or
+// the environment, or a gateway profile. A sign-in sets the default only
+// where none of those is, because replacing a working setup is the
+// person's call and not a side effect of signing in.
+func providerConfigured(cfg config.Config) bool {
+	if strings.TrimSpace(cfg.Provider.Default) != "" || strings.TrimSpace(os.Getenv("SHHH_PROVIDER")) != "" ||
+		strings.TrimSpace(cfg.ProviderAPIKey()) != "" || len(profile.Loaded()) > 0 {
+		return true
+	}
+	for _, name := range []string{"anthropic", "gemini", "openrouter", "openai"} {
+		for _, v := range resolve.KeyVars(name) {
+			if strings.TrimSpace(os.Getenv(v)) != "" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// newProvidersLogoutCmd signs out of the ChatGPT plan: the server is told
+// first, and the tokens are cleared whether it heard or not.
+// See docs/capabilities/chatgpt-plan.md#signing-out.
+func newProvidersLogoutCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:       "logout chatgpt",
+		Short:     "Sign out of the ChatGPT plan and revoke the sign-in",
+		Long:      "Revoke the ChatGPT sign-in at OpenAI and clear its tokens from this machine. The host's registration is kept, so signing in again is one browser approval.",
+		Args:      chatGPTArg,
+		ValidArgs: []string{"chatgpt"},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			a, err := chatGPTAccount()
+			if err != nil {
+				return err
+			}
+			return chatGPTLogout(cmd.Context(), cmd.OutOrStdout(), a.Logout)
+		},
+	}
+}
+
+// chatGPTLogout is the sign-out command's work, apart from the account.
+func chatGPTLogout(ctx context.Context, out io.Writer, logout func(context.Context) (bool, error)) error {
+	revoked, err := logout(ctx)
+	r := report.Report{Title: "shhh providers logout chatgpt"}
+	switch {
+	case errors.Is(err, chatgpt.ErrNotSignedIn):
+		r.Sections = []report.Section{{Rows: []report.Row{report.Empty("not signed in to ChatGPT", "nothing to sign out of")}}}
+		return report.Fprint(out, r)
+	case err != nil:
+		return err
+	}
+	rows := []report.Row{report.Done("signed out", "the tokens are cleared from this machine")}
+	if revoked {
+		rows = append(rows, report.Row{State: report.Pass, Subject: "revoked at OpenAI"})
+	} else {
+		rows = append(rows, report.Row{State: report.Warn, Subject: "revocation was not confirmed",
+			Consequence: "OpenAI did not answer, so the app may still be connected to your account",
+			Fix:         []string{"disconnect shhh in ChatGPT Settings to be sure"}})
+	}
+	r.Sections = []report.Section{{Rows: rows}}
+	return report.Fprint(out, r)
 }
 
 // providersReport is the whole listing: what can be resolved, where profiles
@@ -93,6 +308,10 @@ func providersReport(names []string, sources []report.Row, profiles []profile.Pr
 			continue
 		}
 		builtIn++
+		if name == "chatgpt" {
+			rows = append(rows, chatGPTRow())
+			continue
+		}
 		rows = append(rows, builtinRow(name))
 		rows = append(rows, cacheRowsFor(caches, name, name)...)
 	}

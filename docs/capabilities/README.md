@@ -24,7 +24,7 @@ backlog profile — read only once you have said the checkout is trusted.
 | [`testing.md`](testing.md) | What a passing quality check proves, and where each test tier runs |
 | [`containment.md`](containment.md) | What an approved command can actually reach |
 | [`providers.md`](providers.md) | The LLM backends, gateways, and how failures are classified |
-| [`chatgpt-plan.md`](chatgpt-plan.md) | Running on a ChatGPT plan instead of API credit, and what that route cannot do |
+| [`chatgpt-plan.md`](chatgpt-plan.md) | Signing in with a ChatGPT plan instead of an API key: what it costs, where the sign-in lives, how it stays fresh, and what the route cannot do |
 | [`sessions-and-memory.md`](sessions-and-memory.md) | History, resumable sessions, durable memory, metrics |
 | [`reports.md`](reports.md) | Answers that are pages: local graphical report views, stored and served |
 | [`evidence.md`](evidence.md) | Reducing bulky tool output, and keeping the original retrievable |

@@ -108,6 +108,12 @@ type SurveyOpts struct {
 	LocalBaseURL string
 	// HTTPClient overrides the client the local probe uses.
 	HTTPClient *http.Client
+	// ChatGPT is what is wrong with the ChatGPT sign-in, as the sentence
+	// that says how to fix it, when the provider is chatgpt and the
+	// sign-in is the reason it would not start. It is the likely fix
+	// outright: that provider has no key in any of the other places, so
+	// pointing at one would send the person the wrong way.
+	ChatGPT string
 }
 
 // KeyVars are the environment variables a provider's key can come from, in
@@ -145,6 +151,9 @@ func SurveyPlaces(ctx context.Context, opts SurveyOpts) Survey {
 		surveyLocal(ctx, opts, &s),
 	)
 	s.Likely = likelyFix(s)
+	if providerName == "chatgpt" && opts.ChatGPT != "" {
+		s.Likely = opts.ChatGPT
+	}
 	return s
 }
 
