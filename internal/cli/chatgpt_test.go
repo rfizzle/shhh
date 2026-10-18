@@ -10,14 +10,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/chatgpt"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/shhh/internal/testhttp"
 	"github.com/rfizzle/shhh/internal/ui"
 )
 
@@ -40,13 +43,13 @@ func resetChatGPT(t *testing.T) string {
 	saved := chatGPT.account
 	chatGPT.account = nil
 	chatGPT.mu.Unlock()
-	relay := chatGPTTokens
-	chatGPTTokens = &tokenRelay{}
+	relay := chatGPTRelay
+	chatGPTRelay = &tokenRelay{}
 	t.Cleanup(func() {
 		chatGPT.mu.Lock()
 		chatGPT.account = saved
 		chatGPT.mu.Unlock()
-		chatGPTTokens = relay
+		chatGPTRelay = relay
 	})
 	return filepath.Join(data, "shhh", "chatgpt")
 }
@@ -96,17 +99,17 @@ func mustNotCarry(t *testing.T, what, text string) {
 // record's tokens before anything is learned at all.
 func TestSecrets_HideRelayReplays(t *testing.T) {
 	resetChatGPT(t)
-	chatGPTTokens.learn("early_token_value_123", "", "")
+	chatGPTRelay.learn("early_token_value_123", "", "")
 	v := secret.New()
-	chatGPTTokens.attach(v)
-	chatGPTTokens.learn("later_token_value_456")
+	chatGPTRelay.attach(v)
+	chatGPTRelay.learn("later_token_value_456")
 	want := secret.Redacted(chatgpt.TokenKind)
 	if got := v.Scrub("a early_token_value_123 b later_token_value_456"); got != "a "+want+" b "+want {
 		t.Errorf("Scrub = %q", got)
 	}
 
 	signInRecord(t, testChatGPT)
-	chatGPTTokens = &tokenRelay{}
+	chatGPTRelay = &tokenRelay{}
 	vault, err := loadSecrets(config.Config{}, nil, &bytes.Buffer{})
 	if err != nil {
 		t.Fatal(err)
@@ -134,8 +137,8 @@ func TestSecrets_AHiddenJWTLeavesOtherJWTsWhole(t *testing.T) {
 	id := header + "." + seg(`{"iss":"https://auth.openai.com","email":"person@example.com","nonce":"n"}`) +
 		"." + seg("idtoken-signature-bytes-9876543210-zyxwvutsrq")
 	v := secret.New()
-	chatGPTTokens.attach(v)
-	chatGPTTokens.learn(access, testChatGPT.RefreshToken, id)
+	chatGPTRelay.attach(v)
+	chatGPTRelay.learn(access, testChatGPT.RefreshToken, id)
 
 	unrelated := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0." +
 		"NHVaYe26MbtOYhSKkoKYdFVomg4i8ZJd8_-RU8VNbftc4TSMb4bXP3l3YlNWACwyXPGffz5aXHc6lxZu7UjdZRaaT0NlZbS1xLf0kmMdW1c1KJ8T7b4Q"
@@ -156,6 +159,49 @@ func TestSecrets_AHiddenJWTLeavesOtherJWTsWhole(t *testing.T) {
 		}
 	}
 	mustNotCarry(t, "the refresh token", v.Scrub(testChatGPT.RefreshToken))
+}
+
+// `chatgpt` resolves from the signed-in account, and the session's first
+// request goes under that account's access token — through the one door
+// that turns the account into a token source.
+func TestChatGPT_ResolvesFromTheSignedInAccount(t *testing.T) {
+	resetChatGPT(t)
+	if providerTokens("chatgpt") == nil {
+		t.Fatal("chatgpt has no token source")
+	}
+	signInRecord(t, testChatGPT)
+	var bearer atomic.Value
+	reg := &testhttp.Registry{}
+	api := reg.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bearer.Store(r.Header.Get("Authorization"))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"models":[{"slug":"gpt-plan-a","display_name":"Plan A","visibility":"list"}]}`))
+	}))
+	api.Alias("api.openai.com")
+	t.Cleanup(api.Close)
+	p, err := provider.Resolve("chatgpt", provider.ResolveOpts{TokenSource: providerTokens("chatgpt"), HTTPClient: reg.Client()})
+	if err != nil {
+		t.Fatalf("chatgpt did not resolve from a signed-in record: %v", err)
+	}
+	models, err := p.(provider.ModelLister).ListModels(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := bearer.Load().(string); got != "Bearer "+testChatGPT.AccessToken {
+		t.Errorf("the first request went under %q", got)
+	}
+	if len(models) != 1 || models[0] != "gpt-plan-a" || chatGPTDefaultModel(models) != "gpt-plan-a" {
+		t.Errorf("models = %v, default %q", models, chatGPTDefaultModel(models))
+	}
+
+	// Signed out, the same name fails to resolve with the sign-in error.
+	a, _ := chatGPTAccount()
+	if err := a.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := provider.Resolve("chatgpt", provider.ResolveOpts{TokenSource: providerTokens("chatgpt"), HTTPClient: reg.Client()}); !errors.Is(err, provider.ErrChatGPTSignedOut) {
+		t.Errorf("a signed-out chatgpt resolved to %v", err)
+	}
 }
 
 // A host that never signed in gets no directory from a session opening its
@@ -338,7 +384,7 @@ func TestChatGPTSurveyLine_NamesTheSignIn(t *testing.T) {
 		t.Errorf("another provider got %q", got)
 	}
 	line := chatGPTSurveyLine("chatgpt")
-	if line != "not signed in to ChatGPT — run `shhh providers login chatgpt`" {
+	if line != provider.ErrChatGPTSignedOut.Error() {
 		t.Fatalf("line = %q", line)
 	}
 	s := resolve.SurveyPlaces(context.Background(), resolve.SurveyOpts{Provider: "chatgpt", ChatGPT: line,

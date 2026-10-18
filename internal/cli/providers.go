@@ -141,9 +141,7 @@ func newProvidersLoginCmd() *cobra.Command {
 				save:       save,
 				proj:       ProjectConfigFrom(cmd.Context()),
 			}
-			if listChatGPTModels != nil {
-				run.models = func(ctx context.Context) ([]string, error) { return listChatGPTModels(ctx, a) }
-			}
+			run.models = listChatGPTModels
 			return run.run(cmd.Context(), cmd.OutOrStdout())
 		},
 	}

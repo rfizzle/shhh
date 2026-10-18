@@ -111,13 +111,19 @@ func providerTokens(name string) provider.TokenSource {
 	return chatGPTTokens()
 }
 
-// chatGPTTokens is this process's ChatGPT credential as a token source. It
-// answers nil while no sign-in store is wired into this build, and the
-// `chatgpt` provider then fails to resolve with the sign-in error rather
-// than reaching for a key. A store that answers through a typed nil must be
-// turned into a plain nil here, or the provider would hold a source that
-// panics on its first request.
-func chatGPTTokens() provider.TokenSource { return nil }
+// chatGPTTokens is this process's ChatGPT credential as a token source: the
+// one account every request, refresh and vault share. An account that will
+// not open answers nil, and the `chatgpt` provider then fails to resolve
+// with the sign-in error rather than reaching for a key. The nil is the
+// untyped literal and never a nil *chatgpt.Account, which in the interface
+// is not nil and would panic on the first request.
+func chatGPTTokens() provider.TokenSource {
+	a, err := chatGPTAccount()
+	if err != nil || a == nil {
+		return nil
+	}
+	return a
+}
 
 // resolveProvider resolves the request, and on failure asks the card. It
 // returns the provider, the request that built it (the model may have moved,

@@ -152,7 +152,7 @@ for that host alone.
 A run with nobody at the terminal — a one-shot `shhh -p`, a served session,
 an unattended coding run, the backlog runner — never opens a browser or a
 listener. With ChatGPT chosen and no usable sign-in, it reports
-"not signed in to ChatGPT — run `shhh providers login chatgpt`" and exits 1,
+"not signed in to ChatGPT; run `shhh providers login chatgpt`" and exits 1,
 exactly as a missing key does. A sign-in that expires mid-run ends that turn
 the way a dead key would. Nothing fails open into a prompt nobody can
 answer.

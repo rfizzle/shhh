@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
 
@@ -48,17 +49,27 @@ const loginCommand = "`shhh providers login chatgpt`"
 
 var (
 	// ErrNotSignedIn is a host with no usable sign-in: none was ever made,
-	// or it was signed out.
-	ErrNotSignedIn = errors.New("not signed in to ChatGPT — run " + loginCommand)
+	// or it was signed out. It is the plan route's own signed-out error, so
+	// the provider and every report built on it say one sentence, not two.
+	ErrNotSignedIn = provider.ErrChatGPTSignedOut
 	// ErrSignInRequired is a sign-in the server will no longer refresh. The
 	// tokens have been cleared; the account and the registration are kept.
-	ErrSignInRequired = errors.New("the ChatGPT sign-in has expired — run " + loginCommand)
+	// It is also the plan route's signed-out error to errors.Is, because
+	// what is to be done about it is the same.
+	ErrSignInRequired error = signInExpired{}
 	// ErrPlanNotGranted is a sign-in without the scope that lets a request
 	// spend the plan.
 	ErrPlanNotGranted = errors.New("signed in to ChatGPT, but plan use was not granted")
 	// ErrDeclined is the person saying no in the browser.
 	ErrDeclined = errors.New("sign-in was declined in the browser")
 )
+
+// signInExpired is ErrSignInRequired: its own words, and the signed-out
+// error underneath.
+type signInExpired struct{}
+
+func (signInExpired) Error() string { return "the ChatGPT sign-in has expired — run " + loginCommand }
+func (signInExpired) Unwrap() error { return provider.ErrChatGPTSignedOut }
 
 // File names inside the account directory.
 const (

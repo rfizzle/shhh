@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/chatgpt"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 )
 
@@ -27,8 +28,8 @@ var chatGPT struct {
 // temporary directory and an in-memory server.
 var chatGPTOptions = func() chatgpt.Options { return chatgpt.Options{} }
 
-// chatGPTTokens hides every token the account learns in every session vault.
-var chatGPTTokens = &tokenRelay{}
+// chatGPTRelay hides every token the account learns in every session vault.
+var chatGPTRelay = &tokenRelay{}
 
 // chatGPTAccount is the process's account. A failure to open it is not
 // remembered: the directory may be creatable on the next try.
@@ -39,7 +40,7 @@ func chatGPTAccount() (*chatgpt.Account, error) {
 		return chatGPT.account, nil
 	}
 	o := chatGPTOptions()
-	relay := chatGPTTokens
+	relay := chatGPTRelay
 	o.OnTokens = func(access, refresh, id string) { relay.learn(access, refresh, id) }
 	a, err := chatgpt.Open(o)
 	if err != nil {
@@ -50,21 +51,23 @@ func chatGPTAccount() (*chatgpt.Account, error) {
 }
 
 // listChatGPTModels lists the models the plan serves the signed-in account,
-// so a sign-in can say what it unlocked. It belongs to the plan's provider,
-// which reads the plan's own model list; it is nil until that provider is
-// registered and sets it, and a sign-in without it lists nothing.
-var listChatGPTModels func(ctx context.Context, a *chatgpt.Account) ([]string, error)
+// so a sign-in can say what it unlocked. It is the plan provider's own list,
+// built on the process's account; a test replaces it.
+var listChatGPTModels = func(ctx context.Context) ([]string, error) {
+	p, err := provider.Resolve("chatgpt", provider.ResolveOpts{TokenSource: chatGPTTokens()})
+	if err != nil {
+		return nil, err
+	}
+	lister, ok := p.(provider.ModelLister)
+	if !ok {
+		return nil, nil
+	}
+	return lister.ListModels(ctx)
+}
 
 // chatGPTDefaultModel picks the model a sign-in saved with --save writes to
-// provider.model, out of the ones the plan listed. It is the plan provider's
-// choice to make, which replaces this one when it is wired; until then the
-// first listed model is the plan's own suggestion.
-var chatGPTDefaultModel = func(listed []string) string {
-	if len(listed) == 0 {
-		return ""
-	}
-	return listed[0]
-}
+// provider.model, out of the ones the plan listed.
+var chatGPTDefaultModel = provider.ChatGPTDefaultModel
 
 // tokenRelay hands the tokens the account learns to the session vaults, in
 // either order: a vault attached after a refresh is told what was learned
@@ -133,7 +136,7 @@ func (r *tokenRelay) attach(v *secret.Vault) {
 // command, and the vault is what keeps the refresh token out of what the
 // model reads. A host that never signed in is left without a directory.
 func hideChatGPTTokens(v *secret.Vault) {
-	chatGPTTokens.attach(v)
+	chatGPTRelay.attach(v)
 	if !chatgpt.HasRecord(chatGPTOptions().Dir) {
 		return
 	}
@@ -147,12 +150,14 @@ func hideChatGPTTokens(v *secret.Vault) {
 	if err != nil {
 		return
 	}
-	chatGPTTokens.learn(cred.AccessToken, cred.RefreshToken, cred.IDToken)
+	chatGPTRelay.learn(cred.AccessToken, cred.RefreshToken, cred.IDToken)
 }
 
-// The sentences the setup report says about the sign-in.
-const (
-	chatGPTNotSignedIn = "not signed in to ChatGPT — run `shhh providers login chatgpt`"
+// The sentences the setup report says about the sign-in. The signed-out one
+// is the plan route's own error, so a run that fails to resolve and the
+// report that explains it say the same words.
+var (
+	chatGPTNotSignedIn = provider.ErrChatGPTSignedOut.Error()
 	chatGPTNoPlan      = "signed in to ChatGPT, but plan use was not granted — run `shhh providers login chatgpt --consent`"
 )
 

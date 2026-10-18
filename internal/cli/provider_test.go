@@ -156,6 +156,7 @@ func TestOneShotRecordsTheModelItsOwnKeyNamed(t *testing.T) {
 // the sign-in's words, and a key in every place a key route looks is not a
 // way round it: moving the bill to a key is the person's switch to make.
 func TestTryProvider_ChatGPTWithoutASignInIsTheSignInError(t *testing.T) {
+	resetChatGPT(t) // an empty data directory, not this machine's sign-in
 	t.Setenv("OPENAI_API_KEY", "sk-env")
 	t.Setenv("SHHH_API_KEY", "sk-env")
 	var cfg config.Config
