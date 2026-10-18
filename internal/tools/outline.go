@@ -96,6 +96,9 @@ func executeDocumentSymbol(_ context.Context, raw json.RawMessage) (string, erro
 		return "", fmt.Errorf("cannot read file: %w", err)
 	}
 	defer f.Close()
+	if err := refuseOpened(f); err != nil {
+		return "", err
+	}
 	o, err := scanFile(f, true)
 	if err != nil {
 		return "", fmt.Errorf("cannot read file: %w", err)

@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // The preview is a diff, computed here rather than printed by sd: with no
@@ -146,6 +147,9 @@ func (t *Toolset) sdFileDiff(ctx context.Context, args sdArgs, path string) (str
 		rel = path
 	}
 	rel = filepath.ToSlash(rel)
+	if err := tools.RefuseSecret(path); err != nil {
+		return "", err
+	}
 	info, err := os.Stat(path)
 	if err != nil {
 		return "", fmt.Errorf("cannot read %s: %w", rel, err)

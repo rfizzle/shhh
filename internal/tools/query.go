@@ -331,6 +331,9 @@ func expandQueryGlob(pattern string) ([]string, error) {
 		}
 	}
 	base = filepath.FromSlash(base)
+	if err := refuseSecret(base); err != nil {
+		return nil, err
+	}
 	info, err := os.Stat(base)
 	if err != nil || !info.IsDir() {
 		return nil, nil
@@ -416,6 +419,9 @@ func queryFile(ctx context.Context, watch *queryMemoryWatch, out *queryOutput, p
 		return fmt.Errorf("cannot read file: %w", err)
 	}
 	defer f.Close()
+	if err := refuseOpened(f); err != nil {
+		return err
+	}
 
 	// The inputs are decoded one at a time and handed on, so a file of many
 	// documents, lines or rows is never held whole unless slurp asks for it

@@ -667,26 +667,38 @@ sentence shorter.
 
 Containment hides shhh's own state from a command it contains. The readers
 are not commands: `read_file`, `search`, `glob`, `list_directory`, `query`,
-`sqlite` and the outline run inside shhh, as the person, and open whatever
-path they are given. With containment off, or on a path the mask never
-covered, that was every file in the data directory: the session store, the
-sandbox records and the ChatGPT sign-in record, whose refresh token the
-session would then have read into its transcript.
+`sqlite`, the outline and the structural `sd` preview run inside shhh, as the
+person, and open whatever path they are given. With containment off, or on a
+path the mask never covered, that was every file in the data directory: the
+session store, the sandbox records and the ChatGPT sign-in record, whose
+refresh token the session would then have read into its transcript. The
+config file is the same kind of file, because it can hold an API key, a
+search key and the environment and headers of an MCP server.
 
-So the readers refuse the data directory themselves, whatever the
-containment setting. A path is judged by where it resolves to: symlinks and
-`..` are followed first, and each parent is compared with the directory by
-identity as well as by name, so a link in the workspace, a path spelled with
-a different case on a case-insensitive disk, and a file that does not exist
-yet all answer as the directory does. A path that cannot be resolved for any
-reason but being absent is refused, not read.
+So the readers refuse those files themselves, whatever the containment
+setting: everything under the data directory, and each config file by name.
+The config directory is not refused whole, because the skills and agent
+profiles in it are read by the model on purpose. A path is judged by where it
+resolves to: symlinks and `..` are followed first, a file that does not exist
+yet is judged by the directory it would land in, and each file is compared
+with the guarded ones by identity as well as by name, so a link in the
+workspace, a hard link to the session store, a path spelled with a different
+case on a case-insensitive disk, and a name changed between the check and the
+open all answer as the file does. The identity is checked again on the file
+actually opened. A path that cannot be resolved for any reason but being
+absent is refused, not read.
+
+The tools that change a file refuse the same paths. An edit answers a near
+miss with the file's own text, and a write over the sign-in or sandbox record
+would rewrite shhh's state behind one approval card, so neither is offered the
+file at all.
 
 A search over a parent is a different question from a request for the file.
-`search`, `glob`, `list_directory` and a `query` glob walk past the data
-directory and say nothing of it, so a search over a whole home directory is
-answered as if shhh's files were not there, rather than refused for holding
-them. The person's own `/` commands are not readers of this kind and are
-unaffected.
+`search`, `glob`, `list_directory` and a `query` glob walk past these files
+and say nothing of them, so a search over a whole home directory is answered
+as if shhh's files were not there, rather than refused for holding them. A
+glob whose own starting directory is the data directory is refused. The
+person's own `/` commands are not readers of this kind and are unaffected.
 
 The model is told: "<path> is under shhh's own data directory, which holds
 sign-in tokens and records and is never shown to the model, so nothing under

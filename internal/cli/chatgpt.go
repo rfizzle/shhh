@@ -94,8 +94,9 @@ type tokenRelay struct {
 // the record whatever the containment setting, and its output is scrubbed
 // by a vault that knows only what this session has learned, so each scrub
 // first asks whether the record changed. It is a stat when nothing did, and a
-// read of the record, never logged, when something did. A record that will
-// not read changes nothing, and is tried again at the next scrub.
+// read of the record, never logged, when something did. A record that cannot
+// be read at all is tried again at the next scrub; one that reads but does not
+// parse is remembered as the version it is.
 // See docs/capabilities/chatgpt-plan.md#what-keeps-the-tokens-from-the-model.
 func (r *tokenRelay) refresh() {
 	dir := chatGPTOptions().Dir
@@ -107,12 +108,17 @@ func (r *tokenRelay) refresh() {
 		return
 	}
 	cred, err := chatgpt.ReadRecord(dir)
-	if err != nil {
+	if err != nil && !chatgpt.IsMalformed(err) {
 		return
 	}
+	// A record that parsed badly is a version too: it is not read and
+	// parsed again at every line of output, and the next write replaces it.
 	r.mu.Lock()
 	r.stamp = now
 	r.mu.Unlock()
+	if err != nil {
+		return
+	}
 	r.learn(cred.AccessToken, cred.RefreshToken, cred.IDToken)
 }
 

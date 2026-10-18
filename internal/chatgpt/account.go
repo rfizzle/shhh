@@ -273,7 +273,7 @@ func readRecord(path string) (Credential, error) {
 	if err := json.Unmarshal(data, &c); err != nil {
 		// The decoder's error names a character or a type, never the text
 		// around it, so it cannot carry a token into the message.
-		return Credential{}, fmt.Errorf("%s is not a ChatGPT credential record: %w", path, err)
+		return Credential{}, fmt.Errorf("%s is not a ChatGPT credential record: %w", path, errMalformed{err})
 	}
 	return c, nil
 }

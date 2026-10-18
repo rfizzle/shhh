@@ -675,6 +675,9 @@ func readForModel(path string, tail int) (data []byte, notice string, err error)
 		return nil, "", fmt.Errorf("cannot read file: %w", err)
 	}
 	defer f.Close()
+	if err := refuseOpened(f); err != nil {
+		return nil, "", err
+	}
 
 	head := make([]byte, SniffBytes)
 	n, err := io.ReadFull(f, head)

@@ -340,6 +340,9 @@ func checkSqliteFile(path string) error {
 		return fmt.Errorf("cannot read database: %w", err)
 	}
 	defer f.Close()
+	if err := refuseOpened(f); err != nil {
+		return err
+	}
 	head := make([]byte, len(sqliteHeader))
 	if _, err := io.ReadFull(f, head); err != nil || !bytes.Equal(head, sqliteHeader) {
 		return fmt.Errorf("%s is not a SQLite database: it does not start with SQLite's file header", path)

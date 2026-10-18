@@ -113,6 +113,19 @@ func callPaths(rawArgs string) []string {
 	return out
 }
 
+// refuseCallPaths refuses a write or an edit of shhh's own files, whatever
+// the mode: the diff and the near-miss text an edit answers with are the file
+// read back, and a write over the sign-in or sandbox record is shhh's state
+// rewritten behind one approval card.
+func refuseCallPaths(raw json.RawMessage) error {
+	for _, p := range callPaths(string(raw)) {
+		if err := refuseSecret(p); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ExecuteMutating dispatches a user-approved file-modification tool call. It
 // refuses every other tool name so read-only tools cannot be routed here by
 // mistake.
@@ -174,6 +187,9 @@ func PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 // be executed against, or a person is shown a diff for a change the write
 // then refuses.
 func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
+	if err := refuseCallPaths(raw); err != nil {
+		return Mutation{}, err
+	}
 	switch name {
 	case WriteFileName:
 		args, err := parseWriteFileArgs(raw, false)
@@ -278,6 +294,9 @@ func parseWriteFileArgs(raw json.RawMessage, byPerson bool) (writeFileArgs, erro
 }
 
 func (r *Recorder) executeWriteFile(_ context.Context, raw json.RawMessage) (string, error) {
+	if err := refuseCallPaths(raw); err != nil {
+		return "", err
+	}
 	return r.writeFile(raw, false)
 }
 
@@ -475,6 +494,9 @@ func parseEditFileArgs(raw json.RawMessage) (editFileArgs, error) {
 }
 
 func (r *Recorder) executeEditFile(_ context.Context, raw json.RawMessage) (string, error) {
+	if err := refuseCallPaths(raw); err != nil {
+		return "", err
+	}
 	args, err := parseEditFileArgs(raw)
 	if err != nil {
 		return "", err

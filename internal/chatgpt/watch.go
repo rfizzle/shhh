@@ -1,6 +1,7 @@
 package chatgpt
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"time"
@@ -63,4 +64,16 @@ func recordPath(dir string) (string, error) {
 		}
 	}
 	return filepath.Join(dir, credentialsFile), nil
+}
+
+// errMalformed marks a record that was read and did not parse.
+type errMalformed struct{ error }
+
+func (e errMalformed) Unwrap() error { return e.error }
+
+// IsMalformed reports whether ReadRecord read the record and found it is not
+// one, which a holder remembers as a version rather than trying again.
+func IsMalformed(err error) bool {
+	var m errMalformed
+	return errors.As(err, &m)
 }

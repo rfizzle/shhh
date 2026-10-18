@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -724,5 +725,30 @@ func TestBinariesNameWhatWasFoundAndWhatWasNot(t *testing.T) {
 	}
 	if f, m := (*Toolset)(nil).Binaries(); f != nil || m != nil {
 		t.Errorf("a nil toolset found %v and missed %v", f, m)
+	}
+}
+
+// A preview reads the file in process and answers with a diff of it, so a
+// file of shhh's own is refused before the read.
+func TestExecuteSdRefusesShhhsOwnFiles(t *testing.T) {
+	ts := newTestToolset(t, map[string]string{SdToolName: writeScript(t, `printf 'x\n'`)})
+	data := filepath.Join(ts.root, "xdg")
+	t.Setenv("XDG_DATA_HOME", data)
+	record := filepath.Join(data, "shhh", "chatgpt", "credentials.json")
+	if err := os.MkdirAll(filepath.Dir(record), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(record, []byte("REFRESH-TOKEN"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(ts.root, "copy.json")
+	if err := os.Link(record, link); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{record, link} {
+		out, err := ts.Execute(context.Background(), SdToolName, json.RawMessage(`{"pattern": "a", "replacement": "b", "paths": [`+strconv.Quote(p)+`]}`))
+		if (err == nil || !strings.Contains(err.Error(), "never shown to the model")) || strings.Contains(out, "REFRESH-TOKEN") {
+			t.Errorf("sd over %s = %q, %v; want the refusal", p, out, err)
+		}
 	}
 }

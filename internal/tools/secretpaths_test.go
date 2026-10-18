@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/config"
 )
 
 const secretMarker = "REFRESH-TOKEN-FROM-ANOTHER-PROCESS"
@@ -121,4 +124,120 @@ func TestSecretPaths_AWalkOverAParentSkipsTheRecordSilently(t *testing.T) {
 			t.Errorf("list = %q, %v; want the state directory left out", out, err)
 		}
 	})
+}
+
+func TestSecretPaths_AQueryGlobOverTheRecordsDirectoryIsRefused(t *testing.T) {
+	_, record := secretWorkspace(t)
+	out, err := runTool(t, QueryName, map[string]any{"paths": []string{filepath.Join(filepath.Dir(record), "*.json")}})
+	if err == nil || !strings.Contains(err.Error(), "never shown to the model") || strings.Contains(out, secretMarker) {
+		t.Errorf("query = %q, %v; want the refusal", out, err)
+	}
+}
+
+func TestSecretPaths_TheConfigFileIsRefusedAndItsNeighboursAreNot(t *testing.T) {
+	ws := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(ws, "cfg"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(ws, "data"))
+	cfg := filepath.Join(ws, "cfg", "shhh", "config.toml")
+	skill := filepath.Join(ws, "cfg", "shhh", "skills", "x", "SKILL.md")
+	must(t, os.MkdirAll(filepath.Dir(skill), 0o755))
+	must(t, os.WriteFile(cfg, []byte("api_key = \""+secretMarker+"\"\n"), 0o600))
+	must(t, os.WriteFile(skill, []byte("a skill api_key"), 0o644))
+
+	for name, call := range map[string]func() (string, error){
+		"read_file": func() (string, error) { return runTool(t, ReadFileName, map[string]any{"path": cfg}) },
+		"search": func() (string, error) {
+			return runTool(t, SearchName, map[string]any{"pattern": "api_key", "path": cfg})
+		},
+		"glob": func() (string, error) { return runTool(t, GlobName, map[string]any{"pattern": "*", "path": cfg}) },
+	} {
+		out, err := call()
+		if err == nil || strings.Contains(out, secretMarker) {
+			t.Errorf("%s of the config file = %q, %v; want the refusal", name, out, err)
+		}
+	}
+	// A walk over the directory leaves the file out and finds the skill.
+	forceWalker(t)
+	out, err := runTool(t, SearchName, map[string]any{"pattern": "api_key", "path": filepath.Join(ws, "cfg")})
+	if err != nil || strings.Contains(out, secretMarker) || !strings.Contains(out, "SKILL.md") {
+		t.Errorf("search over the config directory = %q, %v; want the skill only", out, err)
+	}
+	if out, err := runTool(t, ReadFileName, map[string]any{"path": skill}); err != nil || !strings.Contains(out, "a skill") {
+		t.Errorf("the skill beside the config file is unreadable: %q, %v", out, err)
+	}
+}
+
+func TestSecretPaths_AHardLinkIsTheSameFile(t *testing.T) {
+	ws, record := secretWorkspace(t)
+	db := filepath.Join(ws, "xdg", "shhh", "shhh.db")
+	must(t, os.WriteFile(db, []byte("SQLite format 3\x00"+secretMarker), 0o600))
+	linkRecord, linkDB := filepath.Join(ws, "a.json"), filepath.Join(ws, "b.db")
+	must(t, os.Link(record, linkRecord))
+	must(t, os.Link(db, linkDB))
+
+	out, err := runTool(t, ReadFileName, map[string]any{"path": linkRecord})
+	if err == nil || strings.Contains(out, secretMarker) {
+		t.Errorf("read_file of a hard link = %q, %v; want the refusal", out, err)
+	}
+	out, err = runTool(t, SqliteName, map[string]any{"path": linkDB, "sql": "select 1"})
+	if err == nil || !strings.Contains(err.Error(), "never shown to the model") {
+		t.Errorf("sqlite over a hard link = %q, %v; want the refusal", out, err)
+	}
+	// Walks leave the link out as they leave the file.
+	forceWalker(t)
+	out, err = runTool(t, SearchName, map[string]any{"pattern": "refresh_token", "path": ws})
+	if err != nil || strings.Contains(out, secretMarker) || strings.Contains(out, "a.json") {
+		t.Errorf("search = %q, %v; want the hard link left out", out, err)
+	}
+}
+
+func TestSecretPaths_AFileNotYetThereUnderALinkedDirectoryIsJudgedByWhereItLands(t *testing.T) {
+	ws, record := secretWorkspace(t)
+	link := filepath.Join(ws, "dirlink")
+	must(t, os.Symlink(filepath.Dir(record), link))
+	args := map[string]any{"path": filepath.Join(link, "new.json"), "content": "x"}
+	if _, err := ExecuteMutating(context.Background(), WriteFileName, mustRaw(t, args)); err == nil || !strings.Contains(err.Error(), "never shown to the model") {
+		t.Errorf("write_file through a linked directory = %v; want the refusal", err)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(record), "new.json")); err == nil {
+		t.Error("the file was written")
+	}
+}
+
+func TestSecretPaths_TheMutatingToolsRefuseShhhsFilesToo(t *testing.T) {
+	ws, record := secretWorkspace(t)
+	plain := filepath.Join(ws, "work.json")
+	for name, tc := range map[string]struct {
+		tool string
+		args map[string]any
+	}{
+		"write":     {WriteFileName, map[string]any{"path": record, "content": "{}"}},
+		"edit":      {EditFileName, map[string]any{"path": record, "edits": []map[string]any{{"old_text": "refresh_token", "new_text": "x"}}}},
+		"edit many": {EditFileName, map[string]any{"paths": []string{plain, record}, "edits": []map[string]any{{"old_text": "refresh_token", "new_text": "x"}}}},
+	} {
+		out, err := ExecuteMutating(context.Background(), tc.tool, mustRaw(t, tc.args))
+		if err == nil || !strings.Contains(err.Error(), "never shown to the model") || strings.Contains(out, secretMarker) {
+			t.Errorf("%s = %q, %v; want the refusal", name, out, err)
+		}
+		if _, err := PreviewMutation(tc.tool, mustRaw(t, tc.args)); err == nil {
+			t.Errorf("%s: the approval card would have been drawn", name)
+		}
+	}
+	if b, _ := os.ReadFile(record); !strings.Contains(string(b), secretMarker) {
+		t.Error("the record was changed")
+	}
+}
+
+func mustRaw(t *testing.T, v any) json.RawMessage {
+	t.Helper()
+	b, err := json.Marshal(v)
+	must(t, err)
+	return b
+}
+
+func TestSecretPaths_TheConfigListIsTheConfigPackages(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	if got, want := configFilePaths(), config.Paths(); !slices.Equal(got, want) {
+		t.Errorf("configFilePaths = %v, config.Paths = %v", got, want)
+	}
 }
