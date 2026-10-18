@@ -8,9 +8,11 @@ package provider
 // the story asked to be covered.
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net"
 	"net/url"
 	"os"
@@ -21,7 +23,6 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/rfizzle/shhh/internal/logs"
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/genai"
 )
@@ -350,8 +351,13 @@ func TestClassify_NilStaysNil(t *testing.T) {
 // the reader pressing Esc rather than anything going wrong.
 func TestClassify_WritesTheRefusalToTheLog(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "shhh.log")
-	logs.To(path)
-	t.Cleanup(func() { logs.To("") })
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	SetLogger(slog.New(slog.NewTextHandler(f, nil)))
+	t.Cleanup(func() { SetLogger(nil) })
 
 	classify := newClassifier("openai", "OPENAI_API_KEY", "sk-live-abcd4f9c")
 	// The classified errors themselves are what other tests here assert; the
@@ -379,5 +385,34 @@ func TestClassify_WritesTheRefusalToTheLog(t *testing.T) {
 		if strings.Contains(written, secret) {
 			t.Errorf("the log carries %q:\n%s", secret, written)
 		}
+	}
+}
+
+// The line is the one the diagnostic log has always held: the same message
+// and the same attributes in the same order, whoever the logger belongs to.
+func TestClassify_TheRefusalLineIsUnchanged(t *testing.T) {
+	var buf bytes.Buffer
+	SetLogger(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+			return a
+		},
+	})))
+	t.Cleanup(func() { SetLogger(nil) })
+
+	record(&Failure{Provider: "openai", Class: ClassRateLimit, Status: 429, Code: "rl", RequestID: "req_1", Message: "slow down"})
+	want := `level=ERROR msg="provider request refused" provider=openai class="rate limited" status=429 code=rl request_id=req_1 detail="slow down"` + "\n"
+	if got := buf.String(); got != want {
+		t.Errorf("the refusal line changed:\n got %q\nwant %q", got, want)
+	}
+}
+
+func TestSetLogger_NilAndUnsetDiscard(t *testing.T) {
+	SetLogger(nil)
+	record(&Failure{Provider: "openai", Class: ClassRateLimit})
+	if log() == nil {
+		t.Fatal("a nil logger must be the discard logger")
 	}
 }

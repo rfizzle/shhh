@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // DefaultWait is how long a sign-in waits for the browser to come back.
@@ -194,15 +192,15 @@ func (a *Account) Login(ctx context.Context, o LoginOptions) (Result, error) {
 
 	cb, err := a.awaitCallback(ctx, o, at, host, h)
 	if err != nil {
-		logs.Logger().Info("chatgpt sign-in ended", "reason", reasonOf(err))
+		log().Info("chatgpt sign-in ended", "reason", reasonOf(err))
 		return Result{}, err
 	}
 	res, err := a.finish(ctx, at, cb, saved, disc)
 	if err != nil {
-		logs.Logger().Info("chatgpt sign-in ended", "reason", reasonOf(err))
+		log().Info("chatgpt sign-in ended", "reason", reasonOf(err))
 		return Result{}, err
 	}
-	logs.Logger().Info("chatgpt sign-in ok", "registered", res.Registered, "plan", res.PlanGranted)
+	log().Info("chatgpt sign-in ok", "registered", res.Registered, "plan", res.PlanGranted)
 	return res, nil
 }
 
@@ -231,7 +229,7 @@ func (a *Account) awaitCallback(ctx context.Context, o LoginOptions, at attempt,
 		if err := browser(page); err == nil {
 			opened = true
 		} else {
-			logs.Logger().Info("chatgpt sign-in browser did not open")
+			log().Info("chatgpt sign-in browser did not open")
 		}
 	}
 	if opened {

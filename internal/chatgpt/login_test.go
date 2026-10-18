@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -14,8 +15,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // signIn runs one sign-in against the fake with a fresh listener.
@@ -332,11 +331,13 @@ func TestCallback_AnswersOnceOnItsOwnHost(t *testing.T) {
 // sign-in, a refresh, a refused refresh and a sign-out.
 func TestLogin_NothingInTheLogIsAURLOrAToken(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "shhh.log")
-	logs.To(path)
-	if err := logs.SetLevel("debug"); err != nil {
+	lf, err := os.Create(path)
+	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { logs.To(""); _ = logs.SetLevel("") })
+	defer lf.Close()
+	SetLogger(slog.New(slog.NewTextHandler(lf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	t.Cleanup(func() { SetLogger(nil) })
 
 	clock := newClock()
 	fake, client := newFakeAuth(t, clock)

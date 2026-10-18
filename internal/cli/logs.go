@@ -15,8 +15,10 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/rfizzle/shhh/internal/chatgpt"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -46,6 +48,10 @@ func openLog() {
 	if path, err := logPath(); err == nil {
 		logs.To(path)
 	}
+	// The library packages write through what they are handed, and the
+	// logger is the one logs.To just pointed at the file (or at nothing).
+	provider.SetLogger(logs.Logger())
+	chatgpt.SetLogger(logs.Logger())
 }
 
 func newLogsCmd() *cobra.Command {

@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // revokeAttempts and revokeBackoff are how hard a sign-out tries to tell the
@@ -46,7 +44,7 @@ func (a *Account) Logout(ctx context.Context) (revoked bool, err error) {
 		revoked = a.revoke(ctx, cred)
 		return a.write(cred.cleared(a.now()))
 	})
-	logs.Logger().Info("chatgpt sign-out", "revoked", revoked)
+	log().Info("chatgpt sign-out", "revoked", revoked)
 	return revoked, err
 }
 
@@ -104,7 +102,7 @@ func (a *Account) revokeOnce(ctx context.Context, endpoint *string, form url.Val
 	case status >= 500:
 		return false, true
 	}
-	logs.Logger().Warn("chatgpt revocation refused", "status", status)
+	log().Warn("chatgpt revocation refused", "status", status)
 	return false, false
 }
 

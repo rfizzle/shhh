@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/rfizzle/shhh/internal/logs"
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/genai"
 )
@@ -297,7 +296,7 @@ func record(f *Failure) {
 	// The message is the provider's own, already bounded, and already what
 	// the recovery row on the screen shows — writing it down exposes nothing
 	// the session did not.
-	logs.Logger().Error("provider request refused",
+	log().Error("provider request refused",
 		"provider", f.Provider, "class", string(f.Class),
 		"status", f.Status, "code", f.Code, "request_id", f.RequestID,
 		"detail", f.Message)

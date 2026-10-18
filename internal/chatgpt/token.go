@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // terminalCodes are the refresh refusals no retry can turn around: the
@@ -84,7 +82,7 @@ func (a *Account) Token(ctx context.Context, refused string) (string, error) {
 		if err != nil {
 			var te *tokenError
 			if errors.As(err, &te) && terminalCodes[te.code] {
-				logs.Logger().Warn("chatgpt refresh refused", "code", te.code)
+				log().Warn("chatgpt refresh refused", "code", te.code)
 				cleared := cred.cleared(a.now())
 				if te.code == "invalid_client" {
 					// The registration itself is gone, so the next sign-in
@@ -98,14 +96,14 @@ func (a *Account) Token(ctx context.Context, refused string) (string, error) {
 				}
 				return ErrSignInRequired
 			}
-			logs.Logger().Warn("chatgpt refresh failed", "kind", failureKind(err))
+			log().Warn("chatgpt refresh failed", "kind", failureKind(err))
 			return err
 		}
 		if err := a.write(next); err != nil {
 			// The server has already spent the old refresh token, so the
 			// new set is the only sign-in there is: it is kept and
 			// written by the next caller, and this request still goes.
-			logs.Logger().Warn("chatgpt refresh not saved; kept until it can be")
+			log().Warn("chatgpt refresh not saved; kept until it can be")
 			// The disk still holds the refresh token it held before any
 			// unsaved refresh; a pending one already knows which that was.
 			if a.pending == nil {
@@ -115,7 +113,7 @@ func (a *Account) Token(ctx context.Context, refused string) (string, error) {
 		} else {
 			a.pending, a.pendingFrom = nil, ""
 		}
-		logs.Logger().Info("chatgpt refresh ok")
+		log().Info("chatgpt refresh ok")
 		a.report(next)
 		token = next.AccessToken
 		return nil
