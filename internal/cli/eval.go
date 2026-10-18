@@ -693,6 +693,11 @@ func evalDetail(res eval.Result) string {
 			score.Cited.String()+" cited read",
 			score.Quoted.String()+" quotes found",
 			score.Facts.String()+" facts")
+		// Beside the rates, never inside one: a quotation on another page
+		// the run read is in Quoted already, and this says it was misplaced.
+		if score.WrongPage > 0 {
+			parts = append(parts, fmt.Sprintf("%d quoted from another page", score.WrongPage))
+		}
 	}
 	if rounds := res.MedianRounds(); rounds > 0 {
 		parts = append(parts, eval.FormatRounds(rounds)+" rounds")

@@ -591,6 +591,28 @@ func TestEvalReportPrintsTheThreeResearchRatesApart(t *testing.T) {
 	}
 }
 
+// A quotation on another page the run read is drawn beside the rates, and a
+// row with none draws exactly what it did before.
+func TestEvalReportDrawsTheWrongPageCountBesideTheRates(t *testing.T) {
+	score := eval.ResearchScore{
+		Cited:  eval.Rate{Got: 2, Of: 2},
+		Quoted: eval.Rate{Got: 1, Of: 1},
+		Facts:  eval.Rate{Got: 2, Of: 2},
+	}
+	before := evalRow(researchResult(score)).Subject
+	if strings.Contains(before, "another page") {
+		t.Errorf("subject = %q, want no wrong-page count at zero", before)
+	}
+	score.WrongPage = 1
+	after := evalRow(researchResult(score)).Subject
+	if !strings.Contains(after, "2 of 2 facts · 1 quoted from another page") {
+		t.Errorf("subject = %q, want the count beside the three rates", after)
+	}
+	if !strings.Contains(after, "1 of 1 quotes found") {
+		t.Errorf("subject = %q, want the quote rate unchanged", after)
+	}
+}
+
 // A research row that came out whole has nothing to explain, and it must not
 // borrow the workspace shape's "the check failed and printed nothing".
 func TestEvalReportSaysNothingExtraAboutAWholeWriteUp(t *testing.T) {
