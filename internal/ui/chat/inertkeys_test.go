@@ -601,10 +601,13 @@ func TestInertKeys_WaitingAndLiveNeverPaintAlike(t *testing.T) {
 // which surface is up, how much transcript there is, what is waiting for an
 // answer, and where the reading cursor is. The draft itself is checked
 // separately, because that is the one thing the letter is allowed to change.
+// The copy caption is in it: a copy that went through draws only that, where
+// one that could not draws a notice as well, and which of the two a host gets
+// is a fact about its terminal.
 func snapshot(m Model) string {
-	return fmt.Sprintf("state=%v entries=%d waiting=%d gated=%v focus=%d agents=%v attached=%q",
+	return fmt.Sprintf("state=%v entries=%d waiting=%d gated=%v focus=%d agents=%v attached=%q copied=%q",
 		m.state, len(m.transcript), m.waitingCount(), m.decisionGated(),
-		m.focusIdx, m.agentList != nil, m.attachedTo)
+		m.focusIdx, m.agentList != nil, m.attachedTo, m.readingCopied)
 }
 
 // TestRowHandover_WithNothingSelectedOnlyTheLastFailureAnswers holds the one
