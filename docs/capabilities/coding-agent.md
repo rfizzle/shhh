@@ -663,6 +663,42 @@ seeing, so it rides back on the result as a picture wherever the model can
 take one. Where it cannot, the line stands on its own — the same answer, one
 sentence shorter.
 
+## shhh's own files are not the model's to read
+
+Containment hides shhh's own state from a command it contains. The readers
+are not commands: `read_file`, `search`, `glob`, `list_directory`, `query`,
+`sqlite` and the outline run inside shhh, as the person, and open whatever
+path they are given. With containment off, or on a path the mask never
+covered, that was every file in the data directory: the session store, the
+sandbox records and the ChatGPT sign-in record, whose refresh token the
+session would then have read into its transcript.
+
+So the readers refuse the data directory themselves, whatever the
+containment setting. A path is judged by where it resolves to: symlinks and
+`..` are followed first, and each parent is compared with the directory by
+identity as well as by name, so a link in the workspace, a path spelled with
+a different case on a case-insensitive disk, and a file that does not exist
+yet all answer as the directory does. A path that cannot be resolved for any
+reason but being absent is refused, not read.
+
+A search over a parent is a different question from a request for the file.
+`search`, `glob`, `list_directory` and a `query` glob walk past the data
+directory and say nothing of it, so a search over a whole home directory is
+answered as if shhh's files were not there, rather than refused for holding
+them. The person's own `/` commands are not readers of this kind and are
+unaffected.
+
+The model is told: "<path> is under shhh's own data directory, which holds
+sign-in tokens and records and is never shown to the model, so nothing under
+it can be read. If the task needs a file from there, ask the person". The
+reason is here and not in the sentence: a model told why a file is
+withheld looks for another way to it, and the sentence names what to do
+instead.
+
+The shell is the other way to the same file, and a path check cannot close
+it, because a command can read anything. What closes it is the scrub: see
+[`chatgpt-plan.md`](chatgpt-plan.md#what-keeps-the-tokens-from-the-model).
+
 ## What git will not look at, the agent does not offer
 
 The file walks skip what `.gitignore` names, for the reason the completion

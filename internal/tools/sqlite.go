@@ -143,6 +143,9 @@ func (r *Recorder) executeSqlite(ctx context.Context, raw json.RawMessage) (stri
 	if args.Limit > 0 {
 		limit = min(args.Limit, MaxSqliteRowsCeiling)
 	}
+	if err := refuseSecret(args.Path); err != nil {
+		return "", err
+	}
 	if err := checkSqliteFile(args.Path); err != nil {
 		return "", err
 	}

@@ -388,6 +388,13 @@ func (r *Recorder) executeReadFile(_ context.Context, raw json.RawMessage) (stri
 	// under the .gz's, would be a fingerprint of content the file does not
 	// have — every later write to it refused as stale, or worse, a whole
 	// read vouching for a file the model never saw.
+	opened := args.Path
+	if archive, _, ok := splitArchivePath(args.Path); ok {
+		opened = archive
+	}
+	if err := refuseSecret(opened); err != nil {
+		return "", err
+	}
 	var data []byte
 	var notice string
 	var err error
@@ -817,6 +824,14 @@ func executeListDirectory(ctx context.Context, raw json.RawMessage) (string, err
 		args.Depth = 3
 	}
 
+	listed := args.Path
+	if archive, _, ok := splitArchivePath(args.Path); ok {
+		listed = archive
+	}
+	if err := refuseSecret(listed); err != nil {
+		return "", err
+	}
+
 	var lines []string
 	var err error
 	if archive, inner, ok := splitArchivePath(args.Path); ok {
@@ -853,10 +868,11 @@ func walkDir(ctx context.Context, base, prefix string, depth int, rules project.
 	if err != nil {
 		return fmt.Errorf("cannot list directory: %w", err)
 	}
+	secret := newSecretGuard()
 	for _, e := range entries {
 		rel := filepath.Join(prefix, e.Name())
 		full := filepath.Join(base, rel)
-		if rules.Ignored(full, e.IsDir()) {
+		if rules.Ignored(full, e.IsDir()) || secret.skips(full, e) {
 			continue
 		}
 		if e.IsDir() {

@@ -60,6 +60,9 @@ func executeGlob(ctx context.Context, raw json.RawMessage) (string, error) {
 		}
 	}
 
+	if err := refuseSecret(args.Path); err != nil {
+		return "", err
+	}
 	info, err := os.Stat(args.Path)
 	if err != nil {
 		return "", fmt.Errorf("cannot access path: %w", err)
@@ -67,6 +70,7 @@ func executeGlob(ctx context.Context, raw json.RawMessage) (string, error) {
 	if !info.IsDir() {
 		return "", fmt.Errorf("path is not a directory: %s", args.Path)
 	}
+	secret := newSecretGuard()
 
 	limit := MaxGlobResults
 	if args.Limit > 0 {
@@ -84,6 +88,12 @@ func executeGlob(ctx context.Context, raw json.RawMessage) (string, error) {
 			return err
 		}
 		if walkErr != nil {
+			return nil
+		}
+		if secret.skips(p, d) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if d.IsDir() {

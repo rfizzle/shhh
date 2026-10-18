@@ -302,6 +302,9 @@ func searchNaming(ctx context.Context, raw json.RawMessage, named func(string)) 
 		return "", err
 	}
 
+	if err := refuseSecret(args.Path); err != nil {
+		return "", err
+	}
 	info, err := os.Stat(args.Path)
 	if err != nil {
 		return "", fmt.Errorf("cannot access path: %w", err)
@@ -412,6 +415,7 @@ func searchWithRipgrep(ctx context.Context, rg string, args searchArgs) (results
 		argv = append(argv, "--context", strconv.Itoa(args.context))
 	}
 	argv = append(argv, "--regexp", searchPattern(args), "--", args.Path)
+	secret := newSecretGuard()
 
 	cmd := exec.CommandContext(ctx, rg, argv...)
 	stdout, err := cmd.StdoutPipe()
@@ -439,6 +443,9 @@ func searchWithRipgrep(ctx context.Context, rg string, args searchArgs) (results
 			continue
 		}
 		path, rest := line[:nul], line[nul+1:]
+		if secret.holds(path) {
+			continue
+		}
 		if args.FilesOnly {
 			results = append(results, formatFileCount(path, rest))
 			args.name(path)
@@ -529,8 +536,9 @@ func ripgrepGzipFiles(ctx context.Context, rg string, include *includeMatcher, a
 	}
 	out, _ := exec.CommandContext(ctx, rg, argv...).Output()
 	var files []string
+	secret := newSecretGuard()
 	for _, p := range strings.Split(string(out), "\x00") {
-		if p = strings.Trim(p, "\n"); p == "" || !strings.HasSuffix(strings.ToLower(p), ".gz") {
+		if p = strings.Trim(p, "\n"); p == "" || !strings.HasSuffix(strings.ToLower(p), ".gz") || secret.holds(p) {
 			continue
 		}
 		if include != nil {
@@ -575,8 +583,9 @@ func ripgrepFiles(ctx context.Context, rg string, args searchArgs) ([]string, er
 		// Partial errors (e.g. unreadable files) still named files.
 	}
 	var files []string
+	secret := newSecretGuard()
 	for _, p := range strings.Split(string(out), "\x00") {
-		if p = strings.Trim(p, "\n"); p != "" {
+		if p = strings.Trim(p, "\n"); p != "" && !secret.holds(p) {
 			files = append(files, p)
 		}
 	}
@@ -625,12 +634,19 @@ func walkSearch(ctx context.Context, include *includeMatcher, args searchArgs, v
 	// otherwise the same search answers differently depending on whether rg
 	// happens to be installed on the machine.
 	ignore := newWalkIgnore(args.Path)
+	secret := newSecretGuard()
 	more := true
 	err = filepath.WalkDir(args.Path, func(p string, d os.DirEntry, walkErr error) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 		if walkErr != nil {
+			return nil
+		}
+		if secret.skips(p, d) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if d.IsDir() {

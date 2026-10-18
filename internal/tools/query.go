@@ -279,6 +279,9 @@ func expandQueryPaths(entries []string) ([]string, error) {
 			return nil, fmt.Errorf("paths entries must not be empty")
 		}
 		if !queryGlobMeta(entry) {
+			if err := refuseSecret(entry); err != nil {
+				return nil, err
+			}
 			if err := add(entry); err != nil {
 				return nil, err
 			}
@@ -335,8 +338,15 @@ func expandQueryGlob(pattern string) ([]string, error) {
 
 	var out []string
 	ignore := newWalkIgnore(base)
+	secret := newSecretGuard()
 	err = filepath.WalkDir(base, func(p string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
+			return nil
+		}
+		if secret.skips(p, d) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if d.IsDir() {

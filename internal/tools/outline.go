@@ -70,6 +70,9 @@ func executeDocumentSymbol(_ context.Context, raw json.RawMessage) (string, erro
 	if a.Path == "" {
 		return "", fmt.Errorf("path is required")
 	}
+	if err := refuseSecret(a.Path); err != nil {
+		return "", err
+	}
 	if !IsMarkdown(a.Path) {
 		ext := filepath.Ext(a.Path)
 		if ext == "" {
