@@ -64,15 +64,15 @@ const sitePlaceholder = "{site}"
 const searchPath = "/-search"
 
 // RunsBinary reports whether this kind is measured by starting a session
-// process. Only a workspace case is: the other shapes are requests and loops
+// process. Only a workspace case is, and its chat sibling: the other shapes are requests and loops
 // this harness makes itself, and a suite of them must not refuse to start
 // because the harness could not name its own executable.
 //
-// The empty kind answers yes for the reason the loader turns it into a
-// workspace case: it is what every case written before the other shapes
-// existed still means, and a caller that built a Case by hand rather than
-// from a file means it too.
-func (k Kind) RunsBinary() bool { return k == KindWorkspace || k == "" }
+// A chat case starts one too (chat.go). The empty kind answers yes for the
+// reason the loader turns it into a workspace case: it is what every case
+// written before the other shapes existed still means, and a caller that
+// built a Case by hand rather than from a file means it too.
+func (k Kind) RunsBinary() bool { return k.workspaceShaped() }
 
 // Rate is one of the three things a write-up is graded on: how many of the
 // things there were to check came out right, and how many there were.

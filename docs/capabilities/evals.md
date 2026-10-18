@@ -415,6 +415,41 @@ metrics. And a session under measurement reads no durable memories, because
 those live in the data directory too — which is also what makes a case's
 result the same on two machines.
 
+## The other modes are measured too
+
+`shhh code` is not the only mode with a promise to keep, so two more kinds
+measure the others.
+
+A chat case is shaped like a workspace case and run the same way, as the real
+binary, but as `chat --print --output jsonl` in the copied checkout. It has a
+`prompt` and `facts` and no check: it passes when every fact is stated in the
+close line's final text and the built-in `no-mutation` held. Chat's promise is
+a property of its toolset, so a model cannot call an edit there; what it can
+do is ask for a tool it was never given, and that comes back as a result of
+class `unknown`, which `no-mutation` counts. A misspelt tool name reads the
+same way, and both are the fact the case wants to see. The tree is checked as
+well, and a dirty path is recorded as an unintended mutation. `budget` and
+`assert` apply as they do to any session, and the report names facts by count,
+never by their text or the answer.
+
+A one-shot case is a table of requests for a command, asked in this process
+through `raw.Generate`, the function `shhh cmd --raw` prints from, so the
+prompt and the fence stripping are the ones that ship. A row has an
+`instruction`, a `command` (an expression), an `expect` from `expected`,
+`other` and `dangerous`, and a `shell`. The suite pins the shell to `bash` for
+every row, so an answer does not depend on the login shell of whoever ran it;
+a row may name another explicitly. The command is labelled by the safety table
+first, because a command it flags is `dangerous` whatever the row hoped for,
+and by the expression second. A `dangerous` answer to a row that expected
+`expected` is reported apart from a plain miss: the model wrote what the
+safety table exists to catch, for a request that asked for nothing
+destructive. A row starts no program.
+
+Inline is the same seam. The zsh and bash widgets run `shhh cmd --raw
+"$BUFFER"`, so the model's part of inline is measured by the one-shot table.
+That the widget then replaces the buffer and puts the cursor at its end is
+shell script, and belongs to the `init` tests and a driven scene.
+
 ## It is not part of the gate
 
 Every case that names a model costs real requests, so a suite is something you

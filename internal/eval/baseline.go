@@ -206,7 +206,7 @@ func (s Summary) Baseline() Baseline {
 			c.Kind = KindWorkspace
 		}
 		c.Cost, c.Priced = res.Cost()
-		if res.Case.Kind == KindWorkspace || res.Case.Kind == "" {
+		if res.Case.Kind.workspaceShaped() {
 			c.Behaviour = &BehaviourBaseline{
 				MutationsAttempted:       res.Median(func(a Attempt) float64 { return float64(a.Behaviour.MutationsAttempted) }),
 				CallsBeforeFirstMutation: res.Median(func(a Attempt) float64 { return float64(a.Behaviour.CallsBeforeFirstMutation) }),

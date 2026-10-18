@@ -2,18 +2,17 @@ name: Eval
 
 # The suite is run by a person asking for it and never by a push.
 #
-# Every case that names a model costs real requests: fourteen cases, ten of
-# them on the provider, several minutes of wall clock and a few dollars at the
-# usual rates — more with --repeat, which is what a flaky case needs to be
-# told from a failing one. That is a thing to spend deliberately, and a
-# workflow that spent it on every commit would be a bill nobody decided to
-# pay and a number nobody read.
+# Every case that names a model costs real requests: 29 cases, 4 scripted and
+# free, several minutes of wall clock for the rest — more with --repeat, which
+# is what a flaky case needs to be told from a failing one. That is a thing to
+# spend deliberately, and a workflow that spent it on every commit would be a
+# bill nobody decided to pay and a number nobody read.
 #
 # The scripted cases cost nothing and run here whatever the secret says: they
 # put the harness's own mechanisms — the steer, the window recovery, the
 # spawn and patch loop, the quality gate — to a labelled table with the
 # model's part written down. A run without SHHH_API_KEY is those four cases
-# and ten honest skips, which is a useful thing to be able to ask for on its
+# and honest skips for the rest, which is a useful thing to be able to ask for on its
 # own.
 #
 # The report is compared against evals/baseline.json, which is committed, so

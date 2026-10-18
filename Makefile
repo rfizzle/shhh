@@ -278,10 +278,10 @@ hooks: ## Install the pre-push hook that runs make prepush (opt-in)
 	echo "${MAGENTA}pre-push hook installed (git push --no-verify skips it)${RESET}"
 
 ## Live:
-# Costs real requests: ten of the fourteen cases put a task or a question to
-# the model, which is several minutes and a few dollars a run, and more with
-# --repeat. It is not part of `make ci` for that reason, and the workflow that
-# runs it (.github/workflows/eval.yml) is one a person triggers. The four
+# Costs real requests: 29 cases, 4 scripted and free; every other case puts a
+# task or a question to the model, which is several minutes a run, and more
+# with --repeat. It is not part of `make ci` for that reason, and the workflow
+# that runs it (.github/workflows/eval.yml) is one a person triggers. The four
 # scripted cases cost nothing and run without an account at all, so
 # `make eval EVAL_ARGS="--case close-gate"` is a free thing to ask for.
 #

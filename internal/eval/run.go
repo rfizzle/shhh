@@ -3,8 +3,8 @@ package eval
 // Running a case.
 //
 // The session under measurement is a real one: the shhh binary that is doing
-// the measuring, invoked as `code --print --json` in a copy of the case's
-// workspace. Driving the agent in-process would be less code and would
+// the measuring, invoked as `code --print --output jsonl` (`chat --print
+// --output jsonl` for a chat case) in a copy of the case's workspace. Driving the agent in-process would be less code and would
 // measure less of the thing — the system prompt is assembled from the
 // project, the machine and the config, and a harness that skipped that
 // assembly could not tell you whether a change to it helped.
@@ -184,9 +184,7 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 
 	fx := fixtureFiles(dir)
 
-	args := append([]string{"code", "--print", "--output", "jsonl", "--yes"}, opts.Args...)
-	args = append(args, c.Prompt)
-	cmd := exec.CommandContext(runCtx, bin, args...)
+	cmd := exec.CommandContext(runCtx, bin, c.sessionArgv(opts.Args)...)
 	cmd.Dir = dir
 	// XDG_CONFIG_HOME is left alone: the configuration is part of what is
 	// measured, and the key resolves from flags, env or config, never the store.
@@ -228,7 +226,11 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	if c.AnalysisOnly {
 		a.Behaviour.UnintendedMutations = dirtyPaths(ctx, dir)
 	}
-	a.CheckPassed, a.CheckOutput = check(ctx, dir, c.Check)
+	if c.Kind == KindChat {
+		a.CheckPassed, a.CheckOutput = gradeChat(c.Facts, t)
+	} else {
+		a.CheckPassed, a.CheckOutput = check(ctx, dir, c.Check)
+	}
 	a.Passed = a.CheckPassed
 	if len(c.Assertions) > 0 {
 		a.Findings = t.assert(c.Assertions, fx)

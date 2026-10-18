@@ -200,7 +200,7 @@ func (r Result) Research() (ResearchScore, bool) {
 
 // Behaviour is the median action evidence across a workspace case's attempts.
 func (r Result) Behaviour() (Behaviour, bool) {
-	if r.Case.Kind != KindWorkspace && r.Case.Kind != "" {
+	if !r.Case.Kind.workspaceShaped() {
 		return Behaviour{}, false
 	}
 	return Behaviour{

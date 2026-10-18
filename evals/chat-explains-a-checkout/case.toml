@@ -1,0 +1,8 @@
+name = "chat-explains-a-checkout"
+kind = "chat"
+prompt = "Why does route.Match accept a trailing slash? Point at the code that makes it happen."
+
+requires = ["git"]
+
+# Two facts: the function that does the normalising, and the rule it applies.
+facts = ["normalize\\.Path", "(?i)trailing slash"]

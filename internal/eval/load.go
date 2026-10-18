@@ -121,7 +121,7 @@ func loadCase(dir string) (Case, error) {
 		c.Name = filepath.Base(dir)
 	}
 
-	if kind != KindWorkspace && len(f.Budget)+len(f.Assert) > 0 {
+	if !kind.workspaceShaped() && len(f.Budget)+len(f.Assert) > 0 {
 		return Case{}, fmt.Errorf("%s: budget and assert are about a session's calls, and a %s case runs none", path, kind)
 	}
 
@@ -145,6 +145,33 @@ func loadCase(dir string) (Case, error) {
 			return Case{}, err
 		}
 		c.Assertions = as
+	case KindChat:
+		if strings.TrimSpace(f.Prompt) == "" {
+			return Case{}, fmt.Errorf("%s: prompt is required — it is the question", path)
+		}
+		if len(f.Check) > 0 {
+			return Case{}, fmt.Errorf("%s: a chat case has no check — its facts decide, and the conversation changes nothing for a command to look at", path)
+		}
+		ws := filepath.Join(dir, workspaceDir)
+		if info, err := os.Stat(ws); err != nil || !info.IsDir() {
+			return Case{}, fmt.Errorf("%s: no %s/ directory — a chat case is asked about a checkout", dir, workspaceDir)
+		}
+		if len(f.Facts) == 0 {
+			return Case{}, fmt.Errorf("%s: facts is required — without it nothing decides whether the question was answered", path)
+		}
+		facts, err := compileFacts(path, f.Facts)
+		if err != nil {
+			return Case{}, err
+		}
+		as, err := parseAssertions(f.Budget, f.Assert, path, false)
+		if err != nil {
+			return Case{}, err
+		}
+		// A conversation promises to change nothing, so a dirty tree is an
+		// unintended mutation whatever the case file says, and no-mutation is
+		// declared for it.
+		c.Workspace, c.Prompt, c.Facts, c.AnalysisOnly = ws, strings.TrimSpace(f.Prompt), facts, true
+		c.Assertions = withBuiltIn(as, wordNoMutation)
 	case KindResearch:
 		if strings.TrimSpace(f.Prompt) == "" {
 			return Case{}, fmt.Errorf("%s: prompt is required — it is the question", path)
@@ -161,7 +188,7 @@ func loadCase(dir string) (Case, error) {
 			return Case{}, err
 		}
 		c.Site, c.Prompt, c.Facts = site, strings.TrimSpace(f.Prompt), facts
-	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate, KindInherit, KindDelegation, KindReadOnly, KindProcessChoice:
+	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate, KindInherit, KindDelegation, KindReadOnly, KindProcessChoice, KindOneShot:
 		rows, err := loadTable(filepath.Join(dir, TableFile), kind)
 		if err != nil {
 			return Case{}, err
@@ -250,7 +277,8 @@ func caseDigest(dir string) (string, error) {
 func kindNames() []string {
 	return []string{string(KindWorkspace), string(KindResearch), string(KindClassifier),
 		string(KindSummary), string(KindSteer), string(KindCompaction), string(KindSpawn), string(KindGate),
-		string(KindInherit), string(KindDelegation), string(KindReadOnly), string(KindProcessChoice)}
+		string(KindInherit), string(KindDelegation), string(KindReadOnly), string(KindProcessChoice),
+		string(KindChat), string(KindOneShot)}
 }
 
 // tableFile is a table on disk: nothing but rows, and no top-level key beside
@@ -301,6 +329,11 @@ type rowFile struct {
 	Decline   bool     `toml:"decline"`
 	Config    string   `toml:"config"`
 	Suite     string   `toml:"suite"`
+
+	// What a one-shot row states (oneshot.go): the expression its command
+	// has to match, and the shell the request names.
+	Command string `toml:"command"`
+	Shell   string `toml:"shell"`
 
 	// What an inherit row states (inherit.go): how many turns of the
 	// conversation its child is handed, and the workspace it is spawned
@@ -384,6 +417,12 @@ func loadTable(path string, kind Kind) ([]Row, error) {
 			Config:     rf.Config,
 			Suite:      strings.TrimSpace(rf.Suite),
 		}
+		if kind == KindOneShot {
+			var err error
+			if row, err = oneShotRow(path, row, rf); err != nil {
+				return nil, err
+			}
+		}
 		if err := checkScriptedRow(path, kind, row); err != nil {
 			return nil, err
 		}
@@ -454,6 +493,13 @@ func checkScriptedRow(path string, kind Kind, row Row) error {
 		}
 		if slices.Contains(row.Expect, LabelDividedInPlace) && len(row.Parts) < 2 {
 			return fmt.Errorf("%s: %s: parts needs two or more names — it is how a round of reads is told to have divided the work", path, row.Name)
+		}
+	case KindOneShot:
+		if row.Instruction == "" {
+			return fmt.Errorf("%s: %s: instruction is required — it is the request the command is generated for", path, row.Name)
+		}
+		if row.Accepts(LabelExpected) && row.match == nil {
+			return fmt.Errorf("%s: %s: command is required — a row that expects %s needs the expression the command has to match", path, row.Name, LabelExpected)
 		}
 	case KindProcessChoice:
 		if row.Instruction == "" {
