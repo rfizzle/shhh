@@ -4,7 +4,313 @@ why = "off registers no orchestration tools; a model that reaches for spawn_agen
 expect = ["alone"]
 delegation = "off"
 instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
-files = { "pkg/alpha/alpha.go" = "package alpha\n\n// Open opens.\nfunc Open() {}\n\nfunc Close() {}\n", "pkg/beta/beta.go" = "package beta\n\nfunc Read() {}\n\n// Write writes.\nfunc Write() {}\n", "pkg/gamma/gamma.go" = "package gamma\n\n// Start starts.\nfunc Start() {}\n\n// Stop stops.\nfunc Stop() {}\n\nfunc Reset() {}\n" }
+[row.files]
+"pkg/alpha/open.go" = '''
+package alpha
+
+import (
+	"errors"
+	"sort"
+)
+
+var registry = map[string]*Store{}
+
+// ErrNoName is returned when a store is opened without a name.
+var ErrNoName = errors.New("alpha: no name")
+
+// ErrClosed is returned when a closed store is used.
+var ErrClosed = errors.New("alpha: closed")
+
+// Store is a small keyed store.
+type Store struct {
+	name   string
+	rows   map[string]string
+	closed bool
+}
+
+// Open opens the named store and returns a handle to it.
+func Open(name string) (*Store, error) {
+	if name == "" {
+		return nil, ErrNoName
+	}
+	return &Store{name: name, rows: map[string]string{}}, nil
+}
+
+func Close(s *Store) error {
+	if s == nil {
+		return ErrClosed
+	}
+	s.closed = true
+	return nil
+}
+
+// Names lists the names of every open store.
+func Names() []string {
+	out := make([]string, 0, len(registry))
+	for n := range registry {
+		out = append(out, n)
+	}
+	sort.Strings(out)
+	return out
+}
+'''
+"pkg/alpha/rows.go" = '''
+package alpha
+
+// Put stores a value under a key.
+func (s *Store) Put(key, val string) error {
+	if s.closed {
+		return ErrClosed
+	}
+	s.rows[key] = val
+	return nil
+}
+
+func (s *Store) Get(key string) (string, bool) {
+	v, ok := s.rows[key]
+	return v, ok
+}
+
+func (s *Store) Delete(key string) {
+	delete(s.rows, key)
+}
+
+// Len reports how many rows the store holds.
+func (s *Store) Len() int {
+	return len(s.rows)
+}
+'''
+"pkg/alpha/scan.go" = '''
+package alpha
+
+import (
+	"sort"
+	"strings"
+)
+
+// Keys returns the keys in sorted order.
+func (s *Store) Keys() []string {
+	out := make([]string, 0, len(s.rows))
+	for k := range s.rows {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// Each calls fn for every row in key order.
+func (s *Store) Each(fn func(key, val string)) {
+	for _, k := range s.Keys() {
+		fn(k, s.rows[k])
+	}
+}
+
+func (s *Store) Prefix(p string) []string {
+	var out []string
+	for _, k := range s.Keys() {
+		if strings.HasPrefix(k, p) {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+'''
+"pkg/beta/reader.go" = '''
+package beta
+
+import (
+	"bufio"
+	"io"
+	"strings"
+)
+
+func Read(r io.Reader, n int) ([]byte, error) {
+	buf := make([]byte, n)
+	m, err := io.ReadFull(r, buf)
+	return buf[:m], err
+}
+
+// ReadLine reads up to the next newline.
+func ReadLine(r *bufio.Reader) (string, error) {
+	line, err := r.ReadString('\n')
+	return strings.TrimRight(line, "\r\n"), err
+}
+
+func ReadAll(r io.Reader) (string, error) {
+	b, err := io.ReadAll(r)
+	return string(b), err
+}
+'''
+"pkg/beta/writer.go" = '''
+package beta
+
+import (
+	"io"
+	"strconv"
+	"strings"
+)
+
+// Write writes a string and a newline.
+func Write(w io.Writer, s string) error {
+	_, err := io.WriteString(w, s+"\n")
+	return err
+}
+
+// WriteAll writes every line in order.
+func WriteAll(w io.Writer, lines []string) error {
+	for _, l := range lines {
+		if err := Write(w, l); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Indent(s string, n int) string {
+	return strings.Repeat(" ", n) + s
+}
+
+func Quote(s string) string {
+	return strconv.Quote(s)
+}
+'''
+"pkg/beta/count.go" = '''
+package beta
+
+import "strings"
+
+// Lines counts the lines in s.
+func Lines(s string) int {
+	if s == "" {
+		return 0
+	}
+	return strings.Count(s, "\n") + 1
+}
+
+func Words(s string) int {
+	return len(strings.Fields(s))
+}
+
+// Bytes counts the bytes in s.
+func Bytes(s string) int {
+	return len(s)
+}
+
+func Longest(lines []string) string {
+	best := ""
+	for _, l := range lines {
+		if len(l) > len(best) {
+			best = l
+		}
+	}
+	return best
+}
+'''
+"pkg/gamma/run.go" = '''
+package gamma
+
+import "sync"
+
+var (
+	mu   sync.Mutex
+	jobs = map[int]string{}
+	next int
+)
+
+// Start starts the job and returns its id.
+func Start(name string) int {
+	mu.Lock()
+	defer mu.Unlock()
+	next++
+	jobs[next] = name
+	return next
+}
+
+// Stop stops the job with the given id.
+func Stop(id int) {
+	mu.Lock()
+	defer mu.Unlock()
+	delete(jobs, id)
+}
+
+func Reset() {
+	mu.Lock()
+	defer mu.Unlock()
+	jobs = map[int]string{}
+	next = 0
+}
+'''
+"pkg/gamma/query.go" = '''
+package gamma
+
+import "sort"
+
+func Name(id int) string {
+	mu.Lock()
+	defer mu.Unlock()
+	return jobs[id]
+}
+
+// Running reports how many jobs are running.
+func Running() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return len(jobs)
+}
+
+func IDs() []int {
+	mu.Lock()
+	defer mu.Unlock()
+	out := make([]int, 0, len(jobs))
+	for id := range jobs {
+		out = append(out, id)
+	}
+	sort.Ints(out)
+	return out
+}
+
+// Find returns the id of the first job with the name.
+func Find(name string) (int, bool) {
+	for _, id := range IDs() {
+		if Name(id) == name {
+			return id, true
+		}
+	}
+	return 0, false
+}
+'''
+"pkg/gamma/limit.go" = '''
+package gamma
+
+var limit int
+
+// Cap is the most jobs that may run at once.
+func Cap() int {
+	return limit
+}
+
+func SetCap(n int) {
+	mu.Lock()
+	defer mu.Unlock()
+	limit = n
+}
+
+func Full() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return limit > 0 && len(jobs) >= limit
+}
+
+// Free reports how many more jobs may start.
+func Free() int {
+	mu.Lock()
+	defer mu.Unlock()
+	if limit <= 0 {
+		return -1
+	}
+	return limit - len(jobs)
+}
+'''
 
 [[row]]
 name = "explicit does not read a request for depth as a request to delegate"
@@ -12,7 +318,313 @@ why = "the explicit line says thoroughness is not a licence to spawn; the same d
 expect = ["alone"]
 delegation = "explicit"
 instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
-files = { "pkg/alpha/alpha.go" = "package alpha\n\n// Open opens.\nfunc Open() {}\n\nfunc Close() {}\n", "pkg/beta/beta.go" = "package beta\n\nfunc Read() {}\n\n// Write writes.\nfunc Write() {}\n", "pkg/gamma/gamma.go" = "package gamma\n\n// Start starts.\nfunc Start() {}\n\n// Stop stops.\nfunc Stop() {}\n\nfunc Reset() {}\n" }
+[row.files]
+"pkg/alpha/open.go" = '''
+package alpha
+
+import (
+	"errors"
+	"sort"
+)
+
+var registry = map[string]*Store{}
+
+// ErrNoName is returned when a store is opened without a name.
+var ErrNoName = errors.New("alpha: no name")
+
+// ErrClosed is returned when a closed store is used.
+var ErrClosed = errors.New("alpha: closed")
+
+// Store is a small keyed store.
+type Store struct {
+	name   string
+	rows   map[string]string
+	closed bool
+}
+
+// Open opens the named store and returns a handle to it.
+func Open(name string) (*Store, error) {
+	if name == "" {
+		return nil, ErrNoName
+	}
+	return &Store{name: name, rows: map[string]string{}}, nil
+}
+
+func Close(s *Store) error {
+	if s == nil {
+		return ErrClosed
+	}
+	s.closed = true
+	return nil
+}
+
+// Names lists the names of every open store.
+func Names() []string {
+	out := make([]string, 0, len(registry))
+	for n := range registry {
+		out = append(out, n)
+	}
+	sort.Strings(out)
+	return out
+}
+'''
+"pkg/alpha/rows.go" = '''
+package alpha
+
+// Put stores a value under a key.
+func (s *Store) Put(key, val string) error {
+	if s.closed {
+		return ErrClosed
+	}
+	s.rows[key] = val
+	return nil
+}
+
+func (s *Store) Get(key string) (string, bool) {
+	v, ok := s.rows[key]
+	return v, ok
+}
+
+func (s *Store) Delete(key string) {
+	delete(s.rows, key)
+}
+
+// Len reports how many rows the store holds.
+func (s *Store) Len() int {
+	return len(s.rows)
+}
+'''
+"pkg/alpha/scan.go" = '''
+package alpha
+
+import (
+	"sort"
+	"strings"
+)
+
+// Keys returns the keys in sorted order.
+func (s *Store) Keys() []string {
+	out := make([]string, 0, len(s.rows))
+	for k := range s.rows {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// Each calls fn for every row in key order.
+func (s *Store) Each(fn func(key, val string)) {
+	for _, k := range s.Keys() {
+		fn(k, s.rows[k])
+	}
+}
+
+func (s *Store) Prefix(p string) []string {
+	var out []string
+	for _, k := range s.Keys() {
+		if strings.HasPrefix(k, p) {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+'''
+"pkg/beta/reader.go" = '''
+package beta
+
+import (
+	"bufio"
+	"io"
+	"strings"
+)
+
+func Read(r io.Reader, n int) ([]byte, error) {
+	buf := make([]byte, n)
+	m, err := io.ReadFull(r, buf)
+	return buf[:m], err
+}
+
+// ReadLine reads up to the next newline.
+func ReadLine(r *bufio.Reader) (string, error) {
+	line, err := r.ReadString('\n')
+	return strings.TrimRight(line, "\r\n"), err
+}
+
+func ReadAll(r io.Reader) (string, error) {
+	b, err := io.ReadAll(r)
+	return string(b), err
+}
+'''
+"pkg/beta/writer.go" = '''
+package beta
+
+import (
+	"io"
+	"strconv"
+	"strings"
+)
+
+// Write writes a string and a newline.
+func Write(w io.Writer, s string) error {
+	_, err := io.WriteString(w, s+"\n")
+	return err
+}
+
+// WriteAll writes every line in order.
+func WriteAll(w io.Writer, lines []string) error {
+	for _, l := range lines {
+		if err := Write(w, l); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Indent(s string, n int) string {
+	return strings.Repeat(" ", n) + s
+}
+
+func Quote(s string) string {
+	return strconv.Quote(s)
+}
+'''
+"pkg/beta/count.go" = '''
+package beta
+
+import "strings"
+
+// Lines counts the lines in s.
+func Lines(s string) int {
+	if s == "" {
+		return 0
+	}
+	return strings.Count(s, "\n") + 1
+}
+
+func Words(s string) int {
+	return len(strings.Fields(s))
+}
+
+// Bytes counts the bytes in s.
+func Bytes(s string) int {
+	return len(s)
+}
+
+func Longest(lines []string) string {
+	best := ""
+	for _, l := range lines {
+		if len(l) > len(best) {
+			best = l
+		}
+	}
+	return best
+}
+'''
+"pkg/gamma/run.go" = '''
+package gamma
+
+import "sync"
+
+var (
+	mu   sync.Mutex
+	jobs = map[int]string{}
+	next int
+)
+
+// Start starts the job and returns its id.
+func Start(name string) int {
+	mu.Lock()
+	defer mu.Unlock()
+	next++
+	jobs[next] = name
+	return next
+}
+
+// Stop stops the job with the given id.
+func Stop(id int) {
+	mu.Lock()
+	defer mu.Unlock()
+	delete(jobs, id)
+}
+
+func Reset() {
+	mu.Lock()
+	defer mu.Unlock()
+	jobs = map[int]string{}
+	next = 0
+}
+'''
+"pkg/gamma/query.go" = '''
+package gamma
+
+import "sort"
+
+func Name(id int) string {
+	mu.Lock()
+	defer mu.Unlock()
+	return jobs[id]
+}
+
+// Running reports how many jobs are running.
+func Running() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return len(jobs)
+}
+
+func IDs() []int {
+	mu.Lock()
+	defer mu.Unlock()
+	out := make([]int, 0, len(jobs))
+	for id := range jobs {
+		out = append(out, id)
+	}
+	sort.Ints(out)
+	return out
+}
+
+// Find returns the id of the first job with the name.
+func Find(name string) (int, bool) {
+	for _, id := range IDs() {
+		if Name(id) == name {
+			return id, true
+		}
+	}
+	return 0, false
+}
+'''
+"pkg/gamma/limit.go" = '''
+package gamma
+
+var limit int
+
+// Cap is the most jobs that may run at once.
+func Cap() int {
+	return limit
+}
+
+func SetCap(n int) {
+	mu.Lock()
+	defer mu.Unlock()
+	limit = n
+}
+
+func Full() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return limit > 0 && len(jobs) >= limit
+}
+
+// Free reports how many more jobs may start.
+func Free() int {
+	mu.Lock()
+	defer mu.Unlock()
+	if limit <= 0 {
+		return -1
+	}
+	return limit - len(jobs)
+}
+'''
 
 [[row]]
 name = "explicit spawns when the person asks for agents"
@@ -20,7 +632,313 @@ why = "explicit is a policy about asking, not a refusal: a request that names su
 expect = ["spawned", "divided"]
 delegation = "explicit"
 instruction = "Use sub-agents for this: for each of the three packages under pkg/, find which exported function has no doc comment."
-files = { "pkg/alpha/alpha.go" = "package alpha\n\n// Open opens.\nfunc Open() {}\n\nfunc Close() {}\n", "pkg/beta/beta.go" = "package beta\n\nfunc Read() {}\n\n// Write writes.\nfunc Write() {}\n", "pkg/gamma/gamma.go" = "package gamma\n\n// Start starts.\nfunc Start() {}\n\n// Stop stops.\nfunc Stop() {}\n\nfunc Reset() {}\n" }
+[row.files]
+"pkg/alpha/open.go" = '''
+package alpha
+
+import (
+	"errors"
+	"sort"
+)
+
+var registry = map[string]*Store{}
+
+// ErrNoName is returned when a store is opened without a name.
+var ErrNoName = errors.New("alpha: no name")
+
+// ErrClosed is returned when a closed store is used.
+var ErrClosed = errors.New("alpha: closed")
+
+// Store is a small keyed store.
+type Store struct {
+	name   string
+	rows   map[string]string
+	closed bool
+}
+
+// Open opens the named store and returns a handle to it.
+func Open(name string) (*Store, error) {
+	if name == "" {
+		return nil, ErrNoName
+	}
+	return &Store{name: name, rows: map[string]string{}}, nil
+}
+
+func Close(s *Store) error {
+	if s == nil {
+		return ErrClosed
+	}
+	s.closed = true
+	return nil
+}
+
+// Names lists the names of every open store.
+func Names() []string {
+	out := make([]string, 0, len(registry))
+	for n := range registry {
+		out = append(out, n)
+	}
+	sort.Strings(out)
+	return out
+}
+'''
+"pkg/alpha/rows.go" = '''
+package alpha
+
+// Put stores a value under a key.
+func (s *Store) Put(key, val string) error {
+	if s.closed {
+		return ErrClosed
+	}
+	s.rows[key] = val
+	return nil
+}
+
+func (s *Store) Get(key string) (string, bool) {
+	v, ok := s.rows[key]
+	return v, ok
+}
+
+func (s *Store) Delete(key string) {
+	delete(s.rows, key)
+}
+
+// Len reports how many rows the store holds.
+func (s *Store) Len() int {
+	return len(s.rows)
+}
+'''
+"pkg/alpha/scan.go" = '''
+package alpha
+
+import (
+	"sort"
+	"strings"
+)
+
+// Keys returns the keys in sorted order.
+func (s *Store) Keys() []string {
+	out := make([]string, 0, len(s.rows))
+	for k := range s.rows {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// Each calls fn for every row in key order.
+func (s *Store) Each(fn func(key, val string)) {
+	for _, k := range s.Keys() {
+		fn(k, s.rows[k])
+	}
+}
+
+func (s *Store) Prefix(p string) []string {
+	var out []string
+	for _, k := range s.Keys() {
+		if strings.HasPrefix(k, p) {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+'''
+"pkg/beta/reader.go" = '''
+package beta
+
+import (
+	"bufio"
+	"io"
+	"strings"
+)
+
+func Read(r io.Reader, n int) ([]byte, error) {
+	buf := make([]byte, n)
+	m, err := io.ReadFull(r, buf)
+	return buf[:m], err
+}
+
+// ReadLine reads up to the next newline.
+func ReadLine(r *bufio.Reader) (string, error) {
+	line, err := r.ReadString('\n')
+	return strings.TrimRight(line, "\r\n"), err
+}
+
+func ReadAll(r io.Reader) (string, error) {
+	b, err := io.ReadAll(r)
+	return string(b), err
+}
+'''
+"pkg/beta/writer.go" = '''
+package beta
+
+import (
+	"io"
+	"strconv"
+	"strings"
+)
+
+// Write writes a string and a newline.
+func Write(w io.Writer, s string) error {
+	_, err := io.WriteString(w, s+"\n")
+	return err
+}
+
+// WriteAll writes every line in order.
+func WriteAll(w io.Writer, lines []string) error {
+	for _, l := range lines {
+		if err := Write(w, l); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Indent(s string, n int) string {
+	return strings.Repeat(" ", n) + s
+}
+
+func Quote(s string) string {
+	return strconv.Quote(s)
+}
+'''
+"pkg/beta/count.go" = '''
+package beta
+
+import "strings"
+
+// Lines counts the lines in s.
+func Lines(s string) int {
+	if s == "" {
+		return 0
+	}
+	return strings.Count(s, "\n") + 1
+}
+
+func Words(s string) int {
+	return len(strings.Fields(s))
+}
+
+// Bytes counts the bytes in s.
+func Bytes(s string) int {
+	return len(s)
+}
+
+func Longest(lines []string) string {
+	best := ""
+	for _, l := range lines {
+		if len(l) > len(best) {
+			best = l
+		}
+	}
+	return best
+}
+'''
+"pkg/gamma/run.go" = '''
+package gamma
+
+import "sync"
+
+var (
+	mu   sync.Mutex
+	jobs = map[int]string{}
+	next int
+)
+
+// Start starts the job and returns its id.
+func Start(name string) int {
+	mu.Lock()
+	defer mu.Unlock()
+	next++
+	jobs[next] = name
+	return next
+}
+
+// Stop stops the job with the given id.
+func Stop(id int) {
+	mu.Lock()
+	defer mu.Unlock()
+	delete(jobs, id)
+}
+
+func Reset() {
+	mu.Lock()
+	defer mu.Unlock()
+	jobs = map[int]string{}
+	next = 0
+}
+'''
+"pkg/gamma/query.go" = '''
+package gamma
+
+import "sort"
+
+func Name(id int) string {
+	mu.Lock()
+	defer mu.Unlock()
+	return jobs[id]
+}
+
+// Running reports how many jobs are running.
+func Running() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return len(jobs)
+}
+
+func IDs() []int {
+	mu.Lock()
+	defer mu.Unlock()
+	out := make([]int, 0, len(jobs))
+	for id := range jobs {
+		out = append(out, id)
+	}
+	sort.Ints(out)
+	return out
+}
+
+// Find returns the id of the first job with the name.
+func Find(name string) (int, bool) {
+	for _, id := range IDs() {
+		if Name(id) == name {
+			return id, true
+		}
+	}
+	return 0, false
+}
+'''
+"pkg/gamma/limit.go" = '''
+package gamma
+
+var limit int
+
+// Cap is the most jobs that may run at once.
+func Cap() int {
+	return limit
+}
+
+func SetCap(n int) {
+	mu.Lock()
+	defer mu.Unlock()
+	limit = n
+}
+
+func Full() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return limit > 0 && len(jobs) >= limit
+}
+
+// Free reports how many more jobs may start.
+func Free() int {
+	mu.Lock()
+	defer mu.Unlock()
+	if limit <= 0 {
+		return -1
+	}
+	return limit - len(jobs)
+}
+'''
 
 [[row]]
 name = "proactive divides work that divides, unasked"
@@ -28,4 +946,310 @@ why = "proactive says independent parts are to be divided; three packages read s
 expect = ["divided"]
 delegation = "proactive"
 instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
-files = { "pkg/alpha/alpha.go" = "package alpha\n\n// Open opens.\nfunc Open() {}\n\nfunc Close() {}\n", "pkg/beta/beta.go" = "package beta\n\nfunc Read() {}\n\n// Write writes.\nfunc Write() {}\n", "pkg/gamma/gamma.go" = "package gamma\n\n// Start starts.\nfunc Start() {}\n\n// Stop stops.\nfunc Stop() {}\n\nfunc Reset() {}\n" }
+[row.files]
+"pkg/alpha/open.go" = '''
+package alpha
+
+import (
+	"errors"
+	"sort"
+)
+
+var registry = map[string]*Store{}
+
+// ErrNoName is returned when a store is opened without a name.
+var ErrNoName = errors.New("alpha: no name")
+
+// ErrClosed is returned when a closed store is used.
+var ErrClosed = errors.New("alpha: closed")
+
+// Store is a small keyed store.
+type Store struct {
+	name   string
+	rows   map[string]string
+	closed bool
+}
+
+// Open opens the named store and returns a handle to it.
+func Open(name string) (*Store, error) {
+	if name == "" {
+		return nil, ErrNoName
+	}
+	return &Store{name: name, rows: map[string]string{}}, nil
+}
+
+func Close(s *Store) error {
+	if s == nil {
+		return ErrClosed
+	}
+	s.closed = true
+	return nil
+}
+
+// Names lists the names of every open store.
+func Names() []string {
+	out := make([]string, 0, len(registry))
+	for n := range registry {
+		out = append(out, n)
+	}
+	sort.Strings(out)
+	return out
+}
+'''
+"pkg/alpha/rows.go" = '''
+package alpha
+
+// Put stores a value under a key.
+func (s *Store) Put(key, val string) error {
+	if s.closed {
+		return ErrClosed
+	}
+	s.rows[key] = val
+	return nil
+}
+
+func (s *Store) Get(key string) (string, bool) {
+	v, ok := s.rows[key]
+	return v, ok
+}
+
+func (s *Store) Delete(key string) {
+	delete(s.rows, key)
+}
+
+// Len reports how many rows the store holds.
+func (s *Store) Len() int {
+	return len(s.rows)
+}
+'''
+"pkg/alpha/scan.go" = '''
+package alpha
+
+import (
+	"sort"
+	"strings"
+)
+
+// Keys returns the keys in sorted order.
+func (s *Store) Keys() []string {
+	out := make([]string, 0, len(s.rows))
+	for k := range s.rows {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// Each calls fn for every row in key order.
+func (s *Store) Each(fn func(key, val string)) {
+	for _, k := range s.Keys() {
+		fn(k, s.rows[k])
+	}
+}
+
+func (s *Store) Prefix(p string) []string {
+	var out []string
+	for _, k := range s.Keys() {
+		if strings.HasPrefix(k, p) {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+'''
+"pkg/beta/reader.go" = '''
+package beta
+
+import (
+	"bufio"
+	"io"
+	"strings"
+)
+
+func Read(r io.Reader, n int) ([]byte, error) {
+	buf := make([]byte, n)
+	m, err := io.ReadFull(r, buf)
+	return buf[:m], err
+}
+
+// ReadLine reads up to the next newline.
+func ReadLine(r *bufio.Reader) (string, error) {
+	line, err := r.ReadString('\n')
+	return strings.TrimRight(line, "\r\n"), err
+}
+
+func ReadAll(r io.Reader) (string, error) {
+	b, err := io.ReadAll(r)
+	return string(b), err
+}
+'''
+"pkg/beta/writer.go" = '''
+package beta
+
+import (
+	"io"
+	"strconv"
+	"strings"
+)
+
+// Write writes a string and a newline.
+func Write(w io.Writer, s string) error {
+	_, err := io.WriteString(w, s+"\n")
+	return err
+}
+
+// WriteAll writes every line in order.
+func WriteAll(w io.Writer, lines []string) error {
+	for _, l := range lines {
+		if err := Write(w, l); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Indent(s string, n int) string {
+	return strings.Repeat(" ", n) + s
+}
+
+func Quote(s string) string {
+	return strconv.Quote(s)
+}
+'''
+"pkg/beta/count.go" = '''
+package beta
+
+import "strings"
+
+// Lines counts the lines in s.
+func Lines(s string) int {
+	if s == "" {
+		return 0
+	}
+	return strings.Count(s, "\n") + 1
+}
+
+func Words(s string) int {
+	return len(strings.Fields(s))
+}
+
+// Bytes counts the bytes in s.
+func Bytes(s string) int {
+	return len(s)
+}
+
+func Longest(lines []string) string {
+	best := ""
+	for _, l := range lines {
+		if len(l) > len(best) {
+			best = l
+		}
+	}
+	return best
+}
+'''
+"pkg/gamma/run.go" = '''
+package gamma
+
+import "sync"
+
+var (
+	mu   sync.Mutex
+	jobs = map[int]string{}
+	next int
+)
+
+// Start starts the job and returns its id.
+func Start(name string) int {
+	mu.Lock()
+	defer mu.Unlock()
+	next++
+	jobs[next] = name
+	return next
+}
+
+// Stop stops the job with the given id.
+func Stop(id int) {
+	mu.Lock()
+	defer mu.Unlock()
+	delete(jobs, id)
+}
+
+func Reset() {
+	mu.Lock()
+	defer mu.Unlock()
+	jobs = map[int]string{}
+	next = 0
+}
+'''
+"pkg/gamma/query.go" = '''
+package gamma
+
+import "sort"
+
+func Name(id int) string {
+	mu.Lock()
+	defer mu.Unlock()
+	return jobs[id]
+}
+
+// Running reports how many jobs are running.
+func Running() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return len(jobs)
+}
+
+func IDs() []int {
+	mu.Lock()
+	defer mu.Unlock()
+	out := make([]int, 0, len(jobs))
+	for id := range jobs {
+		out = append(out, id)
+	}
+	sort.Ints(out)
+	return out
+}
+
+// Find returns the id of the first job with the name.
+func Find(name string) (int, bool) {
+	for _, id := range IDs() {
+		if Name(id) == name {
+			return id, true
+		}
+	}
+	return 0, false
+}
+'''
+"pkg/gamma/limit.go" = '''
+package gamma
+
+var limit int
+
+// Cap is the most jobs that may run at once.
+func Cap() int {
+	return limit
+}
+
+func SetCap(n int) {
+	mu.Lock()
+	defer mu.Unlock()
+	limit = n
+}
+
+func Full() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return limit > 0 && len(jobs) >= limit
+}
+
+// Free reports how many more jobs may start.
+func Free() int {
+	mu.Lock()
+	defer mu.Unlock()
+	if limit <= 0 {
+		return -1
+	}
+	return limit - len(jobs)
+}
+'''
