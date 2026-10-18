@@ -26,3 +26,15 @@ func TestRecordOnThePlanCountsTokensAndPricesNothing(t *testing.T) {
 		t.Errorf("billed entry = %+v", billed)
 	}
 }
+
+// The roll-up says how much of it the plan paid for, so a reader that prices
+// the rest never prices the plan's share.
+func TestTotalsCarryWhatThePlanPaid(t *testing.T) {
+	l := New(cachedPrices())
+	u := provider.Usage{PromptTokens: 1000, CompletionTokens: 10}
+	l.RecordOn(PlanProvider, Origin{Source: SourceAgent}, "cached", u)
+	l.RecordOn("openai", Origin{Source: SourceAgent}, "cached", u)
+	if got := l.Total().Plan; got != 1010 {
+		t.Errorf("plan tokens = %d, want 1010", got)
+	}
+}

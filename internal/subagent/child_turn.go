@@ -291,7 +291,7 @@ func (c *child) addUsage(u *provider.Usage) (over bool) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.spend.Record(meter.Origin{Source: meter.SourceSubagent, Label: c.name}, c.model, *u)
+	c.spend.RecordOn(c.env.Provider, meter.Origin{Source: meter.SourceSubagent, Label: c.name}, c.model, *u)
 	c.fresh += int64(max(u.PromptTokens-u.CachedTokens, 0)) + int64(u.CompletionTokens)
 	if c.maxTokens > 0 && c.fresh > c.maxTokens {
 		c.budgetHit = true

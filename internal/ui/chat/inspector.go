@@ -1016,6 +1016,11 @@ func (m Model) totalsLabel(t meter.Totals) string {
 		// would be a figure nobody was charged.
 		return "~" + formatTokenCount(t.In+t.Out) + " tok"
 	}
+	if t.Plan > 0 {
+		// The session has left the plan, but what the plan paid is still in
+		// the roll-up and is not billed per token: count it, never price it.
+		return "~" + formatTokenCount(t.In+t.Out) + " tok"
+	}
 	return m.freshRateLabel(t.In, t.Out)
 }
 

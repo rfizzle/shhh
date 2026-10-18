@@ -122,6 +122,9 @@ type Totals struct {
 	Cost     float64
 	Priced   bool
 	Requests int
+	// Plan is the part of In and Out a plan paid for, which no price applies
+	// to: a reader pricing the remainder must leave it out.
+	Plan int64
 }
 
 // Plus is two roll-ups summed — an attempt's spend added to what the attempts
@@ -136,11 +139,16 @@ func (t Totals) Plus(o Totals) Totals {
 		Cost:     t.Cost + o.Cost,
 		Priced:   t.Priced || o.Priced,
 		Requests: t.Requests + o.Requests,
+		Plan:     t.Plan + o.Plan,
 	}
 }
 
 func (t *Totals) add(e Entry) {
-	*t = t.Plus(Totals{In: e.In, Out: e.Out, Cached: e.Cached, Cost: e.Cost, Priced: e.Priced, Requests: e.Requests})
+	var plan int64
+	if e.Provider == PlanProvider {
+		plan = e.In + e.Out
+	}
+	*t = t.Plus(Totals{In: e.In, Out: e.Out, Cached: e.Cached, Cost: e.Cost, Priced: e.Priced, Requests: e.Requests, Plan: plan})
 }
 
 // Ledger is the session's spend, accumulated in first-use order. Sub-agents

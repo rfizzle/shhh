@@ -178,6 +178,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		}.stream()
 
 		return subagent.Env{
+			Provider:     env.prov.Name(),
 			SystemPrompt: sysPrompt,
 			Stream:       stream,
 			Executor:     session.vault.WrapExecutor(subagent.RootedExecutor(croot, autoExec)),

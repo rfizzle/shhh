@@ -463,12 +463,12 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		},
 		switchProvider: func(name string) error {
 			sessionMu.Lock()
-			key := currentKey
+			key, cur := currentKey, currentProvider
 			sessionMu.Unlock()
 			// A key resolved for one provider is not a key for another, so
 			// the switch resolves the new provider's own credentials rather
 			// than carrying the old one's across.
-			if name != currentProvider {
+			if name != cur {
 				key = ""
 			}
 			return rebuild(name, key)

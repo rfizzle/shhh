@@ -301,6 +301,16 @@ func TestPlan_ASpentPlanTurnShowsTokensAndNoDollar(t *testing.T) {
 	}
 }
 
+func TestPlan_APlanTurnIsNeverPricedAfterTheSessionLeavesThePlan(t *testing.T) {
+	m := failureModel(t)
+	m.providerName = "openai"
+	m.modelName = "gpt-5.6-terra"
+	total := meter.Totals{In: 1200, Out: 300, Requests: 2, Plan: 1500}
+	if got := m.totalsLabel(total); strings.Contains(got, "$") || !strings.Contains(got, "tok") {
+		t.Fatalf("a session that ran on the plan then switched shows %q", got)
+	}
+}
+
 func TestPlan_APickerLabelsEachSlugWithItsDisplayName(t *testing.T) {
 	m := failureModel(t)
 	m.modelName = "gpt-5.6-terra"

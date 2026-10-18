@@ -14,6 +14,10 @@ import (
 // Env is everything a child needs to run, assembled by the CLI so this
 // package stays free of provider and config plumbing.
 type Env struct {
+	// Provider names the dialect the child's requests go to. It is what
+	// keeps a child on a ChatGPT plan counted and never priced in its own
+	// bill; empty prices the child by its model as before.
+	Provider string
 	// SystemPrompt is the child's role-specific system prompt.
 	SystemPrompt string
 	// Stream opens completion streams bound to the child's context and
