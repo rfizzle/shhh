@@ -353,6 +353,20 @@ session in a checkout is a different session: it can undo a turn, its prompt
 states the branch and what was already changed, and its containment grants
 differ.
 
+## A measured session keeps nothing
+
+A session leaves its conversation, its record and its evidence in the data
+directory, and an attempt that used the reader's would put every measured
+session in their chat history and in the cohorts `shhh observe` exists to keep
+honest. So each attempt gets a data directory of its own, beside its
+workspace, and both are removed when it ends. The configuration is not moved:
+it is part of what is measured.
+
+Two things follow. Measured sessions do not appear in the reader's history or
+metrics. And a session under measurement reads no durable memories, because
+those live in the data directory too — which is also what makes a case's
+result the same on two machines.
+
 ## It is not part of the gate
 
 Every case that names a model costs real requests, so a suite is something you

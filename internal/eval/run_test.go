@@ -148,6 +148,40 @@ func TestASessionThatFailsIsNotACaseThatFailed(t *testing.T) {
 	}
 }
 
+// The child session's slot, record and evidence live in a directory of the
+// attempt's own and are gone with it; the configuration home is not touched.
+func TestAnAttemptKeepsItsStoreInItsOwnDirectory(t *testing.T) {
+	requireGit(t)
+	t.Setenv("XDG_DATA_HOME", "/the/readers/data")
+	t.Setenv("XDG_CONFIG_HOME", "/the/readers/config")
+	seen := filepath.Join(t.TempDir(), "seen")
+	bin := fakeShhh(t, "printf '%s\\n%s\\n' \"$XDG_DATA_HOME\" \"$XDG_CONFIG_HOME\" > "+seen+"\n"+
+		"mkdir -p \"$XDG_DATA_HOME/shhh\" && echo row > \"$XDG_DATA_HOME/shhh/shhh.db\"\n"+emptyTranscript)
+	cases := suite(t, []string{"true"}, map[string]string{"a.txt": "x"})
+
+	if _, err := Run(context.Background(), cases, Options{Binary: bin}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(seen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("saw %q", raw)
+	}
+	data, config := lines[0], lines[1]
+	if data == "/the/readers/data" || !strings.HasPrefix(data, os.TempDir()) {
+		t.Errorf("the session's data home = %q, want a temporary directory of its own", data)
+	}
+	if config != "/the/readers/config" {
+		t.Errorf("the configuration home = %q, want the reader's left alone", config)
+	}
+	if _, err := os.Stat(data); !os.IsNotExist(err) {
+		t.Errorf("the session's data directory outlived the attempt: %v", err)
+	}
+}
+
 // The rounds are counted from the transcript rather than from anything the
 // session says about itself.
 func TestRoundsAndCallsAreReadFromTheTranscript(t *testing.T) {

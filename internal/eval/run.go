@@ -246,6 +246,19 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	}
 	defer cleanup()
 
+	// The session keeps its slot, its record and its evidence in a data
+	// directory of its own, so they go with the workspace and never reach the
+	// reader's store or `shhh observe`. Beside the workspace and not in it: a
+	// directory in the fixture would show as an unintended change.
+	// See docs/capabilities/evals.md#a-measured-session-keeps-nothing.
+	dataDir, err := os.MkdirTemp("", "shhh-eval-data-")
+	if err != nil {
+		a.Err = fmt.Errorf("cannot make a data directory: %w", err)
+		a.Elapsed = time.Since(start)
+		return a
+	}
+	defer func() { _ = os.RemoveAll(dataDir) }()
+
 	runCtx := ctx
 	if opts.Timeout > 0 {
 		var cancel context.CancelFunc
@@ -257,6 +270,9 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	args = append(args, c.Prompt)
 	cmd := exec.CommandContext(runCtx, bin, args...)
 	cmd.Dir = dir
+	// XDG_CONFIG_HOME is left alone: the configuration is part of what is
+	// measured, and the key resolves from flags, env or config, never the store.
+	cmd.Env = append(os.Environ(), "XDG_DATA_HOME="+dataDir)
 	var out, errOut strings.Builder
 	cmd.Stdout = &out
 	cmd.Stderr = &errOut
