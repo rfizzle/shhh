@@ -309,9 +309,11 @@ func decision(verdict string) provider.StreamEvent {
 }
 
 // silence is the failure this shape exists to catch: a reply with no verdict
-// in it, which is what an exhausted ceiling produces.
+// in it, which is what an exhausted ceiling produces. It stops at the ceiling,
+// because an empty reply that ends normally is the model declining to judge
+// and is scored as refused.
 func silence() provider.StreamEvent {
-	return provider.StreamEvent{Usage: &provider.Usage{PromptTokens: 400, CompletionTokens: 0}, Done: true}
+	return provider.StreamEvent{Usage: &provider.Usage{PromptTokens: 400, CompletionTokens: 0}, Stop: provider.StopLength, Done: true}
 }
 
 func decisionCase(rows ...Row) Case {

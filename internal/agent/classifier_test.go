@@ -781,6 +781,45 @@ func TestClassifier_ModelAtIsAskedPerJudgementAndKeptForIt(t *testing.T) {
 	}
 }
 
+// A reply with no text and no tool call is the model declining to judge: one
+// request, a refusal, fail closed, and the line still shows the stop. Text with
+// no decision is an unreadable answer and keeps its retry.
+func TestClassifier_EmptyReplyIsARefusal(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{Done: true}), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "small", Retries: 2}).Judge(context.Background(), testRequest())
+	if p.calls != 1 || v.Decision != Ask || !v.Failed || !v.Refused {
+		t.Fatalf("an empty reply is one request and a refusal, got %d calls, %+v", p.calls, v)
+	}
+	written := readLog(t, path)
+	for _, want := range []string{"failure=refused", "reply_stop=end", "reply_calls=0"} {
+		if !strings.Contains(written, want) {
+			t.Errorf("the line does not carry %q:\n%s", want, written)
+		}
+	}
+
+	prose := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{Token: "hmm", Done: true}), nil
+	}}
+	v = NewClassifier(prose, ClassifierConfig{Model: "small", Retries: 1}).Judge(context.Background(), testRequest())
+	if prose.calls != 2 || v.Refused || !v.Failed {
+		t.Fatalf("text with no decision retries and is not a refusal, got %d calls, %+v", prose.calls, v)
+	}
+
+	ceiling := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{Stop: provider.StopLength, Done: true}), nil
+	}}
+	v = NewClassifier(ceiling, ClassifierConfig{Model: "small", Retries: 1}).Judge(context.Background(), testRequest())
+	if ceiling.calls != 2 || v.Refused || !v.Failed {
+		t.Fatalf("an empty reply cut off at the ceiling retries and is not a refusal, got %d calls, %+v", ceiling.calls, v)
+	}
+}
+
 // An unreadable reply is logged by its shape, so the line says why the verdict
 // was invalid: the stop, the tools it named, and the head of its text with a
 // secret scrubbed out of it. Never the evidence the model was sent.

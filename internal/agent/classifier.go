@@ -405,7 +405,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 			v.Reason = errClassifierRefused.Error()
 			v.Refused = true
 			logs.Logger().Warn("permission classifier failed closed",
-				"model", model, "failure", classifierRefused, "attempts", attempt)
+				append([]any{"model", model, "failure", classifierRefused, "attempts", attempt}, got...)...)
 			return finish(v)
 		}
 		if err != nil {
@@ -599,6 +599,16 @@ func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evid
 
 	if reply.Stop == provider.StopRefusal {
 		return Ask, "", usage, nil, errClassifierRefused
+	}
+	// A reply with no text and no tool call is a refusal too. A model that
+	// read the evidence and said nothing has declined to answer, it has not
+	// answered badly, and asking again with the same evidence asks for a
+	// different answer to the same question. The shape travels with the
+	// error so the line still shows the stop was an empty end. A reply cut
+	// off at the output ceiling is not one: it ran out of room, and is read
+	// as an invalid decision like any other unfinished answer.
+	if reply.Stop == provider.StopEnd && len(reply.Calls) == 0 && strings.TrimSpace(reply.Text) == "" {
+		return Ask, "", usage, replyShape(reply), errClassifierRefused
 	}
 	for _, tc := range reply.Calls {
 		if tc.Name != DecisionToolName {
