@@ -351,6 +351,14 @@ would agree with every run and could never report anything. A suite with no
 baseline yet is not an error: the report says there was nothing to read the
 run against, and how to write one.
 
+A refresh needs every measured case measured. A run that skipped a case the
+file holds a measured row for (no model to ask, a toolchain the machine lacks)
+is refused before anything is written, with each case and its reason named and
+a non-zero exit, so a machine that could not ask a model cannot replace
+measurements with skips. A skipped case new to the suite is named and left out
+of the file rather than written as a skip, and a run that measured nothing
+writes nothing.
+
 A run narrowed to named cases is compared against those rows of the file and
 not the rest. That is not the skipped suite the section above refuses: the reader
 said which cases they wanted.

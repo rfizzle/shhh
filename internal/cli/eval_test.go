@@ -465,6 +465,49 @@ func skippableSuite(t *testing.T, names ...string) string {
 	return root
 }
 
+// seedBaseline writes the suite's baseline holding each named case at the
+// given verdict, and returns the file's path.
+func seedBaseline(t *testing.T, suite, verdict string, names ...string) string {
+	t.Helper()
+	b := eval.Baseline{Version: eval.BaselineVersion}
+	for _, n := range names {
+		b.Cases = append(b.Cases, eval.CaseBaseline{Name: n, Kind: eval.KindWorkspace, Verdict: verdict})
+	}
+	path := filepath.Join(suite, eval.BaselineFile)
+	if err := eval.WriteBaseline(path, b); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// A refresh from a run that skipped a case the file holds measured is
+// refused whole, and the file is byte for byte what it was.
+func TestEvalRefreshRefusesARunThatSkippedAMeasuredCase(t *testing.T) {
+	suite := skippableSuite(t, "alpha", "beta")
+	path := seedBaseline(t, suite, "passed", "alpha", "beta")
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other := filepath.Join(t.TempDir(), "other.json")
+	_, err = runEval(t, suite, "--refresh-baseline", "--baseline", other)
+	if err == nil {
+		t.Fatal("a refresh that measured nothing was allowed")
+	}
+	for _, want := range []string{"alpha", "beta", "a-toolchain-nobody-has"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal should name %q: %v", want, err)
+		}
+	}
+	after, readErr := os.ReadFile(path)
+	if readErr != nil || !bytes.Equal(before, after) {
+		t.Errorf("the baseline changed (%v)", readErr)
+	}
+	if _, statErr := os.Stat(other); statErr == nil {
+		t.Error("--baseline wrote a file for a refused refresh")
+	}
+}
+
 // runEval runs `shhh eval <args>` under the root command.
 func runEval(t *testing.T, args ...string) (string, error) {
 	t.Helper()
@@ -737,6 +780,12 @@ func TestEvalReadsTheSuitesOwnBaselineWithoutBeingAsked(t *testing.T) {
 		t.Errorf("a suite with no baseline should say so and say how to write one:\n%s", out)
 	}
 
+	// Every case here is skipped, so a refresh writes only over rows that
+	// were skips already.
+	if _, err := runEval(t, suite, "--refresh-baseline"); err == nil {
+		t.Fatal("a refresh that measured nothing wrote a file")
+	}
+	seedBaseline(t, suite, "skipped", "fix-failing-test")
 	if _, err := runEval(t, suite, "--refresh-baseline"); err != nil {
 		t.Fatal(err)
 	}
@@ -757,6 +806,7 @@ func TestEvalReadsTheSuitesOwnBaselineWithoutBeingAsked(t *testing.T) {
 // edited after it reads as a different test on the next run.
 func TestEvalReadsACaseEditedSinceTheRefreshAsADifferentTest(t *testing.T) {
 	suite := skippableSuite(t, "alpha")
+	seedBaseline(t, suite, "skipped", "alpha")
 	if _, err := runEval(t, suite, "--refresh-baseline"); err != nil {
 		t.Fatal(err)
 	}
@@ -820,6 +870,7 @@ func TestEvalRefusesARefreshFromPartOfTheSuite(t *testing.T) {
 // not the overlap a mismatched pair of runs is refused for.
 func TestEvalComparesANarrowedRunAgainstThoseRowsAlone(t *testing.T) {
 	suite := skippableSuite(t, "alpha", "beta")
+	seedBaseline(t, suite, "skipped", "alpha", "beta")
 	if _, err := runEval(t, suite, "--refresh-baseline"); err != nil {
 		t.Fatal(err)
 	}

@@ -265,6 +265,55 @@ func WriteBaseline(path string, b Baseline) error {
 	return nil
 }
 
+// RefreshBaseline is the file a refresh may write over the one standing, and
+// the cases it left out of it.
+//
+// A refresh replaces measured rows, so a run that could not measure one of
+// them (no model to ask, a toolchain the machine lacks) is refused whole,
+// naming each case and why: writing it would trade a figure for a skip and
+// leave a reviewer a diff of lost measurements. A case the standing file does
+// not hold that was skipped is not written as a skip either; it is left out
+// and returned by name, so the file only ever holds rows that were measured
+// or were already skips. standing is empty for a suite with no file yet.
+func (s Summary) RefreshBaseline(standing Baseline) (Baseline, []string, error) {
+	held := map[string]string{}
+	for _, c := range standing.Cases {
+		held[c.Name] = c.Verdict
+	}
+	next := s.Baseline()
+	kept := next.Cases[:0:0]
+	var refused, left []string
+	for i, res := range s.Results {
+		c := next.Cases[i]
+		if res.Verdict() != Skipped {
+			kept = append(kept, c)
+			continue
+		}
+		why := res.Case.Skip
+		if why == "" {
+			why = "skipped"
+		}
+		verdict, ok := held[c.Name]
+		switch {
+		case !ok:
+			left = append(left, fmt.Sprintf("%s (%s)", c.Name, why))
+		case verdict != Skipped.String():
+			refused = append(refused, fmt.Sprintf("%s: %s", c.Name, why))
+		default:
+			kept = append(kept, c)
+		}
+	}
+	if len(refused) > 0 {
+		return Baseline{}, left, fmt.Errorf("--refresh-baseline needs every measured case measured, and %d held a measured row and was skipped, so nothing was written:\n  %s",
+			len(refused), strings.Join(refused, "\n  "))
+	}
+	if len(kept) == 0 {
+		return Baseline{}, left, fmt.Errorf("--refresh-baseline has nothing measured to write, so nothing was written")
+	}
+	next.Cases = kept
+	return next, left, nil
+}
+
 // ReadBaseline loads one, refusing a file it cannot read as the numbers it
 // claims to be.
 func ReadBaseline(path string) (Baseline, error) {

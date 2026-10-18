@@ -229,13 +229,32 @@ func newEvalCmd() *cobra.Command {
 			if against != "" {
 				before, compareErr = eval.ReadBaseline(against)
 			}
+			// A refresh is checked before anything is written, --baseline
+			// included: a run that could not measure a case the file holds
+			// is refused whole.
+			var refreshed eval.Baseline
+			if refresh {
+				var standing eval.Baseline
+				if b, readErr := eval.ReadBaseline(committed); readErr == nil {
+					standing = b
+				}
+				var left []string
+				refreshed, left, err = sum.RefreshBaseline(standing)
+				for _, name := range left {
+					_ = report.Fprintln(cmd.ErrOrStderr(), report.Row{State: report.Skip,
+						Subject: "left out of the baseline, skipped and new to it: " + name})
+				}
+				if err != nil {
+					return err
+				}
+			}
 			if baselinePath != "" {
 				if err := eval.WriteBaseline(baselinePath, sum.Baseline()); err != nil {
 					return err
 				}
 			}
 			if refresh {
-				if err := eval.WriteBaseline(committed, sum.Baseline()); err != nil {
+				if err := eval.WriteBaseline(committed, refreshed); err != nil {
 					return err
 				}
 				fmt.Fprintf(cmd.ErrOrStderr(), "wrote %s — what moved in it is the diff a reviewer reads\n", committed)
