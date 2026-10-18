@@ -258,6 +258,10 @@ func (m Model) stopRun() (tea.Model, tea.Cmd, bool) {
 		return m, nil, true
 	case stateStreaming, stateCloseGate:
 		return m.stopped(m.cancelTurnNow())
+	case stateRetryWait:
+		// The countdown is a turn between two requests; the stop ends the
+		// wait and keeps everything the turn already did (resume.go).
+		return m.stopped(m.cancelRetryWait())
 	case stateConfirmRun, statePlanApprove, stateQuestion:
 		// A decision on its card is a stage of the turn, and stopping the
 		// turn is the one thing the chord does to it: the card's own no is

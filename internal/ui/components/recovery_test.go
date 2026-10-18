@@ -177,11 +177,11 @@ func TestRetryWait_StatesItsNumberAndItsBound(t *testing.T) {
 		Pct: 60, Text: "retry in 12s", Note: "attempt 2 of 3",
 		Keys: []KeyOffer{
 			{Key: "[m]", Label: "finish this turn on gpt-4o-mini"},
-			{Key: "[esc]", Label: "stop and keep the 3 edits"},
+			{Key: "[ctrl+c]", Label: "stop and keep the 3 edits"},
 		},
 	}
 	view := ansi.Strip(w.View(80))
-	for _, want := range []string{"▰", "▱", "retry in 12s", "attempt 2 of 3", "[m]", "[esc]"} {
+	for _, want := range []string{"▰", "▱", "retry in 12s", "attempt 2 of 3", "[m]", "[ctrl+c]"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the countdown should say %q, got:\n%s", want, view)
 		}
@@ -244,7 +244,7 @@ func TestRecoveryRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 	// way out of the wait — stands after a fallback model's long name.
 	wait := RetryWait{Pct: 60, Text: "retry in 12s", Note: "attempt 2 of 3", Keys: []KeyOffer{
 		{Key: "[m]", Label: "finish this turn on claude-haiku-4-5-20251001"},
-		{Key: "[esc]", Label: "stop and keep the 3 edits"},
+		{Key: "[ctrl+c]", Label: "stop and keep the 3 edits"},
 	}}
 	for _, width := range []int{60, 80, 110, 130} {
 		view := ansi.Strip(wait.View(width))

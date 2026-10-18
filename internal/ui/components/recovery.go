@@ -244,8 +244,8 @@ func (w RetryWait) View(width int) string {
 	}
 	lines := []string{detailLine(head, width)}
 	// The offers wrap rather than clip, as the row's own do (keyLines): a
-	// fallback model's name is long enough to push esc off a narrow
-	// terminal, and esc is the way out of the wait.
+	// fallback model's name is long enough to push ctrl+c off a narrow
+	// terminal, and ctrl+c is the way out of the wait.
 	for _, keys := range packOffers(w.Keys, max(width-detailIndent, 1)) {
 		lines = append(lines, detailLine(keys, width))
 	}

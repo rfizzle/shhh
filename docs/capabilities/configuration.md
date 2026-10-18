@@ -1015,7 +1015,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `editor.save_leave` | `ctrl+s` | write and leave | yes |
 | `editor.keep` | `esc` | back | yes |
 | `wait.fallback` | `m` | finish this turn on the fallback model | yes |
-| `wait.stop` | `esc` | back | yes |
+| `wait.stop` | `ctrl+c` | stop the turn | yes |
 | `wait.compact` | `enter` | compact now | yes |
 | `wait.new_session` | `n` | new session | yes |
 | `wait.keep_going` | `esc` | back | yes |

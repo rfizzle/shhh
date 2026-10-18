@@ -77,7 +77,7 @@ var acts = map[string]string{
 	"profile.move": "move↑↓", "profile.edit": "edit", "profile.clear": "delete",
 	"profile.back": "back", "profile.save": "write",
 	"editor.save": "write", "editor.save_leave": "write", "editor.back": "back", "editor.keep": "back",
-	"wait.stop": "back", "wait.keep_going": "back", "wait.keep_key": "back",
+	"wait.keep_going": "back", "wait.keep_key": "back",
 	"diff.scroll": "move", "diff.hunk": "match", "diff.back": "back",
 	"output.scroll": "move", "output.back": "back",
 	"preview.remove": "delete", "preview.back": "back",
@@ -95,8 +95,9 @@ var acts = map[string]string{
 // apart are the blocks the vocabulary does not speak for. The draft spends
 // chords only, by its own rule, and its history search is a mode of it; a
 // transcript row's offers are answered through the handover and keep their
-// letters.
-var apart = []string{"draft.", "search.older", "search.keep", "row."}
+// letters. The retry countdown's stop is the cancel chord the draft spends,
+// spoken on the one surface that has no esc of its own to leave.
+var apart = []string{"draft.", "search.older", "search.keep", "row.", "wait.stop"}
 
 // answers are a card's own y, n and e — the answer to the question the card
 // asks, not a key of the screen — and the inline confirm's.

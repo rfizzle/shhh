@@ -225,7 +225,7 @@
   WAIT
 
   · fallback     m · finish this turn on the fallback model  [shipped]
-  · stop         esc · back  [shipped]
+  · stop         ctrl+c · stop the turn  [shipped]
   · compact      enter · compact now  [shipped]
   · new_session  n · new session  [shipped]
   · keep_going   esc · back  [shipped]

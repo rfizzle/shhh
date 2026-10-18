@@ -69,7 +69,7 @@ func TestProgram_AStalledRequestIsWaitedOutAndAnswered(t *testing.T) {
 	// The wait is drawn for a second and the frames are read every ten
 	// milliseconds, so both halves of the row are read while it is up.
 	waitForText(t, tm, "attempt 1 of 3")
-	waitForText(t, tm, "[esc] stop the turn")
+	waitForText(t, tm, "[ctrl+c] stop the turn")
 
 	waitForText(t, tm, "and nowhere else")
 	frame := finalFrame(t, tm)

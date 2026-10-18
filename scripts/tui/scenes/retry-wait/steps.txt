@@ -6,7 +6,7 @@
 #
 # A stall on a narrow terminal: the scripted endpoint refuses two requests
 # with a 503, so the session draws the failure card stalled and the retry wait
-# under it — the draining meter, the attempt against the bound and the `[esc]`
+# under it — the draining meter, the attempt against the bound and the `[ctrl+c]`
 # offer, whole at 60 columns — waits the stall out twice, and the third
 # request is answered, and the turn ends on its total. The first wait is two seconds or so of wall clock, so
 # each snap waits on the attempt only that wait carries. `[m]` is not on the
@@ -29,8 +29,8 @@ setup printf '[behavior]\nmax_tool_rounds = 40\n' > config.toml
 setup printf 'package agent\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "why does the loop stop" Enter
-snap 02-wait "attempt 1 of 3" "⚠ model" "503 overloaded" "is overloaded" "retry in" "[esc] stop the turn"
-snap 03-again "attempt 2 of 3" "retry in" "[esc] stop the turn"
+snap 02-wait "attempt 1 of 3" "⚠ model" "503 overloaded" "is overloaded" "retry in" "[ctrl+c] stop the turn"
+snap 03-again "attempt 2 of 3" "retry in" "[ctrl+c] stop the turn"
 narrow 130 snap 04-answered "and nowhere" "Nothing in the turn was lost" "∗ worked"
 # Beside the rail the failure card's sentence wraps before "turn".
 wide 130 snap 04-answered "and nowhere" "Nothing in the" "turn was lost" "∗ worked"

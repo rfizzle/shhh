@@ -234,7 +234,7 @@ func TestRateLimit_WaitsOnACountdownWithItsBound(t *testing.T) {
 		t.Errorf("the provider's own wait should be believed, got %v", next.retry.wait)
 	}
 	block := stripANSI(next.retryWaitBlock(110))
-	for _, want := range []string{"▰", "retry in", "attempt 1 of 3", "[m]", "gpt-4.1", "[esc]"} {
+	for _, want := range []string{"▰", "retry in", "attempt 1 of 3", "[m]", "gpt-4.1", "[ctrl+c]"} {
 		if !strings.Contains(block, want) {
 			t.Errorf("the countdown should say %q, got:\n%s", want, block)
 		}
@@ -280,22 +280,32 @@ func TestRetryWait_TickResumesWhenTheCountdownRunsOut(t *testing.T) {
 	}
 }
 
-func TestRetryWait_EscStopsWithoutLosingTheTurn(t *testing.T) {
+func TestRetryWait_CtrlCStopsWithoutLosingTheTurn(t *testing.T) {
 	m := streamed(resumeModel(t), "")
 	updated, _ := m.Update(streamErrMsg{err: rateLimit(30 * time.Second)})
 	next := updated.(Model)
 	before := len(next.transcript)
 
-	stopped, _ := next.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	// Esc has nothing to leave here: the countdown keeps running.
+	kept, _ := next.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if kept.(Model).turnState() != stateRetryWait || kept.(Model).retry == nil {
+		t.Fatalf("esc must not stop the countdown, state = %v", kept.(Model).turnState())
+	}
+
+	// One ctrl+c stops it, arms no quit window, and keeps what the turn did.
+	stopped, _ := next.Update(ctrlC)
 	after := stopped.(Model)
 	if after.turnState() != stateInput || after.retry != nil {
-		t.Fatalf("esc should end the wait, state = %v", after.turnState())
+		t.Fatalf("ctrl+c should end the wait, state = %v", after.turnState())
 	}
 	if after.turnOutcome != components.TurnCancelled {
 		t.Errorf("outcome = %v, want cancelled — you stopped it", after.turnOutcome)
 	}
 	if len(after.transcript) < before {
 		t.Error("stopping keeps everything the turn already did")
+	}
+	if after.armed.open(armQuit) {
+		t.Error("a stop opens no quit window: the next ctrl+c is a new first press")
 	}
 }
 
@@ -419,8 +429,8 @@ func TestRetryWait_NoFallbackOfferedWhenThereIsNone(t *testing.T) {
 	if strings.Contains(block, "[m]") {
 		t.Errorf("a key the session cannot honour is not offered:\n%s", block)
 	}
-	if !strings.Contains(block, "[esc]") {
-		t.Errorf("esc is always offered — a wait you cannot stop is a hang:\n%s", block)
+	if !strings.Contains(block, "[ctrl+c] stop the turn") || strings.Contains(block, "[esc]") {
+		t.Errorf("ctrl+c is always offered, and esc has nothing to leave — a wait you cannot stop is a hang:\n%s", block)
 	}
 	// And the key does nothing when it is not on the row.
 	pressed, _ := next.Update(keyPress('m'))

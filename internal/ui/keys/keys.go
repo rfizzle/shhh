@@ -1365,7 +1365,7 @@ type WaitKeys struct {
 
 var Wait = WaitKeys{
 	Fallback: bind("m", "finish this turn on the fallback model", "m"),
-	Stop:     bind("esc", "back", "esc"),
+	Stop:     bind("ctrl+c", "stop the turn", "ctrl+c"),
 
 	Compact:    bind("enter", "compact now", "enter"),
 	NewSession: bind("n", "new session", "n"),

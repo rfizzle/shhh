@@ -564,8 +564,8 @@ func (m Model) resumeAfterWait() (tea.Model, tea.Cmd) {
 	return m, m.requestStream()
 }
 
-// cancelRetryWait stops the wait. Esc is honoured at any point in it, and
-// everything the turn already did — its edits, its rows, its steering — is
+// cancelRetryWait stops the wait. ctrl+c is honoured at any point in it, as
+// it is on every live run (stopRun), and everything the turn already did — its edits, its rows, its steering — is
 // exactly where it was (invariant 3).
 func (m Model) cancelRetryWait() (tea.Model, tea.Cmd) {
 	m.retry = nil
@@ -583,13 +583,13 @@ func (m Model) cancelRetryWait() (tea.Model, tea.Cmd) {
 	return m, m.autosaveCmd()
 }
 
-// updateRetryWait owns the keyboard while the countdown drains. Two keys, and
-// both of them end the wait: everything else would be a keystroke typed into
-// an input that is not listening.
+// updateRetryWait owns the keyboard while the countdown drains. Its own key
+// is the fallback; the stop is the cancel chord, answered before this
+// (stopRun), and esc has nothing here to leave, so it does nothing.
+// Everything else would be a keystroke typed into an input that is not
+// listening.
 func (m Model) updateRetryWait(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Select.Cancel):
-		return m.cancelRetryWait()
 	case keys.Is(pressed, keys.Wait.Fallback):
 		if m.retry != nil && m.retry.fallback != "" {
 			return m.finishOnFallback(m.retry.fallback)
@@ -710,7 +710,7 @@ func countdownText(d time.Duration) string {
 }
 
 // retryStopLabel says what stopping keeps. A turn that has already changed
-// files says how many, because that is the fact that makes esc safe to press.
+// files says how many, because that is the fact that makes ctrl+c safe to press.
 func (m Model) retryStopLabel() string {
 	if t, ok := m.changes.Turn(m.turnCount); ok && t.Files() > 0 {
 		return fmt.Sprintf("stop and keep the %s", pluralFiles(t.Files()))
