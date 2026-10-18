@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -44,7 +44,7 @@ func safetyModel(t *testing.T) Model {
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
-	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil, Wiring{
+	return New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, nil, Wiring{
 		Scope:            sc,
 		Mode:             agent.ModeManual,
 		CommandAllowlist: []string{"go test"},
@@ -103,7 +103,7 @@ func TestSafety_EverySectionIsItsOwnersReading(t *testing.T) {
 
 // An absent capability is stated as absent, never left off the page.
 func TestSafety_AnAbsentCapabilityIsStated(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, nil, Wiring{
 		Containment: Containment{
 			Status: "unconfined — no mechanism", Detail: "sandbox-exec not found",
 		},
@@ -129,7 +129,7 @@ func TestSafety_AnAbsentCapabilityIsStated(t *testing.T) {
 // A conversation says it has no mode and no fetch cards rather than showing
 // one it does not run under.
 func TestSafety_AConversationHasNoMode(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, nil, Wiring{
 		Conversation:    true,
 		GatedTools:      fetchPreviews(),
 		ToolDefinitions: []ToolTokens{{Name: "read_file"}, {Name: "web_fetch"}},

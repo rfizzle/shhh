@@ -8,10 +8,10 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -366,11 +366,11 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			}
 			m.appendEntry(e)
 		}
-		if msg.stop == provider.StopLength {
+		if msg.stop == llm.StopLength {
 			// The round asked for tools and ran out of budget while it was
 			// still writing them. The calls that were finished are whole and
 			// run as usual; the one the ceiling landed inside of never
-			// reaches here (internal/provider/partial.go), and this is the
+			// reaches here (github.com/rfizzle/llm, partial.go), and this is the
 			// line that says so rather than letting a round quietly lose one.
 			// It goes under the announcement, which is where it happened.
 			m.truncatedRound()
@@ -658,7 +658,7 @@ func (m Model) finishReply(msg doneMsg) (tea.Model, tea.Cmd) {
 	// one: no plan to approve, no queued follow-up sent against half an
 	// answer. What it gets instead is the offer to have it finished
 	// (resume.go).
-	if msg.stop == provider.StopLength {
+	if msg.stop == llm.StopLength {
 		if hadText {
 			return m.truncatedReply(text)
 		}

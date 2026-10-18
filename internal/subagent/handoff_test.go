@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/lsp"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -134,20 +134,20 @@ func (w *keptWriter) stored() []string {
 
 func (w *keptWriter) factory() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			w.mu.Lock()
 			w.round++
 			round := w.round
 			w.mu.Unlock()
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			switch {
 			case round == 1:
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 					{ID: "w1", Name: "write_file", Arguments: `{"path":"kept.go"}`},
 				}}
 			case w.answer:
-				ch <- provider.StreamEvent{Token: "wrote kept.go"}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: "wrote kept.go"}
+				ch <- llm.StreamEvent{Done: true}
 			default:
 				close(w.writing)
 				go func() {
@@ -574,7 +574,7 @@ func requiredMinimum(t *testing.T, err error) int64 {
 // has room for; the roster says it in full because it is where resume_handoff
 // is read back from, and the report says it once.
 func TestAFailedChildsDetailIsTheReasonAlone(t *testing.T) {
-	env := &scriptedEnv{steps: []streamStep{{fail: &provider.Failure{Class: provider.ClassAuth}}}}
+	env := &scriptedEnv{steps: []streamStep{{fail: &llm.Failure{Class: llm.ClassAuth}}}}
 	sup := New(context.Background(), Options{
 		Root: t.TempDir(), NewEnv: env.factory(),
 		Record: func(Spec, string) Recorder {

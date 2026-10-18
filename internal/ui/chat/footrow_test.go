@@ -7,8 +7,8 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // The foot row is three chords, idle and working, at every width the frame
@@ -120,7 +120,7 @@ func TestFrame_TheClipboardIsReadOnIdleAndOnFocusOnly(t *testing.T) {
 	reads := 0
 	read := func() (attachment.Clipboard, error) {
 		reads++
-		return attachment.Clipboard{Attachments: []provider.Attachment{{Name: "shot.png"}}}, nil
+		return attachment.Clipboard{Attachments: []llm.Attachment{{Name: "shot.png"}}}, nil
 	}
 	asked := func(cmd tea.Cmd) bool {
 		if cmd == nil {

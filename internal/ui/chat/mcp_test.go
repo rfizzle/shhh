@@ -11,9 +11,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/mcp"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -202,7 +202,7 @@ func TestJoin_TakesTheServerAtTheBoundaryNotMidRound(t *testing.T) {
 			}, true
 		},
 	}
-	m.agent.SetMessages([]provider.Message{{Role: provider.RoleSystem, Content: "you are shhh"}})
+	m.agent.SetMessages([]llm.Message{{Role: llm.RoleSystem, Content: "you are shhh"}})
 
 	// A turn in flight: the line steers, and nothing joins.
 	m.setTurnState(stateStreaming)
@@ -456,7 +456,7 @@ func TestApplyMCPPrompt_ReportsAFailureAndSendsNothing(t *testing.T) {
 func TestResourceToolAutoRunsAndDrawsAsARead(t *testing.T) {
 	m := promptModel(t)
 	m.policy.mode = agent.ModeManual
-	call := provider.ToolCall{Name: "mcp_resource", Arguments: `{"uri":"docs://guide"}`}
+	call := llm.ToolCall{Name: "mcp_resource", Arguments: `{"uri":"docs://guide"}`}
 	if m.requiresApproval(call) {
 		t.Fatal("a resource read asked for approval")
 	}

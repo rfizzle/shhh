@@ -20,7 +20,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -61,16 +61,16 @@ func answerQueue(t *testing.T, m Model) (Model, tea.Cmd) {
 }
 
 // execCall is one queued shell command.
-func execCall(id, command string) provider.ToolCall {
-	return provider.ToolCall{
+func execCall(id, command string) llm.ToolCall {
+	return llm.ToolCall{
 		ID: id, Name: "execute_command",
 		Arguments: fmt.Sprintf(`{"command":%q}`, command),
 	}
 }
 
 // writeCall is one queued file write.
-func writeCall(id, path, content string) provider.ToolCall {
-	return provider.ToolCall{
+func writeCall(id, path, content string) llm.ToolCall {
+	return llm.ToolCall{
 		ID: id, Name: "write_file",
 		Arguments: fmt.Sprintf(`{"path":%q,"content":%q}`, path, content),
 	}
@@ -80,7 +80,7 @@ func TestQueueStrip_ShowsPositionAndOrder(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo first"),
 		execCall("c2", "echo second"),
 		execCall("c3", "echo third"),
@@ -129,7 +129,7 @@ func TestQueueStrip_SingleDecisionHasNoStrip(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo only"),
 	}})
 	m = updated.(Model)
@@ -152,7 +152,7 @@ func TestBatch_MembershipSpansOnlyTheSameCategory(t *testing.T) {
 	m := execModel(t, &ran)
 	dir := t.TempDir()
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		writeCall("w1", filepath.Join(dir, "a.txt"), "a\n"),
 		execCall("c2", "echo two"),
@@ -185,7 +185,7 @@ func TestBatch_ExcludesFlaggedActions(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "git reset --hard"),
 		execCall("c3", "echo three"),
@@ -230,7 +230,7 @@ func TestBatch_ApprovesEveryMemberWithoutAskingAgain(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "echo two"),
 		execCall("c3", "echo three"),
@@ -268,7 +268,7 @@ func TestBatch_EditsBatchTogether(t *testing.T) {
 	dir := t.TempDir()
 	first, second := filepath.Join(dir, "a.txt"), filepath.Join(dir, "b.txt")
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		writeCall("w1", first, "one\n"),
 		writeCall("w2", second, "two\n"),
 		execCall("c1", "echo after"),
@@ -307,7 +307,7 @@ func TestBatch_DenyStillDeniesOnlyTheCurrentItem(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "echo two"),
 	}})
@@ -333,7 +333,7 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "git reset --hard"),
 	}})
@@ -362,7 +362,7 @@ func TestBatch_CancelledTurnDropsItsGrants(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "echo two"),
 		execCall("c3", "echo three"),
@@ -396,7 +396,7 @@ func TestQueueList_CountsTheDecisionsItCouldNotTake(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "echo two"),
 		execCall("c3", "git reset --hard"),
@@ -439,7 +439,7 @@ func TestQueueList_AllowsTheCheckedAndDeniesTheRest(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "echo two"),
 		execCall("c3", "echo three"),
@@ -464,7 +464,7 @@ func TestQueueList_AllowsTheCheckedAndDeniesTheRest(t *testing.T) {
 	if len(ran) != 2 || ran[0] != "echo one" || ran[1] != "echo three" {
 		t.Fatalf("the checked commands should have run and nothing else, got %v", ran)
 	}
-	var denied *provider.Message
+	var denied *llm.Message
 	for i, msg := range m.Messages() {
 		if msg.ToolCallID == "c2" {
 			denied = &m.Messages()[i]
@@ -501,7 +501,7 @@ func TestQueueList_ARuleStillRefusesARowItAllowed(t *testing.T) {
 	m := execModel(t, &ran)
 	m.policy.denylist = []string{"echo two"}
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "echo two"),
 	}})
@@ -532,7 +532,7 @@ func TestQueueList_EscAnswersNothing(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		execCall("c1", "echo one"),
 		execCall("c2", "echo two"),
 	}})
@@ -568,7 +568,7 @@ func TestQueueList_WindowsALongQueue(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	calls := make([]provider.ToolCall, 0, 20)
+	calls := make([]llm.ToolCall, 0, 20)
 	for i := 0; i < 20; i++ {
 		calls = append(calls, execCall(fmt.Sprintf("c%d", i+1), fmt.Sprintf("echo %d", i+1)))
 	}
@@ -600,7 +600,7 @@ func TestQueueList_RatesEveryRow(t *testing.T) {
 	m := execModel(t, &ran)
 	dir := t.TempDir()
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		writeCall("w1", filepath.Join(dir, "a.txt"), "one\n"),
 		writeCall("w2", filepath.Join(dir, "b.txt"), "two\n"),
 	}})
@@ -636,7 +636,7 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 	m := New(nil, mockStream, Wiring{Workspace: root})
 
 	stale := m.skippedCallEntry(
-		provider.ToolCall{Name: "write_file", Arguments: `{"path":"internal/agent/loop.go"}`},
+		llm.ToolCall{Name: "write_file", Arguments: `{"path":"internal/agent/loop.go"}`},
 		fmt.Errorf("invalid arguments: %w",
 			tools.StaleError{Path: filepath.Join(root, "internal", "agent", "loop.go")}))
 	if stale.text != "internal/agent/loop.go" || stale.skipped != tools.StaleReason {
@@ -665,7 +665,7 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 	// in the verb column and is never the subject.
 	given := fmt.Errorf("invalid arguments: %w", errors.New("content is required"))
 	bad := m.skippedCallEntry(
-		provider.ToolCall{Name: "write_file", Arguments: `{"path":"internal/agent/round.go"}`}, given)
+		llm.ToolCall{Name: "write_file", Arguments: `{"path":"internal/agent/round.go"}`}, given)
 	if bad.text != "internal/agent/round.go" || bad.skipped != skippedArgsReason {
 		t.Errorf("malformed row:\n got subject %q reason %q\nwant %q, %q",
 			bad.text, bad.skipped, "internal/agent/round.go", skippedArgsReason)
@@ -692,7 +692,7 @@ func TestSkippedCallEntrySaysWhenNothingWasNamed(t *testing.T) {
 		{"arguments that named no path", `{"old_text":"x"}`},
 	} {
 		e := m.skippedCallEntry(
-			provider.ToolCall{Name: "write_file", Arguments: tc.args},
+			llm.ToolCall{Name: "write_file", Arguments: tc.args},
 			errors.New("invalid arguments: path is required"))
 		if e.text != noSubject || e.skipped != skippedArgsReason {
 			t.Errorf("%s:\n got subject %q reason %q\nwant %q, %q",
@@ -720,7 +720,7 @@ func TestSkippedCallEntrySaysWhenNothingWasNamed(t *testing.T) {
 func TestSkippedCallEntryKeepsAPathOutsideTheWorkspace(t *testing.T) {
 	m := New(nil, mockStream, Wiring{Workspace: filepath.Join(t.TempDir(), "checkout")})
 	outside := filepath.Join(t.TempDir(), "elsewhere", "notes.md")
-	e := m.skippedCallEntry(provider.ToolCall{Name: "write_file"}, tools.StaleError{Path: outside})
+	e := m.skippedCallEntry(llm.ToolCall{Name: "write_file"}, tools.StaleError{Path: outside})
 	if !strings.Contains(e.text, outside) {
 		t.Errorf("row should keep the absolute path, got %q", e.text)
 	}
@@ -744,8 +744,8 @@ func writeNeedsContent(raw json.RawMessage) (GatedPreview, error) {
 }
 
 // readCall is one read the session runs without asking.
-func readCall(id, path string) provider.ToolCall {
-	return provider.ToolCall{
+func readCall(id, path string) llm.ToolCall {
+	return llm.ToolCall{
 		ID: id, Name: "read_file", Arguments: fmt.Sprintf(`{"path":%q}`, path),
 	}
 }
@@ -761,7 +761,7 @@ func batchModel(t *testing.T) Model {
 
 // runRound puts a round of calls to the model and lets the calls that need no
 // decision finish, which is the state a queued decision is answered from.
-func runRound(m Model, calls []provider.ToolCall) Model {
+func runRound(m Model, calls []llm.ToolCall) Model {
 	updated, cmd := m.Update(toolCallsMsg{calls: calls})
 	m = updated.(Model)
 	for _, c := range unwrapBatch(cmd) {
@@ -803,7 +803,7 @@ func batchTargets(m Model) []string {
 // skipped row a call the preview could not read gets without ever reaching a
 // card — and where they go is the one thing all three share.
 func TestBatchOrder_ADecidedCallKeepsItsPlaceInTheRound(t *testing.T) {
-	round := []provider.ToolCall{
+	round := []llm.ToolCall{
 		readCall("call_1", "first.go"),
 		writeCall("call_2", "second.go", "the write\n"),
 		readCall("call_3", "third.go"),
@@ -840,7 +840,7 @@ func TestBatchOrder_ADecidedCallKeepsItsPlaceInTheRound(t *testing.T) {
 	})
 
 	t.Run("skipped for invalid arguments", func(t *testing.T) {
-		m := runRound(batchModel(t), []provider.ToolCall{round[0], malformed, round[2]})
+		m := runRound(batchModel(t), []llm.ToolCall{round[0], malformed, round[2]})
 		if m.state == stateConfirmRun {
 			t.Fatal("a call the preview cannot read never reaches a card")
 		}
@@ -856,13 +856,13 @@ func TestBatchOrder_ADecidedCallKeepsItsPlaceInTheRound(t *testing.T) {
 // already drawn is never drawn somewhere else and the round before this one
 // is never reached — not even where nothing was said between them.
 func TestBatchOrder_ALateRowStaysInsideItsOwnRound(t *testing.T) {
-	m := runRound(batchModel(t), []provider.ToolCall{
+	m := runRound(batchModel(t), []llm.ToolCall{
 		readCall("a1", "one.go"), readCall("a2", "two.go"),
 	})
 	// The second round's first call is the one that waits, and the read after
 	// it has already landed. Neither round announced itself, so there is no
 	// prose between them for the walk to stop at.
-	m = runRound(m, []provider.ToolCall{
+	m = runRound(m, []llm.ToolCall{
 		{ID: "b1", Name: "write_file", Arguments: `{"path":"three.go"}`},
 		readCall("b2", "four.go"),
 	})

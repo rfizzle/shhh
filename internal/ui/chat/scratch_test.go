@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -73,7 +73,7 @@ func TestScratchDelete_TheClassifiersYesStandsAndTheRowSaysWhy(t *testing.T) {
 	command := "rm -rf " + filepath.Join(ws, ".tmp", "test-build")
 	args, _ := json.Marshal(map[string]string{"command": command})
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: tools.ExecCommandName, Arguments: string(args)},
 	}})
 	m = updated.(Model)
@@ -114,7 +114,7 @@ func TestScratchDelete_AnythingShortOfItKeepsTheCard(t *testing.T) {
 			m, ws := scratchWorkspace(t, classifierModel(t, &ran, p))
 			command := strings.ReplaceAll(shape, "{ws}", ws)
 			args, _ := json.Marshal(map[string]string{"command": command})
-			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+			updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 				{ID: "call_x", Name: tools.ExecCommandName, Arguments: string(args)},
 			}})
 			m = updated.(Model)

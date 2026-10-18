@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/config"
@@ -18,7 +19,6 @@ import (
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/receipt"
@@ -80,15 +80,15 @@ type writtenByCalls struct {
 	list []string
 }
 
-func (w *writtenByCalls) wrap(resolve func(provider.ToolCall) string) func(provider.ToolCall) string {
-	return func(tc provider.ToolCall) string {
+func (w *writtenByCalls) wrap(resolve func(llm.ToolCall) string) func(llm.ToolCall) string {
+	return func(tc llm.ToolCall) string {
 		result := resolve(tc)
 		w.note(tc, result)
 		return result
 	}
 }
 
-func (w *writtenByCalls) note(tc provider.ToolCall, result string) {
+func (w *writtenByCalls) note(tc llm.ToolCall, result string) {
 	paths := tools.WrittenPaths(tc.Name, tc.Arguments)
 	if len(paths) == 0 || strings.HasPrefix(result, "error:") {
 		return
@@ -214,7 +214,7 @@ type headlessApproval struct {
 // un is what this run has beyond its flags: the supervisor a spawn is handed
 // to, and the judge a call the flags did not answer is put to (approvals.go).
 // A zero value is the surface exactly as it was — flags, or a refusal.
-func headlessApprover(ctx context.Context, r headlessApproval) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, r headlessApproval) func(llm.ToolCall) string {
 	holds := agent.Answers{Has: r.answers, Redirects: r.redirects}
 	if r.procSup != nil {
 		holds.Command = process.CommandOf
@@ -226,7 +226,7 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 		noun:     "process start",
 		denied:   "error: process start denied (",
 		parseErr: func(err error) string { return "error: " + err.Error() },
-		exec: func(tc provider.ToolCall, _ string) string {
+		exec: func(tc llm.ToolCall, _ string) string {
 			exec := func(_ context.Context, _ string, args json.RawMessage) (string, error) {
 				return r.procSup.Execute(args)
 			}
@@ -237,7 +237,7 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 		noun:     "command",
 		denied:   "error: command denied (",
 		parseErr: func(err error) string { return "error: " + err.Error() },
-		exec: func(_ provider.ToolCall, command string) string {
+		exec: func(_ llm.ToolCall, command string) string {
 			// The typed result, not an output/status pair: a command that
 			// never started keeps its category and one whose ending nobody
 			// read keeps that, on the status line the transcript, the stream
@@ -252,7 +252,7 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 			return tools.FormatExecResultKeeping(result, r.red.Keep)
 		},
 	}
-	return func(tc provider.ToolCall) string {
+	return func(tc llm.ToolCall) string {
 		call, callErr := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), holds)
 		switch {
 		case !r.answers(tc.Name):
@@ -303,13 +303,13 @@ func (r headlessApproval) noteTook(decision, reason string, took time.Duration) 
 // wherever the scheduler sends it. One place for both, because a refusal
 // that reached one of them and not the other is a run whose record and
 // whose log disagree about what happened to it.
-func (r headlessApproval) refuse(tc provider.ToolCall, command, rule string) {
+func (r headlessApproval) refuse(tc llm.ToolCall, command, rule string) {
 	r.refuseTook(tc, command, rule, 0)
 }
 
 // refuseTook is refuse for a refusal the classifier reached, with how long it
 // took.
-func (r headlessApproval) refuseTook(tc provider.ToolCall, command, rule string, took time.Duration) {
+func (r headlessApproval) refuseTook(tc llm.ToolCall, command, rule string, took time.Duration) {
 	r.noteTook(observe.DecisionDeny, rule, took)
 	at := r.un.pos()
 	agent.LogRefusal(tc.Name, command, rule, at.Turn, at.Round)
@@ -339,7 +339,7 @@ func (r headlessApproval) refuseTook(tc provider.ToolCall, command, rule string,
 //
 // took is how long the classifier took where it was asked, and zero where a
 // flag answered, for the row the caller notes the allow under.
-func (r headlessApproval) answer(tc provider.ToolCall, action agent.Action, byFlag bool, flagReason, what, without string) (string, time.Duration, bool) {
+func (r headlessApproval) answer(tc llm.ToolCall, action agent.Action, byFlag bool, flagReason, what, without string) (string, time.Duration, bool) {
 	if byFlag {
 		return flagReason, 0, true
 	}
@@ -385,7 +385,7 @@ func (r headlessApproval) answers(name string) bool {
 // for the calls it goes on to make, so this is the decision — and the only
 // one.
 // See docs/capabilities/subagents.md#spawning-is-a-decision.
-func (r headlessApproval) approveSpawn(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveSpawn(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
 	// A model the session cannot run is refused ahead of the verdict, as
 	// the session refuses it ahead of its card: no classifier round is spent
 	// on a spawn that cannot start.
@@ -406,7 +406,7 @@ func (r headlessApproval) approveSpawn(ctx context.Context, tc provider.ToolCall
 
 // approveServerCall answers a server call, an external action like a fetch:
 // --yes opts in, the default denies.
-func (r headlessApproval) approveServerCall(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveServerCall(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
 	reason, took, ok := r.answer(tc, call.Action,
 		r.opts.yes, observe.ReasonHeadlessYes, tc.Name, "external actions by default (run with --yes)")
 	if !ok {
@@ -419,7 +419,7 @@ func (r headlessApproval) approveServerCall(ctx context.Context, tc provider.Too
 // approveFetch answers web_fetch, an external action: --yes opts in to any
 // host the deny list does not name, the default denies like every other
 // gated call.
-func (r headlessApproval) approveFetch(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveFetch(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
 	// The host is on the action because it is the unit a fetch is judged
 	// on: the classifier is being asked whether this page is an outbound
 	// channel worth stopping for, and where the request goes is most of that
@@ -485,7 +485,7 @@ type commandAdmission struct {
 	noun     string
 	denied   string
 	parseErr func(error) string
-	exec     func(tc provider.ToolCall, command string) string
+	exec     func(tc llm.ToolCall, command string) string
 }
 
 // admitCommand is the one ladder a command climbs before it runs unattended,
@@ -493,7 +493,7 @@ type commandAdmission struct {
 // requirement, the arguments, the deny list, the safety table, the flags and
 // the classifier, then the working scope. The order is the policy, so it is
 // written once.
-func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classified, callErr error, how commandAdmission) string {
+func (r headlessApproval) admitCommand(tc llm.ToolCall, call agent.Classified, callErr error, how commandAdmission) string {
 	// Refused before the approval it would otherwise be given: a run that
 	// requires containment has nothing to approve where none is in force,
 	// and the refusal is the result the model reads.
@@ -547,7 +547,7 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 // answered where a file modification is answered — after the deny list,
 // which reads the command line the call stands for, because a person who
 // refused `git commit` refused the act and not the spelling.
-func (r headlessApproval) approveGitWrite(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveGitWrite(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
 	line := call.Action.Command
 	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
 		r.refuse(tc, line, refusal.Code)
@@ -588,7 +588,7 @@ func (r headlessApproval) approveGitWrite(ctx context.Context, tc provider.ToolC
 }
 
 // approveWrite answers a file modification.
-func (r headlessApproval) approveWrite(ctx context.Context, tc provider.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveWrite(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
 	// Before --yes and before the judge, as the screen reads it before its
 	// card: a path git runs is no grant's to write.
 	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
@@ -689,14 +689,14 @@ func headlessAllowlist(cfg config.Config, opts printOpts) []string {
 // half the model cannot work out for itself: told only that `write_file` is
 // unknown, a conversation's model reaches for `edit_file` next.
 // See docs/capabilities/chat.md#chat-changes-nothing.
-func onlyRegistered(defs []provider.Tool, next func(provider.ToolCall) string) func(provider.ToolCall) string {
+func onlyRegistered(defs []llm.Tool, next func(llm.ToolCall) string) func(llm.ToolCall) string {
 	offered := make(map[string]bool, len(defs))
 	names := make([]string, 0, len(defs))
 	for _, d := range defs {
 		offered[d.Name] = true
 		names = append(names, d.Name)
 	}
-	return func(tc provider.ToolCall) string {
+	return func(tc llm.ToolCall) string {
 		if !offered[tc.Name] {
 			return "error: " + tools.UnknownTool(tc.Name, names).Error()
 		}

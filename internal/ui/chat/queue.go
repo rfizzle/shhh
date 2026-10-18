@@ -33,11 +33,11 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -146,7 +146,7 @@ type callBatch struct {
 // openCallBatch records the order a round asked for its calls in, and where
 // its rows begin. It is called once a round, after the announcement that
 // titles it, because that row belongs to the round and not to any call in it.
-func (m *Model) openCallBatch(calls []provider.ToolCall) {
+func (m *Model) openCallBatch(calls []llm.ToolCall) {
 	seq := make(map[string]int, len(calls))
 	for i, tc := range calls {
 		seq[tc.ID] = i + 1
@@ -189,7 +189,7 @@ func (m Model) placeCall(seq int) int {
 // previewQueued describes a queued call for the strip. A call whose arguments
 // will not parse is listed as what it is rather than omitted: it is still a
 // decision the queue holds, and it will be reported when its turn comes.
-func (m Model) previewQueued(tc provider.ToolCall) *approvalRequest {
+func (m Model) previewQueued(tc llm.ToolCall) *approvalRequest {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
 		return &approvalRequest{
@@ -236,7 +236,7 @@ const noSubject = "(no path)"
 // so cost the reader the one fact only they have: which editor, sibling
 // session or background build touched the file. So that refusal names the
 // file as its subject and what happened to it as its reason.
-func (m Model) skippedCallEntry(call provider.ToolCall, err error) entry {
+func (m Model) skippedCallEntry(call llm.ToolCall, err error) entry {
 	// The subject goes in text, which is where a command row's subject
 	// already lives: the row cannot take its target off the arguments the way
 	// every accepted call's row does, because those arguments are the thing
@@ -371,7 +371,7 @@ func (m Model) resolveSpawns(cur *approvalRequest, batch []string) []components.
 		marked[id] = true
 	}
 	rows := []components.SpawnRow{*cur.spawn}
-	calls := []provider.ToolCall{cur.call}
+	calls := []llm.ToolCall{cur.call}
 	for _, tc := range m.agent.PendingApprovals() {
 		if !marked[tc.ID] {
 			continue
@@ -398,7 +398,7 @@ const overlapAllowedScope = " · overlap allowed"
 // that name, and a sibling the call left unnamed is not named for it: the
 // supervisor has not chosen its name yet.
 // See docs/capabilities/subagents.md#spawning-is-a-decision.
-func nameSharedSiblings(rows []components.SpawnRow, calls []provider.ToolCall) {
+func nameSharedSiblings(rows []components.SpawnRow, calls []llm.ToolCall) {
 	type claim struct {
 		name  string
 		paths []string

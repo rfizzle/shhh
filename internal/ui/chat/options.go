@@ -19,12 +19,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/nudge"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -33,7 +33,7 @@ import (
 // New builds the screen from the conversation, the stream that answers it,
 // and everything else it is given. The work the wiring needs done happens
 // here in one fixed order, each step after the ones whose results it reads.
-func New(initialMessages []provider.Message, stream StreamFunc, w Wiring) Model {
+func New(initialMessages []llm.Message, stream StreamFunc, w Wiring) Model {
 	ta := components.NewTextArea()
 	// No placeholder sentence and no per-line prompt: the command-center
 	// frame's gutter glyph and bottom-rail hints carry that.
@@ -386,7 +386,7 @@ func (m Model) WithUpdateNotice(notice string) Model {
 // The conversation is told what the checkout looks like now on its way back,
 // which is the one thing a restored transcript cannot say for itself
 // (reopen.go).
-func (m Model) WithResumedMessages(name string, msgs []provider.Message) Model {
+func (m Model) WithResumedMessages(name string, msgs []llm.Message) Model {
 	m.resumeConversation(name, msgs)
 	return m
 }

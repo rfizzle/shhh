@@ -13,8 +13,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/clipboard"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -41,10 +41,10 @@ const oneBlock = "Build it first:\n```sh\nmake build\n```"
 // that records what reached it.
 func replyModel(t *testing.T, reply string, caught *[]string) Model {
 	t.Helper()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "how?"},
-		{Role: provider.RoleAssistant, Content: reply},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "how?"},
+		{Role: llm.RoleAssistant, Content: reply},
 	}
 	updated, _ := New(msgs, mockStream, Wiring{}).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m := updated.(Model)
@@ -352,8 +352,8 @@ func TestGolden_CopyBlock(t *testing.T) {
 		base := func() Model {
 			m := frameModel(t, width, 40)
 			m.agent.SetMessages(append(m.agent.Messages(),
-				provider.Message{Role: provider.RoleUser, Content: "show me the handler"},
-				provider.Message{Role: provider.RoleAssistant, Content: threeBlocks}))
+				llm.Message{Role: llm.RoleUser, Content: "show me the handler"},
+				llm.Message{Role: llm.RoleAssistant, Content: threeBlocks}))
 			m.copyFn = func(string) clipboard.Result { return clipboard.Result{OK: true} }
 			m.transcript = []entry{
 				{kind: entryUser, text: "show me the handler"},
@@ -397,7 +397,7 @@ func TestProgram_ABlockIsCopiedFromTheCardAndFromReadingMode(t *testing.T) {
 		caught []string
 	)
 	p := &programProvider{turns: []programTurn{{text: oneBlock}, {text: threeBlocks}}}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
 	m.copyFn = func(text string) clipboard.Result {
 		mu.Lock()
 		defer mu.Unlock()

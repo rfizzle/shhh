@@ -10,10 +10,10 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -186,9 +186,9 @@ func TestCheckConfigValue_EveryWordKeyIsJudged(t *testing.T) {
 func TestSettings_StatedDefaultsAreTheConstants(t *testing.T) {
 	for key, want := range map[string]string{
 		"provider.default":                     resolve.DefaultProvider,
-		"provider.reasoning":                   provider.DefaultEffort.String(),
-		"provider.cache_ttl":                   string(provider.DefaultCacheTTL),
-		"provider.stream_idle_seconds":         strconv.Itoa(int(provider.DefaultStreamIdle/time.Second)) + " seconds",
+		"provider.reasoning":                   llm.DefaultEffort.String(),
+		"provider.cache_ttl":                   string(llm.DefaultCacheTTL),
+		"provider.stream_idle_seconds":         strconv.Itoa(int(llm.DefaultStreamIdle/time.Second)) + " seconds",
 		"behavior.max_tool_rounds":             strconv.Itoa(agent.DefaultMaxToolRounds),
 		"behavior.context_max_tokens":          strconv.Itoa(config.DefaultContextMaxTokens) + " tokens",
 		"behavior.check_in_interval_rounds":    strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",

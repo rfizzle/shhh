@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -28,7 +28,7 @@ func editFixture(t *testing.T) string {
 func editSessionAt(t *testing.T, width int) (Model, string) {
 	t.Helper()
 	path := editFixture(t)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Workspace: filepath.Dir(path),
 		Changeset: changeset.New(changeset.DefaultMaxBytes),
 	})

@@ -4,10 +4,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -78,8 +78,8 @@ func worktreeNote(worktree bool) string {
 // delegation tools and everything the session shares with every child go on
 // afterwards, and withSessionTools composes the prompt over the finished set.
 func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info, extra string,
-	webTools *web.Toolset, gate *quality.Runner, gated map[string]bool) (func(names []string) string, []provider.Tool, agent.ToolExecutor) {
-	var defs []provider.Tool
+	webTools *web.Toolset, gate *quality.Runner, gated map[string]bool) (func(names []string) string, []llm.Tool, agent.ToolExecutor) {
+	var defs []llm.Tool
 	for _, t := range tools.Definitions() {
 		if def.Allows(t.Name) {
 			defs = append(defs, t)
@@ -99,7 +99,7 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 	}
 	base := agent.ToolExecutor(tools.Execute)
 	if def.Has(config.PermissionWeb) && webTools != nil {
-		var admitted []provider.Tool
+		var admitted []llm.Tool
 		for _, t := range webTools.Definitions() {
 			if def.Allows(t.Name) {
 				admitted = append(admitted, t)
@@ -139,7 +139,7 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 // execCommandDefinition is the command tool as a profile's child is told it:
 // the description names edit_file as the way to change a file, which is
 // true only where the profile was granted it.
-func execCommandDefinition(def config.AgentDefinition) provider.Tool {
+func execCommandDefinition(def config.AgentDefinition) llm.Tool {
 	if def.Has(config.PermissionWrite) && def.Allows(tools.EditFileName) {
 		return tools.ExecCommandTool()
 	}
@@ -156,9 +156,9 @@ func execCommandDefinition(def config.AgentDefinition) provider.Tool {
 // spend a round learning the refusal its prompt never warned of.
 // See docs/capabilities/subagents.md#two-kinds-and-the-difference-is-what-they-may-touch.
 func builtinEnv(role subagent.Role, spec subagent.Spec, info shell.Info, extra string,
-	webTools *web.Toolset, gated map[string]bool) (string, []provider.Tool, agent.ToolExecutor) {
+	webTools *web.Toolset, gated map[string]bool) (string, []llm.Tool, agent.ToolExecutor) {
 	var sysPrompt string
-	var defs []provider.Tool
+	var defs []llm.Tool
 	base := agent.ToolExecutor(tools.Execute)
 	switch role {
 	case subagent.RoleReviewer:

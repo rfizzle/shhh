@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
-func image(name string) provider.Attachment {
-	return provider.Attachment{Kind: provider.AttachmentImage, Name: name, MediaType: "image/png", Data: []byte{1}}
+func image(name string) llm.Attachment {
+	return llm.Attachment{Kind: llm.AttachmentImage, Name: name, MediaType: "image/png", Data: []byte{1}}
 }
 
 func TestNoteAndTakeResult(t *testing.T) {

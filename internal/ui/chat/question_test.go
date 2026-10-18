@@ -13,10 +13,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -30,9 +30,9 @@ const chooseArgs = `{"question":"Which store should the cache use?","shape":"cho
 // question is a decision and never runs.
 func questionModel(t *testing.T, mode agent.Mode) Model {
 	t.Helper()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "do the thing"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "do the thing"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Executor: func(_ context.Context, name string, _ json.RawMessage) (string, error) {
@@ -49,7 +49,7 @@ func questionModel(t *testing.T, mode agent.Mode) Model {
 }
 
 func askCall(args string) toolCallsMsg {
-	return toolCallsMsg{calls: []provider.ToolCall{{ID: "call_q", Name: ask.ToolName, Arguments: args}}}
+	return toolCallsMsg{calls: []llm.ToolCall{{ID: "call_q", Name: ask.ToolName, Arguments: args}}}
 }
 
 // openedQuestion is the card up and holding the keyboard, which is what a
@@ -565,7 +565,7 @@ func TestQuestion_TheGutterSaysTheDraftIsAnswering(t *testing.T) {
 // included: a strip describing a decision that is not there would be the one
 // thing the reader could not act on.
 func TestQuestion_EscLeavesNothingOfTheCardOnTheScreen(t *testing.T) {
-	updated, _ := questionModel(t, agent.ModeManual).Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := questionModel(t, agent.ModeManual).Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_q", Name: ask.ToolName, Arguments: chooseArgs},
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"cache.go","content":"package cache"}`},
 	}})
@@ -769,7 +769,7 @@ func TestQuestion_ACancelledTurnTakesTheQuestionWithIt(t *testing.T) {
 // A queued question is recognisable in the strip. Two of them both labelled
 // with the tool's name would be two rows nobody can tell apart.
 func TestQuestion_TheQueueStripNamesTheQuestion(t *testing.T) {
-	req, err := questionModel(t, agent.ModeManual).buildQuestionApproval(provider.ToolCall{
+	req, err := questionModel(t, agent.ModeManual).buildQuestionApproval(llm.ToolCall{
 		ID: "call_q", Name: ask.ToolName, Arguments: chooseArgs,
 	})
 	if err != nil {

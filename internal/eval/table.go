@@ -26,8 +26,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // Kind is what a case measures. The empty string in a case file means
@@ -114,7 +114,7 @@ type Row struct {
 	Tool         string
 	Arguments    string
 	CWD          string
-	Conversation []provider.Message
+	Conversation []llm.Message
 
 	// The rest is a summary row's digest, in the fields the reading is
 	// assembled from. A scripted row (mechanism.go) reuses them where it
@@ -238,7 +238,7 @@ type Answer struct {
 	// It is a fourth outcome: not a label, and not an outage either.
 	Refused bool
 	// Usage is what this row cost, summed into the attempt.
-	Usage   provider.Usage
+	Usage   llm.Usage
 	Elapsed time.Duration
 	// Probability is the chance the decisions backend put on the call being
 	// allowed, as a fraction, and Probed whether it put one. A row on the
@@ -393,7 +393,7 @@ func (s Score) Misses() []Answer {
 // score is only worth writing down if two people who run the suite can
 // compare theirs, and a run that quietly took one reader's overridden prompt
 // or ceiling would produce a number nobody else could reproduce.
-func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row, run commandRunner, backend string, threshold int) Answer {
+func askRow(ctx context.Context, p llm.Provider, model string, kind Kind, row Row, run commandRunner, backend string, threshold int) Answer {
 	switch {
 	case kind == KindClassifier:
 		return askClassifier(ctx, p, model, row, backend, threshold)
@@ -415,7 +415,7 @@ func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, r
 	return Answer{Row: row, Err: "not a table case"}
 }
 
-func askClassifier(ctx context.Context, p provider.Provider, model string, row Row, backend string, threshold int) Answer {
+func askClassifier(ctx context.Context, p llm.Provider, model string, row Row, backend string, threshold int) Answer {
 	cwd := row.CWD
 	if cwd == "" {
 		cwd = defaultRowCWD
@@ -442,7 +442,7 @@ func askClassifier(ctx context.Context, p provider.Provider, model string, row R
 	return a
 }
 
-func askSummary(ctx context.Context, p provider.Provider, model string, row Row) Answer {
+func askSummary(ctx context.Context, p llm.Provider, model string, row Row) Answer {
 	s := sidejobs.NewSummarizer(p, sidejobs.SummaryConfig{Model: model})
 	v := s.Summarize(ctx, sidejobs.SummaryRequest{
 		Target:    row.Instruction,

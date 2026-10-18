@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -16,7 +17,6 @@ import (
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -615,7 +615,7 @@ func (c *child) noteApproved(id string) {
 // noteWrite records a file this child's own call wrote. A call that came back
 // an error wrote nothing, and a file written twice is one file — the same
 // reading of a write every surface without a changeset takes.
-func (c *child) noteWrite(call provider.ToolCall, result string) {
+func (c *child) noteWrite(call llm.ToolCall, result string) {
 	paths := tools.WrittenPaths(call.Name, call.Arguments)
 	if len(paths) == 0 || digest.Outcome(result) == digest.OutcomeError {
 		return

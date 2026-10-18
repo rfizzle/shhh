@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/clipboard"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func TestExtractCodeBlocks(t *testing.T) {
@@ -77,7 +77,7 @@ func TestExtractCodeBlocks_UnclosedFence(t *testing.T) {
 
 // copyCommandModel is a sized session whose clipboard records what reached
 // it. The size matters: /copy answers in the transcript, which is rendered.
-func copyCommandModel(t *testing.T, msgs []provider.Message, copied *string) Model {
+func copyCommandModel(t *testing.T, msgs []llm.Message, copied *string) Model {
 	t.Helper()
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -98,10 +98,10 @@ func runCopy(t *testing.T, m Model, text string) (Model, tea.Cmd) {
 }
 
 func TestSlashCopy_CopiesLastResponse(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "how do I list files?"},
-		{Role: provider.RoleAssistant, Content: "Use this:\n\n```bash\nls -la\n```"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "how do I list files?"},
+		{Role: llm.RoleAssistant, Content: "Use this:\n\n```bash\nls -la\n```"},
 	}
 	var copied string
 	m := copyCommandModel(t, msgs, &copied)
@@ -125,7 +125,7 @@ func TestSlashCopy_CopiesLastResponse(t *testing.T) {
 
 func TestSlashCopy_NothingToCopy(t *testing.T) {
 	var copied string
-	m := copyCommandModel(t, []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, &copied)
+	m := copyCommandModel(t, []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, &copied)
 
 	m, _ = runCopy(t, m, "/copy")
 	if note := lastSystemText(m); !strings.Contains(note, "nothing to copy") {
@@ -138,10 +138,10 @@ func TestSlashCopy_NothingToCopy(t *testing.T) {
 // the terminal first, so the copy goes through with nothing on PATH to do it
 // — the same path the copy key takes.
 func TestSlashCopy_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "how do I list files?"},
-		{Role: provider.RoleAssistant, Content: "ls -la"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "how do I list files?"},
+		{Role: llm.RoleAssistant, Content: "ls -la"},
 	}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -169,9 +169,9 @@ func TestSlashCopy_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
 // A session built without a clipboard at all says so rather than panicking
 // on a copy function that is not there.
 func TestSlashCopy_NoClipboardInThisSession(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleAssistant, Content: "ls -la"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleAssistant, Content: "ls -la"},
 	}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})

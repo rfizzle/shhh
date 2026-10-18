@@ -12,9 +12,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -288,7 +288,7 @@ func TestAmend_TheBatchMarkIsTakenAgainstTheLineTheReaderWrote(t *testing.T) {
 		ran = append(ran, cmd)
 		return "ok", 0
 	})
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_a", Name: tools.ExecCommandName, Arguments: `{"command":"echo one"}`},
 		{ID: "call_b", Name: tools.ExecCommandName, Arguments: `{"command":"echo two"}`},
 	}})

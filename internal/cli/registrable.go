@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
@@ -10,7 +11,6 @@ import (
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/skill"
@@ -47,8 +47,8 @@ import (
 // toolbox lines and their own schemas — the two things this list holds a tool
 // to. The outline is defined once, by the tools package; a language server
 // answers it for the files it covers rather than defining it again.
-func registrableDefinitions(skills *skill.Catalog, profiles subagent.Profiles) []provider.Tool {
-	var defs []provider.Tool
+func registrableDefinitions(skills *skill.Catalog, profiles subagent.Profiles) []llm.Tool {
+	var defs []llm.Tool
 	for _, d := range tools.Definitions() {
 		switch d.Name {
 		case tools.QueryName, tools.SqliteName, tools.DocumentSymbolName:

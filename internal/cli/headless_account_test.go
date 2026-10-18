@@ -8,8 +8,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -22,10 +22,10 @@ type accountAnswer struct {
 
 func (accountAnswer) Name() string { return "account-test" }
 
-func (p accountAnswer) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p accountAnswer) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	*p.asked = append(*p.asked, msgs[len(msgs)-1].Content)
-	events := make(chan provider.StreamEvent, 1)
-	events <- provider.StreamEvent{Token: p.answer, Done: true}
+	events := make(chan llm.StreamEvent, 1)
+	events <- llm.StreamEvent{Token: p.answer, Done: true}
 	close(events)
 	return events, nil
 }
@@ -40,10 +40,10 @@ func TestHeadlessSave_CarriesTheRevisedAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "fix the retry flake"},
-		{Role: provider.RoleAssistant, Content: "the timer is fixed"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "fix the retry flake"},
+		{Role: llm.RoleAssistant, Content: "the timer is fixed"},
 	}
 	var asked []string
 	writer := sidejobs.NewAccountant(accountAnswer{answer: "Fixed the retry flake. Left off with the tests green.", asked: &asked},
@@ -95,10 +95,10 @@ func TestServedAccount_RevisesOnTheIntervalAndOnceMoreAtTheEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "fix the retry flake"},
-		{Role: provider.RoleAssistant, Content: "the timer is fixed"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "fix the retry flake"},
+		{Role: llm.RoleAssistant, Content: "the timer is fixed"},
 	}
 	var asked []string
 	writer := sidejobs.NewAccountant(accountAnswer{answer: "Fixed the retry flake.", asked: &asked},

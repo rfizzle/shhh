@@ -12,8 +12,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -77,7 +77,7 @@ func TestPolicy_AllowlistAutoApprovesCommand(t *testing.T) {
 	m := execModel(t, &ran)
 	m.policy.allowlist = []string{"echo"}
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
 	m = updated.(Model)
@@ -91,7 +91,7 @@ func TestPolicy_AllowlistAutoApprovesCommand(t *testing.T) {
 		t.Fatalf("expected the command to run once, got %v", ran)
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_x" || !strings.Contains(last.Content, "exit code: 0") {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_x" || !strings.Contains(last.Content, "exit code: 0") {
 		t.Fatalf("expected a tool result for the auto-approved command, got %+v", last)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -107,7 +107,7 @@ func TestPolicy_ChainedCommandNotAutoApproved(t *testing.T) {
 	m := execModel(t, &ran)
 	m.policy.allowlist = []string{"echo"}
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi && cat secrets.txt"}`},
 	}})
 	m = updated.(Model)
@@ -126,7 +126,7 @@ func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
 	m.policy.allowlist = []string{"git"}
 	m.policy.allCommands = true
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"git reset --hard"}`},
 	}})
 	m = updated.(Model)
@@ -156,7 +156,7 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"go build ./one"}`},
 		{ID: "call_2", Name: "execute_command", Arguments: `{"command":"go build ./two"}`},
 	}})
@@ -205,7 +205,7 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 	first := filepath.Join(dir, "a.txt")
 	second := filepath.Join(dir, "b.txt")
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, first)},
 		{ID: "call_2", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"two\n"}`, second)},
 	}})
@@ -265,7 +265,7 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 	m.policy.allEdits = true
 	m.policy.allCommands = true
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_g", Name: "my_tool", Arguments: `{}`},
 	}})
 	m = updated.(Model)
@@ -289,9 +289,9 @@ func TestPolicy_AWriteTierToolIsAnsweredLikeAnEdit(t *testing.T) {
 			return GatedPreview{Title: "commit", Summary: "feat: do it", DenyLine: "git commit"}, nil
 		},
 	}
-	call := provider.ToolCall{ID: "call_gw", Name: "git_write", Arguments: `{"verb":"commit","message":"feat: do it"}`}
+	call := llm.ToolCall{ID: "call_gw", Name: "git_write", Arguments: `{"verb":"commit","message":"feat: do it"}`}
 	offer := func(m Model) Model {
-		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{call}})
+		updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{call}})
 		return updated.(Model)
 	}
 	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
@@ -346,7 +346,7 @@ func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
 	m.policy.mode = agent.ModeAcceptEdits
 	path := filepath.Join(t.TempDir(), "a.txt")
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
 	}})
 	m = updated.(Model)
@@ -370,7 +370,7 @@ func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
 
 	// Commands still prompt in accept-edits.
 	m.state = stateStreaming
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_c", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
 	m = updated.(Model)
@@ -388,7 +388,7 @@ func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 	m.policy.allowlist = []string{"echo"}
 	m.policy.mode = agent.ModeAuto
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
 	m = updated.(Model)
@@ -403,7 +403,7 @@ func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 
 	// An unlisted command still asks in auto mode (no classifier yet).
 	m.state = stateStreaming
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_y", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
@@ -419,7 +419,7 @@ func TestMode_AutoFlaggedCommandStillPrompts(t *testing.T) {
 	m.policy.mode = agent.ModeAuto
 	m.policy.allCommands = true
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"git reset --hard"}`},
 	}})
 	m = updated.(Model)
@@ -437,7 +437,7 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 	m.policy.allCommands = true
 	path := filepath.Join(t.TempDir(), "a.txt")
 
-	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, restream := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
 		{ID: "call_c", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
@@ -452,7 +452,7 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 	msgs := m.Messages()
 	refused := 0
 	for _, msg := range msgs {
-		if msg.Role == provider.RoleTool && strings.Contains(msg.Content, "plan mode") {
+		if msg.Role == llm.RoleTool && strings.Contains(msg.Content, "plan mode") {
 			refused++
 		}
 	}
@@ -490,7 +490,7 @@ func TestMode_ReadOnlyRefusesAnEditInItsOwnWords(t *testing.T) {
 	m.policy.allEdits = true
 	path := filepath.Join(t.TempDir(), "a.txt")
 
-	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, restream := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
 	}})
 	m = updated.(Model)
@@ -500,7 +500,7 @@ func TestMode_ReadOnlyRefusesAnEditInItsOwnWords(t *testing.T) {
 	}
 	msgs := m.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleTool || last.Content != agent.ReadOnlyModeResult("", nil) {
+	if last.Role != llm.RoleTool || last.Content != agent.ReadOnlyModeResult("", nil) {
 		t.Fatalf("the refusal should be read-only mode's own, got %+v", last)
 	}
 	if strings.Contains(last.Content, "plan") {
@@ -533,7 +533,7 @@ func TestMode_ReadOnlyRunsInspectionCommands(t *testing.T) {
 	m := execModel(t, &ran)
 	m.policy.mode = agent.ModeReadOnly
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_c", Name: "execute_command", Arguments: `{"command":"git status"}`},
 	}})
 	m = updated.(Model)
@@ -550,7 +550,7 @@ func TestMode_ReadOnlyToolsBypassApprovalInPlanMode(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.policy.mode = agent.ModePlan
 	for _, name := range []string{"read_file", "list_directory", "search", "glob"} {
-		if m.requiresApproval(provider.ToolCall{Name: name}) {
+		if m.requiresApproval(llm.ToolCall{Name: name}) {
 			t.Errorf("read-only tool %s must never be approval-gated", name)
 		}
 	}
@@ -560,7 +560,7 @@ func TestMode_ReadOnlyToolsBypassApprovalInPlanMode(t *testing.T) {
 // answered without an approval and without a classifier round. Nothing gates
 // it, in any mode, and this is the test that says so.
 func TestMode_GitToolIsReadOnlyInEveryMode(t *testing.T) {
-	call := provider.ToolCall{
+	call := llm.ToolCall{
 		Name:      structural.GitToolName,
 		Arguments: `{"verb":"blame","paths":["internal/structural/git.go"]}`,
 	}
@@ -574,7 +574,7 @@ func TestMode_GitToolIsReadOnlyInEveryMode(t *testing.T) {
 }
 
 func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -702,7 +702,7 @@ func TestReadOnlyCommandRunsWithoutPrompt(t *testing.T) {
 	m.policy.mode = agent.ModeManual
 	m.state = stateStreaming
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_ro", Name: "execute_command", Arguments: `{"command":"git status"}`},
 	}})
 	m = updated.(Model)
@@ -726,7 +726,7 @@ func TestReadOnlyAutoDisabledPrompts(t *testing.T) {
 	m.policy.mode = agent.ModeManual
 	m.state = stateStreaming
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_ro", Name: "execute_command", Arguments: `{"command":"git status"}`},
 	}})
 	if updated.(Model).state != stateConfirmRun {
@@ -777,7 +777,7 @@ func TestGrant_ADifferentShapeOfCommandStillAsks(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"go build ./one"}`},
 		{ID: "call_2", Name: "execute_command", Arguments: `{"command":"npm publish"}`},
 	}})
@@ -809,7 +809,7 @@ func TestGrant_ADifferentDirectoryStillAsks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, inside)},
 		{ID: "call_2", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"two\n"}`, beside)},
 	}})
@@ -898,7 +898,7 @@ func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
 		m.policy.mode = mode
 		m.policy.allCommands = true
 
-		updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		updated, restream := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 			{ID: "call_p", Name: "execute_command", Arguments: `{"command":"go build && git push origin main"}`},
 		}})
 		m = updated.(Model)
@@ -911,7 +911,7 @@ func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
 		}
 		refused := false
 		for _, msg := range m.Messages() {
-			if msg.Role == provider.RoleTool && msg.Content == agent.DenylistResult {
+			if msg.Role == llm.RoleTool && msg.Content == agent.DenylistResult {
 				refused = true
 			}
 		}
@@ -945,7 +945,7 @@ func TestDenylist_WhyNamesTheListThatAnswered(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 	m.policy.denylist = []string{"terraform apply"}
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_t", Name: "execute_command", Arguments: `{"command":"terraform apply -auto-approve"}`},
 	}})
 	m = updated.(Model)
@@ -984,8 +984,8 @@ func fetchPreviews() map[string]GatedPreviewFunc {
 	}
 }
 
-func fetchCall(id, rawURL string) provider.ToolCall {
-	return provider.ToolCall{ID: id, Name: "web_fetch", Arguments: fmt.Sprintf(`{"url":%q}`, rawURL)}
+func fetchCall(id, rawURL string) llm.ToolCall {
+	return llm.ToolCall{ID: id, Name: "web_fetch", Arguments: fmt.Sprintf(`{"url":%q}`, rawURL)}
 }
 
 // [a] on a fetch card grants the host the card named and nothing beside it:
@@ -997,7 +997,7 @@ func TestPolicy_AlwaysAllowOneHostViaKey(t *testing.T) {
 	var pushed []string
 	m.wiring.HostGrants = func(hosts []string) { pushed = hosts }
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
 	}})
 	m = updated.(Model)
@@ -1020,7 +1020,7 @@ func TestPolicy_AlwaysAllowOneHostViaKey(t *testing.T) {
 
 	// The same site again is not a decision any more.
 	m.state = stateStreaming
-	updated, cmd = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_2", "https://docs.python.org/3/library/os.html"),
 	}})
 	m = updated.(Model)
@@ -1032,7 +1032,7 @@ func TestPolicy_AlwaysAllowOneHostViaKey(t *testing.T) {
 	// A different site is, including one the granted host is a suffix of.
 	for _, other := range []string{"https://python.org/downloads", "https://pkg.go.dev/context"} {
 		m.state = stateStreaming
-		updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_x", other)}})
+		updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_x", other)}})
 		m = updated.(Model)
 		if m.state != stateConfirmRun {
 			t.Fatalf("%s did not ask; the grant widened past the host on the card", other)
@@ -1069,7 +1069,7 @@ func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
 
 	allowed := gatedModel(t, executor, fetchPreviews())
 	allowed.policy.allowHosts, allowed.policy.denyHosts = []string{"pkg.go.dev"}, nil
-	updated, _ := allowed.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := allowed.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_a", "https://pkg.go.dev/context"),
 	}})
 	if m := updated.(Model); m.state == stateConfirmRun {
@@ -1080,7 +1080,7 @@ func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
 	denied.policy.allowHosts, denied.policy.denyHosts = []string{"paste.example.test"}, []string{"paste.example.test"}
 	denied.policy.mode = agent.ModeAuto
 	denied.policy.hosts = []string{"paste.example.test"}
-	updated, _ = denied.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = denied.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_d", "https://paste.example.test/x"),
 	}})
 	m := updated.(Model)

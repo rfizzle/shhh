@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -145,8 +145,8 @@ func countDetail(n int, noun string) string {
 func (m Model) messageCounts() (messages, results int) {
 	for i, msg := range m.agent.Messages() {
 		switch {
-		case i == 0 && msg.Role == provider.RoleSystem:
-		case msg.Role == provider.RoleTool:
+		case i == 0 && msg.Role == llm.RoleSystem:
+		case msg.Role == llm.RoleTool:
 			results++
 		default:
 			messages++

@@ -6,8 +6,8 @@ package chat
 import (
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -18,13 +18,13 @@ import (
 // marked, a step reworded, and one taken back all land as the one list.
 func TestProgram_TheSessionsOwnStepsReachTheRail(t *testing.T) {
 	dir := fixtureDir(t, map[string]string{"loop.go": "package fixture\n", "round.go": "package fixture\n"})
-	steps := func(id, args string) provider.ToolCall {
-		return provider.ToolCall{ID: id, Name: plan.StepsToolName, Arguments: args}
+	steps := func(id, args string) llm.ToolCall {
+		return llm.ToolCall{ID: id, Name: plan.StepsToolName, Arguments: args}
 	}
 	m, _ := scriptedSession(
-		programTurn{text: "Working through it in steps.\n", calls: append([]provider.ToolCall{
+		programTurn{text: "Working through it in steps.\n", calls: append([]llm.ToolCall{
 			steps("s1", `{"steps":[{"title":"Read the loop"},{"title":"Patch the limit"},{"title":"Test it"}]}`)}, reads("loop.go")...)},
-		programTurn{text: "The ceiling is what is wrong.\n", calls: append([]provider.ToolCall{
+		programTurn{text: "The ceiling is what is wrong.\n", calls: append([]llm.ToolCall{
 			steps("s2", `{"steps":[{"title":"Read the loop","done":true},{"title":"Raise the ceiling","done":true},{"title":"Test again"}]}`)}, reads("round.go")...)},
 		programTurn{text: "Changed round.go and round_test.go."},
 	)
@@ -74,7 +74,7 @@ func TestProgram_BarePlanOpensTheApprovedPlansChecklist(t *testing.T) {
 // on it closes with the row that says so, and /steps says it after the count.
 func TestProgram_AListLeftStandingSaysHowOldItIs(t *testing.T) {
 	dir := fixtureDir(t, map[string]string{"loop.go": "package fixture\n"})
-	turns := []programTurn{{text: "Working through it in steps.\n", calls: append([]provider.ToolCall{
+	turns := []programTurn{{text: "Working through it in steps.\n", calls: append([]llm.ToolCall{
 		{ID: "s1", Name: plan.StepsToolName, Arguments: `{"steps":[{"title":"Read the loop","done":true},{"title":"Patch the limit"},{"title":"Test it"}]}`},
 	}, reads("loop.go")...)}}
 	for range components.StaleListRounds + 1 {

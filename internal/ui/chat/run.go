@@ -17,10 +17,10 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/hook"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -410,7 +410,7 @@ func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	if ranIn != "" {
 		where = ranIn
 	}
-	m.calls.put(ctx, provider.ToolCall{ID: dryRunCallPrefix + call, Name: tools.ExecCommandName, Arguments: string(args)}, cancel, tail, where)
+	m.calls.put(ctx, llm.ToolCall{ID: dryRunCallPrefix + call, Name: tools.ExecCommandName, Arguments: string(args)}, cancel, tail, where)
 	return m, func() tea.Msg {
 		defer cancel()
 		start := time.Now()

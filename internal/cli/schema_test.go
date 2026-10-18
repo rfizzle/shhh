@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/spf13/cobra"
 )
 
@@ -113,10 +113,10 @@ func TestAnswerSchema_ChecksTheFourKeywords(t *testing.T) {
 
 // runUnderSchema drives a headless turn through the schema's close hook the
 // way runPrintSession wires it, and reads the answer back the way it does.
-func runUnderSchema(t *testing.T, s *answerSchema, rounds ...[]provider.StreamEvent) (*agent.Agent, json.RawMessage, error) {
+func runUnderSchema(t *testing.T, s *answerSchema, rounds ...[]llm.StreamEvent) (*agent.Agent, json.RawMessage, error) {
 	t.Helper()
-	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, scriptedStream(rounds...))
-	h := &agent.Headless{Agent: a, Gate: func(provider.ToolCall) bool { return false }}
+	a := agent.New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, scriptedStream(rounds...))
+	h := &agent.Headless{Agent: a, Gate: func(llm.ToolCall) bool { return false }}
 	shape := &schemaClose{schema: s, truncated: h.TruncatedReply}
 	h.OnClose = shape.close
 	final, err := h.Run("grade it" + s.instruction())
@@ -130,7 +130,7 @@ func runUnderSchema(t *testing.T, s *answerSchema, rounds ...[]provider.StreamEv
 func handBacks(a *agent.Agent) []string {
 	var out []string
 	for _, m := range a.Messages() {
-		if m.Role == provider.RoleUser && m.Machine {
+		if m.Role == llm.RoleUser && m.Machine {
 			out = append(out, m.Content)
 		}
 	}
@@ -140,8 +140,8 @@ func handBacks(a *agent.Agent) []string {
 func TestSchemaClose_AMissIsAskedForOnceMoreWithTheValidatorsWords(t *testing.T) {
 	s := mustSchema(t, verdictSchema)
 	a, answer, err := runUnderSchema(t, s,
-		[]provider.StreamEvent{{Token: `{"verdict":"pass"}`}, {Done: true}},
-		[]provider.StreamEvent{{Token: `{"verdict":"pass","count":2}`}, {Done: true}},
+		[]llm.StreamEvent{{Token: `{"verdict":"pass"}`}, {Done: true}},
+		[]llm.StreamEvent{{Token: `{"verdict":"pass","count":2}`}, {Done: true}},
 	)
 	if err != nil || string(answer) != `{"verdict":"pass","count":2}` {
 		t.Fatalf("answer = %s, %v; want the second attempt, which satisfies the schema", answer, err)
@@ -160,9 +160,9 @@ func TestSchemaClose_AMissIsAskedForOnceMoreWithTheValidatorsWords(t *testing.T)
 func TestSchemaClose_ASecondMissIsAFailedTurn(t *testing.T) {
 	s := mustSchema(t, verdictSchema)
 	a, answer, err := runUnderSchema(t, s,
-		[]provider.StreamEvent{{Token: "pass"}, {Done: true}},
-		[]provider.StreamEvent{{Token: "still pass"}, {Done: true}},
-		[]provider.StreamEvent{{Token: `{"verdict":"pass","count":1}`}, {Done: true}},
+		[]llm.StreamEvent{{Token: "pass"}, {Done: true}},
+		[]llm.StreamEvent{{Token: "still pass"}, {Done: true}},
+		[]llm.StreamEvent{{Token: `{"verdict":"pass","count":1}`}, {Done: true}},
 	)
 	if answer != nil || err == nil {
 		t.Fatalf("answer = %s, %v; want the second miss to stand as the run's error", answer, err)
@@ -184,8 +184,8 @@ func TestSchemaClose_ASecondMissIsAFailedTurn(t *testing.T) {
 // rather than a label — even where what was cut still parses.
 func TestSchemaClose_ACutAnswerIsAMiss(t *testing.T) {
 	s := mustSchema(t, `{"type": "integer"}`)
-	cut := func(text string) []provider.StreamEvent {
-		return []provider.StreamEvent{{Token: text}, {Done: true, Stop: provider.StopLength}}
+	cut := func(text string) []llm.StreamEvent {
+		return []llm.StreamEvent{{Token: text}, {Done: true, Stop: llm.StopLength}}
 	}
 	a, _, err := runUnderSchema(t, s, cut("12"), cut("34"), cut("56"), cut("78"))
 	if err == nil || !strings.Contains(err.Error(), "output ceiling") {
@@ -221,7 +221,7 @@ func TestFinalIsTheAnswerAsJSONUnderASchema(t *testing.T) {
 
 	var lines strings.Builder
 	newJSONLStream(&lines).closed(observe.Pos{Turn: 1}, observe.TurnDone, exitDone, `{"count":2}`,
-		json.RawMessage(`{"count":2}`), provider.Usage{}, headlessHandles{}, nil)
+		json.RawMessage(`{"count":2}`), llm.Usage{}, headlessHandles{}, nil)
 	var ev map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(lines.String()), &ev); err != nil {
 		t.Fatal(err)

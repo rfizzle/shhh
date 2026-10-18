@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // fakeDecisions answers the Decisions API from the evidence, the way fakeAux
@@ -20,22 +20,22 @@ type fakeDecisions struct {
 
 func (f *fakeDecisions) Name() string { return "fake" }
 
-func (f *fakeDecisions) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (f *fakeDecisions) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	f.t.Fatal("the decisions backend asked a completion")
 	return nil, nil
 }
 
 func (f *fakeDecisions) OffersDecisions(string) bool { return true }
 
-func (f *fakeDecisions) Decide(_ context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+func (f *fakeDecisions) Decide(_ context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
 	f.decided++
 	p := 0.95
 	if strings.Contains(req.Input, "answers-deny") {
 		p = 0.1
 	}
-	return provider.DecisionResult{
-		Answers: []provider.DecisionAnswer{{Type: provider.AnswerPredicate, Name: req.Questions[0].Name, Probability: p}},
-		Usage:   provider.Usage{PromptTokens: 1000},
+	return llm.DecisionResult{
+		Answers: []llm.DecisionAnswer{{Type: llm.AnswerPredicate, Name: req.Questions[0].Name, Probability: p}},
+		Usage:   llm.Usage{PromptTokens: 1000},
 	}, nil
 }
 

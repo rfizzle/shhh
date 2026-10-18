@@ -43,9 +43,9 @@ import (
 	"math"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -159,7 +159,7 @@ func (m Model) retryIn(waited time.Duration) (string, bool) {
 	case idle < 0:
 		return "", false
 	case idle == 0:
-		idle = provider.DefaultStreamIdle
+		idle = llm.DefaultStreamIdle
 	}
 	left := max(idle-waited, 0)
 	if left > retryWarning {

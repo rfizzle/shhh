@@ -14,10 +14,10 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/persona"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -44,9 +44,9 @@ func agentSession(t *testing.T, root string, nb *notebook.Store, kids children, 
 		p := &programProvider{turns: script}
 		return subagent.Env{
 			SystemPrompt: "sys",
-			Stream: func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			Stream: func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 				sctx, cancel := context.WithCancel(ctx)
-				events, err := p.StreamCompletion(sctx, msgs, provider.CompletionOpts{ToolChoice: choice})
+				events, err := p.StreamCompletion(sctx, msgs, llm.CompletionOpts{ToolChoice: choice})
 				if err != nil {
 					cancel()
 					return nil, nil, err
@@ -178,7 +178,7 @@ func TestProgram_AChildsRequestIsAnsweredFromItsCard(t *testing.T) {
 	lead.hold = hold
 	m, _ := agentSession(t, root, nil, children{
 		"writer-1": {
-			{calls: []provider.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
+			{calls: []llm.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
 			{text: "The counter is read at the top of the loop, and nowhere else."},
 		},
 	}, lead, programTurn{text: "The writer is on it."})
@@ -338,7 +338,7 @@ func TestProgram_TheChordMovesOnItsFirstPressAfterTheManager(t *testing.T) {
 	lead.hold = hold
 	m, _ := agentSession(t, root, nil, children{
 		"writer-1": {
-			{calls: []provider.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
+			{calls: []llm.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
 			{text: "The counter is read at the top of the loop."},
 		},
 	}, lead, programTurn{text: "The writer is on it."})
@@ -365,7 +365,7 @@ func TestProgram_TheManagerAnswersAChildInPlace(t *testing.T) {
 	lead.hold = hold
 	m, _ := agentSession(t, root, nil, children{
 		"writer-1": {
-			{calls: []provider.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
+			{calls: []llm.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
 			{text: "The counter is read at the top of the loop."},
 		},
 	}, lead, programTurn{text: "The writer is on it."})
@@ -418,7 +418,7 @@ func TestProgram_TheNotebookIsReadAndCorrectedOnItsScreen(t *testing.T) {
 	lead.hold = hold
 	note := func(title string) []programTurn {
 		return []programTurn{
-			{calls: []provider.ToolCall{call("n-"+title, notebook.WriteToolName, fmt.Sprintf(`{"title":%q,"body":"what the reader found"}`, title))}},
+			{calls: []llm.ToolCall{call("n-"+title, notebook.WriteToolName, fmt.Sprintf(`{"title":%q,"body":"what the reader found"}`, title))}},
 			{text: "Noted."},
 		}
 	}

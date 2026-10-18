@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func testPrices() *pricing.Table {
@@ -20,21 +20,21 @@ func testPrices() *pricing.Table {
 // stubProvider emits one usage report on the terminal event, the way every
 // real provider does.
 type stubProvider struct {
-	usage  provider.Usage
+	usage  llm.Usage
 	mu     sync.Mutex
 	models []string
 }
 
 func (s *stubProvider) Name() string { return "stub" }
 
-func (s *stubProvider) StreamCompletion(ctx context.Context, _ []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (s *stubProvider) StreamCompletion(ctx context.Context, _ []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	s.mu.Lock()
 	s.models = append(s.models, opts.Model)
 	s.mu.Unlock()
-	ch := make(chan provider.StreamEvent, 2)
-	ch <- provider.StreamEvent{Token: "hi"}
+	ch := make(chan llm.StreamEvent, 2)
+	ch <- llm.StreamEvent{Token: "hi"}
 	u := s.usage
-	ch <- provider.StreamEvent{Usage: &u, Done: true}
+	ch <- llm.StreamEvent{Usage: &u, Done: true}
 	close(ch)
 	return ch, nil
 }
@@ -43,9 +43,9 @@ type stubLister struct{ *stubProvider }
 
 func (s *stubLister) ListModels(context.Context) ([]string, error) { return []string{"a"}, nil }
 
-func drain(t *testing.T, p provider.Provider, model string) {
+func drain(t *testing.T, p llm.Provider, model string) {
 	t.Helper()
-	ev, err := p.StreamCompletion(context.Background(), nil, provider.CompletionOpts{Model: model})
+	ev, err := p.StreamCompletion(context.Background(), nil, llm.CompletionOpts{Model: model})
 	if err != nil {
 		t.Fatalf("stream: %v", err)
 	}
@@ -57,7 +57,7 @@ func drain(t *testing.T, p provider.Provider, model string) {
 // ledger without knowing the ledger exists.
 func TestGate_BillsWhatPassesThrough(t *testing.T) {
 	l := New(testPrices())
-	p := l.For(&stubProvider{usage: provider.Usage{PromptTokens: 1000, CompletionTokens: 100}}, SourceAgent)
+	p := l.For(&stubProvider{usage: llm.Usage{PromptTokens: 1000, CompletionTokens: 100}}, SourceAgent)
 	drain(t, p, "big")
 	drain(t, p, "big")
 
@@ -74,7 +74,7 @@ func TestGate_BillsWhatPassesThrough(t *testing.T) {
 // against whichever model the session is on.
 func TestGate_PricesEachOriginAgainstItsOwnModel(t *testing.T) {
 	l := New(testPrices())
-	stub := &stubProvider{usage: provider.Usage{PromptTokens: 1000, CompletionTokens: 100}}
+	stub := &stubProvider{usage: llm.Usage{PromptTokens: 1000, CompletionTokens: 100}}
 	drain(t, l.For(stub, SourceAgent), "big")
 	drain(t, l.For(stub, SourceSummary), "small")
 
@@ -92,7 +92,7 @@ func TestGate_PricesEachOriginAgainstItsOwnModel(t *testing.T) {
 // answer to "which of them cost that".
 func TestGate_NamesIndividualSubagents(t *testing.T) {
 	l := New(testPrices())
-	stub := &stubProvider{usage: provider.Usage{PromptTokens: 500, CompletionTokens: 50}}
+	stub := &stubProvider{usage: llm.Usage{PromptTokens: 500, CompletionTokens: 50}}
 	drain(t, l.ForOrigin(stub, Origin{Source: SourceSubagent, Label: "scout"}), "small")
 	drain(t, l.ForOrigin(stub, Origin{Source: SourceSubagent, Label: "scribe"}), "small")
 	drain(t, l.ForOrigin(stub, Origin{Source: SourceSubagent, Label: "scribe"}), "small")
@@ -114,7 +114,7 @@ func TestGate_NamesIndividualSubagents(t *testing.T) {
 // whole point of the gate is that a feature added later cannot under-report.
 func TestGate_UndeclaredSpendIsVisible(t *testing.T) {
 	l := New(testPrices())
-	drain(t, l.For(&stubProvider{usage: provider.Usage{PromptTokens: 10, CompletionTokens: 1}}, ""), "big")
+	drain(t, l.For(&stubProvider{usage: llm.Usage{PromptTokens: 10, CompletionTokens: 1}}, ""), "big")
 
 	if got := l.SourceTotal(SourceUnattributed); got.In != 10 {
 		t.Fatalf("undeclared spend lands in its own bucket, got %+v", got)
@@ -128,14 +128,14 @@ func TestLedger_BudgetWarnsAndCapsFutureRequests(t *testing.T) {
 	prices := pricing.NewTable(map[string]pricing.ModelPricing{"model": {InputCostPerToken: 0.01}})
 	ledger := New(prices)
 	ledger.SetBudget(Budget{WarningCents: 50, CapCents: 100})
-	ledger.Record(Origin{Source: SourceAgent}, "model", provider.Usage{PromptTokens: 60})
+	ledger.Record(Origin{Source: SourceAgent}, "model", llm.Usage{PromptTokens: 60})
 	if total, warned := ledger.Warning(); !warned || total.Cost != 0.6 {
 		t.Fatalf("Warning() = %+v, %v; want priced warning at $0.60", total, warned)
 	}
 	if err := ledger.AllowRequest(); err != nil {
 		t.Fatalf("$0.60 must remain below the $1.00 cap: %v", err)
 	}
-	ledger.Record(Origin{Source: SourceAgent}, "model", provider.Usage{PromptTokens: 40})
+	ledger.Record(Origin{Source: SourceAgent}, "model", llm.Usage{PromptTokens: 40})
 	err := ledger.AllowRequest()
 	if err == nil {
 		t.Fatal("the next request must be refused at the cap")
@@ -158,7 +158,7 @@ func TestLedger_BudgetWarnsAndCapsFutureRequests(t *testing.T) {
 func TestLedger_BudgetDoesNotInventADollarLimitForUnpricedUsage(t *testing.T) {
 	ledger := New(nil)
 	ledger.SetBudget(Budget{WarningCents: 1, CapCents: 1})
-	ledger.Record(Origin{Source: SourceAgent}, "unknown", provider.Usage{PromptTokens: 1_000_000})
+	ledger.Record(Origin{Source: SourceAgent}, "unknown", llm.Usage{PromptTokens: 1_000_000})
 	if _, warned := ledger.Warning(); warned {
 		t.Fatal("unpriced tokens must not claim to cross a dollar warning")
 	}
@@ -171,11 +171,11 @@ func TestLedger_BudgetDoesNotInventADollarLimitForUnpricedUsage(t *testing.T) {
 func TestGate_ForwardsModelListingOnlyWhereItExists(t *testing.T) {
 	l := New(nil)
 	plain := l.For(&stubProvider{}, SourceAgent)
-	if _, ok := plain.(provider.ModelLister); ok {
+	if _, ok := plain.(llm.ModelLister); ok {
 		t.Fatal("a provider that cannot enumerate must not appear to")
 	}
 	rich := l.For(&stubLister{stubProvider: &stubProvider{}}, SourceAgent)
-	lister, ok := rich.(provider.ModelLister)
+	lister, ok := rich.(llm.ModelLister)
 	if !ok {
 		t.Fatal("a provider that can enumerate must still say so through the gate")
 	}
@@ -188,7 +188,7 @@ func TestGate_ForwardsModelListingOnlyWhereItExists(t *testing.T) {
 // their own goroutines.
 func TestLedger_ConcurrentWriters(t *testing.T) {
 	l := New(testPrices())
-	stub := &stubProvider{usage: provider.Usage{PromptTokens: 100, CompletionTokens: 10}}
+	stub := &stubProvider{usage: llm.Usage{PromptTokens: 100, CompletionTokens: 10}}
 	var wg sync.WaitGroup
 	for i := range 8 {
 		wg.Add(1)
@@ -196,7 +196,7 @@ func TestLedger_ConcurrentWriters(t *testing.T) {
 			defer wg.Done()
 			p := l.ForOrigin(stub, Origin{Source: SourceSubagent, Label: string(rune('a' + i))})
 			for range 25 {
-				ev, _ := p.StreamCompletion(context.Background(), nil, provider.CompletionOpts{Model: "small"})
+				ev, _ := p.StreamCompletion(context.Background(), nil, llm.CompletionOpts{Model: "small"})
 				for range ev {
 				}
 			}
@@ -211,9 +211,9 @@ func TestLedger_ConcurrentWriters(t *testing.T) {
 // A stream nobody finishes reading was still paid for.
 func TestGate_AbandonedStreamIsStillBilled(t *testing.T) {
 	l := New(testPrices())
-	p := l.For(&stubProvider{usage: provider.Usage{PromptTokens: 700, CompletionTokens: 7}}, SourceAgent)
+	p := l.For(&stubProvider{usage: llm.Usage{PromptTokens: 700, CompletionTokens: 7}}, SourceAgent)
 	ctx, cancel := context.WithCancel(context.Background())
-	ev, err := p.StreamCompletion(ctx, nil, provider.CompletionOpts{Model: "big"})
+	ev, err := p.StreamCompletion(ctx, nil, llm.CompletionOpts{Model: "big"})
 	if err != nil {
 		t.Fatalf("stream: %v", err)
 	}
@@ -245,11 +245,11 @@ func cachedPrices() *pricing.Table {
 func TestRecordChargesACachedReadAtTheCachedRate(t *testing.T) {
 	fresh := New(cachedPrices())
 	fresh.Record(Origin{Source: SourceAgent}, "cached",
-		provider.Usage{PromptTokens: 1000, CompletionTokens: 10})
+		llm.Usage{PromptTokens: 1000, CompletionTokens: 10})
 
 	warm := New(cachedPrices())
 	warm.Record(Origin{Source: SourceAgent}, "cached",
-		provider.Usage{PromptTokens: 1000, CompletionTokens: 10, CachedTokens: 900})
+		llm.Usage{PromptTokens: 1000, CompletionTokens: 10, CachedTokens: 900})
 
 	freshCost := fresh.Total().Cost
 	warmCost := warm.Total().Cost
@@ -267,7 +267,7 @@ func TestRecordChargesACachedReadAtTheCachedRate(t *testing.T) {
 func TestRecordChargesACacheWriteItsPremium(t *testing.T) {
 	l := New(cachedPrices())
 	l.Record(Origin{Source: SourceAgent}, "cached",
-		provider.Usage{PromptTokens: 1000, CacheCreationTokens: 1000})
+		llm.Usage{PromptTokens: 1000, CacheCreationTokens: 1000})
 
 	if want := 1000 * 0.0000125; !nearly(l.Total().Cost, want) {
 		t.Errorf("cache write cost: want %v got %v", want, l.Total().Cost)
@@ -279,7 +279,7 @@ func TestRecordChargesACacheWriteItsPremium(t *testing.T) {
 func TestRecordCountsCachedTokensInThePromptTotal(t *testing.T) {
 	l := New(cachedPrices())
 	l.Record(Origin{Source: SourceAgent}, "cached",
-		provider.Usage{PromptTokens: 1000, CachedTokens: 900, CompletionTokens: 10})
+		llm.Usage{PromptTokens: 1000, CachedTokens: 900, CompletionTokens: 10})
 
 	tot := l.Total()
 	if tot.In != 1000 {

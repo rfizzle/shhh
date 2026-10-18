@@ -11,10 +11,10 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -123,8 +123,8 @@ func supervisorRecording(t *testing.T, env *scriptedEnv, rec *testRecorder) *Sup
 // worth of searching, which is the shape the record exists to show.
 func TestChildRecordsToolCallsWithPositionAndClass(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
-		{text: "found it", usage: &provider.Usage{PromptTokens: 40, CompletionTokens: 6}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{text: "found it", usage: &llm.Usage{PromptTokens: 40, CompletionTokens: 6}},
 	}}
 	rec := &testRecorder{}
 	sup := supervisorRecording(t, env, rec)
@@ -154,7 +154,7 @@ func TestChildRecordsToolErrorClass(t *testing.T) {
 	env := &scriptedEnv{
 		gated: map[string]bool{"read_file": true},
 		steps: []streamStep{
-			{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+			{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 			{text: "gave up"},
 		},
 	}
@@ -194,8 +194,8 @@ func TestChildRecordsToolErrorClass(t *testing.T) {
 // session reports about how a turn went, from a surface nobody watched.
 func TestChildClosesWithATurnEvent(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
-		{text: "found it", usage: &provider.Usage{PromptTokens: 40, CompletionTokens: 6}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{text: "found it", usage: &llm.Usage{PromptTokens: 40, CompletionTokens: 6}},
 	}}
 	rec := &testRecorder{}
 	sup := supervisorRecording(t, env, rec)
@@ -246,7 +246,7 @@ func TestChildRecordIsGivenItsOwnSystemPrompt(t *testing.T) {
 // paused and carries on, which is what a session's cap does.
 func TestChildRecordsTheRoundCapAsAPausedTurn(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 		{text: "taking stock"},
 	}}
 	rec := &testRecorder{}
@@ -272,7 +272,7 @@ func TestChildRecordsTheRoundCapAsAPausedTurn(t *testing.T) {
 // the same table a session does.
 func TestChildRecordsNothingOutsideTheClosedSets(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"/home/someone/secrets"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"/home/someone/secrets"}`}}},
 		{text: "found it"},
 	}}
 	rec := &testRecorder{}
@@ -298,7 +298,7 @@ func TestChildRecordsNothingOutsideTheClosedSets(t *testing.T) {
 // path, which is content.
 func TestChildRecordsACommandsPurposeAndNotItsText(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName,
+		{calls: []llm.ToolCall{{ID: "c1", Name: tools.ExecCommandName,
 			Arguments: `{"command":"grep -n secret /home/someone/notes.md | head -5"}`}}},
 		{text: "found it"},
 	}}
@@ -332,7 +332,7 @@ var storedWord = regexp.MustCompile(`^[a-z0-9]+(?:[-_][a-z0-9]+)*$`)
 // clock is accounted for afterwards.
 func TestChildRecordsARetryAndSaysSoOnItsLane(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{fail: &provider.Failure{Class: provider.ClassRateLimit, Status: 429, RetryAfter: time.Millisecond}},
+		{fail: &llm.Failure{Class: llm.ClassRateLimit, Status: 429, RetryAfter: time.Millisecond}},
 		{text: "done"},
 	}}
 	rec := &testRecorder{}
@@ -429,7 +429,7 @@ func (r *rowRecorder) sum() (in, out int64) {
 // supervisorRecordingRows is a supervisor that opens a fresh row for every
 // attempt, with the classifier wired when one is given so both roads a
 // child's spend travels can be driven.
-func supervisorRecordingRows(t *testing.T, env *scriptedEnv, rows *rowRecorder, judge provider.Provider) *Supervisor {
+func supervisorRecordingRows(t *testing.T, env *scriptedEnv, rows *rowRecorder, judge llm.Provider) *Supervisor {
 	t.Helper()
 	opts := Options{
 		Root:   t.TempDir(),
@@ -472,7 +472,7 @@ func retryWhenReady(t *testing.T, sup *Supervisor, name string) {
 // reach.
 func TestARetriedChildsRowsSumToWhatItSpent(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "over budget", usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 200}},
+		{text: "over budget", usage: &llm.Usage{PromptTokens: 300100, CompletionTokens: 200}},
 	}}
 	rows := &rowRecorder{}
 	sup := supervisorRecordingRows(t, env, rows, nil)
@@ -481,7 +481,7 @@ func TestARetriedChildsRowsSumToWhatItSpent(t *testing.T) {
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	env.mu.Lock()
-	env.steps = []streamStep{{text: "done", usage: &provider.Usage{PromptTokens: 100, CompletionTokens: 20}}}
+	env.steps = []streamStep{{text: "done", usage: &llm.Usage{PromptTokens: 100, CompletionTokens: 20}}}
 	env.mu.Unlock()
 	retryWhenReady(t, sup, "researcher-1")
 	waitState(t, sup, "researcher-1", StateDone)
@@ -507,7 +507,7 @@ func TestARetriedChildsRowsSumToWhatItSpent(t *testing.T) {
 // it is double-counted by the same defect and has to be fixed by the same
 // accessor.
 func TestARetriedChildsClassifierSpendIsCountedOnce(t *testing.T) {
-	call := []streamStep{{calls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`}}}}
+	call := []streamStep{{calls: []llm.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`}}}}
 	env := &scriptedEnv{
 		// One scripted step and no answer after the tool result: the stream
 		// runs out, which fails the child with the classifier's spend on its
@@ -549,11 +549,11 @@ func TestARetriedChildsClassifierSpendIsCountedOnce(t *testing.T) {
 // classifier's contribution to a child's spend is a number a test can add up.
 type judgeSpending struct{ prompt, completion int }
 
-func (p *judgeSpending) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "d1", Name: agent.DecisionToolName, Arguments: `{"decision":"allow","reason":"runs the requested tests"}`}},
-		Usage:     &provider.Usage{PromptTokens: p.prompt, CompletionTokens: p.completion},
+func (p *judgeSpending) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{ID: "d1", Name: agent.DecisionToolName, Arguments: `{"decision":"allow","reason":"runs the requested tests"}`}},
+		Usage:     &llm.Usage{PromptTokens: p.prompt, CompletionTokens: p.completion},
 		Done:      true,
 	}
 	close(ch)
@@ -569,7 +569,7 @@ func (p *judgeSpending) Name() string { return "judge" }
 // is the parent's or the person's own words, and the record holds no content.
 func TestChildRecordsASteersSourceAndNeverItsWords(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"importer.go"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"importer.go"}`}}},
 		{text: "read the importer"},
 	}, delay: 5 * time.Millisecond}
 	rec := &testRecorder{}
@@ -624,7 +624,7 @@ func newHeldReader(state string) *heldReader {
 	return &heldReader{state: state, started: make(chan struct{}, 1), release: make(chan struct{})}
 }
 
-func (p *heldReader) StreamCompletion(ctx context.Context, _ []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *heldReader) StreamCompletion(ctx context.Context, _ []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	select {
 	case p.started <- struct{}{}:
 	default:
@@ -634,9 +634,9 @@ func (p *heldReader) StreamCompletion(ctx context.Context, _ []provider.Message,
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{
 			ID:        "s1",
 			Name:      sidejobs.SummaryToolName,
 			Arguments: `{"summary":"reading the importer","state":"` + p.state + `","reason":"reading the importer, not the exporter"}`,
@@ -699,7 +699,7 @@ func waitSignal(t *testing.T, rec *testRecorder, code string) recordedEvent {
 func TestChildFilesALateReadingAtTheRoundItRead(t *testing.T) {
 	reader := newHeldReader("on_target")
 	env := &scriptedEnv{
-		steps: append(toolRounds(3), streamStep{text: "spent it", usage: &provider.Usage{PromptTokens: 300100}}),
+		steps: append(toolRounds(3), streamStep{text: "spent it", usage: &llm.Usage{PromptTokens: 300100}}),
 		delay: 2 * time.Millisecond,
 		summarizer: sidejobs.NewSummarizer(reader,
 			sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
@@ -825,7 +825,7 @@ func supervisorEnding(t *testing.T, env *scriptedEnv, rec *endRecorder) *Supervi
 // to whether 200k is the right number.
 func TestChildEndsWithABudgetReasonAndItsRetryIsTheSecondAttempt(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "over budget", usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 200}},
+		{text: "over budget", usage: &llm.Usage{PromptTokens: 300100, CompletionTokens: 200}},
 	}}
 	rec := &endRecorder{}
 	sup := supervisorEnding(t, env, rec)
@@ -838,7 +838,7 @@ func TestChildEndsWithABudgetReasonAndItsRetryIsTheSecondAttempt(t *testing.T) {
 	}
 
 	env.mu.Lock()
-	env.steps = []streamStep{{text: "done", usage: &provider.Usage{PromptTokens: 100, CompletionTokens: 20}}}
+	env.steps = []streamStep{{text: "done", usage: &llm.Usage{PromptTokens: 100, CompletionTokens: 20}}}
 	env.mu.Unlock()
 	retryWhenReady(t, sup, "researcher-1")
 	waitState(t, sup, "researcher-1", StateDone)
@@ -924,7 +924,7 @@ func TestAChildsEndCarriesTheReadingInTheRecordsOwnWord(t *testing.T) {
 func TestAChildsRecordedCostBillsCacheReadsAtTheCacheRate(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{{
 		text:  "done",
-		usage: &provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000},
+		usage: &llm.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000},
 	}}}
 	prices := pricing.NewTable(map[string]pricing.ModelPricing{
 		"cached-1": {
@@ -983,7 +983,7 @@ func TestAChildsRecordedCostBillsCacheReadsAtTheCacheRate(t *testing.T) {
 // attempt's row the carried figure bills the first attempt on both rows.
 func TestARetrysRecordedCostIsItsOwnAttempts(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "over budget", usage: &provider.Usage{PromptTokens: 600_001, CachedTokens: 300_000}},
+		{text: "over budget", usage: &llm.Usage{PromptTokens: 600_001, CachedTokens: 300_000}},
 	}}
 	prices := pricing.NewTable(map[string]pricing.ModelPricing{
 		"cached-1": {
@@ -1006,7 +1006,7 @@ func TestARetrysRecordedCostIsItsOwnAttempts(t *testing.T) {
 	const first = 0.4500015 + 0.045 // 300001 fresh, 300k cached
 
 	env.mu.Lock()
-	env.steps = []streamStep{{text: "done", usage: &provider.Usage{PromptTokens: 100_000, CachedTokens: 99_500}}}
+	env.steps = []streamStep{{text: "done", usage: &llm.Usage{PromptTokens: 100_000, CachedTokens: 99_500}}}
 	env.mu.Unlock()
 	if err := sup.Retry("researcher-1"); err != nil {
 		t.Fatalf("retry: %v", err)

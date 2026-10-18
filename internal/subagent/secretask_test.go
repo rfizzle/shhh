@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // A child's write that adds a credential shape is put to the person in every
@@ -20,7 +20,7 @@ func TestRoutedApproval_AChildsWriteWithASecretAsks(t *testing.T) {
 		repo := initTestRepo(t)
 		env := &scriptedEnv{
 			steps: []streamStep{
-				{calls: []provider.ToolCall{{ID: "w1", Name: "write_file",
+				{calls: []llm.ToolCall{{ID: "w1", Name: "write_file",
 					Arguments: fmt.Sprintf(`{"path":"dev.env","content":%q}`, content)}}},
 				{text: "done"},
 			},

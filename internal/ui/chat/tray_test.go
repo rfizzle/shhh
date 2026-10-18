@@ -14,15 +14,15 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // trayPNG is a real 32×16 picture under a name, the way a door hands one
 // over: sniffed and named, and not yet given a handle.
-func trayPNG(t *testing.T, name string) provider.Attachment {
+func trayPNG(t *testing.T, name string) llm.Attachment {
 	t.Helper()
 	a := stageImage(t, frameModel(t, 100, 40), name).attachments[0]
 	a.Handle = ""
@@ -30,14 +30,14 @@ func trayPNG(t *testing.T, name string) provider.Attachment {
 }
 
 // trayPDF is a two-page PDF as the path door reads one.
-func trayPDF(t *testing.T) provider.Attachment {
+func trayPDF(t *testing.T) llm.Attachment {
 	t.Helper()
 	a, err := attachment.FromBytes("spec.pdf", []byte("%PDF-1.4\n1 0 obj <</Type /Pages /Count 2>>\n"+
 		"2 0 obj <</Type /Page>>\n3 0 obj <</Type /Page>>\n%%EOF\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a.Kind != provider.AttachmentDocument {
+	if a.Kind != llm.AttachmentDocument {
 		t.Fatalf("the fixture sniffed as %s, not a document", a.Kind)
 	}
 	return a
@@ -45,7 +45,7 @@ func trayPDF(t *testing.T) provider.Attachment {
 
 // attach stages one file through the door a path takes: at the cursor, the
 // way a dragged path lands, or by `/paste <path>`, which leaves no fold.
-func attach(t *testing.T, m Model, a provider.Attachment, path string, atCursor bool) Model {
+func attach(t *testing.T, m Model, a llm.Attachment, path string, atCursor bool) Model {
 	t.Helper()
 	updated, _ := m.handleAttachedFile(attachedFileMsg{attachment: a, path: path, atCursor: atCursor})
 	return updated.(Model)
@@ -125,7 +125,7 @@ func TestUserEntry_EveryAttachmentHasARow(t *testing.T) {
 	}
 
 	// A message saved before handles existed has a row for its picture too.
-	rows := m.sentEntries("look", []provider.Attachment{{Kind: provider.AttachmentImage, Name: "old.png", Data: pngHeader}})
+	rows := m.sentEntries("look", []llm.Attachment{{Kind: llm.AttachmentImage, Name: "old.png", Data: pngHeader}})
 	if len(rows) != 2 || !strings.Contains(stripANSI(m.renderEntry(rows[1], 120)), "⟨▣⟩") {
 		t.Fatalf("a handle-less picture has no row: %d entries", len(rows))
 	}
@@ -327,7 +327,7 @@ func TestPreview_ASentPictureSaysWhichTurnCarriedIt(t *testing.T) {
 	pic.Handle = "Image#1"
 	m := frameModel(t, 110, 40)
 	m.transcript = append(m.sentEntries("the first question", nil),
-		m.sentEntries("and this one carries the picture", []provider.Attachment{pic})...)
+		m.sentEntries("and this one carries the picture", []llm.Attachment{pic})...)
 	idx := trayAt(t, m, "Image#1")
 
 	opened, _ := m.openTrayPicture(idx)
@@ -357,7 +357,7 @@ func TestPreview_ASentPictureSaysWhichTurnCarriedIt(t *testing.T) {
 	// A recall stages the same picture again under the same handle and name;
 	// the sent row's card still offers no drop, and its key leaves the
 	// recalled chip where it is.
-	rm.attachments = []provider.Attachment{pic}
+	rm.attachments = []llm.Attachment{pic}
 	opened, _ = rm.openCursorRow(stateFocus)
 	card = opened.(Model)
 	if hint := stripANSI(joinSegs(card.renderPreviewHint())); hint != "[esc] back" {
@@ -378,10 +378,10 @@ func TestReopen_ASentPictureStillOpens(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 	pic := trayPNG(t, "clipboard.png")
 	pic.Handle = "Image#1"
-	saved := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "this one", Attachments: []provider.Attachment{pic}},
-		{Role: provider.RoleAssistant, Content: "Looked at it."},
+	saved := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "this one", Attachments: []llm.Attachment{pic}},
+		{Role: llm.RoleAssistant, Content: "Looked at it."},
 	}
 	if err := db.SaveChat("tray", saved); err != nil {
 		t.Fatal(err)
@@ -407,7 +407,7 @@ func TestReopen_ASentPictureStillOpens(t *testing.T) {
 func trayProgram(t *testing.T) (*program, string) {
 	t.Helper()
 	p := &programProvider{turns: []programTurn{{text: "Looked at both."}}}
-	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
+	tm := runProgram(t, New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
 	tm.Send(attachedFileMsg{attachment: trayPNG(t, "first.png")})
 	tm.Send(attachedFileMsg{attachment: trayPNG(t, "second.png")})
 	waitForText(t, tm, "Image#2")

@@ -10,9 +10,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/profile"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 )
 
@@ -79,7 +79,7 @@ func providersJSON(profiles []profile.Profile, errs []error, prices *pricing.Tab
 	for _, p := range profiles {
 		byName[p.Name] = p
 	}
-	names := provider.Available()
+	names := llm.Available()
 	sort.Strings(names)
 
 	doc := providersDoc{Providers: make([]providerDoc, 0, len(names)), Profiles: []profileDoc{}}

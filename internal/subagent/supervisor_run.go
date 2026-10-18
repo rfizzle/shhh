@@ -9,9 +9,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -454,11 +454,11 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 	// it, where a session answers its own: a call no decision can let run is
 	// not handed to a seam that fires the person's pre-tool hook for it.
 	// See docs/capabilities/containment.md#containment-can-be-required.
-	gated := func(tc provider.ToolCall) string { return s.resolveGated(c, tc) }
+	gated := func(tc llm.ToolCall) string { return s.resolveGated(c, tc) }
 	if c.env.WrapGated != nil {
 		gated = c.env.WrapGated(c.seam(), gated)
 	}
-	resolve := func(tc provider.ToolCall) string {
+	resolve := func(tc llm.ToolCall) string {
 		if refusal, refused := s.refuseUncontained(c, tc); refused {
 			return refusal
 		}
@@ -570,7 +570,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 			}
 			s.emitUpdate(c)
 		},
-		Gate:    func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },
+		Gate:    func(tc llm.ToolCall) bool { return c.env.Gated[tc.Name] },
 		Resolve: resolve,
 		Steer: func() []string {
 			msgs := c.drainSteering()
@@ -589,7 +589,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 			return msgs
 		},
 		Hold: func() <-chan struct{} { return s.holdFor(c) },
-		OnUsage: func(u *provider.Usage) {
+		OnUsage: func(u *llm.Usage) {
 			if c.addUsage(u) {
 				c.cancel()
 			}
@@ -628,7 +628,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 			c.mu.Unlock()
 			s.emitUpdate(c)
 		},
-		OnToolCall: func(tc provider.ToolCall) {
+		OnToolCall: func(tc llm.ToolCall) {
 			c.beginToolEntry(tc.ID, tc.Name, tc.Arguments)
 			at := c.pos()
 			c.mu.Lock()

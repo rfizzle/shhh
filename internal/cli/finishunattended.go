@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/spf13/cobra"
@@ -76,7 +76,7 @@ type tailOpts struct {
 	sayCommands bool
 	// initial is a conversation the session begins from in place of the
 	// fresh one, nil for the fresh one.
-	initial []provider.Message
+	initial []llm.Message
 	// settings is the surface's own part of what the record is stamped
 	// with: the mode, the item and stage, the round cap and the classifier.
 	settings runSettings
@@ -91,7 +91,7 @@ type unattendedTail struct {
 	hooks    *hook.Runner
 	hookCwd  string
 	saved    *headlessChat
-	messages []provider.Message
+	messages []llm.Message
 	recorder *observeRecorder
 
 	// closers end what the tail opened, in the reverse order it was opened.
@@ -159,7 +159,7 @@ func finishUnattended(cmd *cobra.Command, asm *assembly, session *chatSession, o
 	hookNoteLine(hookStart)
 	if hookStart.Context != "" {
 		env.sysPrompt = prompt.CombineExtra(env.sysPrompt, hookStart.Context)
-		if len(env.messages) > 0 && env.messages[0].Role == provider.RoleSystem {
+		if len(env.messages) > 0 && env.messages[0].Role == llm.RoleSystem {
 			env.messages[0].Content = env.sysPrompt
 		}
 	}

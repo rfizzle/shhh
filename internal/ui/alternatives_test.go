@@ -12,7 +12,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -225,7 +225,7 @@ func TestAlternatives_TheStreamNeverShowsTheSection(t *testing.T) {
 func TestAlternatives_SteppingBackRestoresTheOffersWithTheCommand(t *testing.T) {
 	// The revise answers with one command and no section, so the offers on
 	// screen after it are the revised command's own — none.
-	newStream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	newStream := func(msgs []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return makeEvents("ps -ef | grep -w LISTEN"), noopCancel, nil
 	}
 	m := NewGenerateModel(makeEvents(twoOthers), noopCancel, nil, newStream, nil, "").

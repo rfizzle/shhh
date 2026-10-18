@@ -13,13 +13,13 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
@@ -302,7 +302,7 @@ func TestObserveSessionTimeline(t *testing.T) {
 	// Stamped in the mode it started in and never left: no mode signal is
 	// recorded below, and the page must still say what mode it ran in.
 	rec.stamp("the prompt", 2, "/repo", sessionSettings(config.Config{}, runSettings{
-		mode: agent.ModeAuto.String(), effort: provider.EffortHigh, rounds: 60,
+		mode: agent.ModeAuto.String(), effort: llm.EffortHigh, rounds: 60,
 		sandbox: "workspace", model: "test-model", summary: true, classifier: true,
 	}))
 	rec.link("2026-01-01 10:00:00")
@@ -1567,15 +1567,15 @@ func observedSessionWithItsWords(t *testing.T, db *storage.DB) *observeRecorder 
 	t.Helper()
 	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
 	slot := "2026-09-08 10:00:00"
-	if err := db.SaveChat(slot, []provider.Message{
-		{Role: provider.RoleUser, Content: "where is the steering tuned?", Turn: 1},
-		{Role: provider.RoleAssistant, Turn: 1, Round: 8, ToolCalls: []provider.ToolCall{
+	if err := db.SaveChat(slot, []llm.Message{
+		{Role: llm.RoleUser, Content: "where is the steering tuned?", Turn: 1},
+		{Role: llm.RoleAssistant, Turn: 1, Round: 8, ToolCalls: []llm.ToolCall{
 			{ID: "a", Name: "search", Arguments: `{"pattern":"steeringItem","path":"internal/ui/chat"}`},
 			{ID: "b", Name: "search", Arguments: `{"pattern":"checkInEvery","path":"internal/agent"}`},
 		}},
-		{Role: provider.RoleTool, ToolCallID: "a", Turn: 1, Round: 8,
+		{Role: llm.RoleTool, ToolCallID: "a", Turn: 1, Round: 8,
 			Content: "internal/ui/chat/steer.go:14\ninternal/ui/chat/steer.go:52"},
-		{Role: provider.RoleTool, ToolCallID: "b", Turn: 1, Round: 8, Content: "internal/agent/checkin.go:9"},
+		{Role: llm.RoleTool, ToolCallID: "b", Turn: 1, Round: 8, Content: "internal/agent/checkin.go:9"},
 	}); err != nil {
 		t.Fatalf("save chat: %v", err)
 	}

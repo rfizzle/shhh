@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -18,9 +18,9 @@ func TestHeadlessSave_KeepsTheSessionsWorkingList(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 	const steps = `{"steps":[{"n":1,"title":"Read"},{"n":2,"title":"Patch"}],"done":[1]}`
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "carry on"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "carry on"},
 	}
 	if err := db.SaveChat("left", msgs); err != nil {
 		t.Fatal(err)
@@ -30,7 +30,7 @@ func TestHeadlessSave_KeepsTheSessionsWorkingList(t *testing.T) {
 	}
 
 	c := &headlessChat{db: db, slot: "left", kind: "code", steps: steps}
-	c.save(append(msgs, provider.Message{Role: provider.RoleAssistant, Content: "done"}))
+	c.save(append(msgs, llm.Message{Role: llm.RoleAssistant, Content: "done"}))
 	got, err := db.ChatResume(c.slot)
 	if err != nil {
 		t.Fatal(err)

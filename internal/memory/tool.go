@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -27,8 +27,8 @@ const DeclinedBefore = "the user declined this before; do not propose it"
 // the result as the person's standing answer and moves on, rather than
 // rewording the sentence to get it past the check
 // (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
-func ToolDefinition() provider.Tool {
-	return provider.Tool{
+func ToolDefinition() llm.Tool {
+	return llm.Tool{
 		Name:        RememberToolName,
 		Description: "Propose one short memory to keep across sessions: a user preference, a project convention, a correction the user made, or a lesson learned. The user reviews every proposal and chooses to save it (to this project or globally) or to decline; a declined proposal returns an error result — accept it and do not re-propose, and a text the user declined before is refused without asking them again. Keep entries short, general, and durable; never session-specific facts, file contents, or secrets.",
 		Parameters: json.RawMessage(`{

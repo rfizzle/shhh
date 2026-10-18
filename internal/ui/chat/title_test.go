@@ -9,7 +9,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -21,15 +21,15 @@ type titleProvider struct {
 	calls int
 }
 
-func (p *titleProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *titleProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.calls++
 	if p.err != nil {
 		return nil, p.err
 	}
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "t1", Name: sidejobs.TitleToolName, Arguments: `{"title":"` + p.title + `"}`}},
-		Usage:     &provider.Usage{PromptTokens: 200, CompletionTokens: 6},
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{ID: "t1", Name: sidejobs.TitleToolName, Arguments: `{"title":"` + p.title + `"}`}},
+		Usage:     &llm.Usage{PromptTokens: 200, CompletionTokens: 6},
 		Done:      true,
 	}
 	close(ch)
@@ -39,10 +39,10 @@ func (p *titleProvider) StreamCompletion(ctx context.Context, msgs []provider.Me
 func (p *titleProvider) Name() string { return "titles" }
 
 // titledModel is a session over a store with a titler on the given provider.
-func titledModel(t *testing.T, p provider.Provider) (Model, *storage.DB) {
+func titledModel(t *testing.T, p llm.Provider) (Model, *storage.DB) {
 	t.Helper()
 	db := rewindTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, multiTokenStream("hi there"), Wiring{
 		DB:     db,
 		Titler: sidejobs.NewTitler(p, sidejobs.TitleConfig{Model: "fast"}),

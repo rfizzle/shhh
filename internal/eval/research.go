@@ -37,9 +37,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -162,10 +162,10 @@ func researchAttempt(ctx context.Context, c Case, opts Options) Attempt {
 	ts.UseLedger(ledger)
 
 	ag := agent.New(
-		[]provider.Message{{Role: provider.RoleSystem, Content: prompt.BuildResearcher(shell.Detect(), prompt.WebTools{Fetch: true, Search: true})}},
-		func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		[]llm.Message{{Role: llm.RoleSystem, Content: prompt.BuildResearcher(shell.Detect(), prompt.WebTools{Fetch: true, Search: true})}},
+		func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(runCtx)
-			ev, sErr := opts.Provider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
+			ev, sErr := opts.Provider.StreamCompletion(sctx, msgs, llm.CompletionOpts{
 				Model:      opts.Model,
 				Tools:      ts.Definitions(),
 				ToolChoice: choice,
@@ -185,8 +185,8 @@ func researchAttempt(ctx context.Context, c Case, opts Options) Attempt {
 	// case: a suite that stopped for an approval would measure nothing.
 	h := &agent.Headless{
 		Agent:      ag,
-		OnToolCall: func(provider.ToolCall) { a.Calls++ },
-		OnUsage: func(u *provider.Usage) {
+		OnToolCall: func(llm.ToolCall) { a.Calls++ },
+		OnUsage: func(u *llm.Usage) {
 			a.TokensIn += u.PromptTokens
 			a.TokensOut += u.CompletionTokens
 		},

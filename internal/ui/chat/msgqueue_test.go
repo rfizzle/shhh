@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -38,7 +38,7 @@ func queuedModel(t *testing.T, width int) Model {
 func userTexts(m Model) []string {
 	var out []string
 	for _, msg := range m.Messages() {
-		if msg.Role == provider.RoleUser {
+		if msg.Role == llm.RoleUser {
 			out = append(out, msg.Content)
 		}
 	}
@@ -234,7 +234,7 @@ func TestGolden_Queue(t *testing.T) {
 func TestProgram_AQueuedLineIsCancelledOrPulledBackBeforeItIsSent(t *testing.T) {
 	hold := make(chan struct{})
 	p := &programProvider{turns: []programTurn{{text: "the scripted answer", hold: hold}}}
-	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
+	tm := runProgram(t, New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
 
 	tm.Type("start the work")
 	tm.Send(programEnter)

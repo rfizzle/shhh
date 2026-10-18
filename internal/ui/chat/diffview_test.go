@@ -10,9 +10,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -52,7 +52,7 @@ func appliedEditModel(t *testing.T) Model {
 	m := gatedModel(t, nil, nil)
 	path := filepath.Join(t.TempDir(), "code.go")
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
@@ -93,7 +93,7 @@ func TestAppliedEdit_LandsAsCollapsedDiffRow(t *testing.T) {
 	}
 	// The model still received the plain tool result.
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "Created") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "Created") {
 		t.Fatalf("tool result should confirm the write, got %+v", last)
 	}
 }
@@ -106,7 +106,7 @@ func TestAppliedEdit_ErrorKeepsToolBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_e", Name: "edit_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"old_text":"alpha","new_text":"beta"}`, path)},
 	}})
@@ -189,7 +189,7 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	path := filepath.Join(t.TempDir(), "code.go")
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})

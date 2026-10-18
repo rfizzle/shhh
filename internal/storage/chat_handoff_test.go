@@ -4,14 +4,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // A handoff is kept on its slot, survives the saves after it and the resume
 // columns being rewritten, and a slot that never had one answers empty.
 func TestChatHandoff_IsKeptBesideTheConversation(t *testing.T) {
 	db := openTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "hi"}}
 	if err := db.SaveChat("h", msgs); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -21,7 +21,7 @@ func TestChatHandoff_IsKeptBesideTheConversation(t *testing.T) {
 	if err := db.SetChatHandoff("h", "Retry backoff half done\nopen: the timer test"); err != nil {
 		t.Fatalf("set: %v", err)
 	}
-	if err := db.SaveChat("h", append(msgs, provider.Message{Role: provider.RoleAssistant, Content: "ok"})); err != nil {
+	if err := db.SaveChat("h", append(msgs, llm.Message{Role: llm.RoleAssistant, Content: "ok"})); err != nil {
 		t.Fatalf("save again: %v", err)
 	}
 	if err := db.SetChatResume("h", ChatResume{Summary: "s"}); err != nil {

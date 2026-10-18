@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/persona"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
@@ -36,7 +36,7 @@ func TestPersonasReloadMakesAnEditedRoleTheRunningSessions(t *testing.T) {
 	tools := subagent.Definitions(agents.profiles, subagent.Offer{})
 	env := &sessionEnv{
 		prov: assemblyProvider{},
-		replaceTools: func(edit func([]provider.Tool) []provider.Tool) {
+		replaceTools: func(edit func([]llm.Tool) []llm.Tool) {
 			tools = edit(tools)
 		},
 	}
@@ -52,7 +52,7 @@ func TestPersonasReloadMakesAnEditedRoleTheRunningSessions(t *testing.T) {
 		}
 		return plan.About
 	}
-	spawnTool := func() provider.Tool {
+	spawnTool := func() llm.Tool {
 		t.Helper()
 		for _, tool := range tools {
 			if tool.Name == subagent.SpawnToolName {
@@ -60,7 +60,7 @@ func TestPersonasReloadMakesAnEditedRoleTheRunningSessions(t *testing.T) {
 			}
 		}
 		t.Fatal("the spawn tool went missing")
-		return provider.Tool{}
+		return llm.Tool{}
 	}
 
 	write("description = \"reads a diff for style\"\npermissions = [\"read\"]\n")
@@ -102,13 +102,13 @@ func TestPersonasReloadMakesAnEditedRoleTheRunningSessions(t *testing.T) {
 }
 
 // briefProvider keeps the messages of the drafting request it is sent.
-type briefProvider struct{ sent *[]provider.Message }
+type briefProvider struct{ sent *[]llm.Message }
 
 func (briefProvider) Name() string { return "brief-test" }
 
-func (p briefProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p briefProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	*p.sent = append(*p.sent, msgs...)
-	ch := make(chan provider.StreamEvent)
+	ch := make(chan llm.StreamEvent)
 	close(ch)
 	return ch, nil
 }
@@ -120,11 +120,11 @@ func TestPersonasDraftWithTheSessionsScrub(t *testing.T) {
 	const declared = "hunter2-deploy-key-7f3a9c"
 	v := secret.New()
 	must(t, v.Add("DEPLOY_KEY", declared))
-	var sent []provider.Message
+	var sent []llm.Message
 	agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), Profiles: agents.profiles})
 	t.Cleanup(sup.Close)
-	env := &sessionEnv{prov: briefProvider{sent: &sent}, modelName: "m", replaceTools: func(func([]provider.Tool) []provider.Tool) {}}
+	env := &sessionEnv{prov: briefProvider{sent: &sent}, modelName: "m", replaceTools: func(func([]llm.Tool) []llm.Tool) {}}
 	p := buildPersonas(chatSession{vault: v}, env, agents, sup, meter.New(nil), nil)
 
 	p.Draft(t.Context(), persona.Request{Kind: persona.KindCode, Brief: "deploy with " + declared})
@@ -152,7 +152,7 @@ func TestPersonasReloadKeepsAConversationsRolesReaders(t *testing.T) {
 	agents := (&agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}).readers()
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), Profiles: agents.profiles})
 	t.Cleanup(sup.Close)
-	env := &sessionEnv{prov: assemblyProvider{}, replaceTools: func(func([]provider.Tool) []provider.Tool) {}}
+	env := &sessionEnv{prov: assemblyProvider{}, replaceTools: func(func([]llm.Tool) []llm.Tool) {}}
 	p := buildPersonas(chatSession{conversation: true}, env, agents, sup, meter.New(nil), nil)
 	must(t, p.Reload(path))
 

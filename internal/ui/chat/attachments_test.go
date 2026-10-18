@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -29,7 +29,7 @@ func stagePNG(t *testing.T, m Model, name string) Model {
 	if err != nil {
 		t.Fatal(err)
 	}
-	next, _ := m.stage([]provider.Attachment{a})
+	next, _ := m.stage([]llm.Attachment{a})
 	return next.(Model)
 }
 
@@ -129,7 +129,7 @@ func TestAttachments_RideOnTheUserMessage(t *testing.T) {
 
 	msgs := next.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleUser || len(last.Attachments) != 1 {
+	if last.Role != llm.RoleUser || len(last.Attachments) != 1 {
 		t.Fatalf("last message = %#v", last)
 	}
 	if last.Attachments[0].Name != "shot.png" || len(last.Attachments[0].Data) == 0 {
@@ -253,12 +253,12 @@ func TestPastedFileAttachment_ClaimsEverythingButText(t *testing.T) {
 
 func TestStage_RefusesPastTheTotalCeiling(t *testing.T) {
 	m := frameModel(t, 100, 40)
-	m.attachments = []provider.Attachment{{
-		Kind: provider.AttachmentImage, Name: "big.png",
+	m.attachments = []llm.Attachment{{
+		Kind: llm.AttachmentImage, Name: "big.png",
 		Data: make([]byte, attachment.MaxTotalBytes-10),
 	}}
-	updated, _ := m.stage([]provider.Attachment{{
-		Kind: provider.AttachmentImage, Name: "more.png", Data: make([]byte, 1024),
+	updated, _ := m.stage([]llm.Attachment{{
+		Kind: llm.AttachmentImage, Name: "more.png", Data: make([]byte, 1024),
 	}})
 	next := updated.(Model)
 	if len(next.attachments) != 1 {
@@ -338,7 +338,7 @@ func TestPasteMsg_StagesAPasteTooBigForTheDraft(t *testing.T) {
 	if got := m.attachments[0].Name; got != "paste-1.txt" {
 		t.Fatalf("the staged paste is called %q, want paste-1.txt", got)
 	}
-	if got := m.attachments[0].Kind; got != provider.AttachmentText {
+	if got := m.attachments[0].Kind; got != llm.AttachmentText {
 		t.Fatalf("the staged paste is %q, want text", got)
 	}
 	if got := m.input.Value(); got != "⟨Paste#1 · 11 lines⟩" {
@@ -494,9 +494,9 @@ func TestPasteMsg_NumbersEachStagedPaste(t *testing.T) {
 // and only where there is a height to carry.
 func TestAttachmentChips_TextCarriesItsHeightAndNothingElseDoes(t *testing.T) {
 	m := frameModel(t, 100, 40)
-	m.attachments = []provider.Attachment{
-		{Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("a\nb\nc\n")},
-		{Kind: provider.AttachmentImage, Name: "shot.png", Data: pngHeader},
+	m.attachments = []llm.Attachment{
+		{Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("a\nb\nc\n")},
+		{Kind: llm.AttachmentImage, Name: "shot.png", Data: pngHeader},
 	}
 	chips := m.attachmentChips()
 	if chips[0].Lines != 3 {
@@ -511,8 +511,8 @@ func TestAttachmentChips_TextCarriesItsHeightAndNothingElseDoes(t *testing.T) {
 // both are one artifact the model takes whole, and neither has a height.
 func TestAttachmentChips_ARecordingTakesTheDocumentMark(t *testing.T) {
 	m := frameModel(t, 100, 40)
-	m.attachments = []provider.Attachment{
-		{Kind: provider.AttachmentAudio, Name: "memo.mp3", MediaType: "audio/mpeg", Data: []byte("ID3\x04")},
+	m.attachments = []llm.Attachment{
+		{Kind: llm.AttachmentAudio, Name: "memo.mp3", MediaType: "audio/mpeg", Data: []byte("ID3\x04")},
 	}
 	chips := m.attachmentChips()
 	if chips[0].Kind != components.ChipDocument {
@@ -897,11 +897,11 @@ func TestStage_HandlesRunAcrossTheConversation(t *testing.T) {
 	// row kept.
 	log := strings.Repeat("a line of the log\n", 11)
 	token := components.PasteToken("Paste#2", "11 lines")
-	r := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "look " + token, Attachments: []provider.Attachment{
-			{Kind: provider.AttachmentImage, Handle: "Image#4", Name: "clipboard.png", MediaType: "image/png", Data: pngHeader},
-			{Kind: provider.AttachmentText, Handle: "Paste#2", Name: "paste-2.txt", MediaType: "text/plain", Data: []byte(log)},
+	r := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "look " + token, Attachments: []llm.Attachment{
+			{Kind: llm.AttachmentImage, Handle: "Image#4", Name: "clipboard.png", MediaType: "image/png", Data: pngHeader},
+			{Kind: llm.AttachmentText, Handle: "Paste#2", Name: "paste-2.txt", MediaType: "text/plain", Data: []byte(log)},
 		}},
 	})
 	r = stageImage(t, r, "clipboard.png")
@@ -924,7 +924,7 @@ func TestStage_HandlesRunAcrossTheConversation(t *testing.T) {
 
 // pictureToFold is a real 32×16 PNG as the clipboard or a dragged path hands
 // it over: sniffed, named, and not yet given a handle.
-func pictureToFold(t *testing.T) provider.Attachment {
+func pictureToFold(t *testing.T) llm.Attachment {
 	t.Helper()
 	a := stageImage(t, frameModel(t, 100, 40), "clipboard.png").attachments[0]
 	a.Handle = ""
@@ -947,7 +947,7 @@ func TestFold_WhatArrivesAtTheCursorLeavesOne(t *testing.T) {
 
 	// The clipboard's own key is the same door.
 	updated, _ = frameModel(t, 120, 40).handleClipboard(clipboardMsg{
-		clip: attachment.Clipboard{Attachments: []provider.Attachment{pictureToFold(t)}}, atCursor: true})
+		clip: attachment.Clipboard{Attachments: []llm.Attachment{pictureToFold(t)}}, atCursor: true})
 	if got := updated.(Model).input.Value(); got != "⟨Image#1 · 32×16⟩" {
 		t.Fatalf("ctrl+v left %q in the draft", got)
 	}

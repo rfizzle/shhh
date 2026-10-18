@@ -13,8 +13,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -48,7 +48,7 @@ func bracketRun(dir string, run func(context.Context, string) tools.ExecResult, 
 // readClaims reads the claims a git add carries, and the refusal it meets
 // before anything is asked: a reason missing, a path outside the workspace,
 // a path the tree shows unchanged, or a run with nowhere to record one.
-func (r headlessApproval) readClaims(tc provider.ToolCall) ([]structural.Claim, string) {
+func (r headlessApproval) readClaims(tc llm.ToolCall) ([]structural.Claim, string) {
 	if r.structTools == nil {
 		return nil, ""
 	}

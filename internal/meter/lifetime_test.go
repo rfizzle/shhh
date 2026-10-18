@@ -6,36 +6,36 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 const lifeModel = "claude-sonnet-5-5"
 
 // scriptProvider answers each request with the next usage in its script.
 type scriptProvider struct {
-	script []provider.Usage
+	script []llm.Usage
 	n      int
 }
 
 func (s *scriptProvider) Name() string { return "gateway" }
 
-func (s *scriptProvider) StreamCompletion(_ context.Context, _ []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (s *scriptProvider) StreamCompletion(_ context.Context, _ []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	u := s.script[s.n]
 	s.n++
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{Usage: &u, Done: true}
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{Usage: &u, Done: true}
 	close(ch)
 	return ch, nil
 }
 
 // conversation is a growing message list: each call to next returns the
 // earlier messages with one more turn appended.
-type conversation struct{ msgs []provider.Message }
+type conversation struct{ msgs []llm.Message }
 
-func (c *conversation) next(text string) []provider.Message {
-	c.msgs = append(c.msgs, provider.Message{Role: provider.RoleUser, Content: text})
-	return append([]provider.Message(nil), c.msgs...)
+func (c *conversation) next(text string) []llm.Message {
+	c.msgs = append(c.msgs, llm.Message{Role: llm.RoleUser, Content: text})
+	return append([]llm.Message(nil), c.msgs...)
 }
 
 // clocked is a ledger on a clock the test moves, priced at $3 a million
@@ -50,9 +50,9 @@ func clocked(lease string) (*Ledger, *time.Time) {
 	return l, &now
 }
 
-func sendAs(t *testing.T, p provider.Provider, model string, msgs []provider.Message) {
+func sendAs(t *testing.T, p llm.Provider, model string, msgs []llm.Message) {
 	t.Helper()
-	ev, err := p.StreamCompletion(context.Background(), msgs, provider.CompletionOpts{Model: model})
+	ev, err := p.StreamCompletion(context.Background(), msgs, llm.CompletionOpts{Model: model})
 	if err != nil {
 		t.Fatalf("stream: %v", err)
 	}
@@ -60,21 +60,21 @@ func sendAs(t *testing.T, p provider.Provider, model string, msgs []provider.Mes
 	}
 }
 
-func send(t *testing.T, p provider.Provider, msgs []provider.Message) {
+func send(t *testing.T, p llm.Provider, msgs []llm.Message) {
 	t.Helper()
 	sendAs(t, p, lifeModel, msgs)
 }
 
 var (
-	wrote = provider.Usage{PromptTokens: 100_000, CacheCreationTokens: 100_000}
-	read  = provider.Usage{PromptTokens: 100_500, CachedTokens: 100_000, CacheCreationTokens: 500}
+	wrote = llm.Usage{PromptTokens: 100_000, CacheCreationTokens: 100_000}
+	read  = llm.Usage{PromptTokens: 100_500, CachedTokens: 100_000, CacheCreationTokens: 500}
 )
 
 // A request that reads what the last one wrote, across a pause, bounds the
 // lifetime from below by the pause.
 func TestGate_ObservesSurvivalAcrossAnIdleGap(t *testing.T) {
 	l, now := clocked("1h")
-	p := l.For(&scriptProvider{script: []provider.Usage{wrote, read, read}}, SourceAgent)
+	p := l.For(&scriptProvider{script: []llm.Usage{wrote, read, read}}, SourceAgent)
 	var c conversation
 	send(t, p, c.next("a"))
 	*now = now.Add(48 * time.Minute)
@@ -96,8 +96,8 @@ func TestGate_ObservesSurvivalAcrossAnIdleGap(t *testing.T) {
 // was gone within it, and the session keeps the receipt for it.
 func TestGate_ObservesAnExpiry(t *testing.T) {
 	l, now := clocked("1h")
-	full := provider.Usage{PromptTokens: 112_000, CacheCreationTokens: 112_000}
-	p := l.For(&scriptProvider{script: []provider.Usage{full, full}}, SourceAgent)
+	full := llm.Usage{PromptTokens: 112_000, CacheCreationTokens: 112_000}
+	p := l.For(&scriptProvider{script: []llm.Usage{full, full}}, SourceAgent)
 	var c conversation
 	send(t, p, c.next("a"))
 	*now = now.Add(62 * time.Minute)
@@ -125,25 +125,25 @@ func TestGate_ObservesAnExpiry(t *testing.T) {
 // Each of the four things that change the bytes inside the prefix reads as
 // an expiry if compared, and so yields no observation at all.
 func TestGate_NoObservationWhenThePrefixChanged(t *testing.T) {
-	long := []provider.Message{
-		{Role: provider.RoleSystem, Content: "workspace v1"},
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "two"},
-		{Role: provider.RoleUser, Content: "three"},
+	long := []llm.Message{
+		{Role: llm.RoleSystem, Content: "workspace v1"},
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "two"},
+		{Role: llm.RoleUser, Content: "three"},
 	}
 	for _, tc := range []struct {
 		name  string
-		next  []provider.Message
+		next  []llm.Message
 		model string
 	}{
-		{"a trim", []provider.Message{long[0], long[2], long[3], {Role: provider.RoleUser, Content: "four"}}, lifeModel},
-		{"a compaction", []provider.Message{long[0], {Role: provider.RoleUser, Content: "summary", Machine: true}, long[3]}, lifeModel},
-		{"a workspace rewrite", []provider.Message{{Role: provider.RoleSystem, Content: "workspace v2"}, long[1], long[2], long[3], {Role: provider.RoleUser, Content: "four"}}, lifeModel},
-		{"a model switch", append(append([]provider.Message(nil), long...), provider.Message{Role: provider.RoleUser, Content: "four"}), "claude-opus-5-5"},
+		{"a trim", []llm.Message{long[0], long[2], long[3], {Role: llm.RoleUser, Content: "four"}}, lifeModel},
+		{"a compaction", []llm.Message{long[0], {Role: llm.RoleUser, Content: "summary", Machine: true}, long[3]}, lifeModel},
+		{"a workspace rewrite", []llm.Message{{Role: llm.RoleSystem, Content: "workspace v2"}, long[1], long[2], long[3], {Role: llm.RoleUser, Content: "four"}}, lifeModel},
+		{"a model switch", append(append([]llm.Message(nil), long...), llm.Message{Role: llm.RoleUser, Content: "four"}), "claude-opus-5-5"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			l, now := clocked("1h")
-			p := l.For(&scriptProvider{script: []provider.Usage{wrote, {PromptTokens: 50_000, CacheCreationTokens: 50_000}}}, SourceAgent)
+			p := l.For(&scriptProvider{script: []llm.Usage{wrote, {PromptTokens: 50_000, CacheCreationTokens: 50_000}}}, SourceAgent)
 			send(t, p, long)
 			*now = now.Add(30 * time.Minute)
 			sendAs(t, p, tc.model, tc.next)
@@ -163,12 +163,12 @@ func TestGate_NoObservationWhenThePrefixChanged(t *testing.T) {
 // prompt is a different prefix from the agent's.
 func TestGate_ObservesEachOriginAgainstItsOwnPrevious(t *testing.T) {
 	l, now := clocked("1h")
-	sp := &scriptProvider{script: []provider.Usage{wrote, {PromptTokens: 1_000, CacheCreationTokens: 1_000}, read}}
+	sp := &scriptProvider{script: []llm.Usage{wrote, {PromptTokens: 1_000, CacheCreationTokens: 1_000}, read}}
 	agentP, childP := l.For(sp, SourceAgent), l.ForOrigin(sp, Origin{Source: SourceSubagent, Label: "critic"})
 	var c conversation
 	send(t, agentP, c.next("a"))
 	*now = now.Add(10 * time.Minute)
-	send(t, childP, []provider.Message{{Role: provider.RoleUser, Content: "other"}})
+	send(t, childP, []llm.Message{{Role: llm.RoleUser, Content: "other"}})
 	send(t, agentP, c.next("b"))
 	if r := l.CacheReadingFor("gateway", lifeModel); r.SurvivedN != 1 || r.SurvivedMax != 10*time.Minute || r.ExpiredN != 0 {
 		t.Errorf("reading %+v", r)
@@ -200,7 +200,7 @@ func TestReading_EffectiveLifetime(t *testing.T) {
 // rewrite five minutes would have paid for: 1.25x less a read.
 func TestLedger_CounterfactualOnTheHour(t *testing.T) {
 	l, now := clocked("1h")
-	p := l.For(&scriptProvider{script: []provider.Usage{wrote, read}}, SourceAgent)
+	p := l.For(&scriptProvider{script: []llm.Usage{wrote, read}}, SourceAgent)
 	var c conversation
 	send(t, p, c.next("a"))
 	*now = now.Add(20 * time.Minute)
@@ -221,7 +221,7 @@ func TestLedger_CounterfactualOnTheHour(t *testing.T) {
 // hour would have read through is a saving: its rewrite at 2x less a read.
 func TestLedger_CounterfactualOnFiveMinutes(t *testing.T) {
 	l, now := clocked("5m")
-	p := l.For(&scriptProvider{script: []provider.Usage{wrote, wrote}}, SourceAgent)
+	p := l.For(&scriptProvider{script: []llm.Usage{wrote, wrote}}, SourceAgent)
 	var c conversation
 	send(t, p, c.next("a"))
 	*now = now.Add(20 * time.Minute)
@@ -242,8 +242,8 @@ func TestLedger_CounterfactualOnFiveMinutes(t *testing.T) {
 func TestLedger_CounterfactualNeedsAPrice(t *testing.T) {
 	l := New(nil)
 	l.SetCacheLease("1h")
-	p := l.For(&scriptProvider{script: []provider.Usage{wrote}}, SourceAgent)
-	send(t, p, []provider.Message{{Role: provider.RoleUser, Content: "a"}})
+	p := l.For(&scriptProvider{script: []llm.Usage{wrote}}, SourceAgent)
+	send(t, p, []llm.Message{{Role: llm.RoleUser, Content: "a"}})
 	if got := l.LeaseCosts(); len(got) != 0 {
 		t.Errorf("unpriced writes were costed: %+v", got)
 	}

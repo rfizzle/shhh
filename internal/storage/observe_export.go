@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe/record"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 type AgentSessionSummary struct {
@@ -227,7 +227,7 @@ func (db *DB) AgentSessionCalls(id int64) ([]AgentSessionCall, error) {
 	)
 	for _, m := range msgs {
 		if m.toolCallsJSON != nil {
-			var tcs []provider.ToolCall
+			var tcs []llm.ToolCall
 			if err := json.Unmarshal([]byte(*m.toolCallsJSON), &tcs); err != nil {
 				return nil, fmt.Errorf("unmarshal tool calls: %w", err)
 			}
@@ -239,7 +239,7 @@ func (db *DB) AgentSessionCalls(id int64) ([]AgentSessionCall, error) {
 			}
 			continue
 		}
-		if m.role == string(provider.RoleTool) && m.callID != "" {
+		if m.role == string(llm.RoleTool) && m.callID != "" {
 			if i, ok := at[m.callID]; ok {
 				calls[i].Result = m.content
 			}
@@ -297,10 +297,10 @@ type AgentExportEvent struct {
 
 // AgentExportMessage is one conversation message in the transcript join.
 type AgentExportMessage struct {
-	Role       string              `json:"role"`
-	Content    string              `json:"content,omitempty"`
-	ToolCalls  []provider.ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string              `json:"tool_call_id,omitempty"`
+	Role       string         `json:"role"`
+	Content    string         `json:"content,omitempty"`
+	ToolCalls  []llm.ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string         `json:"tool_call_id,omitempty"`
 }
 
 // ExportAgentObservability returns every session (with its events) since the

@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -349,7 +349,7 @@ func (m Model) safetyTools() components.SafetySection {
 		// tool that asks everywhere else is a read here.
 		case m.wiring.Conversation && receipt.IsFetch(name):
 			read = append(read, name)
-		case m.requiresApproval(provider.ToolCall{Name: name}):
+		case m.requiresApproval(llm.ToolCall{Name: name}):
 			asks = append(asks, name)
 		default:
 			read = append(read, name)

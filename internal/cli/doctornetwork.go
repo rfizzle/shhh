@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -65,7 +65,7 @@ func probeModel(ctx context.Context, cfg config.Config) doctor.Finding {
 	// A reasoning level is the other half of what a request asks for,
 	// and an unreadable one is a session that will fail to start rather than
 	// quietly reason less than it was told to.
-	if effort, err := provider.ParseEffort(resolved.Reasoning); err != nil {
+	if effort, err := llm.ParseEffort(resolved.Reasoning); err != nil {
 		f.Detail = doctor.JoinDetail(f.Detail, err.Error())
 	} else if effort.On() {
 		f.Detail = doctor.JoinDetail(f.Detail, "reasoning "+effort.String())
@@ -91,7 +91,7 @@ func withIdleCompactWarning(f doctor.Finding, cfg config.Config, readings []stor
 		return f
 	}
 	state := meter.CacheNoneYet
-	if len(provider.PromptCacheOff(providerName, model)) > 0 {
+	if len(llm.PromptCacheOff(providerName, model)) > 0 {
 		state = meter.CacheOff
 	} else {
 		for _, r := range readings {
@@ -141,7 +141,7 @@ func probeFlows(_ context.Context, cfg config.Config) doctor.Finding {
 func flowsFinding(cfg config.Config, provName string, answers []flowModel, replaced bool) doctor.Finding {
 	f := doctorFlows(answers)
 	for i, a := range answers {
-		if a.flow.flow == provider.FlowClassifier {
+		if a.flow.flow == llm.FlowClassifier {
 			f.Fix[i] += classifierBackendNote(cfg, provName, a.model, replaced)
 			if decisionsClassifier(cfg) {
 				// The decisions backend sends no schema, so nothing a
@@ -161,16 +161,16 @@ func flowsFinding(cfg config.Config, provName string, answers []flowModel, repla
 // with, without loading prices; a flow the registry says has nothing to
 // narrow keeps its line as it was.
 // See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
-func declarationNote(flow provider.Flow, model string) string {
+func declarationNote(flow llm.Flow, model string) string {
 	if model == "" {
 		return ""
 	}
 	var note string
-	for _, d := range provider.Declarations() {
+	for _, d := range llm.Declarations() {
 		if !d.Scopes(flow) {
 			continue
 		}
-		if by := provider.DeclaredOn(model, flow, d.Key); len(by) > 0 {
+		if by := llm.DeclaredOn(model, flow, d.Key); len(by) > 0 {
 			note += " · " + d.Instead + " (profile " + strings.Join(by, ", ") + ")"
 		}
 	}
@@ -190,7 +190,7 @@ func classifierBackendNote(cfg config.Config, provName, model string, replaced b
 		return " · " + agent.BackendCompletion + " backend"
 	}
 	note := " · " + agent.BackendDecisions + " backend, "
-	if provider.DecisionsDeclared(provName, model) {
+	if llm.DecisionsDeclared(provName, model) {
 		note += "offered by this model"
 	} else {
 		note += "not offered by this model, so every verdict fails closed"

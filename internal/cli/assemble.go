@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -229,7 +229,7 @@ func unattendedRegistration(ownStore, sayDelegation bool) func(*cobra.Command, *
 				return err
 			}
 			a.agents = agents
-			session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.snapshot(), subagent.Offer{})...)
+			session.toolDefs = append(append([]llm.Tool{}, session.toolDefs...), subagent.Definitions(agents.snapshot(), subagent.Offer{})...)
 		}
 		return nil
 	}

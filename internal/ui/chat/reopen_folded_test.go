@@ -6,8 +6,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -22,12 +22,12 @@ func TestReopen_ACompactedSessionKeepsItsFoldedTurns(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 	pic := trayPNG(t, "before.png")
 	pic.Handle = "Image#1"
-	a := agent.New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "this one", Attachments: []provider.Attachment{pic}},
-		{Role: provider.RoleAssistant, Content: "Looked at it."},
-		{Role: provider.RoleUser, Content: "and now this"},
-		{Role: provider.RoleAssistant, Content: "Done."},
+	a := agent.New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "this one", Attachments: []llm.Attachment{pic}},
+		{Role: llm.RoleAssistant, Content: "Looked at it."},
+		{Role: llm.RoleUser, Content: "and now this"},
+		{Role: llm.RoleAssistant, Content: "Done."},
 	}, nil)
 	a.Compact("they looked at a picture", a.Messages()[3:])
 	compacted := len(a.Messages())

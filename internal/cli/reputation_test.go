@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -25,10 +25,10 @@ type verdictJudge struct {
 
 func (v verdictJudge) Name() string { return "judge" }
 
-func (v verdictJudge) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (v verdictJudge) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	*v.calls++
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{Done: true, ToolCalls: []provider.ToolCall{{ID: "d", Name: agent.DecisionToolName,
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{Done: true, ToolCalls: []llm.ToolCall{{ID: "d", Name: agent.DecisionToolName,
 		Arguments: `{"decision":"` + v.decision + `","reason":"reads a page"}`}}}
 	close(ch)
 	return ch, nil
@@ -68,7 +68,7 @@ func TestAutoJudgeReadsTheHostBeforeTheClassifier(t *testing.T) {
 			calls := 0
 			j := &autoJudge{ctx: t.Context(), allowHosts: c.allow, denyHosts: c.deny,
 				classifier: agent.NewClassifier(verdictJudge{decision: c.decision, calls: &calls}, agent.ClassifierConfig{Model: "m"})}
-			got, _, code := j.decide(provider.ToolCall{Name: web.FetchToolName, Arguments: `{"url":"https://h/"}`}, c.action)
+			got, _, code := j.decide(llm.ToolCall{Name: web.FetchToolName, Arguments: `{"url":"https://h/"}`}, c.action)
 			if got != c.want || code != c.code {
 				t.Fatalf("decide = %v %q, want %v %q", got, code, c.want, c.code)
 			}

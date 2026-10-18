@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -97,7 +97,7 @@ func TestTurns_APausedTurnKeepsItsFigures(t *testing.T) {
 	m := turnModel(t)
 	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "fix the round accounting")
-	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 80})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 1200, CompletionTokens: 80})
 	spend := m.totalsLabel(m.turnSpend())
 	m = applyWrite(t, m, filepath.Join(t.TempDir(), "loop.go"), "package agent\n", "y")
 	if m.roundPause == nil || m.turnOpen {

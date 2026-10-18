@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -81,7 +81,7 @@ func TestEveryRegistrableArgumentSaysWhatItIsFor(t *testing.T) {
 // registrable is the set both tests read, built from the fixtures the two
 // runtime-shaped definitions need: a catalog of one skill for the skill
 // tool's name enum, and the built-in roles for the spawn tool's role enum.
-func registrable(t *testing.T) []provider.Tool {
+func registrable(t *testing.T) []llm.Tool {
 	t.Helper()
 	catalog := &skill.Catalog{Skills: []skill.Skill{{Name: "fixture", Description: "A fixture skill."}}}
 	defs := registrableDefinitions(catalog, subagent.BuiltinProfiles())

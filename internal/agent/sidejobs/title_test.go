@@ -6,20 +6,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
-func titleCall(args string) provider.StreamEvent {
-	return provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "t1", Name: TitleToolName, Arguments: args}},
-		Usage:     &provider.Usage{PromptTokens: 300, CompletionTokens: 8},
+func titleCall(args string) llm.StreamEvent {
+	return llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{ID: "t1", Name: TitleToolName, Arguments: args}},
+		Usage:     &llm.Usage{PromptTokens: 300, CompletionTokens: 8},
 		Done:      true,
 	}
 }
 
 func TestTitler_ToolCallReading(t *testing.T) {
 	var sawUser bool
-	p := &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		sawUser = opts.Model == "small"
 		return eventsOf(titleCall(`{"title":"Flaky retry test"}`)), nil
 	}}
@@ -36,7 +36,7 @@ func TestTitler_ToolCallReading(t *testing.T) {
 	// The instruction is the system message and the exchange the user turn,
 	// so a conversation that tries to name itself is not sitting in the
 	// same message as the instruction that names it.
-	if len(p.msgs) != 2 || p.msgs[0].Role != provider.RoleSystem || p.msgs[1].Role != provider.RoleUser {
+	if len(p.msgs) != 2 || p.msgs[0].Role != llm.RoleSystem || p.msgs[1].Role != llm.RoleUser {
 		t.Fatalf("messages = %+v", p.msgs)
 	}
 	if !strings.Contains(p.msgs[0].Content, "You name conversations") || strings.Contains(p.msgs[0].Content, "UNTRUSTED EXCHANGE") {
@@ -64,7 +64,7 @@ func TestTitler_CeilingLeavesRoomForTheThought(t *testing.T) {
 	if v.Failed || v.Title != "Flaky retry test" {
 		t.Fatalf("the default ceiling should produce a title, got %+v", v)
 	}
-	if roomy.seen.Effort != provider.EffortLow {
+	if roomy.seen.Effort != llm.EffortLow {
 		t.Errorf("effort = %v", roomy.seen.Effort)
 	}
 	if DefaultTitleMaxTokens <= lowBudget() {
@@ -73,8 +73,8 @@ func TestTitler_CeilingLeavesRoomForTheThought(t *testing.T) {
 }
 
 func TestTitler_ProseFallbackAndBounds(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-		return eventsOf(provider.StreamEvent{Token: "\"One two three four five six seven eight.\"\nmore", Done: true}), nil
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+		return eventsOf(llm.StreamEvent{Token: "\"One two three four five six seven eight.\"\nmore", Done: true}), nil
 	}}
 	v := NewTitler(p, TitleConfig{Model: "m"}).Title(context.Background(), TitleRequest{User: "q"})
 	if v.Failed {
@@ -86,11 +86,11 @@ func TestTitler_ProseFallbackAndBounds(t *testing.T) {
 }
 
 func TestTitler_FailsSoft(t *testing.T) {
-	cases := map[string]func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error){
-		"provider error": func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	cases := map[string]func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error){
+		"provider error": func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 			return nil, errors.New("down")
 		},
-		"empty answer": func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		"empty answer": func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 			return eventsOf(titleCall(`{"title":"   "}`)), nil
 		},
 	}

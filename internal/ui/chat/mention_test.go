@@ -11,9 +11,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // mentionModel is a ready session whose file walk is a fixed list.
@@ -143,7 +143,7 @@ func TestMention_ImageIsStaged(t *testing.T) {
 	updated, _ = next.Update(attached)
 	next = updated.(Model)
 
-	if len(next.attachments) != 1 || next.attachments[0].Kind != provider.AttachmentImage {
+	if len(next.attachments) != 1 || next.attachments[0].Kind != llm.AttachmentImage {
 		t.Fatalf("expected one staged image chip, got %v", next.attachments)
 	}
 	if !strings.Contains(next.input.Value(), "shot.png") {
@@ -256,7 +256,7 @@ func TestMention_AColleagueReachesTheModelAsWrittenInTheMessage(t *testing.T) {
 	next = updated.(Model)
 	msgs := next.agent.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleUser || last.Content != "ask @security-reviewer about the diff" {
+	if last.Role != llm.RoleUser || last.Content != "ask @security-reviewer about the diff" {
 		t.Fatalf("the message should carry the name as typed, got %s %q", last.Role, last.Content)
 	}
 }

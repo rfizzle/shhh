@@ -34,7 +34,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -177,13 +177,13 @@ const spawnReadRounds = 3
 func (s *scriptedChild) steps() []scriptedStep {
 	var out []scriptedStep
 	if s.row.WritePath != "" {
-		out = append(out, scriptedStep{call: &provider.ToolCall{
+		out = append(out, scriptedStep{call: &llm.ToolCall{
 			ID: "w1", Name: writeToolName,
 			Arguments: string(scriptedArgs(map[string]any{"path": s.row.WritePath, "content": s.row.WriteBody})),
 		}})
 	}
 	for i := range spawnReadRounds {
-		out = append(out, scriptedStep{call: &provider.ToolCall{
+		out = append(out, scriptedStep{call: &llm.ToolCall{
 			ID: fmt.Sprintf("r%d", i+1), Name: "read_file", Arguments: `{"path":"README.md"}`,
 		}})
 	}
@@ -194,7 +194,7 @@ func (s *scriptedChild) steps() []scriptedStep {
 // scriptedStep is one round of the child's script: a tool call, or the text
 // that ends the turn.
 type scriptedStep struct {
-	call *provider.ToolCall
+	call *llm.ToolCall
 	text string
 }
 
@@ -202,7 +202,7 @@ func (s *scriptedChild) factory() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		script := s.steps()
 		root := spec.Root
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			if err := ctx.Err(); err != nil {
 				return nil, nil, err
 			}
@@ -216,14 +216,14 @@ func (s *scriptedChild) factory() subagent.EnvFactory {
 			step := script[at]
 			time.Sleep(spawnRoundDelay)
 
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			if step.text != "" {
-				ch <- provider.StreamEvent{Token: step.text}
+				ch <- llm.StreamEvent{Token: step.text}
 			}
 			if step.call != nil {
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{*step.call}}
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{*step.call}}
 			} else {
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			// The whole reply is already in the channel, so there is nothing
@@ -298,13 +298,13 @@ type scriptedReader struct {
 
 func (r *scriptedReader) Name() string { return "scripted" }
 
-func (r *scriptedReader) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (r *scriptedReader) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	args := scriptedArgs(map[string]any{
 		"summary": "a reading of the scripted child", "state": r.state, "reason": r.reason,
 	})
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "s1", Name: sidejobs.SummaryToolName, Arguments: string(args)}},
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{ID: "s1", Name: sidejobs.SummaryToolName, Arguments: string(args)}},
 		Done:      true,
 	}
 	close(ch)

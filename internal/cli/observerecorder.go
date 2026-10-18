@@ -13,12 +13,12 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo"
 )
@@ -360,7 +360,7 @@ type runSettings struct {
 	// and a headless run answers with --yes and --allow instead.
 	mode string
 	// effort is the reasoning level the surface starts at.
-	effort provider.Effort
+	effort llm.Effort
 	// rounds is the per-turn tool-round cap in force, 0 for none; a
 	// surface that resolves its cap through maxRoundsFor spells it with
 	// roundCapFor first.

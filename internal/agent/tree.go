@@ -59,9 +59,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // DefaultTreeBudget is how long one reading may take before it stops running
@@ -302,7 +302,7 @@ func (a *Agent) TreeChecking() bool { return a.tree != nil }
 // noteTreeCalls counts the calls of a round that may write anywhere, so the
 // next notice can say a command ran rather than claim the changes are
 // somebody else's.
-func (a *Agent) noteTreeCalls(calls []provider.ToolCall) {
+func (a *Agent) noteTreeCalls(calls []llm.ToolCall) {
 	if a.tree == nil || a.tree.cfg.IsCommand == nil {
 		return
 	}

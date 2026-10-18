@@ -10,7 +10,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // Secrets wires the session vault into the chat TUI. The zero value
@@ -22,7 +22,7 @@ type Secrets struct {
 	Manage func(args []string) (note, announce string)
 	// Scrub is the rewrite every message goes through on its way into the
 	// conversation and out to a provider.
-	Scrub func(provider.Message) provider.Message
+	Scrub func(llm.Message) llm.Message
 }
 
 // secretCommand is /secret. A change to the set is told to the model as a

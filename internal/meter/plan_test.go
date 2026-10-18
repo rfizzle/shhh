@@ -3,7 +3,7 @@ package meter
 import (
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // A request the ChatGPT plan answered is counted and never priced, so no
@@ -11,7 +11,7 @@ import (
 // answered.
 func TestRecordOnThePlanCountsTokensAndPricesNothing(t *testing.T) {
 	l := New(cachedPrices())
-	u := provider.Usage{PromptTokens: 1000, CompletionTokens: 10}
+	u := llm.Usage{PromptTokens: 1000, CompletionTokens: 10}
 	l.RecordOn(PlanProvider, Origin{Source: SourceAgent}, "cached", u)
 	l.RecordOn("openai", Origin{Source: SourceAgent}, "cached", u)
 	entries := l.Entries()
@@ -31,7 +31,7 @@ func TestRecordOnThePlanCountsTokensAndPricesNothing(t *testing.T) {
 // the rest never prices the plan's share.
 func TestTotalsCarryWhatThePlanPaid(t *testing.T) {
 	l := New(cachedPrices())
-	u := provider.Usage{PromptTokens: 1000, CompletionTokens: 10}
+	u := llm.Usage{PromptTokens: 1000, CompletionTokens: 10}
 	l.RecordOn(PlanProvider, Origin{Source: SourceAgent}, "cached", u)
 	l.RecordOn("openai", Origin{Source: SourceAgent}, "cached", u)
 	if got := l.Total().Plan; got != 1010 {

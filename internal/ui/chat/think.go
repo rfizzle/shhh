@@ -5,7 +5,7 @@ package chat
 // answer and slanted, at the body column a card's sentence starts on, with
 // no glyph, no band, no count and no fold.
 //
-// Thinking arrives on its own channel (internal/provider) because it is not
+// Thinking arrives on its own channel (github.com/rfizzle/llm) because it is not
 // the answer — a provider that streamed it as a token would print the model's
 // private murmur as its reply. "See it before it happens" is the product's
 // first claim, and what the model thought is the earliest thing there is to
@@ -28,7 +28,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -45,7 +45,7 @@ func lineCounts(n int) string {
 // reasoningText is the readable half of a round's reasoning blocks. A
 // redacted block has none — the provider kept the words and handed back an
 // opaque payload — so it contributes nothing rather than an empty line.
-func reasoningText(blocks []provider.ReasoningBlock) string {
+func reasoningText(blocks []llm.ReasoningBlock) string {
 	var parts []string
 	for _, b := range blocks {
 		if b.Text != "" {
@@ -111,7 +111,7 @@ func (m *Model) appendThinking(text string) {
 // than as it is written. A round that already has one keeps it — the
 // streamed text and the finished blocks are the same words, and appending
 // both would say everything twice.
-func (m *Model) recordReasoning(blocks []provider.ReasoningBlock) {
+func (m *Model) recordReasoning(blocks []llm.ReasoningBlock) {
 	if m.thinkIdx == 0 {
 		m.appendThinking(reasoningText(blocks))
 	}

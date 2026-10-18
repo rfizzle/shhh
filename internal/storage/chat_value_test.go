@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // What a tool result carried beside its text is saved with the message and
@@ -13,10 +13,10 @@ import (
 func TestChat_AToolResultsValueSurvivesAReopen(t *testing.T) {
 	db := openTestDB(t)
 	want := json.RawMessage(`{"Suite":"default","Verdict":"pass"}`)
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "go"},
-		{Role: provider.RoleTool, Content: "Quality gate", ToolCallID: "c1", Value: want},
-		{Role: provider.RoleTool, Content: "plain", ToolCallID: "c2"},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "go"},
+		{Role: llm.RoleTool, Content: "Quality gate", ToolCallID: "c1", Value: want},
+		{Role: llm.RoleTool, Content: "plain", ToolCallID: "c2"},
 	}
 	if err := db.SaveChat("v", msgs); err != nil {
 		t.Fatal(err)
@@ -40,7 +40,7 @@ func TestSaveChat_IsStampedByTheStoresClock(t *testing.T) {
 	at := time.Date(2031, 2, 3, 4, 5, 6, 0, time.UTC)
 	db.clock = func() time.Time { return at }
 
-	if err := db.SaveChat("held", []provider.Message{{Role: "user", Content: "hi"}}); err != nil {
+	if err := db.SaveChat("held", []llm.Message{{Role: "user", Content: "hi"}}); err != nil {
 		t.Fatal(err)
 	}
 	var got string

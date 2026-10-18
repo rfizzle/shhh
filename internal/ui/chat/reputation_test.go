@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -62,7 +62,7 @@ func TestReputation_AutoModeLetsAKnownHostThrough(t *testing.T) {
 		&decisions)
 	m.policy.mode = agent.ModeAuto
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_1", "https://pkg.go.dev/context"),
 	}})
 	m = updated.(Model)
@@ -96,7 +96,7 @@ func TestReputation_AutoModeLetsAKnownHostThrough(t *testing.T) {
 func TestReputation_ManualModeStillAsks(t *testing.T) {
 	useFixtureReputation(t, nil)
 	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://pkg.go.dev/context")}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://pkg.go.dev/context")}})
 	if m = updated.(Model); m.state != stateConfirmRun {
 		t.Fatalf("manual mode let a known host through (state %d)", m.state)
 	}
@@ -123,7 +123,7 @@ func TestReputation_AWarnedHostIsCardedWhereTheClassifierAllowed(t *testing.T) {
 				&decisions)
 			m.policy.mode = agent.ModeAuto
 
-			updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://"+c.host+"/x")}})
+			updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://"+c.host+"/x")}})
 			m = updated.(Model)
 			if m.state != stateClassifying {
 				t.Fatalf("an unknown-to-policy fetch in auto mode should be classified, got state %d", m.state)
@@ -169,7 +169,7 @@ func TestReputation_AWarnedHostIsNotOfferedTheGrant(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			useFixtureReputation(t, map[string][]string{"urlhaus": {"bad.test"}})
 			m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
-			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://"+c.host+"/x")}})
+			updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://"+c.host+"/x")}})
 			m = handover(t, updated.(Model))
 			view := m.View().Content
 			offered := strings.Contains(view, "allow "+c.host+" without asking")
@@ -198,7 +198,7 @@ func TestReputation_AnUnknownHostLeavesTheClassifiersAnswer(t *testing.T) {
 	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
 	m.classifier.judge = agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
 	m.policy.mode = agent.ModeAuto
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://nowhere.test/x")}})
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://nowhere.test/x")}})
 	m = updated.(Model)
 	updated, _ = m.Update(driveClassifierDone(t, cmd))
 	m = updated.(Model)
@@ -223,7 +223,7 @@ func TestObserve_AHostStandingAskCarriesTheClassifiersTime(t *testing.T) {
 		DecisionTimed: func(_ observe.Pos, d, r string, _ time.Duration) { timed = append(timed, [2]string{d, r}) },
 	}
 	m.policy.mode = agent.ModeAuto
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://bad.test/x")}})
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://bad.test/x")}})
 	m = updated.(Model)
 	m.Update(driveClassifierDone(t, cmd))
 	want := [2]string{observe.DecisionAsk, observe.ReasonHostListed}

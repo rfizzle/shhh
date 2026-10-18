@@ -21,7 +21,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 const (
@@ -100,18 +100,18 @@ func (r SuggestRequest) Empty() bool {
 type SuggestVerdict struct {
 	Suggestion string
 	Model      string
-	Usage      provider.Usage
+	Usage      llm.Usage
 	Failed     bool
 	Err        string
 }
 
 // Suggester writes the offered next step through the session's provider.
 type Suggester struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      SuggestConfig
 }
 
-func NewSuggester(p provider.Provider, cfg SuggestConfig) *Suggester {
+func NewSuggester(p llm.Provider, cfg SuggestConfig) *Suggester {
 	return &Suggester{provider: p, cfg: cfg}
 }
 
@@ -161,26 +161,26 @@ func (s *Suggester) Suggest(ctx context.Context, req SuggestRequest) SuggestVerd
 	// The instruction and the evidence travel in separate messages, so the
 	// dialect's own instruction channel is what keeps them apart
 	// (classifier.go).
-	events, err := s.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: s.cfg.prompt()},
-		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
-	}, provider.CompletionOpts{
+	events, err := s.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: s.cfg.prompt()},
+		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
+	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      provider.FlowSuggestion,
+		Flow:      llm.FlowSuggestion,
 		MaxTokens: s.cfg.maxTokens(),
 		// A shallow thought is the right amount for one sentence, for the
 		// reason the titler asks for one.
-		Effort: provider.EffortLow,
+		Effort: llm.EffortLow,
 		// The answer is the prose: there is no tool to call, and the request
 		// says so rather than leaving it to the dialect's default.
-		ToolChoice: provider.ToolChoiceNone,
+		ToolChoice: llm.ToolChoiceNone,
 	})
 	if err != nil {
 		v.Err = "the suggestion could not be read: " + err.Error()
 		return v
 	}
 
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	if reply.Usage != nil {
 		v.Usage = *reply.Usage
 	}

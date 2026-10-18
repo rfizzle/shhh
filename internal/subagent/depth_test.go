@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -327,9 +327,9 @@ func TestDepth_ThreeWaitingAgentsAndAQueuedGrandchildAllFinish(t *testing.T) {
 		kid := parent + "-a"
 		kids = append(kids, parent, kid)
 		scripts[parent] = []streamStep{
-			{calls: []provider.ToolCall{{ID: "s", Name: SpawnToolName,
+			{calls: []llm.ToolCall{{ID: "s", Name: SpawnToolName,
 				Arguments: fmt.Sprintf(`{"role":"researcher","task":"piece of %s","name":%q}`, parent, kid)}}},
-			{calls: []provider.ToolCall{{ID: "w", Name: ReportToolName,
+			{calls: []llm.ToolCall{{ID: "w", Name: ReportToolName,
 				Arguments: fmt.Sprintf(`{"name":%q}`, kid)}}},
 			{text: "collected " + kid},
 		}
@@ -374,7 +374,7 @@ func TestDepth_ARetriedAgentKeepsItsPlaceInTheTree(t *testing.T) {
 	base := perAgentEnv(map[string][]streamStep{
 		"two": {{text: "the parent has answered"}},
 		"three": {
-			{fail: &provider.Failure{Message: "the provider refused"}},
+			{fail: &llm.Failure{Message: "the provider refused"}},
 			{text: "the second attempt answered"},
 		},
 	}, func(name string, next agent.ToolExecutor) agent.ToolExecutor {
@@ -437,9 +437,9 @@ func TestDepth_AKilledAgentComesOutOfItsWaitOnADescendant(t *testing.T) {
 
 	scripts := map[string][]streamStep{
 		"parent": {
-			{calls: []provider.ToolCall{{ID: "s", Name: SpawnToolName,
+			{calls: []llm.ToolCall{{ID: "s", Name: SpawnToolName,
 				Arguments: `{"role":"researcher","task":"a piece","name":"kid"}`}}},
-			{calls: []provider.ToolCall{{ID: "w", Name: ReportToolName, Arguments: `{"name":"kid"}`}}},
+			{calls: []llm.ToolCall{{ID: "w", Name: ReportToolName, Arguments: `{"name":"kid"}`}}},
 			{text: "collected"},
 		},
 	}
@@ -457,7 +457,7 @@ func TestDepth_AKilledAgentComesOutOfItsWaitOnADescendant(t *testing.T) {
 			if err != nil {
 				return env, err
 			}
-			env.Stream = func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			env.Stream = func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 				select {
 				case <-ctx.Done():
 				case <-blocked:
@@ -502,7 +502,7 @@ func perAgentEnv(scripts map[string][]streamStep, wrap func(string, agent.ToolEx
 	}
 	return func(ctx context.Context, spec Spec) (Env, error) {
 		name := spec.Name
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			if ctx.Err() != nil {
 				return nil, nil, ctx.Err()
 			}
@@ -518,14 +518,14 @@ func perAgentEnv(scripts map[string][]streamStep, wrap func(string, agent.ToolEx
 			if step.fail != nil {
 				return nil, nil, step.fail
 			}
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			if step.text != "" {
-				ch <- provider.StreamEvent{Token: step.text}
+				ch <- llm.StreamEvent{Token: step.text}
 			}
 			if len(step.calls) > 0 {
-				ch <- provider.StreamEvent{ToolCalls: step.calls}
+				ch <- llm.StreamEvent{ToolCalls: step.calls}
 			} else {
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			_, cancel := context.WithCancel(context.Background())
@@ -628,13 +628,13 @@ func TestDepth_AKillTakesTheSubtreeAndTheWorktreeGoesLast(t *testing.T) {
 	repo := initTestRepo(t)
 	scripts := map[string][]streamStep{
 		"writer-1": {
-			{calls: []provider.ToolCall{{ID: "s", Name: SpawnToolName,
+			{calls: []llm.ToolCall{{ID: "s", Name: SpawnToolName,
 				Arguments: `{"role":"researcher","task":"read the change","name":"reader"}`}}},
-			{calls: []provider.ToolCall{{ID: "w", Name: ReportToolName, Arguments: `{"name":"reader"}`}}},
+			{calls: []llm.ToolCall{{ID: "w", Name: ReportToolName, Arguments: `{"name":"reader"}`}}},
 			{text: "collected"},
 		},
 		"reader": {
-			{calls: []provider.ToolCall{{ID: "c", Name: tools.ExecCommandName,
+			{calls: []llm.ToolCall{{ID: "c", Name: tools.ExecCommandName,
 				Arguments: `{"command":"go test ./..."}`}}},
 			{text: "read it"},
 		},

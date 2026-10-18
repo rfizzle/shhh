@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // What the model's command made is the turn's work: the command's card is
@@ -26,7 +26,7 @@ func TestProgram_ACommandsFileIsCountedOnTheClose(t *testing.T) {
 			return "", 0
 		}),
 	},
-		programTurn{calls: []provider.ToolCall{
+		programTurn{calls: []llm.ToolCall{
 			{ID: "call_gen", Name: "execute_command", Arguments: `{"command":"make gen"}`},
 		}},
 		programTurn{text: "The protobufs are generated."},

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestPlanRecord_RoundTripsByOpaqueHandle(t *testing.T) {
@@ -38,9 +38,9 @@ func TestPlanRecord_RoundTripsByOpaqueHandle(t *testing.T) {
 func TestPlanRecord_SurvivesItsChatSession(t *testing.T) {
 	db := openTestDB(t)
 	const slot = "2026-09-13 10:00:00"
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "what would you do"},
-		{Role: provider.RoleAssistant, Content: "1. do the thing"},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "what would you do"},
+		{Role: llm.RoleAssistant, Content: "1. do the thing"},
 	}
 	if err := db.SaveChat(slot, msgs); err != nil {
 		t.Fatal(err)

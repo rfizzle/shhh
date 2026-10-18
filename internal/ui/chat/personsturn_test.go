@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // A turn the person starts while a run fans out answers under the person's
@@ -85,7 +85,7 @@ func TestPersonsTurn_TheClassifierNeverJudgesTheSkillTurn(t *testing.T) {
 
 	next, _ := m.sendUserMessageAs("skill body", "/skill documentation")
 	m = next.(Model)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)

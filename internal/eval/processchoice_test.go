@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -49,21 +49,21 @@ func TestEval_ProcessChoiceTableShape(t *testing.T) {
 
 func TestAskProcessChoice_ReadsTheFirstToolCall(t *testing.T) {
 	row := Row{Name: "dev server", Expect: []string{LabelProcess}, Instruction: "start the dev server"}
-	start := provider.ToolCall{ID: "p", Name: process.ToolName, Arguments: `{"action":"start","name":"dev","command":"npm run dev"}`}
+	start := llm.ToolCall{ID: "p", Name: process.ToolName, Arguments: `{"action":"start","name":"dev","command":"npm run dev"}`}
 	cases := []struct {
 		name  string
-		reply provider.StreamEvent
+		reply llm.StreamEvent
 		want  string
 	}{
-		{"a process start", provider.StreamEvent{ToolCalls: []provider.ToolCall{start}, Done: true}, LabelProcess},
-		{"the command tool", provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "c", Name: tools.ExecCommandName, Arguments: `{"command":"npm run dev"}`}}, Done: true}, LabelCommand},
-		{"a process read is neither", provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "r", Name: process.ToolName, Arguments: `{"action":"read","name":"dev"}`}}, Done: true}, LabelOtherCall},
-		{"a read of the tree first", provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "l", Name: "list_directory", Arguments: `{"path":"."}`}, start}, Done: true}, LabelOtherCall},
-		{"no call", provider.StreamEvent{Token: "which port?", Done: true}, LabelOtherCall},
+		{"a process start", llm.StreamEvent{ToolCalls: []llm.ToolCall{start}, Done: true}, LabelProcess},
+		{"the command tool", llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "c", Name: tools.ExecCommandName, Arguments: `{"command":"npm run dev"}`}}, Done: true}, LabelCommand},
+		{"a process read is neither", llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "r", Name: process.ToolName, Arguments: `{"action":"read","name":"dev"}`}}, Done: true}, LabelOtherCall},
+		{"a read of the tree first", llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "l", Name: "list_directory", Arguments: `{"path":"."}`}, start}, Done: true}, LabelOtherCall},
+		{"no call", llm.StreamEvent{Token: "which port?", Done: true}, LabelOtherCall},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			m := &delegationModel{inheritModel: inheritModel{replies: []provider.StreamEvent{c.reply}}}
+			m := &delegationModel{inheritModel: inheritModel{replies: []llm.StreamEvent{c.reply}}}
 			a := askProcessChoice(context.Background(), m, "scripted", row)
 			if a.Err != "" || a.Label != c.want {
 				t.Fatalf("label %q err %q (%s), want %q", a.Label, a.Err, a.Reason, c.want)
@@ -75,7 +75,7 @@ func TestAskProcessChoice_ReadsTheFirstToolCall(t *testing.T) {
 // The row is asked with both tools in front of the model and the toolbox's
 // line for the process tool, which is what a session holding it writes.
 func TestAskProcessChoice_HoldsBothToolsAndTheToolbox(t *testing.T) {
-	m := &delegationModel{inheritModel: inheritModel{replies: []provider.StreamEvent{{Token: "ok", Done: true}}}}
+	m := &delegationModel{inheritModel: inheritModel{replies: []llm.StreamEvent{{Token: "ok", Done: true}}}}
 	askProcessChoice(context.Background(), m, "scripted", Row{Name: "x", Instruction: "start it"})
 	have := map[string]bool{}
 	for _, tl := range m.tools {

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -354,8 +354,8 @@ func (a Answer) Validate(q Question) error {
 
 // ToolDefinition is the ask tool the session registers where there is
 // somebody to answer it.
-func ToolDefinition() provider.Tool {
-	return provider.Tool{
+func ToolDefinition() llm.Tool {
+	return llm.Tool{
 		Name: ToolName,
 		Description: "Put a question to the person and wait for their answer. " +
 			"Only for a fork you cannot decide and where the answers would lead to materially different work: " +

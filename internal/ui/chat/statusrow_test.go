@@ -8,9 +8,9 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -57,7 +57,7 @@ func TestStatusRow_IdleCountsTheSession(t *testing.T) {
 // intervals, which is what makes a reading stale.
 func outrun(m *Model, n int) {
 	for range n + 2*m.summaryInterval() + 1 {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 }
 

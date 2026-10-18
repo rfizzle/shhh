@@ -17,10 +17,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -1148,7 +1148,7 @@ func TestTodoRunHeadless_AnItemsConversationsGoUnlessItStopped(t *testing.T) {
 			slotOf := func(stage run.Stage) string { return "stage " + string(stage) }
 			d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 				slot := slotOf(step.Stage)
-				must(t, d.db.SaveChat(slot, []provider.Message{{Role: provider.RoleUser, Content: "x"}}))
+				must(t, d.db.SaveChat(slot, []llm.Message{{Role: llm.RoleUser, Content: "x"}}))
 				stages = append(stages, step.Stage)
 				turn := todoTurn{code: exitDone, chat: slot, resume: "shhh code --resume='" + slot + "'"}
 				if step.Stage == tc.breakAt {

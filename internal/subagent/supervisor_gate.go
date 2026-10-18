@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -151,7 +151,7 @@ func (a *Ask) Answered() (approved, ok bool) {
 // result, which is where the child can act on it. A call whose arguments do
 // not parse is left to resolveGated, which says so.
 // See docs/capabilities/containment.md#containment-can-be-required.
-func (s *Supervisor) refuseUncontained(c *child, tc provider.ToolCall) (string, bool) {
+func (s *Supervisor) refuseUncontained(c *child, tc llm.ToolCall) (string, bool) {
 	if tc.Name != tools.ExecCommandName || c.env.CommandRefusal == "" {
 		return "", false
 	}
@@ -191,7 +191,7 @@ func refuseGitProgramPath(c *child, name string, rooted json.RawMessage, title s
 // verdict along the way is recorded at the codes a session records its own
 // at — an approval rate that covered the parent and not its children would
 // be a rate over the half of the work a person was looking at.
-func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
+func (s *Supervisor) resolveGated(c *child, tc llm.ToolCall) string {
 	raw := json.RawMessage(tc.Arguments)
 	// A child's spawn naming a model the session cannot run is refused here,
 	// ahead of the policy, the classifier and the card, as the session's own
@@ -383,7 +383,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
 		return c.nudgeTurn().Append(c.pos().Turn, action.Command, c.env.execResult(result))
 	}
-	return agent.ExecuteWith(c.ctx, c.env.ExecuteGated, provider.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
+	return agent.ExecuteWith(c.ctx, c.env.ExecuteGated, llm.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
 }
 
 // classify runs the auto-mode permission classifier for a call the
@@ -401,7 +401,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 // refused here, as it always was: the only answerer on the other end of the
 // route is a rule, and it would decline the call in somebody's name.
 // See docs/capabilities/subagents.md#a-child-answers-to-the-session.
-func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string, judged, failed bool) {
+func (s *Supervisor) classify(c *child, mode agent.Mode, tc llm.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string, judged, failed bool) {
 	if mode != agent.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
 		return agent.Ask, 0, "", false, false
 	}

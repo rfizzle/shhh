@@ -9,9 +9,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -28,7 +28,7 @@ func verdictModel(t *testing.T, state string) Model {
 
 func advanceRounds(m Model, n int) Model {
 	for i := 0; i < n; i++ {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 	return m
 }
@@ -37,7 +37,7 @@ func advanceRounds(m Model, n int) Model {
 func lastUserMessage(m Model) string {
 	msgs := m.agent.RequestMessages()
 	for i := len(msgs) - 1; i >= 0; i-- {
-		if msgs[i].Role == provider.RoleUser {
+		if msgs[i].Role == llm.RoleUser {
 			return msgs[i].Content
 		}
 	}

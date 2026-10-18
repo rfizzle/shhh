@@ -2,7 +2,7 @@ package attachment
 
 // Acquiring attachments: reading the bytes off the clipboard or off
 // disk, deciding what they are, and refusing what shhh cannot carry. The
-// wire type lives in internal/provider — this package is only the door the
+// wire type lives in github.com/rfizzle/llm — this package is only the door the
 // bytes come in through, which is why it is named for the noun rather than
 // for `attach`, the verb that already means "attach to a sub-agent" here.
 
@@ -16,8 +16,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/clipboard"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 const (
@@ -51,7 +51,7 @@ const (
 // is not an attachment — it belongs in the draft — so the caller decides
 // between the two rather than being told there was nothing.
 type Clipboard struct {
-	Attachments []provider.Attachment
+	Attachments []llm.Attachment
 	Text        string
 	// Rejected is why something on the clipboard could not be attached —
 	// a file too large, bytes of a kind shhh does not carry. Empty when
@@ -73,7 +73,7 @@ func Read() (Clipboard, error) {
 			out.Rejected = err
 			return out, nil
 		}
-		out.Attachments = []provider.Attachment{a}
+		out.Attachments = []llm.Attachment{a}
 		return out, nil
 	}
 	for _, path := range p.Files {
@@ -90,72 +90,72 @@ func Read() (Clipboard, error) {
 }
 
 // FromFile reads one file off disk as an attachment.
-func FromFile(path string) (provider.Attachment, error) {
+func FromFile(path string) (llm.Attachment, error) {
 	path = Expand(path)
 	info, err := os.Stat(path)
 	if err != nil {
-		return provider.Attachment{}, fmt.Errorf("%s: %w", filepath.Base(path), err)
+		return llm.Attachment{}, fmt.Errorf("%s: %w", filepath.Base(path), err)
 	}
 	if info.IsDir() {
-		return provider.Attachment{}, fmt.Errorf("%s is a directory", filepath.Base(path))
+		return llm.Attachment{}, fmt.Errorf("%s is a directory", filepath.Base(path))
 	}
 	if info.Size() > MaxBytes {
-		return provider.Attachment{}, fmt.Errorf("%s is %s — the limit for one attachment is %s",
+		return llm.Attachment{}, fmt.Errorf("%s is %s — the limit for one attachment is %s",
 			filepath.Base(path), HumanSize(int(info.Size())), HumanSize(MaxBytes))
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return provider.Attachment{}, err
+		return llm.Attachment{}, err
 	}
 	return FromBytes(filepath.Base(path), data)
 }
 
 // FromBytes classifies bytes that are already in hand — a pasted screenshot,
 // a file already read.
-func FromBytes(name string, data []byte) (provider.Attachment, error) {
+func FromBytes(name string, data []byte) (llm.Attachment, error) {
 	if len(data) == 0 {
-		return provider.Attachment{}, fmt.Errorf("%s is empty", name)
+		return llm.Attachment{}, fmt.Errorf("%s is empty", name)
 	}
 	if len(data) > MaxBytes {
-		return provider.Attachment{}, fmt.Errorf("%s is %s — the limit for one attachment is %s",
+		return llm.Attachment{}, fmt.Errorf("%s is %s — the limit for one attachment is %s",
 			name, HumanSize(len(data)), HumanSize(MaxBytes))
 	}
 	kind, mediaType, err := Sniff(name, data)
 	if err != nil {
-		return provider.Attachment{}, err
+		return llm.Attachment{}, err
 	}
-	if kind == provider.AttachmentText && len(data) > MaxTextBytes {
-		return provider.Attachment{}, fmt.Errorf(
+	if kind == llm.AttachmentText && len(data) > MaxTextBytes {
+		return llm.Attachment{}, fmt.Errorf(
 			"%s is %s of text — attach files under %s, or let the agent read it with a tool",
 			name, HumanSize(len(data)), HumanSize(MaxTextBytes))
 	}
-	return provider.Attachment{Kind: kind, Name: name, MediaType: mediaType, Data: data}, nil
+	return llm.Attachment{Kind: kind, Name: name, MediaType: mediaType, Data: data}, nil
 }
 
 // Sniff decides what a set of bytes is. The extension is consulted only to
 // sharpen a media type the content sniffer already agrees with — bytes win,
 // so a .png that is really a JPEG is sent as one, and a recording renamed to
 // .wav is refused rather than sent under a format it is not in.
-func Sniff(name string, data []byte) (provider.AttachmentKind, string, error) {
+func Sniff(name string, data []byte) (llm.AttachmentKind, string, error) {
 	detected := http.DetectContentType(data)
 	if i := strings.IndexByte(detected, ';'); i >= 0 {
 		detected = strings.TrimSpace(detected[:i])
 	}
 	switch detected {
 	case "image/png", "image/jpeg", "image/gif", "image/webp":
-		return provider.AttachmentImage, detected, nil
+		return llm.AttachmentImage, detected, nil
 	case "application/pdf":
-		return provider.AttachmentDocument, detected, nil
+		return llm.AttachmentDocument, detected, nil
 	}
 	// A recording keeps the name the vendors' format lists give it, which is
 	// not always the one the sniffing rules answer with.
-	if mediaType, ok := provider.AudioMediaType(detected); ok {
-		return provider.AttachmentAudio, mediaType, nil
+	if mediaType, ok := llm.AudioMediaType(detected); ok {
+		return llm.AttachmentAudio, mediaType, nil
 	}
 	// DetectContentType calls anything textish text/plain; source files are
 	// the common case here, so the extension names them more usefully.
 	if utf8.Valid(data) && !hasNUL(data) {
-		return provider.AttachmentText, textMediaType(name), nil
+		return llm.AttachmentText, textMediaType(name), nil
 	}
 	return "", "", fmt.Errorf("%s is %s — shhh attaches images, PDFs, audio, and text files",
 		name, detected)
@@ -243,7 +243,7 @@ func LooksLikeFile(s string) (string, bool) {
 // bracketed paste, which is a keystroke — where reading a five-megabyte file
 // to find out it is a PNG would stall the frame. The read that follows
 // happens in a command.
-func PeekKind(path string) (provider.AttachmentKind, error) {
+func PeekKind(path string) (llm.AttachmentKind, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -314,7 +314,7 @@ func NormalizeNewlines(text string) string {
 // provider's count, because the line leading a text attachment in a request
 // states the same figure (provider.Attachment.Label).
 func LineCount(data []byte) int {
-	return provider.LineCount(data)
+	return llm.LineCount(data)
 }
 
 // PasteName is what the paste handed `Paste#n` is called. A paste has no
@@ -329,12 +329,12 @@ func PasteName(n int) string {
 // figures at most, so it never widens a row unpredictably. It is the
 // provider's spelling, for LineCount's reason.
 func HumanSize(n int) string {
-	return provider.HumanSize(n)
+	return llm.HumanSize(n)
 }
 
 // Summarize is the one-line description of a staged set, for the notice rail
 // and the transcript row: how many, and how much.
-func Summarize(atts []provider.Attachment) string {
+func Summarize(atts []llm.Attachment) string {
 	if len(atts) == 0 {
 		return ""
 	}
@@ -342,12 +342,12 @@ func Summarize(atts []provider.Attachment) string {
 	if len(atts) == 1 {
 		noun = "attachment"
 	}
-	return fmt.Sprintf("%d %s · %s", len(atts), noun, HumanSize(provider.AttachmentBytes(atts)))
+	return fmt.Sprintf("%d %s · %s", len(atts), noun, HumanSize(llm.AttachmentBytes(atts)))
 }
 
 // Names lists the staged attachments the way the transcript shows them: the
 // name and its size, never the bytes.
-func Names(atts []provider.Attachment) []string {
+func Names(atts []llm.Attachment) []string {
 	out := make([]string, 0, len(atts))
 	for _, a := range atts {
 		out = append(out, fmt.Sprintf("%s (%s)", a.Name, HumanSize(len(a.Data))))
@@ -370,8 +370,8 @@ const (
 // HandleWord is the word an attachment of this kind is numbered under when
 // nothing asked for another. A paste is never decided here: it is text like
 // a text file, and only the door that staged it knows it had no file.
-func HandleWord(kind provider.AttachmentKind) string {
-	if kind == provider.AttachmentImage {
+func HandleWord(kind llm.AttachmentKind) string {
+	if kind == llm.AttachmentImage {
 		return HandleImage
 	}
 	return HandleFile

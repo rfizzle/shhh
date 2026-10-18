@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -36,7 +36,7 @@ func TestServe_ClassifierVerdictsCarryTheirTime(t *testing.T) {
 		recordTook: l.recordTook,
 		un:         unattended{judge: judge, at: l.obs.pos},
 	})
-	resolve(provider.ToolCall{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"go install ./cmd/tool"}`})
+	resolve(llm.ToolCall{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"go install ./cmd/tool"}`})
 	rec.end()
 
 	if calls != 1 {

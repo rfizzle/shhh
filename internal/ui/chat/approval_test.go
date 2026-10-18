@@ -15,11 +15,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -76,9 +76,9 @@ func gatedModel(t *testing.T, executor ToolExecutor, gated map[string]GatedPrevi
 // tools win over the two named.
 func gatedModelWith(t *testing.T, executor ToolExecutor, gated map[string]GatedPreviewFunc, w Wiring) Model {
 	t.Helper()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "change it"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "change it"},
 	}
 	if w.Executor == nil {
 		w.Executor = executor
@@ -113,7 +113,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 		"write_file": writeFilePreview("line one\n"),
 	}))
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"line one\nline two\n"}`},
 	}})
 	m = updated.(Model)
@@ -175,7 +175,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	updated, restream := m.Update(done)
 	m = updated.(Model)
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_w" || last.Content != "wrote 2 lines" {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_w" || last.Content != "wrote 2 lines" {
 		t.Fatalf("expected tool result for call_w, got %+v", last)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -192,7 +192,7 @@ func TestGatedTool_Declined(t *testing.T) {
 		"write_file": writeFilePreview(""),
 	})
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"x\n"}`},
 	}})
 	m = updated.(Model)
@@ -202,7 +202,7 @@ func TestGatedTool_Declined(t *testing.T) {
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_w" || !strings.Contains(last.Content, "declined") {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_w" || !strings.Contains(last.Content, "declined") {
 		t.Fatalf("declined call should produce an error tool result, got %+v", last)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -230,7 +230,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	})
 	m.wiring.Runner = legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 })
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"a.txt","content":"x\n"}`},
 	}})
@@ -272,7 +272,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	m = updated.(Model)
 	var ids []string
 	for _, msg := range m.Messages() {
-		if msg.Role == provider.RoleTool {
+		if msg.Role == llm.RoleTool {
 			ids = append(ids, msg.ToolCallID)
 		}
 	}
@@ -289,13 +289,13 @@ func TestGatedTool_InvalidPreviewSkipped(t *testing.T) {
 		},
 	})
 
-	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, restream := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{}`},
 	}})
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "invalid arguments") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "invalid arguments") {
 		t.Fatalf("invalid preview should produce an error tool result, got %+v", last)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -315,13 +315,13 @@ func TestGatedTool_StalePreviewNamesTheFile(t *testing.T) {
 		},
 	})
 
-	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, restream := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"loop.go"}`},
 	}})
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "read_file it again") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "read_file it again") {
 		t.Fatalf("the model must still get its own sentence, got %+v", last)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -348,7 +348,7 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 		},
 	})
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_g", Name: "my_tool", Arguments: `{}`},
 	}})
 	m = updated.(Model)
@@ -377,7 +377,7 @@ func TestGatedTool_APreviewThatNamesTheActLeadsWithIt(t *testing.T) {
 		},
 	})
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_g", Name: "my_tool", Arguments: `{}`},
 	}})
 	view := ansi.Strip(updated.(Model).View().Content)
@@ -405,7 +405,7 @@ func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
 	m := gatedModel(t, executor, nil)
 	path := filepath.Join(t.TempDir(), "hello.txt")
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"hello\n"}`, path)},
 	}})
@@ -444,7 +444,7 @@ func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
 	updated, _ = m.Update(done)
 	m = updated.(Model)
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_w" || !strings.Contains(last.Content, "Created") {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_w" || !strings.Contains(last.Content, "Created") {
 		t.Fatalf("tool result should confirm the write, got %+v", last)
 	}
 }
@@ -456,7 +456,7 @@ func TestMutatingTool_EditDeclinedLeavesFileUntouched(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_e", Name: "edit_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"old_text":"beta","new_text":"delta"}`, path)},
 	}})
@@ -478,7 +478,7 @@ func TestMutatingTool_EditDeclinedLeavesFileUntouched(t *testing.T) {
 		t.Fatal("declined edit must leave the file untouched")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_e" || !strings.Contains(last.Content, "declined") {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_e" || !strings.Contains(last.Content, "declined") {
 		t.Fatalf("declined edit should produce an error tool result, got %+v", last)
 	}
 }
@@ -490,14 +490,14 @@ func TestMutatingTool_InvalidEditSkippedWithError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, restream := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_e", Name: "edit_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"old_text":"missing","new_text":"x"}`, path)},
 	}})
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "not found") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "not found") {
 		t.Fatalf("no-match edit should produce an error tool result, got %+v", last)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -519,7 +519,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	// the turn's live tail is using.
 	normalHeight := m.viewportHeight()
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file",
 			Arguments: fmt.Sprintf(`{"path":"big.txt","content":%q}`, content.String())},
 	}})
@@ -559,7 +559,7 @@ func TestMutatingTool_HookAppendsDiagnosticsToResult(t *testing.T) {
 	}
 	path := filepath.Join(t.TempDir(), "hello.go")
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
@@ -582,7 +582,7 @@ func TestMutatingTool_HookAppendsDiagnosticsToResult(t *testing.T) {
 	updated, _ = m.Update(done)
 	m = updated.(Model)
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "Created") ||
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "Created") ||
 		!strings.Contains(last.Content, "Diagnostics (fake)") {
 		t.Fatalf("tool result should carry write confirmation plus hook diagnostics, got %+v", last)
 	}
@@ -611,7 +611,7 @@ func TestMutatingTool_SeveralEditsAreOneCardAndOneRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_e", Name: "edit_file", Arguments: string(args)},
 	}})
 	m = updated.(Model)
@@ -691,7 +691,7 @@ func TestMutatingTool_OverlappingEditsNeverReachACard(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_e", Name: "edit_file", Arguments: string(args)},
 	}})
 	m = updated.(Model)
@@ -699,7 +699,7 @@ func TestMutatingTool_OverlappingEditsNeverReachACard(t *testing.T) {
 		t.Fatal("a call the write would refuse must not be put to the user")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "overlap") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "overlap") {
 		t.Fatalf("the model should be told the edits overlap, got %+v", last)
 	}
 	if data, _ := os.ReadFile(path); string(data) != "func Handle() {}\n" {
@@ -718,7 +718,7 @@ func pendingExec(t *testing.T, m Model, command string) Model {
 	if err != nil {
 		t.Fatalf("marshalling the call arguments: %v", err)
 	}
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: tools.ExecCommandName, Arguments: string(args)},
 	}})
 	return updated.(Model)
@@ -793,7 +793,7 @@ func TestApprovalCard_DryRunRunsTheDerivedFormAndDecidesNothing(t *testing.T) {
 		t.Fatalf("esc should come back to the waiting decision, got state %d pending %v", m.state, m.approval.request)
 	}
 	for _, msg := range m.Messages() {
-		if msg.Role == provider.RoleTool {
+		if msg.Role == llm.RoleTool {
 			t.Fatalf("a dry run must never answer the call: %+v", msg)
 		}
 	}
@@ -855,7 +855,7 @@ func TestApprovalCard_DryRunNotOfferedWithoutAHarmlessForm(t *testing.T) {
 func runOnce(t *testing.T, m Model, command string) (Model, string) {
 	t.Helper()
 	args, _ := json.Marshal(map[string]string{"command": command})
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "c" + command, Name: tools.ExecCommandName, Arguments: string(args)},
 	}})
 	m = updated.(Model)
@@ -875,7 +875,7 @@ func runOnce(t *testing.T, m Model, command string) (Model, string) {
 	m = updated.(Model)
 	msgs := m.agent.Messages()
 	for i := len(msgs) - 1; i >= 0; i-- {
-		if msgs[i].Role == provider.RoleTool {
+		if msgs[i].Role == llm.RoleTool {
 			return m, msgs[i].Content
 		}
 	}
@@ -927,7 +927,7 @@ func TestApproval_FailedCommandIsAnErrorResultForEveryConsumer(t *testing.T) {
 }
 
 func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		Runner:  legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 }),
 		Repeats: agent.NewRepeatDetector(),
@@ -952,7 +952,7 @@ func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
 func TestApproval_ARepeatedDeclineSaysSo(t *testing.T) {
 	decline := func(t *testing.T, m Model) (Model, string) {
 		t.Helper()
-		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 			{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"x\n"}`},
 		}})
 		m = handover(t, updated.(Model))
@@ -988,7 +988,7 @@ func TestAutoApproval_LeavesOneRowCarryingItsOwnAccount(t *testing.T) {
 	m := execModel(t, &ran)
 	m.policy.mode = agent.ModeAcceptEdits
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
 	}})
 	m = updated.(Model)
@@ -1042,7 +1042,7 @@ func TestAutoApproval_NeverPrintsWhatTheRowBounds(t *testing.T) {
 		})
 	m.policy.mode = agent.ModeAcceptEdits
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_gw", Name: structural.GitWriteToolName, Arguments: string(args)},
 	}})
 	m = updated.(Model)
@@ -1082,7 +1082,7 @@ func TestAutoApproval_ASummaryCannotLandInsideAnApprovedAct(t *testing.T) {
 	m := execModel(t, &ran)
 	m.policy.mode = agent.ModeAcceptEdits
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
 	}})
 	m = updated.(Model)
@@ -1137,7 +1137,7 @@ func spawnPreview(raw json.RawMessage) (GatedPreview, error) {
 
 // spawnModel is a session at a spawn card, with the calls the round asked for
 // already queued and the keyboard handed to the card.
-func spawnModel(t *testing.T, calls ...provider.ToolCall) Model {
+func spawnModel(t *testing.T, calls ...llm.ToolCall) Model {
 	t.Helper()
 	m := tallPanel(t, gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) {
 		return "started", nil
@@ -1146,8 +1146,8 @@ func spawnModel(t *testing.T, calls ...provider.ToolCall) Model {
 	return handover(t, updated.(Model))
 }
 
-func spawnCall(id, args string) provider.ToolCall {
-	return provider.ToolCall{ID: id, Name: subagent.SpawnToolName, Arguments: args}
+func spawnCall(id, args string) llm.ToolCall {
+	return llm.ToolCall{ID: id, Name: subagent.SpawnToolName, Arguments: args}
 }
 
 // TestSpawnCard_ARoundIsOneDecision: three children asked for in one round
@@ -1232,7 +1232,7 @@ func TestSpawnCard_AnAnsweredChildIsNotAskedAgain(t *testing.T) {
 	// The list denied the third child and allowed the second; the head has
 	// run and the second is the card now.
 	m.approval.batchAnswered = map[string]bool{"s3": false}
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		spawnCall("s2", `{"role":"researcher","task":"say where the limit is set","name":"researcher-2"}`),
 		spawnCall("s3", `{"role":"researcher","task":"say where the loop exits","name":"researcher-3"}`),
 	}})
@@ -1368,9 +1368,9 @@ func gitWriteCards() []gitWriteCard {
 // size and returns the panel it draws.
 func armGitWrite(t *testing.T, width, height int, c gitWriteCard) string {
 	t.Helper()
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "commit that change"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "commit that change"},
 	}, mockStream, Wiring{
 		GatedTools: map[string]GatedPreviewFunc{
 			structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) { return c.preview, nil },
@@ -1379,7 +1379,7 @@ func armGitWrite(t *testing.T, width, height int, c gitWriteCard) string {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: height})
 	m = updated.(Model)
 	m.state = stateStreaming
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_gw", Name: structural.GitWriteToolName, Arguments: c.args},
 	}})
 	m = updated.(Model)
@@ -1422,9 +1422,9 @@ func TestGitWrite_RequiredContainmentPutsItToTheCard(t *testing.T) {
 	}
 	arm := func(c gitWriteCard, contain Containment) Model {
 		t.Helper()
-		m := New([]provider.Message{
-			{Role: provider.RoleSystem, Content: "sys"},
-			{Role: provider.RoleUser, Content: "commit that change"},
+		m := New([]llm.Message{
+			{Role: llm.RoleSystem, Content: "sys"},
+			{Role: llm.RoleUser, Content: "commit that change"},
 		}, mockStream, Wiring{
 			GatedTools: map[string]GatedPreviewFunc{
 				structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) { return c.preview, nil },
@@ -1434,7 +1434,7 @@ func TestGitWrite_RequiredContainmentPutsItToTheCard(t *testing.T) {
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 48})
 		m = updated.(Model)
 		m.state = stateStreaming
-		updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 			{ID: "call_gw", Name: structural.GitWriteToolName, Arguments: c.args},
 		}})
 		return updated.(Model)
@@ -1447,7 +1447,7 @@ func TestGitWrite_RequiredContainmentPutsItToTheCard(t *testing.T) {
 			t.Fatalf("%s: a git write under a required session should be put to its card", c.label)
 		}
 		for _, msg := range m.Messages() {
-			if msg.Role == provider.RoleTool {
+			if msg.Role == llm.RoleTool {
 				t.Fatalf("%s: nothing should be answered for the call before the card, got %q", c.label, msg.Content)
 			}
 		}
@@ -1470,7 +1470,7 @@ func TestApproval_AWriteWithASecretAsks(t *testing.T) {
 		m := execModel(t, &ran)
 		m.policy.mode, m.policy.allEdits = mode, grant
 		path := filepath.Join(t.TempDir(), "dev.env")
-		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 			{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":%q}`, path, content)},
 		}})
 		return updated.(Model)
@@ -1526,7 +1526,7 @@ func TestApproval_AWriteWithASecretSkipsTheClassifier(t *testing.T) {
 		m := recordingDecisions(classifierModel(t, &ran, judge), decisions)
 		m.wiring.Scope = sc
 		path := filepath.Join(outside, "dev.env")
-		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 			{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":%q}`, path, content)},
 		}})
 		return updated.(Model), judge, decisions

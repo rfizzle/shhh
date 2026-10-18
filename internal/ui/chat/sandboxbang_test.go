@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -24,10 +24,10 @@ type ranWhere struct {
 // /run, and which has a command ceiling set.
 func whereModel(t *testing.T, mechanism string, rec *ranWhere) Model {
 	t.Helper()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "how?"},
-		{Role: provider.RoleAssistant, Content: "Try:\n```bash\necho hi\n```"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "how?"},
+		{Role: llm.RoleAssistant, Content: "Try:\n```bash\necho hi\n```"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {

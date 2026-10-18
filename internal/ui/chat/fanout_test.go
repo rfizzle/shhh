@@ -10,9 +10,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -152,9 +152,9 @@ func TestFanoutHeldChildIsDrawnHeldAndNotIdle(t *testing.T) {
 // begins.
 func checkRunEnv(ran chan<- string) subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-			ch := make(chan provider.StreamEvent, 1)
-			ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "c1",
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan llm.StreamEvent, 1)
+			ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "c1",
 				Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`}}}
 			close(ch)
 			return ch, func() {}, nil
@@ -313,12 +313,12 @@ func gatedEnv() subagent.EnvFactory {
 		// is an infinite generator that only ever stopped because the round
 		// cap stopped it, and a child with no cap would spin past
 		// Close.
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			if err := ctx.Err(); err != nil {
 				return nil, nil, err
 			}
-			ch := make(chan provider.StreamEvent, 1)
-			ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{
+			ch := make(chan llm.StreamEvent, 1)
+			ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{
 				ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"echo hi"}`,
 			}}}
 			close(ch)
@@ -458,7 +458,7 @@ func spawnedFanout(t *testing.T, env subagent.EnvFactory, settled bool) Model {
 	t.Helper()
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: env})
 	t.Cleanup(sup.Close)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 	m.appendEntry(entry{kind: entryAssistant, text: fanoutTitle})
@@ -687,7 +687,7 @@ func TestChildSpendLabel_ReportsTheBillNotTheFreshRate(t *testing.T) {
 	})
 
 	spend := meter.New(table)
-	usage := provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
+	usage := llm.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
 	spend.Record(meter.Origin{Source: meter.SourceSubagent, Label: "researcher-1"}, "cheap-1", usage)
 	st := subagent.Status{Name: "researcher-1", Model: "cheap-1", Spend: spend.Total()}
 

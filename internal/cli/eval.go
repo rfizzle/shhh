@@ -19,11 +19,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/eval"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -141,7 +141,7 @@ func newEvalCmd() *cobra.Command {
 			// which are exactly the ones a machine with no account has. The
 			// report says so on every row it skipped and once at the top,
 			// because a mistyped key must not read as a suite that passed.
-			var prov provider.Provider
+			var prov llm.Provider
 			var unprovided string
 			if needsProvider(cases) {
 				req := providerRequest{Provider: resolved.Provider, Model: resolved.Model, APIKey: flags.FlagAPIKey}

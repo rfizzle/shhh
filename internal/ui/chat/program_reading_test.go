@@ -15,8 +15,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // One applied edit opened to its depths from reading mode: the card it is
@@ -30,7 +30,7 @@ func TestProgram_AnEditRowOpensToEachDepth(t *testing.T) {
 	loop := filepath.Join(dir, "loop.go")
 	tm := runProgramAt(t, readingSession(dir,
 		programTurn{calls: reads("loop.go")},
-		programTurn{calls: []provider.ToolCall{call("e1", "edit_file", fmt.Sprintf(`{"path":%q,"old_text":"        return ErrRoundLimit","new_text":"        return &RoundsExhausted{Round: a.round, Max: limit}"}`, loop))}},
+		programTurn{calls: []llm.ToolCall{call("e1", "edit_file", fmt.Sprintf(`{"path":%q,"old_text":"        return ErrRoundLimit","new_text":"        return &RoundsExhausted{Round: a.round, Max: limit}"}`, loop))}},
 		programTurn{calls: reads("notes.md")},
 		programTurn{text: "The cap is where the file says it is."},
 	), 130, 40)
@@ -77,7 +77,7 @@ func TestProgram_EscFoldsWhatThePointerOpened(t *testing.T) {
 	// the pane cuts at a width the temporary directory decides; a glob names
 	// them relative to its root.
 	tm := runProgram(t, readingSession(dir,
-		programTurn{calls: []provider.ToolCall{reads("loop.go")[0], call("g1", "glob", `{"pattern":"*.go"}`)}},
+		programTurn{calls: []llm.ToolCall{reads("loop.go")[0], call("g1", "glob", `{"pattern":"*.go"}`)}},
 		programTurn{text: "The limit is a checkpoint, not a wall."},
 	))
 

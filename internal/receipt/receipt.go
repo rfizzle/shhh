@@ -26,9 +26,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -81,7 +81,7 @@ type Call struct {
 	// Attachments is what the result carried that is not text — a read of
 	// an image file hands the picture back beside its sentence. A front-end
 	// needs the bytes to open it, and the result string never holds them.
-	Attachments []provider.Attachment
+	Attachments []llm.Attachment
 }
 
 // Receipt is what one call did, as a row states it.
@@ -123,7 +123,7 @@ type Receipt struct {
 	// Picture is the image the call's result carried, which a front-end
 	// opens the way it opens one the reader attached, and nil on a call that
 	// returned none.
-	Picture *provider.Attachment
+	Picture *llm.Attachment
 
 	tool    string
 	arg     string

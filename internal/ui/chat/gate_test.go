@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -218,7 +218,7 @@ func TestCloseGate_AFailingVerdictBuysOneRoundAndThenCloses(t *testing.T) {
 	}
 	msgs := m.agent.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleUser || !strings.Contains(last.Content, "FAIL") {
+	if last.Role != llm.RoleUser || !strings.Contains(last.Content, "FAIL") {
 		t.Fatalf("the verdict never reached the request: %+v", last)
 	}
 	if !strings.HasPrefix(last.Content, "Quality gate ") {
@@ -437,7 +437,7 @@ func TestCloseGate_SteeringTypedAtTheCloseWaitsForTheVerdict(t *testing.T) {
 		t.Errorf("the steering was left queued after the close: %v", m.steering)
 	}
 	last := m.agent.Messages()[len(m.agent.Messages())-1]
-	if last.Role != provider.RoleUser || last.Content != "also update the docs" {
+	if last.Role != llm.RoleUser || last.Content != "also update the docs" {
 		t.Errorf("the steering never became the next turn: %+v", last)
 	}
 }
@@ -463,7 +463,7 @@ func TestCloseGate_SteeringJoinsTheRoundAFailingVerdictBuys(t *testing.T) {
 	}
 	var steered, verdict bool
 	for _, msg := range m.agent.Messages() {
-		if msg.Role != provider.RoleUser {
+		if msg.Role != llm.RoleUser {
 			continue
 		}
 		if msg.Content == "and mind the goldens" {
@@ -595,7 +595,7 @@ func TestCloseGate_AStalePassIsRetried(t *testing.T) {
 				}
 				msgs := m.agent.Messages()
 				last := msgs[len(msgs)-1]
-				if last.Role != provider.RoleUser || !strings.Contains(last.Content, "STALE:") {
+				if last.Role != llm.RoleUser || !strings.Contains(last.Content, "STALE:") {
 					t.Fatalf("the stale verdict never reached the request: %+v", last)
 				}
 				if !strings.HasPrefix(last.Content, "Quality gate ") {

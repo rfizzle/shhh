@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 )
 
@@ -40,7 +40,7 @@ func TestHeader_TheBranchFollowsAGitSwitch(t *testing.T) {
 	m.policy.mode = agent.ModeAcceptEdits
 	m = headedBy(t, m, ws)
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_sw", Name: structural.GitWriteToolName, Arguments: `{"verb":"switch","branch":"feature/x","create":true}`},
 	}})
 	m = updated.(Model)

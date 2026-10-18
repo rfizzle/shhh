@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // oneShotTimer splits the one-shot's single turn by what it waited on: the
@@ -79,17 +79,17 @@ func (t *oneShotTimer) span() (time.Duration, agent.TurnSplit) {
 // outside the meter, so what it times is what the person waited for, the
 // gate included.
 type timedProvider struct {
-	provider.Provider
+	llm.Provider
 	timer *oneShotTimer
 }
 
-func (p timedProvider) StreamCompletion(ctx context.Context, messages []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p timedProvider) StreamCompletion(ctx context.Context, messages []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.timer.mark((*agent.TurnClock).Request)
 	events, err := p.Provider.StreamCompletion(ctx, messages, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := make(chan provider.StreamEvent)
+	out := make(chan llm.StreamEvent)
 	go func() {
 		defer close(out)
 		defer p.timer.ended()

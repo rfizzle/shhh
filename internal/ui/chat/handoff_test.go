@@ -11,8 +11,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -27,11 +27,11 @@ type handoffProvider struct{ asked []string }
 
 func (p *handoffProvider) Name() string { return "handoffs" }
 
-func (p *handoffProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *handoffProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.asked = append(p.asked, msgs[len(msgs)-1].Content)
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "h1", Name: sidejobs.HandoffToolName, Arguments: handoffAnswer}},
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{ID: "h1", Name: sidejobs.HandoffToolName, Arguments: handoffAnswer}},
 		Done:      true,
 	}
 	close(ch)
@@ -39,17 +39,17 @@ func (p *handoffProvider) StreamCompletion(_ context.Context, msgs []provider.Me
 }
 
 // handoffConversation is a conversation with work in it.
-func handoffConversation() []provider.Message {
-	return []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "cap the retry backoff"},
-		{Role: provider.RoleAssistant, Content: "capped it at 30s; the timer test still flakes"},
+func handoffConversation() []llm.Message {
+	return []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "cap the retry backoff"},
+		{Role: llm.RoleAssistant, Content: "capped it at 30s; the timer test still flakes"},
 	}
 }
 
 // handoffModel is a sized session over a store, holding a conversation that
 // has been saved to its slot, with the handoff writer wired on p.
-func handoffModel(t *testing.T, p provider.Provider) (Model, *storage.DB) {
+func handoffModel(t *testing.T, p llm.Provider) (Model, *storage.DB) {
 	t.Helper()
 	db := rewindTestDB(t)
 	m := New(handoffConversation(), mockStream, Wiring{
@@ -325,7 +325,7 @@ func TestHandoff_FollowsABranchAndAMovedSlot(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer other.Close()
-	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	sys := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	mm := sendText(t, New(sys, mockStream, Wiring{DB: mdb}), "first question")
 	updated, _ := mm.Update(tokenMsg{text: "an answer"})
 	updated, save := updated.(Model).Update(doneMsg{})
@@ -338,7 +338,7 @@ func TestHandoff_FollowsABranchAndAMovedSlot(t *testing.T) {
 	if _, err := other.LoadChat(taken); err != nil {
 		t.Fatal(err)
 	}
-	theirs := append(handoffConversation(), provider.Message{Role: provider.RoleUser, Content: "and more"})
+	theirs := append(handoffConversation(), llm.Message{Role: llm.RoleUser, Content: "and more"})
 	if err := other.SaveChat(taken, theirs); err != nil {
 		t.Fatal(err)
 	}
@@ -352,7 +352,7 @@ func TestHandoff_FollowsABranchAndAMovedSlot(t *testing.T) {
 
 	// And one kept this sitting rides the move without a read of the slot.
 	mm.handoff.kept = "kept now"
-	if err := other.SaveChat(taken, append(theirs, provider.Message{Role: provider.RoleUser, Content: "again"})); err != nil {
+	if err := other.SaveChat(taken, append(theirs, llm.Message{Role: llm.RoleUser, Content: "again"})); err != nil {
 		t.Fatal(err)
 	}
 	mv, ok := mm.autosaveCmd()().(autosaveMovedMsg)
@@ -375,7 +375,7 @@ func TestHandoff_ANewCloseReopensTheOffer(t *testing.T) {
 	if err := db.SetChatHandoff("yesterday", "the old one\nopen: the flake"); err != nil {
 		t.Fatal(err)
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		DB: db, Workspace: t.TempDir(),
 		Handoff: sidejobs.NewHandoffWriter(&handoffProvider{}, sidejobs.HandoffConfig{Model: "fast"}),
 	}).WithResumedMessages("yesterday", saved)

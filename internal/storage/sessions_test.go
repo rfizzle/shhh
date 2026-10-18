@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestLiveSessions_ListsSessionsAPersonCanOpenWithTheirChildrenUnderThem(t *testing.T) {
@@ -14,7 +14,7 @@ func TestLiveSessions_ListsSessionsAPersonCanOpenWithTheirChildrenUnderThem(t *t
 	liveOnly(t, os.Getpid(), 4242, 4343)
 
 	// Another process's coding session, writing a slot that says where it is.
-	if err := db.SaveChat("elsewhere", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+	if err := db.SaveChat("elsewhere", []llm.Message{{Role: llm.RoleUser, Content: "hi"}}); err != nil {
 		t.Fatalf("save chat: %v", err)
 	}
 	if err := db.SetChatResume("elsewhere", ChatResume{Root: "/work/b"}); err != nil {

@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // StreamFunc opens a completion stream over a message list. The choice is
@@ -20,7 +20,7 @@ import (
 // provider.ToolChoiceNone); a front-end's closure puts it on the request
 // rather than deciding for itself, because only the caller knows whether it
 // is asking for work or for prose.
-type StreamFunc func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error)
+type StreamFunc func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error)
 
 // ToolExecutor runs one tool call and returns its result text. The context
 // is the call's own: it ends when the turn the call belongs to is cancelled,
@@ -33,18 +33,18 @@ type ToolExecutor func(ctx context.Context, name string, args json.RawMessage) (
 // execute_command, mutating tools, and registered gated tools). The gate sees
 // the whole call, so a tool can gate on its arguments (the process tool gates
 // only its start action).
-type ApprovalGate func(tc provider.ToolCall) bool
+type ApprovalGate func(tc llm.ToolCall) bool
 
 // ToolResult pairs an executed tool call with its result text and how long
 // the call took (zero when the call never ran, e.g. a cancellation).
 type ToolResult struct {
-	Call   provider.ToolCall
+	Call   llm.ToolCall
 	Result string
 	// Attachments are the parts of the result that are not text — the image
 	// a reader found where it was asked for a file. They ride on the result
 	// message, so the providers that can show the model a picture do, and the
 	// ones that cannot are left with the notice the tool wrote.
-	Attachments []provider.Attachment
+	Attachments []llm.Attachment
 	// Value is what the result carries beside its text
 	// (provider.Message.Value): the quality gate's verdict, which the rows
 	// read in place of the text.
@@ -89,8 +89,8 @@ type Agent struct {
 	// turnStart, when set, is told each time a turn begins (SetTurnStart).
 	turnStart func()
 
-	messages []provider.Message
-	folded   []provider.Message
+	messages []llm.Message
+	folded   []llm.Message
 	runID    int
 	rounds   int
 	// roundSeq counts every tool round the agent has begun, across turns.
@@ -157,14 +157,14 @@ type Agent struct {
 	// pending holds every call of the current round still owed a result, and
 	// queue the subset awaiting user approval.
 	executing bool
-	pending   []provider.ToolCall
-	queue     []provider.ToolCall
+	pending   []llm.ToolCall
+	queue     []llm.ToolCall
 
 	// reasoning is the thinking the response now being folded into the
 	// conversation produced. It is latched from the terminal stream
 	// event and consumed by the assistant message that round records,
 	// because that is the message the next request has to carry it in.
-	reasoning []provider.ReasoningBlock
+	reasoning []llm.ReasoningBlock
 
 	// keep, when set, marks tool results that context trimming must leave
 	// alone. Nil keeps nothing.
@@ -176,14 +176,14 @@ type Agent struct {
 
 	// scrub, when set, rewrites every text that joins the conversation or
 	// leaves it for a provider. Nil leaves text alone.
-	scrub func(msg provider.Message) provider.Message
+	scrub func(msg llm.Message) llm.Message
 
 	// tree, when set, is the reading that tells a turn the working tree
 	// moved under it (tree.go). Nil reads nothing.
 	tree *treeState
 }
 
-func New(initial []provider.Message, stream StreamFunc) *Agent {
+func New(initial []llm.Message, stream StreamFunc) *Agent {
 	return &Agent{messages: initial, stream: stream}
 }
 
@@ -198,7 +198,7 @@ func (a *Agent) SetExecutor(executor ToolExecutor) { a.executor = executor }
 // ctx is the call's own context, which ends when the call returns as well as
 // when it is stopped, so a surface listing the calls can tell which are
 // still running.
-type CallCancel func(ctx context.Context, tc provider.ToolCall, cancel context.CancelFunc)
+type CallCancel func(ctx context.Context, tc llm.ToolCall, cancel context.CancelFunc)
 
 // SetCallCancel installs the per-call cancel seam. Nil, the default, hands
 // the cancels to nobody, and only the round's context stops a call.
@@ -238,9 +238,9 @@ func (a *Agent) StoreElided(archive func(tool, content string) (string, bool)) {
 // because either alone has a path around it — a resumed session, a stream
 // a front-end opens itself.
 // See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
-func (a *Agent) SetScrub(scrub func(provider.Message) provider.Message) { a.scrub = scrub }
+func (a *Agent) SetScrub(scrub func(llm.Message) llm.Message) { a.scrub = scrub }
 
-func (a *Agent) scrubbed(msg provider.Message) provider.Message {
+func (a *Agent) scrubbed(msg llm.Message) llm.Message {
 	if a.scrub == nil {
 		return msg
 	}
@@ -273,13 +273,13 @@ func (a *Agent) MaxRounds() int {
 
 // Messages is the conversation as it stands. The returned slice is the
 // Agent's own; callers must not mutate it.
-func (a *Agent) Messages() []provider.Message { return a.messages }
+func (a *Agent) Messages() []llm.Message { return a.messages }
 
 // SetMessages replaces the conversation wholesale (resume, /clear,
 // compaction).
-func (a *Agent) SetMessages(msgs []provider.Message) {
+func (a *Agent) SetMessages(msgs []llm.Message) {
 	if a.scrub != nil {
-		msgs = append([]provider.Message(nil), msgs...)
+		msgs = append([]llm.Message(nil), msgs...)
 		for i := range msgs {
 			msgs[i] = a.scrub(msgs[i])
 		}
@@ -302,7 +302,7 @@ func (a *Agent) SetTurn(turn int64) { a.turn = turn }
 // for. A message replayed into the agent whole — a resume, a compaction —
 // comes through SetMessages instead and keeps the position it was saved
 // with (provider.Message.Turn).
-func (a *Agent) Append(msg provider.Message) {
+func (a *Agent) Append(msg llm.Message) {
 	msg.Turn, msg.Round = a.turn, int64(a.rounds)
 	a.messages = append(a.messages, a.scrubbed(msg))
 }
@@ -314,7 +314,7 @@ func (a *Agent) Append(msg provider.Message) {
 // that speak for the person from crediting it to them
 // (provider.Message.Machine).
 func (a *Agent) AppendMachine(content string) {
-	a.Append(provider.Message{Role: provider.RoleUser, Content: content, Machine: true})
+	a.Append(llm.Message{Role: llm.RoleUser, Content: content, Machine: true})
 }
 
 // StartTurn begins a fresh user turn: the text joins the conversation and
@@ -324,9 +324,9 @@ func (a *Agent) StartTurn(text string) { a.StartTurnWith(text, nil) }
 // StartTurnWith is StartTurn carrying the attachments staged for this turn
 // . They ride on the user message itself, so every later snapshot,
 // save and resume keeps them beside the sentence that was asked about them.
-func (a *Agent) StartTurnWith(text string, atts []provider.Attachment) {
+func (a *Agent) StartTurnWith(text string, atts []llm.Attachment) {
 	a.startTurn()
-	a.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
+	a.Append(llm.Message{Role: llm.RoleUser, Content: text, Attachments: atts})
 }
 
 // StartMachineTurn begins a turn on a message nobody at this keyboard typed —
@@ -354,21 +354,21 @@ func (a *Agent) startTurn() {
 
 // RequestMessages snapshots the conversation for a stream request, so
 // in-flight requests are immune to later mutation.
-func (a *Agent) RequestMessages() []provider.Message {
-	msgs := make([]provider.Message, len(a.messages))
+func (a *Agent) RequestMessages() []llm.Message {
+	msgs := make([]llm.Message, len(a.messages))
 	copy(msgs, a.messages)
 	return msgs
 }
 
 // Stream opens a completion stream over msgs with the tools open to the
 // model, which is what a turn wants.
-func (a *Agent) Stream(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-	return a.StreamWithChoice(msgs, provider.ToolChoiceAuto)
+func (a *Agent) Stream(msgs []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+	return a.StreamWithChoice(msgs, llm.ToolChoiceAuto)
 }
 
 // StreamWithChoice is Stream under an explicit tool choice, for a request
 // that wants prose out of a session whose tools are still on the wire.
-func (a *Agent) StreamWithChoice(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+func (a *Agent) StreamWithChoice(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 	return a.streamOn(a.stream, msgs, choice)
 }
 
@@ -446,12 +446,12 @@ func (a *Agent) Executing() bool { return a.executing }
 // assistant message about to record it. Every terminal stream event calls it,
 // including the ones with nothing to carry: a stale latch would attach one
 // response's thinking to another's tool calls, which is worse than none.
-func (a *Agent) CarryReasoning(blocks []provider.ReasoningBlock) { a.reasoning = blocks }
+func (a *Agent) CarryReasoning(blocks []llm.ReasoningBlock) { a.reasoning = blocks }
 
 // BeginToolRound records the assistant message that requested calls and
 // splits them into auto-run and approval-gated sets using gate; gated calls
 // wait in the approval queue until the front-end resolves them.
-func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate ApprovalGate) (auto, gated []provider.ToolCall) {
+func (a *Agent) BeginToolRound(text string, calls []llm.ToolCall, gate ApprovalGate) (auto, gated []llm.ToolCall) {
 	a.rounds++
 	a.roundSeq++
 	// Whether this round's prose was the public status the session asked for
@@ -462,8 +462,8 @@ func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate Appr
 	// (docs/interface/surfaces.md#the-progress-checkpoint).
 	answered := a.progress.answered
 	a.progress.answered = false
-	a.Append(provider.Message{
-		Role:       provider.RoleAssistant,
+	a.Append(llm.Message{
+		Role:       llm.RoleAssistant,
 		Content:    text,
 		ToolCalls:  calls,
 		Reasoning:  a.reasoning,
@@ -519,7 +519,7 @@ const MaxParallelToolCalls = 8
 // produced it, because this is the only point where the tool that wrote them
 // and the result they belong to are both in hand: an executor returns a
 // string, and every wrapper on the chain in between passes one.
-func (a *Agent) ExecuteCalls(ctx context.Context, calls []provider.ToolCall) []ToolResult {
+func (a *Agent) ExecuteCalls(ctx context.Context, calls []llm.ToolCall) []ToolResult {
 	return a.ExecuteCallsWith(ctx, calls, a.callCancel)
 }
 
@@ -528,13 +528,13 @@ func (a *Agent) ExecuteCalls(ctx context.Context, calls []provider.ToolCall) []T
 // table of calls per round passes that round's here: an installed seam is one
 // field read by a round's goroutines while the next round may already be
 // replacing it.
-func (a *Agent) ExecuteCallsWith(ctx context.Context, calls []provider.ToolCall, seam CallCancel) []ToolResult {
+func (a *Agent) ExecuteCallsWith(ctx context.Context, calls []llm.ToolCall, seam CallCancel) []ToolResult {
 	results := make([]ToolResult, len(calls))
 	sem := make(chan struct{}, MaxParallelToolCalls)
 	var wg sync.WaitGroup
 	for i, tc := range calls {
 		wg.Add(1)
-		go func(i int, tc provider.ToolCall) {
+		go func(i int, tc llm.ToolCall) {
 			defer wg.Done()
 			callCtx, cancel := context.WithCancel(ctx)
 			defer cancel()
@@ -556,7 +556,7 @@ func (a *Agent) ExecuteCallsWith(ctx context.Context, calls []provider.ToolCall,
 				Call:        tc,
 				Result:      result,
 				Attachments: attachment.TakeResult(result),
-				Value:       provider.TakeValue(tc.Name, tc.Arguments),
+				Value:       llm.TakeValue(tc.Name, tc.Arguments),
 				Duration:    time.Since(start),
 			}
 		}(i, tc)
@@ -566,7 +566,7 @@ func (a *Agent) ExecuteCallsWith(ctx context.Context, calls []provider.ToolCall,
 }
 
 // ExecuteCall runs one tool call through the Agent's executor.
-func (a *Agent) ExecuteCall(ctx context.Context, tc provider.ToolCall) string {
+func (a *Agent) ExecuteCall(ctx context.Context, tc llm.ToolCall) string {
 	return ExecuteWith(ctx, a.executor, tc)
 }
 
@@ -579,7 +579,7 @@ func (a *Agent) ExecuteCall(ctx context.Context, tc provider.ToolCall) string {
 // and a stop is the person saying not now. It reads what a call the stop
 // caught before it ran reads (CancelledResult).
 // See docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn.
-func ExecuteWith(ctx context.Context, executor ToolExecutor, tc provider.ToolCall) string {
+func ExecuteWith(ctx context.Context, executor ToolExecutor, tc llm.ToolCall) string {
 	if executor == nil {
 		return "error: no tool executor configured"
 	}
@@ -599,8 +599,8 @@ func ExecuteWith(ctx context.Context, executor ToolExecutor, tc provider.ToolCal
 // remains owed for this round is the approval queue.
 func (a *Agent) RecordAutoResults(results []ToolResult) {
 	for _, r := range results {
-		a.Append(provider.Message{
-			Role:        provider.RoleTool,
+		a.Append(llm.Message{
+			Role:        llm.RoleTool,
 			Content:     r.Result,
 			ToolCallID:  r.Call.ID,
 			Attachments: r.Attachments,
@@ -617,14 +617,14 @@ func (a *Agent) QueuedApprovals() int { return len(a.queue) }
 // PendingApprovals is the approval queue in the order it will be asked,
 // head first. It is what the queue strip and batch approval read;
 // the slice is a copy, so reading it can never reorder what the agent pops.
-func (a *Agent) PendingApprovals() []provider.ToolCall {
-	return append([]provider.ToolCall(nil), a.queue...)
+func (a *Agent) PendingApprovals() []llm.ToolCall {
+	return append([]llm.ToolCall(nil), a.queue...)
 }
 
 // NextApproval is the head of the approval queue, if any.
-func (a *Agent) NextApproval() (provider.ToolCall, bool) {
+func (a *Agent) NextApproval() (llm.ToolCall, bool) {
 	if len(a.queue) == 0 {
-		return provider.ToolCall{}, false
+		return llm.ToolCall{}, false
 	}
 	return a.queue[0], true
 }
@@ -637,9 +637,9 @@ func (a *Agent) ResolveApproval(content string) json.RawMessage {
 	if len(a.queue) == 0 {
 		return nil
 	}
-	value := provider.TakeValue(a.queue[0].Name, a.queue[0].Arguments)
-	a.Append(provider.Message{
-		Role:       provider.RoleTool,
+	value := llm.TakeValue(a.queue[0].Name, a.queue[0].Arguments)
+	a.Append(llm.Message{
+		Role:       llm.RoleTool,
 		Content:    content,
 		ToolCallID: a.queue[0].ID,
 		Value:      value,
@@ -653,16 +653,16 @@ func (a *Agent) ResolveApproval(content string) json.RawMessage {
 // results so the conversation stays well-formed, the approval queue is
 // dropped, and the run ID advances so stale asynchronous results are fenced
 // off. Returns the calls that received synthetic results.
-func (a *Agent) CancelTurn() []provider.ToolCall {
+func (a *Agent) CancelTurn() []llm.ToolCall {
 	a.runID++
-	var cancelled []provider.ToolCall
+	var cancelled []llm.ToolCall
 	// A round whose every call waits on a decision is not executing, and
 	// its calls are just as outstanding: a stop over the card abandons them
 	// with the turn, and the conversation has to say so for each.
 	if a.executing || len(a.pending) > 0 {
 		for _, tc := range a.pending {
-			a.Append(provider.Message{
-				Role:       provider.RoleTool,
+			a.Append(llm.Message{
+				Role:       llm.RoleTool,
 				Content:    CancelledResult,
 				ToolCallID: tc.ID,
 			})

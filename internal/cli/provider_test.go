@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/testhttp"
 )
@@ -162,7 +162,7 @@ func TestTryProvider_ChatGPTWithoutASignInIsTheSignInError(t *testing.T) {
 	var cfg config.Config
 	cfg.Provider.APIKey = "sk-config"
 	_, err := tryProvider(cfg, providerRequest{Provider: "chatgpt", APIKey: "sk-flag"})
-	if !errors.Is(err, provider.ErrChatGPTSignedOut) {
+	if !errors.Is(err, llm.ErrChatGPTSignedOut) {
 		t.Fatalf("want the sign-in error, got %v", err)
 	}
 	if providerTokens("openai-responses") != nil || providerTokens("openai") != nil {
@@ -185,12 +185,12 @@ func TestRefreshCache_APlanSessionSendsNothing(t *testing.T) {
 	}))
 	srv.Alias("api.openai.com")
 	t.Cleanup(srv.Close)
-	p, err := provider.Resolve("chatgpt", provider.ResolveOpts{TokenSource: staticTokens("tok"), HTTPClient: reg.Client()})
+	p, err := llm.Resolve("chatgpt", llm.ResolveOpts{TokenSource: staticTokens("tok"), HTTPClient: reg.Client()})
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
 	_, err = refreshCache(context.Background(), meter.New(nil).For(p, meter.SourceAgent),
-		provider.CompletionOpts{Model: "gpt-5.6-terra"}, []provider.Message{{Role: provider.RoleUser, Content: "hi"}})
+		llm.CompletionOpts{Model: "gpt-5.6-terra"}, []llm.Message{{Role: llm.RoleUser, Content: "hi"}})
 	if err == nil {
 		t.Fatal("a plan keep-alive should be refused")
 	}

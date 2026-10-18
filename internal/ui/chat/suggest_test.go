@@ -8,8 +8,8 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -19,15 +19,15 @@ import (
 type suggestProvider struct {
 	line  string
 	calls int
-	msgs  []provider.Message
-	opts  provider.CompletionOpts
+	msgs  []llm.Message
+	opts  llm.CompletionOpts
 }
 
-func (p *suggestProvider) StreamCompletion(_ context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *suggestProvider) StreamCompletion(_ context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.calls++
 	p.msgs, p.opts = msgs, opts
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{Token: p.line, Usage: &provider.Usage{PromptTokens: 120, CompletionTokens: 8}, Done: true}
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{Token: p.line, Usage: &llm.Usage{PromptTokens: 120, CompletionTokens: 8}, Done: true}
 	close(ch)
 	return ch, nil
 }
@@ -40,9 +40,9 @@ var keyRight = tea.KeyPressMsg{Code: tea.KeyRight}
 
 // suggestingModel is a session with a suggester on p, recording every signal
 // it files.
-func suggestingModel(t *testing.T, p provider.Provider, on bool) (Model, *[]string) {
+func suggestingModel(t *testing.T, p llm.Provider, on bool) (Model, *[]string) {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	var signals []string
 	m := New(msgs, multiTokenStream("hi there"), Wiring{
 		Suggester:   sidejobs.NewSuggester(p, sidejobs.SuggestConfig{Model: "fast"}),
@@ -98,7 +98,7 @@ func TestSuggestion_AClosedTurnOffersANextStep(t *testing.T) {
 	if p.calls != 1 {
 		t.Fatalf("calls = %d, want one per closed turn", p.calls)
 	}
-	if p.opts.Model != "fast" || p.opts.ToolChoice != provider.ToolChoiceNone {
+	if p.opts.Model != "fast" || p.opts.ToolChoice != llm.ToolChoiceNone {
 		t.Errorf("opts = %+v", p.opts)
 	}
 	if !strings.Contains(p.msgs[1].Content, "add the retry backoff") || !strings.Contains(p.msgs[1].Content, "ended done") {

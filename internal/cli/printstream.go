@@ -14,10 +14,10 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -240,7 +240,7 @@ func (h headlessObserver) progress(s string) {
 // record keeps a call and its result as one row, written when the result
 // lands; the stream carries them as two, because between them is the wait
 // that is the reason to read a stream at all.
-func (h headlessObserver) call(tc provider.ToolCall) {
+func (h headlessObserver) call(tc llm.ToolCall) {
 	h.stream.call(h.pos(), tc)
 }
 
@@ -277,7 +277,7 @@ func (h headlessObserver) decisionTook(decision, reason string, took time.Durati
 // usage is what the run has spent so far. The record takes it priced; the
 // stream carries the tokens, cached ones included, because a script totalling
 // a night of runs is doing the pricing itself.
-func (h headlessObserver) usage(u provider.Usage) {
+func (h headlessObserver) usage(u llm.Usage) {
 	h.stream.usage(h.pos(), u)
 }
 
@@ -348,7 +348,7 @@ func (h headlessObserver) retry(n agent.RetryNotice) {
 // finished — which is how a consumer tells the two apart without parsing the
 // sentence.
 func failureClass(err error) string {
-	if f, ok := provider.AsFailure(err); ok {
+	if f, ok := llm.AsFailure(err); ok {
 		return string(f.Class)
 	}
 	var miss *schemaMiss
@@ -510,7 +510,7 @@ type jsonUsage struct {
 
 // usageOf is the one reading of a run's totals into the shape both the
 // transcript and the stream state them in.
-func usageOf(u provider.Usage) jsonUsage {
+func usageOf(u llm.Usage) jsonUsage {
 	return jsonUsage{
 		PromptTokens:     u.PromptTokens,
 		CompletionTokens: u.CompletionTokens,
@@ -543,7 +543,7 @@ type jsonToolCall struct {
 }
 
 // jsonMessages is the conversation as data.
-func jsonMessages(msgs []provider.Message) []jsonMessage {
+func jsonMessages(msgs []llm.Message) []jsonMessage {
 	out := make([]jsonMessage, 0, len(msgs))
 	for _, m := range msgs {
 		row := jsonMessage{Role: string(m.Role), Content: m.Content, ToolCallID: m.ToolCallID}
@@ -560,12 +560,12 @@ func jsonMessages(msgs []provider.Message) []jsonMessage {
 // caller that transposed two of them would be writing a transcript nothing
 // downstream could tell was wrong.
 type jsonRun struct {
-	messages []provider.Message
+	messages []llm.Message
 	final    string
 	// answer is final as JSON, where a schema checked it.
 	answer    json.RawMessage
 	truncated bool
-	usage     provider.Usage
+	usage     llm.Usage
 	gate      quality.Closing
 	written   []string
 	// sources is the run's sources ledger, oldest row first.
@@ -836,7 +836,7 @@ func (s *jsonlStream) progress(at observe.Pos, text string) {
 	s.write(jsonEvent{Kind: observe.EventProgress, Turn: at.Turn, Round: at.Round, Text: text})
 }
 
-func (s *jsonlStream) call(at observe.Pos, tc provider.ToolCall) {
+func (s *jsonlStream) call(at observe.Pos, tc llm.ToolCall) {
 	if s == nil {
 		return
 	}
@@ -900,7 +900,7 @@ func (s *jsonlStream) source(at observe.Pos, row jsonSource) {
 	s.write(jsonEvent{Kind: observe.EventSource, Turn: at.Turn, Round: at.Round, Source: &row})
 }
 
-func (s *jsonlStream) usage(at observe.Pos, u provider.Usage) {
+func (s *jsonlStream) usage(at observe.Pos, u llm.Usage) {
 	if s == nil {
 		return
 	}
@@ -912,7 +912,7 @@ func (s *jsonlStream) usage(at observe.Pos, u provider.Usage) {
 // word the record keeps, the exit code projected from it, the answer, and
 // what the run spent getting there. A consumer that reads only this line has
 // everything the exit status says and the answer besides.
-func (s *jsonlStream) closed(at observe.Pos, outcome string, code int, final string, answer json.RawMessage, u provider.Usage, left headlessHandles, err error) {
+func (s *jsonlStream) closed(at observe.Pos, outcome string, code int, final string, answer json.RawMessage, u llm.Usage, left headlessHandles, err error) {
 	if s == nil {
 		return
 	}

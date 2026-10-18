@@ -16,8 +16,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/mcp"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -401,7 +401,7 @@ func (m *Model) joinMCP() {
 	}
 	system := ""
 	msgs := m.agent.Messages()
-	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 		system = msgs[0].Content
 	}
 	j, ok := m.mcp.Join(system)
@@ -409,7 +409,7 @@ func (m *Model) joinMCP() {
 		return
 	}
 	if j.System != "" && system != "" && j.System != system {
-		next := append([]provider.Message(nil), msgs...)
+		next := append([]llm.Message(nil), msgs...)
 		next[0].Content = j.System
 		m.agent.SetMessages(next)
 	}

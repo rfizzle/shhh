@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/spf13/cobra"
@@ -198,7 +198,7 @@ type commandEnvironment struct {
 // environment describes. A conversation has no runner, and telling it what a
 // command of its would run under describes an action it cannot take — which
 // is the failure prompt.Toolbox exists to avoid, in the other direction.
-func offersCommands(defs []provider.Tool) bool {
+func offersCommands(defs []llm.Tool) bool {
 	for _, d := range defs {
 		if d.Name == tools.ExecCommandName {
 			return true

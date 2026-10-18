@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // The contract's fixed values, from OpenAI's sign-in documentation. Only the
@@ -48,7 +48,7 @@ var (
 	// ErrNotSignedIn is a host with no usable sign-in: none was ever made,
 	// or it was signed out. It is the plan route's own signed-out error, so
 	// the provider and every report built on it say one sentence, not two.
-	ErrNotSignedIn = provider.ErrChatGPTSignedOut
+	ErrNotSignedIn = llm.ErrChatGPTSignedOut
 	// ErrSignInRequired is a sign-in the server will no longer refresh. The
 	// tokens have been cleared; the account and the registration are kept.
 	// It is also the plan route's signed-out error to errors.Is, because
@@ -66,7 +66,7 @@ var (
 type signInExpired struct{}
 
 func (signInExpired) Error() string { return "the ChatGPT sign-in has expired — run " + loginCommand }
-func (signInExpired) Unwrap() error { return provider.ErrChatGPTSignedOut }
+func (signInExpired) Unwrap() error { return llm.ErrChatGPTSignedOut }
 
 // Credential is the record kept in credentials.json, with the fields
 // OpenAI's documentation lists. HostID is recorded as the docs ask, but the

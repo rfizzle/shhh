@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -37,7 +37,7 @@ func flowScreen(cfg config.Config, env *sessionEnv) *configModel {
 // which link of the chain gave it, read from the chain the calls are sent
 // with — and a model this session holds says so instead.
 func TestConfigScreen_FlowsSayWhichStepAnswered(t *testing.T) {
-	small := provider.Defaults("anthropic").CheapModel
+	small := llm.Defaults("anthropic").CheapModel
 	if small == "" {
 		t.Fatal("the fixture needs a provider that names a small model")
 	}

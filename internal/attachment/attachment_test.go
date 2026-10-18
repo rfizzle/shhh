@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // pngBytes is the smallest thing http.DetectContentType calls a PNG.
@@ -18,7 +18,7 @@ func TestSniff_ClassifiesByBytesNotExtension(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sniff png: %v", err)
 	}
-	if kind != provider.AttachmentImage || mt != "image/png" {
+	if kind != llm.AttachmentImage || mt != "image/png" {
 		t.Fatalf("got %s/%s, want image/image-png", kind, mt)
 	}
 
@@ -26,7 +26,7 @@ func TestSniff_ClassifiesByBytesNotExtension(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sniff text: %v", err)
 	}
-	if kind != provider.AttachmentText || mt != "text/markdown" {
+	if kind != llm.AttachmentText || mt != "text/markdown" {
 		t.Fatalf("got %s/%s, want text/text-markdown", kind, mt)
 	}
 
@@ -34,7 +34,7 @@ func TestSniff_ClassifiesByBytesNotExtension(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sniff pdf: %v", err)
 	}
-	if kind != provider.AttachmentDocument {
+	if kind != llm.AttachmentDocument {
 		t.Fatalf("got %s, want document", kind)
 	}
 }
@@ -57,7 +57,7 @@ func TestSniff_AudioKeepsTheNameItsFormatIsListedUnder(t *testing.T) {
 		if err != nil {
 			t.Fatalf("sniff %s: %v", tc.name, err)
 		}
-		if kind != provider.AttachmentAudio || mt != tc.media {
+		if kind != llm.AttachmentAudio || mt != tc.media {
 			t.Fatalf("%s got %s/%s, want audio/%s", tc.name, kind, mt, tc.media)
 		}
 	}
@@ -102,7 +102,7 @@ func TestFromFile_NamesTheBaseNameOnly(t *testing.T) {
 	if a.Name != "shot.png" {
 		t.Fatalf("name = %q, want the base name — the transcript must not leak the path", a.Name)
 	}
-	if a.Kind != provider.AttachmentImage {
+	if a.Kind != llm.AttachmentImage {
 		t.Fatalf("kind = %s, want image", a.Kind)
 	}
 }
@@ -139,7 +139,7 @@ func TestExpand_ResolvesHome(t *testing.T) {
 }
 
 func TestSummarizeAndNames(t *testing.T) {
-	atts := []provider.Attachment{
+	atts := []llm.Attachment{
 		{Name: "a.png", Data: make([]byte, 2048)},
 		{Name: "b.png", Data: make([]byte, 2048)},
 	}
@@ -221,7 +221,7 @@ func TestPasteName_IsTypeable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a.Kind != provider.AttachmentText || a.MediaType != "text/plain" {
+	if a.Kind != llm.AttachmentText || a.MediaType != "text/plain" {
 		t.Fatalf("a staged paste is %q/%q, want text/text.plain", a.Kind, a.MediaType)
 	}
 }

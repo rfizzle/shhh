@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/profile"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // A profile's structured_outputs = false is registered from the profile, as
@@ -28,9 +28,9 @@ id = "claude-opus-5-5"
 	table := pricing.Snapshot()
 	table.Overlay(profile.Pricing(loaded))
 	installCapabilities(table)
-	t.Cleanup(func() { provider.SetCapabilityLookup(nil) })
+	t.Cleanup(func() { llm.SetCapabilityLookup(nil) })
 
-	opts := provider.CompletionOpts{ResponseSchema: &provider.ResponseSchema{Name: "v", Schema: []byte(`{"type":"object"}`)}}
+	opts := llm.CompletionOpts{ResponseSchema: &llm.ResponseSchema{Name: "v", Schema: []byte(`{"type":"object"}`)}}
 	if opts.SchemaFor("claude-sonnet-5-5") != nil {
 		t.Error("the declared model should be sent no schema")
 	}
@@ -58,7 +58,7 @@ func TestCapabilities_ADeclarationAloneKeepsTheFloorsReasoning(t *testing.T) {
 	if _, ok := pricing.Snapshot().Entry(model); ok {
 		t.Fatalf("the snapshot describes %s; the test needs a model it lacks", model)
 	}
-	floor := provider.CapabilitiesFor(model)
+	floor := llm.CapabilitiesFor(model)
 	for _, line := range []string{
 		"structured_outputs = false",
 		"flows = { classifier = { structured_outputs = false } }",
@@ -70,16 +70,16 @@ func TestCapabilities_ADeclarationAloneKeepsTheFloorsReasoning(t *testing.T) {
 		if _, ok := table.Entry(model); ok {
 			t.Errorf("%s: a declaration alone made a price-table entry", line)
 		}
-		for _, flow := range []provider.Flow{"", provider.FlowClassifier, provider.FlowTitle} {
-			c := provider.CompletionOpts{Flow: flow}.Capabilities(model)
-			if got := provider.EffortLow.Fit(c); got != provider.EffortLow {
+		for _, flow := range []llm.Flow{"", llm.FlowClassifier, llm.FlowTitle} {
+			c := llm.CompletionOpts{Flow: flow}.Capabilities(model)
+			if got := llm.EffortLow.Fit(c); got != llm.EffortLow {
 				t.Errorf("%s, flow %q: effort fits to %v, want low", line, flow, got)
 			}
 			if c.MaxOutputTokens != floor.MaxOutputTokens || c.MaxOutputTokens == 0 {
 				t.Errorf("%s, flow %q: output ceiling %d, want the floor's %d", line, flow, c.MaxOutputTokens, floor.MaxOutputTokens)
 			}
 		}
-		provider.SetCapabilityLookup(nil)
+		llm.SetCapabilityLookup(nil)
 	}
 }
 
@@ -104,15 +104,15 @@ flows = { classifier = { structured_outputs = false } }
 		"claude-opus-5-5":   {InputCostPerToken: 1, SupportsReasoning: true, AdaptiveThinking: true},
 	})
 	installCapabilities(downloaded)
-	t.Cleanup(func() { provider.SetCapabilityLookup(nil) })
+	t.Cleanup(func() { llm.SetCapabilityLookup(nil) })
 
-	if c := provider.CapabilitiesFor("claude-sonnet-5-5"); c.StructuredOutputs || !c.NoSchema || !c.Adaptive {
+	if c := llm.CapabilitiesFor("claude-sonnet-5-5"); c.StructuredOutputs || !c.NoSchema || !c.Adaptive {
 		t.Errorf("the model-wide declaration must survive the table, got %+v", c)
 	}
-	if c := (provider.CompletionOpts{Flow: provider.FlowClassifier}).Capabilities("claude-opus-5-5"); c.StructuredOutputs || !c.Adaptive {
+	if c := (llm.CompletionOpts{Flow: llm.FlowClassifier}).Capabilities("claude-opus-5-5"); c.StructuredOutputs || !c.Adaptive {
 		t.Errorf("the flow scope must survive the table, got %+v", c)
 	}
-	if c := (provider.CompletionOpts{Flow: provider.FlowBacklog}).Capabilities("claude-opus-5-5"); !c.StructuredOutputs {
+	if c := (llm.CompletionOpts{Flow: llm.FlowBacklog}).Capabilities("claude-opus-5-5"); !c.StructuredOutputs {
 		t.Errorf("an unscoped flow keeps the floor's schema under the table, got %+v", c)
 	}
 }

@@ -16,9 +16,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -28,8 +28,8 @@ import (
 // cancelled, so tests can observe a "running" child deterministically.
 func blockingEnv() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-			ch := make(chan provider.StreamEvent)
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan llm.StreamEvent)
 			go func() {
 				<-ctx.Done()
 				close(ch)
@@ -48,13 +48,13 @@ func blockingEnv() subagent.EnvFactory {
 // usage and then blocks, so a test can observe a child that is both running
 // and has spent something — which is the state a rail scoped to a child has
 // to be able to report.
-func billedEnv(u provider.Usage) subagent.EnvFactory {
+func billedEnv(u llm.Usage) subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-			ch := make(chan provider.StreamEvent)
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan llm.StreamEvent)
 			go func() {
 				select {
-				case ch <- provider.StreamEvent{Usage: &u}:
+				case ch <- llm.StreamEvent{Usage: &u}:
 				case <-ctx.Done():
 				}
 				<-ctx.Done()
@@ -72,7 +72,7 @@ func billedEnv(u provider.Usage) subagent.EnvFactory {
 
 func newSubagentModel(t *testing.T, sup *subagent.Supervisor) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	return updated.(Model)
@@ -1192,17 +1192,17 @@ func keptRepo(t *testing.T) string {
 func keptWriterEnv(answer bool) subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		round := 0
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			round++
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			switch {
 			case round == 1:
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 					{ID: "w1", Name: "write_file", Arguments: `{"path":"kept.go"}`},
 				}}
 			case answer:
-				ch <- provider.StreamEvent{Token: "wrote kept.go"}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: "wrote kept.go"}
+				ch <- llm.StreamEvent{Done: true}
 			default:
 				go func() {
 					<-ctx.Done()
@@ -1367,9 +1367,9 @@ func TestApprovingASpawnHandsOverTheTurnsAsTheyStoodAtDispatch(t *testing.T) {
 	opened := make(chan string, 1)
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(),
 		NewEnv: func(context.Context, subagent.Spec) (subagent.Env, error) {
-			stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 				for _, m := range msgs {
-					if m.Role == provider.RoleUser {
+					if m.Role == llm.RoleUser {
 						select {
 						case opened <- m.Content:
 						default:
@@ -1377,8 +1377,8 @@ func TestApprovingASpawnHandsOverTheTurnsAsTheyStoodAtDispatch(t *testing.T) {
 						break
 					}
 				}
-				ch := make(chan provider.StreamEvent, 1)
-				ch <- provider.StreamEvent{Token: "done", Done: true}
+				ch := make(chan llm.StreamEvent, 1)
+				ch <- llm.StreamEvent{Token: "done", Done: true}
 				close(ch)
 				return ch, func() {}, nil
 			}
@@ -1386,14 +1386,14 @@ func TestApprovingASpawnHandsOverTheTurnsAsTheyStoodAtDispatch(t *testing.T) {
 		}})
 	t.Cleanup(sup.Close)
 	m := newSubagentModel(t, sup)
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: "the ask at the card"})
-	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: "spawning a checker"})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: "the ask at the card"})
+	m.agent.Append(llm.Message{Role: llm.RoleAssistant, Content: "spawning a checker"})
 
 	args := `{"role":"researcher","task":"check it","inherit":1}`
-	m.approval.request = &approvalRequest{call: provider.ToolCall{ID: "s1", Name: subagent.SpawnToolName, Arguments: args}}
+	m.approval.request = &approvalRequest{call: llm.ToolCall{ID: "s1", Name: subagent.SpawnToolName, Arguments: args}}
 	updated, _ := m.executeApprovedTool()
 	m = updated.(Model)
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: "a later ask"})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: "a later ask"})
 
 	if _, err := sup.WrapExecutor("", nil)(context.Background(), subagent.SpawnToolName, json.RawMessage(args)); err != nil {
 		t.Fatal(err)

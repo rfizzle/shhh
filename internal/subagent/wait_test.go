@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -39,15 +39,15 @@ func (h *heldEnv) finish(name string) { close(h.gate(name)) }
 
 func (h *heldEnv) factory() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			select {
 			case <-h.gate(spec.Name):
 			case <-ctx.Done():
 				return nil, nil, ctx.Err()
 			}
-			ch := make(chan provider.StreamEvent, 2)
-			ch <- provider.StreamEvent{Token: "report of " + spec.Name}
-			ch <- provider.StreamEvent{Done: true}
+			ch := make(chan llm.StreamEvent, 2)
+			ch <- llm.StreamEvent{Token: "report of " + spec.Name}
+			ch <- llm.StreamEvent{Done: true}
 			close(ch)
 			return ch, func() {}, nil
 		}

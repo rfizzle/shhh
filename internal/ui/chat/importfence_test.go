@@ -16,6 +16,10 @@ import (
 // screenModule is the import path every package of this module starts with.
 const screenModule = "github.com/rfizzle/shhh/internal/"
 
+// llmModule is the shared provider library, which the backend fence reads as
+// the package "llm".
+const llmModule = "github.com/rfizzle/llm"
+
 // fencedForNames are the packages the screen once imported only to name a
 // tool. What a call did is the receipt's to say, so a file that reaches one
 // of them for a tool's name and nothing else is the screen growing a table
@@ -114,7 +118,7 @@ var behindBackend = []backendFence{
 	// The stream's events. The screen hands the channel back to the backend
 	// to be read and never reads an event off it itself; the messages and
 	// their payloads, the conversation and its calls, stay the screen's.
-	{"provider", []string{"StreamEvent"}},
+	{"llm", []string{"StreamEvent"}},
 }
 
 // backendFence is one entry of that list.
@@ -138,6 +142,9 @@ func aroundBackend(t *testing.T, f *ast.File, fences []backendFence) []string {
 			t.Fatal(err)
 		}
 		pkg, ok := strings.CutPrefix(path, screenModule)
+		if path == llmModule {
+			pkg, ok = "llm", true
+		}
 		if !ok {
 			continue
 		}
@@ -232,17 +239,17 @@ func TestScreenImportFence(t *testing.T) {
 		want      string
 	}{
 		{"the stream's event named",
-			`package p; import "github.com/rfizzle/shhh/internal/provider"; var _ provider.StreamEvent`, behindBackend, "provider.StreamEvent"},
+			`package p; import "github.com/rfizzle/llm"; var _ llm.StreamEvent`, behindBackend, "llm.StreamEvent"},
 		{"the rest of the package is the screen's",
-			`package p; import "github.com/rfizzle/shhh/internal/provider"; var _ provider.Message`, behindBackend, ""},
+			`package p; import "github.com/rfizzle/llm"; var _ llm.Message`, behindBackend, ""},
 		{"a renamed import is still the package",
-			`package p; import pv "github.com/rfizzle/shhh/internal/provider"; var _ []pv.StreamEvent`, behindBackend, "provider.StreamEvent"},
+			`package p; import pv "github.com/rfizzle/llm"; var _ []pv.StreamEvent`, behindBackend, "llm.StreamEvent"},
 		{"a field of the same name is not the package",
-			`package p; import "github.com/rfizzle/shhh/internal/provider"; var m struct{ provider struct{ StreamEvent int } }; var _, _ = m.provider.StreamEvent, provider.Message{}`, behindBackend, ""},
+			`package p; import "github.com/rfizzle/llm"; var m struct{ llm struct{ StreamEvent int } }; var _, _ = m.llm.StreamEvent, llm.Message{}`, behindBackend, ""},
 		{"a whole package fenced is refused at the import",
 			`package p; import "github.com/rfizzle/shhh/internal/storage"; var _ *storage.Store`, wholeStore, "storage"},
 		{"a whole package fenced is not refused where it is not imported",
-			`package p; import "github.com/rfizzle/shhh/internal/provider"; var _ provider.StreamEvent`, wholeStore, ""},
+			`package p; import "github.com/rfizzle/llm"; var _ llm.StreamEvent`, wholeStore, ""},
 	}
 	for _, p := range backendProbes {
 		fset := token.NewFileSet()

@@ -13,12 +13,12 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -53,7 +53,7 @@ const elidedResult = agent.ElidedResult
 // "about".
 const compactSummaryEstimate = 1000
 
-func estimateMessageTokens(msgs []provider.Message) int64 {
+func estimateMessageTokens(msgs []llm.Message) int64 {
 	return agent.EstimateMessageTokens(msgs)
 }
 
@@ -87,7 +87,7 @@ func (m Model) windowFor(model string) int64 {
 			return w
 		}
 	}
-	if w, ok := provider.ContextWindowFor(model); ok {
+	if w, ok := llm.ContextWindowFor(model); ok {
 		return w
 	}
 	return DefaultContextWindow
@@ -198,7 +198,7 @@ type elidedRow struct {
 }
 
 // messageBodies is the conversation's contents, by message index.
-func messageBodies(msgs []provider.Message) []string {
+func messageBodies(msgs []llm.Message) []string {
 	bodies := make([]string, len(msgs))
 	for i, msg := range msgs {
 		bodies[i] = msg.Content
@@ -396,7 +396,7 @@ func (m Model) startCompactFor(idle bool) (tea.Model, tea.Cmd) {
 	}
 	// The request the shared step builds, under the choice it asks for: what
 	// a compaction sends is one thing whichever surface asked for it.
-	return m, m.requestStreamFor(m.agent.CompactRequest(), provider.ToolChoiceNone)
+	return m, m.requestStreamFor(m.agent.CompactRequest(), llm.ToolChoiceNone)
 }
 
 // compactTrigger is who asked for the compaction under way, in the word a
@@ -441,7 +441,7 @@ func (m Model) finishPreCompact(msg preCompactMsg) (tea.Model, tea.Cmd) {
 	}
 	m.appendEntry(entry{kind: entrySystem, text: compactingNotice})
 	m.syncViewport()
-	return m, m.requestStreamFor(m.agent.CompactRequest(), provider.ToolChoiceNone)
+	return m, m.requestStreamFor(m.agent.CompactRequest(), llm.ToolChoiceNone)
 }
 
 // postCompactCmd is the seam behind a compaction, once the conversation has
@@ -637,7 +637,7 @@ func (m *Model) regenerateWorkspace() {
 		return
 	}
 	msgs := m.agent.Messages()
-	if len(msgs) == 0 || msgs[0].Role != provider.RoleSystem {
+	if len(msgs) == 0 || msgs[0].Role != llm.RoleSystem {
 		return
 	}
 	rebuilt := project.ReplaceBlock(msgs[0].Content, m.wiring.WorkspaceBlock())
@@ -647,7 +647,7 @@ func (m *Model) regenerateWorkspace() {
 	// Copied rather than written through the slice the agent handed back:
 	// the conversation is the agent's to hold, and a caller reaching into it
 	// is a write nothing in the agent can see.
-	updated := append([]provider.Message(nil), msgs...)
+	updated := append([]llm.Message(nil), msgs...)
 	updated[0].Content = rebuilt
 	m.agent.SetMessages(updated)
 }
@@ -747,9 +747,9 @@ func (m Model) windowShare(tokens int64) int {
 // also carries the tool definitions and the project context and a compaction
 // touches neither — counting them would put what the act cannot recover into
 // the figure for what it did.
-func (m Model) droppedTokens(kept []provider.Message) int64 {
+func (m Model) droppedTokens(kept []llm.Message) int64 {
 	msgs := m.agent.Messages()
-	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 		msgs = msgs[1:]
 	}
 	return max(estimateMessageTokens(msgs)-estimateMessageTokens(kept), 0)
@@ -769,7 +769,7 @@ func (m Model) droppedTokens(kept []provider.Message) int64 {
 // boundary too, and they are not folded again: a session that compacts twice
 // over the same turns has recovered nothing the second time, and that is what
 // the floor case is.
-func (m Model) compactSplit(kept []provider.Message) (folded, remaining []entry, turns compactTurns) {
+func (m Model) compactSplit(kept []llm.Message) (folded, remaining []entry, turns compactTurns) {
 	left, end := keptReaderTurns(kept), len(m.transcript)
 	for end > 0 && left > 0 {
 		end--
@@ -821,10 +821,10 @@ type compactTurns struct {
 // summary has replaced and the kept tail does not carry, which is a turn the
 // split would hold on neither side of itself
 // (docs/interface/principles.md#fold-never-hide).
-func keptReaderTurns(kept []provider.Message) int {
+func keptReaderTurns(kept []llm.Message) int {
 	n := 0
 	for _, msg := range kept {
-		if msg.Role == provider.RoleUser && !msg.Machine {
+		if msg.Role == llm.RoleUser && !msg.Machine {
 			n++
 		}
 	}
@@ -1057,12 +1057,12 @@ func (m Model) compactSummaryBlock(e entry, width int) string {
 // compactKeep is the tail a compaction carries through verbatim, under this
 // session's window and its own correction factor. The card reads it too, to
 // promise what compacting would keep before anything has been compacted.
-func (m Model) compactKeep() []provider.Message {
+func (m Model) compactKeep() []llm.Message {
 	return m.agent.CompactKeep(m.contextWindow()*agent.CompactKeepPercent/100, m.calibration)
 }
 
 // keptTurnCount counts the user messages in a kept tail — the turns it is.
-func (m Model) keptTurnCount(kept []provider.Message) int {
+func (m Model) keptTurnCount(kept []llm.Message) int {
 	return agent.CompactKeptTurns(kept)
 }
 

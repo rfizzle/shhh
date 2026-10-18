@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // todaysWording is the digest of the built-in instruction as it stood before
@@ -30,8 +30,8 @@ func TestClassifier_DefaultBackendSendsTodaysRequest(t *testing.T) {
 		t.Fatalf("the built-in wording moved: %s", got)
 	}
 	for _, backend := range []string{"", BackendCompletion, " Completion "} {
-		var seen provider.CompletionOpts
-		d := &fakeDecider{fakeClassifierProvider: &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		var seen llm.CompletionOpts
+		d := &fakeDecider{fakeClassifierProvider: &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 			seen = opts
 			return eventsOf(decisionCall(`{"decision":"allow","reason":"runs the tests"}`)), nil
 		}}, offers: true}
@@ -51,7 +51,7 @@ func TestClassifier_DefaultBackendSendsTodaysRequest(t *testing.T) {
 		if d.msgs[1].Content != evidence {
 			t.Fatalf("%q: evidence =\n%s", backend, d.msgs[1].Content)
 		}
-		if seen.Model != "m" || seen.MaxTokens != DefaultClassifierMaxTokens || seen.Effort != provider.EffortLow ||
+		if seen.Model != "m" || seen.MaxTokens != DefaultClassifierMaxTokens || seen.Effort != llm.EffortLow ||
 			seen.ResponseSchema == nil || seen.ResponseSchema.Name != DecisionToolName ||
 			len(seen.Tools) != 1 || seen.ToolChoice != "auto" {
 			t.Fatalf("%q: options = %+v", backend, seen)
@@ -64,23 +64,23 @@ func TestClassifier_DefaultBackendSendsTodaysRequest(t *testing.T) {
 type fakeDecider struct {
 	*fakeClassifierProvider
 	offers  bool
-	decide  func(attempt int, ctx context.Context) (provider.DecisionResult, error)
+	decide  func(attempt int, ctx context.Context) (llm.DecisionResult, error)
 	decided int
-	req     provider.DecisionRequest
+	req     llm.DecisionRequest
 }
 
 func (f *fakeDecider) OffersDecisions(string) bool { return f.offers }
 
-func (f *fakeDecider) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+func (f *fakeDecider) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
 	f.decided++
 	f.req = req
 	return f.decide(f.decided, ctx)
 }
 
-func predicate(p float64) provider.DecisionResult {
-	return provider.DecisionResult{
-		Answers: []provider.DecisionAnswer{{Type: provider.AnswerPredicate, Name: decisionsQuestionName, Probability: p}},
-		Usage:   provider.Usage{PromptTokens: 40},
+func predicate(p float64) llm.DecisionResult {
+	return llm.DecisionResult{
+		Answers: []llm.DecisionAnswer{{Type: llm.AnswerPredicate, Name: decisionsQuestionName, Probability: p}},
+		Usage:   llm.Usage{PromptTokens: 40},
 	}
 }
 
@@ -91,7 +91,7 @@ func predicate(p float64) provider.DecisionResult {
 // Allow, below is Deny — and the sentence the card draws names both.
 func TestClassifier_DecisionsBackendAsksAPredicate(t *testing.T) {
 	d := &fakeDecider{fakeClassifierProvider: &fakeClassifierProvider{}, offers: true,
-		decide: func(int, context.Context) (provider.DecisionResult, error) { return predicate(0.795), nil }}
+		decide: func(int, context.Context) (llm.DecisionResult, error) { return predicate(0.795), nil }}
 	cfg := ClassifierConfig{Model: "gpt-6-luna", Backend: BackendDecisions, Prompt: "MY OWN WORDING"}
 	v := NewClassifier(d, cfg).Judge(context.Background(), testRequest())
 	if v.Failed || v.Decision != Deny {
@@ -112,7 +112,7 @@ func TestClassifier_DecisionsBackendAsksAPredicate(t *testing.T) {
 		t.Fatalf("request = %+v", req)
 	}
 	q := req.Questions[0]
-	if q.Type != provider.QuestionPredicate || q.Name != decisionsQuestionName || q.Instructions != decisionsPredicate {
+	if q.Type != llm.QuestionPredicate || q.Name != decisionsQuestionName || q.Instructions != decisionsPredicate {
 		t.Fatalf("question = %+v", q)
 	}
 	if !strings.HasPrefix(req.Input, "UNTRUSTED EVIDENCE:\n{\"proposed_action\":") || !strings.Contains(req.Input, "run the tests") {
@@ -142,7 +142,7 @@ func TestClassifier_DecisionsBackendAsksAPredicate(t *testing.T) {
 		{0.5, 50, Allow, "the classifier put the chance this may run unasked at 50%, at or over the 50% threshold"},
 		{1, 101, Deny, "the classifier put the chance this may run unasked at 100%, under the 101% threshold"},
 	} {
-		d.decide = func(int, context.Context) (provider.DecisionResult, error) { return predicate(c.p), nil }
+		d.decide = func(int, context.Context) (llm.DecisionResult, error) { return predicate(c.p), nil }
 		cfg.Threshold = c.threshold
 		v := NewClassifier(d, cfg).Judge(context.Background(), testRequest())
 		if v.Failed || v.Decision != c.want || v.Reason != c.reason {
@@ -158,25 +158,25 @@ func TestClassifier_DecisionsBackendAsksAPredicate(t *testing.T) {
 // refuses. A refusal spends no retry; the rest take the retries a completion
 // would.
 func TestClassifier_DecisionsBackendFailsClosed(t *testing.T) {
-	refusal := provider.DecisionResult{Answers: []provider.DecisionAnswer{{Type: provider.AnswerRefusal, Name: decisionsQuestionName}}}
-	missing := provider.DecisionResult{Answers: []provider.DecisionAnswer{{Type: provider.AnswerPredicate, Name: "other", Probability: 1}}}
+	refusal := llm.DecisionResult{Answers: []llm.DecisionAnswer{{Type: llm.AnswerRefusal, Name: decisionsQuestionName}}}
+	missing := llm.DecisionResult{Answers: []llm.DecisionAnswer{{Type: llm.AnswerPredicate, Name: "other", Probability: 1}}}
 	cases := []struct {
 		name     string
 		offers   bool
-		decide   func(int, context.Context) (provider.DecisionResult, error)
+		decide   func(int, context.Context) (llm.DecisionResult, error)
 		attempts int
 		reason   string
 	}{
-		{"refusal", true, func(int, context.Context) (provider.DecisionResult, error) { return refusal, nil }, 1, "declined"},
-		{"error", true, func(int, context.Context) (provider.DecisionResult, error) {
-			return provider.DecisionResult{}, errors.New("503 overloaded")
+		{"refusal", true, func(int, context.Context) (llm.DecisionResult, error) { return refusal, nil }, 1, "declined"},
+		{"error", true, func(int, context.Context) (llm.DecisionResult, error) {
+			return llm.DecisionResult{}, errors.New("503 overloaded")
 		}, 2, "503 overloaded"},
-		{"timeout", true, func(_ int, ctx context.Context) (provider.DecisionResult, error) {
+		{"timeout", true, func(_ int, ctx context.Context) (llm.DecisionResult, error) {
 			<-ctx.Done()
-			return provider.DecisionResult{}, ctx.Err()
+			return llm.DecisionResult{}, ctx.Err()
 		}, 2, "deadline"},
-		{"missing answer", true, func(int, context.Context) (provider.DecisionResult, error) { return missing, nil }, 2, "no answer"},
-		{"not offered", false, func(int, context.Context) (provider.DecisionResult, error) { return predicate(1), nil }, 0, "does not offer"},
+		{"missing answer", true, func(int, context.Context) (llm.DecisionResult, error) { return missing, nil }, 2, "no answer"},
+		{"not offered", false, func(int, context.Context) (llm.DecisionResult, error) { return predicate(1), nil }, 0, "does not offer"},
 	}
 	plain := Action{Kind: ActionCommand, Command: "go test ./..."}
 	for _, c := range cases {
@@ -204,7 +204,7 @@ func TestClassifier_DecisionsBackendFailsClosed(t *testing.T) {
 
 	// A provider that cannot speak the API at all is the same as a model
 	// that does not offer it.
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		t.Fatal("a decisions classifier fell back to a completion")
 		return nil, nil
 	}}

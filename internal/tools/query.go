@@ -26,8 +26,8 @@ import (
 	"github.com/itchyny/gojq"
 	"go.yaml.in/yaml/v4"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -72,7 +72,7 @@ var (
 var query = Definition{
 	Receipt: describe.Describer{Kind: describe.KindSearch, Verb: "search",
 		Does: "structured files, read with jq"},
-	Tool: provider.Tool{
+	Tool: llm.Tool{
 		Name: QueryName,
 		Description: "Read structured data files — JSON, JSONL, YAML, TOML, XML, CSV and TSV — with a jq expression, in-process; it reads and never writes. " +
 			"On a file you have not seen, call it with no expression first: it answers the file's shape — its top-level keys, their types and array lengths — in a few lines instead of the whole file. " +

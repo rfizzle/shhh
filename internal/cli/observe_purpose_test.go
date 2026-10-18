@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -33,9 +33,9 @@ func TestHeadlessObserver_ACommandIsRecordedByWhatItWasFor(t *testing.T) {
 	rec := startObserveRecorder(db, "print", "anthropic", "test-model", nil)
 	obs := headlessObserver{rec: rec, rounds: func() int { return 1 }}
 
-	obs.toolResult(agent.ToolResult{Call: provider.ToolCall{ID: "1", Name: "execute_command",
+	obs.toolResult(agent.ToolResult{Call: llm.ToolCall{ID: "1", Name: "execute_command",
 		Arguments: `{"command":"tail -40 /home/someone/notes.md"}`}, Result: "text", Duration: time.Millisecond})
-	obs.toolResult(agent.ToolResult{Call: provider.ToolCall{ID: "2", Name: "execute_command",
+	obs.toolResult(agent.ToolResult{Call: llm.ToolCall{ID: "2", Name: "execute_command",
 		Arguments: `{"command":"go test ./..."}`}, Result: "ok", Duration: time.Millisecond})
 	obs.toolResult(toolResultOf("read_file", time.Millisecond, "the file"))
 	rec.end()
@@ -67,14 +67,14 @@ func TestClassifyRecordedCommands_ReadsTheWordFromTheSavedConversation(t *testin
 	db := fixtureStore(t)
 	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
 	slot := "2026-09-30 10:00:00"
-	if err := db.SaveChat(slot, []provider.Message{
-		{Role: provider.RoleUser, Content: "how big is it?", Turn: 1},
-		{Role: provider.RoleAssistant, Turn: 1, Round: 2, ToolCalls: []provider.ToolCall{
+	if err := db.SaveChat(slot, []llm.Message{
+		{Role: llm.RoleUser, Content: "how big is it?", Turn: 1},
+		{Role: llm.RoleAssistant, Turn: 1, Round: 2, ToolCalls: []llm.ToolCall{
 			{ID: "a", Name: "execute_command", Arguments: `{"command":"wc -c docs/big.md"}`},
 			{ID: "b", Name: "execute_command", Arguments: `{"command":"grep -n foo docs/big.md"}`},
 		}},
-		{Role: provider.RoleTool, ToolCallID: "a", Turn: 1, Round: 2, Content: "51000 docs/big.md"},
-		{Role: provider.RoleTool, ToolCallID: "b", Turn: 1, Round: 2, Content: "3:foo"},
+		{Role: llm.RoleTool, ToolCallID: "a", Turn: 1, Round: 2, Content: "51000 docs/big.md"},
+		{Role: llm.RoleTool, ToolCallID: "b", Turn: 1, Round: 2, Content: "3:foo"},
 	}); err != nil {
 		t.Fatalf("save chat: %v", err)
 	}
@@ -110,9 +110,9 @@ func TestClassifyRecordedCommands_LeavesAWordAlreadyRecorded(t *testing.T) {
 	db := fixtureStore(t)
 	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
 	slot := "2026-09-30 11:00:00"
-	if err := db.SaveChat(slot, []provider.Message{
-		{Role: provider.RoleUser, Content: "go", Turn: 1},
-		{Role: provider.RoleAssistant, Turn: 1, Round: 1, ToolCalls: []provider.ToolCall{
+	if err := db.SaveChat(slot, []llm.Message{
+		{Role: llm.RoleUser, Content: "go", Turn: 1},
+		{Role: llm.RoleAssistant, Turn: 1, Round: 1, ToolCalls: []llm.ToolCall{
 			{ID: "a", Name: "execute_command", Arguments: `{"command":"rm -rf build"}`},
 			{ID: "b", Name: "execute_command", Arguments: `{"command":"ls"}`},
 		}},

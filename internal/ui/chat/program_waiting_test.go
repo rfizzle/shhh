@@ -9,7 +9,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // heldProvider holds its stream open with nothing on it until reason is
@@ -19,8 +19,8 @@ type heldProvider struct{ reason chan struct{} }
 
 func (p *heldProvider) Name() string { return "scripted" }
 
-func (p *heldProvider) StreamCompletion(ctx context.Context, _ []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-	ch := make(chan provider.StreamEvent)
+func (p *heldProvider) StreamCompletion(ctx context.Context, _ []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+	ch := make(chan llm.StreamEvent)
 	go func() {
 		defer close(ch)
 		select {
@@ -29,7 +29,7 @@ func (p *heldProvider) StreamCompletion(ctx context.Context, _ []provider.Messag
 			return
 		}
 		select {
-		case ch <- provider.StreamEvent{Thinking: "weighing where the flake comes from"}:
+		case ch <- llm.StreamEvent{Thinking: "weighing where the flake comes from"}:
 		case <-ctx.Done():
 			return
 		}
@@ -43,7 +43,7 @@ func (p *heldProvider) StreamCompletion(ctx context.Context, _ []provider.Messag
 // reasoning's count once it has (docs/interface/surfaces.md#the-input-frame).
 func TestProgram_ARequestThatHearsNothingSaysSo(t *testing.T) {
 	p := &heldProvider{reason: make(chan struct{})}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
 	tm := runProgramAt(t, m, 110, 40)
 
 	tm.Type("why does the test flake")

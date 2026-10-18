@@ -7,19 +7,19 @@ package chat
 import (
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestProgram_AnAuthFailureOffersTheSignInBesideTheKey(t *testing.T) {
-	p := refusingProvider{fail: &provider.Failure{
-		Class: provider.ClassAuth, Status: 401, Provider: "openai",
+	p := refusingProvider{fail: &llm.Failure{
+		Class: llm.ClassAuth, Status: 401, Provider: "openai",
 		Message: "Incorrect API key provided",
 	}}
 	w := Wiring{
 		ReplaceKey:    func(string) error { return nil },
 		SignInChatGPT: (&fakeSignIn{}).run,
 	}
-	tm := runProgramAt(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), w), 110, 40)
+	tm := runProgramAt(t, New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), w), 110, 40)
 
 	tm.Type("why does the loop stop")
 	tm.Send(programEnter)

@@ -6,7 +6,7 @@ package chat
 import (
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // A session that has run two billed turns: `/stats` reaches the bill through
@@ -14,7 +14,7 @@ import (
 // the older turn over the group rails, and enter opens it on the turns
 // screen.
 func TestProgram_StatsOpensTheBillAndATurnFromIt(t *testing.T) {
-	usage := &provider.Usage{PromptTokens: 1200, CompletionTokens: 80}
+	usage := &llm.Usage{PromptTokens: 1200, CompletionTokens: 80}
 	m, _ := scriptedSession(
 		programTurn{text: "The first answer.", usage: usage},
 		programTurn{text: "The second answer.", usage: usage},

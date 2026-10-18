@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -70,8 +70,8 @@ func TestSandboxWriterGetsItsOwnContainer(t *testing.T) {
 	var mu sync.Mutex
 	var roots []string
 	ran := make(chan tools.ExecResult, 1)
-	steps := []provider.StreamEvent{
-		{ToolCalls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"echo from-the-writer"}`}}},
+	steps := []llm.StreamEvent{
+		{ToolCalls: []llm.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"echo from-the-writer"}`}}},
 		{Token: "done"},
 	}
 	newEnv := func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
@@ -87,13 +87,13 @@ func TestSandboxWriterGetsItsOwnContainer(t *testing.T) {
 		next := 0
 		return subagent.Env{
 			SystemPrompt: "a writer in a sandbox session",
-			Stream: func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-				ch := make(chan provider.StreamEvent, 2)
+			Stream: func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+				ch := make(chan llm.StreamEvent, 2)
 				if next < len(steps) {
 					ch <- steps[next]
 					next++
 				}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Done: true}
 				close(ch)
 				return ch, func() {}, nil
 			},

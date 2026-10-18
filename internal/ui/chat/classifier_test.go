@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -24,19 +24,19 @@ type verdictProvider struct {
 	calls    int
 }
 
-func (p *verdictProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *verdictProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.calls++
 	if p.err != nil {
 		return nil, p.err
 	}
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{
 			ID:        "d1",
 			Name:      agent.DecisionToolName,
 			Arguments: `{"decision":"` + p.decision + `","reason":"` + p.reason + `"}`,
 		}},
-		Usage: &provider.Usage{PromptTokens: 100, CompletionTokens: 10},
+		Usage: &llm.Usage{PromptTokens: 100, CompletionTokens: 10},
 		Done:  true,
 	}
 	close(ch)
@@ -47,7 +47,7 @@ func (p *verdictProvider) Name() string { return "verdict" }
 
 // classifierModel is execModel in auto mode with a classifier over the given
 // fake provider.
-func classifierModel(t *testing.T, ran *[]string, p provider.Provider) Model {
+func classifierModel(t *testing.T, ran *[]string, p llm.Provider) Model {
 	t.Helper()
 	// Wired the way the session wires it: the classifier gets its provider
 	// through the gate, so what it spends is billed without the model
@@ -77,7 +77,7 @@ func TestClassifierFlow_AllowRunsCommand(t *testing.T) {
 	var ran []string
 	m := classifierModel(t, &ran, &verdictProvider{decision: "allow", reason: "runs the requested check"})
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
@@ -126,7 +126,7 @@ func judgedCard(t *testing.T, ran *[]string, why string) (Model, *[][2]string) {
 	t.Helper()
 	decisions := &[][2]string{}
 	m := recordingDecisions(classifierModel(t, ran, &verdictProvider{decision: "deny", reason: why}), decisions)
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: tools.ExecCommandName, Arguments: `{"command":"npm run deploy"}`},
 	}})
 	m = updated.(Model)
@@ -152,7 +152,7 @@ func TestClassifierFlow_ANoIsACardCarryingItsReason(t *testing.T) {
 	if len(ran) != 0 {
 		t.Fatal("nothing may run before the person answers")
 	}
-	if last := m.Messages()[len(m.Messages())-1]; last.Role == provider.RoleTool {
+	if last := m.Messages()[len(m.Messages())-1]; last.Role == llm.RoleTool {
 		t.Fatalf("the model should hear nothing until the card is answered, got %+v", last)
 	}
 	card := m.buildApprovalCard()
@@ -210,7 +210,7 @@ func TestClassifierFlow_ThePersonsAnswerIsRecordedBesideTheVerdict(t *testing.T)
 			t.Fatalf("the person's no should refuse the command, got %v", ran)
 		}
 		last := m.Messages()[len(m.Messages())-1]
-		if last.Role != provider.RoleTool || !strings.Contains(last.Content, "the user declined to run this command") {
+		if last.Role != llm.RoleTool || !strings.Contains(last.Content, "the user declined to run this command") {
 			t.Fatalf("the model reads the person's no as it reads any card's, got %+v", last)
 		}
 		want := [][2]string{{observe.DecisionDeny, observe.ReasonClassifier}, {observe.DecisionDeny, observe.ReasonUser}}
@@ -224,7 +224,7 @@ func TestClassifierFlow_FailureFallsBackToPrompt(t *testing.T) {
 	var ran []string
 	m := classifierModel(t, &ran, &verdictProvider{err: errors.New("api down")})
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
@@ -253,7 +253,7 @@ func TestClassifierFlow_FlaggedCommandSkipsClassifier(t *testing.T) {
 	p := &verdictProvider{decision: "allow", reason: "sure"}
 	m := classifierModel(t, &ran, p)
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"git reset --hard"}`},
 	}})
 	m = updated.(Model)
@@ -270,7 +270,7 @@ func TestClassifierFlow_CtrlCFallsBackToPrompt(t *testing.T) {
 	var ran []string
 	m := classifierModel(t, &ran, &verdictProvider{decision: "allow", reason: "ok"})
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
@@ -312,7 +312,7 @@ func TestClassifierFlow_ADenyListRefusalIsNotAJudgement(t *testing.T) {
 	m := classifierModel(t, &ran, p)
 	m.policy.denylist = []string{"rm"}
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: tools.ExecCommandName, Arguments: `{"command":"rm -rf build"}`},
 	}})
 	m = updated.(Model)
@@ -354,7 +354,7 @@ func classifierDownRound(t *testing.T, width int) Model {
 	m.policy.mode = agent.ModeAuto
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 48})
 	m = updated.(Model)
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		readCall("call_1", "internal/agent/loop.go"),
 		execCall("call_2", "go test ./internal/agent"),
 		readCall("call_3", "internal/ui/chat/turn.go"),

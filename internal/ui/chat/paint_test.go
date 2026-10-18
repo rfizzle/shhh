@@ -9,7 +9,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -187,7 +187,7 @@ func TestScreens_TheFirstFrameIsPainted(t *testing.T) {
 	components.SetMono(false)
 
 	view := func() (string, color.Color) {
-		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+		m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 		v := m.View()
 		return v.Content, v.BackgroundColor
 	}

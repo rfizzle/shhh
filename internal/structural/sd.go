@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/diff"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -24,7 +24,7 @@ import (
 // past MaxOutputBytes is still cut off and kept nowhere, because this tool is
 // exempt from the evidence pipeline.
 // See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
-var sdTool = provider.Tool{
+var sdTool = llm.Tool{
 	Name: SdToolName,
 	Description: "PREVIEW a find-and-replace across files with sd. This tool never modifies files: it always runs sd with --preview " +
 		"and returns a unified diff of the lines that would change, under a \"--- a/<path>\" header per file; a named file with no match adds nothing. Use it to check a transform across several files, then apply the changes you want with edit_file. " +

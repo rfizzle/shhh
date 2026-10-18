@@ -20,8 +20,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui"
 	"github.com/spf13/cobra"
@@ -46,7 +46,7 @@ type providerRequest struct {
 // and nothing else, and a sentence is more use there than half a list.
 // See docs/interface/surfaces.md#outside-the-tui.
 func providerFlagUsage() string {
-	names := provider.Available()
+	names := llm.Available()
 	sort.Strings(names)
 	return "send the request to a built-in provider or to a gateway profile from `shhh providers`:\n" +
 		strings.Join(names, ", ")
@@ -87,8 +87,8 @@ func fillConfigHalf(flags *resolve.Opts, cfg config.Config, surface string) {
 // so a failure there is the setup card and an exit; a suite whose scripted
 // cases ask nobody has cases to measure either way, and must not be taken
 // out through that door (eval.go).
-func tryProvider(cfg config.Config, req providerRequest) (provider.Provider, error) {
-	return provider.Resolve(req.Provider, provider.ResolveOpts{
+func tryProvider(cfg config.Config, req providerRequest) (llm.Provider, error) {
+	return llm.Resolve(req.Provider, llm.ResolveOpts{
 		APIKey:            req.APIKey,
 		Model:             req.Model,
 		BaseURL:           req.BaseURL,
@@ -104,7 +104,7 @@ func tryProvider(cfg config.Config, req providerRequest) (provider.Provider, err
 // providerTokens is the token source a provider name is built with: the
 // ChatGPT plan's credential for `chatgpt`, and nil for every name that sends
 // a key, so no key route is ever handed the plan's token.
-func providerTokens(name string) provider.TokenSource {
+func providerTokens(name string) llm.TokenSource {
 	if name != "chatgpt" {
 		return nil
 	}
@@ -117,7 +117,7 @@ func providerTokens(name string) provider.TokenSource {
 // with the sign-in error rather than reaching for a key. The nil is the
 // untyped literal and never a nil *chatgpt.Account, which in the interface
 // is not nil and would panic on the first request.
-func chatGPTTokens() provider.TokenSource {
+func chatGPTTokens() llm.TokenSource {
 	a, err := chatGPTAccount()
 	if err != nil || a == nil {
 		return nil
@@ -129,7 +129,7 @@ func chatGPTTokens() provider.TokenSource {
 // returns the provider, the request that built it (the model may have moved,
 // if the card chose a different provider), and an error only when there was
 // still no way in.
-func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest) (provider.Provider, providerRequest, error) {
+func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest) (llm.Provider, providerRequest, error) {
 	p, err := tryProvider(cfg, req)
 	if err == nil {
 		return p, req, nil
@@ -168,11 +168,11 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 	}
 	if choice.Model != "" {
 		next.Model = choice.Model
-	} else if model := provider.Defaults(next.Provider).Model; model != "" && next.Provider != req.Provider {
+	} else if model := llm.Defaults(next.Provider).Model; model != "" && next.Provider != req.Provider {
 		next.Model = model
 	}
 
-	p, err = provider.Resolve(next.Provider, provider.ResolveOpts{
+	p, err = llm.Resolve(next.Provider, llm.ResolveOpts{
 		APIKey:            next.APIKey,
 		Model:             next.Model,
 		BaseURL:           next.BaseURL,
@@ -203,7 +203,7 @@ func askProvider(survey resolve.Survey) (ui.ProviderChoice, bool) {
 		fmt.Fprint(os.Stderr, ui.PlainProviderReport(survey))
 		return ui.ProviderChoice{}, false
 	}
-	names := provider.Available()
+	names := llm.Available()
 	sort.Strings(names)
 	final, err := newProgram(ui.NewProviderSetup(survey, names), tea.WithOutput(os.Stderr)).Run()
 	if err != nil {
@@ -296,7 +296,7 @@ func reportFailure(err error, model string) error {
 	if err == nil {
 		return nil
 	}
-	if _, ok := provider.AsFailure(err); !ok {
+	if _, ok := llm.AsFailure(err); !ok {
 		return err
 	}
 	if isTerminal(os.Stderr) {

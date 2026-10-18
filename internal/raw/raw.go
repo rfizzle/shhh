@@ -6,14 +6,14 @@ import (
 	"io"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/ui"
 )
 
 type Opts struct {
-	Provider          provider.Provider
+	Provider          llm.Provider
 	Model             string
 	Prompt            string
 	SystemPromptExtra string
@@ -45,12 +45,12 @@ func Generate(ctx context.Context, opts Opts) (string, error) {
 	}
 	sysPrompt := SystemPrompt(info, opts.SystemPromptExtra)
 
-	messages := []provider.Message{
-		{Role: provider.RoleSystem, Content: sysPrompt},
-		{Role: provider.RoleUser, Content: opts.Prompt},
+	messages := []llm.Message{
+		{Role: llm.RoleSystem, Content: sysPrompt},
+		{Role: llm.RoleUser, Content: opts.Prompt},
 	}
 
-	compOpts := provider.CompletionOpts{Model: opts.Model}
+	compOpts := llm.CompletionOpts{Model: opts.Model}
 
 	events, err := opts.Provider.StreamCompletion(ctx, messages, compOpts)
 	if err != nil {

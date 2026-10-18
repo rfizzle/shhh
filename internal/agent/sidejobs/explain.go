@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 const (
@@ -72,11 +72,11 @@ func (c ExplainConfig) maxTokens() int {
 
 // Explainer says what a command does, through the session's provider.
 type Explainer struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      ExplainConfig
 }
 
-func NewExplainer(p provider.Provider, cfg ExplainConfig) *Explainer {
+func NewExplainer(p llm.Provider, cfg ExplainConfig) *Explainer {
 	return &Explainer{provider: p, cfg: cfg}
 }
 
@@ -111,7 +111,7 @@ type ExplainRequest struct {
 type ExplainVerdict struct {
 	Text    string
 	Model   string
-	Usage   provider.Usage
+	Usage   llm.Usage
 	Failed  bool
 	Err     string
 	Elapsed time.Duration
@@ -145,24 +145,24 @@ func (e *Explainer) Explain(ctx context.Context, req ExplainRequest) ExplainVerd
 	// command was written by a model and is about to be read by a person
 	// deciding whether to run it — an explanation that could be talked into
 	// vouching for the thing it describes is worse than none.
-	events, err := e.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: e.cfg.Prompt},
-		{Role: provider.RoleUser, Content: "UNTRUSTED COMMAND:\n" + command},
-	}, provider.CompletionOpts{
+	events, err := e.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: e.cfg.Prompt},
+		{Role: llm.RoleUser, Content: "UNTRUSTED COMMAND:\n" + command},
+	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      provider.FlowExplanation,
+		Flow:      llm.FlowExplanation,
 		MaxTokens: e.cfg.maxTokens(),
 		// A shallow thought is the right amount for reading a command line,
 		// and asking for it is the only way to bound one on a model that
 		// thinks whether or not it was asked.
-		Effort: provider.EffortLow,
+		Effort: llm.EffortLow,
 	})
 	if err != nil {
 		v.Err = "the explanation could not be read: " + err.Error()
 		return finish(v)
 	}
 
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	if reply.Usage != nil {
 		v.Usage = *reply.Usage
 	}

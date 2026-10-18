@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -20,12 +20,12 @@ type scriptedProvider struct {
 
 func (p *scriptedProvider) Name() string { return "scripted" }
 
-func (p *scriptedProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *scriptedProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	// The digest is the user turn; the instructions are the system message.
 	p.prompt = msgs[len(msgs)-1].Content
-	ch := make(chan provider.StreamEvent, 2)
-	ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{Name: todo.ExtractToolName, Arguments: p.args}}}
-	ch <- provider.StreamEvent{Done: true}
+	ch := make(chan llm.StreamEvent, 2)
+	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{Name: todo.ExtractToolName, Arguments: p.args}}}
+	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 	return ch, nil
 }

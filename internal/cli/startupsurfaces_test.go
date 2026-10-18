@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -50,7 +50,7 @@ func runSurfaceSessions(t *testing.T, kind, input string, args ...string) [][]st
 		[]byte("[mcp.servers.broken]\ncommand = \"/nonexistent/mcp-server\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	provider.Register(oneShotProviderName, func(provider.ResolveOpts) (provider.Provider, error) {
+	llm.Register(oneShotProviderName, func(llm.ResolveOpts) (llm.Provider, error) {
 		return oneShotProvider{answer: "ls -la", asked: &[]time.Time{}}, nil
 	})
 

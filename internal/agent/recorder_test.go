@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestRecorder_KeepsTheRecentRowsOldestFirst(t *testing.T) {
@@ -58,16 +58,16 @@ func TestDigestRows_SearchesOfOneDirectoryAreTheirPatterns(t *testing.T) {
 	patterns := []string{"steeringItem", "queuedSteer", "authorOf"}
 
 	r := NewRecorder(DefaultDigestRows)
-	var msgs []provider.Message
+	var msgs []llm.Message
 	for i, pattern := range patterns {
 		args := fmt.Sprintf(`{"pattern":%q,"path":"internal/ui/chat"}`, pattern)
 		r.Tool("search", args, "no matches")
 		id := fmt.Sprintf("c%d", i)
 		msgs = append(msgs,
-			provider.Message{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{
+			llm.Message{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{
 				{ID: id, Name: "search", Arguments: args},
 			}},
-			provider.Message{Role: provider.RoleTool, ToolCallID: id, Content: "no matches"})
+			llm.Message{Role: llm.RoleTool, ToolCallID: id, Content: "no matches"})
 	}
 
 	for _, digest := range []struct{ name, text string }{

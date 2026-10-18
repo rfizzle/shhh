@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func TestDefinitions(t *testing.T) {
@@ -597,8 +597,8 @@ func TestReadFile_ImageComesBackAsANoticeAndAnAttachment(t *testing.T) {
 	if len(atts) != 1 {
 		t.Fatalf("expected the image to ride on the result, got %d attachments", len(atts))
 	}
-	if atts[0].Kind != provider.AttachmentImage || atts[0].MediaType != "image/png" {
-		t.Errorf("unexpected attachment: %+v", provider.Attachment{Kind: atts[0].Kind, Name: atts[0].Name, MediaType: atts[0].MediaType})
+	if atts[0].Kind != llm.AttachmentImage || atts[0].MediaType != "image/png" {
+		t.Errorf("unexpected attachment: %+v", llm.Attachment{Kind: atts[0].Kind, Name: atts[0].Name, MediaType: atts[0].MediaType})
 	}
 	if !bytes.Equal(atts[0].Data, want) {
 		t.Errorf("the attachment should carry the whole file: %d bytes of %d", len(atts[0].Data), len(want))

@@ -32,9 +32,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/exp/teatest/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/persona"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -42,7 +42,7 @@ import (
 // listed: some text, some tool calls, or both.
 type programTurn struct {
 	text  string
-	calls []provider.ToolCall
+	calls []llm.ToolCall
 	// hold, when set, keeps this turn's events off the channel until it is
 	// closed. It is what makes a card's arrival orderable against the keys
 	// the test is sending: a decision that lands while the draft holds a
@@ -51,7 +51,7 @@ type programTurn struct {
 	hold chan struct{}
 	// usage, when set, is what the turn's closing event reports the request
 	// cost, the way an endpoint's final chunk does.
-	usage *provider.Usage
+	usage *llm.Usage
 }
 
 // programProvider is a provider.Provider that answers each request with the
@@ -63,12 +63,12 @@ type programProvider struct {
 	next  int
 	// asked is the last message of every request, in order: what the
 	// session put in front of the model at each round boundary.
-	asked []provider.Message
+	asked []llm.Message
 }
 
 func (p *programProvider) Name() string { return "scripted" }
 
-func (p *programProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *programProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.mu.Lock()
 	if len(msgs) > 0 {
 		p.asked = append(p.asked, msgs[len(msgs)-1])
@@ -77,7 +77,7 @@ func (p *programProvider) StreamCompletion(ctx context.Context, msgs []provider.
 	p.next++
 	p.mu.Unlock()
 
-	ch := make(chan provider.StreamEvent, 2)
+	ch := make(chan llm.StreamEvent, 2)
 	go func() {
 		defer close(ch)
 		if turn.hold != nil {
@@ -88,19 +88,19 @@ func (p *programProvider) StreamCompletion(ctx context.Context, msgs []provider.
 			}
 		}
 		if turn.text != "" {
-			ch <- provider.StreamEvent{Token: turn.text}
+			ch <- llm.StreamEvent{Token: turn.text}
 		}
-		ch <- provider.StreamEvent{ToolCalls: turn.calls, Usage: turn.usage, Done: true}
+		ch <- llm.StreamEvent{ToolCalls: turn.calls, Usage: turn.usage, Done: true}
 	}()
 	return ch, nil
 }
 
 // streamOf is the adapter every host writes around its provider to hand the
 // session a StreamFunc: a cancellable request per turn.
-func streamOf(p provider.Provider) StreamFunc {
-	return func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+func streamOf(p llm.Provider) StreamFunc {
+	return func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		ctx, cancel := context.WithCancel(context.Background())
-		events, err := p.StreamCompletion(ctx, msgs, provider.CompletionOpts{ToolChoice: choice})
+		events, err := p.StreamCompletion(ctx, msgs, llm.CompletionOpts{ToolChoice: choice})
 		if err != nil {
 			cancel()
 			return nil, nil, err
@@ -239,7 +239,7 @@ const draftSentence = "half a thought"
 // whole round trip through the runtime, with nothing driving Update by hand.
 func TestProgram_ATypedLineFetchesAReplyOntoTheFrame(t *testing.T) {
 	p := &programProvider{turns: []programTurn{{text: "the scripted answer"}}}
-	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
+	tm := runProgram(t, New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
 
 	tm.Type("say something")
 	tm.Send(programEnter)
@@ -264,12 +264,12 @@ func heldCommandProgram(t *testing.T, ran *[]string) *program {
 	release := sync.OnceFunc(func() { close(hold) })
 	t.Cleanup(release)
 	p := &programProvider{turns: []programTurn{
-		{hold: hold, calls: []provider.ToolCall{
+		{hold: hold, calls: []llm.ToolCall{
 			{ID: "call_1", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 		}},
 		{text: "and that is done"},
 	}}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{
 		Runner: legacyRunner(func(_ context.Context, cmd string) (string, int) {
 			*ran = append(*ran, cmd)
 			return "hi", 0
@@ -398,7 +398,7 @@ func TestProgram_TheDraftIsRevisedOneSectionAtATime(t *testing.T) {
 		Sections: &persona.Sections{Purpose: "NEW purpose.", Method: "Run go vet after each file."}}
 	var mu sync.Mutex
 	var asked []persona.Request
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}}), Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}}), Wiring{
 		Personas: Personas{
 			Kind:    persona.KindCode,
 			Enabled: true,
@@ -485,7 +485,7 @@ func TestProgram_AnOlderProfileIsMigratedFromTheManager(t *testing.T) {
 		_, err := config.LoadAgentFile(path)
 		return err
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}}), Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}}), Wiring{
 		Personas: Personas{
 			Kind:    persona.KindCode,
 			Enabled: true,

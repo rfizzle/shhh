@@ -10,9 +10,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/diff"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -21,7 +21,7 @@ import (
 // clipboard.
 func copyModel(t *testing.T, caught *[]string) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -145,7 +145,7 @@ func TestCopyRow_CaptionStandsUntilTheNextKey(t *testing.T) {
 
 // The failure lands in the transcript, where /copy's already goes.
 func TestCopyRow_FailureIsATranscriptRow(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -183,7 +183,7 @@ func TestReadingHint_CopyOfferFollowsTheRow(t *testing.T) {
 // clipboard write is asked first, and the copy goes through with nothing on
 // PATH to do it.
 func TestCopyRow_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)

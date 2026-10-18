@@ -7,21 +7,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 type mockProvider struct {
-	events []provider.StreamEvent
+	events []llm.StreamEvent
 	err    error
 }
 
 func (m *mockProvider) Name() string { return "mock" }
 
-func (m *mockProvider) StreamCompletion(_ context.Context, _ []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (m *mockProvider) StreamCompletion(_ context.Context, _ []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
-	ch := make(chan provider.StreamEvent, len(m.events))
+	ch := make(chan llm.StreamEvent, len(m.events))
 	for _, ev := range m.events {
 		ch <- ev
 	}
@@ -31,7 +31,7 @@ func (m *mockProvider) StreamCompletion(_ context.Context, _ []provider.Message,
 
 func TestRun_OutputsCommand(t *testing.T) {
 	p := &mockProvider{
-		events: []provider.StreamEvent{
+		events: []llm.StreamEvent{
 			{Token: "ls "},
 			{Token: "-la"},
 			{Done: true},
@@ -56,7 +56,7 @@ func TestRun_OutputsCommand(t *testing.T) {
 
 func TestRun_StripsFences(t *testing.T) {
 	p := &mockProvider{
-		events: []provider.StreamEvent{
+		events: []llm.StreamEvent{
 			{Token: "```bash\n"},
 			{Token: "find . -name '*.go'\n"},
 			{Token: "```"},
@@ -82,7 +82,7 @@ func TestRun_StripsFences(t *testing.T) {
 
 func TestRun_StreamError(t *testing.T) {
 	p := &mockProvider{
-		events: []provider.StreamEvent{
+		events: []llm.StreamEvent{
 			{Token: "ls "},
 			{Err: io.ErrUnexpectedEOF, Done: true},
 		},
@@ -119,7 +119,7 @@ func TestRun_ProviderInitError(t *testing.T) {
 
 func TestRun_ContextInPrompt(t *testing.T) {
 	p := &capturingProvider{
-		events: []provider.StreamEvent{
+		events: []llm.StreamEvent{
 			{Token: "grep error app.log"},
 			{Done: true},
 		},
@@ -144,7 +144,7 @@ func TestRun_ContextInPrompt(t *testing.T) {
 	}
 
 	userMsg := p.messages[1]
-	if userMsg.Role != provider.RoleUser {
+	if userMsg.Role != llm.RoleUser {
 		t.Errorf("expected user role, got %s", userMsg.Role)
 	}
 	if userMsg.Content != prompt {
@@ -155,7 +155,7 @@ func TestRun_ContextInPrompt(t *testing.T) {
 // Run prints exactly what Generate returns, so the widget and the eval suite,
 // which ask through Generate, read the answer shhh cmd --raw prints.
 func TestRunPrintsWhatGenerateReturns(t *testing.T) {
-	events := []provider.StreamEvent{{Token: "```sh\nls -la\n```\n"}, {Done: true}}
+	events := []llm.StreamEvent{{Token: "```sh\nls -la\n```\n"}, {Done: true}}
 
 	got, err := Generate(context.Background(), Opts{Provider: &mockProvider{events: events}, Prompt: "list files"})
 	if err != nil {
@@ -174,7 +174,7 @@ func TestRunPrintsWhatGenerateReturns(t *testing.T) {
 // machine's own is.
 func TestGenerateNamesThePinnedShell(t *testing.T) {
 	t.Setenv("SHELL", "/usr/bin/fish")
-	p := &capturingProvider{events: []provider.StreamEvent{{Token: "ls"}, {Done: true}}}
+	p := &capturingProvider{events: []llm.StreamEvent{{Token: "ls"}, {Done: true}}}
 	if _, err := Generate(context.Background(), Opts{Provider: p, Prompt: "list files", Shell: "bash"}); err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
@@ -185,15 +185,15 @@ func TestGenerateNamesThePinnedShell(t *testing.T) {
 }
 
 type capturingProvider struct {
-	events   []provider.StreamEvent
-	messages []provider.Message
+	events   []llm.StreamEvent
+	messages []llm.Message
 }
 
 func (c *capturingProvider) Name() string { return "capturing" }
 
-func (c *capturingProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (c *capturingProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	c.messages = msgs
-	ch := make(chan provider.StreamEvent, len(c.events))
+	ch := make(chan llm.StreamEvent, len(c.events))
 	for _, ev := range c.events {
 		ch <- ev
 	}

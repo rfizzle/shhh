@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // The record's failure is a line in the history the first time the screen
@@ -14,7 +14,7 @@ import (
 func TestRecordNotice_IsDrawnOnce(t *testing.T) {
 	failure := errors.New("disk full")
 	asked := 0
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Observer: observe.Observer{WriteFailed: func() error {
 			asked++
 			err := failure

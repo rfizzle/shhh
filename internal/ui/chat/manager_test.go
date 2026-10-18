@@ -10,9 +10,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -108,7 +108,7 @@ func TestProgram_TheManagerStopsAProcess(t *testing.T) {
 // request.
 func TestProgram_TheManagerStopsOneCallAndTheRoundGoesOn(t *testing.T) {
 	m, _ := scriptedSession(
-		programTurn{calls: []provider.ToolCall{
+		programTurn{calls: []llm.ToolCall{
 			call("s1", tools.SearchName, `{"pattern":"rounds"}`),
 			call("s2", tools.SearchName, `{"pattern":"limits"}`),
 		}},
@@ -157,7 +157,7 @@ func TestProgram_TheManagerStopsOneCallAndTheRoundGoesOn(t *testing.T) {
 
 	results := map[string]string{}
 	for _, msg := range m.agent.Messages() {
-		if msg.Role == provider.RoleTool {
+		if msg.Role == llm.RoleTool {
 			results[msg.ToolCallID] = msg.Content
 		}
 	}

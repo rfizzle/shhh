@@ -7,24 +7,24 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // parentTurns is a parent's conversation two turns long, the second of which
 // read a file whose contents are large enough to be kept rather than dropped,
 // and quoted a secret.
-func parentTurns() []provider.Message {
+func parentTurns() []llm.Message {
 	body := "package loop\n" + strings.Repeat("// the round counter is reset at every turn\n", 40)
-	return []provider.Message{
-		{Role: provider.RoleSystem, Content: "the parent's system prompt"},
-		{Role: provider.RoleUser, Content: "first ask: survey the exporter"},
-		{Role: provider.RoleAssistant, Content: "the exporter writes CSV"},
-		{Role: provider.RoleUser, Content: "second ask: why does the round cap reset? the token is hunter2"},
-		{Role: provider.RoleAssistant, Content: "reading the loop", ToolCalls: []provider.ToolCall{
+	return []llm.Message{
+		{Role: llm.RoleSystem, Content: "the parent's system prompt"},
+		{Role: llm.RoleUser, Content: "first ask: survey the exporter"},
+		{Role: llm.RoleAssistant, Content: "the exporter writes CSV"},
+		{Role: llm.RoleUser, Content: "second ask: why does the round cap reset? the token is hunter2"},
+		{Role: llm.RoleAssistant, Content: "reading the loop", ToolCalls: []llm.ToolCall{
 			{ID: "c1", Name: "read_file", Arguments: `{"path":"internal/agent/loop.go"}`}}},
-		{Role: provider.RoleTool, ToolCallID: "c1", Content: body},
-		{Role: provider.RoleUser, Content: "a gate verdict the session wrote", Machine: true},
-		{Role: provider.RoleAssistant, Content: "the counter is zeroed in StartTurn"},
+		{Role: llm.RoleTool, ToolCallID: "c1", Content: body},
+		{Role: llm.RoleUser, Content: "a gate verdict the session wrote", Machine: true},
+		{Role: llm.RoleAssistant, Content: "the counter is zeroed in StartTurn"},
 	}
 }
 
@@ -44,7 +44,7 @@ func (e *inheritingEnv) factory() EnvFactory {
 		e.mu.Lock()
 		e.inherits = append(e.inherits, spec.Inherit)
 		e.mu.Unlock()
-		env.Scrub = func(m provider.Message) provider.Message {
+		env.Scrub = func(m llm.Message) llm.Message {
 			m.Content = strings.ReplaceAll(m.Content, "hunter2", "[secret:TOKEN]")
 			return m
 		}
@@ -167,15 +167,15 @@ func TestAProfilesInheritIsADefaultACallMayLower(t *testing.T) {
 // claimed — no slot, no record, nothing written to the store — naming them
 // among what it counted.
 func TestInheritedTurnsAreCountedBeforeAnythingIsClaimed(t *testing.T) {
-	big := []provider.Message{
-		{Role: provider.RoleUser, Content: strings.Repeat("a long ask ", 60_000)},
-		{Role: provider.RoleAssistant, Content: "noted"},
+	big := []llm.Message{
+		{Role: llm.RoleUser, Content: strings.Repeat("a long ask ", 60_000)},
+		{Role: llm.RoleAssistant, Content: "noted"},
 	}
 	env := &inheritingEnv{scriptedEnv: &scriptedEnv{steps: []streamStep{{text: "x"}}}}
 	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: env.factory(),
 		Record: func(Spec, string) Recorder { t.Fatal("a refused spawn opened a record"); return Recorder{} }})
 	t.Cleanup(sup.Close)
-	sup.SetConversation(func() []provider.Message { return big })
+	sup.SetConversation(func() []llm.Message { return big })
 
 	_, err := sup.Spawn(json.RawMessage(`{"role":"researcher","task":"x","inherit":1,"max_tokens":300000}`))
 	if err == nil || !strings.Contains(err.Error(), "cannot admit") || !strings.Contains(err.Error(), "your last turn (~") {
@@ -193,7 +193,7 @@ func TestInheritedTurnsAreCountedBeforeAnythingIsClaimed(t *testing.T) {
 // attempt ended — not a fresh read of a conversation that has moved on.
 func TestARetryReissuesTheSameInheritanceAheadOfItsHandoff(t *testing.T) {
 	env := &inheritingEnv{scriptedEnv: &scriptedEnv{steps: []streamStep{
-		{text: "ran out of room", usage: &provider.Usage{PromptTokens: 300100}},
+		{text: "ran out of room", usage: &llm.Usage{PromptTokens: 300100}},
 	}}}
 	sup := newInheritingSupervisor(t, env, nil)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"check the reset","inherit":1,"max_tokens":300000}`)
@@ -201,8 +201,8 @@ func TestARetryReissuesTheSameInheritanceAheadOfItsHandoff(t *testing.T) {
 	first, _ := sup.Get("researcher-1")
 
 	// The parent's conversation moves on; the retry must not read it again.
-	sup.SetConversation(func() []provider.Message {
-		return []provider.Message{{Role: provider.RoleUser, Content: "a later ask nobody handed over"}}
+	sup.SetConversation(func() []llm.Message {
+		return []llm.Message{{Role: llm.RoleUser, Content: "a later ask nobody handed over"}}
 	})
 	env.scriptedEnv.mu.Lock()
 	env.steps = []streamStep{{text: "it resets in StartTurn"}}
@@ -283,7 +283,7 @@ func TestLastTurnsCountsTheTurnsSomebodyStarted(t *testing.T) {
 			t.Errorf("lastTurns(%d) starts at %q, want %q", c.n, turns[0].Content, c.first)
 		}
 		for _, m := range turns {
-			if m.Role == provider.RoleSystem {
+			if m.Role == llm.RoleSystem {
 				t.Errorf("lastTurns(%d) handed over the parent's system prompt", c.n)
 			}
 		}

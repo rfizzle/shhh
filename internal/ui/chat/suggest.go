@@ -35,9 +35,9 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -261,7 +261,7 @@ func (m Model) suggestRequest() sidejobs.SuggestRequest {
 	}
 	msgs := agent.StripResumeContext(m.agent.Messages())
 	for i := len(msgs) - 1; i >= 0; i-- {
-		if msgs[i].Role == provider.RoleUser && !msgs[i].Machine && strings.TrimSpace(msgs[i].Content) != "" {
+		if msgs[i].Role == llm.RoleUser && !msgs[i].Machine && strings.TrimSpace(msgs[i].Content) != "" {
 			req.Instruction = msgs[i].Content
 			break
 		}

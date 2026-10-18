@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
@@ -16,7 +17,6 @@ import (
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -27,12 +27,12 @@ import (
 
 // replaceDefinitions swaps each definition in defs for the one of the same
 // name in fresh, leaving its place and every other definition as they were.
-func replaceDefinitions(defs, fresh []provider.Tool) []provider.Tool {
-	byName := make(map[string]provider.Tool, len(fresh))
+func replaceDefinitions(defs, fresh []llm.Tool) []llm.Tool {
+	byName := make(map[string]llm.Tool, len(fresh))
 	for _, t := range fresh {
 		byName[t.Name] = t
 	}
-	out := make([]provider.Tool, 0, len(defs))
+	out := make([]llm.Tool, 0, len(defs))
 	for _, t := range defs {
 		if f, ok := byName[t.Name]; ok {
 			t = f
@@ -53,8 +53,8 @@ func replaceDefinitions(defs, fresh []provider.Tool) []provider.Tool {
 // belongs to the session, not to a tree — and no child gets a way to remove
 // anything from it, because there is no such tool to hand out.
 // See docs/capabilities/subagents.md#what-they-share.
-func withNotebook(nb *notebook.Store, signature string, defs []provider.Tool, base agent.ToolExecutor, sysPrompt string) (
-	[]provider.Tool, agent.ToolExecutor, string) {
+func withNotebook(nb *notebook.Store, signature string, defs []llm.Tool, base agent.ToolExecutor, sysPrompt string) (
+	[]llm.Tool, agent.ToolExecutor, string) {
 	if nb == nil {
 		return defs, base, sysPrompt
 	}
@@ -112,8 +112,8 @@ func notebookSignature(sup *subagent.Supervisor, spec subagent.Spec) string {
 // offer is the session's list as it stands at the spawn: a child names the
 // same models its parent may, and is refused the same others.
 func withDelegation(sup *subagent.Supervisor, agents *agentProfiles, offer subagent.Offer, def config.AgentDefinition,
-	spec subagent.Spec, defs []provider.Tool, base agent.ToolExecutor, gated map[string]bool) (
-	[]provider.Tool, agent.ToolExecutor) {
+	spec subagent.Spec, defs []llm.Tool, base agent.ToolExecutor, gated map[string]bool) (
+	[]llm.Tool, agent.ToolExecutor) {
 	if sup == nil || spec.Depth >= sup.MaxDepth() {
 		return defs, base
 	}
@@ -174,8 +174,8 @@ func delegationWords(policy string) string {
 // page through the parent's own report call, the same way it reaches the
 // transcript.
 func withSessionTools(session chatSession, red *evidence.Reducer, signature, croot string,
-	defs []provider.Tool, base agent.ToolExecutor, rolePrompt func(names []string) string) (
-	[]provider.Tool, agent.ToolExecutor, string, func(string) bool) {
+	defs []llm.Tool, base agent.ToolExecutor, rolePrompt func(names []string) string) (
+	[]llm.Tool, agent.ToolExecutor, string, func(string) bool) {
 	// The blocks below follow the role's own prompt, which is composed last
 	// for the same reason the toolbox is.
 	var sysPrompt string
@@ -271,8 +271,8 @@ func fixedPrompt(sysPrompt string) func([]string) string {
 // own, which never has. A child has no approval card of its own, so a commit
 // it asked for would have nobody to ask.
 // See docs/capabilities/subagents.md#a-child-searches-with-what-the-session-searches-with.
-func withNavigation(ls *lsp.Toolset, st *structural.Toolset, defs []provider.Tool, base agent.ToolExecutor) (
-	[]provider.Tool, agent.ToolExecutor) {
+func withNavigation(ls *lsp.Toolset, st *structural.Toolset, defs []llm.Tool, base agent.ToolExecutor) (
+	[]llm.Tool, agent.ToolExecutor) {
 	if ls != nil {
 		defs = append(defs, ls.Definitions()...)
 		base = ls.WrapExecutor(base)
@@ -400,7 +400,7 @@ func childTree(cfg config.Config, sib sessionSibling, root string, worktree bool
 // childToolTokens is what a child's definitions cost on every request it
 // makes. They are not in its conversation, so a child measuring only its
 // messages thinks it has a toolset's worth of room it does not have.
-func childToolTokens(defs []provider.Tool) int64 {
+func childToolTokens(defs []llm.Tool) int64 {
 	var total int64
 	for _, t := range toolDefTokens(defs) {
 		total += t.Tokens
@@ -413,7 +413,7 @@ func childToolTokens(defs []provider.Tool) int64 {
 // a reviewer or a profile that changes nothing, and its own prompt already
 // says it cannot edit or run anything, which is the whole of what the mode's
 // paragraph would tell it.
-func holdsRefusable(defs []provider.Tool) bool {
+func holdsRefusable(defs []llm.Tool) bool {
 	for _, d := range defs {
 		if d.Name == tools.ExecCommandName || tools.IsMutating(d.Name) {
 			return true
@@ -423,8 +423,8 @@ func holdsRefusable(defs []provider.Tool) bool {
 }
 
 // holdsCommand reports a toolset holding execute_command.
-func holdsCommand(defs []provider.Tool) bool {
-	return slices.ContainsFunc(defs, func(d provider.Tool) bool { return d.Name == tools.ExecCommandName })
+func holdsCommand(defs []llm.Tool) bool {
+	return slices.ContainsFunc(defs, func(d llm.Tool) bool { return d.Name == tools.ExecCommandName })
 }
 
 // runsCommands reports whether a child of role is handed execute_command:
@@ -457,7 +457,7 @@ func (a *agentProfiles) runsCommands(role subagent.Role) bool {
 // paragraph built from the child's own toolset and the same inspection list,
 // so the list a child reads is the one its policy runs.
 // See docs/capabilities/subagents.md#a-child-answers-to-the-session.
-func withModeInstructions(msgs []provider.Message, mode agent.Mode, extra []string, defs []provider.Tool) []provider.Message {
+func withModeInstructions(msgs []llm.Message, mode agent.Mode, extra []string, defs []llm.Tool) []llm.Message {
 	return withSystemParagraph(msgs, agent.ModeInstructions(mode, extra, toolNames(defs)))
 }
 
@@ -467,14 +467,14 @@ func withModeInstructions(msgs []provider.Message, mode agent.Mode, extra []stri
 // to contain it would otherwise spend its rounds learning that one refused
 // build at a time and report the refusals as the change failing.
 // See docs/capabilities/containment.md#containment-can-be-required.
-func withRefusedCommands(msgs []provider.Message) []provider.Message {
+func withRefusedCommands(msgs []llm.Message) []llm.Message {
 	return withSystemParagraph(msgs, prompt.UncontainedWriterInstructions)
 }
 
 // withSystemParagraph appends block to a request's system prompt without
 // touching the conversation it was read from.
-func withSystemParagraph(msgs []provider.Message, block string) []provider.Message {
-	if block == "" || len(msgs) == 0 || msgs[0].Role != provider.RoleSystem {
+func withSystemParagraph(msgs []llm.Message, block string) []llm.Message {
+	if block == "" || len(msgs) == 0 || msgs[0].Role != llm.RoleSystem {
 		return msgs
 	}
 	out := slices.Clone(msgs)

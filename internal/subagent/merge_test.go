@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/hostgit"
-	"github.com/rfizzle/shhh/internal/provider"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -122,19 +122,19 @@ func mergeFactory(ws map[string]mergeWriter) EnvFactory {
 		round := 0
 		return Env{
 			SystemPrompt: "sys",
-			Stream: func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			Stream: func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 				round++
-				ch := make(chan provider.StreamEvent, 2)
+				ch := make(chan llm.StreamEvent, 2)
 				if round == 1 {
-					ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+					ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 						{ID: spec.Name + "-w", Name: "write_file", Arguments: `{"path":"main.go"}`},
 					}}
 				} else {
 					if w.answering != nil {
 						w.answering()
 					}
-					ch <- provider.StreamEvent{Token: spec.Name + " done"}
-					ch <- provider.StreamEvent{Done: true}
+					ch <- llm.StreamEvent{Token: spec.Name + " done"}
+					ch <- llm.StreamEvent{Done: true}
 				}
 				close(ch)
 				return ch, func() {}, nil

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/evidence"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // placeholderIDRe reads the evidence id back out of a trim's placeholder. It
@@ -18,13 +18,13 @@ var placeholderIDRe = regexp.MustCompile(`evidence (ev-[0-9a-f]{16})`)
 // big enough to move a trim's arithmetic.
 func trimmable() string { return strings.Repeat("finding worth keeping\n", 2000) }
 
-func withOldResult(content string) []provider.Message {
-	return []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "execute_command"}}},
-		{Role: provider.RoleTool, Content: content, ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+func withOldResult(content string) []llm.Message {
+	return []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "execute_command"}}},
+		{Role: llm.RoleTool, Content: content, ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}
 }
 
@@ -106,11 +106,11 @@ func TestTrimOldToolResults_StoreFailureStillElides(t *testing.T) {
 // also never handed to the store — an entry nothing in the conversation
 // points at is a file kept for a week that nobody can ask for.
 func TestTrimOldToolResults_ShortResultIsLeftAlone(t *testing.T) {
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleTool, Content: "ok", ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleTool, Content: "ok", ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, noStream)
 	offered := 0
 	a.StoreElided(func(string, string) (string, bool) {
@@ -136,14 +136,14 @@ func TestTrimOldToolResults_ShortResultIsLeftAlone(t *testing.T) {
 // elides past the mark it asked for.
 func TestTrimOldToolResults_ShrinksByTheCallersUnits(t *testing.T) {
 	big := strings.Repeat("x", 40000) // ~10k estimated tokens each
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
 	}
 	for range 6 {
-		msgs = append(msgs, provider.Message{Role: provider.RoleTool, Content: big, ToolCallID: "c"})
+		msgs = append(msgs, llm.Message{Role: llm.RoleTool, Content: big, ToolCallID: "c"})
 	}
-	msgs = append(msgs, provider.Message{Role: provider.RoleUser, Content: "q2"})
+	msgs = append(msgs, llm.Message{Role: llm.RoleUser, Content: "q2"})
 
 	var cal Calibration
 	for range 8 {
@@ -263,16 +263,16 @@ func TestCalibration_NothingReportedChangesNothing(t *testing.T) {
 // session it is the fastest-growing part. An estimate that skipped it read
 // the same for two conversations of very different size.
 func TestEstimateMessageTokens_CountsReasoning(t *testing.T) {
-	plain := []provider.Message{
-		{Role: provider.RoleUser, Content: strings.Repeat("a", 400)},
-		{Role: provider.RoleAssistant, Content: strings.Repeat("b", 400)},
+	plain := []llm.Message{
+		{Role: llm.RoleUser, Content: strings.Repeat("a", 400)},
+		{Role: llm.RoleAssistant, Content: strings.Repeat("b", 400)},
 	}
-	thought := []provider.Message{
+	thought := []llm.Message{
 		plain[0],
 		{
-			Role:    provider.RoleAssistant,
+			Role:    llm.RoleAssistant,
 			Content: strings.Repeat("b", 400),
-			Reasoning: []provider.ReasoningBlock{
+			Reasoning: []llm.ReasoningBlock{
 				{Text: strings.Repeat("c", 400), Signature: "sig"},
 				{Redacted: strings.Repeat("d", 400)},
 			},

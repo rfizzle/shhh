@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 )
 
@@ -491,15 +491,15 @@ func TestRenderedPromptSurvivesTheLoader(t *testing.T) {
 
 // sentProvider keeps every message of the one request it is sent and
 // answers with a question, so a test can read what left the machine.
-type sentProvider struct{ msgs []provider.Message }
+type sentProvider struct{ msgs []llm.Message }
 
 func (p *sentProvider) Name() string { return "sent" }
 
-func (p *sentProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-	p.msgs = append([]provider.Message(nil), msgs...)
-	ch := make(chan provider.StreamEvent, 2)
-	ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{Name: DraftToolName, Arguments: `{"questions":["which paths?"]}`}}}
-	ch <- provider.StreamEvent{Done: true}
+func (p *sentProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+	p.msgs = append([]llm.Message(nil), msgs...)
+	ch := make(chan llm.StreamEvent, 2)
+	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{Name: DraftToolName, Arguments: `{"questions":["which paths?"]}`}}}
+	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 	return ch, nil
 }

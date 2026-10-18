@@ -8,8 +8,8 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hook"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -66,7 +66,7 @@ func TestHook_PreToolDenyDrawsTheRuleDenialRow(t *testing.T) {
 	m.policy.allowlist = []string{"go build"}
 	m.policy.allCommands = true
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_h", Name: "execute_command", Arguments: `{"command":"go build"}`},
 	}})
 	m = drivePreToolHook(t, updated.(Model), cmd)
@@ -79,7 +79,7 @@ func TestHook_PreToolDenyDrawsTheRuleDenialRow(t *testing.T) {
 	}
 	refused := false
 	for _, msg := range m.Messages() {
-		if msg.Role == provider.RoleTool && strings.Contains(msg.Content, "guard") {
+		if msg.Role == llm.RoleTool && strings.Contains(msg.Content, "guard") {
 			refused = true
 		}
 	}
@@ -109,7 +109,7 @@ func TestHook_AFailureOnAGatedCallAsks(t *testing.T) {
 		"guard": {Event: hook.PreTool, Command: "guard"},
 	}, "boom\n", 1, nil)
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_h", Name: "execute_command", Arguments: `{"command":"go build"}`},
 	}})
 	m = drivePreToolHook(t, updated.(Model), cmd)
@@ -135,7 +135,7 @@ func TestHook_UpdatedInputRebuildsThePreview(t *testing.T) {
 		"rewrite": {Event: hook.PreTool, Matcher: "write_file", Command: "rewrite"},
 	}, `{"updated_input":{"path":"other.go","content":"rewritten\n"}}`, 0, nil)
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"line two\n"}`},
 	}})
 	m = drivePreToolHook(t, updated.(Model), cmd)
@@ -250,19 +250,19 @@ func TestHook_TurnCloseFiresOnceAsTheTurnEnds(t *testing.T) {
 // compactingModel is a session with a conversation worth compacting, whose
 // stream counts the requests it is asked for and answers each with a summary.
 func compactingModel(requests *int) Model {
-	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		*requests++
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "the summary"}
-		ch <- provider.StreamEvent{Done: true}
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "the summary"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
 	}
-	return New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "question"},
-		{Role: provider.RoleAssistant, Content: "answer"},
+	return New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "question"},
+		{Role: llm.RoleAssistant, Content: "answer"},
 	}, stream, Wiring{})
 }
 

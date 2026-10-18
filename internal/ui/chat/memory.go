@@ -16,9 +16,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -88,7 +88,7 @@ func (m Model) recordMemoryDecline(req *approvalRequest) {
 }
 
 // buildMemoryApproval turns a remember tool call into its approval request.
-func (m Model) buildMemoryApproval(tc provider.ToolCall) (*approvalRequest, error) {
+func (m Model) buildMemoryApproval(tc llm.ToolCall) (*approvalRequest, error) {
 	if m.wiring.Memory.Save == nil {
 		return nil, fmt.Errorf("tool %s cannot be approved in this session", tc.Name)
 	}

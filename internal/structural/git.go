@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hostgit"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -78,7 +78,7 @@ const (
 // that job, and a whole patch read back from evidence costs rounds a narrowed
 // one does not.
 // See docs/capabilities/approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read.
-var gitTool = provider.Tool{
+var gitTool = llm.Tool{
 	Name: GitToolName,
 	Description: "Read this repository's history: status, log, show, diff, blame. It is read-only, so it answers without an approval. " +
 		"Read a broad comparison in stages: diff or show with stat: true first for the per-file summary, then the patch narrowed with paths to the files that matter. " +

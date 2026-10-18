@@ -25,8 +25,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -320,11 +320,11 @@ func (t *Turn) Ran(run func(context.Context, string) tools.ExecResult) func(cont
 // detector's wrapper, never inside it: the detector keys on the result, and
 // a line on the first call and not the second would make two identical
 // commands look like two different ones.
-func (t *Turn) WrapResolver(turn func() int64, next func(provider.ToolCall) string) func(provider.ToolCall) string {
+func (t *Turn) WrapResolver(turn func() int64, next func(llm.ToolCall) string) func(llm.ToolCall) string {
 	if t == nil {
 		return next
 	}
-	return func(tc provider.ToolCall) string {
+	return func(tc llm.ToolCall) string {
 		t.mu.Lock()
 		t.ran = false
 		t.mu.Unlock()

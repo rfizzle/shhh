@@ -29,8 +29,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // InterveneKind is what a turn is being interrupted for.
@@ -425,10 +425,10 @@ func (a *Agent) WithdrawIntervention(iv Intervention) bool {
 	// way in goes through the scrub, so a steer that quoted an instruction
 	// carrying a secret is in the conversation with the secret already gone
 	// and would never match the words the caller still holds.
-	want := a.scrubbed(provider.Message{Role: provider.RoleUser, Content: iv.Message, Machine: true}).Content
+	want := a.scrubbed(llm.Message{Role: llm.RoleUser, Content: iv.Message, Machine: true}).Content
 	idx := -1
 	for i, msg := range a.messages {
-		if msg.Machine && msg.Role == provider.RoleUser && msg.Content == want {
+		if msg.Machine && msg.Role == llm.RoleUser && msg.Content == want {
 			idx = i
 		}
 	}

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -19,7 +19,7 @@ import (
 // pause the failure should be timed by.
 type downProvider struct{}
 
-func (downProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (downProvider) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	time.Sleep(2 * time.Millisecond)
 	return nil, errors.New("backend down")
 }
@@ -50,14 +50,14 @@ func TestObserve_EveryClassifierRowIsTimed(t *testing.T) {
 
 	for _, c := range []struct {
 		name  string
-		judge provider.Provider
+		judge llm.Provider
 		steps []streamStep
 		gated string
 		want  string
 	}{
 		{"failed", downProvider{}, gatedCommandSteps("go install ./cmd/tool"), tools.ExecCommandName, observe.ReasonClassifierFailed},
 		{"standing", &verdictProvider{decision: "allow", reason: "reads a page"}, []streamStep{
-			{calls: []provider.ToolCall{{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://bad.test/x"}`}}},
+			{calls: []llm.ToolCall{{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://bad.test/x"}`}}},
 			{text: "task complete"},
 		}, web.FetchToolName, observe.ReasonHostListed},
 	} {

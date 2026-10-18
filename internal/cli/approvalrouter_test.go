@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -60,20 +60,20 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 	denyHosts := []string{"evil.test"}
 	refusal := "error: this session requires containment and none is available"
 
-	gitCommit := provider.ToolCall{ID: "c1", Name: structural.GitWriteToolName, Arguments: `{"verb":"commit","message":"feat: do it"}`}
-	gitBranch := provider.ToolCall{ID: "c1", Name: structural.GitWriteToolName, Arguments: `{"verb":"branch","name":"topic"}`}
-	write := func(path string) provider.ToolCall {
+	gitCommit := llm.ToolCall{ID: "c1", Name: structural.GitWriteToolName, Arguments: `{"verb":"commit","message":"feat: do it"}`}
+	gitBranch := llm.ToolCall{ID: "c1", Name: structural.GitWriteToolName, Arguments: `{"verb":"branch","name":"topic"}`}
+	write := func(path string) llm.ToolCall {
 		args, _ := json.Marshal(map[string]string{"path": path, "content": "x\n"})
-		return provider.ToolCall{ID: "c1", Name: tools.WriteFileName, Arguments: string(args)}
+		return llm.ToolCall{ID: "c1", Name: tools.WriteFileName, Arguments: string(args)}
 	}
-	fetch := func(url string) provider.ToolCall {
-		return provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"` + url + `"}`}
+	fetch := func(url string) llm.ToolCall {
+		return llm.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"` + url + `"}`}
 	}
 
 	const none = ""
 	for _, c := range []struct {
 		name string
-		call provider.ToolCall
+		call llm.ToolCall
 		// rule is the rule that answers, none where no rule does.
 		rule string
 		// code is what both doors file the refusal under.
@@ -206,7 +206,7 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 // the way it always has.
 func TestApprovalRouter_AYesFetchReadsTheHostList(t *testing.T) {
 	denyHosts := []string{"evil.test"}
-	call := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://evil.test/page"}`}
+	call := llm.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://evil.test/page"}`}
 	for _, c := range []struct {
 		name string
 		yes  bool

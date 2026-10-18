@@ -9,30 +9,30 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/logs"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // recordedRequest is one request a test's stream was asked for: what it
 // carried and what it was allowed to do about tools.
 type recordedRequest struct {
-	msgs   []provider.Message
+	msgs   []llm.Message
 	choice string
 }
 
 // recordingStream is scriptedStream that also keeps every request, so a test
 // can assert what a compaction actually sent rather than only what came back.
-func recordingStream(t *testing.T, into *[]recordedRequest, rounds ...[]provider.StreamEvent) StreamFunc {
+func recordingStream(t *testing.T, into *[]recordedRequest, rounds ...[]llm.StreamEvent) StreamFunc {
 	t.Helper()
 	i := 0
-	return func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		*into = append(*into, recordedRequest{msgs: msgs, choice: choice})
 		if i >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", i+1)
 		}
 		evs := rounds[i]
 		i++
-		ch := make(chan provider.StreamEvent, len(evs))
+		ch := make(chan llm.StreamEvent, len(evs))
 		for _, ev := range evs {
 			ch <- ev
 		}
@@ -44,18 +44,18 @@ func recordingStream(t *testing.T, into *[]recordedRequest, rounds ...[]provider
 
 // prose is a message of about n bytes, so a fixture can be built to a size
 // rather than to a word count.
-func prose(role provider.Role, n int) provider.Message {
-	return provider.Message{Role: role, Content: strings.Repeat("word ", n/5)}
+func prose(role llm.Role, n int) llm.Message {
+	return llm.Message{Role: role, Content: strings.Repeat("word ", n/5)}
 }
 
 // filledWithProse is a conversation over the trim threshold of a 4000-token
 // window with nothing a trim can take: every message is text, and text is
 // what a trim always keeps.
-func filledWithProse() []provider.Message {
-	return []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		prose(provider.RoleUser, 7000),
-		prose(provider.RoleAssistant, 7000),
+func filledWithProse() []llm.Message {
+	return []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		prose(llm.RoleUser, 7000),
+		prose(llm.RoleAssistant, 7000),
 	}
 }
 
@@ -90,13 +90,13 @@ func TestHeadlessCompactsWhereATrimCannotRecover(t *testing.T) {
 	// a choice that forbids the model answering with the tool call the turn
 	// was about to make.
 	summary := reqs[0]
-	if summary.choice != provider.ToolChoiceNone {
-		t.Fatalf("summary request choice = %q, want %q", summary.choice, provider.ToolChoiceNone)
+	if summary.choice != llm.ToolChoiceNone {
+		t.Fatalf("summary request choice = %q, want %q", summary.choice, llm.ToolChoiceNone)
 	}
 	if last := summary.msgs[len(summary.msgs)-1]; last.Content != CompactInstruction {
 		t.Fatalf("summary request does not end with the instruction: %q", last.Content)
 	}
-	if reqs[1].choice != provider.ToolChoiceAuto {
+	if reqs[1].choice != llm.ToolChoiceAuto {
 		t.Fatalf("the turn's own request lost its tools: choice = %q", reqs[1].choice)
 	}
 
@@ -106,13 +106,13 @@ func TestHeadlessCompactsWhereATrimCannotRecover(t *testing.T) {
 	if len(msgs) != 4 {
 		t.Fatalf("rebuilt conversation has %d messages: %+v", len(msgs), msgs)
 	}
-	if msgs[0].Role != provider.RoleSystem || msgs[0].Content != "sys" {
+	if msgs[0].Role != llm.RoleSystem || msgs[0].Content != "sys" {
 		t.Fatalf("system prompt did not survive: %+v", msgs[0])
 	}
 	if !strings.HasPrefix(msgs[1].Content, CompactSummaryPrefix) {
 		t.Fatalf("summary is not the second message: %+v", msgs[1])
 	}
-	if msgs[2].Role != provider.RoleUser || msgs[2].Content != "carry on" {
+	if msgs[2].Role != llm.RoleUser || msgs[2].Content != "carry on" {
 		t.Fatalf("the turn being answered was not kept: %+v", msgs[2])
 	}
 
@@ -131,11 +131,11 @@ func TestHeadlessCompactsWhereATrimCannotRecover(t *testing.T) {
 // whose bulk is old tool output never reaches the summary request.
 func TestHeadlessTrimsBeforeItCompacts(t *testing.T) {
 	var reqs []recordedRequest
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "look at this"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		prose(provider.RoleTool, 14000),
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "look at this"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		prose(llm.RoleTool, 14000),
 	}, recordingStream(t, &reqs, doneRound("done")))
 	a.messages[3].ToolCallID = "c1"
 
@@ -167,24 +167,24 @@ func TestHeadlessTrimsBeforeItCompacts(t *testing.T) {
 // summary that is merely lossy.
 func TestCompactRebuildsAWellFormedConversation(t *testing.T) {
 	a := New(nil, nil)
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	// Two turns that fill the window and a small one behind them, which is
 	// the shape that has a tail worth keeping: a last turn the size of the
 	// others would not fit the bound and there would be nothing to cut.
 	for _, size := range []int{8000, 8000, 500} {
 		id := "c" + strconv.Itoa(len(msgs))
 		msgs = append(msgs,
-			prose(provider.RoleUser, size),
-			provider.Message{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: id, Name: "search"}}},
-			provider.Message{Role: provider.RoleTool, ToolCallID: id, Content: "hits"},
-			provider.Message{Role: provider.RoleAssistant, Content: "answered"},
+			prose(llm.RoleUser, size),
+			llm.Message{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: id, Name: "search"}}},
+			llm.Message{Role: llm.RoleTool, ToolCallID: id, Content: "hits"},
+			llm.Message{Role: llm.RoleAssistant, Content: "answered"},
 		)
 	}
 	a.SetMessages(msgs)
 
 	c := &Compactor{Model: "test-model", Window: testWindow}
-	n := c.Recover(a, func(msgs []provider.Message, choice string) (string, error) {
-		if choice != provider.ToolChoiceNone {
+	n := c.Recover(a, func(msgs []llm.Message, choice string) (string, error) {
+		if choice != llm.ToolChoiceNone {
 			t.Fatalf("summary asked under choice %q", choice)
 		}
 		return "what happened", nil
@@ -194,16 +194,16 @@ func TestCompactRebuildsAWellFormedConversation(t *testing.T) {
 	}
 
 	got := a.Messages()
-	if got[0].Role != provider.RoleSystem {
+	if got[0].Role != llm.RoleSystem {
 		t.Fatalf("rebuilt conversation does not open with the system prompt: %+v", got[0])
 	}
-	if got[1].Role != provider.RoleUser || !strings.HasPrefix(got[1].Content, CompactSummaryPrefix) {
+	if got[1].Role != llm.RoleUser || !strings.HasPrefix(got[1].Content, CompactSummaryPrefix) {
 		t.Fatalf("the summary is not the first thing said: %+v", got[1])
 	}
 	if n.Kept != 1 {
 		t.Fatalf("kept %d turns, want the last one alone: %+v", n.Kept, got)
 	}
-	if got[2].Role != provider.RoleUser {
+	if got[2].Role != llm.RoleUser {
 		t.Fatalf("the kept tail does not start at a turn: %+v", got[2])
 	}
 	called := map[string]bool{}
@@ -211,7 +211,7 @@ func TestCompactRebuildsAWellFormedConversation(t *testing.T) {
 		for _, tc := range msg.ToolCalls {
 			called[tc.ID] = true
 		}
-		if msg.Role == provider.RoleTool && !called[msg.ToolCallID] {
+		if msg.Role == llm.RoleTool && !called[msg.ToolCallID] {
 			t.Fatalf("a result survived without the call it answers: %+v", msg)
 		}
 	}
@@ -225,7 +225,7 @@ func TestCompactorAsksOncePerCrossing(t *testing.T) {
 	a := New(filledWithProse(), nil)
 	c := &Compactor{Model: "test-model", Window: testWindow}
 	asks := 0
-	ask := func([]provider.Message, string) (string, error) {
+	ask := func([]llm.Message, string) (string, error) {
 		asks++
 		return "", errors.New("the provider refused")
 	}
@@ -242,7 +242,7 @@ func TestCompactorAsksOncePerCrossing(t *testing.T) {
 	}
 
 	// Under the line and over it again: a new crossing gets its own attempt.
-	a.SetMessages([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}})
+	a.SetMessages([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}})
 	c.Recover(a, ask)
 	a.SetMessages(filledWithProse())
 	if n := c.Recover(a, ask); n.Err == nil {
@@ -260,19 +260,19 @@ func TestCompactorAsksOncePerCrossing(t *testing.T) {
 func TestCompactorRearmsWhenATrimEndsTheCrossing(t *testing.T) {
 	// Over the line, with one old result big enough that eliding it settles
 	// the crossing on its own.
-	filled := func() []provider.Message {
-		return []provider.Message{
-			{Role: provider.RoleSystem, Content: "sys"},
-			{Role: provider.RoleUser, Content: "look"},
-			{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "search"}}},
-			{Role: provider.RoleTool, ToolCallID: "c1", Content: strings.Repeat("word ", 3000)},
-			prose(provider.RoleUser, 200),
+	filled := func() []llm.Message {
+		return []llm.Message{
+			{Role: llm.RoleSystem, Content: "sys"},
+			{Role: llm.RoleUser, Content: "look"},
+			{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "search"}}},
+			{Role: llm.RoleTool, ToolCallID: "c1", Content: strings.Repeat("word ", 3000)},
+			prose(llm.RoleUser, 200),
 		}
 	}
 	a := New(filledWithProse(), nil)
 	c := &Compactor{Model: "test-model", Window: testWindow}
 	asks := 0
-	ask := func([]provider.Message, string) (string, error) {
+	ask := func([]llm.Message, string) (string, error) {
 		asks++
 		return "", errors.New("the provider refused")
 	}
@@ -301,14 +301,14 @@ func TestCompactorRearmsWhenATrimEndsTheCrossing(t *testing.T) {
 func TestCompactorInterruptIsNotAnAttempt(t *testing.T) {
 	a := New(filledWithProse(), nil)
 	c := &Compactor{Model: "test-model", Window: testWindow}
-	if n := c.Recover(a, func([]provider.Message, string) (string, error) {
+	if n := c.Recover(a, func([]llm.Message, string) (string, error) {
 		return "", ErrInterrupted
 	}); n.Err != nil || n.Notice != "" {
 		t.Fatalf("an interrupt was reported as a compaction failure: %+v", n)
 	}
 	// Still on the same crossing, and the attempt is still there to spend.
 	asked := false
-	n := c.Recover(a, func([]provider.Message, string) (string, error) {
+	n := c.Recover(a, func([]llm.Message, string) (string, error) {
 		asked = true
 		return "", errors.New("the provider refused")
 	})
@@ -323,7 +323,7 @@ func TestCompactorWithoutAWindowDoesNothing(t *testing.T) {
 	a := New(filledWithProse(), nil)
 	before := len(a.Messages())
 	c := &Compactor{Model: "unknown-model"}
-	n := c.Recover(a, func([]provider.Message, string) (string, error) {
+	n := c.Recover(a, func([]llm.Message, string) (string, error) {
 		t.Fatal("asked for a summary against a window nothing could name")
 		return "", nil
 	})
@@ -337,7 +337,7 @@ func TestCompactorWithoutAWindowDoesNothing(t *testing.T) {
 // restarted from arguments the model was told not to write.
 func TestHeadlessRefusesASummaryThatCalledATool(t *testing.T) {
 	a := New(filledWithProse(), scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file"}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file"}),
 		doneRound("done"),
 	))
 	before := len(a.Messages())
@@ -369,7 +369,7 @@ func TestHeadlessRefusesASummaryThatCalledATool(t *testing.T) {
 // and not only what the conversation holds, and it is corrected by what the
 // provider said the last one came to.
 func TestCompactorEstimateCountsToolsAndTheCorrection(t *testing.T) {
-	msgs := []provider.Message{prose(provider.RoleUser, 4000)}
+	msgs := []llm.Message{prose(llm.RoleUser, 4000)}
 	c := &Compactor{Model: "test-model", Window: testWindow, ToolTokens: 250}
 	raw := EstimateMessageTokens(msgs) + 250
 	if got := c.Estimate(msgs); got != raw {
@@ -398,7 +398,7 @@ func TestRecoverRewritesTheSystemPromptWhenAskedTo(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	msgs := a.Messages()
-	if len(msgs) == 0 || msgs[0].Role != provider.RoleSystem || msgs[0].Content != "sys, read again" {
+	if len(msgs) == 0 || msgs[0].Role != llm.RoleSystem || msgs[0].Content != "sys, read again" {
 		t.Fatalf("system prompt was not rewritten after the compaction: %+v", msgs[0])
 	}
 }
@@ -410,7 +410,7 @@ func TestRecoverRewritesTheSystemPromptWhenAskedTo(t *testing.T) {
 func TestRecoverCarriesWhatTheConversationNoLongerHolds(t *testing.T) {
 	c := &Compactor{Model: "test-model", Window: testWindow, Carry: func() string { return "the list as it stands" }}
 	a := New(filledWithProse(), nil)
-	n := c.Recover(a, func([]provider.Message, string) (string, error) { return "the conversation so far", nil })
+	n := c.Recover(a, func([]llm.Message, string) (string, error) { return "the conversation so far", nil })
 	if !n.Compacted {
 		t.Fatalf("expected a compaction: %+v", n)
 	}
@@ -441,7 +441,7 @@ func TestRecoverFiresTheSeamsAroundACompactionOnly(t *testing.T) {
 		After:  func(n CompactNotice) { order = append(order, "after"); after = n },
 	}
 	a := New(filledWithProse(), nil)
-	n := c.Recover(a, func([]provider.Message, string) (string, error) {
+	n := c.Recover(a, func([]llm.Message, string) (string, error) {
 		order = append(order, "ask")
 		return "the conversation so far", nil
 	})
@@ -457,7 +457,7 @@ func TestRecoverFiresTheSeamsAroundACompactionOnly(t *testing.T) {
 
 	order = nil
 	failed := &Compactor{Model: "test-model", Window: testWindow, Before: c.Before, After: c.After}
-	failed.Recover(New(filledWithProse(), nil), func([]provider.Message, string) (string, error) { return "", nil })
+	failed.Recover(New(filledWithProse(), nil), func([]llm.Message, string) (string, error) { return "", nil })
 	if len(order) != 1 || !strings.HasPrefix(order[0], "before:") {
 		t.Errorf("a summary that never came back rebuilt nothing, so nothing is behind it: %v", order)
 	}
@@ -474,19 +474,19 @@ func TestRecoverWritesDownWhatItDidAndAtWhatShareOfTheWindow(t *testing.T) {
 	t.Cleanup(func() { logs.To("") })
 
 	// A crossing a trim settles, then one that has to be compacted.
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "look"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "search"}}},
-		{Role: provider.RoleTool, ToolCallID: "c1", Content: strings.Repeat("word ", 3000)},
-		prose(provider.RoleUser, 200),
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "look"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "search"}}},
+		{Role: llm.RoleTool, ToolCallID: "c1", Content: strings.Repeat("word ", 3000)},
+		prose(llm.RoleUser, 200),
 	}, nil)
 	c := &Compactor{Model: "test-model", Window: testWindow}
 	if n := c.Recover(a, nil); n.Elided != 1 {
 		t.Fatalf("expected the trim to settle the crossing, got %+v", n)
 	}
 	a.SetMessages(filledWithProse())
-	if n := c.Recover(a, func([]provider.Message, string) (string, error) {
+	if n := c.Recover(a, func([]llm.Message, string) (string, error) {
 		return "what happened", nil
 	}); !n.Compacted {
 		t.Fatalf("expected a compaction, got %+v", n)
@@ -505,7 +505,7 @@ func TestRecoverWritesDownWhatItDidAndAtWhatShareOfTheWindow(t *testing.T) {
 	// And a round boundary under the line — which is almost every one of
 	// them — writes nothing at all.
 	before := len(written)
-	a.SetMessages([]provider.Message{{Role: provider.RoleUser, Content: "short"}})
+	a.SetMessages([]llm.Message{{Role: llm.RoleUser, Content: "short"}})
 	c.Recover(a, nil)
 	if after, _ := os.ReadFile(path); len(after) != before {
 		t.Errorf("a boundary with nothing to do wrote a line:\n%s", after[before:])
@@ -515,21 +515,21 @@ func TestRecoverWritesDownWhatItDidAndAtWhatShareOfTheWindow(t *testing.T) {
 // refusedOnce is a provider that will not take the first request it is given
 // and answers everything after it from a script: the shape of a model whose
 // window is smaller than anything here believed it to be.
-func refusedOnce(t *testing.T, into *[]recordedRequest, refusals int, rounds ...[]provider.StreamEvent) StreamFunc {
+func refusedOnce(t *testing.T, into *[]recordedRequest, refusals int, rounds ...[]llm.StreamEvent) StreamFunc {
 	t.Helper()
 	i := 0
-	return func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		*into = append(*into, recordedRequest{msgs: msgs, choice: choice})
-		if choice != provider.ToolChoiceNone && refusals > 0 {
+		if choice != llm.ToolChoiceNone && refusals > 0 {
 			refusals--
-			return nil, nil, &provider.Failure{Class: provider.ClassContextLength, Status: 400}
+			return nil, nil, &llm.Failure{Class: llm.ClassContextLength, Status: 400}
 		}
 		if i >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", len(*into))
 		}
 		evs := rounds[i]
 		i++
-		ch := make(chan provider.StreamEvent, len(evs))
+		ch := make(chan llm.StreamEvent, len(evs))
 		for _, ev := range evs {
 			ch <- ev
 		}
@@ -569,7 +569,7 @@ func TestHeadlessRecoversARequestThatDidNotFit(t *testing.T) {
 	if len(reqs) != 3 {
 		t.Fatalf("expected the refused request, the summary and the question asked again, got %d", len(reqs))
 	}
-	if reqs[1].choice != provider.ToolChoiceNone {
+	if reqs[1].choice != llm.ToolChoiceNone {
 		t.Fatalf("the second request should be the summary, got choice %q", reqs[1].choice)
 	}
 
@@ -596,7 +596,7 @@ func TestHeadlessEndsOnASecondRefusalInARow(t *testing.T) {
 	))
 
 	h := &Headless{Agent: a, Compact: &Compactor{Model: "test-model", Window: 1_000_000}}
-	if _, err := h.Run("carry on"); !errors.Is(err, provider.ErrContextLength) {
+	if _, err := h.Run("carry on"); !errors.Is(err, llm.ErrContextLength) {
 		t.Fatalf("err = %v, want the provider's refusal", err)
 	}
 	if len(reqs) != 3 {
@@ -608,12 +608,12 @@ func TestHeadlessEndsOnASecondRefusalInARow(t *testing.T) {
 // window the conversation was at, it is a whole one of the corrected window.
 func TestRecoverOverflowCorrectsTheWindowAndTrims(t *testing.T) {
 	big := strings.Repeat("x", 40000)
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "and now"},
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "and now"},
 	}, scriptedStream(t))
 
 	c := &Compactor{Model: "test-model", Window: 1_000_000}

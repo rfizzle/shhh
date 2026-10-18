@@ -42,7 +42,7 @@ package chat
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -53,10 +53,10 @@ import (
 // the rules a live session's history follows — consecutive repeats collapse,
 // the cursor parks past the newest entry — are the rules a loaded one gets,
 // from the same code rather than from a second description of it.
-func (m *Model) recallFromMessages(msgs []provider.Message) {
+func (m *Model) recallFromMessages(msgs []llm.Message) {
 	m.inputHistory = nil
 	for _, msg := range msgs {
-		if msg.Role != provider.RoleUser {
+		if msg.Role != llm.RoleUser {
 			continue
 		}
 		text := strings.TrimSpace(msg.Content)
@@ -73,7 +73,7 @@ func (m *Model) recallFromMessages(msgs []provider.Message) {
 // the message is written and stored beside it, so a reworded message cannot
 // quietly start being recalled and a resumed conversation answers the same
 // way a live one does.
-func typedByHand(msg provider.Message) bool { return !msg.Machine }
+func typedByHand(msg llm.Message) bool { return !msg.Machine }
 
 // A recalled sentence carries its pastes back with it.
 //
@@ -211,7 +211,7 @@ func (m *Model) restagePaste(p pasteFold) (string, bool) {
 	// The row kept the attachment the request carried, handle and all: the
 	// same bytes are the same paste, or the same picture, and a handle
 	// already on the strip is replaced by assignHandle with a fresh one.
-	staged, _ := m.stageQuietly([]provider.Attachment{p.att})
+	staged, _ := m.stageQuietly([]llm.Attachment{p.att})
 	if len(staged.attachments) == len(m.attachments) {
 		return "", false
 	}

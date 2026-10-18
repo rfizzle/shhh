@@ -124,7 +124,6 @@ cmd/shhh/main.go   entry point (cobra root, executed through fang)
 internal/
   cli/             every cobra command, and each surface's assembly
   agent/           front-end-agnostic agent loop; Headless drives it unattended
-  provider/        provider interface and the four dialects
   ui/chat/         the chat TUI model (the main interactive surface)
   ui/components/   reusable TUI components
   ui/keys/         the key register and keymap file

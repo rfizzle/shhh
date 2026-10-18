@@ -41,8 +41,8 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 	"github.com/rfizzle/shhh/internal/ui/raster"
@@ -112,14 +112,14 @@ func sentReach(handles []string) string {
 // sentByHandle is the sent attachment a handle names, newest message first —
 // a recalled paste rides again under the handle it had, so the latest send
 // is the one the reader last saw — and the turn that carried it.
-func (m Model) sentByHandle(handle string) (provider.Attachment, int, bool) {
+func (m Model) sentByHandle(handle string) (llm.Attachment, int, bool) {
 	for i := len(m.transcript) - 1; i >= 0; i-- {
 		f := m.transcript[i].fold
 		if f != nil && f.label != "" && strings.EqualFold(f.label, handle) {
 			return f.att, sentTurn(m.transcript, i), true
 		}
 	}
-	return provider.Attachment{}, 0, false
+	return llm.Attachment{}, 0, false
 }
 
 // sentHandles is every handle the session has sent, once each, in the order
@@ -142,11 +142,11 @@ func (m Model) sentHandles() []string {
 // staging area — a single screenshot or a single paste, just made — and worth
 // refusing for every other one, because guessing which of two was meant is
 // the mistake this surface exists to stop somebody making.
-func onlyPreviewable(atts []provider.Attachment) (provider.Attachment, bool) {
-	var found provider.Attachment
+func onlyPreviewable(atts []llm.Attachment) (llm.Attachment, bool) {
+	var found llm.Attachment
 	var n int
 	for _, a := range atts {
-		if a.Kind == provider.AttachmentImage || a.Kind == provider.AttachmentText {
+		if a.Kind == llm.AttachmentImage || a.Kind == llm.AttachmentText {
 			found, n = a, n+1
 		}
 	}
@@ -160,7 +160,7 @@ func onlyPreviewable(atts []provider.Attachment) (provider.Attachment, bool) {
 // so there is nothing this surface could say about it that the chip does not
 // already say. An image that will not decode does open, because "this is
 // staged and shhh cannot read it" is a fact about the send that follows.
-func (m Model) openPreview(a provider.Attachment) (tea.Model, tea.Cmd) {
+func (m Model) openPreview(a llm.Attachment) (tea.Model, tea.Cmd) {
 	if p, ok := pasteOf(a); ok && p.paste {
 		// A paste has a surface of its own, and the name is a second door
 		// onto it rather than a second reading of it: one thing drawn two
@@ -170,7 +170,7 @@ func (m Model) openPreview(a provider.Attachment) (tea.Model, tea.Cmd) {
 	}
 	view := &components.AttachmentView{Name: a.Name, Size: attachment.HumanSize(len(a.Data))}
 	switch a.Kind {
-	case provider.AttachmentImage:
+	case llm.AttachmentImage:
 		img, err := raster.Decode(a.Data)
 		if err != nil {
 			view.Note = err.Error()
@@ -178,7 +178,7 @@ func (m Model) openPreview(a provider.Attachment) (tea.Model, tea.Cmd) {
 			view.Image = img
 			view.Pixels = fmt.Sprintf("%d×%d", img.Bounds().Dx(), img.Bounds().Dy())
 		}
-	case provider.AttachmentText:
+	case llm.AttachmentText:
 		view.Text = strings.Split(strings.TrimSuffix(string(a.Data), "\n"), "\n")
 	default:
 		return m.surfaceNotice(a.Name + " is not an image or text — " + string(a.Kind) +
@@ -289,7 +289,7 @@ func (m Model) previewDrops() bool {
 func (m *Model) closePreview() overlayAction {
 	cmd := m.caps.Delete()
 	m.preview = nil
-	m.staged.shows, m.staged.row = provider.Attachment{}, false
+	m.staged.shows, m.staged.row = llm.Attachment{}, false
 	return overlayAction{close: true, run: cmd}
 }
 
@@ -342,7 +342,7 @@ type pasteReader struct {
 }
 
 // openPasteReader puts one paste on the pane, from the top.
-func (m Model) openPasteReader(a provider.Attachment) (tea.Model, tea.Cmd) {
+func (m Model) openPasteReader(a llm.Attachment) (tea.Model, tea.Cmd) {
 	p, ok := pasteOf(a)
 	if !ok {
 		return m, nil

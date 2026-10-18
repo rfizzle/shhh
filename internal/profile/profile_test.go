@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func writeProfile(t *testing.T, dir, name, body string) string {
@@ -183,7 +183,7 @@ func TestLoad_RefusesAProfileNamedLikeABuiltIn(t *testing.T) {
 func TestRegister_NeverShadowsABuiltIn(t *testing.T) {
 	t.Cleanup(func() { Register(nil) })
 	Register([]Profile{{Name: "chatgpt", BaseURL: "https://gw.example/v1"}})
-	if got := provider.Defaults("chatgpt").BaseURL; got == "https://gw.example/v1" {
+	if got := llm.Defaults("chatgpt").BaseURL; got == "https://gw.example/v1" {
 		t.Fatalf("a profile replaced the built-in's defaults: %q", got)
 	}
 }
@@ -233,17 +233,17 @@ func TestRegister_MakesTheProfileResolvable(t *testing.T) {
 	p := loaded[0]
 	Register([]Profile{p})
 
-	prov, err := provider.Resolve("gateway", provider.ResolveOpts{Model: "kimi-k2.6", HTTPClient: profileTestHTTP.Client()})
+	prov, err := llm.Resolve("gateway", llm.ResolveOpts{Model: "kimi-k2.6", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("the profile should resolve as a provider: %v", err)
 	}
 	if prov.Name() != "gateway" {
 		t.Fatalf("expected the profile's name, got %q", prov.Name())
 	}
-	if models := provider.KnownModels("gateway"); len(models) != 2 || models[0] != "gemini-3.1-pro" {
+	if models := llm.KnownModels("gateway"); len(models) != 2 || models[0] != "gemini-3.1-pro" {
 		t.Fatalf("the declared models should seed the picker, got %v", models)
 	}
-	if d := provider.Defaults("gateway"); d.Model != "gemini-3.1-pro" || d.BaseURL != p.BaseURL {
+	if d := llm.Defaults("gateway"); d.Model != "gemini-3.1-pro" || d.BaseURL != p.BaseURL {
 		t.Fatalf("unexpected defaults: %+v", d)
 	}
 	if got := Loaded(); len(got) != 1 || got[0].Name != "gateway" {
@@ -254,7 +254,7 @@ func TestRegister_MakesTheProfileResolvable(t *testing.T) {
 func TestNew_ReportsAMissingKey(t *testing.T) {
 	t.Setenv("GATEWAY_API_KEY", "")
 	p := Profile{Name: "gateway", API: aPIOpenAIChat, BaseURL: "https://gw.example/v1", APIKeyEnv: "GATEWAY_API_KEY"}
-	_, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
+	_, err := New(p, llm.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err == nil || !strings.Contains(err.Error(), "GATEWAY_API_KEY") {
 		t.Fatalf("the error should name the variable to export, got %v", err)
 	}
@@ -262,7 +262,7 @@ func TestNew_ReportsAMissingKey(t *testing.T) {
 
 func TestNew_AnthropicDialect(t *testing.T) {
 	p := Profile{Name: "gateway-claude", API: aPIAnthropicMessage, BaseURL: "https://gw.example/anthropic", APIKey: "k"}
-	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -283,11 +283,11 @@ func TestListModels_UsesTheProfilesCatalogPath(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gw", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "secret", ModelsPath: "/v1/models/simple"}
-	prov, err := New(p, provider.ResolveOpts{Model: "kimi-k2.6", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "kimi-k2.6", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	lister, ok := prov.(provider.ModelLister)
+	lister, ok := prov.(llm.ModelLister)
 	if !ok {
 		t.Fatal("a profile-backed provider should support discovery")
 	}
@@ -316,8 +316,8 @@ func TestListModels_FallsBackToTheStandardEndpoint(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gw", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
-	prov, _ := New(p, provider.ResolveOpts{Model: "llama3", HTTPClient: profileTestHTTP.Client()})
-	names, err := prov.(provider.ModelLister).ListModels(context.Background())
+	prov, _ := New(p, llm.ResolveOpts{Model: "llama3", HTTPClient: profileTestHTTP.Client()})
+	names, err := prov.(llm.ModelLister).ListModels(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -514,7 +514,7 @@ func TestNew_ResponsesDialect(t *testing.T) {
 			{When: Match{Model: "gpt-5*"}, Direction: directionRequest, Op: opDelete, Path: "temperature"},
 		},
 	}
-	prov, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-terra", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "gpt-5.6-terra", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -523,9 +523,9 @@ func TestNew_ResponsesDialect(t *testing.T) {
 	}
 
 	temp := 0.5
-	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
-		{Role: provider.RoleUser, Content: "hi"},
-	}, provider.CompletionOpts{Temperature: &temp})
+	ch, err := prov.StreamCompletion(context.Background(), []llm.Message{
+		{Role: llm.RoleUser, Content: "hi"},
+	}, llm.CompletionOpts{Temperature: &temp})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -575,26 +575,26 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 		path    string
 		status  int
 		body    string
-		want    provider.Class
+		want    llm.Class
 		wantErr error
 	}{
 		{
 			name: "openai chat", api: aPIOpenAIChat, path: "/v1/chat/completions",
 			status: http.StatusTooManyRequests,
 			body:   `{"error":{"message":"Rate limit reached for this gateway","type":"rate_limit_error"}}`,
-			want:   provider.ClassRateLimit, wantErr: provider.ErrRateLimited,
+			want:   llm.ClassRateLimit, wantErr: llm.ErrRateLimited,
 		},
 		{
 			name: "openai responses", api: aPIOpenAIResponses, path: "/v1/responses",
 			status: http.StatusUnauthorized,
 			body:   `{"error":{"message":"Incorrect API key provided","type":"invalid_request_error"}}`,
-			want:   provider.ClassAuth, wantErr: provider.ErrAuth,
+			want:   llm.ClassAuth, wantErr: llm.ErrAuth,
 		},
 		{
 			name: "anthropic messages", api: aPIAnthropicMessage, path: "/v1/messages",
 			status: 529,
 			body:   `{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}`,
-			want:   provider.ClassOverloaded, wantErr: provider.ErrOverloaded,
+			want:   llm.ClassOverloaded, wantErr: llm.ErrOverloaded,
 		},
 	}
 
@@ -612,7 +612,7 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 				API:     tc.api,
 				BaseURL: srv.URL + "/v1",
 				APIKey:  "sk-gateway-4f9c",
-			}, provider.ResolveOpts{Model: "some-model", HTTPClient: profileTestHTTP.Client()})
+			}, llm.ResolveOpts{Model: "some-model", HTTPClient: profileTestHTTP.Client()})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -620,9 +620,9 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 			// The chat dialects report the failure when the request is made;
 			// the Messages API reports it on the stream. Either way it has to
 			// arrive classified.
-			ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
-				{Role: provider.RoleUser, Content: "hi"},
-			}, provider.CompletionOpts{})
+			ch, err := prov.StreamCompletion(context.Background(), []llm.Message{
+				{Role: llm.RoleUser, Content: "hi"},
+			}, llm.CompletionOpts{})
 			if err == nil {
 				if ch == nil {
 					t.Fatal("expected either an error or a stream")
@@ -638,7 +638,7 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 				t.Fatal("expected the gateway's failure to reach the caller")
 			}
 
-			f, ok := provider.AsFailure(err)
+			f, ok := llm.AsFailure(err)
 			if !ok {
 				t.Fatalf("a gateway failure reached the caller unclassified: %v", err)
 			}
@@ -728,16 +728,16 @@ func TestNew_ChatRouteCarriesTheCacheBreakpoints(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gateway", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
-	prov, err := New(p, provider.ResolveOpts{Model: "anthropic/claude-sonnet-4-6", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "anthropic/claude-sonnet-4-6", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
-		{Role: provider.RoleSystem, Content: "be helpful"},
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "two"},
-		{Role: provider.RoleUser, Content: "three"},
-	}, provider.CompletionOpts{})
+	ch, err := prov.StreamCompletion(context.Background(), []llm.Message{
+		{Role: llm.RoleSystem, Content: "be helpful"},
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "two"},
+		{Role: llm.RoleUser, Content: "three"},
+	}, llm.CompletionOpts{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -765,14 +765,14 @@ func TestNew_ChatRouteMarksNothingForAnotherVendor(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gateway", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
-	prov, err := New(p, provider.ResolveOpts{Model: "openai/gpt-5.2", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "openai/gpt-5.2", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
-		{Role: provider.RoleSystem, Content: "be helpful"},
-		{Role: provider.RoleUser, Content: "one"},
-	}, provider.CompletionOpts{})
+	ch, err := prov.StreamCompletion(context.Background(), []llm.Message{
+		{Role: llm.RoleSystem, Content: "be helpful"},
+		{Role: llm.RoleUser, Content: "one"},
+	}, llm.CompletionOpts{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -798,14 +798,14 @@ func TestNew_AnthropicRouteHonoursTheConfiguredCacheLifetime(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gateway-claude", API: aPIAnthropicMessage, BaseURL: srv.URL, APIKey: "k"}
-	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", CacheTTL: "5m", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "claude-opus-5", CacheTTL: "5m", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
-		{Role: provider.RoleSystem, Content: "be helpful"},
-		{Role: provider.RoleUser, Content: "one"},
-	}, provider.CompletionOpts{})
+	ch, err := prov.StreamCompletion(context.Background(), []llm.Message{
+		{Role: llm.RoleSystem, Content: "be helpful"},
+		{Role: llm.RoleUser, Content: "one"},
+	}, llm.CompletionOpts{})
 	if err != nil {
 		t.Fatal(err)
 	}

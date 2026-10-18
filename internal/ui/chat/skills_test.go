@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -34,7 +34,7 @@ func skillCatalog(t *testing.T) *skill.Catalog {
 
 func skillModel(t *testing.T) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Skills:     skillCatalog(t),
 		SkillsList: func(c *skill.Catalog) string { return strings.Join(c.Names(), " ") },
 	})
@@ -48,7 +48,7 @@ func TestSkillCommand_SendsContentShowsCommand(t *testing.T) {
 
 	msgs := m.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleUser || !skill.IsContent(last.Content) {
+	if last.Role != llm.RoleUser || !skill.IsContent(last.Content) {
 		t.Fatalf("the model should receive skill content as a user message, got %+v", last)
 	}
 	if !strings.Contains(last.Content, "# documentation body") || !strings.HasSuffix(last.Content, "write the changelog") {
@@ -66,7 +66,7 @@ func TestSkillCommand_ShortcutByName(t *testing.T) {
 	m := skillModel(t)
 	m = sendText(t, m, "/documentation")
 	msgs := m.Messages()
-	if last := msgs[len(msgs)-1]; last.Role != provider.RoleUser || !skill.IsContent(last.Content) {
+	if last := msgs[len(msgs)-1]; last.Role != llm.RoleUser || !skill.IsContent(last.Content) {
 		t.Fatalf("/<skill-name> should activate the skill, got %+v", last)
 	}
 
@@ -105,7 +105,7 @@ func TestSkillCommand_UnknownAndListing(t *testing.T) {
 		t.Fatal("/skills prints the listing it was given")
 	}
 
-	bare := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	bare := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := bare.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	bare = sendText(t, updated.(Model), "/skills")
 	if !transcriptContains(bare, "no skills loaded") {
@@ -142,7 +142,7 @@ func builtinListing(t *testing.T) (*skill.Catalog, func(*skill.Catalog) string) 
 func TestGolden_SkillsBuiltin(t *testing.T) {
 	c, list := builtinListing(t)
 	captureGolden(t, "skills-builtin", "/skills with the built-in skills", goldenWidths, func(width int) []golden.Panel {
-		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Skills: c, SkillsList: list})
+		m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{Skills: c, SkillsList: list})
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 		m = sendText(t, updated.(Model), "/skills")
 		return []golden.Panel{{Label: "a user skill, then the four the binary carries",
@@ -154,7 +154,7 @@ func TestGolden_SkillsBuiltin(t *testing.T) {
 // on it. The scene `skills-builtin` is the same route in a terminal.
 func TestProgram_SkillsListsTheBuiltins(t *testing.T) {
 	c, list := builtinListing(t)
-	tm := runProgramAt(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream,
+	tm := runProgramAt(t, New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream,
 		Wiring{Skills: c, SkillsList: list}), 110, 40)
 	tm.Type("/skills")
 	tm.Send(programEnter)

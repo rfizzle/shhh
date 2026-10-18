@@ -13,6 +13,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -20,7 +21,6 @@ import (
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -38,7 +38,7 @@ const searchHits = "internal/agent/loop.go:88: \t\treturn ErrRoundLimit\n" +
 // activityModel builds a ready model for feed-rendering tests.
 func activityModel(t *testing.T) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model)
@@ -504,7 +504,7 @@ func TestRunningCommandRow_LiveTail(t *testing.T) {
 }
 
 func TestExecuteRun_FeedsTailRunner(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			t.Fatal("the tail runner should take precedence")
@@ -545,7 +545,7 @@ func TestExecuteRun_FeedsTailRunner(t *testing.T) {
 }
 
 func TestStatusBar_CockpitSegments(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001},
 	})
@@ -553,9 +553,9 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 		Prices:    table,
 		ModelName: "gpt-4o",
 	})
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	m.state = stateStreaming
-	m.agent.BeginToolRound("", nil, func(provider.ToolCall) bool { return false })
+	m.agent.BeginToolRound("", nil, func(llm.ToolCall) bool { return false })
 	m.steering = []steeringItem{{text: "queued note"}}
 
 	bar := stripANSI(m.renderStatusBar(160))
@@ -577,8 +577,8 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 // Where no price is known the token pair stands in for the spend, and it is
 // the only time it does. While a turn is spending them they print every digit.
 func TestStatusBar_TokensStandInWhereNoPriceIsKnown(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{ModelName: "scripted-model"})
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{ModelName: "scripted-model"})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	m.state = stateStreaming
 
 	bar := stripANSI(m.renderStatusBar(160))
@@ -602,12 +602,12 @@ func TestStatusBar_CockpitSpendUsesTheBilledSessionTotal(t *testing.T) {
 		},
 	})
 	ledger := meter.New(table)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Prices:    table,
 		ModelName: "gpt-4o",
 		Ledger:    ledger,
 	})
-	usage := provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
+	usage := llm.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", usage)
 	m.accumulateUsage(&usage)
 
@@ -847,7 +847,7 @@ func TestFetchWaitRow_TheSessionsOwnFetchShowsItsWait(t *testing.T) {
 	if _, ok := m.fetchWaitRow(80); ok {
 		t.Fatal("a session with no call in flight drew a waiting row")
 	}
-	m.approval.request = &approvalRequest{call: provider.ToolCall{
+	m.approval.request = &approvalRequest{call: llm.ToolCall{
 		Name: web.FetchToolName, Arguments: `{"url":"https://docs.rs/tokio/latest/tokio/"}`}}
 	row, ok := m.fetchWaitRow(80)
 	if !ok {
@@ -884,12 +884,12 @@ func TestSteerToolNeedsNoApproval(t *testing.T) {
 	})
 	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
 		m.policy.mode = mode
-		steer := provider.ToolCall{Name: subagent.SteerToolName,
+		steer := llm.ToolCall{Name: subagent.SteerToolName,
 			Arguments: `{"name":"writer-1","message":"read the exporter instead"}`}
 		if m.requiresApproval(steer) {
 			t.Errorf("steering an agent must never be approval-gated, and is in %s", mode)
 		}
-		if !m.requiresApproval(provider.ToolCall{Name: subagent.SpawnToolName}) {
+		if !m.requiresApproval(llm.ToolCall{Name: subagent.SpawnToolName}) {
 			t.Errorf("spawning an agent stays gated, and is not in %s", mode)
 		}
 	}
@@ -900,7 +900,7 @@ func TestSteerToolNeedsNoApproval(t *testing.T) {
 // look alike; the message is bounded to its first line, marked when there was
 // more, because the row is one line and the instruction need not be.
 func TestSteerRowNamesTheAgentAndWhatItWasTold(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 30})
 	m = updated.(Model)
 
@@ -1094,7 +1094,7 @@ func TestActivityRow_NoTargetIsTheToolsOwnName(t *testing.T) {
 				m.activityRowFor(entry{kind: entryTool, toolName: name, toolArgs: args,
 					toolResult: "error: invalid arguments"}),
 				m.activityRowFor(m.skippedCallEntry(
-					provider.ToolCall{Name: name, Arguments: args},
+					llm.ToolCall{Name: name, Arguments: args},
 					errors.New("invalid arguments: the call could not be read"))),
 			}
 			for _, row := range rows {

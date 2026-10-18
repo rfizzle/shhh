@@ -13,8 +13,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -249,7 +249,7 @@ func TestRoundLimit_ATurnThatChangedNothingOffersOnlyTheGrant(t *testing.T) {
 	m := turnModel(t)
 	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "look around")
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_r", Name: "read_file", Arguments: `{"path":"nope.go"}`},
 	}})
 	m = updated.(Model)
@@ -312,7 +312,7 @@ func TestRoundLimit_ThePauseDefersTheContextCard(t *testing.T) {
 	m := pressureModel(t, 110)
 	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "keep going")
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_r", Name: "read_file", Arguments: `{"path":"nope.go"}`},
 	}})
 	m = updated.(Model)

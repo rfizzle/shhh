@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -98,7 +98,7 @@ type Supervisor struct {
 
 	// conversation reads the session's own messages for a child of the
 	// session that inherits turns (SetConversation). Under mu.
-	conversation func() []provider.Message
+	conversation func() []llm.Message
 }
 
 // ErrClosed is what a supervisor answers once Close has run: a steer, a note,

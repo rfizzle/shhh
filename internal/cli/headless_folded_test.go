@@ -3,26 +3,26 @@ package cli
 import (
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // A headless continuation keeps the turns the slot's compaction folded, and a
 // compaction in the run adds to them, so a later reopen draws the whole record.
 func TestHeadlessContinue_AFoldedTurnSurvivesTheRun(t *testing.T) {
 	db := printStore(t)
-	stored := []provider.Message{
-		{Role: provider.RoleSystem, Content: "old prompt"},
-		{Role: provider.RoleUser, Content: "summary of the start", Machine: true},
-		{Role: provider.RoleUser, Content: "second ask"},
-		{Role: provider.RoleAssistant, Content: "second answer"},
+	stored := []llm.Message{
+		{Role: llm.RoleSystem, Content: "old prompt"},
+		{Role: llm.RoleUser, Content: "summary of the start", Machine: true},
+		{Role: llm.RoleUser, Content: "second ask"},
+		{Role: llm.RoleAssistant, Content: "second answer"},
 	}
 	if err := db.SaveChat("left", stored); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.SaveChatFolded("left", []provider.Message{
-		{Role: provider.RoleUser, Content: "first ask"},
-		{Role: provider.RoleAssistant, Content: "first answer"},
+	if err := db.SaveChatFolded("left", []llm.Message{
+		{Role: llm.RoleUser, Content: "first ask"},
+		{Role: llm.RoleAssistant, Content: "first answer"},
 	}); err != nil {
 		t.Fatal(err)
 	}

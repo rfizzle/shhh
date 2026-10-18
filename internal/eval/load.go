@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 const (
@@ -534,31 +534,31 @@ func checkScriptedRow(path string, kind Kind, row Row) error {
 // conversation rather than shown one: a window recovery keeps the system
 // message and elides the oldest tool results, and neither can be measured
 // against a transcript that has neither in it.
-func conversation(lines []string) []provider.Message {
-	var out []provider.Message
+func conversation(lines []string) []llm.Message {
+	var out []llm.Message
 	var pending []string
 	for _, line := range lines {
 		text := strings.TrimSpace(line)
 		if text == "" {
 			continue
 		}
-		role := provider.RoleUser
+		role := llm.RoleUser
 		switch {
 		case strings.HasPrefix(strings.ToLower(text), "assistant:"):
-			role, text = provider.RoleAssistant, strings.TrimSpace(text[len("assistant:"):])
+			role, text = llm.RoleAssistant, strings.TrimSpace(text[len("assistant:"):])
 		case strings.HasPrefix(strings.ToLower(text), "system:"):
-			role, text = provider.RoleSystem, strings.TrimSpace(text[len("system:"):])
+			role, text = llm.RoleSystem, strings.TrimSpace(text[len("system:"):])
 		case strings.HasPrefix(strings.ToLower(text), "call:"):
 			out, pending = withCall(out, pending, strings.TrimSpace(text[len("call:"):]))
 			continue
 		case strings.HasPrefix(strings.ToLower(text), "tool:"):
-			role, text = provider.RoleTool, strings.TrimSpace(text[len("tool:"):])
+			role, text = llm.RoleTool, strings.TrimSpace(text[len("tool:"):])
 		case strings.HasPrefix(strings.ToLower(text), "user:"):
 			text = strings.TrimSpace(text[len("user:"):])
 		}
 		if text != "" {
-			msg := provider.Message{Role: role, Content: text}
-			if role == provider.RoleTool && len(pending) > 0 {
+			msg := llm.Message{Role: role, Content: text}
+			if role == llm.RoleTool && len(pending) > 0 {
 				msg.ToolCallID, pending = pending[0], pending[1:]
 			}
 			out = append(out, msg)
@@ -572,17 +572,17 @@ func conversation(lines []string) []provider.Message {
 // not the assistant's, and queues its id for the `tool:` line that answers it.
 // A tool result with no call is an anonymous placeholder once elided; one with
 // a call is what a real session hands a child, and can be offered back.
-func withCall(out []provider.Message, pending []string, spec string) ([]provider.Message, []string) {
+func withCall(out []llm.Message, pending []string, spec string) ([]llm.Message, []string) {
 	name, args, _ := strings.Cut(spec, " ")
 	if args = strings.TrimSpace(args); args == "" {
 		args = "{}"
 	}
-	if len(out) == 0 || out[len(out)-1].Role != provider.RoleAssistant {
-		out = append(out, provider.Message{Role: provider.RoleAssistant})
+	if len(out) == 0 || out[len(out)-1].Role != llm.RoleAssistant {
+		out = append(out, llm.Message{Role: llm.RoleAssistant})
 	}
 	id := fmt.Sprintf("call-%d", len(out))
 	last := &out[len(out)-1]
-	last.ToolCalls = append(last.ToolCalls, provider.ToolCall{ID: id, Name: name, Arguments: args})
+	last.ToolCalls = append(last.ToolCalls, llm.ToolCall{ID: id, Name: name, Arguments: args})
 	return out, append(pending, id)
 }
 

@@ -21,9 +21,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -51,12 +51,12 @@ type approvalOutcome struct {
 type approvalRig struct {
 	edit    bool
 	presses int
-	judge   provider.Provider // the classifier's provider, nil for none
-	deny    []string          // the deny list the host hands the screen
-	explain provider.Provider // the explainer's provider, nil for none
-	command string            // the command asked, approvalCommand when empty
-	ranOK   string            // what the runner prints
-	follow  []programTurn     // the turns after the call, approvalClosing when empty
+	judge   llm.Provider  // the classifier's provider, nil for none
+	deny    []string      // the deny list the host hands the screen
+	explain llm.Provider  // the explainer's provider, nil for none
+	command string        // the command asked, approvalCommand when empty
+	ranOK   string        // what the runner prints
+	follow  []programTurn // the turns after the call, approvalClosing when empty
 }
 
 // approvalDriver is a run in flight: the program, what the runner was
@@ -455,7 +455,7 @@ func TestApprovalRouteBeyondAllowDeny(t *testing.T) {
 		d.p.mu.Lock()
 		note := d.p.asked[1]
 		d.p.mu.Unlock()
-		if note.Role != provider.RoleUser || note.Content != "and keep the output short" {
+		if note.Role != llm.RoleUser || note.Content != "and keep the output short" {
 			t.Fatalf("the note reached the model as %q %q", note.Role, note.Content)
 		}
 		if got.told != note.Content {
@@ -556,7 +556,7 @@ func TestDenyAnsweredBeforeMode(t *testing.T) {
 		for _, mode := range []struct {
 			name    string
 			presses int
-			judge   provider.Provider
+			judge   llm.Provider
 		}{
 			{"manual", 0, nil},
 			{"accept-edits", 1, nil},

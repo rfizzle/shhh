@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestChatFolded_StaysBesideAConversationThatIsRewritten(t *testing.T) {
@@ -14,14 +14,14 @@ func TestChatFolded_StaysBesideAConversationThatIsRewritten(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	pic := provider.Attachment{Kind: provider.AttachmentImage, Name: "a.png", MediaType: "image/png", Data: []byte{1, 2, 3}}
-	folded := []provider.Message{
-		{Role: provider.RoleUser, Content: "first", Attachments: []provider.Attachment{pic}},
-		{Role: provider.RoleAssistant, Content: "answer"},
+	pic := llm.Attachment{Kind: llm.AttachmentImage, Name: "a.png", MediaType: "image/png", Data: []byte{1, 2, 3}}
+	folded := []llm.Message{
+		{Role: llm.RoleUser, Content: "first", Attachments: []llm.Attachment{pic}},
+		{Role: llm.RoleAssistant, Content: "answer"},
 	}
-	compacted := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "summary", Machine: true},
+	compacted := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "summary", Machine: true},
 	}
 	if err := db.SaveChat("s", compacted); err != nil {
 		t.Fatal(err)
@@ -30,7 +30,7 @@ func TestChatFolded_StaysBesideAConversationThatIsRewritten(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A save that rewrites the conversation whole leaves the record alone.
-	rewritten := append(append([]provider.Message(nil), compacted...), provider.Message{Role: provider.RoleUser, Content: "next"})
+	rewritten := append(append([]llm.Message(nil), compacted...), llm.Message{Role: llm.RoleUser, Content: "next"})
 	rewritten[1].Content = "another summary"
 	if err := db.SaveChat("s", rewritten); err != nil {
 		t.Fatal(err)
@@ -68,10 +68,10 @@ func TestSave_ATypedNameReplacesTheFoldedTurns(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := first.SaveChat("slot", []provider.Message{{Role: provider.RoleUser, Content: "old summary"}}); err != nil {
+	if err := first.SaveChat("slot", []llm.Message{{Role: llm.RoleUser, Content: "old summary"}}); err != nil {
 		t.Fatal(err)
 	}
-	if err := first.SaveChatFolded("slot", []provider.Message{{Role: provider.RoleUser, Content: "old fold"}}); err != nil {
+	if err := first.SaveChatFolded("slot", []llm.Message{{Role: llm.RoleUser, Content: "old fold"}}); err != nil {
 		t.Fatal(err)
 	}
 	first.Close()
@@ -81,7 +81,7 @@ func TestSave_ATypedNameReplacesTheFoldedTurns(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { second.Close() })
-	if err := second.SaveChat("slot", []provider.Message{{Role: provider.RoleUser, Content: "new"}}); err != nil {
+	if err := second.SaveChat("slot", []llm.Message{{Role: llm.RoleUser, Content: "new"}}); err != nil {
 		t.Fatal(err)
 	}
 	if back, _ := second.LoadChatFolded("slot"); len(back) != 0 {
@@ -95,11 +95,11 @@ func TestSaveChatBranch_CarriesTheParentsFoldedTurns(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "summary", Machine: true}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "summary", Machine: true}}
 	if err := db.SaveChat("p", msgs); err != nil {
 		t.Fatal(err)
 	}
-	folded := []provider.Message{{Role: provider.RoleUser, Content: "one"}, {Role: provider.RoleAssistant, Content: "two"}}
+	folded := []llm.Message{{Role: llm.RoleUser, Content: "one"}, {Role: llm.RoleAssistant, Content: "two"}}
 	if err := db.SaveChatFolded("p", folded); err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestStoredChatSeq_IgnoresFoldedRows(t *testing.T) {
 	if err := db.SaveChat("s", nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.SaveChatFolded("s", []provider.Message{{Role: provider.RoleUser, Content: "f"}}); err != nil {
+	if err := db.SaveChatFolded("s", []llm.Message{{Role: llm.RoleUser, Content: "f"}}); err != nil {
 		t.Fatal(err)
 	}
 	tx, err := db.sql.Begin()

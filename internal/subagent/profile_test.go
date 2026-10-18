@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func customProfiles() Profiles {
@@ -37,7 +37,7 @@ func TestProfilesParseAndNames(t *testing.T) {
 
 func TestDefinitionsListProfiles(t *testing.T) {
 	defs := Definitions(customProfiles(), Offer{})
-	var spawn provider.Tool
+	var spawn llm.Tool
 	for _, d := range defs {
 		if d.Name == SpawnToolName {
 			spawn = d
@@ -121,7 +121,7 @@ func TestProfileModeIsClampedToParent(t *testing.T) {
 func TestBuiltinReviewerRefusesAnEditInReadOnlyWords(t *testing.T) {
 	env := &scriptedEnv{
 		steps: []streamStep{
-			{calls: []provider.ToolCall{{ID: "e1", Name: "edit_file", Arguments: `{"path":"a.go","old_text":"x","new_text":"y"}`}}},
+			{calls: []llm.ToolCall{{ID: "e1", Name: "edit_file", Arguments: `{"path":"a.go","old_text":"x","new_text":"y"}`}}},
 			{text: "task complete"},
 		},
 		gated: map[string]bool{"edit_file": true},

@@ -10,11 +10,11 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -307,8 +307,8 @@ var configJudges = map[string]func(string) error{
 		}
 		return nil
 	},
-	"provider.reasoning":        func(v string) error { _, err := provider.ParseEffort(v); return err },
-	"provider.cache_ttl":        func(v string) error { _, err := provider.ParseCacheTTL(v); return err },
+	"provider.reasoning":        func(v string) error { _, err := llm.ParseEffort(v); return err },
+	"provider.cache_ttl":        func(v string) error { _, err := llm.ParseCacheTTL(v); return err },
 	"appearance.rail_width":     func(v string) error { _, err := components.ParseRailWidth(v); return err },
 	"sandbox.profile":           func(v string) error { _, err := sandbox.ParseProfile(v); return err },
 	"sandbox.allow_hosts":       func(v string) error { _, err := sandbox.ParseHosts(strings.Split(v, ",")); return err },
@@ -1193,7 +1193,7 @@ func roleModelOptions(c config.Config) []components.SelectOption {
 	opts := []components.SelectOption{
 		{Label: config.InheritModel, Desc: "this role runs whatever the sub-agent model resolves to"},
 	}
-	for _, name := range provider.KnownModels(c.Provider.Default) {
+	for _, name := range llm.KnownModels(c.Provider.Default) {
 		opts = append(opts, components.SelectOption{Label: name})
 	}
 	return opts
@@ -1201,7 +1201,7 @@ func roleModelOptions(c config.Config) []components.SelectOption {
 
 // modelOptions is the provider's own catalog, for the rows that name a model.
 func modelOptions(c config.Config) []components.SelectOption {
-	models := provider.KnownModels(c.Provider.Default)
+	models := llm.KnownModels(c.Provider.Default)
 	opts := make([]components.SelectOption, 0, len(models))
 	for _, name := range models {
 		opts = append(opts, components.SelectOption{Label: name})
@@ -1432,12 +1432,12 @@ var configFallbacks = map[string]string{
 // pair of booleans each saying what it costs.
 var configOptions = map[string]func(config.Config) []components.SelectOption{
 	"provider.default": func(config.Config) []components.SelectOption {
-		names := provider.Available()
+		names := llm.Available()
 		sort.Strings(names)
 		opts := make([]components.SelectOption, 0, len(names))
 		for _, name := range names {
 			opt := components.SelectOption{Label: name}
-			if d := provider.Defaults(name); d.Model != "" {
+			if d := llm.Defaults(name); d.Model != "" {
 				opt.Desc = "default model " + d.Model
 			}
 			opts = append(opts, opt)
@@ -1449,15 +1449,15 @@ var configOptions = map[string]func(config.Config) []components.SelectOption{
 	"summary.model":             modelOptions,
 	"behavior.classifier_model": modelOptions,
 	"provider.reasoning": func(config.Config) []components.SelectOption {
-		opts := make([]components.SelectOption, 0, len(provider.EffortCycle()))
-		for _, e := range provider.EffortCycle() {
+		opts := make([]components.SelectOption, 0, len(llm.EffortCycle()))
+		for _, e := range llm.EffortCycle() {
 			opts = append(opts, components.SelectOption{Label: e.String(), Desc: e.Describe()})
 		}
 		return opts
 	},
 	"provider.cache_ttl": func(config.Config) []components.SelectOption {
-		opts := make([]components.SelectOption, 0, len(provider.CacheTTLCycle()))
-		for _, ttl := range provider.CacheTTLCycle() {
+		opts := make([]components.SelectOption, 0, len(llm.CacheTTLCycle()))
+		for _, ttl := range llm.CacheTTLCycle() {
 			opts = append(opts, components.SelectOption{Label: string(ttl), Desc: ttl.Describe()})
 		}
 		return opts

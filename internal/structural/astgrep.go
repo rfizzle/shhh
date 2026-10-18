@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -22,7 +22,7 @@ import (
 // than the call it was written as, because an empty result from it reads as
 // proof there are no call sites and one search is meant to answer the question.
 // See docs/capabilities/coding-agent.md#finding-things.
-var astGrepTool = provider.Tool{
+var astGrepTool = llm.Tool{
 	Name: AstGrepToolName,
 	Description: "Language-aware structural code search with ast-grep. Prefer this over regex search for structural questions " +
 		"(find every call of a function, match a syntax shape regardless of formatting). The pattern is code with metavariables, " +

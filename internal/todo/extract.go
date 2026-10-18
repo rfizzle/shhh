@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -142,7 +142,7 @@ type ExtractRequest struct {
 type ExtractResult struct {
 	Proposals []Proposal
 	Model     string
-	Usage     provider.Usage
+	Usage     llm.Usage
 	Elapsed   time.Duration
 	Failed    bool
 	Err       string
@@ -234,12 +234,12 @@ func (c ExtractConfig) maxTokens() int {
 // Extractor reads a session digest through a provider, in one profile's
 // vocabulary.
 type Extractor struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      ExtractConfig
 	profile  Profile
 }
 
-func NewExtractor(p provider.Provider, cfg ExtractConfig, profile Profile) *Extractor {
+func NewExtractor(p llm.Provider, cfg ExtractConfig, profile Profile) *Extractor {
 	return &Extractor{provider: p, cfg: cfg, profile: profile}
 }
 
@@ -410,8 +410,8 @@ func (e *Extractor) Extract(ctx context.Context, req ExtractRequest) ExtractResu
 }
 
 // ExtractTool is the tool a reading is offered, in the profile's own words.
-func ExtractTool(profile Profile) provider.Tool {
-	return provider.Tool{
+func ExtractTool(profile Profile) llm.Tool {
+	return llm.Tool{
 		Name:        ExtractToolName,
 		Description: "Propose the backlog items a session leaves behind.",
 		Parameters:  extractSchema(profile),
@@ -435,24 +435,24 @@ func Describers() map[string]describe.Describer {
 // a session and drafting from a sentence differ in what they are told and in
 // nothing else, and two copies of this loop would be two answers to what a
 // proposal is.
-func readProposals(ctx context.Context, p provider.Provider, cfg ExtractConfig, profile Profile, instructions, digest string) ([]Proposal, *provider.Usage, error) {
+func readProposals(ctx context.Context, p llm.Provider, cfg ExtractConfig, profile Profile, instructions, digest string) ([]Proposal, *llm.Usage, error) {
 	schema := extractSchema(profile)
 	if cfg.Scrub != nil {
 		digest = cfg.Scrub(digest)
 	}
 	attemptCtx, cancel := context.WithTimeout(ctx, cfg.timeout())
 	defer cancel()
-	events, err := p.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: instructions},
-		{Role: provider.RoleUser, Content: digest},
-	}, provider.CompletionOpts{
+	events, err := p.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: instructions},
+		{Role: llm.RoleUser, Content: digest},
+	}, llm.CompletionOpts{
 		Model:     cfg.Model,
-		Flow:      provider.FlowBacklog,
+		Flow:      llm.FlowBacklog,
 		MaxTokens: cfg.maxTokens(),
 		// A shallow thought over evidence the session already assembled;
 		// off would leave the depth to the model, and the ceiling is shared
 		// with the answer.
-		Effort: provider.EffortLow,
+		Effort: llm.EffortLow,
 		// The proposals are asked for twice and sent once: a model that can
 		// be told to answer in a shape is sent the schema and no tools, and
 		// what comes back is read by the same parser that reads a model's
@@ -461,14 +461,14 @@ func readProposals(ctx context.Context, p provider.Provider, cfg ExtractConfig, 
 		// through an endpoint that has never heard of a schema is the
 		// reading that was always taken there.
 		// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
-		ResponseSchema: &provider.ResponseSchema{Name: ExtractToolName, Schema: schema},
-		Tools:          []provider.Tool{ExtractTool(profile)},
+		ResponseSchema: &llm.ResponseSchema{Name: ExtractToolName, Schema: schema},
+		Tools:          []llm.Tool{ExtractTool(profile)},
 		ToolChoice:     "auto",
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	usage := reply.Usage
 	if err != nil {
 		return nil, usage, err
@@ -640,12 +640,12 @@ type DraftRequest struct {
 
 // Drafter turns a sentence into one item in the shape the runner wants.
 type Drafter struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      ExtractConfig
 	profile  Profile
 }
 
-func NewDrafter(p provider.Provider, cfg ExtractConfig, profile Profile) *Drafter {
+func NewDrafter(p llm.Provider, cfg ExtractConfig, profile Profile) *Drafter {
 	return &Drafter{provider: p, cfg: cfg, profile: profile}
 }
 

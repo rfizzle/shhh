@@ -16,9 +16,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -38,7 +38,7 @@ import (
 //
 // While an approved plan is being executed the plan is the checklist, so the
 // session keeps no second one beside it; and a conversation keeps no list.
-func (m *Model) noteStepsCall(call provider.ToolCall) bool {
+func (m *Model) noteStepsCall(call llm.ToolCall) bool {
 	if call.Name != plan.StepsToolName || m.planRun != nil || !m.codingSurfaces() {
 		return false
 	}

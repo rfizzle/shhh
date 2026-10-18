@@ -11,7 +11,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func shiftKey(code rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: code, Mod: tea.ModShift} }
@@ -171,7 +171,7 @@ func TestPointer_ReadingModeOpensOnThePointedRowAndLeavingDropsIt(t *testing.T) 
 }
 
 func TestPointer_NothingToPointAtIsNothing(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = updated.(Model)
 	m.appendEntry(entry{kind: entryUser, text: "a question with no row under it"})

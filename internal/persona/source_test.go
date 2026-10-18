@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 )
 
@@ -18,16 +18,16 @@ import (
 // keeps the messages it was sent.
 type answerProvider struct {
 	args string
-	msgs []provider.Message
+	msgs []llm.Message
 }
 
 func (p *answerProvider) Name() string { return "answer" }
 
-func (p *answerProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-	p.msgs = append([]provider.Message(nil), msgs...)
-	ch := make(chan provider.StreamEvent, 2)
-	ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{Name: DraftToolName, Arguments: p.args}}}
-	ch <- provider.StreamEvent{Done: true}
+func (p *answerProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+	p.msgs = append([]llm.Message(nil), msgs...)
+	ch := make(chan llm.StreamEvent, 2)
+	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{Name: DraftToolName, Arguments: p.args}}}
+	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 	return ch, nil
 }

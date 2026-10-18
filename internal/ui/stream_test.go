@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func noopCancel() {}
@@ -17,25 +17,25 @@ func testCancel() (context.CancelFunc, *bool) {
 	return func() { called = true }, &called
 }
 
-func makeEvents(tokens ...string) <-chan provider.StreamEvent {
-	ch := make(chan provider.StreamEvent, len(tokens)+1)
+func makeEvents(tokens ...string) <-chan llm.StreamEvent {
+	ch := make(chan llm.StreamEvent, len(tokens)+1)
 	for _, t := range tokens {
-		ch <- provider.StreamEvent{Token: t}
+		ch <- llm.StreamEvent{Token: t}
 	}
-	ch <- provider.StreamEvent{Done: true}
+	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 	return ch
 }
 
-func makeErrorEvents(err error) <-chan provider.StreamEvent {
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{Err: err, Done: true}
+func makeErrorEvents(err error) <-chan llm.StreamEvent {
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{Err: err, Done: true}
 	close(ch)
 	return ch
 }
 
 func TestStreamModel_SpinnerBeforeFirstToken(t *testing.T) {
-	ch := make(chan provider.StreamEvent, 1)
+	ch := make(chan llm.StreamEvent, 1)
 	m := NewStreamModel(ch, noopCancel)
 
 	view := m.View()
@@ -139,7 +139,7 @@ func TestStreamModel_ViewShowsOutputAfterTokens(t *testing.T) {
 }
 
 func TestStreamModel_ClosedChannelTriggersDone(t *testing.T) {
-	ch := make(chan provider.StreamEvent)
+	ch := make(chan llm.StreamEvent)
 	close(ch)
 	m := NewStreamModel(ch, noopCancel)
 
@@ -153,8 +153,8 @@ func TestStreamModel_ClosedChannelTriggersDone(t *testing.T) {
 }
 
 func TestStreamModel_EscCancelsStream(t *testing.T) {
-	ch := make(chan provider.StreamEvent, 2)
-	ch <- provider.StreamEvent{Token: "partial"}
+	ch := make(chan llm.StreamEvent, 2)
+	ch <- llm.StreamEvent{Token: "partial"}
 	cancel, called := testCancel()
 	m := NewStreamModel(ch, cancel)
 
@@ -184,7 +184,7 @@ func TestStreamModel_EscAndCtrlCCancelTheStream(t *testing.T) {
 		{Code: tea.KeyEscape},
 		{Code: 'c', Mod: tea.ModCtrl},
 	} {
-		ch := make(chan provider.StreamEvent, 1)
+		ch := make(chan llm.StreamEvent, 1)
 		cancel, called := testCancel()
 		m := NewStreamModel(ch, cancel)
 
@@ -204,7 +204,7 @@ func TestStreamModel_EscAndCtrlCCancelTheStream(t *testing.T) {
 }
 
 func TestStreamModel_QDoesNotCancelTheStream(t *testing.T) {
-	ch := make(chan provider.StreamEvent, 1)
+	ch := make(chan llm.StreamEvent, 1)
 	cancel, called := testCancel()
 	m := NewStreamModel(ch, cancel)
 
@@ -274,8 +274,8 @@ func TestStreamModel_StripsInlineBackticksOnDone(t *testing.T) {
 }
 
 func TestStreamModel_StripsOnCancel(t *testing.T) {
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{Token: "```\npartial"}
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{Token: "```\npartial"}
 	m := NewStreamModel(ch, noopCancel)
 
 	model := m

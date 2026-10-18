@@ -13,8 +13,8 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/cli/report"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -387,8 +387,8 @@ func TestUnratedItems_AsksOnlyForWhatIsInScope(t *testing.T) {
 		Prompt: "list the log files", Command: "ls *.log", Action: "run"}); err != nil {
 		t.Fatalf("record request: %v", err)
 	}
-	if err := db.SaveChat("a-session", []provider.Message{
-		{Role: provider.RoleUser, Content: "make the dashboard show the gate rate"}}); err != nil {
+	if err := db.SaveChat("a-session", []llm.Message{
+		{Role: llm.RoleUser, Content: "make the dashboard show the gate rate"}}); err != nil {
 		t.Fatalf("save chat: %v", err)
 	}
 	id, err := db.StartAgentSession("chat", "anthropic", "m")

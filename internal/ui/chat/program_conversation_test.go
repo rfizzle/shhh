@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestProgram_AConversationFetchesWithoutACard(t *testing.T) {
@@ -24,7 +24,7 @@ func TestProgram_AConversationFetchesWithoutACard(t *testing.T) {
 			return "The cache now expires after an hour.", nil
 		},
 	},
-		programTurn{text: "Reading the release notes.\n", calls: []provider.ToolCall{
+		programTurn{text: "Reading the release notes.\n", calls: []llm.ToolCall{
 			fetchCall("f-1", "https://docs.example.test/notes"),
 		}},
 		programTurn{text: "The notes say the cache now expires after an hour."},

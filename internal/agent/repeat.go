@@ -45,9 +45,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -370,11 +370,11 @@ func (d *RepeatDetector) WrapExecutor(next ToolExecutor) ToolExecutor {
 // decision and the call are one function — so the tier the detector was
 // written for is reachable only here, and a run that wraps one chain and not
 // the other cannot see the case its own comment names.
-func (d *RepeatDetector) WrapResolver(next func(provider.ToolCall) string) func(provider.ToolCall) string {
+func (d *RepeatDetector) WrapResolver(next func(llm.ToolCall) string) func(llm.ToolCall) string {
 	if d == nil {
 		return next
 	}
-	return func(tc provider.ToolCall) string {
+	return func(tc llm.ToolCall) string {
 		return d.Notice(tc.Name, json.RawMessage(tc.Arguments), next(tc))
 	}
 }

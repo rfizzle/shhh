@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // A child that has answered is asked something else, and answers on the
@@ -76,8 +76,8 @@ func TestAFinishedChildTakesAFollowUpInItsOwnConversation(t *testing.T) {
 	}
 	var sawAnswer, sawQuestion bool
 	for _, m := range requests[1] {
-		sawAnswer = sawAnswer || (m.Role == provider.RoleAssistant && strings.Contains(m.Content, "otel.go"))
-		sawQuestion = sawQuestion || (m.Role == provider.RoleUser && strings.Contains(m.Content, "how often"))
+		sawAnswer = sawAnswer || (m.Role == llm.RoleAssistant && strings.Contains(m.Content, "otel.go"))
+		sawQuestion = sawQuestion || (m.Role == llm.RoleUser && strings.Contains(m.Content, "how often"))
 	}
 	if !sawAnswer || !sawQuestion {
 		t.Fatalf("the follow-up should run on the child's own conversation: %+v", requests[1])
@@ -136,7 +136,7 @@ func TestAFollowUpIsAnotherTurnOnTheSameRecord(t *testing.T) {
 // with, and the refusal names the figure the way admission does.
 func TestAFollowUpIsRefusedOnAnExhaustedBudget(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "found it", usage: &provider.Usage{PromptTokens: 150_000, CompletionTokens: 10}},
+		{text: "found it", usage: &llm.Usage{PromptTokens: 150_000, CompletionTokens: 10}},
 	}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code","max_tokens":300000}`)
@@ -245,21 +245,21 @@ type followUpWriter struct {
 
 func (w *followUpWriter) factory() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			w.mu.Lock()
 			w.round++
 			round := w.round
 			w.mu.Unlock()
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			switch round {
 			case 1, 3:
 				file := map[int]string{1: "a.go", 3: "b.go"}[round]
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 					{ID: fmt.Sprintf("w%d", round), Name: "write_file", Arguments: `{"path":"` + file + `"}`},
 				}}
 			default:
-				ch <- provider.StreamEvent{Token: "wrote it"}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: "wrote it"}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			return ch, func() {}, nil

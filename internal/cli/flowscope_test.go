@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/profile"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/testhttp"
 	"github.com/rfizzle/shhh/internal/todo"
 )
@@ -60,7 +60,7 @@ api_key  = "sk-test"
 id    = "claude-sonnet-5-5"
 flows = { classifier = { structured_outputs = false } }
 `)
-	p, err := profile.New(loaded[0], provider.ResolveOpts{Model: "claude-sonnet-5-5", HTTPClient: fixtures.Client()})
+	p, err := profile.New(loaded[0], llm.ResolveOpts{Model: "claude-sonnet-5-5", HTTPClient: fixtures.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}

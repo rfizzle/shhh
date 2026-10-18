@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -175,7 +175,7 @@ func TestResumeNotice_SummaryFollowsTheSurvey(t *testing.T) {
 		t.Fatalf("the summary follows it, got %q", n.Messages[1].Content)
 	}
 	for _, msg := range n.Messages {
-		if msg.Role != provider.RoleUser {
+		if msg.Role != llm.RoleUser {
 			t.Fatalf("the context joins the conversation as the user's, got %q", msg.Role)
 		}
 	}
@@ -222,20 +222,20 @@ func TestResumeNotice_OutsideARepositorySaysSo(t *testing.T) {
 // The reading is rebuilt every time a conversation is opened, so the one an
 // earlier opening left behind is replaced rather than stacked in front of it.
 func TestStripResumeContext_ReplacesTheEarlierReading(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: resumeMessagePrefix + "branch master · 0 changed]\nold"},
-		{Role: provider.RoleUser, Content: resumeSummaryPrefix + "\n\nolder still"},
-		{Role: provider.RoleUser, Content: "the real first turn"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: resumeMessagePrefix + "branch master · 0 changed]\nold"},
+		{Role: llm.RoleUser, Content: resumeSummaryPrefix + "\n\nolder still"},
+		{Role: llm.RoleUser, Content: "the real first turn"},
 	}
 	kept := agent.StripResumeContext(msgs)
-	if len(kept) != 2 || kept[0].Role != provider.RoleSystem || kept[1].Content != "the real first turn" {
+	if len(kept) != 2 || kept[0].Role != llm.RoleSystem || kept[1].Content != "the real first turn" {
 		t.Fatalf("the reading should come off the head of the conversation, got %+v", kept)
 	}
 	// A conversation that never carried one is handed back untouched.
-	plain := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hello"},
+	plain := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hello"},
 	}
 	if got := agent.StripResumeContext(plain); len(got) != 2 {
 		t.Fatalf("nothing to strip should change nothing, got %d", len(got))
@@ -243,18 +243,18 @@ func TestStripResumeContext_ReplacesTheEarlierReading(t *testing.T) {
 	// A turn that happens to open the way the summary half does is somebody's
 	// message, not half a reading: without a survey in front of it there is
 	// no block to be the second half of.
-	typed := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: resumeSummaryPrefix + "\n\nI wrote this myself"},
+	typed := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: resumeSummaryPrefix + "\n\nI wrote this myself"},
 	}
 	if got := agent.StripResumeContext(typed); len(got) != 2 {
 		t.Fatalf("a message is not a reading just because it opens like one, got %d", len(got))
 	}
 	// Nor is a first turn that happens to start with the same characters: the
 	// shape is a whole bracketed opening line, not its first nine.
-	opener := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: resumeMessagePrefix + "why does the row say this?"},
+	opener := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: resumeMessagePrefix + "why does the row say this?"},
 	}
 	if got := agent.StripResumeContext(opener); len(got) != 2 {
 		t.Fatalf("a turn that opens with those characters is still a turn, got %d", len(got))
@@ -266,9 +266,9 @@ func TestStripResumeContext_ReplacesTheEarlierReading(t *testing.T) {
 // just left onto the branch just opened, over the one the fork carried there.
 func TestSwitchToBranch_TakesTheBranchesOwnSummary(t *testing.T) {
 	db := rewindTestDB(t)
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "the branch's own turn"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "the branch's own turn"},
 	}
 	if err := db.SaveChat("root", msgs); err != nil {
 		t.Fatal(err)
@@ -280,7 +280,7 @@ func TestSwitchToBranch_TakesTheBranchesOwnSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db})
 	m.compactSummary = "a summary of somewhere else entirely"
 	if note := m.switchToBranch("root (branch 1)"); !strings.Contains(note, "switched to branch") {
 		t.Fatalf("switch failed: %q", note)
@@ -302,10 +302,10 @@ func TestSwitchToBranch_TakesTheBranchesOwnSummary(t *testing.T) {
 
 func TestResumeConversation_InjectsAheadOfTheTranscriptAndDrawsOneRow(t *testing.T) {
 	db := rewindTestDB(t)
-	saved := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "old question"},
-		{Role: provider.RoleAssistant, Content: "old answer"},
+	saved := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "old question"},
+		{Role: llm.RoleAssistant, Content: "old answer"},
 	}
 	if err := db.SaveChat("yesterday", saved); err != nil {
 		t.Fatal(err)
@@ -315,7 +315,7 @@ func TestResumeConversation_InjectsAheadOfTheTranscriptAndDrawsOneRow(t *testing
 		t.Fatal(err)
 	}
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", saved)
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", saved)
 
 	msgs := m.Messages()
 	if len(msgs) != 5 {
@@ -354,15 +354,15 @@ func TestResumeConversation_InjectsAheadOfTheTranscriptAndDrawsOneRow(t *testing
 // stacked in front of the one an earlier opening left.
 func TestResumeConversation_SecondOpeningReplacesTheFirstsReading(t *testing.T) {
 	db := rewindTestDB(t)
-	saved := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "old question"},
-		{Role: provider.RoleAssistant, Content: "old answer"},
+	saved := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "old question"},
+		{Role: llm.RoleAssistant, Content: "old answer"},
 	}
 	if err := db.SaveChat("yesterday", saved); err != nil {
 		t.Fatal(err)
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", saved)
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", saved)
 
 	// What the session would save is the conversation without the reading.
 	stored := agent.StripResumeContext(m.Messages())
@@ -370,7 +370,7 @@ func TestResumeConversation_SecondOpeningReplacesTheFirstsReading(t *testing.T) 
 		t.Fatalf("the slot keeps the conversation and not the reading, got %d messages", len(stored))
 	}
 
-	again := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", m.Messages())
+	again := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", m.Messages())
 	blocks := 0
 	for _, msg := range again.Messages() {
 		if strings.HasPrefix(msg.Content, resumeMessagePrefix) {

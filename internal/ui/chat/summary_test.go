@@ -12,10 +12,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -29,7 +29,7 @@ type readingProvider struct {
 	calls  int
 }
 
-func (p *readingProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *readingProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.calls++
 	if p.err != nil {
 		return nil, p.err
@@ -38,14 +38,14 @@ func (p *readingProvider) StreamCompletion(ctx context.Context, msgs []provider.
 	if state == "" {
 		state = "on_target"
 	}
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{
 			ID:        "s1",
 			Name:      sidejobs.SummaryToolName,
 			Arguments: `{"summary":"` + p.text + `","state":"` + state + `","reason":"` + p.reason + `"}`,
 		}},
-		Usage: &provider.Usage{PromptTokens: 800, CompletionTokens: 30},
+		Usage: &llm.Usage{PromptTokens: 800, CompletionTokens: 30},
 		Done:  true,
 	}
 	close(ch)
@@ -57,7 +57,7 @@ func (p *readingProvider) Name() string { return "reading" }
 // summaryModel is a gated model with a summarizer over the given fake
 // provider. The wall-clock floor is removed: these tests are about the round
 // interval, and twenty real seconds is not a thing a test can wait for.
-func summaryModel(t *testing.T, p provider.Provider) Model {
+func summaryModel(t *testing.T, p llm.Provider) Model {
 	t.Helper()
 	// Wired the way the session wires it: the summarizer reaches its
 	// provider through the gate, so a reading is billed as it streams.
@@ -104,7 +104,7 @@ func TestSummaryDue_FirstReadingComesEarly(t *testing.T) {
 		if m.summaryDue() {
 			t.Fatalf("no reading is due at round %d, before the first", m.agent.Rounds())
 		}
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 	if !m.summaryDue() {
 		t.Fatalf("the first reading is due at round %d", m.agent.Rounds())
@@ -115,7 +115,7 @@ func TestSummaryDue_FirstReadingComesEarly(t *testing.T) {
 func TestSummaryDue_ThenOnTheInterval(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
 	for i := 0; i < sidejobs.FirstSummaryRound; i++ {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 	m = applyReading(t, m)
 	first := m.summary.schedule.LastRound()
@@ -123,13 +123,13 @@ func TestSummaryDue_ThenOnTheInterval(t *testing.T) {
 		t.Fatalf("the reading is stamped with the round it read: got %d", first)
 	}
 	for i := 1; i < m.summaryInterval(); i++ {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 		if m.summaryDue() {
 			t.Fatalf("a reading came due %d rounds after the last, before the interval of %d",
 				i, m.summaryInterval())
 		}
 	}
-	m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+	m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	if !m.summaryDue() {
 		t.Fatalf("a reading is due %d rounds on", m.summaryInterval())
 	}
@@ -146,7 +146,7 @@ func TestSummaryDue_WallClockFloorHoldsTheInterval(t *testing.T) {
 	m.summary.last = &sidejobs.SummaryVerdict{Text: "standing"}
 	m.summary.schedule.Read(1)
 	for i := 0; i < 5; i++ {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 	if m.summaryDue() {
 		t.Fatal("the wall-clock floor holds a reading back however many rounds have passed")
@@ -372,12 +372,12 @@ func TestSummary_StaleOnlyOnceTheSessionHasOutrunIt(t *testing.T) {
 		t.Fatal("a fresh reading is not stale")
 	}
 	for i := 0; i < 2*m.summaryInterval(); i++ {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 	if m.summaryStale() {
 		t.Fatal("a reading one interval behind is being refreshed, not stale")
 	}
-	m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+	m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	if !m.summaryStale() {
 		t.Fatal("a reading the session has outrun by two intervals says so")
 	}
@@ -393,7 +393,7 @@ func TestSummary_DisabledIsSilent(t *testing.T) {
 	m.summary.writer = sidejobs.NewSummarizer(p,
 		sidejobs.SummaryConfig{Model: "fast", Disabled: true})
 	for i := 0; i < 30; i++ {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 	if m.summaryDue() || m.forceSummaryCmd() != nil {
 		t.Fatal("a disabled summarizer takes no readings")
@@ -415,7 +415,7 @@ func TestSummary_DisabledIsSilent(t *testing.T) {
 func TestSummary_ReachesTheRail(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Wiring the pause into the model.", state: "off_target"})
 	for i := 0; i < 4; i++ {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 	m = applyReading(t, m)
 	s := m.inspectorSummary()
@@ -444,7 +444,7 @@ func TestSummary_ReachesTheRail(t *testing.T) {
 func TestSummary_DriftQueuesButMovesNothingAtReadingTime(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Rewriting the README.", state: "off_target"})
 	m.setTurnState(stateStreaming)
-	m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+	m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	before := len(m.transcript)
 	m = applyReading(t, m)
 	if m.turnState() != stateStreaming {
@@ -470,7 +470,7 @@ func TestSummary_DriftQueuesButMovesNothingAtReadingTime(t *testing.T) {
 func TestSummary_TurnCloseTakesAReading(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Done wiring the pause."})
 	for i := 0; i < 4; i++ {
-		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+		m.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	}
 	m.summary.schedule.Read(2) // a reading from the turn's middle
 
@@ -483,7 +483,7 @@ func TestSummary_TurnCloseTakesAReading(t *testing.T) {
 	}
 	// A turn that took one round is already legible in full.
 	short := summaryModel(t, &readingProvider{text: "x"})
-	short.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
+	short.agent.BeginToolRound("", []llm.ToolCall{{Name: "read_file"}}, nil)
 	shortIdle := short
 	shortIdle.state = stateInput
 	shortWorking := short

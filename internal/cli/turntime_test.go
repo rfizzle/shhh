@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/rpc"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -35,16 +35,16 @@ func newSteppingClock() *steppingClock {
 
 // scriptedRounds is an agent whose requests replay the given rounds, with
 // every auto call answered "contents".
-func scriptedRounds(t *testing.T, rounds ...[]provider.StreamEvent) *agent.Agent {
+func scriptedRounds(t *testing.T, rounds ...[]llm.StreamEvent) *agent.Agent {
 	t.Helper()
 	var next atomic.Int64
-	a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := agent.New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		i := int(next.Add(1)) - 1
 		if i >= len(rounds) {
 			t.Errorf("unexpected stream request #%d", i+1)
 			return nil, nil, context.Canceled
 		}
-		ch := make(chan provider.StreamEvent, len(rounds[i]))
+		ch := make(chan llm.StreamEvent, len(rounds[i]))
 		for _, ev := range rounds[i] {
 			ch <- ev
 		}
@@ -97,8 +97,8 @@ func TestTurnTime_EverySurfaceSplitsItsTurn(t *testing.T) {
 			}
 		}
 	}
-	toolThenAnswer := [][]provider.StreamEvent{
-		{{ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}}},
+	toolThenAnswer := [][]llm.StreamEvent{
+		{{ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}}},
 		{{Token: "done"}, {Done: true}},
 	}
 
@@ -143,8 +143,8 @@ func TestTurnTime_EverySurfaceSplitsItsTurn(t *testing.T) {
 		db, rec := startupStore(t)
 		clock := newSteppingClock()
 		a := scriptedRounds(t,
-			[]provider.StreamEvent{{ToolCalls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"make"}`}}}},
-			[]provider.StreamEvent{{Token: "built"}, {Done: true}},
+			[]llm.StreamEvent{{ToolCalls: []llm.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"make"}`}}}},
+			[]llm.StreamEvent{{Token: "built"}, {Done: true}},
 		)
 		l := &serveLoop{
 			agent:    a,
@@ -158,10 +158,10 @@ func TestTurnTime_EverySurfaceSplitsItsTurn(t *testing.T) {
 		client := func(rpc.Call) bool { return true }
 		l.headless = &agent.Headless{
 			Agent: a,
-			Gate:  func(tc provider.ToolCall) bool { return tc.Name == tools.ExecCommandName },
+			Gate:  func(tc llm.ToolCall) bool { return tc.Name == tools.ExecCommandName },
 			// The call is put to the client the way the assembly's resolver
 			// puts it (serve.go).
-			Resolve: func(tc provider.ToolCall) string {
+			Resolve: func(tc llm.ToolCall) string {
 				if l.putToClient(client, rpc.Call{Tool: tc.Name}) {
 					return "ok"
 				}
@@ -178,7 +178,7 @@ func TestTurnTime_EverySurfaceSplitsItsTurn(t *testing.T) {
 		db, rec := startupStore(t)
 		clock := newSteppingClock()
 		env := &scriptedChildren{steps: []childStep{
-			{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+			{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 			{text: "surveyed"},
 		}}
 		sup := subagent.New(t.Context(), subagent.Options{
@@ -216,7 +216,7 @@ func TestTurnTime_EverySurfaceSplitsItsTurn(t *testing.T) {
 			timer:   timer,
 			outcome: observe.TurnDone,
 		}
-		events, err := p.StreamCompletion(t.Context(), nil, provider.CompletionOpts{})
+		events, err := p.StreamCompletion(t.Context(), nil, llm.CompletionOpts{})
 		if err != nil {
 			t.Fatalf("stream: %v", err)
 		}

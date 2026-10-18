@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -16,8 +16,8 @@ import (
 const ToolName = "process"
 
 // Definition is the process tool registered for agent sessions.
-func Definition() provider.Tool {
-	return provider.Tool{
+func Definition() llm.Tool {
+	return llm.Tool{
 		Name: ToolName,
 		Description: "Start a named process and read it later: use this for a server, a watcher, a log tail, a long build you will check on, anything you will read more than once or that does not end on its own; a command that ends belongs in execute_command, which refuses a server or a watcher with a redirect here. " +
 			"Action \"start\" launches a command under a name — the user must approve it like any command — with cwd contained to the workspace and an environment of PATH and HOME plus any env vars you pass. " +

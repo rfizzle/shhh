@@ -12,9 +12,9 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -50,9 +50,9 @@ func grantVia(t *testing.T, m Model, label string) (Model, tea.Cmd) {
 func grantCardModel(t *testing.T, ran *[]string, commands ...string) Model {
 	t.Helper()
 	m := execModel(t, ran)
-	calls := make([]provider.ToolCall, len(commands))
+	calls := make([]llm.ToolCall, len(commands))
 	for i, c := range commands {
-		calls[i] = provider.ToolCall{
+		calls[i] = llm.ToolCall{
 			ID:        fmt.Sprintf("call_%d", i),
 			Name:      "execute_command",
 			Arguments: fmt.Sprintf(`{"command":%q}`, c),
@@ -100,7 +100,7 @@ func TestGrantList_EachRowGrantsWhatItSaid(t *testing.T) {
 		// The width is the whole of what that row buys: a line that merely
 		// starts with the granted one is a card again.
 		m.state = stateStreaming
-		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 			{ID: "call_wider", Name: "execute_command", Arguments: `{"command":"go build ./one ./two"}`},
 		}})
 		if next := updated.(Model); next.state != stateConfirmRun {
@@ -142,7 +142,7 @@ func TestGrantList_TheTurnGrantEndsWithTheTurn(t *testing.T) {
 	}
 
 	m.state = stateStreaming
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_next", Name: "execute_command", Arguments: `{"command":"go build ./three"}`},
 	}})
 	if next := updated.(Model); next.state != stateConfirmRun {
@@ -185,7 +185,7 @@ func TestGrantList_ATurnGrantReachesAChildAndIsTakenBack(t *testing.T) {
 	m := gatedModel(t, executor, fetchPreviews())
 	m.wiring.HostGrants = func(hosts []string) { pushed = hosts }
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
 	}})
 	m, _ = grantVia(t, handover(t, updated.(Model)), "this turn only")
@@ -306,7 +306,7 @@ func TestGrantList_AnEditCardOffersTheDirectoryAndTheFile(t *testing.T) {
 	dir := t.TempDir()
 	first := filepath.Join(dir, "a.txt")
 	second := filepath.Join(dir, "b.txt")
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, first)},
 		{ID: "call_2", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"two\n"}`, second)},
 	}})
@@ -374,7 +374,7 @@ func TestGrantList_NoLengthOutranksTheDenyList(t *testing.T) {
 	}
 
 	m.state = stateStreaming
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_denied", Name: "execute_command", Arguments: `{"command":"go build ./two"}`},
 	}})
 	m = updated.(Model)
@@ -393,7 +393,7 @@ func TestGrantList_NoLengthOutranksTheDenyList(t *testing.T) {
 func TestGrantList_AFetchCardHasNoNarrowRow(t *testing.T) {
 	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "page text", nil }
 	m := gatedModel(t, executor, fetchPreviews())
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
 	}})
 	m = handover(t, updated.(Model))

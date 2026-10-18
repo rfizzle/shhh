@@ -3,7 +3,7 @@ package prompt
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // Saying what is actually in the box.
@@ -85,7 +85,7 @@ const (
 // otherwise it says a request for depth is not a request to delegate. A
 // session whose policy is off registered no spawn_agent, so it has no line
 // to lean either way.
-func Toolbox(tools []provider.Tool, proactive bool) string {
+func Toolbox(tools []llm.Tool, proactive bool) string {
 	have := make(map[string]bool, len(tools))
 	for _, t := range tools {
 		have[t.Name] = true

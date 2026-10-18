@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -43,7 +43,7 @@ func TestIrreplaceableTarget_RefusedBeforeTheClassifierAndTheCard(t *testing.T) 
 	m := irreplaceableHome(t, classifierModel(t, &ran, p))
 	m.policy.allCommands = true
 
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: tools.ExecCommandName, Arguments: `{"command":"sudo rm -rf \"$HOME\""}`},
 	}})
 	m = updated.(Model)

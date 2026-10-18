@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // queueChord is the follow-up queue's one chord (keys.Draft.Queue).
@@ -53,7 +53,7 @@ func TestFollowUp_SentWhenTheTurnEnds(t *testing.T) {
 		t.Fatalf("the follow-up should have started the next turn, got state %d", m.state)
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleUser || last.Content != "and then update the docs" {
+	if last.Role != llm.RoleUser || last.Content != "and then update the docs" {
 		t.Fatalf("expected the follow-up as the next user message, got %+v", last)
 	}
 }
@@ -146,9 +146,9 @@ func TestFollowUp_LoadedConversationDropsTheQueue(t *testing.T) {
 	m = updated.(Model)
 	m.cancelStreaming()
 
-	m.loadConversation([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hello"},
+	m.loadConversation([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hello"},
 	})
 	if len(m.followUps) != 0 || m.followUpsHeld {
 		t.Fatalf("a loaded conversation must drop the queue, got %v held=%v", m.followUps, m.followUpsHeld)

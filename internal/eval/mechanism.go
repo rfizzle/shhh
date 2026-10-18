@@ -38,8 +38,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 )
 
@@ -238,10 +238,10 @@ func askSteer(row Row) Answer {
 // summarized away, is the failure worth catching: nothing reports it, the
 // model simply carries on without what it had.
 func askCompaction(row Row) Answer {
-	a := agent.New(append([]provider.Message(nil), row.Conversation...), nil)
+	a := agent.New(append([]llm.Message(nil), row.Conversation...), nil)
 	c := &agent.Compactor{Window: row.Window, Model: "scripted"}
 	summary := row.Summary
-	notice := c.Recover(a, func([]provider.Message, string) (string, error) { return summary, nil })
+	notice := c.Recover(a, func([]llm.Message, string) (string, error) { return summary, nil })
 	if notice.Err != nil {
 		return Answer{Err: notice.Err.Error()}
 	}

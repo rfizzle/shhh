@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat
@@ -20,8 +20,8 @@ const modelListTimeout = 10 * time.Second
 // modelListerFor adapts a provider that can enumerate its endpoint into the
 // chat model's lazy lister. Providers without the capability return nil, and
 // the picker keeps the curated catalog.
-func modelListerFor(p provider.Provider) func(context.Context) ([]string, error) {
-	lister, ok := p.(provider.ModelLister)
+func modelListerFor(p llm.Provider) func(context.Context) ([]string, error) {
+	lister, ok := p.(llm.ModelLister)
 	if !ok {
 		return nil
 	}
@@ -109,8 +109,8 @@ func (e *endpointModels) list(ctx context.Context, spawn bool) ([]string, error)
 // the answer is missing, because the table and the family floor are behind it
 // and the first trim is many turns away in any case. A failure is dropped for
 // the same reason it is not logged: nobody asked for this.
-func endpointWindowsFor(p provider.Provider) func(string) (int64, bool) {
-	endpoint, ok := p.(provider.ModelWindower)
+func endpointWindowsFor(p llm.Provider) func(string) (int64, bool) {
+	endpoint, ok := p.(llm.ModelWindower)
 	if !ok {
 		return nil
 	}

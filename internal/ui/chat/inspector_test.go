@@ -8,11 +8,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -27,11 +27,11 @@ func inspectorModel(t *testing.T, width, height int) Model {
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001, MaxInputTokens: 200000},
 	})
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Prices:    table,
 		ModelName: "gpt-4o",
 	})
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	m.turnStarted = time.Now().Add(-64 * time.Second)
 	m.turnEnded = time.Now()
 	m.turnCount = 1
@@ -254,7 +254,7 @@ func TestInspectorData_BlocksFromTheSession(t *testing.T) {
 }
 
 func TestInspectorData_OmitsBlocksWithNothingToSay(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	fresh := updated.(Model)
 	rail := fresh.inspectorData()
@@ -277,7 +277,7 @@ func TestTurnClockAndSpend(t *testing.T) {
 	if next.turnStarted.IsZero() || !next.turnEnded.IsZero() {
 		t.Fatal("a new turn starts its clock and clears the end stamp")
 	}
-	next.accumulateUsage(&provider.Usage{PromptTokens: 100, CompletionTokens: 50})
+	next.accumulateUsage(&llm.Usage{PromptTokens: 100, CompletionTokens: 50})
 	if next.turnTokensIn != 100 || next.turnTokensOut != 50 {
 		t.Fatalf("turn usage: %d/%d", next.turnTokensIn, next.turnTokensOut)
 	}
@@ -386,7 +386,7 @@ func TestUICommand_RailBelowTheRungSaysWhyNothingMoved(t *testing.T) {
 func TestInspector_AgentsMapsEverySession(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	m = updated.(Model)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
@@ -421,7 +421,7 @@ func TestInspector_AgentsMapsEverySession(t *testing.T) {
 func TestInspector_RailStaysMarkedWhileAttached(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	m = updated.(Model)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
@@ -448,7 +448,7 @@ func TestInspector_RailStaysMarkedWhileAttached(t *testing.T) {
 func TestInspectorContext_BurnSparkline(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	for i := 0; i < contextBurnSamples+4; i++ {
-		m.accumulateUsage(&provider.Usage{PromptTokens: 1000 * (i + 1), CompletionTokens: 100})
+		m.accumulateUsage(&llm.Usage{PromptTokens: 1000 * (i + 1), CompletionTokens: 100})
 	}
 	if got := len(m.vitals.burn); got != contextBurnSamples {
 		t.Fatalf("the burn series is bounded to %d samples, got %d", contextBurnSamples, got)
@@ -893,12 +893,12 @@ func TestRailMemo_IsKeyedRatherThanRebuilt(t *testing.T) {
 func alertMemoModel(t *testing.T) Model {
 	t.Helper()
 	big := strings.Repeat("line\n", 8000) // ~10k estimated tokens
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{})
 	m.turnCount = 1
 	m.appendEntry(entry{kind: entryCommand, text: "go test ./internal/agent/...", exitCode: 1})

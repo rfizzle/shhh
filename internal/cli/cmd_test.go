@@ -18,11 +18,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/proposal"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/raw"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -241,7 +241,7 @@ func oneShotFixture(tb testing.TB, answer string) (string, *[]time.Time) {
 	tb.Setenv("SHHH_REASONING", "")
 
 	asked := &[]time.Time{}
-	provider.Register(oneShotProviderName, func(provider.ResolveOpts) (provider.Provider, error) {
+	llm.Register(oneShotProviderName, func(llm.ResolveOpts) (llm.Provider, error) {
 		return oneShotProvider{answer: answer, asked: asked}, nil
 	})
 	return data, asked
@@ -259,14 +259,14 @@ type oneShotProvider struct {
 
 func (p oneShotProvider) Name() string { return oneShotProviderName }
 
-func (p oneShotProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p oneShotProvider) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	*p.asked = append(*p.asked, time.Now())
 	if p.answer == "" {
 		return nil, errors.New("no answer")
 	}
-	events := make(chan provider.StreamEvent, 2)
-	events <- provider.StreamEvent{Token: p.answer}
-	events <- provider.StreamEvent{Done: true, Usage: &provider.Usage{PromptTokens: 40, CompletionTokens: 6}}
+	events := make(chan llm.StreamEvent, 2)
+	events <- llm.StreamEvent{Token: p.answer}
+	events <- llm.StreamEvent{Done: true, Usage: &llm.Usage{PromptTokens: 40, CompletionTokens: 6}}
 	close(events)
 	return events, nil
 }

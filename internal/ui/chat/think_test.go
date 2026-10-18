@@ -8,20 +8,20 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // thinkingStream is a provider that thinks out loud, then answers, then asks
 // for a tool — the order every reasoning model streams in.
-func thinkingStream(think, answer string, calls []provider.ToolCall) StreamFunc {
-	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, 3)
-		ch <- provider.StreamEvent{Thinking: think}
-		ch <- provider.StreamEvent{Token: answer}
-		ch <- provider.StreamEvent{
+func thinkingStream(think, answer string, calls []llm.ToolCall) StreamFunc {
+	return func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, 3)
+		ch <- llm.StreamEvent{Thinking: think}
+		ch <- llm.StreamEvent{Token: answer}
+		ch <- llm.StreamEvent{
 			ToolCalls: calls,
-			Reasoning: []provider.ReasoningBlock{{Text: think, Signature: "sig"}},
+			Reasoning: []llm.ReasoningBlock{{Text: think, Signature: "sig"}},
 			Done:      true,
 		}
 		close(ch)
@@ -128,8 +128,8 @@ func TestThink_ComesBeforeTheRoundsWork(t *testing.T) {
 	updated, _ = m.Update(tokenMsg{text: "Reading the loop"})
 	m = updated.(Model)
 	updated, _ = m.Update(toolCallsMsg{
-		calls:     []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"loop.go"}`}},
-		reasoning: []provider.ReasoningBlock{{Text: "Weighing two approaches.", Signature: "sig"}},
+		calls:     []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"loop.go"}`}},
+		reasoning: []llm.ReasoningBlock{{Text: "Weighing two approaches.", Signature: "sig"}},
 	})
 	m = updated.(Model)
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file",
@@ -162,11 +162,11 @@ func TestThink_OnlyWhereThereIsReasoning(t *testing.T) {
 	updated, _ := m.Update(tokenMsg{text: "Straight to the answer."})
 	m = updated.(Model)
 	updated, _ = m.Update(toolCallsMsg{
-		calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"a.go"}`}},
+		calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"a.go"}`}},
 	})
 	m = updated.(Model)
 	m.thinkIdx = 0
-	m.recordReasoning([]provider.ReasoningBlock{{Redacted: "opaque"}})
+	m.recordReasoning([]llm.ReasoningBlock{{Redacted: "opaque"}})
 	if slices.Contains(kindsOf(m.transcript), entryThink) {
 		t.Fatal("a round that did not think, or whose words were taken back, has no thought")
 	}
@@ -203,7 +203,7 @@ func TestThink_NewRoundNewPassage(t *testing.T) {
 	updated, _ := m.Update(tokenMsg{think: "round one"})
 	m = updated.(Model)
 
-	events := make(chan provider.StreamEvent)
+	events := make(chan llm.StreamEvent)
 	close(events)
 	updated, _ = m.Update(streamStartedMsg{events: events})
 	m = updated.(Model)
@@ -242,17 +242,17 @@ func TestThink_NotDuringCompaction(t *testing.T) {
 func TestThink_SurvivesARebuild(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		msgs []provider.Message
+		msgs []llm.Message
 		want []entryKind
 	}{
-		{"a round whose reasoning is replayed", []provider.Message{
-			{Role: provider.RoleUser, Content: "make it cheaper"},
-			{Role: provider.RoleAssistant, Content: "Reading the loop",
-				Reasoning: []provider.ReasoningBlock{{Text: "Two ways to do this.", Signature: "sig"}}},
+		{"a round whose reasoning is replayed", []llm.Message{
+			{Role: llm.RoleUser, Content: "make it cheaper"},
+			{Role: llm.RoleAssistant, Content: "Reading the loop",
+				Reasoning: []llm.ReasoningBlock{{Text: "Two ways to do this.", Signature: "sig"}}},
 		}, []entryKind{entryUser, entryThink, entryAssistant}},
-		{"a final answer, whose blocks were dropped", []provider.Message{
-			{Role: provider.RoleUser, Content: "make it cheaper"},
-			{Role: provider.RoleAssistant, Content: "Done — the loop is two calls shorter."},
+		{"a final answer, whose blocks were dropped", []llm.Message{
+			{Role: llm.RoleUser, Content: "make it cheaper"},
+			{Role: llm.RoleAssistant, Content: "Done — the loop is two calls shorter."},
 		}, []entryKind{entryUser, entryAssistant}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -340,7 +340,7 @@ func TestThink_TheRungDecides(t *testing.T) {
 // the session uses, so the batching and the ordering are asserted together.
 func TestThink_StreamOrder(t *testing.T) {
 	events, cancel, err := thinkingStream("thought one\nthought two", "Answering.",
-		[]provider.ToolCall{{ID: "c1", Name: "search", Arguments: `{"pattern":"x"}`}})(nil, provider.ToolChoiceAuto)
+		[]llm.ToolCall{{ID: "c1", Name: "search", Arguments: `{"pattern":"x"}`}})(nil, llm.ToolChoiceAuto)
 	if err != nil {
 		t.Fatal(err)
 	}

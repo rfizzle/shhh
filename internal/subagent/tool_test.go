@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // listedModels is a session's check over a fixed list, refusing every other
@@ -41,7 +41,7 @@ func (l *listedModels) check(model string) (string, error) {
 }
 
 // spawnDefinition is spawn_agent as Definitions builds it for offer.
-func spawnDefinition(t *testing.T, offer Offer) provider.Tool {
+func spawnDefinition(t *testing.T, offer Offer) llm.Tool {
 	t.Helper()
 	for _, d := range Definitions(nil, offer) {
 		if d.Name == SpawnToolName {
@@ -49,7 +49,7 @@ func spawnDefinition(t *testing.T, offer Offer) provider.Tool {
 		}
 	}
 	t.Fatal("Definitions has no spawn_agent")
-	return provider.Tool{}
+	return llm.Tool{}
 }
 
 // modelArgument is the model property of spawn_agent's schema.
@@ -130,7 +130,7 @@ func TestSpawnModelDescriptionListsTheSpawnableModels(t *testing.T) {
 // a gateway declares, what it adds to spawn_agent stays under what one of
 // the small orchestration tools costs on its own.
 func TestSpawnDefinitionGrowthIsBounded(t *testing.T) {
-	size := func(d provider.Tool) int {
+	size := func(d llm.Tool) int {
 		b, err := json.Marshal(d)
 		if err != nil {
 			t.Fatal(err)
@@ -233,7 +233,7 @@ func TestSpawnRefusalTakesNoSlotAndRaisesNoCard(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			env := &scriptedEnv{
 				steps: []streamStep{
-					{calls: []provider.ToolCall{{ID: "s1", Name: SpawnToolName,
+					{calls: []llm.ToolCall{{ID: "s1", Name: SpawnToolName,
 						Arguments: `{"role":"researcher","task":"read the exporter","model":"` + tc.model + `"}`}}},
 					{text: "done"},
 				},
@@ -273,7 +273,7 @@ func TestSpawnRefusalTakesNoSlotAndRaisesNoCard(t *testing.T) {
 			last := env.requests[len(env.requests)-1]
 			var result string
 			for _, m := range last {
-				if m.Role == provider.RoleTool {
+				if m.Role == llm.RoleTool {
 					result = m.Content
 				}
 			}

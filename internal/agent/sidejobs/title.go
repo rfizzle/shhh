@@ -19,7 +19,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // TitleToolName is the tool the titler is asked to call with its answer.
@@ -83,18 +83,18 @@ type TitleRequest struct {
 type TitleVerdict struct {
 	Title  string
 	Model  string
-	Usage  provider.Usage
+	Usage  llm.Usage
 	Failed bool
 	Err    string
 }
 
 // Titler names a session through the session's provider.
 type Titler struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      TitleConfig
 }
 
-func NewTitler(p provider.Provider, cfg TitleConfig) *Titler {
+func NewTitler(p llm.Provider, cfg TitleConfig) *Titler {
 	return &Titler{provider: p, cfg: cfg}
 }
 
@@ -143,18 +143,18 @@ func (t *Titler) Title(ctx context.Context, req TitleRequest) TitleVerdict {
 	// The instruction and the exchange travel in separate messages, so the
 	// dialect's own instruction channel is what keeps them apart
 	// (classifier.go).
-	events, err := t.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: titlePrompt},
-		{Role: provider.RoleUser, Content: "UNTRUSTED EXCHANGE:\n" + string(evidence)},
-	}, provider.CompletionOpts{
+	events, err := t.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: titlePrompt},
+		{Role: llm.RoleUser, Content: "UNTRUSTED EXCHANGE:\n" + string(evidence)},
+	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      provider.FlowTitle,
+		Flow:      llm.FlowTitle,
 		MaxTokens: t.cfg.maxTokens(),
 		// A shallow thought is the right amount for naming an exchange, and
 		// asking for it is the only way to bound one on a model that thinks
 		// whether or not it was asked.
-		Effort: provider.EffortLow,
-		Tools: []provider.Tool{{
+		Effort: llm.EffortLow,
+		Tools: []llm.Tool{{
 			Name:        TitleToolName,
 			Description: "Name the conversation.",
 			Parameters:  titleSchema,
@@ -166,7 +166,7 @@ func (t *Titler) Title(ctx context.Context, req TitleRequest) TitleVerdict {
 		return v
 	}
 
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	if reply.Usage != nil {
 		v.Usage = *reply.Usage
 	}

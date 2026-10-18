@@ -7,7 +7,7 @@ package ui
 // it is where a raw provider error used to land hardest: one line of Go on
 // stderr, no indication whether the key, the network or the account was the
 // problem. The classification is the same one the session uses — that is the
-// point of it living in internal/provider — and so is the row it renders on.
+// point of it living in github.com/rfizzle/llm — and so is the row it renders on.
 //
 // What differs is the offer. A session can hand you a key to press; a
 // one-shot has already exited by the time you have read the row, so the way
@@ -17,7 +17,7 @@ package ui
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -30,7 +30,7 @@ const failureReportWidth = 88
 // not a provider failure, which the caller should keep handling as it always
 // has.
 func FailureReport(err error, model string) (string, bool) {
-	f, ok := provider.AsFailure(err)
+	f, ok := llm.AsFailure(err)
 	if !ok {
 		return "", false
 	}
@@ -48,7 +48,7 @@ func FailureReport(err error, model string) (string, bool) {
 	if f.Recoverable() {
 		row.State = components.RecoveryStalled
 	}
-	if f.Class == provider.ClassCancelled {
+	if f.Class == llm.ClassCancelled {
 		row.State = components.RecoveryStopped
 	}
 	return row.View(failureReportWidth), true
@@ -58,7 +58,7 @@ func FailureReport(err error, model string) (string, bool) {
 // no chrome, still classified. A pipe gets the name of what went wrong and
 // the provider's own words, and nothing that needs a cursor to read.
 func FailureLine(err error) (string, bool) {
-	f, ok := provider.AsFailure(err)
+	f, ok := llm.AsFailure(err)
 	if !ok {
 		return "", false
 	}
@@ -71,7 +71,7 @@ func FailureLine(err error) (string, bool) {
 
 // failureSubject is the model that failed, or the provider when the caller
 // never named a model.
-func failureSubject(f *provider.Failure, model string) string {
+func failureSubject(f *llm.Failure, model string) string {
 	if model != "" {
 		return model
 	}
@@ -80,31 +80,31 @@ func failureSubject(f *provider.Failure, model string) string {
 
 // failureOutcome is the right-aligned field: the one fact about this class
 // that decides what to do next, never a repeat of the class itself.
-func failureOutcome(f *provider.Failure) string {
+func failureOutcome(f *llm.Failure) string {
 	switch f.Class {
-	case provider.ClassAuth:
+	case llm.ClassAuth:
 		if f.KeyTail == "" {
 			return "no key was sent"
 		}
 		return "key ···" + f.KeyTail + " rejected"
-	case provider.ClassRateLimit:
+	case llm.ClassRateLimit:
 		if f.RetryAfter > 0 {
 			return "retry in " + components.FormatElapsed(f.RetryAfter)
 		}
 		return "retry shortly"
-	case provider.ClassQuota:
+	case llm.ClassQuota:
 		return "the account, not the rate"
-	case provider.ClassOverloaded:
+	case llm.ClassOverloaded:
 		return "the provider's side"
-	case provider.ClassContextLength:
+	case llm.ClassContextLength:
 		return "over the window"
-	case provider.ClassModelNotFound:
+	case llm.ClassModelNotFound:
 		return "the id, not the key"
-	case provider.ClassNetwork:
+	case llm.ClassNetwork:
 		return "never reached it"
-	case provider.ClassMalformed:
+	case llm.ClassMalformed:
 		return "unreadable reply"
-	case provider.ClassCancelled:
+	case llm.ClassCancelled:
 		return components.OutcomeCancelled
 	}
 	return "message below"
@@ -113,23 +113,23 @@ func failureOutcome(f *provider.Failure) string {
 // failureRemedy is the way out, as a command. Every one of these is something
 // the reader can paste; none of them is a key, because there is no longer a
 // program listening for one.
-func failureRemedy(f *provider.Failure) string {
+func failureRemedy(f *llm.Failure) string {
 	switch f.Class {
-	case provider.ClassAuth:
+	case llm.ClassAuth:
 		hint := f.KeyEnv
 		if hint == "" {
 			hint = "SHHH_API_KEY"
 		}
 		return "export " + hint + ", or shhh config set --global provider.api_key <key>"
-	case provider.ClassQuota:
+	case llm.ClassQuota:
 		return "waiting will not clear this — shhh providers lists the alternatives"
-	case provider.ClassRateLimit, provider.ClassOverloaded, provider.ClassNetwork:
+	case llm.ClassRateLimit, llm.ClassOverloaded, llm.ClassNetwork:
 		return "run it again, or --provider <name> to ask somewhere else"
-	case provider.ClassContextLength:
+	case llm.ClassContextLength:
 		return "shorten the prompt, or pipe less into it"
-	case provider.ClassModelNotFound:
+	case llm.ClassModelNotFound:
 		return "--model <name>, or shhh providers lists what each one serves"
-	case provider.ClassCancelled:
+	case llm.ClassCancelled:
 		return "nothing was sent"
 	}
 	return "shhh providers shows what this machine can reach"

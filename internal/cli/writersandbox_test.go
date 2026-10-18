@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -185,9 +185,9 @@ func TestAWriterWhoseCommandsAreRefusedIsToldSo(t *testing.T) {
 			t.Errorf("%s: told = %v, want %v", tc.name, got, tc.want)
 		}
 	}
-	conversation := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "task"},
+	conversation := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "task"},
 	}
 	got := withRefusedCommands(conversation)
 	if got[0].Content != "sys\n\n"+prompt.UncontainedWriterInstructions {

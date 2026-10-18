@@ -12,8 +12,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/diff"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -31,7 +31,7 @@ func wheel(dir int) tea.MouseMsg {
 // exchange of messages, which is what most of a chat session actually is.
 func proseModel(t *testing.T) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = updated.(Model)
@@ -48,7 +48,7 @@ func proseModel(t *testing.T) Model {
 // diffFullModel is a full-screen viewer over a patch long enough to scroll.
 func diffFullModel(t *testing.T) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = updated.(Model)
@@ -309,7 +309,7 @@ func TestReadingMode_ProseRowsTakeTheCursor(t *testing.T) {
 // without a cursor, and j/k are a line of scroll where they cannot be a
 // selection.
 func TestReadingMode_OpensOnATranscriptWithNothingSelectable(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = updated.(Model)

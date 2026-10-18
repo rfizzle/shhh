@@ -14,7 +14,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // CacheState is the reading's verdict.
@@ -77,7 +77,7 @@ type CacheReading struct {
 	// the person did not ask for.
 	Confirmed string
 	// Reports is every cache field the endpoint has sent.
-	Reports provider.CacheFields
+	Reports llm.CacheFields
 	// SurvivedMax is the longest gap between two requests the cache was seen
 	// to outlast and ExpiredMin the shortest it was seen to expire within,
 	// each with how many gaps were seen; zero is a bound nothing has
@@ -117,7 +117,7 @@ func (r CacheReading) LastShare() int {
 // Downgraded reports a request that asked for the hour and was written for
 // five minutes: the dearer write paid for the shorter cache.
 func (r CacheReading) Downgraded() bool {
-	return r.Lease == string(provider.CacheTTL1h) && r.Confirmed == string(provider.CacheTTL5m)
+	return r.Lease == string(llm.CacheTTL1h) && r.Confirmed == string(llm.CacheTTL5m)
 }
 
 // SetCacheLease names the lease the session's requests ask for, so a
@@ -143,7 +143,7 @@ func (l *Ledger) SetClock(now func() time.Time) {
 }
 
 // ObserveCache folds one response's usage into its endpoint's reading.
-func (l *Ledger) ObserveCache(providerName, model string, u provider.Usage) {
+func (l *Ledger) ObserveCache(providerName, model string, u llm.Usage) {
 	if l == nil {
 		return
 	}
@@ -170,9 +170,9 @@ func (l *Ledger) ObserveCache(providerName, model string, u provider.Usage) {
 	r.LastIn, r.LastCached, r.LastCreated = u.PromptTokens, u.CachedTokens, u.CacheCreationTokens
 	switch {
 	case u.CacheCreation5m > 0:
-		r.Confirmed = string(provider.CacheTTL5m)
+		r.Confirmed = string(llm.CacheTTL5m)
 	case u.CacheCreation1h > 0:
-		r.Confirmed = string(provider.CacheTTL1h)
+		r.Confirmed = string(llm.CacheTTL1h)
 	}
 	r.Reports |= u.Reports
 }
@@ -199,7 +199,7 @@ func (l *Ledger) CacheReadings() []CacheReading {
 	out := slices.Clone(l.caches)
 	l.mu.Unlock()
 	for i := range out {
-		out[i].OffBy = provider.PromptCacheOff(out[i].Provider, out[i].Model)
+		out[i].OffBy = llm.PromptCacheOff(out[i].Provider, out[i].Model)
 	}
 	return out
 }
@@ -232,6 +232,6 @@ func (l *Ledger) CacheReadingFor(providerName, model string) CacheReading {
 	}
 	return CacheReading{
 		CacheKey: CacheKey{Provider: providerName, Model: model},
-		OffBy:    provider.PromptCacheOff(providerName, model),
+		OffBy:    llm.PromptCacheOff(providerName, model),
 	}
 }

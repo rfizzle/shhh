@@ -29,7 +29,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -122,7 +122,7 @@ func sized(m GenerateModel, width int) GenerateModel {
 func TestGolden_Generating(t *testing.T) {
 	captureGolden(t, "one-shot-generating", "the one-shot while the command arrives",
 		func(width int) []golden.Panel {
-			waiting := sized(NewGenerateModel(make(chan provider.StreamEvent), noopCancel, nil, nil, nil, ""), width)
+			waiting := sized(NewGenerateModel(make(chan llm.StreamEvent), noopCancel, nil, nil, nil, ""), width)
 			partial := NewGenerateModel(makeEvents("lsof -nP -iTCP"), noopCancel, nil, nil, nil, "")
 			partial = sized(drainStreamPending(partial, 1), width)
 			return []golden.Panel{
@@ -195,7 +195,7 @@ func goldenRevised(t *testing.T, width int) GenerateModel {
 	revised := "lsof -nP -iTCP -sTCP:LISTEN -u $(id -un) -Fpcn\n" +
 		"--- explanation\n" +
 		"-u filters to your uid; -F prints pid, command and name as parseable fields.\n"
-	newStream := func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	newStream := func([]llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return makeEvents(revised), noopCancel, nil
 	}
 	m := NewGenerateModel(makeEvents(goldenGeneration), noopCancel, nil, newStream, nil, "")

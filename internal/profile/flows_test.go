@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // flowsProfile is a two-model profile whose second model carries line, so a
@@ -38,7 +38,7 @@ func TestProfile_FlowScopeRefusesTrue(t *testing.T) {
 
 func TestProfile_FlowScopeRefusesAnUnknownFlow(t *testing.T) {
 	refusedWith(t, "flows = { extraction = { structured_outputs = false } }",
-		`unknown flow "extraction"`, provider.FlowWords())
+		`unknown flow "extraction"`, llm.FlowWords())
 }
 
 func TestProfile_FlowScopeRefusesAnUnknownSetting(t *testing.T) {
@@ -73,23 +73,23 @@ base_url = "http://x/anthropic"
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]provider.Declared{
+	want := map[string]llm.Declared{
 		"wide":   {Model: map[string]any{"structured_outputs": false}},
-		"scoped": {Flows: map[provider.Flow]map[string]any{provider.FlowClassifier: {"structured_outputs": false}}},
+		"scoped": {Flows: map[llm.Flow]map[string]any{llm.FlowClassifier: {"structured_outputs": false}}},
 	}
 	if got := loaded[0].declarations(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("declarations = %+v", got)
 	}
 	Register(loaded)
 	t.Cleanup(func() { Register(nil) })
-	if got := provider.DeclaredOn("scoped", provider.FlowClassifier, "structured_outputs"); !reflect.DeepEqual(got, []string{"gw"}) {
+	if got := llm.DeclaredOn("scoped", llm.FlowClassifier, "structured_outputs"); !reflect.DeepEqual(got, []string{"gw"}) {
 		t.Fatalf("DeclaredOn scoped = %v", got)
 	}
-	if got := provider.DeclaredOn("scoped", provider.FlowBacklog, "structured_outputs"); got != nil {
+	if got := llm.DeclaredOn("scoped", llm.FlowBacklog, "structured_outputs"); got != nil {
 		t.Fatalf("DeclaredOn another flow = %v", got)
 	}
 	Register(nil)
-	if got := provider.DeclaredOn("wide", provider.FlowBacklog, "structured_outputs"); got != nil {
+	if got := llm.DeclaredOn("wide", llm.FlowBacklog, "structured_outputs"); got != nil {
 		t.Fatalf("a second registration withdraws the first's declarations, got %v", got)
 	}
 }

@@ -13,8 +13,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -156,13 +156,13 @@ type ModelCheck func(model string) (note string, err error)
 // the session loaded, so a profile the user wrote is one the model can see
 // and choose between; nil means the built-in two. The model argument lists
 // what offer says the session can run.
-func Definitions(profiles Profiles, offer Offer) []provider.Tool {
+func Definitions(profiles Profiles, offer Offer) []llm.Tool {
 	if profiles == nil {
 		profiles = BuiltinProfiles()
 	}
 	names, _ := json.Marshal(profiles.Names())
 	modelDesc, _ := json.Marshal(spawnModelDescription(offer))
-	return []provider.Tool{
+	return []llm.Tool{
 		{
 			Name:        SpawnToolName,
 			Description: "Delegate a scoped task to a background sub-agent. Roles: " + profiles.describe() + ". The user must approve each spawn. Returns immediately; collect the final report with agent_report in a LATER step, never in the same round as the spawn. Give each agent a complete, self-contained task prompt: it cannot see this conversation unless you pass inherit. To ask more of an agent that has already reported, send a follow-up with agent_steer rather than spawning again.",

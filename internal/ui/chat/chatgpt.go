@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -200,7 +200,7 @@ func (m *Model) adoptProvider(name string) {
 	was := m.providerName
 	m.providerName = name
 	if was != name {
-		if model := provider.Defaults(name).Model; model != "" {
+		if model := llm.Defaults(name).Model; model != "" {
 			m.modelName = model
 		}
 	}

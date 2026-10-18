@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -83,7 +83,7 @@ func TestAttachMCP_ReturnsBeforeAServerAnswers(t *testing.T) {
 	h := holdServers("docs", "tracker")
 	cat := &mcp.Catalog{Servers: []mcp.Definition{stdioServer("docs", true), stdioServer("tracker", false)}}
 	cat.Servers[1].Timeout = 30 * time.Millisecond
-	s := &chatSession{toolDefs: []provider.Tool{{Name: "read_file"}}, promptExtra: "standing"}
+	s := &chatSession{toolDefs: []llm.Tool{{Name: "read_file"}}, promptExtra: "standing"}
 	closeAll := s.useMCP(connectMCP(t.Context(), cat, mcp.Options{Dial: h.dial}, false), cat, false)
 	t.Cleanup(closeAll)
 
@@ -117,7 +117,7 @@ func TestAttachMCP_ReturnsBeforeAServerAnswers(t *testing.T) {
 func TestHeadlessMCP_StillConnectsBeforeTheFirstRound(t *testing.T) {
 	h := holdServers("docs")
 	cat := &mcp.Catalog{Servers: []mcp.Definition{stdioServer("docs", true)}}
-	s := &chatSession{toolDefs: []provider.Tool{{Name: "read_file"}}}
+	s := &chatSession{toolDefs: []llm.Tool{{Name: "read_file"}}}
 	dialing := make(chan struct{})
 	opts := mcp.Options{Dial: func(ctx context.Context, def mcp.Definition, mask func(string) bool) (*mcp.Server, error) {
 		close(dialing)
@@ -161,7 +161,7 @@ func TestHeadlessMCP_StillConnectsBeforeTheFirstRound(t *testing.T) {
 func TestJoin_RebuildsTheToolListTheServerBlockAndTheToolbox(t *testing.T) {
 	h := holdServers("docs", "tracker")
 	cat := &mcp.Catalog{Servers: []mcp.Definition{stdioServer("docs", true), stdioServer("tracker", false)}}
-	s := &chatSession{toolDefs: []provider.Tool{{Name: "read_file"}, {Name: "web_fetch"}}}
+	s := &chatSession{toolDefs: []llm.Tool{{Name: "read_file"}, {Name: "web_fetch"}}}
 	s.toolboxSaid = prompt.Toolbox(s.toolDefs, false)
 	t.Cleanup(s.useMCP(connectMCP(t.Context(), cat, mcp.Options{Dial: h.dial}, false), cat, false))
 	join := newMCPJoin(*s)
@@ -239,7 +239,7 @@ func TestMCPFailure_IsALineAtTheBoundary(t *testing.T) {
 	h := holdServers("tracker", "linear")
 	cat := &mcp.Catalog{Servers: []mcp.Definition{stdioServer("tracker", false), stdioServer("linear", false)}}
 	cat.Servers[0].Timeout = 20 * time.Millisecond
-	s := &chatSession{toolDefs: []provider.Tool{{Name: "read_file"}}}
+	s := &chatSession{toolDefs: []llm.Tool{{Name: "read_file"}}}
 	t.Cleanup(s.useMCP(connectMCP(t.Context(), cat, mcp.Options{Dial: h.dial}, false), cat, false))
 	join := newMCPJoin(*s)
 	close(h["linear"])
@@ -333,7 +333,7 @@ func TestMCPFailure_ATimeoutLineNamesTheBoundAndTheKey(t *testing.T) {
 func TestJoin_TheRecordsPromptHashFollowsTheJoin(t *testing.T) {
 	h := holdServers("docs")
 	cat := &mcp.Catalog{Servers: []mcp.Definition{stdioServer("docs", true)}}
-	s := &chatSession{toolDefs: []provider.Tool{{Name: "read_file"}}}
+	s := &chatSession{toolDefs: []llm.Tool{{Name: "read_file"}}}
 	s.toolboxSaid = prompt.Toolbox(s.toolDefs, false)
 	t.Cleanup(s.useMCP(connectMCP(t.Context(), cat, mcp.Options{Dial: h.dial}, false), cat, false))
 	system := "base prompt\n\n" + s.toolboxSaid

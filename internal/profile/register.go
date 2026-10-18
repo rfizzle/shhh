@@ -24,7 +24,7 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -46,35 +46,35 @@ func Loaded() []Profile {
 // declared models seeding the picker's catalog.
 func Register(profiles []Profile) {
 	for _, p := range registered {
-		provider.RegisterDeclarations(p.Name, nil)
+		llm.RegisterDeclarations(p.Name, nil)
 	}
 	registered = append([]Profile(nil), profiles...)
 	for _, p := range profiles {
 		p := p
-		if provider.IsBuiltin(p.Name) {
+		if llm.IsBuiltin(p.Name) {
 			// Load refuses these; one built by hand never shadows a built-in.
 			continue
 		}
-		provider.Register(p.Name, func(opts provider.ResolveOpts) (provider.Provider, error) {
+		llm.Register(p.Name, func(opts llm.ResolveOpts) (llm.Provider, error) {
 			return New(p, opts)
 		})
-		provider.RegisterDefaults(p.Name, provider.ProviderDefaults{
+		llm.RegisterDefaults(p.Name, llm.ProviderDefaults{
 			Model:   defaultModel(p),
 			BaseURL: p.BaseURL,
 		})
-		provider.RegisterModels(p.Name, p.ModelIDs())
-		provider.RegisterDecisions(p.Name, p.DeclaresDecisions)
+		llm.RegisterModels(p.Name, p.ModelIDs())
+		llm.RegisterDecisions(p.Name, p.DeclaresDecisions)
 		// What a model's line narrows is registered as the decisions are,
 		// rather than carried on the price table: a line that declares only
 		// a narrowing is not a price, and the doctor reads the answer
 		// without loading prices at all.
-		provider.RegisterDeclarations(p.Name, p.declarations())
+		llm.RegisterDeclarations(p.Name, p.declarations())
 	}
 }
 
 // declarations is what each declared model's line narrows, by model id.
-func (p Profile) declarations() map[string]provider.Declared {
-	out := map[string]provider.Declared{}
+func (p Profile) declarations() map[string]llm.Declared {
+	out := map[string]llm.Declared{}
 	for _, m := range p.declaredModels() {
 		if d, ok := m.declared(); ok {
 			out[m.ID] = d
@@ -100,7 +100,7 @@ func defaultModel(p Profile) string {
 // profile onto that one address. Routing is a map from models to endpoints,
 // and an override that names one endpoint for everything has already answered
 // the question the map exists to answer.
-func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
+func New(p Profile, opts llm.ResolveOpts) (llm.Provider, error) {
 	if err := p.permits(opts.Model); err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
 		}
 		return p.restrict(inner), nil
 	}
-	r := &router{profile: p, routes: routes, opts: opts, built: map[int]provider.Provider{}}
+	r := &router{profile: p, routes: routes, opts: opts, built: map[int]llm.Provider{}}
 	if silent(routes) {
 		// Every address is either dialect-less or told not to be asked, so
 		// the router has nothing to enumerate. Keeping ListModels here would
@@ -146,7 +146,7 @@ func (p Profile) permits(model string) error {
 	return fmt.Errorf("provider %q: model %q is not in the declared catalog", p.Name, model)
 }
 
-func (p Profile) restrict(inner provider.Provider) provider.Provider {
+func (p Profile) restrict(inner llm.Provider) llm.Provider {
 	if !p.StrictModels {
 		return inner
 	}
@@ -156,11 +156,11 @@ func (p Profile) restrict(inner provider.Provider) provider.Provider {
 // declaredCatalog is the check that also covers a /model switch after the
 // provider was resolved. ResolveOpts can reject only the opening model.
 type declaredCatalog struct {
-	provider.Provider
+	llm.Provider
 	profile Profile
 }
 
-func (p declaredCatalog) StreamCompletion(ctx context.Context, messages []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p declaredCatalog) StreamCompletion(ctx context.Context, messages []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	if err := p.profile.permits(opts.Model); err != nil {
 		return nil, err
 	}
@@ -173,9 +173,9 @@ func (p declaredCatalog) OffersDecisions(model string) bool {
 	return p.profile.permits(model) == nil && offersDecisions(p.Provider, model)
 }
 
-func (p declaredCatalog) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+func (p declaredCatalog) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
 	if err := p.profile.permits(req.Model); err != nil {
-		return provider.DecisionResult{}, err
+		return llm.DecisionResult{}, err
 	}
 	return decide(ctx, p.Provider, req)
 }
@@ -184,15 +184,15 @@ func (p declaredCatalog) Decide(ctx context.Context, req provider.DecisionReques
 // wrappers. Each wrapper embeds the provider interface, which promotes only
 // its two methods, so without them a wrapper would hide the capability the
 // way noDiscovery hides the catalog — on purpose there, by accident here.
-func offersDecisions(p provider.Provider, model string) bool {
-	d, ok := p.(provider.Decider)
+func offersDecisions(p llm.Provider, model string) bool {
+	d, ok := p.(llm.Decider)
 	return ok && d.OffersDecisions(model)
 }
 
-func decide(ctx context.Context, p provider.Provider, req provider.DecisionRequest) (provider.DecisionResult, error) {
-	d, ok := p.(provider.Decider)
+func decide(ctx context.Context, p llm.Provider, req llm.DecisionRequest) (llm.DecisionResult, error) {
+	d, ok := p.(llm.Decider)
 	if !ok {
-		return provider.DecisionResult{}, fmt.Errorf("provider %q: model %q is not served the Decisions API here", p.Name(), req.Model)
+		return llm.DecisionResult{}, fmt.Errorf("provider %q: model %q is not served the Decisions API here", p.Name(), req.Model)
 	}
 	return d.Decide(ctx, req)
 }
@@ -218,16 +218,16 @@ func silent(routes []Endpoint) bool {
 type router struct {
 	profile Profile
 	routes  []Endpoint
-	opts    provider.ResolveOpts
+	opts    llm.ResolveOpts
 
 	mu    sync.Mutex
-	built map[int]provider.Provider
+	built map[int]llm.Provider
 }
 
 func (r *router) Name() string { return r.profile.Name }
 
 // StreamCompletion sends the request to the endpoint that claims its model.
-func (r *router) StreamCompletion(ctx context.Context, messages []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (r *router) StreamCompletion(ctx context.Context, messages []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p, err := r.providerFor(opts.Model)
 	if err != nil {
 		return nil, err
@@ -244,10 +244,10 @@ func (r *router) OffersDecisions(model string) bool {
 
 // Decide sends the request to the endpoint that claims its model, as a turn
 // is sent.
-func (r *router) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+func (r *router) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
 	p, err := r.providerFor(req.Model)
 	if err != nil {
-		return provider.DecisionResult{}, err
+		return llm.DecisionResult{}, err
 	}
 	return decide(ctx, p, req)
 }
@@ -257,7 +257,7 @@ func (r *router) Decide(ctx context.Context, req provider.DecisionRequest) (prov
 // none of them should cost a client, and — more to the point — an endpoint
 // whose key is unset should not fail a session that was never going to send
 // it anything.
-func (r *router) providerFor(model string) (provider.Provider, error) {
+func (r *router) providerFor(model string) (llm.Provider, error) {
 	route := r.profile.Route(model)
 	idx := r.indexOf(route)
 	r.mu.Lock()
@@ -313,7 +313,7 @@ func (r *router) ListModels(ctx context.Context) ([]string, error) {
 			lastErr = err
 			continue
 		}
-		lister, ok := p.(provider.ModelLister)
+		lister, ok := p.(llm.ModelLister)
 		if !ok {
 			continue
 		}
@@ -330,7 +330,7 @@ func (r *router) ListModels(ctx context.Context) ([]string, error) {
 	return out, nil
 }
 
-func (r *router) providerAt(idx int, route Endpoint) (provider.Provider, error) {
+func (r *router) providerAt(idx int, route Endpoint) (llm.Provider, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if p, ok := r.built[idx]; ok {
@@ -346,7 +346,7 @@ func (r *router) providerAt(idx int, route Endpoint) (provider.Provider, error) 
 
 // newEndpoint builds the client one endpoint describes: the dialect's own
 // client, pointed at that address, over the rewriting transport.
-func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Provider, error) {
+func newEndpoint(p Profile, e Endpoint, opts llm.ResolveOpts) (llm.Provider, error) {
 	key := opts.APIKey
 	if key == "" {
 		key = e.Key()
@@ -371,7 +371,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 		base = opts.HTTPClient.Transport
 	}
 	if e.API == "" || e.API == aPIOpenAIChat {
-		base = provider.NewCacheMarkTransport(base, opts.CacheTTL)
+		base = llm.NewCacheMarkTransport(base, opts.CacheTTL)
 	}
 	httpClient := &http.Client{Transport: NewTransport(e, base)}
 
@@ -381,11 +381,11 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 	// able to go quiet than the direct path.
 	switch e.API {
 	case aPIOpenAIResponses:
-		inner := provider.NewOpenAIResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
+		inner := llm.NewOpenAIResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
 		return withDiscovery(e, &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient, decides: p.DeclaresDecisions}), nil
 	case aPIAnthropicMessage:
-		inner := provider.NewAnthropicNamed(anthropic.NewClient(
+		inner := llm.NewAnthropicNamed(anthropic.NewClient(
 			option.WithAPIKey(key),
 			option.WithBaseURL(e.BaseURL),
 			option.WithHTTPClient(httpClient),
@@ -396,7 +396,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 		cfg := openai.DefaultConfig(key)
 		cfg.BaseURL = e.BaseURL
 		cfg.HTTPClient = httpClient
-		inner := provider.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), opts.Model, e.BaseURL, p.Name)
+		inner := llm.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), opts.Model, e.BaseURL, p.Name)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
 		return withDiscovery(e, &openAIProfile{OpenAICompat: inner, endpoint: e, client: httpClient, key: key, decides: p.DeclaresDecisions}), nil
 	}
@@ -410,7 +410,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 // bare /model opens straight onto the declared catalog, with no query
 // surface, no ten-second budget, and no request to a gateway whose /models
 // the user has told us not to call.
-func withDiscovery(e Endpoint, p provider.Provider) provider.Provider {
+func withDiscovery(e Endpoint, p llm.Provider) llm.Provider {
 	if e.DiscoveryOff() {
 		return noDiscovery{p}
 	}
@@ -420,13 +420,13 @@ func withDiscovery(e Endpoint, p provider.Provider) provider.Provider {
 // noDiscovery is a provider with its catalog query removed. Embedding the
 // interface rather than the concrete type is what does it: only the two
 // interface methods are promoted, so a ModelLister assertion fails.
-type noDiscovery struct{ provider.Provider }
+type noDiscovery struct{ llm.Provider }
 
 // OffersDecisions and Decide are passed through: hiding the catalog is all
 // this type is for.
 func (n noDiscovery) OffersDecisions(model string) bool { return offersDecisions(n.Provider, model) }
 
-func (n noDiscovery) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+func (n noDiscovery) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
 	return decide(ctx, n.Provider, req)
 }
 
@@ -434,7 +434,7 @@ func (n noDiscovery) Decide(ctx context.Context, req provider.DecisionRequest) (
 // streaming and discovery from OpenAICompat, overriding discovery only when
 // the gateway publishes its catalog somewhere else.
 type openAIProfile struct {
-	*provider.OpenAICompat
+	*llm.OpenAICompat
 	endpoint Endpoint
 	client   *http.Client
 	// key is the endpoint's resolved key, and decides the profile's
@@ -448,8 +448,8 @@ func (o *openAIProfile) OffersDecisions(model string) bool { return o.decides(mo
 
 // Decide sends a Decisions API request over the endpoint's own client, so
 // the profile's headers and rewrite rules apply to it as they do to a turn.
-func (o *openAIProfile) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
-	return provider.PostDecisions(ctx, o.client, o.endpoint.BaseURL, o.key, o.Name(), req)
+func (o *openAIProfile) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+	return llm.PostDecisions(ctx, o.client, o.endpoint.BaseURL, o.key, o.Name(), req)
 }
 
 func (o *openAIProfile) ListModels(ctx context.Context) ([]string, error) {
@@ -462,7 +462,7 @@ func (o *openAIProfile) ListModels(ctx context.Context) ([]string, error) {
 // responsesProfile is a profile-backed openai-responses provider, with the
 // same catalog override the chat dialect gets.
 type responsesProfile struct {
-	*provider.OpenAIResponses
+	*llm.OpenAIResponses
 	endpoint Endpoint
 	client   *http.Client
 	// decides is the profile's declaration, in place of the native
@@ -482,7 +482,7 @@ func (r *responsesProfile) ListModels(ctx context.Context) ([]string, error) {
 // anthropicProfile is a profile-backed anthropic-messages provider. The
 // Messages API has no catalog endpoint, so its models are the declared ones.
 type anthropicProfile struct {
-	*provider.Anthropic
+	*llm.Anthropic
 	name string
 }
 

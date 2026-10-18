@@ -7,8 +7,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // scaffoldFixturePaths is what the host hands the card. The chat side never
@@ -22,7 +22,7 @@ func scaffoldFixturePaths() []string {
 // scaffold, with the write and the refusal recorded rather than performed.
 func scaffoldModel(t *testing.T, wrote *string, declined *bool) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Start: new(startFixture()),
 		Scaffold: Scaffold{
 			Offer: true,
@@ -198,7 +198,7 @@ func TestScaffold_EscLeavesTheOfferStanding(t *testing.T) {
 // A conversation has no checkout to scaffold, and the command table answers
 // for that before the surface ever does.
 func TestScaffold_CommandIsNotPartOfAConversation(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Conversation: true})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{Conversation: true})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	m = updated.(Model)
 	if !m.unavailableCommand(scaffoldCommandName) {
@@ -215,7 +215,7 @@ func TestScaffold_CommandIsNotPartOfAConversation(t *testing.T) {
 }
 
 func TestScaffold_UnwiredSessionSaysSoRatherThanOpeningACard(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	next, _ := updated.(Model).scaffoldCommand()
 	m = next.(Model)

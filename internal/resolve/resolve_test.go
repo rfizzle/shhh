@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func clearEnv(t *testing.T) {
@@ -192,7 +192,7 @@ func must(t *testing.T, err error) {
 // reason the copy exists at all.
 func TestDefaultModelsAgreeWithTheProviderRegistry(t *testing.T) {
 	for name, model := range defaultModels {
-		if got := provider.Defaults(name).Model; got != model {
+		if got := llm.Defaults(name).Model; got != model {
 			t.Errorf("%s: resolve says %q, the provider registry says %q", name, model, got)
 		}
 	}

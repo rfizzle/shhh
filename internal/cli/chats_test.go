@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/cli/report"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -22,10 +22,10 @@ func chatsDB(t *testing.T) {
 		t.Fatalf("open: %v", err)
 	}
 	defer db.Close()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "why does it flake"},
-		{Role: provider.RoleAssistant, Content: "it races the timer", ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"a.go"}`}}},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "why does it flake"},
+		{Role: llm.RoleAssistant, Content: "it races the timer", ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"a.go"}`}}},
 	}
 	if err := db.SaveChat("alpha", msgs); err != nil {
 		t.Fatal(err)

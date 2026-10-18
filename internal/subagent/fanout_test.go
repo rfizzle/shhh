@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // hangingEnv builds children whose stream blocks until the child's context is
@@ -18,8 +18,8 @@ import (
 // batch rather than at a race to finish.
 func hangingEnv() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-			ch := make(chan provider.StreamEvent)
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan llm.StreamEvent)
 			go func() {
 				<-ctx.Done()
 				close(ch)

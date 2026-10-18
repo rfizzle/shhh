@@ -23,7 +23,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/exp/teatest/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -43,7 +43,7 @@ func scriptedSession(turns ...programTurn) (Model, *programProvider) {
 // scriptedSessionWith is scriptedSession built from w.
 func scriptedSessionWith(w Wiring, turns ...programTurn) (Model, *programProvider) {
 	p := &programProvider{turns: turns}
-	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), w), p
+	return New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), w), p
 }
 
 // quietHold is a hold released once the keyboard has been quiet for the
@@ -105,8 +105,8 @@ func waitForGone(t *testing.T, tm *program, s string) {
 }
 
 // call is one scripted tool call.
-func call(id, name, args string) provider.ToolCall {
-	return provider.ToolCall{ID: id, Name: name, Arguments: args}
+func call(id, name, args string) llm.ToolCall {
+	return llm.ToolCall{ID: id, Name: name, Arguments: args}
 }
 
 // frameHas fails the test for every phrase the frame does not carry.
@@ -191,7 +191,7 @@ func TestProgram_ACardAnswersToItsOwnKeys(t *testing.T) {
 			var ran []string
 			hold, release := quietHold(t)
 			m, _ := scriptedSession(
-				programTurn{hold: hold, calls: []provider.ToolCall{call("c1", tools.ExecCommandName, `{"command":"`+tc.command+`"}`)}},
+				programTurn{hold: hold, calls: []llm.ToolCall{call("c1", tools.ExecCommandName, `{"command":"`+tc.command+`"}`)}},
 				programTurn{text: tc.reply},
 			)
 			m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
@@ -228,7 +228,7 @@ func TestProgram_AnEditCardAppliesTheEdit(t *testing.T) {
 	// test may never change, and the write's own row is not in the header.
 	m := readingSession(dir,
 		programTurn{calls: reads("loop.go")},
-		programTurn{calls: []provider.ToolCall{call("e1", "edit_file", fmt.Sprintf(`{"path":%q,"old_text":"const limit = 25","new_text":"const limit = 50"}`, loop))}},
+		programTurn{calls: []llm.ToolCall{call("e1", "edit_file", fmt.Sprintf(`{"path":%q,"old_text":"const limit = 25","new_text":"const limit = 50"}`, loop))}},
 		programTurn{text: "The rounds are capped at the limit now"},
 	)
 	tm := runProgram(t, m)
@@ -269,7 +269,7 @@ func TestProgram_AnEditAcrossFilesIsOneCard(t *testing.T) {
 	}
 	args, _ := json.Marshal(map[string]any{"paths": paths, "old_text": `step\((\w+)\)`, "new_text": "step($1, budget)", "regex": true})
 	m := readingSession(dir,
-		programTurn{calls: []provider.ToolCall{call("e1", "edit_file", string(args))}},
+		programTurn{calls: []llm.ToolCall{call("e1", "edit_file", string(args))}},
 		programTurn{text: "Both calls pass the budget now"},
 	)
 	tm := runProgram(t, m)
@@ -337,8 +337,8 @@ func programPress(t *testing.T, tm *program, keys ...string) {
 // reads is one read_file call per named file, named as the scenes name them:
 // relative, so the row's target column shows the file and not a temporary
 // directory.
-func reads(names ...string) []provider.ToolCall {
-	calls := make([]provider.ToolCall, len(names))
+func reads(names ...string) []llm.ToolCall {
+	calls := make([]llm.ToolCall, len(names))
 	for i, name := range names {
 		calls[i] = call(fmt.Sprintf("r%d-%s", i, name), tools.ReadFileName, fmt.Sprintf(`{"path":%q}`, name))
 	}

@@ -13,8 +13,8 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hook"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -34,7 +34,7 @@ func (m Model) hookExecutor(next ToolExecutor) ToolExecutor {
 	return ToolExecutor(m.wiring.Hooks.WrapExecutor(
 		func() hook.Pos { return hook.Pos{Round: int64(a.Rounds())} },
 		func(name string, args json.RawMessage) bool {
-			return gated(provider.ToolCall{Name: name, Arguments: string(args)})
+			return gated(llm.ToolCall{Name: name, Arguments: string(args)})
 		},
 		hook.Executor(next)))
 }

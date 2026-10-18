@@ -8,7 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -149,7 +149,7 @@ func TestTurnStatus_TokensMoveWhileTheProseArrives(t *testing.T) {
 // numbers under it.
 func TestTurnStatus_TokensMoveWhileTheReasoningArrives(t *testing.T) {
 	m := statusModel(t)
-	m.events = make(chan provider.StreamEvent)
+	m.events = make(chan llm.StreamEvent)
 	_, before := m.liveTurnTokens()
 
 	m.appendThinking(strings.Repeat("weighing it up ", 200))
@@ -175,7 +175,7 @@ func TestTurnStatus_PromptEstimatedUntilTheFirstUsageLands(t *testing.T) {
 		t.Fatal("an unbilled prompt should count the context estimate, got 0")
 	}
 
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 100})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 100})
 	if in, _ := m.liveTurnTokens(); in != 41200 {
 		t.Fatalf("a reported prompt replaces the estimate, got %d", in)
 	}
@@ -364,7 +364,7 @@ func TestTurnStatus_ARealTurnResolvesOnTheRail(t *testing.T) {
 func TestTurnStatus_CountsHoldThroughAToolRound(t *testing.T) {
 	m := statusModel(t)
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 2000, CompletionTokens: 700})
 	settleCounts(&m)
 	beforeIn, beforeOut := m.liveSessionTokens()
 

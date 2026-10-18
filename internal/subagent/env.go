@@ -5,9 +5,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -85,7 +85,7 @@ type Env struct {
 	Gated map[string]bool
 	// Scrub, when set, is installed on the child's agent so its
 	// conversation never holds a session secret; nil scrubs nothing.
-	Scrub func(provider.Message) provider.Message
+	Scrub func(llm.Message) llm.Message
 	// Summarizer, when set and enabled, takes periodic readings of the child
 	// so a run that has drifted or that already has what it needs is
 	// interrupted the way a session is. Nil takes no readings, which is what
@@ -132,7 +132,7 @@ type Env struct {
 	// dispatched by the kind of call it is, whatever a seam said about it.
 	// Nil leaves the dispatcher exactly as this Env built it.
 	WrapAuto  func(Seam, agent.ToolExecutor) agent.ToolExecutor
-	WrapGated func(Seam, func(provider.ToolCall) string) func(provider.ToolCall) string
+	WrapGated func(Seam, func(llm.ToolCall) string) func(llm.ToolCall) string
 	// Start, Stop and Compaction are the surface's seams at the rest of a
 	// child's life: as it starts, as it ends, and either side of a
 	// compaction of its conversation.
@@ -241,7 +241,7 @@ func (e Env) execResult(result tools.ExecResult) string {
 func childCompactor(model string, env Env) *agent.Compactor {
 	window := env.Window
 	if window <= 0 {
-		window, _ = provider.ContextWindowFor(model)
+		window, _ = llm.ContextWindowFor(model)
 	}
 	if window <= 0 {
 		return nil
@@ -268,7 +268,7 @@ func roundCap(a *agent.Agent) int {
 // anything, which is precisely the failure the interval exists to prevent and
 // precisely the one that leaves no trace.
 func newChildAgent(env Env, maxRounds int) *agent.Agent {
-	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
+	a := agent.New([]llm.Message{{Role: llm.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
 	a.SetMaxRounds(maxRounds)
 	a.SetSteering(env.Steering)
 	// After the steering, and deliberately: the configured interval is a

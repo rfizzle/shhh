@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hostgit/hostgittest"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // treeFixture is a repository with one commit and a clean tree, and a git
@@ -192,7 +192,7 @@ func TestTree_ANewDirectoryOfTheSessionsOwnIsSubtracted(t *testing.T) {
 func TestTree_ACommandChangesTheAttribution(t *testing.T) {
 	ws, _ := treeFixture(t)
 	a := treeAgent(t, ws, nil)
-	a.BeginToolRound("", []provider.ToolCall{{ID: "c1", Name: "execute_command", Arguments: `{"command":"touch x"}`}}, nil)
+	a.BeginToolRound("", []llm.ToolCall{{ID: "c1", Name: "execute_command", Arguments: `{"command":"touch x"}`}}, nil)
 	write(t, ws, "x", "")
 
 	n, ok := a.NextTreeNotice(false)
@@ -424,7 +424,7 @@ func TestTree_DiffOnSnapshotsBuiltByHand(t *testing.T) {
 func TestTree_BeginToolRoundCountsCommands(t *testing.T) {
 	ws, _ := treeFixture(t)
 	a := treeAgent(t, ws, nil)
-	calls := []provider.ToolCall{
+	calls := []llm.ToolCall{
 		{ID: "1", Name: "read_file", Arguments: `{}`},
 		{ID: "2", Name: "execute_command", Arguments: `{}`},
 		{ID: "3", Name: "execute_command", Arguments: `{}`},
@@ -782,7 +782,7 @@ func TestTree_ACacheACommandWroteIsNotReported(t *testing.T) {
 			run("commit", "-q", "-m", "src")
 			a := treeAgent(t, ws, nil)
 
-			a.BeginToolRound("", []provider.ToolCall{{ID: "c1", Name: "execute_command",
+			a.BeginToolRound("", []llm.ToolCall{{ID: "c1", Name: "execute_command",
 				Arguments: `{"command":"GOCACHE=$PWD/.cache/gocache go build ./..."}`}}, nil)
 			for _, p := range []string{".cache/gocache/aa/one", ".cache/gocache/bb/two", ".cache/trim.txt"} {
 				write(t, ws, p, "x\n")

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/notebook"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func openTestDB(t *testing.T) *DB {
@@ -125,10 +125,10 @@ func TestMigrate_ChatSessionReferenceAlreadyAdded(t *testing.T) {
 func TestSaveAndLoadChat(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hello"},
-		{Role: provider.RoleAssistant, Content: "hi there"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hello"},
+		{Role: llm.RoleAssistant, Content: "hi there"},
 	}
 
 	if err := db.SaveChat("test-chat", msgs); err != nil {
@@ -154,17 +154,17 @@ func TestSaveAndLoadChat(t *testing.T) {
 func TestSaveChat_WithToolCalls(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "list files"},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "list files"},
 		{
-			Role:    provider.RoleAssistant,
+			Role:    llm.RoleAssistant,
 			Content: "",
-			ToolCalls: []provider.ToolCall{
+			ToolCalls: []llm.ToolCall{
 				{ID: "tc1", Name: "list_dir", Arguments: `{"path":"."}`},
 			},
 		},
-		{Role: provider.RoleTool, Content: "file1.go\nfile2.go", ToolCallID: "tc1"},
-		{Role: provider.RoleAssistant, Content: "Here are the files."},
+		{Role: llm.RoleTool, Content: "file1.go\nfile2.go", ToolCallID: "tc1"},
+		{Role: llm.RoleAssistant, Content: "Here are the files."},
 	}
 
 	if err := db.SaveChat("tools-chat", msgs); err != nil {
@@ -195,18 +195,18 @@ func TestSaveChat_WithToolCalls(t *testing.T) {
 func TestSaveChat_RoundTripsAttachments(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
+	msgs := []llm.Message{
 		{
-			Role:    provider.RoleUser,
+			Role:    llm.RoleUser,
 			Content: "what is wrong here?",
-			Attachments: []provider.Attachment{{
-				Kind:      provider.AttachmentImage,
+			Attachments: []llm.Attachment{{
+				Kind:      llm.AttachmentImage,
 				Name:      "shot.png",
 				MediaType: "image/png",
 				Data:      []byte{0x89, 'P', 'N', 'G', 0x00, 0xff},
 			}},
 		},
-		{Role: provider.RoleAssistant, Content: "the margin is off"},
+		{Role: llm.RoleAssistant, Content: "the margin is off"},
 	}
 
 	if err := db.SaveChat("shots", msgs); err != nil {
@@ -220,7 +220,7 @@ func TestSaveChat_RoundTripsAttachments(t *testing.T) {
 		t.Fatalf("expected 1 attachment, got %d", len(loaded[0].Attachments))
 	}
 	got := loaded[0].Attachments[0]
-	if got.Name != "shot.png" || got.MediaType != "image/png" || got.Kind != provider.AttachmentImage {
+	if got.Name != "shot.png" || got.MediaType != "image/png" || got.Kind != llm.AttachmentImage {
 		t.Fatalf("attachment metadata lost: %#v", got)
 	}
 	if string(got.Data) != string(msgs[0].Attachments[0].Data) {
@@ -238,10 +238,10 @@ func TestSaveChat_RoundTripsAttachments(t *testing.T) {
 func TestSaveChat_RoundTripsWhoWroteTheMessage(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "add the retry"},
-		{Role: provider.RoleAssistant, Content: "on it"},
-		{Role: provider.RoleUser, Content: "Stop and say what you have done so far.", Machine: true},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "add the retry"},
+		{Role: llm.RoleAssistant, Content: "on it"},
+		{Role: llm.RoleUser, Content: "Stop and say what you have done so far.", Machine: true},
 	}
 
 	if err := db.SaveChat("checked-in", msgs); err != nil {
@@ -266,10 +266,10 @@ func TestSaveChat_RoundTripsWhoWroteTheMessage(t *testing.T) {
 func TestSaveChat_RoundTripsTheStatusNoteMark(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "trace the counter"},
-		{Role: provider.RoleAssistant, Content: "Objective, evidence, next action.", Checkpoint: true},
-		{Role: provider.RoleAssistant, Content: "The counter is read at the top of the loop."},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "trace the counter"},
+		{Role: llm.RoleAssistant, Content: "Objective, evidence, next action.", Checkpoint: true},
+		{Role: llm.RoleAssistant, Content: "The counter is read at the top of the loop."},
 	}
 
 	if err := db.SaveChat("noted", msgs); err != nil {
@@ -311,12 +311,12 @@ func TestListChats_Empty(t *testing.T) {
 func TestListChats_WithSessions(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, Content: "a1"},
-		{Role: provider.RoleUser, Content: "q2"},
-		{Role: provider.RoleAssistant, Content: "a2"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, Content: "a1"},
+		{Role: llm.RoleUser, Content: "q2"},
+		{Role: llm.RoleAssistant, Content: "a2"},
 	}
 
 	if err := db.SaveChat("chat-one", msgs); err != nil {
@@ -350,7 +350,7 @@ func TestListChats_WithSessions(t *testing.T) {
 // half writes, and a search answers with it too.
 func TestListChats_CarriesTheStandingAccount(t *testing.T) {
 	db := openTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "the retry flake"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "the retry flake"}}
 	if err := db.SaveChat("summed", msgs); err != nil {
 		t.Fatal(err)
 	}
@@ -385,7 +385,7 @@ func TestListChats_CarriesTheStandingAccount(t *testing.T) {
 func TestSaveChat_OverwritePreservesCreatedAt(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs1 := []provider.Message{{Role: provider.RoleUser, Content: "first"}}
+	msgs1 := []llm.Message{{Role: llm.RoleUser, Content: "first"}}
 	if err := db.SaveChat("update-test", msgs1); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -395,7 +395,7 @@ func TestSaveChat_OverwritePreservesCreatedAt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msgs2 := []provider.Message{{Role: provider.RoleUser, Content: "second"}}
+	msgs2 := []llm.Message{{Role: llm.RoleUser, Content: "second"}}
 	if err := db.SaveChat("update-test", msgs2); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -421,7 +421,7 @@ func TestSaveChat_OverwritePreservesCreatedAt(t *testing.T) {
 func TestDeleteChat(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "hi"}}
 	if err := db.SaveChat("del-test", msgs); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -566,10 +566,10 @@ func TestMetricsSummary(t *testing.T) {
 }
 
 func TestInstrumentStream(t *testing.T) {
-	events := make(chan provider.StreamEvent, 3)
-	events <- provider.StreamEvent{Token: "hello"}
-	events <- provider.StreamEvent{Token: " world"}
-	events <- provider.StreamEvent{Done: true}
+	events := make(chan llm.StreamEvent, 3)
+	events <- llm.StreamEvent{Token: "hello"}
+	events <- llm.StreamEvent{Token: " world"}
+	events <- llm.StreamEvent{Done: true}
 	close(events)
 
 	out, metrics := InstrumentStream(events)
@@ -596,8 +596,8 @@ func TestInstrumentStream(t *testing.T) {
 }
 
 func TestInstrumentStream_Error(t *testing.T) {
-	events := make(chan provider.StreamEvent, 1)
-	events <- provider.StreamEvent{Err: fmt.Errorf("api error"), Done: true}
+	events := make(chan llm.StreamEvent, 1)
+	events <- llm.StreamEvent{Err: fmt.Errorf("api error"), Done: true}
 	close(events)
 
 	out, metrics := InstrumentStream(events)
@@ -800,13 +800,13 @@ func TestRating_Flow(t *testing.T) {
 func TestSaveChatBranch_LinksParent(t *testing.T) {
 	db := openTestDB(t)
 
-	root := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "one"},
+	root := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "one"},
 	}
-	tail := append(append([]provider.Message{}, root...),
-		provider.Message{Role: provider.RoleUser, Content: "two"},
-		provider.Message{Role: provider.RoleAssistant, Content: "reply"},
+	tail := append(append([]llm.Message{}, root...),
+		llm.Message{Role: llm.RoleUser, Content: "two"},
+		llm.Message{Role: llm.RoleAssistant, Content: "reply"},
 	)
 
 	if err := db.SaveChat("main", root); err != nil {
@@ -845,9 +845,9 @@ func TestSaveChatBranch_LinksParent(t *testing.T) {
 func TestSaveChatBranch_CreatesMissingParent(t *testing.T) {
 	db := openTestDB(t)
 
-	tail := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hello"},
+	tail := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hello"},
 	}
 	if err := db.SaveChatBranch("never-saved", "never-saved@turn1", tail); err != nil {
 		t.Fatalf("save branch: %v", err)
@@ -868,9 +868,9 @@ func TestSaveChatBranch_CreatesMissingParent(t *testing.T) {
 func TestListChatBranches_FromBranchFindsWholeFamily(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hi"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hi"},
 	}
 	if err := db.SaveChat("root", msgs); err != nil {
 		t.Fatal(err)
@@ -915,9 +915,9 @@ func TestListChatBranches_UnknownName(t *testing.T) {
 func TestSaveChat_PreservesParentOnOverwrite(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hi"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hi"},
 	}
 	if err := db.SaveChat("root", msgs); err != nil {
 		t.Fatal(err)
@@ -926,7 +926,7 @@ func TestSaveChat_PreservesParentOnOverwrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Re-saving the branch (e.g. before a /branches switch) must keep the link.
-	if err := db.SaveChat("root@a", append(msgs, provider.Message{Role: provider.RoleUser, Content: "more"})); err != nil {
+	if err := db.SaveChat("root@a", append(msgs, llm.Message{Role: llm.RoleUser, Content: "more"})); err != nil {
 		t.Fatal(err)
 	}
 
@@ -948,15 +948,15 @@ func TestMostRecentChat_NewestSessionWithItsTurnCount(t *testing.T) {
 		t.Fatalf("empty database: ok = %v, err = %v; want false, nil", ok, err)
 	}
 
-	older := []provider.Message{
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "1"},
+	older := []llm.Message{
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "1"},
 	}
-	newer := []provider.Message{
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "1"},
-		{Role: provider.RoleUser, Content: "two"},
-		{Role: provider.RoleAssistant, Content: "2"},
+	newer := []llm.Message{
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "1"},
+		{Role: llm.RoleUser, Content: "two"},
+		{Role: llm.RoleAssistant, Content: "2"},
 	}
 	if err := db.SaveChat("older", older); err != nil {
 		t.Fatalf("save older: %v", err)
@@ -994,7 +994,7 @@ func TestMostRecentChat_PricedFromTheSessionThatWroteIt(t *testing.T) {
 	}
 	// Saved while that session is still open, which is when a chat is
 	// actually autosaved.
-	if err := db.SaveChat("live", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+	if err := db.SaveChat("live", []llm.Message{{Role: llm.RoleUser, Content: "hi"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
@@ -1023,7 +1023,7 @@ func TestMostRecentChat_IgnoresASessionThatHadAlreadyEnded(t *testing.T) {
 	// A full second later, so the ended_at written to millisecond precision
 	// is unambiguously before this save.
 	time.Sleep(1100 * time.Millisecond)
-	if err := db.SaveChat("after", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+	if err := db.SaveChat("after", []llm.Message{{Role: llm.RoleUser, Content: "hi"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
@@ -1207,14 +1207,14 @@ func TestMetricsByAction(t *testing.T) {
 func TestRenameChat_KeepsMessagesAndBranches(t *testing.T) {
 	db := openTestDB(t)
 
-	root := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "one"},
+	root := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "one"},
 	}
 	if err := db.SaveChat("main", root); err != nil {
 		t.Fatalf("save root: %v", err)
 	}
-	if err := db.SaveChatBranch("main", "main@turn2", append(root, provider.Message{Role: provider.RoleUser, Content: "two"})); err != nil {
+	if err := db.SaveChatBranch("main", "main@turn2", append(root, llm.Message{Role: llm.RoleUser, Content: "two"})); err != nil {
 		t.Fatalf("save branch: %v", err)
 	}
 	if err := db.SetChatTitle("main", "Renaming things"); err != nil {
@@ -1248,7 +1248,7 @@ func TestRenameChat_KeepsMessagesAndBranches(t *testing.T) {
 
 func TestRenameChat_RefusesACollision(t *testing.T) {
 	db := openTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "hi"}}
 	for _, name := range []string{"a", "b"} {
 		if err := db.SaveChat(name, msgs); err != nil {
 			t.Fatalf("save %s: %v", name, err)
@@ -1270,7 +1270,7 @@ func TestRenameChat_RefusesACollision(t *testing.T) {
 
 func TestDeleteChat_RemovesBranches(t *testing.T) {
 	db := openTestDB(t)
-	root := []provider.Message{{Role: provider.RoleUser, Content: "one"}}
+	root := []llm.Message{{Role: llm.RoleUser, Content: "one"}}
 	if err := db.SaveChat("main", root); err != nil {
 		t.Fatalf("save root: %v", err)
 	}
@@ -1309,7 +1309,7 @@ func TestDeleteChat_RemovesBranches(t *testing.T) {
 
 func TestChatTitle_ListedAndUnknown(t *testing.T) {
 	db := openTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "hi"}}
 	if err := db.SaveChat("t", msgs); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -1340,7 +1340,7 @@ func TestChatTitle_ListedAndUnknown(t *testing.T) {
 // conversation written before the column existed the way it always opened.
 func TestChatHold_MarkedClearedAndAbsent(t *testing.T) {
 	db := openTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "hi"}}
 	if _, err := db.AutosaveChat("h", "fresh", msgs, nil); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -1348,7 +1348,7 @@ func TestChatHold_MarkedClearedAndAbsent(t *testing.T) {
 		t.Fatalf("a fresh chat is not held, got %v %v", held, err)
 	}
 
-	msgs = append(msgs, provider.Message{Role: provider.RoleAssistant, Content: "ok"})
+	msgs = append(msgs, llm.Message{Role: llm.RoleAssistant, Content: "ok"})
 	if _, err := db.AutosaveChat("h", "fresh", msgs, &ChatHold{Rounds: 12, Granted: 100}); err != nil {
 		t.Fatalf("save held: %v", err)
 	}
@@ -1383,7 +1383,7 @@ func TestChatHold_MarkedClearedAndAbsent(t *testing.T) {
 
 func TestChatResume_RoundTripsAndFollowsTheSlot(t *testing.T) {
 	db := openTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "hi"}}
 	if err := db.SaveChat("r", msgs); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -1571,10 +1571,10 @@ func TestClaimChatSlot_SameSecondGetsItsOwnSlot(t *testing.T) {
 		t.Fatalf("two sessions were given the same slot %q", a)
 	}
 
-	if err := first.SaveChat(a, []provider.Message{{Role: provider.RoleUser, Content: "one"}}); err != nil {
+	if err := first.SaveChat(a, []llm.Message{{Role: llm.RoleUser, Content: "one"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
-	if err := second.SaveChat(b, []provider.Message{{Role: provider.RoleUser, Content: "two"}}); err != nil {
+	if err := second.SaveChat(b, []llm.Message{{Role: llm.RoleUser, Content: "two"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 	kept, err := first.LoadChat(a)
@@ -1589,7 +1589,7 @@ func TestClaimChatSlot_SameSecondGetsItsOwnSlot(t *testing.T) {
 func TestClaimChatSlot_UnwrittenSlotIsInvisible(t *testing.T) {
 	first, second := twoStores(t)
 
-	if err := first.SaveChat("yesterday", []provider.Message{{Role: provider.RoleUser, Content: "old"}}); err != nil {
+	if err := first.SaveChat("yesterday", []llm.Message{{Role: llm.RoleUser, Content: "old"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 	idle, err := second.ClaimChatSlot("2026-09-02 10:00:00")
@@ -1634,9 +1634,9 @@ func TestSaveChat_RefusesASlotAnotherSessionWrote(t *testing.T) {
 	if err != nil {
 		t.Fatalf("claim: %v", err)
 	}
-	if err := first.SaveChat(slot, []provider.Message{
-		{Role: provider.RoleUser, Content: "mine"},
-		{Role: provider.RoleAssistant, Content: "ok"},
+	if err := first.SaveChat(slot, []llm.Message{
+		{Role: llm.RoleUser, Content: "mine"},
+		{Role: llm.RoleAssistant, Content: "ok"},
 	}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -1646,16 +1646,16 @@ func TestSaveChat_RefusesASlotAnotherSessionWrote(t *testing.T) {
 	if _, err := second.LoadChat(slot); err != nil {
 		t.Fatalf("load: %v", err)
 	}
-	if err := second.SaveChat(slot, []provider.Message{
-		{Role: provider.RoleUser, Content: "mine"},
-		{Role: provider.RoleAssistant, Content: "ok"},
-		{Role: provider.RoleUser, Content: "and then"},
-		{Role: provider.RoleAssistant, Content: "more"},
+	if err := second.SaveChat(slot, []llm.Message{
+		{Role: llm.RoleUser, Content: "mine"},
+		{Role: llm.RoleAssistant, Content: "ok"},
+		{Role: llm.RoleUser, Content: "and then"},
+		{Role: llm.RoleAssistant, Content: "more"},
 	}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
-	err = first.SaveChat(slot, []provider.Message{{Role: provider.RoleUser, Content: "clobber"}})
+	err = first.SaveChat(slot, []llm.Message{{Role: llm.RoleUser, Content: "clobber"}})
 	var taken ChatSlotConflictError
 	if !errors.As(err, &taken) {
 		t.Fatalf("expected the save to be refused, got %v", err)
@@ -1671,7 +1671,7 @@ func TestSaveChat_RefusesASlotAnotherSessionWrote(t *testing.T) {
 	// The conversation still has to go somewhere: the autosave moves it to
 	// a slot of its own, and a second one refused at the same moment lands
 	// in that same slot rather than leaving a copy behind.
-	mine := []provider.Message{{Role: provider.RoleUser, Content: "clobber"}}
+	mine := []llm.Message{{Role: llm.RoleUser, Content: "clobber"}}
 	moved, err := first.AutosaveChat(slot, "2026-09-02 10:04:00", mine, nil)
 	if err != nil {
 		t.Fatalf("autosave: %v", err)
@@ -1695,10 +1695,10 @@ func TestSaveChat_RefusesASlotAnotherSessionWrote(t *testing.T) {
 
 	// A name this store has never touched is still its own to overwrite:
 	// /save <name> is a decision the person made.
-	if err := first.SaveChat("notes", []provider.Message{{Role: provider.RoleUser, Content: "first"}}); err != nil {
+	if err := first.SaveChat("notes", []llm.Message{{Role: llm.RoleUser, Content: "first"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
-	if err := second.SaveChat("notes", []provider.Message{{Role: provider.RoleUser, Content: "second"}}); err != nil {
+	if err := second.SaveChat("notes", []llm.Message{{Role: llm.RoleUser, Content: "second"}}); err != nil {
 		t.Fatalf("a name nothing here wrote should not be refused: %v", err)
 	}
 }
@@ -1715,10 +1715,10 @@ func TestSaveChat_ConcurrentSavesFromOneProcessAreItsOwn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("claim: %v", err)
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "two"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "two"},
 	}
 
 	errs := make(chan error, 8)
@@ -1745,10 +1745,10 @@ func TestSaveChat_RefusesASlotThatShrankUnderIt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("claim: %v", err)
 	}
-	long := []provider.Message{
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "two"},
-		{Role: provider.RoleUser, Content: "three"},
+	long := []llm.Message{
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "two"},
+		{Role: llm.RoleUser, Content: "three"},
 	}
 	if err := first.SaveChat(slot, long); err != nil {
 		t.Fatalf("save: %v", err)
@@ -1785,11 +1785,11 @@ func sessionWrites(db *DB, stamp string, turns int) error {
 	if err != nil {
 		return fmt.Errorf("start session: %w", err)
 	}
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	for turn := range turns {
 		msgs = append(msgs,
-			provider.Message{Role: provider.RoleUser, Content: fmt.Sprintf("ask %d", turn)},
-			provider.Message{Role: provider.RoleAssistant, Content: fmt.Sprintf("answer %d", turn)})
+			llm.Message{Role: llm.RoleUser, Content: fmt.Sprintf("ask %d", turn)},
+			llm.Message{Role: llm.RoleAssistant, Content: fmt.Sprintf("answer %d", turn)})
 		if _, err := db.AutosaveChat(slot, stamp+" (fresh)", msgs, nil); err != nil {
 			return fmt.Errorf("autosave turn %d: %w", turn, err)
 		}
@@ -1906,7 +1906,7 @@ func TestListChats_MarksASlotARunningSessionStillHolds(t *testing.T) {
 		if _, err := db.ClaimChatSlot(name); err != nil {
 			t.Fatalf("claim %s: %v", name, err)
 		}
-		if err := db.SaveChat(name, []provider.Message{{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+		if err := db.SaveChat(name, []llm.Message{{Role: llm.RoleUser, Content: "hello"}}); err != nil {
 			t.Fatalf("save %s: %v", name, err)
 		}
 	}
@@ -1945,8 +1945,8 @@ func TestListChats_MarksASlotARunningSessionStillHolds(t *testing.T) {
 // way another process's autosave leaves it.
 func liveChatFixture(t *testing.T, db *DB, name string, pid int) {
 	t.Helper()
-	if err := db.SaveChat(name, []provider.Message{
-		{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+	if err := db.SaveChat(name, []llm.Message{
+		{Role: llm.RoleUser, Content: "hello"}}); err != nil {
 		t.Fatalf("save %s: %v", name, err)
 	}
 	id := openSessionIn(t, db, "checkout-a", pid, time.Now())
@@ -1962,8 +1962,8 @@ func TestMostRecentChat_StepsPastASlotARunningSessionHolds(t *testing.T) {
 	db := openTestDB(t)
 	liveOnly(t, 4242)
 
-	if err := db.SaveChat("older", []provider.Message{
-		{Role: provider.RoleUser, Content: "then"}}); err != nil {
+	if err := db.SaveChat("older", []llm.Message{
+		{Role: llm.RoleUser, Content: "then"}}); err != nil {
 		t.Fatalf("save older: %v", err)
 	}
 	time.Sleep(2 * time.Millisecond)
@@ -2040,16 +2040,16 @@ func chatMessageIDs(t *testing.T, db *DB, name string) []int64 {
 func TestAutosaveChat_WritesOnlyTheMessagesTheSlotDoesNotHave(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "why does it flake"},
-		{Role: provider.RoleAssistant, Content: "it races the timer"},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "why does it flake"},
+		{Role: llm.RoleAssistant, Content: "it races the timer"},
 	}
 	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
 		t.Fatalf("first save: %v", err)
 	}
 	before := chatMessageIDs(t, db, "slot")
 
-	msgs = append(msgs, provider.Message{Role: provider.RoleUser, Content: "so what fixes it"})
+	msgs = append(msgs, llm.Message{Role: llm.RoleUser, Content: "so what fixes it"})
 	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
 		t.Fatalf("second save: %v", err)
 	}
@@ -2071,7 +2071,7 @@ func TestAutosaveChat_WritesOnlyTheMessagesTheSlotDoesNotHave(t *testing.T) {
 func TestAutosaveChat_WritesNothingWhenTheConversationHasNotMoved(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "still thinking"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "still thinking"}}
 	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
 		t.Fatalf("first save: %v", err)
 	}
@@ -2087,10 +2087,10 @@ func TestAutosaveChat_WritesNothingWhenTheConversationHasNotMoved(t *testing.T) 
 func TestAutosaveChat_RewritesWhenTheConversationChangedBehindItself(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "first ask"},
-		{Role: provider.RoleAssistant, Content: "first answer"},
-		{Role: provider.RoleUser, Content: "second ask"},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "first ask"},
+		{Role: llm.RoleAssistant, Content: "first answer"},
+		{Role: llm.RoleUser, Content: "second ask"},
 	}
 	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
 		t.Fatalf("first save: %v", err)
@@ -2107,10 +2107,10 @@ func TestAutosaveChat_RewritesWhenTheConversationChangedBehindItself(t *testing.
 	// so the slot ends up exactly as long as it was with a different
 	// conversation in it. Judged by its length alone this would be taken for
 	// a save with nothing new.
-	compacted := []provider.Message{
-		{Role: provider.RoleUser, Content: "summary of the opening"},
-		{Role: provider.RoleAssistant, Content: "first answer"},
-		{Role: provider.RoleUser, Content: "second ask"},
+	compacted := []llm.Message{
+		{Role: llm.RoleUser, Content: "summary of the opening"},
+		{Role: llm.RoleAssistant, Content: "first answer"},
+		{Role: llm.RoleUser, Content: "second ask"},
 	}
 	if _, err := db.AutosaveChat("slot", "fresh", compacted, nil); err != nil {
 		t.Fatalf("second save: %v", err)
@@ -2130,10 +2130,10 @@ func TestAutosaveChat_RewritesWhenTheConversationChangedBehindItself(t *testing.
 func TestAutosaveChat_RewritesAfterARewind(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "first ask"},
-		{Role: provider.RoleAssistant, Content: "first answer"},
-		{Role: provider.RoleUser, Content: "second ask"},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "first ask"},
+		{Role: llm.RoleAssistant, Content: "first answer"},
+		{Role: llm.RoleUser, Content: "second ask"},
 	}
 	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
 		t.Fatalf("first save: %v", err)
@@ -2150,7 +2150,7 @@ func TestAutosaveChat_RewritesAfterARewind(t *testing.T) {
 	}
 	// And the slot goes on appending from where the rewind left it.
 	if _, err := db.AutosaveChat("slot", "fresh",
-		append(msgs[:1:1], provider.Message{Role: provider.RoleAssistant, Content: "another answer"}), nil); err != nil {
+		append(msgs[:1:1], llm.Message{Role: llm.RoleAssistant, Content: "another answer"}), nil); err != nil {
 		t.Fatalf("save after rewind: %v", err)
 	}
 	if got, _ := db.LoadChat("slot"); len(got) != 2 || got[1].Content != "another answer" {
@@ -2161,14 +2161,14 @@ func TestAutosaveChat_RewritesAfterARewind(t *testing.T) {
 func TestSearchChats_FindsAWordSaidInTheConversation(t *testing.T) {
 	db := openTestDB(t)
 
-	if err := db.SaveChat("alpha", []provider.Message{
-		{Role: provider.RoleUser, Content: "why does the retry flake"},
-		{Role: provider.RoleAssistant, Content: "it races the timer"},
+	if err := db.SaveChat("alpha", []llm.Message{
+		{Role: llm.RoleUser, Content: "why does the retry flake"},
+		{Role: llm.RoleAssistant, Content: "it races the timer"},
 	}); err != nil {
 		t.Fatalf("save alpha: %v", err)
 	}
-	if err := db.SaveChat("beta", []provider.Message{
-		{Role: provider.RoleUser, Content: "how do I bump the version"},
+	if err := db.SaveChat("beta", []llm.Message{
+		{Role: llm.RoleUser, Content: "how do I bump the version"},
 	}); err != nil {
 		t.Fatalf("save beta: %v", err)
 	}
@@ -2221,8 +2221,8 @@ func TestSearchChats_FindsAChatWithNoMessagesByItsTitle(t *testing.T) {
 func TestSearchChats_ForgetsAConversationThatWasDeleted(t *testing.T) {
 	db := openTestDB(t)
 
-	if err := db.SaveChat("alpha", []provider.Message{
-		{Role: provider.RoleUser, Content: "why does the retry flake"},
+	if err := db.SaveChat("alpha", []llm.Message{
+		{Role: llm.RoleUser, Content: "why does the retry flake"},
 	}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -2247,7 +2247,7 @@ func TestSearchChats_ForgetsAConversationThatWasDeleted(t *testing.T) {
 func TestPruneOldChats_TakesAFamilyPastTheWindow(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "an old question"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "an old question"}}
 	for _, name := range []string{"old", "old@turn1", "recent"} {
 		if err := db.SaveChat(name, msgs); err != nil {
 			t.Fatalf("save %s: %v", name, err)
@@ -2283,7 +2283,7 @@ func TestPruneOldChats_TakesAFamilyPastTheWindow(t *testing.T) {
 func TestPruneOldChats_KeepsAFamilyWithABranchInsideTheWindow(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "an old question"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "an old question"}}
 	if err := db.SaveChat("root", msgs); err != nil {
 		t.Fatalf("save root: %v", err)
 	}
@@ -2310,7 +2310,7 @@ func TestPruneOldChats_KeepsAFamilyWithABranchInsideTheWindow(t *testing.T) {
 func TestPruneOldChats_OffUntilAWindowIsSet(t *testing.T) {
 	db := openTestDB(t)
 
-	if err := db.SaveChat("ancient", []provider.Message{{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+	if err := db.SaveChat("ancient", []llm.Message{{Role: llm.RoleUser, Content: "hello"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 	long := time.Now().UTC().AddDate(-5, 0, 0).Format(time.RFC3339Nano)
@@ -2350,7 +2350,7 @@ func TestRecorded_AStoreNobodyHasUsedHoldsNothing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	if err := db.SaveChat("something", []provider.Message{{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+	if err := db.SaveChat("something", []llm.Message{{Role: llm.RoleUser, Content: "hello"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 	db.Close()
@@ -2368,9 +2368,9 @@ func TestSaveChat_OverwritesASlotThisProcessHasNeverSeen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	if err := first.SaveChat("notes", []provider.Message{
-		{Role: provider.RoleUser, Content: "kubernetes"},
-		{Role: provider.RoleUser, Content: "shared"},
+	if err := first.SaveChat("notes", []llm.Message{
+		{Role: llm.RoleUser, Content: "kubernetes"},
+		{Role: llm.RoleUser, Content: "shared"},
 	}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -2381,10 +2381,10 @@ func TestSaveChat_OverwritesASlotThisProcessHasNeverSeen(t *testing.T) {
 		t.Fatalf("reopen: %v", err)
 	}
 	defer second.Close()
-	if err := second.SaveChat("notes", []provider.Message{
-		{Role: provider.RoleUser, Content: "postgres"},
-		{Role: provider.RoleUser, Content: "shared"},
-		{Role: provider.RoleUser, Content: "and one more"},
+	if err := second.SaveChat("notes", []llm.Message{
+		{Role: llm.RoleUser, Content: "postgres"},
+		{Role: llm.RoleUser, Content: "shared"},
+		{Role: llm.RoleUser, Content: "and one more"},
 	}); err != nil {
 		t.Fatalf("overwrite: %v", err)
 	}
@@ -2410,7 +2410,7 @@ func TestSaveChat_OverwritesASlotThisProcessHasNeverSeen(t *testing.T) {
 func TestPruneOldChats_TakesTheWholeTreeAndItsWords(t *testing.T) {
 	db := openTestDB(t)
 
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "kubernetes"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "kubernetes"}}
 	for _, name := range []string{"root", "root@turn1", "root@turn1@turn3"} {
 		if err := db.SaveChat(name, msgs); err != nil {
 			t.Fatalf("save %s: %v", name, err)

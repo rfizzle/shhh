@@ -16,8 +16,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -34,7 +34,7 @@ const checkpointNote = "The objective is the round accounting: where the tool-ro
 // a test to reach: two silent calls, and a wall clock nothing waits on.
 func progressModel(t *testing.T, stream StreamFunc) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, stream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, stream, Wiring{
 		ProgressCalls:   2,
 		ProgressElapsed: time.Hour,
 	})
@@ -99,7 +99,7 @@ type roundOutcome struct {
 func runProgressRound(t *testing.T, pending bool) (roundOutcome, entry) {
 	t.Helper()
 	requests := 0
-	m := progressModel(t, StreamFunc(func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	m := progressModel(t, StreamFunc(func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++
 		return mockStream(msgs, choice)
 	}))
@@ -113,7 +113,7 @@ func runProgressRound(t *testing.T, pending bool) (roundOutcome, entry) {
 
 	before := roundOutcome{requests, m.agent.Rounds(), len(m.transcript)}
 	m.streaming = checkpointNote
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call-1", Name: "read_file", Arguments: `{"path":"internal/agent/round.go"}`},
 	}})
 	m = updated.(Model)
@@ -207,7 +207,7 @@ func TestProgress_AConcludingReplyIsTheAnswerAndNotANote(t *testing.T) {
 	// cannot promote or demote it either.
 	msgs := m.agent.Messages()
 	for _, msg := range msgs {
-		if msg.Role == provider.RoleAssistant && msg.Checkpoint {
+		if msg.Role == llm.RoleAssistant && msg.Checkpoint {
 			t.Errorf("the stored answer is marked as public status: %q", msg.Content)
 		}
 	}
@@ -222,7 +222,7 @@ func TestProgress_TheMarkSurvivesAReopenedConversation(t *testing.T) {
 	m = advanceRounds(m, 2)
 	m.roundTail().Next()
 	m.streaming = checkpointNote
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call-1", Name: "read_file", Arguments: `{"path":"internal/agent/round.go"}`},
 	}})
 	m = updated.(Model)
@@ -244,10 +244,10 @@ func TestProgress_TheMarkSurvivesAReopenedConversation(t *testing.T) {
 	// The same conversation with a second note in it, rebuilt from the
 	// messages alone the way every path back to a stored conversation does.
 	msgs = append(msgs,
-		provider.Message{Role: provider.RoleTool, ToolCallID: "call-1", Content: "lines"},
-		provider.Message{Role: provider.RoleAssistant, Content: checkpointNote, Checkpoint: true,
-			ToolCalls: []provider.ToolCall{{ID: "call-2", Name: "read_file"}}},
-		provider.Message{Role: provider.RoleAssistant, Content: "The ceiling is the session's."})
+		llm.Message{Role: llm.RoleTool, ToolCallID: "call-1", Content: "lines"},
+		llm.Message{Role: llm.RoleAssistant, Content: checkpointNote, Checkpoint: true,
+			ToolCalls: []llm.ToolCall{{ID: "call-2", Name: "read_file"}}},
+		llm.Message{Role: llm.RoleAssistant, Content: "The ceiling is the session's."})
 
 	next := frameModel(t, 110, 40)
 	next.loadConversation(msgs)
@@ -284,17 +284,17 @@ func TestProgress_TheMarkSurvivesAReopenedConversation(t *testing.T) {
 // that did have a row live keeps one, which is the other half of the rule.
 func TestProgress_AReopenedTranscriptDrawsNoRowForTheRequest(t *testing.T) {
 	const notice = "The tree moved under the session."
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "system"},
-		{Role: provider.RoleUser, Content: "trace the checkpoint"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "call-1", Name: "read_file"}}},
-		{Role: provider.RoleTool, ToolCallID: "call-1", Content: "lines"},
-		{Role: provider.RoleUser, Content: agent.ProgressPrompt, Machine: true},
-		{Role: provider.RoleAssistant, Content: checkpointNote, Checkpoint: true,
-			ToolCalls: []provider.ToolCall{{ID: "call-2", Name: "read_file"}}},
-		{Role: provider.RoleTool, ToolCallID: "call-2", Content: "lines"},
-		{Role: provider.RoleUser, Content: notice, Machine: true},
-		{Role: provider.RoleAssistant, Content: "The ceiling is the session's."},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "system"},
+		{Role: llm.RoleUser, Content: "trace the checkpoint"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "call-1", Name: "read_file"}}},
+		{Role: llm.RoleTool, ToolCallID: "call-1", Content: "lines"},
+		{Role: llm.RoleUser, Content: agent.ProgressPrompt, Machine: true},
+		{Role: llm.RoleAssistant, Content: checkpointNote, Checkpoint: true,
+			ToolCalls: []llm.ToolCall{{ID: "call-2", Name: "read_file"}}},
+		{Role: llm.RoleTool, ToolCallID: "call-2", Content: "lines"},
+		{Role: llm.RoleUser, Content: notice, Machine: true},
+		{Role: llm.RoleAssistant, Content: "The ceiling is the session's."},
 	}
 
 	m := frameModel(t, 110, 40)
@@ -333,16 +333,16 @@ func TestProgress_AReopenedTranscriptDrawsNoRowForTheRequest(t *testing.T) {
 // reopenedSystemRows saves a conversation whose progress request is req to a
 // store on disk, reopens it into a fresh session, and returns the system rows
 // the rebuilt transcript drew.
-func reopenedSystemRows(t *testing.T, req provider.Message) []string {
+func reopenedSystemRows(t *testing.T, req llm.Message) []string {
 	t.Helper()
 	db := rewindTestDB(t)
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "system"},
-		{Role: provider.RoleUser, Content: "trace the checkpoint"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "call-1", Name: "read_file"}}},
-		{Role: provider.RoleTool, ToolCallID: "call-1", Content: "lines"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "system"},
+		{Role: llm.RoleUser, Content: "trace the checkpoint"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "call-1", Name: "read_file"}}},
+		{Role: llm.RoleTool, ToolCallID: "call-1", Content: "lines"},
 		req,
-		{Role: provider.RoleAssistant, Content: checkpointNote, Checkpoint: true},
+		{Role: llm.RoleAssistant, Content: checkpointNote, Checkpoint: true},
 	}
 	if err := db.SaveChat("progress-slot", msgs); err != nil {
 		t.Fatal(err)
@@ -368,7 +368,7 @@ func TestProgress_AReopenedMarkedRequestDrawsNoRowWhateverItsWords(t *testing.T)
 	a := agent.New(nil, nil)
 	a.AppendProgressRequest("Say where the run stands before the next call.")
 	req := a.Messages()[len(a.Messages())-1]
-	if req.MachineKind != provider.MachineProgress {
+	if req.MachineKind != llm.MachineProgress {
 		t.Fatalf("the progress request was appended unmarked: %+v", req)
 	}
 	if rows := reopenedSystemRows(t, req); len(rows) != 0 {
@@ -380,12 +380,12 @@ func TestProgress_AReopenedMarkedRequestDrawsNoRowWhateverItsWords(t *testing.T)
 // the built-in words are what still leave it out; an unmarked machine message
 // in any other words keeps its row.
 func TestProgress_AReopenedUnmarkedRequestFallsBackToItsWords(t *testing.T) {
-	old := provider.Message{Role: provider.RoleUser, Content: agent.ProgressPrompt, Machine: true}
+	old := llm.Message{Role: llm.RoleUser, Content: agent.ProgressPrompt, Machine: true}
 	if rows := reopenedSystemRows(t, old); len(rows) != 0 {
 		t.Fatalf("an older slot's request came back as rows %q", rows)
 	}
 	const notice = "The tree moved under the session."
-	other := provider.Message{Role: provider.RoleUser, Content: notice, Machine: true}
+	other := llm.Message{Role: llm.RoleUser, Content: notice, Machine: true}
 	if rows := reopenedSystemRows(t, other); len(rows) != 1 || rows[0] != notice {
 		t.Fatalf("an unmarked machine message's rows are %q, want the notice", rows)
 	}
@@ -405,8 +405,8 @@ func TestProgress_ContinuingADroppedNoteKeepsItsMark(t *testing.T) {
 	// written, which is what the drop row offers to continue from.
 	m.streaming = checkpointNote
 	updated, _ := m.Update(streamErrMsg{
-		err:   &provider.Failure{Class: provider.ClassNetwork},
-		calls: []provider.ToolCall{{ID: "call-1", Name: "read_file", Arguments: `{"path":"round.go"}`}},
+		err:   &llm.Failure{Class: llm.ClassNetwork},
+		calls: []llm.ToolCall{{ID: "call-1", Name: "read_file", Arguments: `{"path":"round.go"}`}},
 	})
 	m = updated.(Model)
 

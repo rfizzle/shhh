@@ -19,9 +19,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/rpc"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -54,7 +54,7 @@ func TestServeOnSocket_RefusesAPathThatIsAlreadyThere(t *testing.T) {
 // childStep is one scripted reply a spawned child is answered with, in order.
 type childStep struct {
 	text  string
-	calls []provider.ToolCall
+	calls []llm.ToolCall
 	// steers are sent to the child, through the supervisor the script was
 	// handed, as this step's stream opens, so they reach it at the round
 	// boundary after the step.
@@ -74,7 +74,7 @@ type scriptedChildren struct {
 
 func (s *scriptedChildren) factory() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
-		stream := func(_ []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(_ []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			if ctx.Err() != nil {
 				return nil, nil, ctx.Err()
 			}
@@ -93,14 +93,14 @@ func (s *scriptedChildren) factory() subagent.EnvFactory {
 				}
 			}
 
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			if step.text != "" {
-				ch <- provider.StreamEvent{Token: step.text}
+				ch <- llm.StreamEvent{Token: step.text}
 			}
 			if len(step.calls) > 0 {
-				ch <- provider.StreamEvent{ToolCalls: step.calls}
+				ch <- llm.StreamEvent{ToolCalls: step.calls}
 			} else {
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			_, cancel := context.WithCancel(context.Background())
@@ -206,7 +206,7 @@ func eventuallyWithin(bound time.Duration, cond func() bool) bool {
 // own calls go through.
 func TestAServedSessionsClientIsToldAboutItsChildren(t *testing.T) {
 	sup, name := spawnScripted(t,
-		childStep{calls: []provider.ToolCall{{
+		childStep{calls: []llm.ToolCall{{
 			ID: "1", Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`}}},
 		childStep{text: "the exporter is fine"})
 
@@ -284,7 +284,7 @@ func TestAServedSessionsClientIsToldAboutItsChildren(t *testing.T) {
 // A client is the person: there is nobody else on the other end of a socket.
 func TestAServedSessionsClientSteersAChildAndEndsOne(t *testing.T) {
 	sup, name := spawnScripted(t,
-		childStep{calls: []provider.ToolCall{{
+		childStep{calls: []llm.ToolCall{{
 			ID: "1", Name: tools.ExecCommandName, Arguments: `{"command":"sleep 1"}`}}},
 		childStep{text: "done"})
 
@@ -373,12 +373,12 @@ type heldSummaries struct {
 	release chan struct{}
 }
 
-func (p *heldSummaries) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *heldSummaries) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.asked <- struct{}{}
 	<-p.release
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "s1", Name: sidejobs.SummaryToolName,
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{ID: "s1", Name: sidejobs.SummaryToolName,
 			Arguments: `{"summary":"reading","state":"on_target","reason":"a reason"}`}},
 		Done: true,
 	}
@@ -392,18 +392,18 @@ func (p *heldSummaries) Name() string { return "held" }
 // may have started the next turn by then. The reading is about the turn it
 // read, so its row is filed there and not beside the next turn's events.
 func TestServedClosingReadingIsFiledUnderItsOwnTurn(t *testing.T) {
-	rounds := [][]provider.StreamEvent{
-		{{ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}}},
-		{{ToolCalls: []provider.ToolCall{{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}}}},
+	rounds := [][]llm.StreamEvent{
+		{{ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}}},
+		{{ToolCalls: []llm.ToolCall{{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}}}},
 		{{Token: "first"}, {Done: true}},
 		{{Token: "second"}, {Done: true}},
 	}
 	var next int
-	a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := agent.New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		if next >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", next+1)
 		}
-		ch := make(chan provider.StreamEvent, len(rounds[next]))
+		ch := make(chan llm.StreamEvent, len(rounds[next]))
 		for _, ev := range rounds[next] {
 			ch <- ev
 		}
@@ -479,7 +479,7 @@ func TestAServedSessionKeepsHowACommandEnded(t *testing.T) {
 			run := func(context.Context, string) tools.ExecResult { return c.exec }
 			l.headless = &agent.Headless{
 				Agent: a,
-				Gate:  func(tc provider.ToolCall) bool { return tc.Name == tools.ExecCommandName },
+				Gate:  func(tc llm.ToolCall) bool { return tc.Name == tools.ExecCommandName },
 				// What a call the client allowed is run through (serve.go).
 				Resolve:      headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: run, un: unattended{at: l.obs.pos}}),
 				OnToolResult: l.obs.toolResult,

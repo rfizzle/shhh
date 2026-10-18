@@ -15,7 +15,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -44,7 +44,7 @@ func press(t *testing.T, m GenerateModel, key string) GenerateModel {
 func TestResult_ExplainsBrieflyByDefault(t *testing.T) {
 	var asked int
 	var askedLong bool
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		asked++
 		askedLong = long
 		return makeEvents("lists the directory in long form"), noopCancel, nil
@@ -74,7 +74,7 @@ func TestResult_ExplainsBrieflyByDefault(t *testing.T) {
 
 func TestResult_SilentModeSuppressesTheExplanation(t *testing.T) {
 	asked := 0
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		asked++
 		return makeEvents("lists files"), noopCancel, nil
 	}
@@ -91,7 +91,7 @@ func TestResult_SilentModeSuppressesTheExplanation(t *testing.T) {
 
 func TestResult_FlagBuysTheLongForm(t *testing.T) {
 	var askedLong bool
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		askedLong = long
 		return makeEvents("the long form"), noopCancel, nil
 	}
@@ -307,7 +307,7 @@ func TestResult_BackStepsToThePreviousCommand(t *testing.T) {
 // reviseOnce takes a model through one full revise: `ls` becomes `ls -la`.
 func reviseOnce(t *testing.T) GenerateModel {
 	t.Helper()
-	newStream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	newStream := func(msgs []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return makeEvents("ls -la"), noopCancel, nil
 	}
 	m := NewGenerateModel(makeEvents("ls"), noopCancel, nil, newStream, nil, "").
@@ -334,12 +334,12 @@ func TestResult_AStaleStreamMessageIsIgnored(t *testing.T) {
 	// same message types. A cancelled explanation's last message can land
 	// after a revise has started the next command, and it must not be read as
 	// that command's own.
-	explainEvents := make(chan provider.StreamEvent)
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explainEvents := make(chan llm.StreamEvent)
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return explainEvents, noopCancel, nil
 	}
-	newStream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		return make(chan provider.StreamEvent), noopCancel, nil
+	newStream := func(msgs []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		return make(chan llm.StreamEvent), noopCancel, nil
 	}
 	m := NewGenerateModel(makeEvents("ls"), noopCancel, nil, newStream, explain, "")
 	m = drainStream(m, 2)
@@ -386,7 +386,7 @@ func TestResult_StepByStepIsNotAConfirmation(t *testing.T) {
 // bar arrived when the request did — seconds, on a real provider.
 func TestResult_TheKeysAreOnScreenBeforeTheExplanationIsAskedFor(t *testing.T) {
 	var asked int
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		asked++
 		return makeEvents("lists files"), noopCancel, nil
 	}
@@ -416,7 +416,7 @@ func TestResult_TheKeysAreOnScreenBeforeTheExplanationIsAskedFor(t *testing.T) {
 // with a spinner rather than with nothing.
 func TestResult_TheLongFormSpinsWhileItsStreamOpens(t *testing.T) {
 	var asked int
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		asked++
 		return makeEvents("lists files in detail"), noopCancel, nil
 	}
@@ -443,7 +443,7 @@ func TestResult_TheLongFormSpinsWhileItsStreamOpens(t *testing.T) {
 // rather than leaving the old command on screen looking live.
 func TestResult_AReviseSpinsWhileItsStreamOpens(t *testing.T) {
 	var asked int
-	newStream := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	newStream := func(messages []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		asked++
 		return makeEvents("ls -la"), noopCancel, nil
 	}
@@ -555,7 +555,7 @@ const bundledSentence = "Lists every entry in the working directory, hidden ones
 // refuseExplain answers a request for an explanation that should never be
 // made, and counts the ones that are.
 func refuseExplain(asked *int) ExplainStreamFunc {
-	return func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		*asked++
 		return makeEvents("asked for on its own"), noopCancel, nil
 	}
@@ -593,7 +593,7 @@ func TestResult_TheBundledExplanationNeedsNoSecondRequest(t *testing.T) {
 
 func TestResult_TheLongFormIsStillARequestOfItsOwn(t *testing.T) {
 	asked, askedLong := 0, false
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		asked++
 		askedLong = long
 		return makeEvents("lists the directory, breaking down each flag"), noopCancel, nil
@@ -612,7 +612,7 @@ func TestResult_TheLongFormIsStillARequestOfItsOwn(t *testing.T) {
 
 func TestResult_TheLongFormOnDemandStillOpensAStream(t *testing.T) {
 	asked, askedLong := 0, false
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		asked++
 		askedLong = long
 		return makeEvents("lists the directory, breaking down each flag"), noopCancel, nil
@@ -714,7 +714,7 @@ func TestResult_SavingCarriesTheSentenceAlreadyOnScreen(t *testing.T) {
 
 func TestResult_ChoosingAnAlternativeDropsTheSentenceAboutTheOther(t *testing.T) {
 	asked := 0
-	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	explain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		asked++
 		return makeEvents("counts the entries instead"), noopCancel, nil
 	}
@@ -747,7 +747,7 @@ func TestResult_AnEditDropsTheSentenceAboutWhatItReplaced(t *testing.T) {
 }
 
 func TestResult_SteppingBackRestoresTheSentenceWithTheCommand(t *testing.T) {
-	newStream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	newStream := func(msgs []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return makeEvents("ls\n--- explanation\nLists names only."), noopCancel, nil
 	}
 	m := NewGenerateModel(makeEvents(bundled), noopCancel, nil, newStream, nil, "")

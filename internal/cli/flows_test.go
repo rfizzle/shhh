@@ -9,10 +9,10 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/persona"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -20,17 +20,17 @@ import (
 // each with an empty reply, which every builder reads as a failed reading.
 type flowRecorder struct {
 	mu   sync.Mutex
-	sent []provider.CompletionOpts
+	sent []llm.CompletionOpts
 }
 
 func (r *flowRecorder) Name() string { return "recorder" }
 
-func (r *flowRecorder) StreamCompletion(_ context.Context, _ []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (r *flowRecorder) StreamCompletion(_ context.Context, _ []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	r.mu.Lock()
 	r.sent = append(r.sent, opts)
 	r.mu.Unlock()
-	events := make(chan provider.StreamEvent, 1)
-	events <- provider.StreamEvent{Done: true}
+	events := make(chan llm.StreamEvent, 1)
+	events <- llm.StreamEvent{Done: true}
 	close(events)
 	return events, nil
 }
@@ -39,68 +39,68 @@ func (r *flowRecorder) StreamCompletion(_ context.Context, _ []provider.Message,
 // reading and the backlog are each built in two places, and both are
 // driven.
 var flowBuilders = []struct {
-	flow  provider.Flow
+	flow  llm.Flow
 	where string
-	drive func(ctx context.Context, p provider.Provider)
+	drive func(ctx context.Context, p llm.Provider)
 }{
-	{provider.FlowClassifier, "agent.Classifier", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowClassifier, "agent.Classifier", func(ctx context.Context, p llm.Provider) {
 		agent.NewClassifier(p, agent.ClassifierConfig{Model: "m"}).Judge(ctx, agent.ClassifierRequest{Tool: "execute_command", Arguments: `{"command":"ls"}`})
 	}},
-	{provider.FlowExplanation, "sidejobs.Explainer", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowExplanation, "sidejobs.Explainer", func(ctx context.Context, p llm.Provider) {
 		sidejobs.NewExplainer(p, sidejobs.ExplainConfig{Model: "m", Prompt: "explain"}).Explain(ctx, sidejobs.ExplainRequest{Command: "ls"})
 	}},
-	{provider.FlowDescription, "generateDescription", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowDescription, "generateDescription", func(ctx context.Context, p llm.Provider) {
 		generateDescription(ctx, p, "m", "m", "ls")
 	}},
-	{provider.FlowReading, "sidejobs.Summarizer", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowReading, "sidejobs.Summarizer", func(ctx context.Context, p llm.Provider) {
 		sidejobs.NewSummarizer(p, sidejobs.SummaryConfig{Model: "m"}).Summarize(ctx, sidejobs.SummaryRequest{})
 	}},
-	{provider.FlowReading, "sidejobs.HandoffWriter", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowReading, "sidejobs.HandoffWriter", func(ctx context.Context, p llm.Provider) {
 		sidejobs.NewHandoffWriter(p, sidejobs.HandoffConfig{Model: "m"}).Write(ctx, sidejobs.HandoffRequest{First: "fix it"})
 	}},
-	{provider.FlowTitle, "sidejobs.Titler", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowTitle, "sidejobs.Titler", func(ctx context.Context, p llm.Provider) {
 		sidejobs.NewTitler(p, sidejobs.TitleConfig{Model: "m"}).Title(ctx, sidejobs.TitleRequest{User: "hi"})
 	}},
-	{provider.FlowAccount, "sidejobs.Accountant", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowAccount, "sidejobs.Accountant", func(ctx context.Context, p llm.Provider) {
 		sidejobs.NewAccountant(p, sidejobs.AccountConfig{Model: "m"}).Account(ctx, sidejobs.AccountRequest{First: "fix it"})
 	}},
-	{provider.FlowSuggestion, "sidejobs.Suggester", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowSuggestion, "sidejobs.Suggester", func(ctx context.Context, p llm.Provider) {
 		sidejobs.NewSuggester(p, sidejobs.SuggestConfig{Model: "m"}).Suggest(ctx, sidejobs.SuggestRequest{Instruction: "fix it"})
 	}},
-	{provider.FlowStartOffers, "agent.StartOfferer", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowStartOffers, "agent.StartOfferer", func(ctx context.Context, p llm.Provider) {
 		agent.NewStartOfferer(p, agent.StartOffersConfig{Model: "m"}).Offer(ctx, agent.StartOffersRequest{Facts: "a checkout"})
 	}},
-	{provider.FlowPatterns, "agent.PatternWriter", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowPatterns, "agent.PatternWriter", func(ctx context.Context, p llm.Provider) {
 		agent.NewPatternWriter(p, agent.PatternsConfig{Model: "m"}).Word(ctx, agent.PatternRequest{Want: agent.WordMemory, Lines: []string{"go test"}})
 	}},
-	{provider.FlowCompaction, "summaryModelStream", func(ctx context.Context, p provider.Provider) {
-		events, cancel, err := summaryModelStream(ctx, &sessionEnv{prov: p}, meter.New(nil), nil, "m")([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, provider.ToolChoiceNone)
+	{llm.FlowCompaction, "summaryModelStream", func(ctx context.Context, p llm.Provider) {
+		events, cancel, err := summaryModelStream(ctx, &sessionEnv{prov: p}, meter.New(nil), nil, "m")([]llm.Message{{Role: llm.RoleUser, Content: "hi"}}, llm.ToolChoiceNone)
 		if err == nil {
 			for range events {
 			}
 			cancel()
 		}
 	}},
-	{provider.FlowBacklog, "todo.Extractor", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowBacklog, "todo.Extractor", func(ctx context.Context, p llm.Provider) {
 		todo.NewExtractor(p, todo.ExtractConfig{Model: "m"}, todo.BuiltinCode()).Extract(ctx, todo.ExtractRequest{})
 	}},
-	{provider.FlowBacklog, "todo.Drafter", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowBacklog, "todo.Drafter", func(ctx context.Context, p llm.Provider) {
 		todo.NewDrafter(p, todo.ExtractConfig{Model: "m"}, todo.BuiltinCode()).Draft(ctx, todo.DraftRequest{Sentence: "fix the parser"})
 	}},
-	{provider.FlowProfileDrafter, "persona.Drafter", func(ctx context.Context, p provider.Provider) {
+	{llm.FlowProfileDrafter, "persona.Drafter", func(ctx context.Context, p llm.Provider) {
 		persona.NewDrafter(p, persona.Config{Model: "m"}).Draft(ctx, persona.Request{Kind: persona.KindCode, Brief: "a reviewer"})
 	}},
-	{provider.FlowToolchainDrafter, "toolchainDrafter", func(ctx context.Context, p provider.Provider) {
-		_, _ = toolchainDrafter{prov: p, model: func() string { return "m" }}.ask(ctx, []provider.Message{{Role: provider.RoleUser, Content: "hi"}})
+	{llm.FlowToolchainDrafter, "toolchainDrafter", func(ctx context.Context, p llm.Provider) {
+		_, _ = toolchainDrafter{prov: p, model: func() string { return "m" }}.ask(ctx, []llm.Message{{Role: llm.RoleUser, Content: "hi"}})
 	}},
 }
 
 // sendsSchema drives every builder and records, per flow, whether any of
 // its requests carried a schema, failing on a request that named the wrong
 // flow or none.
-func sendsSchema(t *testing.T) map[provider.Flow]bool {
+func sendsSchema(t *testing.T) map[llm.Flow]bool {
 	t.Helper()
-	out := map[provider.Flow]bool{}
+	out := map[llm.Flow]bool{}
 	for _, b := range flowBuilders {
 		rec := &flowRecorder{}
 		b.drive(context.Background(), rec)
@@ -120,36 +120,36 @@ func sendsSchema(t *testing.T) map[provider.Flow]bool {
 
 func TestFlows_EachBoundedFlowNamesItselfAndSaysWhetherItSendsASchema(t *testing.T) {
 	schema := sendsSchema(t)
-	var covered []provider.Flow
+	var covered []llm.Flow
 	for _, b := range flowBuilders {
 		if !slices.Contains(covered, b.flow) {
 			covered = append(covered, b.flow)
 		}
 	}
-	if !reflect.DeepEqual(covered, provider.Flows()) {
-		t.Errorf("the builders drive %v, want every flow %v", covered, provider.Flows())
+	if !reflect.DeepEqual(covered, llm.Flows()) {
+		t.Errorf("the builders drive %v, want every flow %v", covered, llm.Flows())
 	}
-	var with []provider.Flow
-	for _, f := range provider.Flows() {
+	var with []llm.Flow
+	for _, f := range llm.Flows() {
 		if schema[f] {
 			with = append(with, f)
 		}
 	}
-	if want := []provider.Flow{provider.FlowClassifier, provider.FlowBacklog}; !reflect.DeepEqual(with, want) {
+	if want := []llm.Flow{llm.FlowClassifier, llm.FlowBacklog}; !reflect.DeepEqual(with, want) {
 		t.Errorf("the flows that send a schema are %v, want %v", with, want)
 	}
 }
 
 func TestFlows_TheSetAgreesWithTheChain(t *testing.T) {
-	var words []provider.Flow
+	var words []llm.Flow
 	for _, f := range boundedFlows {
 		if slices.Contains(words, f.flow) {
 			t.Errorf("flow %q is on the chain twice", f.flow)
 		}
 		words = append(words, f.flow)
 	}
-	if !reflect.DeepEqual(words, provider.Flows()) {
-		t.Errorf("the chain's flows are %v, want %v", words, provider.Flows())
+	if !reflect.DeepEqual(words, llm.Flows()) {
+		t.Errorf("the chain's flows are %v, want %v", words, llm.Flows())
 	}
 }
 
@@ -158,11 +158,11 @@ func TestFlows_TheSetAgreesWithTheChain(t *testing.T) {
 // fails here, and so does a listed flow that sends none.
 func TestDeclarations_OnlyFlowsThatSendASchemaMayScopeIt(t *testing.T) {
 	schema := sendsSchema(t)
-	d, ok := provider.DeclarationFor("structured_outputs")
+	d, ok := llm.DeclarationFor("structured_outputs")
 	if !ok {
 		t.Fatal("structured_outputs is not in the registry")
 	}
-	for _, f := range provider.Flows() {
+	for _, f := range llm.Flows() {
 		if d.Scopes(f) != schema[f] {
 			t.Errorf("flow %q: scopable %v, sends a schema %v", f, d.Scopes(f), schema[f])
 		}

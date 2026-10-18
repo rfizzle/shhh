@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // SetConversation names where the session's own conversation is read from
@@ -31,7 +31,7 @@ import (
 // It is asked at the spawn and never again: what a child inherits is the
 // turns as they stood when it was spawned, and a retry re-issues that same
 // text rather than reading a conversation that has since moved on.
-func (s *Supervisor) SetConversation(messages func() []provider.Message) {
+func (s *Supervisor) SetConversation(messages func() []llm.Message) {
 	s.mu.Lock()
 	s.conversation = messages
 	s.mu.Unlock()
@@ -44,7 +44,7 @@ func (s *Supervisor) SetConversation(messages func() []provider.Message) {
 // A child's copy is taken while it is inside its own tool round — the spawn
 // is one of its calls, and only its own loop appends to its conversation,
 // between rounds. The session's is whatever SetConversation handed over.
-func (s *Supervisor) conversationOf(caller string) []provider.Message {
+func (s *Supervisor) conversationOf(caller string) []llm.Message {
 	if caller == "" {
 		s.mu.Lock()
 		read := s.conversation
@@ -52,7 +52,7 @@ func (s *Supervisor) conversationOf(caller string) []provider.Message {
 		if read == nil {
 			return nil
 		}
-		return append([]provider.Message(nil), read()...)
+		return append([]llm.Message(nil), read()...)
 	}
 	c, err := s.lookup(caller)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *Supervisor) conversationOf(caller string) []provider.Message {
 	if a == nil {
 		return nil
 	}
-	return append([]provider.Message(nil), a.Messages()...)
+	return append([]llm.Message(nil), a.Messages()...)
 }
 
 // lastTurns is the tail of msgs holding its last n turns, and how many turns
@@ -73,22 +73,22 @@ func (s *Supervisor) conversationOf(caller string) []provider.Message {
 // check-in, a gate verdict) is part of the turn it arrived in, not the start
 // of another, so counting turns the way the transcript does. The system
 // prompt is never part of it; the child has its own.
-func lastTurns(msgs []provider.Message, n int) ([]provider.Message, int) {
+func lastTurns(msgs []llm.Message, n int) ([]llm.Message, int) {
 	if n <= 0 {
 		return nil, 0
 	}
 	start, got := -1, 0
 	for i := len(msgs) - 1; i >= 0 && got < n; i-- {
-		if msgs[i].Role == provider.RoleUser && !msgs[i].Machine {
+		if msgs[i].Role == llm.RoleUser && !msgs[i].Machine {
 			start, got = i, got+1
 		}
 	}
 	if start < 0 {
 		return nil, 0
 	}
-	var out []provider.Message
+	var out []llm.Message
 	for _, m := range msgs[start:] {
-		if m.Role != provider.RoleSystem {
+		if m.Role != llm.RoleSystem {
 			out = append(out, m)
 		}
 	}
@@ -104,7 +104,7 @@ func lastTurns(msgs []provider.Message, n int) ([]provider.Message, int) {
 // a secret the parent's conversation held never reaches the child's.
 //
 // archive is where an elided result is kept; nil elides it for good.
-func inheritedPrologue(turns []provider.Message, count int, scrub func(provider.Message) provider.Message,
+func inheritedPrologue(turns []llm.Message, count int, scrub func(llm.Message) llm.Message,
 	archive func(tool, content string) (string, bool)) string {
 	if count <= 0 || len(turns) == 0 {
 		return ""
@@ -119,13 +119,13 @@ func inheritedPrologue(turns []provider.Message, count int, scrub func(provider.
 			m = scrub(m)
 		}
 		switch m.Role {
-		case provider.RoleUser:
+		case llm.RoleUser:
 			who := "user"
 			if m.Machine {
 				who = "session note"
 			}
 			sb.WriteString(who + ": " + strings.TrimSpace(m.Content) + "\n\n")
-		case provider.RoleAssistant:
+		case llm.RoleAssistant:
 			if text := strings.TrimSpace(m.Content); text != "" {
 				sb.WriteString("assistant: " + text + "\n\n")
 			}
@@ -137,7 +137,7 @@ func inheritedPrologue(turns []provider.Message, count int, scrub func(provider.
 				}
 				sb.WriteString(line + "\n\n")
 			}
-		case provider.RoleTool:
+		case llm.RoleTool:
 			name := called[m.ToolCallID]
 			sb.WriteString("tool result")
 			if name != "" {

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 )
 
@@ -110,7 +110,7 @@ func TestRepeatDetector_WrapExecutorNotesTheSameFailureTwice(t *testing.T) {
 	if err == nil {
 		t.Fatal("the second failure is still a failure")
 	}
-	result := ExecuteWith(context.Background(), exec, provider.ToolCall{Name: "read_file", Arguments: string(args)})
+	result := ExecuteWith(context.Background(), exec, llm.ToolCall{Name: "read_file", Arguments: string(args)})
 	if !strings.HasPrefix(result, "error: [repeat:") {
 		t.Errorf("the notice goes behind the error prefix, got %q", result)
 	}
@@ -130,10 +130,10 @@ func TestRepeatDetector_WrapResolverAnnotatesTheRepeat(t *testing.T) {
 	// is the only place the detector can see the call its own package
 	// comment is written about.
 	d := NewRepeatDetector()
-	resolve := d.WrapResolver(func(provider.ToolCall) string {
+	resolve := d.WrapResolver(func(llm.ToolCall) string {
 		return "error: command exited with status 1\noutput:\nFAIL\tinternal/calc"
 	})
-	call := provider.ToolCall{Name: "execute_command", Arguments: `{"command":"go test ./internal/calc"}`}
+	call := llm.ToolCall{Name: "execute_command", Arguments: `{"command":"go test ./internal/calc"}`}
 
 	if first := resolve(call); strings.Contains(first, "[repeat:") {
 		t.Errorf("the first run is not a repeat: %q", first)
@@ -158,10 +158,10 @@ func TestRepeatDetector_ARepeatedRefusalIsStillAFailure(t *testing.T) {
 	// the digest's outcome word, the record's class, the transcript row — so
 	// the notice goes behind it rather than in front of it.
 	d := NewRepeatDetector()
-	resolve := d.WrapResolver(func(provider.ToolCall) string {
+	resolve := d.WrapResolver(func(llm.ToolCall) string {
 		return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
 	})
-	call := provider.ToolCall{Name: "edit_file", Arguments: `{"path":"a.go","old":"x","new":"y"}`}
+	call := llm.ToolCall{Name: "edit_file", Arguments: `{"path":"a.go","old":"x","new":"y"}`}
 
 	_ = resolve(call)
 	second := resolve(call)
@@ -182,11 +182,11 @@ func TestRepeatDetector_OneDetectorIsOneHistoryAcrossBothTiers(t *testing.T) {
 	// the second attempt was answered by a policy or by a person.
 	d := NewRepeatDetector()
 	exec := d.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "same output", nil })
-	resolve := d.WrapResolver(func(provider.ToolCall) string { return "same output" })
+	resolve := d.WrapResolver(func(llm.ToolCall) string { return "same output" })
 	args := `{"command":"ls"}`
 
 	_, _ = exec(context.Background(), "execute_command", json.RawMessage(args))
-	if got := resolve(provider.ToolCall{Name: "execute_command", Arguments: args}); !IsRepeatNotice(got) {
+	if got := resolve(llm.ToolCall{Name: "execute_command", Arguments: args}); !IsRepeatNotice(got) {
 		t.Errorf("the second tier should see the first tier's call, got %q", got)
 	}
 }
@@ -200,8 +200,8 @@ func TestRepeatDetector_NilIsSafe(t *testing.T) {
 	if got, _ := exec(context.Background(), "search", json.RawMessage(`{}`)); got != "out" {
 		t.Errorf("a nil detector wraps nothing, got %q", got)
 	}
-	resolve := d.WrapResolver(func(provider.ToolCall) string { return "out" })
-	if got := resolve(provider.ToolCall{Name: "execute_command"}); got != "out" {
+	resolve := d.WrapResolver(func(llm.ToolCall) string { return "out" })
+	if got := resolve(llm.ToolCall{Name: "execute_command"}); got != "out" {
 		t.Errorf("a nil detector resolves nothing, got %q", got)
 	}
 	if got := d.Notice("search", json.RawMessage(`{}`), "out"); got != "out" {

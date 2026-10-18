@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -16,7 +17,6 @@ import (
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/reports"
@@ -166,7 +166,7 @@ func Build(c Call) Receipt {
 	}
 	r.Count, r.Noun, r.Short = count(d, read)
 	for i := range c.Attachments {
-		if c.Attachments[i].Kind == provider.AttachmentImage {
+		if c.Attachments[i].Kind == llm.AttachmentImage {
 			r.Picture = &c.Attachments[i]
 			break
 		}

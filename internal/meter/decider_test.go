@@ -4,21 +4,21 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // stubDecider answers every question at one probability and reports the
 // usage it was given, output included, so the test can see what is billed.
 type stubDecider struct {
 	*stubProvider
-	usage provider.Usage
+	usage llm.Usage
 }
 
 func (s *stubDecider) OffersDecisions(model string) bool { return model == "small" }
 
-func (s *stubDecider) Decide(_ context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
-	return provider.DecisionResult{
-		Answers: []provider.DecisionAnswer{{Type: provider.AnswerPredicate, Name: "q", Probability: 0.9}},
+func (s *stubDecider) Decide(_ context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+	return llm.DecisionResult{
+		Answers: []llm.DecisionAnswer{{Type: llm.AnswerPredicate, Name: "q", Probability: 0.9}},
 		Usage:   s.usage,
 	}, nil
 }
@@ -32,23 +32,23 @@ func (s *stubListerDecider) ListModels(context.Context) ([]string, error) { retu
 // source at its input tokens alone.
 func TestLedger_KeepsTheDecider(t *testing.T) {
 	l := New(testPrices())
-	if _, ok := l.For(&stubProvider{}, SourceClassifier).(provider.Decider); ok {
+	if _, ok := l.For(&stubProvider{}, SourceClassifier).(llm.Decider); ok {
 		t.Fatal("a provider that cannot decide must not appear to")
 	}
 
-	inner := &stubDecider{stubProvider: &stubProvider{}, usage: provider.Usage{PromptTokens: 1000, CompletionTokens: 50}}
+	inner := &stubDecider{stubProvider: &stubProvider{}, usage: llm.Usage{PromptTokens: 1000, CompletionTokens: 50}}
 	p := l.For(inner, SourceClassifier)
-	d, ok := p.(provider.Decider)
+	d, ok := p.(llm.Decider)
 	if !ok {
 		t.Fatal("a provider that can decide must still say so through the gate")
 	}
-	if _, ok := p.(provider.ModelLister); ok {
+	if _, ok := p.(llm.ModelLister); ok {
 		t.Fatal("the gate must not invent a catalog query either")
 	}
 	if !d.OffersDecisions("small") || d.OffersDecisions("big") {
 		t.Fatal("which models offer it is the inner provider's answer")
 	}
-	res, err := d.Decide(context.Background(), provider.DecisionRequest{Model: "small"})
+	res, err := d.Decide(context.Background(), llm.DecisionRequest{Model: "small"})
 	if err != nil || len(res.Answers) != 1 {
 		t.Fatalf("decide should pass through: %+v %v", res, err)
 	}
@@ -61,13 +61,13 @@ func TestLedger_KeepsTheDecider(t *testing.T) {
 	}
 
 	both := l.For(&stubListerDecider{stubDecider: inner}, SourceClassifier)
-	if _, ok := both.(provider.Decider); !ok {
+	if _, ok := both.(llm.Decider); !ok {
 		t.Fatal("a lister that decides keeps the capability")
 	}
-	if _, ok := both.(provider.ModelLister); !ok {
+	if _, ok := both.(llm.ModelLister); !ok {
 		t.Fatal("a lister that decides keeps the catalog")
 	}
-	if _, ok := WithFallbackModel(both, "small").(provider.Decider); !ok {
+	if _, ok := WithFallbackModel(both, "small").(llm.Decider); !ok {
 		t.Fatal("a fallback model must not cost the capability")
 	}
 }

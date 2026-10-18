@@ -21,13 +21,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/shell"
@@ -204,11 +204,11 @@ func hookNotes(set *hook.Set) []string { return set.Notes() }
 // stderr, and a child says them on its own transcript, since the only screen
 // it could reach belongs to the session that spawned it.
 func hookApprover(r *hook.Runner, at func() hook.Pos, note func(hook.Verdict),
-	record func(decision, reason string), next func(provider.ToolCall) string) func(provider.ToolCall) string {
+	record func(decision, reason string), next func(llm.ToolCall) string) func(llm.ToolCall) string {
 	if r == nil {
 		return next
 	}
-	return func(tc provider.ToolCall) string {
+	return func(tc llm.ToolCall) string {
 		ctx := context.Background()
 		call := hook.Call{ID: tc.ID, Name: tc.Name, Arguments: tc.Arguments}
 		pre := r.PreTool(ctx, at(), call, true)
@@ -258,12 +258,12 @@ func hookApprover(r *hook.Runner, at func() hook.Pos, note func(hook.Verdict),
 // See docs/capabilities/containment.md#a-git-write-is-not-a-command.
 func unattendedHooks(r *hook.Runner, at func() hook.Pos, note func(hook.Verdict),
 	record func(decision, reason string), containRefusal string, procSup *process.Supervisor,
-	next func(provider.ToolCall) string) func(provider.ToolCall) string {
+	next func(llm.ToolCall) string) func(llm.ToolCall) string {
 	seams := hookApprover(r, at, note, record, next)
 	if containRefusal == "" {
 		return seams
 	}
-	return func(tc provider.ToolCall) string {
+	return func(tc llm.ToolCall) string {
 		if tc.Name == tools.ExecCommandName || (procSup != nil && tc.Name == process.ToolName) {
 			return containRefusal
 		}
@@ -299,11 +299,11 @@ func childHookAuto(r *hook.Runner) func(subagent.Seam, agent.ToolExecutor) agent
 	}
 }
 
-func childHookGated(r *hook.Runner) func(subagent.Seam, func(provider.ToolCall) string) func(provider.ToolCall) string {
+func childHookGated(r *hook.Runner) func(subagent.Seam, func(llm.ToolCall) string) func(llm.ToolCall) string {
 	if r == nil {
 		return nil
 	}
-	return func(seam subagent.Seam, next func(provider.ToolCall) string) func(provider.ToolCall) string {
+	return func(seam subagent.Seam, next func(llm.ToolCall) string) func(llm.ToolCall) string {
 		return hookApprover(r, childHookPos(seam.At), childHookNotes(seam.Note), seam.Record, next)
 	}
 }

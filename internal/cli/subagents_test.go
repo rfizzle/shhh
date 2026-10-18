@@ -17,6 +17,7 @@ import (
 	"time"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
@@ -29,7 +30,6 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -1083,9 +1083,9 @@ func TestAPreToolDenyHookRefusesAChildsCommand(t *testing.T) {
 	seam := &childSeam{}
 	ran := false
 	resolve := childHookGated(r)(seam.seam(),
-		func(provider.ToolCall) string { ran = true; return "ran" })
+		func(llm.ToolCall) string { ran = true; return "ran" })
 
-	got := resolve(provider.ToolCall{ID: "c1", Name: tools.ExecCommandName,
+	got := resolve(llm.ToolCall{ID: "c1", Name: tools.ExecCommandName,
 		Arguments: `{"command":"rm -rf vendor"}`})
 	if ran {
 		t.Fatal("the child's approval path ran a call a hook refused")
@@ -1116,8 +1116,8 @@ func TestAHooksLineAboutAChildGoesOnTheChildsTranscript(t *testing.T) {
 	r := hookRunnerSaying(t, `{"note":"vendor is off limits"}`, 0, &payloads)
 
 	seam := &childSeam{}
-	resolve := childHookGated(r)(seam.seam(), func(provider.ToolCall) string { return "ran" })
-	resolve(provider.ToolCall{Name: tools.ExecCommandName, Arguments: `{"command":"go build"}`})
+	resolve := childHookGated(r)(seam.seam(), func(llm.ToolCall) string { return "ran" })
+	resolve(llm.ToolCall{Name: tools.ExecCommandName, Arguments: `{"command":"go build"}`})
 
 	if len(seam.notes) == 0 || !strings.Contains(seam.notes[0], "vendor is off limits") {
 		t.Fatalf("the hook's line did not reach the child's transcript: %v", seam.notes)
@@ -1288,7 +1288,7 @@ func TestAChildsWriteIsPutToTheSeamBehindItExactlyOnce(t *testing.T) {
 	gatedExec := withDiagnostics(chainMutation(nil, childPostMutation(r)),
 		func(_ context.Context, name string, _ json.RawMessage) (string, error) { return "wrote " + name, nil })
 	seam := &childSeam{}
-	resolve := childHookGated(r)(seam.seam(), func(tc provider.ToolCall) string {
+	resolve := childHookGated(r)(seam.seam(), func(tc llm.ToolCall) string {
 		out, err := gatedExec(context.Background(), tc.Name, json.RawMessage(tc.Arguments))
 		if err != nil {
 			return "error: " + err.Error()
@@ -1296,7 +1296,7 @@ func TestAChildsWriteIsPutToTheSeamBehindItExactlyOnce(t *testing.T) {
 		return out
 	})
 
-	resolve(provider.ToolCall{Name: tools.WriteFileName, Arguments: `{"path":"a.go","content":"package a\n"}`})
+	resolve(llm.ToolCall{Name: tools.WriteFileName, Arguments: `{"path":"a.go","content":"package a\n"}`})
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -1466,7 +1466,7 @@ func TestModelForLayersTheCallTheRoleTheDepthAndTheSession(t *testing.T) {
 
 // composed is a profile's prompt over the profile's own grants: what
 // profileEnv's composer says before the session's shared tools are added.
-func composed(compose func([]string) string, defs []provider.Tool, _ agent.ToolExecutor) string {
+func composed(compose func([]string) string, defs []llm.Tool, _ agent.ToolExecutor) string {
 	return compose(toolsetNames(defs))
 }
 
@@ -1578,9 +1578,9 @@ func TestApplyDelegation(t *testing.T) {
 // mode reads, on the request and never in its conversation; the other modes
 // send the prompt as it was.
 func TestAChildInAReadOnlyModeIsToldTheMode(t *testing.T) {
-	conversation := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "task"},
+	conversation := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "task"},
 	}
 	defs := tools.DefinitionsFull()
 	for _, tc := range []struct {
@@ -1612,9 +1612,9 @@ func TestAChildInAReadOnlyModeIsToldTheMode(t *testing.T) {
 // own, so the list it is told is the list its policy runs and a reader it
 // does not hold is not named to it.
 func TestAChildReadsTheSameReadOnlyParagraph(t *testing.T) {
-	conversation := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	conversation := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	extra := []string{"tokei"}
-	for _, defs := range [][]provider.Tool{tools.DefinitionsFull(), tools.DefinitionsWithExec()} {
+	for _, defs := range [][]llm.Tool{tools.DefinitionsFull(), tools.DefinitionsWithExec()} {
 		got := withModeInstructions(conversation, agent.ModeReadOnly, extra, defs)[0].Content
 		want := "sys\n\n" + agent.ModeInstructions(agent.ModeReadOnly, extra, toolNames(defs))
 		if got != want {
@@ -1775,7 +1775,7 @@ func TestAProfileSaveDuringASpawnCardIsNotARace(t *testing.T) {
 		<-start
 		for i := range 200 {
 			role := subagent.Role("saved-" + strconv.Itoa(i))
-			agents.effortFor(role, provider.EffortHigh)
+			agents.effortFor(role, llm.EffortHigh)
 			childReachesWeb(chatSession{web: &web.Toolset{}}, agents, role)
 			agents.checkoutIntent(role)
 			agents.runsCommands(role)

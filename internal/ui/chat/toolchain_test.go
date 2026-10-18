@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -38,7 +38,7 @@ func toolchainFixture(ran *[]string) Toolchain {
 // bubblewrap in a checkout that declared a toolchain.
 func toolchainModel(t *testing.T, tc Toolchain) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Start:       new(startFixture()),
 		Containment: Containment{Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc},
 	})
@@ -248,7 +248,7 @@ func TestToolchain_AnInstallTellsTheModelWhatIsNowOnPath(t *testing.T) {
 			m = submitLine(t, m, setupCommandName)
 			m, cmd := pressFor(t, m, "y")
 			m = runSetupCmd(t, m, cmd)
-			var told []provider.Message
+			var told []llm.Message
 			for _, msg := range m.agent.Messages()[before:] {
 				if msg.Machine {
 					told = append(told, msg)

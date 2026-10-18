@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -110,7 +110,7 @@ func TestResolveAutoPutsAWarnedHostToThePerson(t *testing.T) {
 // judgement rests on something about where the request goes.
 func TestClassifierIsShownTheHostsStanding(t *testing.T) {
 	for _, reading := range []web.Reading{readKnown, readUnknown, readYoung, readDisposable, readListed} {
-		p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 			return eventsOf(decisionCall(`{"decision":"allow","reason":"ok"}`)), nil
 		}}
 		req := ClassifierRequest{Tool: web.FetchToolName, Arguments: `{"url":"https://h.test/"}`, Reading: reading}
@@ -127,7 +127,7 @@ func TestClassifierIsShownTheHostsStanding(t *testing.T) {
 		}
 	}
 	// A call that is not a fetch carries none.
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return eventsOf(decisionCall(`{"decision":"allow","reason":"ok"}`)), nil
 	}}
 	NewClassifier(p, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())

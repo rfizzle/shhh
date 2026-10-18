@@ -9,7 +9,7 @@ package meter
 import (
 	"context"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // gated wraps a provider, attributing every request to one origin. The model
@@ -17,7 +17,7 @@ import (
 // the classifier, the summary and a sub-agent all routinely run somewhere
 // cheaper than the session model.
 type gated struct {
-	inner  provider.Provider
+	inner  llm.Provider
 	ledger *Ledger
 	origin Origin
 	// fallbackModel prices a request whose options name no model, which is
@@ -28,13 +28,13 @@ type gated struct {
 // For returns a provider that bills everything it streams to source. Use
 // ForOrigin where several requesters share a source and it matters which one
 // spent.
-func (l *Ledger) For(p provider.Provider, source Source) provider.Provider {
+func (l *Ledger) For(p llm.Provider, source Source) llm.Provider {
 	return l.ForOrigin(p, Origin{Source: source})
 }
 
 // ForOrigin returns a provider that bills everything it streams to one named
 // requester — a single sub-agent, rather than sub-agents as a class.
-func (l *Ledger) ForOrigin(p provider.Provider, o Origin) provider.Provider {
+func (l *Ledger) ForOrigin(p llm.Provider, o Origin) llm.Provider {
 	if p == nil {
 		return nil
 	}
@@ -50,9 +50,9 @@ func (l *Ledger) ForOrigin(p provider.Provider, o Origin) provider.Provider {
 // gate has to answer both questions the same way its inner provider would —
 // hence a type per combination rather than one that always implements both
 // and returns nothing.
-func (g *gated) wrap() provider.Provider {
-	_, lists := g.inner.(provider.ModelLister)
-	_, decides := g.inner.(provider.Decider)
+func (g *gated) wrap() llm.Provider {
+	_, lists := g.inner.(llm.ModelLister)
+	_, decides := g.inner.(llm.Decider)
 	switch {
 	case lists && decides:
 		return &gatedListerDecider{gated: g}
@@ -66,7 +66,7 @@ func (g *gated) wrap() provider.Provider {
 
 // core is the gate under any of its types, or nil for a provider that is
 // not one.
-func core(p provider.Provider) *gated {
+func core(p llm.Provider) *gated {
 	switch g := p.(type) {
 	case *gated:
 		return g
@@ -82,7 +82,7 @@ func core(p provider.Provider) *gated {
 
 // WithFallbackModel names the model to price against when a request does not
 // name one itself.
-func WithFallbackModel(p provider.Provider, model string) provider.Provider {
+func WithFallbackModel(p llm.Provider, model string) llm.Provider {
 	g := core(p)
 	if g == nil {
 		return p
@@ -94,7 +94,7 @@ func WithFallbackModel(p provider.Provider, model string) provider.Provider {
 
 func (g *gated) Name() string { return g.inner.Name() }
 
-func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (g *gated) StreamCompletion(ctx context.Context, messages []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	if err := g.ledger.AllowRequest(); err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Messag
 		model = g.fallbackModel
 	}
 
-	out := make(chan provider.StreamEvent)
+	out := make(chan llm.StreamEvent)
 	go func() {
 		defer close(out)
 		for ev := range events {
@@ -138,29 +138,29 @@ func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Messag
 
 // record bills one response and reads what it said about the cache of the
 // endpoint that answered it.
-func (g *gated) record(model string, req GapRequest, u provider.Usage) {
+func (g *gated) record(model string, req GapRequest, u llm.Usage) {
 	g.ledger.RecordOn(g.inner.Name(), g.origin, model, u)
 	g.ledger.ObserveCache(g.inner.Name(), model, u)
 	g.ledger.ObserveGap(g.origin, g.inner.Name(), model, req, u)
 }
 
 func (g *gated) listModels(ctx context.Context) ([]string, error) {
-	return g.inner.(provider.ModelLister).ListModels(ctx)
+	return g.inner.(llm.ModelLister).ListModels(ctx)
 }
 
 func (g *gated) offersDecisions(model string) bool {
-	return g.inner.(provider.Decider).OffersDecisions(model)
+	return g.inner.(llm.Decider).OffersDecisions(model)
 }
 
 // decide is a Decisions API request through the gate: the same cap a
 // completion meets, and the request billed to this gate's origin. The API
 // charges for input alone, so only the input is recorded — whatever else a
 // response's usage carries is not something anybody was billed for.
-func (g *gated) decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+func (g *gated) decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
 	if err := g.ledger.AllowRequest(); err != nil {
-		return provider.DecisionResult{}, err
+		return llm.DecisionResult{}, err
 	}
-	res, err := g.inner.(provider.Decider).Decide(ctx, req)
+	res, err := g.inner.(llm.Decider).Decide(ctx, req)
 	if err != nil {
 		return res, err
 	}
@@ -168,7 +168,7 @@ func (g *gated) decide(ctx context.Context, req provider.DecisionRequest) (provi
 	if model == "" {
 		model = g.fallbackModel
 	}
-	g.ledger.RecordOn(g.inner.Name(), g.origin, model, provider.Usage{PromptTokens: res.Usage.PromptTokens})
+	g.ledger.RecordOn(g.inner.Name(), g.origin, model, llm.Usage{PromptTokens: res.Usage.PromptTokens})
 	return res, nil
 }
 
@@ -184,7 +184,7 @@ type (
 func (g *gatedLister) ListModels(ctx context.Context) ([]string, error) { return g.listModels(ctx) }
 
 func (g *gatedDecider) OffersDecisions(model string) bool { return g.offersDecisions(model) }
-func (g *gatedDecider) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+func (g *gatedDecider) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
 	return g.decide(ctx, req)
 }
 
@@ -192,6 +192,6 @@ func (g *gatedListerDecider) ListModels(ctx context.Context) ([]string, error) {
 	return g.listModels(ctx)
 }
 func (g *gatedListerDecider) OffersDecisions(model string) bool { return g.offersDecisions(model) }
-func (g *gatedListerDecider) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+func (g *gatedListerDecider) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
 	return g.decide(ctx, req)
 }

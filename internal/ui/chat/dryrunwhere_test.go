@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -16,9 +16,9 @@ import (
 // run, with the host runner there to be told apart from it.
 func sandboxCardModel(t *testing.T, run TailFunc) Model {
 	t.Helper()
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "sync it"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "sync it"},
 	}, mockStream, Wiring{
 		Runner: legacyRunner(func(context.Context, string) (string, int) { return "host", 0 }),
 		Containment: Containment{

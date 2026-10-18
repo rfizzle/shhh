@@ -14,13 +14,13 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -63,21 +63,21 @@ func TestModelHasAStatedBound(t *testing.T) {
 		verb, got, modelFields)
 }
 
-func mockStream(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{Token: "hello", Done: false}
+func mockStream(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{Token: "hello", Done: false}
 	close(ch)
 	_, cancel := context.WithCancel(context.Background())
 	return ch, cancel, nil
 }
 
 func multiTokenStream(tokens ...string) StreamFunc {
-	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, len(tokens)+1)
+	return func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, len(tokens)+1)
 		for _, t := range tokens {
-			ch <- provider.StreamEvent{Token: t}
+			ch <- llm.StreamEvent{Token: t}
 		}
-		ch <- provider.StreamEvent{Done: true}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
@@ -85,7 +85,7 @@ func multiTokenStream(tokens ...string) StreamFunc {
 }
 
 func TestNew_InitialState(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	if m.state != stateInput {
@@ -97,7 +97,7 @@ func TestNew_InitialState(t *testing.T) {
 }
 
 func TestWindowResize_SetsReady(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
@@ -123,7 +123,7 @@ func TestWindowResize_SetsReady(t *testing.T) {
 }
 
 func TestWindowResize_Subsequent(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
@@ -142,7 +142,7 @@ func TestWindowResize_Subsequent(t *testing.T) {
 }
 
 func TestViewBeforeReady(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	view := m.View().Content
@@ -152,7 +152,7 @@ func TestViewBeforeReady(t *testing.T) {
 }
 
 func TestWordWrap(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	input := "one two three four five six seven eight nine ten"
@@ -169,7 +169,7 @@ func TestWordWrap(t *testing.T) {
 }
 
 func TestWordWrap_PreservesNewlines(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	input := "line one\nline two\nline three"
@@ -187,7 +187,7 @@ func TestWordWrap_PreservesNewlines(t *testing.T) {
 // after a notice's act when the notice has to wrap: the head is kept whole,
 // and only the detail after it is re-flowed.
 func TestMarginProse_AWrappedNoticeKeepsTheGapAfterItsHead(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	for _, tc := range []struct{ text, head string }{
 		{"✓ writer-1  approved · apply patch (+40 −40, 2 files)", "✓ writer-1  approved"},
@@ -218,7 +218,7 @@ func TestMarginProse_AWrappedNoticeKeepsTheGapAfterItsHead(t *testing.T) {
 }
 
 func TestEmptyHistory_ShowsWelcome(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	m.width = 80
 
@@ -230,7 +230,7 @@ func TestEmptyHistory_ShowsWelcome(t *testing.T) {
 
 func TestMultiTurn_MessageAccumulation(t *testing.T) {
 	stream := multiTokenStream("world")
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, stream, Wiring{})
 
 	// Initialize with window size
@@ -253,7 +253,7 @@ func TestMultiTurn_MessageAccumulation(t *testing.T) {
 	}
 
 	// Simulate stream started
-	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ := stream(m.Messages(), llm.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -275,7 +275,7 @@ func TestMultiTurn_MessageAccumulation(t *testing.T) {
 	if len(m.Messages()) != 3 {
 		t.Fatalf("expected 3 messages (system+user+assistant), got %d", len(m.Messages()))
 	}
-	if m.Messages()[2].Role != provider.RoleAssistant {
+	if m.Messages()[2].Role != llm.RoleAssistant {
 		t.Fatalf("expected assistant role, got %s", m.Messages()[2].Role)
 	}
 	if m.Messages()[2].Content != "world" {
@@ -285,7 +285,7 @@ func TestMultiTurn_MessageAccumulation(t *testing.T) {
 
 func TestMultiTurn_SecondExchange(t *testing.T) {
 	callCount := 0
-	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		callCount++
 		var token string
 		if callCount == 1 {
@@ -293,15 +293,15 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 		} else {
 			token = "second response"
 		}
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: token}
-		ch <- provider.StreamEvent{Done: true}
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: token}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
 	}
 
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, stream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -312,7 +312,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ := stream(m.Messages(), llm.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -330,7 +330,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 		t.Fatalf("expected 4 messages before second stream, got %d", len(m.Messages()))
 	}
 
-	events, cancel, _ = stream(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ = stream(m.Messages(), llm.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -344,12 +344,12 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 	}
 
 	// Verify message order
-	expected := []provider.Role{
-		provider.RoleSystem,
-		provider.RoleUser,
-		provider.RoleAssistant,
-		provider.RoleUser,
-		provider.RoleAssistant,
+	expected := []llm.Role{
+		llm.RoleSystem,
+		llm.RoleUser,
+		llm.RoleAssistant,
+		llm.RoleUser,
+		llm.RoleAssistant,
 	}
 	for i, msg := range m.Messages() {
 		if msg.Role != expected[i] {
@@ -363,7 +363,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 
 func TestStreaming_TokenByToken(t *testing.T) {
 	stream := multiTokenStream("one", " two", " three")
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, stream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -373,7 +373,7 @@ func TestStreaming_TokenByToken(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ := stream(m.Messages(), llm.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -406,7 +406,7 @@ func TestStreaming_TokenByToken(t *testing.T) {
 
 func TestStreaming_CancelPreservesPartial(t *testing.T) {
 	stream := multiTokenStream("partial", " content")
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, stream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -416,7 +416,7 @@ func TestStreaming_CancelPreservesPartial(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ := stream(m.Messages(), llm.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -442,7 +442,7 @@ func TestStreaming_CancelPreservesPartial(t *testing.T) {
 }
 
 func TestStreamError_ReturnsToInput(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -465,7 +465,7 @@ func TestStreamError_ReturnsToInput(t *testing.T) {
 }
 
 func TestExit_CtrlD(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -491,7 +491,7 @@ func TestExit_CtrlD(t *testing.T) {
 func TestExit_SlashCommands(t *testing.T) {
 	for _, command := range []string{"/quit", "/exit", "/q"} {
 		t.Run(command, func(t *testing.T) {
-			msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+			msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 			m := New(msgs, mockStream, Wiring{})
 
 			updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -512,7 +512,7 @@ func TestExit_SlashCommands(t *testing.T) {
 }
 
 func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -522,7 +522,7 @@ func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := mockStream(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ := mockStream(m.Messages(), llm.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -544,7 +544,7 @@ func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 }
 
 func TestExit_CtrlC_DuringInput_Quits(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -565,12 +565,12 @@ func TestExit_CtrlC_DuringInput_Quits(t *testing.T) {
 }
 
 func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	cancelled := false
-	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "data"}
-		ch <- provider.StreamEvent{Done: true}
+	stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "data"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		wrappedCancel := func() {
@@ -588,7 +588,7 @@ func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ := stream(m.Messages(), llm.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -615,21 +615,21 @@ func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 }
 
 func TestRequestStream_SendsFullConversation(t *testing.T) {
-	var receivedMsgs []provider.Message
-	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		receivedMsgs = make([]provider.Message, len(msgs))
+	var receivedMsgs []llm.Message
+	stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		receivedMsgs = make([]llm.Message, len(msgs))
 		copy(receivedMsgs, msgs)
-		ch := make(chan provider.StreamEvent, 1)
-		ch <- provider.StreamEvent{Done: true}
+		ch := make(chan llm.StreamEvent, 1)
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
 	}
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "first"},
-		{Role: provider.RoleAssistant, Content: "reply"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "first"},
+		{Role: llm.RoleAssistant, Content: "reply"},
 	}
 	m := New(msgs, stream, Wiring{})
 
@@ -682,19 +682,19 @@ func execToolLoop(t *testing.T, m Model, msg toolCallsMsg) (Model, tea.Cmd) {
 
 func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	callCount := 0
-	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		callCount++
-		ch := make(chan provider.StreamEvent, 2)
+		ch := make(chan llm.StreamEvent, 2)
 		if callCount == 1 {
-			ch <- provider.StreamEvent{
-				ToolCalls: []provider.ToolCall{
+			ch <- llm.StreamEvent{
+				ToolCalls: []llm.ToolCall{
 					{ID: "call_1", Name: "read_file", Arguments: `{"path":"test.go"}`},
 				},
 				Done: true,
 			}
 		} else {
-			ch <- provider.StreamEvent{Token: "file contents are good"}
-			ch <- provider.StreamEvent{Done: true}
+			ch <- llm.StreamEvent{Token: "file contents are good"}
+			ch <- llm.StreamEvent{Done: true}
 		}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
@@ -708,7 +708,7 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 		return "package main", nil
 	}
 
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, stream, Wiring{Executor: executor})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -719,14 +719,14 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	m = updated.(Model)
 
 	// Stream starts, returns tool call
-	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ := stream(m.Messages(), llm.ToolChoiceAuto)
 	_ = cancel
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
 	// waitForEvent yields toolCallsMsg
 	var cmd tea.Cmd
-	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"test.go"}`},
 	}})
 
@@ -734,13 +734,13 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	if len(m.Messages()) != 4 {
 		t.Fatalf("expected 4 messages after tool execution, got %d", len(m.Messages()))
 	}
-	if m.Messages()[2].Role != provider.RoleAssistant {
+	if m.Messages()[2].Role != llm.RoleAssistant {
 		t.Fatalf("expected assistant message, got %s", m.Messages()[2].Role)
 	}
 	if len(m.Messages()[2].ToolCalls) != 1 {
 		t.Fatalf("expected 1 tool call on assistant msg, got %d", len(m.Messages()[2].ToolCalls))
 	}
-	if m.Messages()[3].Role != provider.RoleTool {
+	if m.Messages()[3].Role != llm.RoleTool {
 		t.Fatalf("expected tool message, got %s", m.Messages()[3].Role)
 	}
 	if m.Messages()[3].Content != "package main" {
@@ -768,9 +768,9 @@ func TestToolCallLoop_MultipleToolCalls(t *testing.T) {
 		}
 	}
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "check stuff"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "check stuff"},
 	}
 	m := New(msgs, mockStream, Wiring{Executor: executor})
 
@@ -778,7 +778,7 @@ func TestToolCallLoop_MultipleToolCalls(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
 		{ID: "call_2", Name: "list_directory", Arguments: `{"path":"."}`},
 	}})
@@ -806,9 +806,9 @@ func TestToolCallLoop_TextBeforeToolCall(t *testing.T) {
 		return "result", nil
 	}
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hi"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hi"},
 	}
 	m := New(msgs, mockStream, Wiring{Executor: executor})
 
@@ -817,7 +817,7 @@ func TestToolCallLoop_TextBeforeToolCall(t *testing.T) {
 	m.state = stateStreaming
 	m.streaming = "Let me check that."
 
-	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"x.go"}`},
 	}})
 
@@ -836,9 +836,9 @@ func TestToolCallLoop_ExecutorError(t *testing.T) {
 		return "", errors.New("executor failed")
 	}
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hi"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hi"},
 	}
 	m := New(msgs, mockStream, Wiring{Executor: executor})
 
@@ -846,7 +846,7 @@ func TestToolCallLoop_ExecutorError(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "bad_tool", Arguments: `{}`},
 	}})
 
@@ -858,9 +858,9 @@ func TestToolCallLoop_ExecutorError(t *testing.T) {
 }
 
 func TestToolCallLoop_NoExecutor(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hi"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hi"},
 	}
 	m := New(msgs, mockStream, Wiring{})
 
@@ -868,7 +868,7 @@ func TestToolCallLoop_NoExecutor(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"x"}`},
 	}})
 
@@ -879,9 +879,9 @@ func TestToolCallLoop_NoExecutor(t *testing.T) {
 }
 
 func TestWaitForEvent_ToolCalls(t *testing.T) {
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{
 			{ID: "call_1", Name: "search", Arguments: `{"pattern":"TODO"}`},
 		},
 		Done: true,
@@ -904,7 +904,7 @@ func TestWaitForEvent_ToolCalls(t *testing.T) {
 }
 
 func TestResize_RewrapsHistory(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
@@ -945,11 +945,11 @@ func lipglossWidth(s string) int {
 }
 
 func TestWaitForEvent_BatchesBufferedTokens(t *testing.T) {
-	ch := make(chan provider.StreamEvent, 4)
-	ch <- provider.StreamEvent{Token: "a"}
-	ch <- provider.StreamEvent{Token: "b"}
-	ch <- provider.StreamEvent{Token: "c"}
-	ch <- provider.StreamEvent{Done: true}
+	ch := make(chan llm.StreamEvent, 4)
+	ch <- llm.StreamEvent{Token: "a"}
+	ch <- llm.StreamEvent{Token: "b"}
+	ch <- llm.StreamEvent{Token: "c"}
+	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 
 	msg := waitForEvent(ch)()
@@ -966,7 +966,7 @@ func TestWaitForEvent_BatchesBufferedTokens(t *testing.T) {
 }
 
 func TestWaitForEvent_BatchDeliveredThroughUpdate(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -984,7 +984,7 @@ func TestWaitForEvent_BatchDeliveredThroughUpdate(t *testing.T) {
 }
 
 func TestSlashCommand_NoDB_StillHandled(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	for _, cmd := range []string{"/save x", "/load x", "/chats"} {
@@ -1002,16 +1002,16 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "slow result", nil
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hi"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hi"},
 	}
 	m := New(msgs, mockStream, Wiring{Executor: executor})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"x"}`},
 	}})
 	m = updated.(Model)
@@ -1027,7 +1027,7 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 	}
 	// Pending call must have a synthetic result so the conversation stays valid.
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_1" {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_1" {
 		t.Fatalf("expected synthetic tool result for pending call, got role=%s id=%s", last.Role, last.ToolCallID)
 	}
 	before := len(m.Messages())
@@ -1047,7 +1047,7 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 // with nowhere to save has no /save row, and the reader is not sent to a
 // command that would answer that it is unavailable.
 func TestSlashHelp_ListsWhatThisSessionCanDo(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	handled, result := m.handleSlashCommand("/help")
@@ -1080,10 +1080,10 @@ func TestSlashHelp_ListsWhatThisSessionCanDo(t *testing.T) {
 }
 
 func TestSlashClear_ResetsConversation(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hi"},
-		{Role: provider.RoleAssistant, Content: "hello"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hi"},
+		{Role: llm.RoleAssistant, Content: "hello"},
 	}
 	m := New(msgs, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryUser, text: "hi"})
@@ -1093,7 +1093,7 @@ func TestSlashClear_ResetsConversation(t *testing.T) {
 
 	m = sendText(t, m, "/clear")
 
-	if len(m.Messages()) != 1 || m.Messages()[0].Role != provider.RoleSystem {
+	if len(m.Messages()) != 1 || m.Messages()[0].Role != llm.RoleSystem {
 		t.Fatalf("expected only system message to survive /clear, got %d messages", len(m.Messages()))
 	}
 	// The row the new session opens on, and nothing of the conversation it
@@ -1122,7 +1122,7 @@ func TestNewSession_LeavesTheOldConversationWholeAndStartsAnother(t *testing.T) 
 
 	var linked []string
 	hostCalls := 0
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		DB:       db,
 		Observer: observe.Observer{Session: func(name string) { linked = append(linked, name) }},
 		NewSession: func() SessionStart {
@@ -1201,7 +1201,7 @@ func TestNewSession_KeepsTheSlotItIsStillSavingInto(t *testing.T) {
 	}
 	defer db.Close()
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db})
 	m = sendText(t, m, "first session")
 	updated, _ := m.Update(tokenMsg{text: "one"})
 	m = updated.(Model)
@@ -1418,7 +1418,7 @@ func TestNewSession_ConfirmedMidTurnCancelsAndCrosses(t *testing.T) {
 }
 
 func TestSlashUnknown_Handled(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 
 	handled, result := m.handleSlashCommand("/bogus")
@@ -1443,9 +1443,9 @@ func TestSlashUnknown_Handled(t *testing.T) {
 }
 
 func TestStatusBar_ShowsModelAndContext(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{ModelName: "gpt-4o"})
-	m.accumulateUsage(&provider.Usage{PromptTokens: 1500, CompletionTokens: 300})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 1500, CompletionTokens: 300})
 
 	bar := m.renderStatusBar(120)
 	if strings.Contains(bar, "gpt-4o") {
@@ -1476,7 +1476,7 @@ func sendText(t *testing.T, m Model, text string) Model {
 
 func TestInputHistory_RecallWithArrows(t *testing.T) {
 	stream := multiTokenStream("ok")
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -1515,7 +1515,7 @@ func TestInputHistory_RecallWithArrows(t *testing.T) {
 
 func TestInputHistory_UpIgnoredWhenDraftPresent(t *testing.T) {
 	stream := multiTokenStream("ok")
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -1533,7 +1533,7 @@ func TestInputHistory_UpIgnoredWhenDraftPresent(t *testing.T) {
 }
 
 func TestEsc_KeepsInput(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -1547,7 +1547,7 @@ func TestEsc_KeepsInput(t *testing.T) {
 }
 
 func TestCtrlC_ClearsNonEmptyInputBeforeQuitting(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -1577,10 +1577,10 @@ func TestCtrlC_ClearsNonEmptyInputBeforeQuitting(t *testing.T) {
 }
 
 func runCapableModel(response string) Model {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "how?"},
-		{Role: provider.RoleAssistant, Content: response},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "how?"},
+		{Role: llm.RoleAssistant, Content: response},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
@@ -1638,7 +1638,7 @@ func TestRun_SingleBlock_ConfirmAndExecute(t *testing.T) {
 		t.Fatal("should return to input after command completes")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleUser || !strings.Contains(last.Content, "ran: echo hi") {
+	if last.Role != llm.RoleUser || !strings.Contains(last.Content, "ran: echo hi") {
 		t.Fatalf("command output should be recorded in conversation, got %+v", last)
 	}
 	if !strings.Contains(last.Content, "Exit code: 0") {
@@ -1740,9 +1740,9 @@ func TestRun_NoBlocks(t *testing.T) {
 }
 
 func TestRun_NoRunner(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleAssistant, Content: "```bash\nls\n```"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleAssistant, Content: "```bash\nls\n```"},
 	}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -1758,9 +1758,9 @@ func TestRun_NoRunner(t *testing.T) {
 }
 
 func TestExecTool_ApprovalFlow(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "create a file"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "create a file"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
@@ -1771,7 +1771,7 @@ func TestExecTool_ApprovalFlow(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"touch /tmp/x"}`},
 	}})
 	m = updated.(Model)
@@ -1800,9 +1800,9 @@ func TestExecTool_ApprovalFlow(t *testing.T) {
 	m = updated.(Model)
 
 	// Result recorded as a tool message, then the stream resumes.
-	var toolMsg *provider.Message
+	var toolMsg *llm.Message
 	for i := range m.Messages() {
-		if m.Messages()[i].Role == provider.RoleTool {
+		if m.Messages()[i].Role == llm.RoleTool {
 			toolMsg = &m.Messages()[i]
 		}
 	}
@@ -1821,9 +1821,9 @@ func TestExecTool_ApprovalFlow(t *testing.T) {
 }
 
 func TestExecTool_Declined(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "wipe it"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "wipe it"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Workspace: t.TempDir(),
@@ -1836,7 +1836,7 @@ func TestExecTool_Declined(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"rm -rf ./build"}`},
 	}})
 	m = updated.(Model)
@@ -1846,7 +1846,7 @@ func TestExecTool_Declined(t *testing.T) {
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "declined") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "declined") {
 		t.Fatalf("declined call should produce an error tool result, got %+v", last)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -1858,9 +1858,9 @@ func TestExecTool_MixedWithReadOnly(t *testing.T) {
 	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "read result", nil
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "check then fix"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "check then fix"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Executor: executor,
@@ -1870,7 +1870,7 @@ func TestExecTool_MixedWithReadOnly(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_r", Name: "read_file", Arguments: `{"path":"a.go"}`},
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
@@ -1891,7 +1891,7 @@ func TestExecTool_MixedWithReadOnly(t *testing.T) {
 	// The read-only result must already be recorded for call_r.
 	foundRead := false
 	for _, msg := range m.Messages() {
-		if msg.Role == provider.RoleTool && msg.ToolCallID == "call_r" && msg.Content == "read result" {
+		if msg.Role == llm.RoleTool && msg.ToolCallID == "call_r" && msg.Content == "read result" {
 			foundRead = true
 		}
 	}
@@ -1901,9 +1901,9 @@ func TestExecTool_MixedWithReadOnly(t *testing.T) {
 }
 
 func TestExecTool_InvalidArgsSkipped(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "go"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "go"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "", 0 }),
@@ -1912,13 +1912,13 @@ func TestExecTool_InvalidArgsSkipped(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, restream := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "execute_command", Arguments: `not json`},
 	}})
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "invalid") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "invalid") {
 		t.Fatalf("invalid args should produce an error tool result, got %+v", last)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -1933,7 +1933,7 @@ func TestAutosave_AfterExchange(t *testing.T) {
 	}
 	defer db.Close()
 
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, multiTokenStream("hi there"), Wiring{DB: db})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -1968,7 +1968,7 @@ func TestAutosave_EachSessionKeepsItsOwnSlot(t *testing.T) {
 	}
 	defer db.Close()
 
-	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	sys := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	run := func(m Model, user, reply string) Model {
 		m = sendText(t, m, user)
 		updated, _ := m.Update(tokenMsg{text: reply})
@@ -2032,7 +2032,7 @@ func TestAutosave_RefusedSlotMovesTheSessionRatherThanClobbering(t *testing.T) {
 	}
 	defer other.Close()
 
-	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	sys := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := sendText(t, New(sys, mockStream, Wiring{DB: db}), "first question")
 	updated, _ := m.Update(tokenMsg{text: "an answer"})
 	updated, save := updated.(Model).Update(doneMsg{})
@@ -2048,11 +2048,11 @@ func TestAutosave_RefusedSlotMovesTheSessionRatherThanClobbering(t *testing.T) {
 	if _, err := other.LoadChat(taken); err != nil {
 		t.Fatalf("load: %v", err)
 	}
-	theirs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "theirs"},
-		{Role: provider.RoleAssistant, Content: "answered"},
-		{Role: provider.RoleUser, Content: "and more"},
+	theirs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "theirs"},
+		{Role: llm.RoleAssistant, Content: "answered"},
+		{Role: llm.RoleUser, Content: "and more"},
 	}
 	if err := other.SaveChat(taken, theirs); err != nil {
 		t.Fatalf("save: %v", err)
@@ -2110,7 +2110,7 @@ func TestAutosave_AFailedSaveSaysSo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	sys := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := sendText(t, New(sys, mockStream, Wiring{DB: db}), "a question")
 	slot := m.sessionName
 
@@ -2145,7 +2145,7 @@ func TestAutosave_AFailedSaveSaysSo(t *testing.T) {
 }
 
 func TestAutosave_NilWithoutDBOrContent(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	if m.autosaveCmd() != nil {
 		t.Fatal("no DB → no autosave cmd")
@@ -2164,12 +2164,12 @@ func TestAutosave_NilWithoutDBOrContent(t *testing.T) {
 }
 
 func TestWithResumedMessages_RebuildsTranscript(t *testing.T) {
-	saved := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "old question"},
-		{Role: provider.RoleAssistant, Content: "old answer"},
+	saved := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "old question"},
+		{Role: llm.RoleAssistant, Content: "old answer"},
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{}).WithResumedMessages("", saved)
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{}).WithResumedMessages("", saved)
 
 	// The three saved messages, plus the reading of the checkout that goes in
 	// front of every restored transcript.
@@ -2195,11 +2195,11 @@ func TestSlashLoad_NoArg_ListsChats(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if err := db.SaveChat("my-session", []provider.Message{{Role: provider.RoleUser, Content: "x"}}); err != nil {
+	if err := db.SaveChat("my-session", []llm.Message{{Role: llm.RoleUser, Content: "x"}}); err != nil {
 		t.Fatal(err)
 	}
 
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{DB: db})
 
 	handled, result := m.handleSlashCommand("/load")
@@ -2212,7 +2212,7 @@ func TestSlashLoad_NoArg_ListsChats(t *testing.T) {
 }
 
 func TestSlashModel_ShowsCurrentModel(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{ModelName: "gpt-4o"})
 
 	handled, result := m.handleSlashCommand("/model")
@@ -2225,7 +2225,7 @@ func TestSlashModel_ShowsCurrentModel(t *testing.T) {
 }
 
 func TestSlashModel_Switches(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	var switched string
 	m := New(msgs, mockStream, Wiring{
 		ModelName:   "gpt-4o",
@@ -2248,7 +2248,7 @@ func TestSlashModel_Switches(t *testing.T) {
 }
 
 func TestSlashModel_EdgeCases(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 
 	// No switcher configured.
 	m := New(msgs, mockStream, Wiring{ModelName: "gpt-4o"})
@@ -2280,7 +2280,7 @@ func TestSlashModel_EdgeCases(t *testing.T) {
 }
 
 func TestMaxToolRounds_Default(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	if got := m.agent.Ceiling(); got != DefaultMaxToolRounds {
 		t.Fatalf("default cap should be %d, got %d", DefaultMaxToolRounds, got)
@@ -2299,9 +2299,9 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "result", nil
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "go"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "go"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Executor:      executor,
@@ -2313,7 +2313,7 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 
 	// Round 1: under the cap, the loop re-streams.
 	var cmd tea.Cmd
-	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
 	}})
 	if m.state != stateStreaming {
@@ -2324,7 +2324,7 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 	}
 
 	// Round 2 hits the cap: the loop pauses and control returns to the user.
-	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_2", Name: "read_file", Arguments: `{"path":"b.go"}`},
 	}})
 	if m.state != stateInput {
@@ -2334,7 +2334,7 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 		t.Fatal("no re-stream cmd at the cap (autosave is nil without a DB)")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_2" {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_2" {
 		t.Fatalf("conversation must stay well-formed at the cap, last message: %+v", last)
 	}
 	// The cap is a checkpoint, not a notice: the turn closes on the `rounds`
@@ -2358,9 +2358,9 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 }
 
 func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner:        legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }),
@@ -2370,7 +2370,7 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"go build ./..."}`},
 	}})
 	m = updated.(Model)
@@ -2397,7 +2397,7 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 		t.Fatal("no re-stream cmd at the cap (autosave is nil without a DB)")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_1" {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_1" {
 		t.Fatalf("expected the command's tool result last, got %+v", last)
 	}
 }
@@ -2408,7 +2408,7 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 // says at rest — how much of the ceiling the last turn spent — is what the
 // reader about to send the next one is asking (guidelines/layout-drop-order).
 func TestStatusBar_StatesTheRoundCounterRunningAndAtRest(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	if strings.Contains(m.renderStatusBar(80), "round") {
 		t.Fatal("a session that has run no round has no counter to state")
@@ -2427,7 +2427,7 @@ func TestStatusBar_StatesTheRoundCounterRunningAndAtRest(t *testing.T) {
 // steeringModel is a streaming-state model ready to receive steering input.
 func steeringModel(t *testing.T, stream StreamFunc) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -2472,9 +2472,9 @@ func TestSteering_InjectedBeforeNextStreamRequest(t *testing.T) {
 	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "result", nil
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "go"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "go"},
 	}
 	m := New(msgs, mockStream, Wiring{Executor: executor})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -2483,16 +2483,16 @@ func TestSteering_InjectedBeforeNextStreamRequest(t *testing.T) {
 	m.steering = []steeringItem{{text: "focus on the tests"}}
 
 	var cmd tea.Cmd
-	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
 	}})
 
 	// system, user, assistant(tool call), tool result, steering user message
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleUser || last.Content != "focus on the tests" {
+	if last.Role != llm.RoleUser || last.Content != "focus on the tests" {
 		t.Fatalf("steering should be injected as a user message after the tool round, got %+v", last)
 	}
-	if m.Messages()[len(m.Messages())-2].Role != provider.RoleTool {
+	if m.Messages()[len(m.Messages())-2].Role != llm.RoleTool {
 		t.Fatal("steering must come after the round's tool results")
 	}
 	if len(m.steering) != 0 {
@@ -2513,9 +2513,9 @@ func TestSteering_LiftsRoundCap(t *testing.T) {
 	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		return "result", nil
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "go"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "go"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Executor:      executor,
@@ -2527,7 +2527,7 @@ func TestSteering_LiftsRoundCap(t *testing.T) {
 	m.steering = []steeringItem{{text: "keep going"}}
 
 	var cmd tea.Cmd
-	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
 	}})
 
@@ -2550,7 +2550,7 @@ func TestSteering_SentAfterDone(t *testing.T) {
 		t.Fatal("expected a stream request cmd for the steering turn")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleUser || last.Content != "one more thing" {
+	if last.Role != llm.RoleUser || last.Content != "one more thing" {
 		t.Fatalf("expected the steering message as the new user turn, got %+v", last)
 	}
 }
@@ -2628,12 +2628,12 @@ func TestExitBanner_NamesTheSlotTheAutosaveWrote(t *testing.T) {
 	}
 	defer db.Close()
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "ok"},
-		{Role: provider.RoleUser, Content: "two"},
-		{Role: provider.RoleAssistant, Content: "ok"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "ok"},
+		{Role: llm.RoleUser, Content: "two"},
+		{Role: llm.RoleAssistant, Content: "ok"},
 	}
 	m := New(msgs, mockStream, Wiring{DB: db})
 
@@ -2656,9 +2656,9 @@ func TestExitBanner_NamesTheSlotTheAutosaveWrote(t *testing.T) {
 // than pointing at a slot holding somebody else's conversation. The condition
 // is autosaveCmd's, so the two can never disagree.
 func TestExitBanner_NoStoreIsUnsaved(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "one"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "one"},
 	}
 	m := New(msgs, mockStream, Wiring{PersistenceError: errors.New("migrate: database is locked")})
 
@@ -2692,10 +2692,10 @@ func TestExitBanner_PricesCacheReadsAtTheCacheRate(t *testing.T) {
 		},
 	})
 	ledger := meter.New(table)
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "ok"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "ok"},
 	}, mockStream, Wiring{
 		Prices:    table,
 		ModelName: "gpt-4o",
@@ -2704,10 +2704,10 @@ func TestExitBanner_PricesCacheReadsAtTheCacheRate(t *testing.T) {
 
 	// A round of the shape this defect was reported on: a million tokens of
 	// input, nine tenths of it a cache read, and a child that spent as well.
-	usage := provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
+	usage := llm.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", usage)
 	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "researcher-1"}, "gpt-4o",
-		provider.Usage{PromptTokens: 100_000, CachedTokens: 90_000, CompletionTokens: 500})
+		llm.Usage{PromptTokens: 100_000, CachedTokens: 90_000, CompletionTokens: 500})
 	m.accumulateUsage(&usage)
 
 	b := m.ExitBanner("shhh code --continue")
@@ -2733,7 +2733,7 @@ func TestExitBanner_PricesCacheReadsAtTheCacheRate(t *testing.T) {
 
 // A session that never said anything renders nothing at all.
 func TestExitBanner_NothingSaidHasNoTurns(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	if b := m.ExitBanner("shhh chat --continue"); b.Turns != 0 || b.View(80) != "" {
 		t.Fatalf("an empty session should render no banner, got %q", b.View(80))
 	}

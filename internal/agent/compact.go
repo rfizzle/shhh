@@ -25,8 +25,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/logs"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // What a compaction keeps besides the summary.
@@ -94,9 +94,9 @@ var errCompactEmpty = errors.New("the summary came back empty")
 // so a request that dropped them to prevent a call would rebuild the whole
 // head to save a retry.
 // See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
-func (a *Agent) CompactRequest() []provider.Message {
+func (a *Agent) CompactRequest() []llm.Message {
 	return append(a.RequestMessages(),
-		provider.Message{Role: provider.RoleUser, Content: CompactInstruction})
+		llm.Message{Role: llm.RoleUser, Content: CompactInstruction})
 }
 
 // CompactKeep is the tail of the conversation a compaction carries through
@@ -110,15 +110,15 @@ func (a *Agent) CompactRequest() []provider.Message {
 // model can no longer see it made, which every dialect rejects. A tail that
 // would be the whole conversation is no tail at all — there would be nothing
 // left for the summary to have summarized.
-func (a *Agent) CompactKeep(budget int64, cal Calibration) []provider.Message {
+func (a *Agent) CompactKeep(budget int64, cal Calibration) []llm.Message {
 	msgs := a.messages
 	first := 0
-	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 		first = 1
 	}
 	var starts []int
 	for i := first; i < len(msgs); i++ {
-		if msgs[i].Role == provider.RoleUser {
+		if msgs[i].Role == llm.RoleUser {
 			starts = append(starts, i)
 		}
 	}
@@ -136,14 +136,14 @@ func (a *Agent) CompactKeep(budget int64, cal Calibration) []provider.Message {
 	if at < 0 {
 		return nil
 	}
-	return append([]provider.Message(nil), msgs[at:]...)
+	return append([]llm.Message(nil), msgs[at:]...)
 }
 
 // CompactKeptTurns counts the user messages in a kept tail — the turns it is.
-func CompactKeptTurns(kept []provider.Message) int {
+func CompactKeptTurns(kept []llm.Message) int {
 	n := 0
 	for _, msg := range kept {
-		if msg.Role == provider.RoleUser {
+		if msg.Role == llm.RoleUser {
 			n++
 		}
 	}
@@ -159,10 +159,10 @@ func CompactKeptTurns(kept []provider.Message) int {
 // watching. A surface whose user asked for the compaction resets the counter
 // itself, because there the request is the user's and a user's message is
 // what a fresh budget is for.
-func (a *Agent) Compact(summary string, kept []provider.Message) {
-	rebuilt := make([]provider.Message, 0, 2+len(kept))
+func (a *Agent) Compact(summary string, kept []llm.Message) {
+	rebuilt := make([]llm.Message, 0, 2+len(kept))
 	first := 0
-	if len(a.messages) > 0 && a.messages[0].Role == provider.RoleSystem {
+	if len(a.messages) > 0 && a.messages[0].Role == llm.RoleSystem {
 		rebuilt = append(rebuilt, a.messages[0])
 		first = 1
 	}
@@ -173,8 +173,8 @@ func (a *Agent) Compact(summary string, kept []provider.Message) {
 	if end := len(a.messages) - len(kept); end > first {
 		a.folded = append(a.folded, a.messages[first:end]...)
 	}
-	rebuilt = append(rebuilt, provider.Message{
-		Role: provider.RoleUser, Content: CompactSummaryMessage(summary), Machine: true})
+	rebuilt = append(rebuilt, llm.Message{
+		Role: llm.RoleUser, Content: CompactSummaryMessage(summary), Machine: true})
 	rebuilt = append(rebuilt, kept...)
 	a.SetMessages(rebuilt)
 }
@@ -182,22 +182,22 @@ func (a *Agent) Compact(summary string, kept []provider.Message) {
 // Folded is the turns compactions have taken out of the model's list since
 // the conversation was last replaced, oldest first, summaries included. The
 // returned slice is the Agent's own; callers must not mutate it.
-func (a *Agent) Folded() []provider.Message { return a.folded }
+func (a *Agent) Folded() []llm.Message { return a.folded }
 
 // SetFolded replaces the folded turns, for a surface that has put a
 // conversation back from a record that kept them, or that has started a new
 // one and has none. SetMessages leaves them alone, because a rebuild of the
 // same conversation (a new workspace block, a resume reading) folds nothing.
-func (a *Agent) SetFolded(folded []provider.Message) { a.folded = folded }
+func (a *Agent) SetFolded(folded []llm.Message) { a.folded = folded }
 
 // streamOn opens a completion over a stream of the caller's own. The scrub
 // belongs to the conversation and not to the stream that happens to carry it,
 // so a request asked of another model goes through the same door as the
 // turn's own.
 // See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
-func (a *Agent) streamOn(stream StreamFunc, msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+func (a *Agent) streamOn(stream StreamFunc, msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 	if a.scrub != nil {
-		msgs = append([]provider.Message(nil), msgs...)
+		msgs = append([]llm.Message(nil), msgs...)
 		for i := range msgs {
 			msgs[i] = a.scrub(msgs[i])
 		}
@@ -209,7 +209,7 @@ func (a *Agent) streamOn(stream StreamFunc, msgs []provider.Message, choice stri
 // builds the messages and says what the request may do about tools; the
 // driver owns the wait, because the wait is the part that has to stay
 // interruptible and only the driver knows how its run is interrupted.
-type CompactAsk func(msgs []provider.Message, choice string) (string, error)
+type CompactAsk func(msgs []llm.Message, choice string) (string, error)
 
 // CompactNotice is what one recovery step did, for the surfaces that report
 // it. The zero value is a step that found nothing to do, which is what almost
@@ -308,7 +308,7 @@ type Compactor struct {
 // Estimate is what the next request will carry, in the units the window is
 // measured in: the conversation and the tool definitions, corrected by what
 // this model's own reports have said the estimate is worth.
-func (c *Compactor) Estimate(msgs []provider.Message) int64 {
+func (c *Compactor) Estimate(msgs []llm.Message) int64 {
 	if c == nil {
 		return 0
 	}
@@ -318,7 +318,7 @@ func (c *Compactor) Estimate(msgs []provider.Message) int64 {
 // Observe folds one response's reported prompt size into the correction. It
 // has to be called while the conversation still holds exactly the messages
 // that report describes, which is before the response joins it.
-func (c *Compactor) Observe(reported int64, msgs []provider.Message) {
+func (c *Compactor) Observe(reported int64, msgs []llm.Message) {
 	if c == nil {
 		return
 	}
@@ -327,7 +327,7 @@ func (c *Compactor) Observe(reported int64, msgs []provider.Message) {
 
 // raw is the uncorrected estimate — the figure a report is compared against
 // to work the correction out, so it is never taken through one.
-func (c *Compactor) raw(msgs []provider.Message) int64 {
+func (c *Compactor) raw(msgs []llm.Message) int64 {
 	return EstimateMessageTokens(msgs) + c.ToolTokens
 }
 
@@ -480,7 +480,7 @@ func (c *Compactor) recover(a *Agent, before int64, ask CompactAsk) CompactNotic
 	if c.Before != nil {
 		c.Before(n.BeforePct)
 	}
-	summary, err := ask(a.CompactRequest(), provider.ToolChoiceNone)
+	summary, err := ask(a.CompactRequest(), llm.ToolChoiceNone)
 	if summary = strings.TrimSpace(summary); err != nil || summary == "" {
 		if errors.Is(err, ErrInterrupted) {
 			// A request nobody waited for was not an attempt. The run is
@@ -511,7 +511,7 @@ func (c *Compactor) recover(a *Agent, before int64, ask CompactAsk) CompactNotic
 
 // open is where the summary request goes: the stream the compactor was given,
 // or the conversation's own when it was given none.
-func (c *Compactor) open(a *Agent, msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+func (c *Compactor) open(a *Agent, msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 	stream := c.Stream
 	if stream == nil {
 		stream = a.stream
@@ -571,14 +571,14 @@ func (c *Compactor) rewriteSystem(a *Agent) {
 		return
 	}
 	msgs := a.Messages()
-	if len(msgs) == 0 || msgs[0].Role != provider.RoleSystem {
+	if len(msgs) == 0 || msgs[0].Role != llm.RoleSystem {
 		return
 	}
 	rebuilt := c.Workspace(msgs[0].Content)
 	if rebuilt == msgs[0].Content {
 		return
 	}
-	updated := append([]provider.Message(nil), msgs...)
+	updated := append([]llm.Message(nil), msgs...)
 	updated[0].Content = rebuilt
 	a.SetMessages(updated)
 }

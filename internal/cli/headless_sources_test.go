@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/testhttp"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -25,16 +25,16 @@ import (
 // fetchTurn is an agent that fetches one address and then answers.
 func fetchTurn(t *testing.T, url string) *agent.Agent {
 	t.Helper()
-	rounds := [][]provider.StreamEvent{
-		{{ToolCalls: []provider.ToolCall{{ID: "f1", Name: web.FetchToolName, Arguments: `{"url":"` + url + `"}`}}}},
+	rounds := [][]llm.StreamEvent{
+		{{ToolCalls: []llm.ToolCall{{ID: "f1", Name: web.FetchToolName, Arguments: `{"url":"` + url + `"}`}}}},
 		{{Token: "read it"}, {Done: true}},
 	}
 	var next int
-	return agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return agent.New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		if next >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", next+1)
 		}
-		ch := make(chan provider.StreamEvent, len(rounds[next]))
+		ch := make(chan llm.StreamEvent, len(rounds[next]))
 		for _, ev := range rounds[next] {
 			ch <- ev
 		}

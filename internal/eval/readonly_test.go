@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -18,8 +18,8 @@ func readOnlyRow() Row {
 	}
 }
 
-func commandCall(id, command string) provider.ToolCall {
-	return provider.ToolCall{ID: id, Name: tools.ExecCommandName, Arguments: fmt.Sprintf(`{"command":%q}`, command)}
+func commandCall(id, command string) llm.ToolCall {
+	return llm.ToolCall{ID: id, Name: tools.ExecCommandName, Arguments: fmt.Sprintf(`{"command":%q}`, command)}
 }
 
 // The label is decided by the commands the model ran, never by its prose: a
@@ -28,22 +28,22 @@ func commandCall(id, command string) provider.ToolCall {
 func TestAskReadOnly_LabelsTheCommandsTheModelRan(t *testing.T) {
 	cases := []struct {
 		name    string
-		replies []provider.StreamEvent
+		replies []llm.StreamEvent
 		want    string
 		ran     []string
 	}{
-		{"listed", []provider.StreamEvent{
-			{ToolCalls: []provider.ToolCall{commandCall("c1", "du -sh pkg/a pkg/b")}, Done: true},
+		{"listed", []llm.StreamEvent{
+			{ToolCalls: []llm.ToolCall{commandCall("c1", "du -sh pkg/a pkg/b")}, Done: true},
 			{Token: "a and b are 4K each.", Done: true},
 		}, LabelListed, []string{"du -sh pkg/a pkg/b"}},
-		{"off the list", []provider.StreamEvent{
-			{ToolCalls: []provider.ToolCall{commandCall("c1", "make sizes"), commandCall("c2", "wc -l pkg/a/a.go")}, Done: true},
+		{"off the list", []llm.StreamEvent{
+			{ToolCalls: []llm.ToolCall{commandCall("c1", "make sizes"), commandCall("c2", "wc -l pkg/a/a.go")}, Done: true},
 			{Token: "a is one line.", Done: true},
 		}, LabelOffList, []string{"wc -l pkg/a/a.go"}},
-		{"a pipe", []provider.StreamEvent{
-			{ToolCalls: []provider.ToolCall{commandCall("c1", "du -sh pkg/* | sort -h")}, Done: true},
+		{"a pipe", []llm.StreamEvent{
+			{ToolCalls: []llm.ToolCall{commandCall("c1", "du -sh pkg/* | sort -h")}, Done: true},
 		}, LabelOffList, nil},
-		{"no command", []provider.StreamEvent{{Token: "two packages.", Done: true}}, LabelListed, nil},
+		{"no command", []llm.StreamEvent{{Token: "two packages.", Done: true}}, LabelListed, nil},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestAskReadOnly_LabelsTheCommandsTheModelRan(t *testing.T) {
 // The row is asked what a read-only session would be asked: the mode's
 // paragraph, printing the list, on the coding prompt.
 func TestAskReadOnly_ThePromptIsTheSessions(t *testing.T) {
-	m := &inheritModel{replies: []provider.StreamEvent{{Token: "done", Done: true}}}
+	m := &inheritModel{replies: []llm.StreamEvent{{Token: "done", Done: true}}}
 	run := func(context.Context, string, string) tools.ExecResult { return tools.ExecResult{} }
 	askReadOnly(context.Background(), m, "scripted", readOnlyRow(), run)
 	if len(m.first) == 0 || !strings.Contains(m.first[0].Content, "# Read-only mode") ||

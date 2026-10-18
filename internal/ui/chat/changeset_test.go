@@ -13,9 +13,9 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -35,7 +35,7 @@ func showFile(t *testing.T, path string) {
 // not prompt).
 func applyWrite(t *testing.T, m Model, path, content, key string) Model {
 	t.Helper()
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"content":%q}`, path, content)},
 	}})
@@ -152,7 +152,7 @@ func TestChangeset_DeclinedAndFailedCallsRecordNothing(t *testing.T) {
 	if err := os.WriteFile(path, []byte("package main\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_e", Name: "edit_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"old_text":"missing","new_text":"x"}`, path)},
 	}})

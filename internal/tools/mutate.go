@@ -12,7 +12,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -41,7 +41,7 @@ func (r *Recorder) Mutating() []Definition {
 // user-approved execute_command, and the approval-gated file-modification
 // tools. This is what `shhh code` registers; `shhh chat` stays on
 // DefinitionsWithExec.
-func DefinitionsFull() []provider.Tool {
+func DefinitionsFull() []llm.Tool {
 	defs := DefinitionsWithExec()
 	for _, d := range Mutating() {
 		defs = append(defs, d.Tool)
@@ -252,7 +252,7 @@ func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, 
 var writeFile = Definition{
 	Receipt: describe.Describer{Kind: describe.KindWrite, Verb: "write",
 		Does: "a new file, or one written whole"},
-	Tool: provider.Tool{
+	Tool: llm.Tool{
 		Name: WriteFileName,
 		Description: "Create or overwrite a file with the given content. content is written verbatim — never include read_file's line-number prefixes. " +
 			"Overwriting an existing file requires having read it in full first, and fails if it has changed since: prefer edit_file for changing part of a file you have already read. " +
@@ -366,7 +366,7 @@ var editFile = Definition{
 	Receipt: describe.Describer{Kind: describe.KindWrite, Verb: "edit",
 		Subject: editSubject, Count: countEdited,
 		Does: "a change to part of a file"},
-	Tool: provider.Tool{
+	Tool: llm.Tool{
 		Name: EditFileName,
 		Description: "Change an existing file: replace exact text snippets in it, or add text to its end. Give one replacement as old_text/new_text, several as edits — one entry per place — or the text to add as append, and never two of these in the same call. " +
 			"Batch changes to one file into one call. One old_text/new_text applied to several files is one call naming them in paths instead of path; different changes to different files are separate calls. " +

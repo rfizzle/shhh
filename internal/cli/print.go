@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -25,7 +26,6 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/stdin"
@@ -299,7 +299,7 @@ type headlessChat struct {
 	// the slot keeps beside it: loaded when the slot is reopened, handed to
 	// the agent so a compaction in this run adds to them, and written back
 	// after each save (keepFolded), as the screen's autosave does.
-	folded []provider.Message
+	folded []llm.Message
 	// loaded is how many of folded the slot already held when it was opened:
 	// the turns a compaction in this run adds come after them, and the
 	// reading this opening spliced in front of the conversation is at the head
@@ -315,7 +315,7 @@ type headlessChat struct {
 // transcript describes the tree as it was, and a run that acts on a path
 // which has since moved is the one nobody is watching.
 // See docs/capabilities/sessions-and-memory.md#an-unattended-run-comes-back-too.
-func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Message, sysPrompt string) (*headlessChat, []provider.Message, error) {
+func openHeadlessChat(db *storage.DB, session chatSession, initial []llm.Message, sysPrompt string) (*headlessChat, []llm.Message, error) {
 	c := &headlessChat{db: db, kind: session.kind}
 	msgs := initial
 	if session.wantsResume() {
@@ -329,10 +329,10 @@ func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Me
 			// The system prompt is this run's and not the one the
 			// conversation was stored under: the shell, the directory and the
 			// project's instruction files are read now, not last week.
-			if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+			if len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 				msgs[0].Content = sysPrompt
 			} else {
-				msgs = append(append([]provider.Message{}, initial...), msgs...)
+				msgs = append(append([]llm.Message{}, initial...), msgs...)
 			}
 			// No working list: this run has no steps tool to keep one with.
 			notice := chat.ResumeContext(db, c.slot, "", false)
@@ -365,12 +365,12 @@ func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Me
 // remembers but behind the system prompt, which is where a conversation
 // states the facts it is to reason from. It answers with where they went and
 // how many there were, which is what taking them out again needs.
-func spliceAfterSystem(msgs, add []provider.Message) ([]provider.Message, int, int) {
+func spliceAfterSystem(msgs, add []llm.Message) ([]llm.Message, int, int) {
 	at := 0
-	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 		at = 1
 	}
-	joined := make([]provider.Message, 0, len(msgs)+len(add))
+	joined := make([]llm.Message, 0, len(msgs)+len(add))
 	joined = append(joined, msgs[:at]...)
 	joined = append(joined, add...)
 	joined = append(joined, msgs[at:]...)
@@ -384,11 +384,11 @@ func spliceAfterSystem(msgs, add []provider.Message) ([]provider.Message, int, i
 // is safe here and would not be in a session: an unattended conversation only
 // ever grows at its tail — nothing compacts it and no rewind rebuilds it
 // around the head — so the reading is still exactly where it was put.
-func (c *headlessChat) withoutReading(msgs []provider.Message) []provider.Message {
+func (c *headlessChat) withoutReading(msgs []llm.Message) []llm.Message {
 	if c.head == 0 || len(msgs) < c.at+c.head {
 		return msgs
 	}
-	kept := make([]provider.Message, 0, len(msgs)-c.head)
+	kept := make([]llm.Message, 0, len(msgs)-c.head)
 	kept = append(kept, msgs[:c.at]...)
 	return append(kept, msgs[c.at+c.head:]...)
 }
@@ -469,7 +469,7 @@ func (c *headlessChat) keepFed(f *sourceFeed) {
 // quit with a turn parked and means the conversation comes back parked, and
 // a run with no keyboard parks nothing.
 // See docs/capabilities/sessions-and-memory.md#a-held-turn-comes-back-held.
-func (c *headlessChat) save(msgs []provider.Message) {
+func (c *headlessChat) save(msgs []llm.Message) {
 	if c == nil || c.db == nil || c.slot == "" {
 		return
 	}
@@ -500,12 +500,12 @@ func (c *headlessChat) save(msgs []provider.Message) {
 // them: a compaction folds it with the turns after it, at the head of what
 // this run added, and it is cut there as the screen cuts it
 // (agent.FoldedWithoutReading).
-func (c *headlessChat) keepFolded(folded []provider.Message) {
+func (c *headlessChat) keepFolded(folded []llm.Message) {
 	if c == nil {
 		return
 	}
 	had := min(c.loaded, len(folded))
-	kept := append([]provider.Message(nil), folded[:had]...)
+	kept := append([]llm.Message(nil), folded[:had]...)
 	c.folded = append(kept, agent.FoldedWithoutReading(folded[had:])...)
 }
 
@@ -521,7 +521,7 @@ func (c *headlessChat) adopt(a *agent.Agent) {
 // conversation as the save will keep it — the reopening's reading left out —
 // revising the account the slot already carried. A reading that fails, or a
 // run with nothing asked in it, leaves the account as it was.
-func (c *headlessChat) reviseAccount(a *sidejobs.Accountant, msgs []provider.Message) {
+func (c *headlessChat) reviseAccount(a *sidejobs.Accountant, msgs []llm.Message) {
 	if c == nil || c.db == nil || c.slot == "" || !a.Enabled() {
 		return
 	}
@@ -722,11 +722,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// approver below is wrapped with this same one, so the command it runs
 	// and the search the chain dispatches are counted in the same window.
 	repeats := agent.NewRepeatDetector()
-	var gate func(provider.ToolCall) bool
+	var gate func(llm.ToolCall) bool
 	chat.ApplyLoop(a, headlessLoop(cfg, env, session, ts, opts.rounds(cfg),
 		agent.ToolExecutor(hooks.WrapExecutor(hookPos(a.Rounds),
 			func(name string, args json.RawMessage) bool {
-				return gate(provider.ToolCall{Name: name, Arguments: string(args)})
+				return gate(llm.ToolCall{Name: name, Arguments: string(args)})
 			},
 			hook.Executor(repeats.WrapExecutor(exec))))))
 	scopeGateToWrites(qgate, own.paths)
@@ -773,7 +773,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		turnTime.close(recorder, 1, int64(a.Rounds()), headlessTurnOutcome(runErr))
 	}()
 
-	var usage provider.Usage
+	var usage llm.Usage
 	webTools := session.web
 	mcpTools := session.mcpTools
 	gate = unattendedGate(webTools, procSup, mcpTools, sup)
@@ -881,7 +881,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
 			obs.tree(n)
 		},
-		OnToolCall: func(tc provider.ToolCall) {
+		OnToolCall: func(tc llm.ToolCall) {
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
 			obs.call(tc)
 		},
@@ -909,13 +909,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
 			obs.retry(n)
 		},
-		OnUsage: func(*provider.Usage) {
+		OnUsage: func(*llm.Usage) {
 			// What the run has spent is read back from the ledger rather than
 			// summed here. The request that just landed was billed at the
 			// gate, and so is anything a later feature adds to a headless
 			// run without touching this callback.
 			t := ledger.Total()
-			usage = provider.Usage{
+			usage = llm.Usage{
 				PromptTokens:     int(t.In),
 				CompletionTokens: int(t.Out),
 				CachedTokens:     int(t.Cached),
@@ -1199,13 +1199,13 @@ func interruptOnSignal(interrupt func()) (stop func()) {
 // the cheaper mistake by a wide margin. The endpoint's own answer is
 // deliberately not asked for: a session takes it in the background across
 // many turns, and a one-shot run would race the query rather than read it.
-func headlessCompactor(ctx context.Context, cfg config.Config, env *sessionEnv, ledger *meter.Ledger, prices *pricing.Table, defs []provider.Tool) *agent.Compactor {
+func headlessCompactor(ctx context.Context, cfg config.Config, env *sessionEnv, ledger *meter.Ledger, prices *pricing.Table, defs []llm.Tool) *agent.Compactor {
 	var window int64
 	if prices != nil {
 		window, _ = prices.ContextWindow(env.modelName)
 	}
 	if window <= 0 {
-		window, _ = provider.ContextWindowFor(env.modelName)
+		window, _ = llm.ContextWindowFor(env.modelName)
 	}
 	if window <= 0 {
 		return nil
@@ -1248,7 +1248,7 @@ func summaryModelWindow(prices *pricing.Table, model string) (int64, bool) {
 			return w, true
 		}
 	}
-	return provider.ContextWindowFor(model)
+	return llm.ContextWindowFor(model)
 }
 
 // summaryModelStream sends one request on another model of the same provider,
@@ -1256,19 +1256,19 @@ func summaryModelWindow(prices *pricing.Table, model string) (int64, bool) {
 // definitions and the caller's tool choice, because what makes a summary
 // request safe is the choice forbidding a call and not the tools being
 // missing from the request.
-func summaryModelStream(ctx context.Context, env *sessionEnv, ledger *meter.Ledger, defs []provider.Tool, model string) agent.StreamFunc {
-	return func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+func summaryModelStream(ctx context.Context, env *sessionEnv, ledger *meter.Ledger, defs []llm.Tool, model string) agent.StreamFunc {
+	return func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		reqCtx, cancel := context.WithCancel(ctx)
-		events, err := ledger.For(env.prov, meter.SourceSummary).StreamCompletion(reqCtx, msgs, provider.CompletionOpts{
+		events, err := ledger.For(env.prov, meter.SourceSummary).StreamCompletion(reqCtx, msgs, llm.CompletionOpts{
 			Model:      model,
-			Flow:       provider.FlowCompaction,
+			Flow:       llm.FlowCompaction,
 			Tools:      defs,
 			ToolChoice: choice,
 			// A shallow thought over a conversation that is already written.
 			// The judgement asked for is what mattered in it, not what to do
 			// next, and a deep one here is paid for out of the budget the run
 			// is trying to get back under.
-			Effort: provider.EffortLow,
+			Effort: llm.EffortLow,
 		})
 		if err != nil {
 			cancel()
@@ -1511,17 +1511,17 @@ func headlessTurnOutcome(err error) string {
 // unclassified failure — into a status that tells its reader their
 // configuration is wrong, on no evidence that it is.
 func providerRefusedRequest(err error) bool {
-	f, ok := provider.AsFailure(err)
+	f, ok := llm.AsFailure(err)
 	if !ok {
 		return false
 	}
 	switch f.Class {
-	case provider.ClassAuth, provider.ClassQuota,
-		provider.ClassContextLength, provider.ClassModelNotFound,
+	case llm.ClassAuth, llm.ClassQuota,
+		llm.ClassContextLength, llm.ClassModelNotFound,
 		// The ChatGPT plan's three: a spent allowance is the plan's quota,
 		// and an ineligible account or an unsupported request is refused the
 		// same way on every retry.
-		provider.ClassUsageLimit, provider.ClassNotEligible, provider.ClassUnsupported:
+		llm.ClassUsageLimit, llm.ClassNotEligible, llm.ClassUnsupported:
 		return true
 	}
 	return false

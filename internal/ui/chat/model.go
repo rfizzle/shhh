@@ -9,6 +9,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -20,7 +21,6 @@ import (
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -346,12 +346,12 @@ type tokenMsg struct {
 	final tea.Msg
 }
 type doneMsg struct {
-	usage *provider.Usage
+	usage *llm.Usage
 	// stop is why the model stopped writing. It matters here for one value:
 	// a reply cut off at the output ceiling is half an answer, and the
 	// session offers to have it finished rather than filing it as the whole
 	// one (resume.go).
-	stop provider.StopReason
+	stop llm.StopReason
 }
 
 // streamErrMsg carries a failed stream back to the session. calls are the
@@ -360,8 +360,8 @@ type doneMsg struct {
 // failure that never got that far.
 type streamErrMsg struct {
 	err       error
-	calls     []provider.ToolCall
-	reasoning []provider.ReasoningBlock
+	calls     []llm.ToolCall
+	reasoning []llm.ReasoningBlock
 }
 
 // retryTickMsg is defined with the rest of the retry path in resume.go.
@@ -370,13 +370,13 @@ type streamStartedMsg struct {
 	cancel context.CancelFunc
 }
 type toolCallsMsg struct {
-	calls     []provider.ToolCall
-	usage     *provider.Usage
-	reasoning []provider.ReasoningBlock
+	calls     []llm.ToolCall
+	usage     *llm.Usage
+	reasoning []llm.ReasoningBlock
 	// stop is why the model stopped writing. A round of calls that ended at
 	// the output ceiling has lost whatever the model had not finished
 	// writing, and the round runs what survived under a notice saying so.
-	stop provider.StopReason
+	stop llm.StopReason
 }
 type toolResultsMsg struct {
 	runID   int
@@ -436,7 +436,7 @@ type preToolHookMsg struct {
 // it; after is the hook answer waiting on a rewritten call's check.
 type gateCheckMsg struct {
 	runID int
-	call  provider.ToolCall
+	call  llm.ToolCall
 	after *preToolHookMsg
 	err   error
 }
@@ -594,7 +594,7 @@ type entry struct {
 	//. It is stored as the classification rather than as rendered
 	// text, so the row re-renders at any width and the offered keys stay
 	// derived from the class rather than parsed back out of a string.
-	fail *provider.Failure
+	fail *llm.Failure
 	// failAfter and failModel are what a failure card's header names, read
 	// when the failure landed: what the turn had done before it broke, and
 	// the model it was on. They are kept rather than read at render time
@@ -723,7 +723,7 @@ type entry struct {
 	groupFolded bool
 	// picture is the image an entryPicture stands for: what a call's result
 	// carried beside its text (card.go).
-	picture *provider.Attachment
+	picture *llm.Attachment
 	// tree marks the notice of the tree having moved, with what it counted,
 	// so a card it landed in can say so in its footer (card.go).
 	tree *treeMove
@@ -818,7 +818,7 @@ type steeringItem struct {
 	// atts are what was staged when the message was queued. They belong to
 	// it from then on, so pulling it back puts them back on the strip and
 	// cancelling it takes them with it.
-	atts []provider.Attachment
+	atts []llm.Attachment
 	// sent marks a line another session handed this one (inbound.go), and
 	// from is the slot that sent it, empty for the command line. It joins
 	// the turn as a steer does but in the session's own voice, framed by the
@@ -1298,7 +1298,7 @@ type Model struct {
 	// (attachments.go). They ride on whichever user message goes out
 	// next — a fresh turn, or a line queued while a turn runs, which takes
 	// them with it into the queue — and are never rendered, only named.
-	attachments []provider.Attachment
+	attachments []llm.Attachment
 	// handles is the conversation's count of attachment handles, per kind
 	// (attachments.go): zeroed at the session boundary, read back off the
 	// saved messages when a conversation is resumed or loaded.
@@ -1381,7 +1381,7 @@ type Model struct {
 	// Reasoning effort (reasoning.go): the level this session is on and the
 	// persisted default. The hook that carries a change to the next request,
 	// and whatever outranks the default, are the wiring's.
-	effort        provider.Effort
+	effort        llm.Effort
 	effortDefault string
 	// First contact: what the session already knew about the
 	// checkout when it opened, which suggestion the pointer is on, and
@@ -1560,7 +1560,7 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 	// conversation is opened (reopen.go).
 	msgs := agent.StripResumeContext(m.agent.RequestMessages())
 	// And the turns a compaction folded stay, beside it, in the record.
-	folded := agent.FoldedWithoutReading(append([]provider.Message(nil), m.agent.Folded()...))
+	folded := agent.FoldedWithoutReading(append([]llm.Message(nil), m.agent.Folded()...))
 	keepCaches := m.wiring.KeepCacheReadings
 	return func() tea.Msg {
 		// The cache readings ride the save, which is what runs at a turn's
@@ -1758,14 +1758,14 @@ func (m Model) ExitBanner(resume string) components.ExitBanner {
 func (m Model) conversationTurns() int {
 	n := 0
 	for _, msg := range m.agent.Messages() {
-		if msg.Role == provider.RoleUser {
+		if msg.Role == llm.RoleUser {
 			n++
 		}
 	}
 	return n
 }
 
-func (m Model) Messages() []provider.Message { return m.agent.Messages() }
+func (m Model) Messages() []llm.Message { return m.agent.Messages() }
 
 // copyText puts text on a clipboard and says which one took it. Every copy
 // the session offers goes through here — the copy key, /copy and the drag
@@ -2117,7 +2117,7 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 // sendUserMessageWith is sendUserMessageAs with the attachments named rather
 // than taken off the strip: a queued follow-up carries the ones it was
 // queued with, and what is staged now belongs to the sentence being typed.
-func (m Model) sendUserMessageWith(text, shown string, atts []provider.Attachment) (tea.Model, tea.Cmd) {
+func (m Model) sendUserMessageWith(text, shown string, atts []llm.Attachment) (tea.Model, tea.Cmd) {
 	m.openTurn(shown)
 	m.recordCheckpoint(shown)
 	m.agent.StartTurnWith(text, atts)
@@ -2261,7 +2261,7 @@ func (m *Model) loadChatByName(name string) string {
 func (m Model) lastAssistantText() string {
 	msgs := m.agent.Messages()
 	for i := len(msgs) - 1; i >= 0; i-- {
-		if msgs[i].Role == provider.RoleAssistant && msgs[i].Content != "" {
+		if msgs[i].Role == llm.RoleAssistant && msgs[i].Content != "" {
 			return msgs[i].Content
 		}
 	}

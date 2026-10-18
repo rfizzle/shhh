@@ -18,7 +18,7 @@ package chat
 import (
 	"fmt"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -48,13 +48,13 @@ func (m Model) cycleReasoning() (Model, string) {
 	}
 	// The walk covers the rungs this model has: a level Fit would only
 	// lower is not a level worth landing on.
-	next := provider.NextEffort(m.effort, provider.Levels(provider.CapabilitiesFor(m.modelName)))
+	next := llm.NextEffort(m.effort, llm.Levels(llm.CapabilitiesFor(m.modelName)))
 	m.applyEffort(next)
 	return m, m.reasoningNote(next)
 }
 
 // applyEffort sets the level and pushes it at the session.
-func (m *Model) applyEffort(e provider.Effort) {
+func (m *Model) applyEffort(e llm.Effort) {
 	m.effort = e
 	if m.wiring.SwitchEffort != nil {
 		m.wiring.SwitchEffort(e)
@@ -65,7 +65,7 @@ func (m *Model) applyEffort(e provider.Effort) {
 // a turn is running — when it starts applying. A setting that takes effect
 // one request later has to say so, or the next answer looks like it ignored
 // the key.
-func (m Model) reasoningNote(e provider.Effort) string {
+func (m Model) reasoningNote(e llm.Effort) string {
 	note := fmt.Sprintf("Reasoning: %s — %s.", e, e.Describe())
 	if m.turnState() != stateInput {
 		note += " It applies from the next model request; the one in flight keeps the level it opened on."
@@ -84,7 +84,7 @@ func (m *Model) reasoningCommand(parts []string) string {
 	if len(parts) > 1 {
 		return "one level at a time. " + reasoningUsage
 	}
-	e, err := provider.ParseEffort(parts[0])
+	e, err := llm.ParseEffort(parts[0])
 	if err != nil {
 		return failed("reasoning", err.Error())
 	}
@@ -104,7 +104,7 @@ func (m *Model) setReasoningDefault(rest []string) string {
 	if len(rest) == 0 {
 		current := m.effortDefault
 		if current == "" {
-			current = "not set (new sessions start on " + provider.DefaultEffort.String() + ")"
+			current = "not set (new sessions start on " + llm.DefaultEffort.String() + ")"
 		}
 		note := "Default reasoning: " + current
 		if m.wiring.EffortOutranked != "" {
@@ -115,7 +115,7 @@ func (m *Model) setReasoningDefault(rest []string) string {
 	if len(rest) > 1 {
 		return "One level at a time. " + reasoningUsage
 	}
-	e, err := provider.ParseEffort(rest[0])
+	e, err := llm.ParseEffort(rest[0])
 	if err != nil {
 		return failed("reasoning", err.Error())
 	}
@@ -151,7 +151,7 @@ func (m Model) reasoningSegment() string {
 // reasoningArgs are the levels /reasoning offers, plus the sub-command that
 // persists one.
 func reasoningArgs(m *Model) []argOption {
-	levels := provider.Levels(provider.CapabilitiesFor(m.modelName))
+	levels := llm.Levels(llm.CapabilitiesFor(m.modelName))
 	out := make([]argOption, 0, len(levels)+1)
 	for _, e := range levels {
 		desc := e.Describe()
@@ -165,8 +165,8 @@ func reasoningArgs(m *Model) []argOption {
 
 // reasoningLevelArgs are the levels alone, for the position after "default".
 func reasoningLevelArgs() []argOption {
-	out := make([]argOption, 0, len(provider.EffortCycle()))
-	for _, e := range provider.EffortCycle() {
+	out := make([]argOption, 0, len(llm.EffortCycle()))
+	for _, e := range llm.EffortCycle() {
 		out = append(out, argOption{value: e.String(), desc: e.Describe()})
 	}
 	return out

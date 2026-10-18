@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 
@@ -86,16 +86,16 @@ func TestInspectorAgents_TheMapFloatsAndTheChordDoesNot(t *testing.T) {
 func oneToolEnv() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		calls := 0
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			calls++
 			if calls == 1 {
-				ch := make(chan provider.StreamEvent, 1)
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "c1",
+				ch := make(chan llm.StreamEvent, 1)
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "c1",
 					Name: "read_file", Arguments: `{"path":"docs/loop.md"}`}}}
 				close(ch)
 				return ch, func() {}, nil
 			}
-			ch := make(chan provider.StreamEvent)
+			ch := make(chan llm.StreamEvent)
 			go func() {
 				<-ctx.Done()
 				close(ch)
@@ -118,7 +118,7 @@ func oneToolEnv() subagent.EnvFactory {
 func TestInspectorAgents_AWorkingChildSaysItsToolCountOnce(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: oneToolEnv()})
 	t.Cleanup(sup.Close)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	m = updated.(Model)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")

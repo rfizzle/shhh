@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // Source is what kind of thing made a request. It is one axis the session is
@@ -278,7 +278,7 @@ func ReadCap(text string) (*CapError, bool) {
 // Record folds one request's usage into the ledger, pricing it against the
 // model that actually answered rather than whichever model the session
 // happens to be on when someone asks.
-func (l *Ledger) Record(o Origin, model string, u provider.Usage) {
+func (l *Ledger) Record(o Origin, model string, u llm.Usage) {
 	l.RecordOn("", o, model, u)
 }
 
@@ -289,7 +289,7 @@ func (l *Ledger) Record(o Origin, model string, u provider.Usage) {
 const PlanProvider = "chatgpt"
 
 // RecordOn is Record for a request the named provider answered.
-func (l *Ledger) RecordOn(providerName string, o Origin, model string, u provider.Usage) {
+func (l *Ledger) RecordOn(providerName string, o Origin, model string, u llm.Usage) {
 	if l == nil {
 		return
 	}

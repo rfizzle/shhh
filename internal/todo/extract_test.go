@@ -8,15 +8,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/secret"
 )
 
 // fakeProvider answers one request with a scripted stream.
 type fakeProvider struct {
-	events []provider.StreamEvent
+	events []llm.StreamEvent
 	err    error
-	got    provider.CompletionOpts
+	got    llm.CompletionOpts
 	// system is the instruction message and prompt the user turn that
 	// carries the untrusted digest; the split is what the test asserts.
 	system string
@@ -25,18 +25,18 @@ type fakeProvider struct {
 
 func (f *fakeProvider) Name() string { return "fake" }
 
-func (f *fakeProvider) StreamCompletion(_ context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (f *fakeProvider) StreamCompletion(_ context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	f.got = opts
 	f.system = msgs[0].Content
 	f.prompt = msgs[len(msgs)-1].Content
 	if f.err != nil {
 		return nil, f.err
 	}
-	ch := make(chan provider.StreamEvent, len(f.events)+1)
+	ch := make(chan llm.StreamEvent, len(f.events)+1)
 	for _, ev := range f.events {
 		ch <- ev
 	}
-	ch <- provider.StreamEvent{Done: true, Usage: &provider.Usage{PromptTokens: 10, CompletionTokens: 5}}
+	ch <- llm.StreamEvent{Done: true, Usage: &llm.Usage{PromptTokens: 10, CompletionTokens: 5}}
 	close(ch)
 	return ch, nil
 }
@@ -51,7 +51,7 @@ const proposalsJSON = `{"items": [
 ]}`
 
 func TestExtract_ToolCallIsRead(t *testing.T) {
-	fp := &fakeProvider{events: []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}}
+	fp := &fakeProvider{events: []llm.StreamEvent{{ToolCalls: []llm.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}}
 	e := NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode())
 	r := e.Extract(context.Background(), ExtractRequest{Instructions: []string{"do the thing"}, Existing: []string{"old — Old one"}})
 	if r.Failed || len(r.Proposals) != 2 {
@@ -76,7 +76,7 @@ func TestExtract_ToolCallIsRead(t *testing.T) {
 // the ceiling: off means the model's own depth, which on a model that thinks
 // by default is the whole ceiling and no proposals.
 func TestExtract_InstructionsAreSeparateFromTheDigest(t *testing.T) {
-	fp := &fakeProvider{events: []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}}
+	fp := &fakeProvider{events: []llm.StreamEvent{{ToolCalls: []llm.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}}
 	NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode()).Extract(context.Background(), ExtractRequest{Instructions: []string{"do the thing"}})
 	if !strings.Contains(fp.system, "You turn a coding session into backlog items") {
 		t.Errorf("system message = %q", fp.system)
@@ -84,7 +84,7 @@ func TestExtract_InstructionsAreSeparateFromTheDigest(t *testing.T) {
 	if strings.Contains(fp.system, "UNTRUSTED DIGEST") || strings.Contains(fp.prompt, "You turn a coding session") {
 		t.Errorf("the halves are mixed: system=%q user=%q", fp.system, fp.prompt)
 	}
-	if fp.got.Effort != provider.EffortLow {
+	if fp.got.Effort != llm.EffortLow {
 		t.Errorf("effort = %v", fp.got.Effort)
 	}
 	if fp.got.MaxTokens != DefaultExtractMaxTokens {
@@ -107,7 +107,7 @@ func TestExtractAndDraft_TheDigestIsScrubbedBeforeItLeaves(t *testing.T) {
 	}
 	cfg := ExtractConfig{Model: "m", Scrub: v.Scrub}
 	existing := []string{"rotate — Rotate " + declared + " and " + shaped}
-	answer := []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}
+	answer := []llm.StreamEvent{{ToolCalls: []llm.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}
 	for name, send := range map[string]func(*fakeProvider){
 		"extract": func(fp *fakeProvider) {
 			NewExtractor(fp, cfg, BuiltinCode()).Extract(context.Background(), ExtractRequest{Instructions: []string{"use " + declared}, Existing: existing})
@@ -128,15 +128,15 @@ func TestExtractAndDraft_TheDigestIsScrubbedBeforeItLeaves(t *testing.T) {
 }
 
 func TestExtract_TextFallbackAndFailures(t *testing.T) {
-	fp := &fakeProvider{events: []provider.StreamEvent{{Token: "Here you go:\n```json\n" + proposalsJSON + "\n```"}}}
+	fp := &fakeProvider{events: []llm.StreamEvent{{Token: "Here you go:\n```json\n" + proposalsJSON + "\n```"}}}
 	r := NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode()).Extract(context.Background(), ExtractRequest{})
 	if r.Failed || len(r.Proposals) != 2 {
 		t.Fatalf("text fallback = %+v", r)
 	}
 	cases := map[string]*fakeProvider{
 		"provider error": {err: errors.New("boom")},
-		"stream error":   {events: []provider.StreamEvent{{Err: errors.New("mid")}}},
-		"nothing":        {events: []provider.StreamEvent{{Token: "no items here"}}},
+		"stream error":   {events: []llm.StreamEvent{{Err: errors.New("mid")}}},
+		"nothing":        {events: []llm.StreamEvent{{Token: "no items here"}}},
 	}
 	for name, fp := range cases {
 		r := NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode()).Extract(context.Background(), ExtractRequest{})
@@ -190,7 +190,7 @@ func TestParseProposals_Bounds(t *testing.T) {
 // the two describe one shape. A model answering to the schema sends the
 // object alone, which the same parser reads.
 func TestExtract_OffersASchemaAndTheToolTogether(t *testing.T) {
-	fp := &fakeProvider{events: []provider.StreamEvent{{Token: proposalsJSON}}}
+	fp := &fakeProvider{events: []llm.StreamEvent{{Token: proposalsJSON}}}
 	r := NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode()).Extract(context.Background(), ExtractRequest{})
 	if r.Failed || len(r.Proposals) != 2 {
 		t.Fatalf("result = %+v", r)
@@ -246,7 +246,7 @@ const draftJSON = `{"items": [
 ]}`
 
 func TestDraft_OneItemFromASentence(t *testing.T) {
-	fp := &fakeProvider{events: []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: draftJSON}}}}}
+	fp := &fakeProvider{events: []llm.StreamEvent{{ToolCalls: []llm.ToolCall{{Name: ExtractToolName, Arguments: draftJSON}}}}}
 	d := NewDrafter(fp, ExtractConfig{Model: "m"}, BuiltinCode())
 	r := d.Draft(context.Background(), DraftRequest{
 		Sentence: "the cache never expires anything",
@@ -296,7 +296,7 @@ func TestDraft_DisabledAndEmptyAnswer(t *testing.T) {
 	if r := off.Draft(context.Background(), DraftRequest{Sentence: "x"}); !r.Failed {
 		t.Error("a nil drafter drafted something")
 	}
-	fp := &fakeProvider{events: []provider.StreamEvent{{Token: "sorry, no."}}}
+	fp := &fakeProvider{events: []llm.StreamEvent{{Token: "sorry, no."}}}
 	d := NewDrafter(fp, ExtractConfig{Model: "m"}, BuiltinCode())
 	if r := d.Draft(context.Background(), DraftRequest{Sentence: "x"}); !r.Failed || !strings.Contains(r.Err, "proposed nothing") {
 		t.Errorf("result = %+v", r)

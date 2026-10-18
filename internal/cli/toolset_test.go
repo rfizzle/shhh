@@ -11,12 +11,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/secret"
@@ -40,7 +40,7 @@ func toolsetCmd(t *testing.T) *cobra.Command {
 
 // toolsetNames is what the model would be offered, in a form two of them can
 // be compared in.
-func toolsetNames(defs []provider.Tool) []string {
+func toolsetNames(defs []llm.Tool) []string {
 	names := make([]string, 0, len(defs))
 	for _, d := range defs {
 		names = append(names, d.Name)
@@ -155,7 +155,7 @@ func TestBuildToolsetTellsTheModelWhichReportLineItWillGet(t *testing.T) {
 
 // reportDescription is how the report tool was described to this surface's
 // model, which is where the promise about the result lives.
-func reportDescription(t *testing.T, defs []provider.Tool) string {
+func reportDescription(t *testing.T, defs []llm.Tool) string {
 	t.Helper()
 	for _, d := range defs {
 		if d.Name == reports.ToolName {

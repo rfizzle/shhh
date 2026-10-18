@@ -11,7 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 
@@ -21,7 +21,7 @@ import (
 func answeringEnv(answers ...string) subagent.EnvFactory {
 	var mu sync.Mutex
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			mu.Lock()
 			var text string
 			if len(answers) > 0 {
@@ -29,16 +29,16 @@ func answeringEnv(answers ...string) subagent.EnvFactory {
 			}
 			mu.Unlock()
 			if text == "" {
-				ch := make(chan provider.StreamEvent)
+				ch := make(chan llm.StreamEvent)
 				go func() {
 					<-ctx.Done()
 					close(ch)
 				}()
 				return ch, func() {}, nil
 			}
-			ch := make(chan provider.StreamEvent, 2)
-			ch <- provider.StreamEvent{Token: text}
-			ch <- provider.StreamEvent{Done: true}
+			ch := make(chan llm.StreamEvent, 2)
+			ch <- llm.StreamEvent{Token: text}
+			ch <- llm.StreamEvent{Done: true}
 			close(ch)
 			return ch, func() {}, nil
 		}

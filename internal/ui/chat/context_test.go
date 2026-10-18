@@ -10,19 +10,19 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 func TestContextWindow_DefaultAndTable(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	if got := m.contextWindow(); got != DefaultContextWindow {
 		t.Fatalf("without pricing, want DefaultContextWindow (%d), got %d", DefaultContextWindow, got)
@@ -43,7 +43,7 @@ func TestContextWindow_DefaultAndTable(t *testing.T) {
 }
 
 func TestContextSeverity_Thresholds(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{}) // default window 32768: warn 19660, trim 26214
 
 	m.contextTokens = 1000
@@ -70,14 +70,14 @@ func TestContextSeverity_Thresholds(t *testing.T) {
 
 func TestTrimContext_ElidesOldestToolResults(t *testing.T) {
 	big := strings.Repeat("x", 40000) // ~10k estimated tokens
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
-		{Role: provider.RoleAssistant, Content: "answer 1"},
-		{Role: provider.RoleUser, Content: "q2"},
-		{Role: provider.RoleTool, Content: "recent result", ToolCallID: "c2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: llm.RoleAssistant, Content: "answer 1"},
+		{Role: llm.RoleUser, Content: "q2"},
+		{Role: llm.RoleTool, Content: "recent result", ToolCallID: "c2"},
 	}, mockStream, Wiring{})
 	m.contextTokens = 30000 // over the default trim threshold (26214)
 
@@ -100,11 +100,11 @@ func TestTrimContext_ElidesOldestToolResults(t *testing.T) {
 }
 
 func TestTrimContext_NoopUnderThreshold(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleTool, Content: "small result", ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleTool, Content: "small result", ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{})
 	m.contextTokens = 1000
 
@@ -123,18 +123,18 @@ func TestTrimContext_NoopUnderThreshold(t *testing.T) {
 func trimFixture(t *testing.T) Model {
 	t.Helper()
 	big := strings.Repeat("x", 40000) // ~10k estimated tokens each
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
 	}
 	for _, id := range []string{"c1", "c2", "c3", "c4"} {
 		msgs = append(msgs,
-			provider.Message{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: id, Name: "read_file"}}},
-			provider.Message{Role: provider.RoleTool, Content: big, ToolCallID: id})
+			llm.Message{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: id, Name: "read_file"}}},
+			llm.Message{Role: llm.RoleTool, Content: big, ToolCallID: id})
 	}
 	msgs = append(msgs,
-		provider.Message{Role: provider.RoleAssistant, Content: "answer 1"},
-		provider.Message{Role: provider.RoleUser, Content: "q2"})
+		llm.Message{Role: llm.RoleAssistant, Content: "answer 1"},
+		llm.Message{Role: llm.RoleUser, Content: "q2"})
 	return New(msgs, mockStream, Wiring{})
 }
 
@@ -160,9 +160,9 @@ func TestTrimContext_TrimsOnceAcrossTwoRequests(t *testing.T) {
 
 	// The next round: another large result and the turn that closes over it.
 	m.agent.SetMessages(append(m.Messages(),
-		provider.Message{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c5", Name: "read_file"}}},
-		provider.Message{Role: provider.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c5"},
-		provider.Message{Role: provider.RoleUser, Content: "q3"}))
+		llm.Message{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c5", Name: "read_file"}}},
+		llm.Message{Role: llm.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c5"},
+		llm.Message{Role: llm.RoleUser, Content: "q3"}))
 
 	if n := m.trimContext(); n != 0 {
 		t.Fatalf("the second request trimmed %d more results; one deep trim should have covered it", n)
@@ -235,18 +235,18 @@ func pct(t *testing.T, s string) int {
 // did not move at all, the trim declined to fire, and the next request — the
 // one carrying the large result — went out oversize.
 func TestTrimContext_TheRoundThatJustLandedCounts(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: strings.Repeat("x", 48000), ToolCallID: "c1"},
-		{Role: provider.RoleAssistant, Content: "answer 1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: strings.Repeat("x", 48000), ToolCallID: "c1"},
+		{Role: llm.RoleAssistant, Content: "answer 1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{})
 
 	// The provider counts that request at 15k of the default 32768-token
 	// window, comfortably under the 26214 that trims.
-	m.accumulateUsage(&provider.Usage{PromptTokens: 15000, CompletionTokens: 200})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 15000, CompletionTokens: 200})
 	if m.contextTokens >= m.trimThreshold() {
 		t.Fatalf("the fixture's report (%d) has to sit under the threshold %d",
 			m.contextTokens, m.trimThreshold())
@@ -257,9 +257,9 @@ func TestTrimContext_TheRoundThatJustLandedCounts(t *testing.T) {
 
 	// And then the round that report was taken for lands: a call, and 60 KB
 	// of output behind it.
-	m.agent.Append(provider.Message{Role: provider.RoleAssistant,
-		ToolCalls: []provider.ToolCall{{ID: "c2", Name: "search"}}})
-	m.agent.Append(provider.Message{Role: provider.RoleTool,
+	m.agent.Append(llm.Message{Role: llm.RoleAssistant,
+		ToolCalls: []llm.ToolCall{{ID: "c2", Name: "search"}}})
+	m.agent.Append(llm.Message{Role: llm.RoleTool,
 		Content: strings.Repeat("y", 60000), ToolCallID: "c2"})
 
 	if got := m.estimatedContextTokens(); got <= m.contextTokens {
@@ -279,10 +279,10 @@ func TestTrimContext_TheRoundThatJustLandedCounts(t *testing.T) {
 
 func TestSendUserMessage_TrimsAndNotes(t *testing.T) {
 	big := strings.Repeat("y", 60000)
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c1"},
 	}, mockStream, Wiring{})
 	m.contextTokens = 30000
 
@@ -350,20 +350,20 @@ func driveCompact(t *testing.T, m Model) Model {
 }
 
 func TestCompact_RestartsFromSummary(t *testing.T) {
-	var gotReq []provider.Message
-	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	var gotReq []llm.Message
+	stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		gotReq = msgs
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "the summary"}
-		ch <- provider.StreamEvent{Done: true, Usage: &provider.Usage{PromptTokens: 500, CompletionTokens: 20}}
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "the summary"}
+		ch <- llm.StreamEvent{Done: true, Usage: &llm.Usage{PromptTokens: 500, CompletionTokens: 20}}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
 	}
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "question"},
-		{Role: provider.RoleAssistant, Content: "answer"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "question"},
+		{Role: llm.RoleAssistant, Content: "answer"},
 	}, stream, Wiring{})
 	m.contextTokens = 5000
 
@@ -375,10 +375,10 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 	if len(m.Messages()) != 2 {
 		t.Fatalf("conversation should restart as system + summary, got %d messages", len(m.Messages()))
 	}
-	if m.Messages()[0].Role != provider.RoleSystem || m.Messages()[0].Content != "sys" {
+	if m.Messages()[0].Role != llm.RoleSystem || m.Messages()[0].Content != "sys" {
 		t.Fatal("system prompt must survive compaction")
 	}
-	if m.Messages()[1].Role != provider.RoleUser || !strings.Contains(m.Messages()[1].Content, "the summary") {
+	if m.Messages()[1].Role != llm.RoleUser || !strings.Contains(m.Messages()[1].Content, "the summary") {
 		t.Fatalf("summary message missing, got %+v", m.Messages()[1])
 	}
 	if m.compacting || m.state != stateInput {
@@ -408,19 +408,19 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 // can only turn into a failed compaction.
 func TestCompact_ForbidsAToolCall(t *testing.T) {
 	var choices []string
-	stream := func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		choices = append(choices, choice)
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "the summary"}
-		ch <- provider.StreamEvent{Done: true}
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "the summary"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
 	}
-	conversation := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "question"},
-		{Role: provider.RoleAssistant, Content: "answer"},
+	conversation := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "question"},
+		{Role: llm.RoleAssistant, Content: "answer"},
 	}
 
 	turn := New(conversation, stream, Wiring{})
@@ -439,16 +439,16 @@ func TestCompact_ForbidsAToolCall(t *testing.T) {
 	if len(choices) != 2 {
 		t.Fatalf("expected a turn request and a compaction request, got %v", choices)
 	}
-	if choices[0] != provider.ToolChoiceAuto {
+	if choices[0] != llm.ToolChoiceAuto {
 		t.Errorf("a turn must leave the tools open, got %q", choices[0])
 	}
-	if choices[1] != provider.ToolChoiceNone {
+	if choices[1] != llm.ToolChoiceNone {
 		t.Errorf("a compaction must forbid a tool call, got %q", choices[1])
 	}
 }
 
 func TestCompact_NothingToCompact(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.input.SetValue("/compact")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
@@ -463,16 +463,16 @@ func TestCompact_NothingToCompact(t *testing.T) {
 }
 
 func TestCompact_EmptySummaryKeepsConversation(t *testing.T) {
-	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, 1)
-		ch <- provider.StreamEvent{Done: true}
+	stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, 1)
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
 	}
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "question"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "question"},
 	}, stream, Wiring{})
 
 	m = driveCompact(t, m)
@@ -487,9 +487,9 @@ func TestCompact_EmptySummaryKeepsConversation(t *testing.T) {
 }
 
 func TestCompact_CancelKeepsConversation(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "question"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "question"},
 	}, mockStream, Wiring{})
 	m.input.SetValue("/compact")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -517,15 +517,15 @@ func TestCompact_CancelKeepsConversation(t *testing.T) {
 }
 
 func TestCompact_ToolCallsAbort(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "question"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "question"},
 	}, mockStream, Wiring{})
 	m.input.SetValue("/compact")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "c1", Name: "read_file", Arguments: `{"path":"a.go"}`},
 	}})
 	m = updated.(Model)
@@ -560,7 +560,7 @@ func TestContextWindow_FallsBackToTheModelFamily(t *testing.T) {
 		{"some-local-llama-build", DefaultContextWindow},
 		{"", DefaultContextWindow},
 	} {
-		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{ModelName: tc.model})
+		m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{ModelName: tc.model})
 		if got := m.contextWindow(); got != tc.want {
 			t.Errorf("%q: context window = %d, want %d", tc.model, got, tc.want)
 		}
@@ -575,7 +575,7 @@ func TestContextWindow_EndpointOutranksTheTable(t *testing.T) {
 		w, ok := windows[model]
 		return w, ok
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		ModelName:       "qwen3:8b",
 		EndpointWindows: lookup,
 	})
@@ -596,12 +596,12 @@ func TestContextWindow_EndpointOutranksTheTable(t *testing.T) {
 // page it back instead of running the tool again.
 func TestTrimContext_WiredStoreMakesElisionRecoverable(t *testing.T) {
 	kept := map[string]string{}
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{
 		Evidence: Evidence{
 			Keep: func(tool, content string) (string, bool) {
@@ -638,19 +638,19 @@ func TestTrimContext_WiredStoreMakesElisionRecoverable(t *testing.T) {
 // the workspace block is the one thing left describing the checkout as it was
 // when the session opened.
 func TestCompact_RereadsTheWorkspace(t *testing.T) {
-	stream := func(_ []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "the summary"}
-		ch <- provider.StreamEvent{Done: true}
+	stream := func(_ []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "the summary"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
 	}
 	opened := project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "master"})
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys\n\n" + opened},
-		{Role: provider.RoleUser, Content: "question"},
-		{Role: provider.RoleAssistant, Content: "answer"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys\n\n" + opened},
+		{Role: llm.RoleUser, Content: "question"},
+		{Role: llm.RoleAssistant, Content: "answer"},
 	}, stream, Wiring{
 		WorkspaceBlock: func() string {
 			return project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "side"})
@@ -675,18 +675,18 @@ func TestCompact_RereadsTheWorkspace(t *testing.T) {
 // which is what every front-end without one did before there was anything to
 // ask.
 func TestCompact_WithoutAWorkspaceReadingKeepsThePrompt(t *testing.T) {
-	stream := func(_ []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "the summary"}
-		ch <- provider.StreamEvent{Done: true}
+	stream := func(_ []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "the summary"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
 	}
 	opened := project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "master"})
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys\n\n" + opened},
-		{Role: provider.RoleUser, Content: "question"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys\n\n" + opened},
+		{Role: llm.RoleUser, Content: "question"},
 	}, stream, Wiring{})
 
 	m = driveCompact(t, m)
@@ -702,10 +702,10 @@ func TestCompact_WithoutAWorkspaceReadingKeepsThePrompt(t *testing.T) {
 func TestChatLoad_RereadsTheWorkspace(t *testing.T) {
 	db := rewindTestDB(t)
 	stale := project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "master", Dirty: 4})
-	if err := db.SaveChat("alpha", []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys\n\n" + stale},
-		{Role: provider.RoleUser, Content: "q"},
-		{Role: provider.RoleAssistant, Content: "a"},
+	if err := db.SaveChat("alpha", []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys\n\n" + stale},
+		{Role: llm.RoleUser, Content: "q"},
+		{Role: llm.RoleAssistant, Content: "a"},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -737,12 +737,12 @@ func TestChatLoad_RereadsTheWorkspace(t *testing.T) {
 // placeholder the model got.
 func TestTrimContext_ElidesTheTranscriptCopy(t *testing.T) {
 	big := strings.Repeat("line\n", 8000) // 40000 bytes, ~10k estimated tokens
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryUser, text: "q1"})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"big.txt"}`, toolResult: big})
@@ -775,12 +775,12 @@ func TestTrimContext_ElidesTheTranscriptCopy(t *testing.T) {
 func TestElidedRow_OffersTheEvidencePage(t *testing.T) {
 	big := strings.Repeat("line\n", 8000)
 	kept := map[string]string{}
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{
 		Evidence: Evidence{
 			Keep: func(_, content string) (string, bool) {
@@ -829,12 +829,12 @@ func TestElidedRow_OffersTheEvidencePage(t *testing.T) {
 // outcome were read off the body, and the placeholder is not the body.
 func TestElidedRow_KeepsWhatTheBodySaid(t *testing.T) {
 	boom := "error: " + strings.Repeat("stack frame\n", 3000)
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: boom, ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: boom, ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: boom})
 	m.contextTokens = 30000
@@ -858,12 +858,12 @@ func TestElidedRow_KeepsWhatTheBodySaid(t *testing.T) {
 func TestElidedCheck_TheTurnKeepsItsVerdict(t *testing.T) {
 	gate := "Quality gate \"default\": FAIL — 3/5 checks passed (1.2s)\n" +
 		strings.Repeat("a failing check said something\n", 2000)
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: quality.ToolName}}},
-		{Role: provider.RoleTool, Content: gate, ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: quality.ToolName}}},
+		{Role: llm.RoleTool, Content: gate, ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryTool, turn: 1, toolName: quality.ToolName, toolResult: gate,
 		gate: gateSummary("FAIL", 3, 5)})
@@ -889,12 +889,12 @@ func TestElidedCheck_TheTurnKeepsItsVerdict(t *testing.T) {
 // still an error: the placeholder carries no `error:` for it to read.
 func TestElidedRow_StillReportsAsAnErrorToTheDigest(t *testing.T) {
 	boom := "error: " + strings.Repeat("stack frame\n", 3000)
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
-		{Role: provider.RoleTool, Content: boom, ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: llm.RoleTool, Content: boom, ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: boom})
 	m.contextTokens = 30000
@@ -913,10 +913,10 @@ func TestElidedRow_StillReportsAsAnErrorToTheDigest(t *testing.T) {
 // worth watching.
 func filledMidTurn(t *testing.T, stream agent.StreamFunc) Model {
 	t.Helper()
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "question"},
-		{Role: provider.RoleAssistant, Content: "answer"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "question"},
+		{Role: llm.RoleAssistant, Content: "answer"},
 	}, stream, Wiring{})
 	// The report is the session's own occupancy, over the default window's
 	// trim threshold (26214 of 32768).
@@ -933,15 +933,15 @@ func filledMidTurn(t *testing.T, stream agent.StreamFunc) Model {
 // own request with an answer, recording what each was allowed to do about
 // tools.
 func midTurnStream(choices *[]string) agent.StreamFunc {
-	return func(_ []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(_ []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		*choices = append(*choices, choice)
-		ch := make(chan provider.StreamEvent, 2)
-		if choice == provider.ToolChoiceNone {
-			ch <- provider.StreamEvent{Token: "the summary"}
+		ch := make(chan llm.StreamEvent, 2)
+		if choice == llm.ToolChoiceNone {
+			ch <- llm.StreamEvent{Token: "the summary"}
 		} else {
-			ch <- provider.StreamEvent{Token: "carrying on"}
+			ch <- llm.StreamEvent{Token: "carrying on"}
 		}
-		ch <- provider.StreamEvent{Done: true}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
@@ -995,7 +995,7 @@ func TestRoundTail_CompactsWhenTheTrimCannotClearTheLine(t *testing.T) {
 	}
 
 	m, _ = driveTurn(t, m, cmd, nil)
-	if len(choices) != 2 || choices[0] != provider.ToolChoiceNone || choices[1] != provider.ToolChoiceAuto {
+	if len(choices) != 2 || choices[0] != llm.ToolChoiceNone || choices[1] != llm.ToolChoiceAuto {
 		t.Fatalf("expected a summary request then the round's own, got %v", choices)
 	}
 	if last := m.transcript[len(m.transcript)-1]; last.kind == entryAssistant && last.text != "carrying on" {
@@ -1017,7 +1017,7 @@ func TestRoundTail_DoesNotCompactOverABorrowedScreen(t *testing.T) {
 		t.Fatal("a compaction must wait for the screen to come back")
 	}
 	m, _ = driveTurn(t, m, cmd, nil)
-	if len(choices) != 1 || choices[0] != provider.ToolChoiceAuto {
+	if len(choices) != 1 || choices[0] != llm.ToolChoiceAuto {
 		t.Fatalf("the round's own request should have gone out, got %v", choices)
 	}
 	if m.compacting || m.compactResume {
@@ -1077,7 +1077,7 @@ func TestRoundTail_AsksForOneSummaryPerCrossing(t *testing.T) {
 	if !m.autoCompacted {
 		t.Fatal("the crossing is not over, so its one attempt is spent")
 	}
-	if len(choices) != 2 || choices[1] != provider.ToolChoiceAuto {
+	if len(choices) != 2 || choices[1] != llm.ToolChoiceAuto {
 		t.Fatalf("expected one summary and the round's own request, got %v", choices)
 	}
 }
@@ -1100,14 +1100,14 @@ func (m Model) compactEntry() (entry, bool) {
 // are about.
 func receiptModel(t *testing.T) Model {
 	t.Helper()
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "where is the round limit counted"},
-		{Role: provider.RoleAssistant, Content: "Locate the round accounting"},
-		{Role: provider.RoleUser, Content: "and who declares it"},
-		{Role: provider.RoleAssistant, Content: "second answer"},
-		{Role: provider.RoleUser, Content: "move it"},
-		{Role: provider.RoleAssistant, Content: "third answer"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "where is the round limit counted"},
+		{Role: llm.RoleAssistant, Content: "Locate the round accounting"},
+		{Role: llm.RoleUser, Content: "and who declares it"},
+		{Role: llm.RoleAssistant, Content: "second answer"},
+		{Role: llm.RoleUser, Content: "move it"},
+		{Role: llm.RoleAssistant, Content: "third answer"},
 	}, summaryStream("The limit lived in two places and disagreed. "+
 		"The loop owns it now and nothing else declares one."), Wiring{})
 	m.transcript = []entry{
@@ -1253,12 +1253,12 @@ func TestCompactReceipt_EnterFoldsTheSummaryAwayAndGivesItBack(t *testing.T) {
 // what is still in the window, and no summary under it — there was nothing
 // for a summary to stand in for.
 func TestCompactReceipt_TheFloorSaysWhatIsLeftAndCarriesNoSummary(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "a summary of what came before"},
-		{Role: provider.RoleAssistant, Content: "second answer"},
-		{Role: provider.RoleUser, Content: "and now this"},
-		{Role: provider.RoleAssistant, Content: "third answer"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "a summary of what came before"},
+		{Role: llm.RoleAssistant, Content: "second answer"},
+		{Role: llm.RoleUser, Content: "and now this"},
+		{Role: llm.RoleAssistant, Content: "third answer"},
 	}, summaryStream("a summary nobody needed"), Wiring{})
 	// The conversation the first compaction left: its summary, and the one
 	// turn since. Every turn still in the window is a turn this compaction
@@ -1301,16 +1301,16 @@ func TestCompactReceipt_TheFloorSaysWhatIsLeftAndCarriesNoSummary(t *testing.T) 
 // the summary has replaced and the kept tail does not carry. Every row is on
 // exactly one side of the split, whatever else is in the conversation.
 func TestCompact_AMessageNobodyTypedIsNotATurnTheFoldCountsBack(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "first"},
-		{Role: provider.RoleAssistant, Content: "first answer"},
-		{Role: provider.RoleUser, Content: "second"},
-		{Role: provider.RoleAssistant, Content: "second answer"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "first"},
+		{Role: llm.RoleAssistant, Content: "first answer"},
+		{Role: llm.RoleUser, Content: "second"},
+		{Role: llm.RoleAssistant, Content: "second answer"},
 		// The context a local run hands the model: user-role, nobody typed it.
-		{Role: provider.RoleUser, Content: "I ran `go test` myself.", Machine: true},
-		{Role: provider.RoleUser, Content: "third"},
-		{Role: provider.RoleAssistant, Content: "third answer"},
+		{Role: llm.RoleUser, Content: "I ran `go test` myself.", Machine: true},
+		{Role: llm.RoleUser, Content: "third"},
+		{Role: llm.RoleAssistant, Content: "third answer"},
 	}, summaryStream("the summary"), Wiring{})
 	m.transcript = []entry{
 		{kind: entryUser, text: "first"},
@@ -1365,7 +1365,7 @@ func TestCompact_AMessageNobodyTypedIsNotATurnTheFoldCountsBack(t *testing.T) {
 // drop has to tell the render caches itself: the rebuild a compaction goes on
 // to do would mask a drop that did not, and nothing here performs one.
 func TestDropCompactingNotice_TheNextRenderHasNoRowForIt(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.width, m.height = 110, 40
 	read := func(path string) entry {
 		return entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"` + path + `"}`, toolResult: "x"}
@@ -1425,10 +1425,10 @@ func TestProgram_TheContextMeterHoldsWhenAReportUndercounts(t *testing.T) {
 	p := &programProvider{turns: []programTurn{{
 		text:  "the scripted answer",
 		hold:  hold,
-		usage: &provider.Usage{PromptTokens: 10, CompletionTokens: 3},
+		usage: &llm.Usage{PromptTokens: 10, CompletionTokens: 3},
 	}}}
 	sys := strings.Repeat("s", 64000)
-	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: sys}}, streamOf(p), Wiring{
+	tm := runProgram(t, New([]llm.Message{{Role: llm.RoleSystem, Content: sys}}, streamOf(p), Wiring{
 		Prices:    pricing.NewTable(nil),
 		ModelName: "example-model",
 	}))
@@ -1453,13 +1453,13 @@ func TestProgram_TheContextMeterHoldsWhenAReportUndercounts(t *testing.T) {
 // a plausible report before it as the anchor, and a plausible report is
 // anchored as it always was.
 func TestAccumulateUsage_AnUndercountingReportIsNotTheAnchor(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: strings.Repeat("s", 40000)}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: strings.Repeat("s", 40000)}}, mockStream, Wiring{
 		Prices:    pricing.NewTable(nil),
 		ModelName: "example-model",
 	})
 	est := m.contextEstimate().total()
 
-	m.accumulateUsage(&provider.Usage{PromptTokens: 10})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 10})
 	if b := m.contextAccounting(); b.Reported || b.total() != est {
 		t.Fatalf("an undercounting report must leave the estimate standing, got %+v totalling %d against %d", b, b.total(), est)
 	}
@@ -1467,10 +1467,10 @@ func TestAccumulateUsage_AnUndercountingReportIsNotTheAnchor(t *testing.T) {
 		t.Fatalf("the report is still what was billed: ↑%d", m.TotalTokensIn)
 	}
 
-	m.accumulateUsage(&provider.Usage{PromptTokens: int(est)})
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: strings.Repeat("u", 400)})
+	m.accumulateUsage(&llm.Usage{PromptTokens: int(est)})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: strings.Repeat("u", 400)})
 	anchored := m.contextAccounting().total()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 10})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 10})
 	if b := m.contextAccounting(); !b.Reported || b.total() != anchored {
 		t.Fatalf("the plausible report before stays the anchor: %+v totalling %d against %d", b, b.total(), anchored)
 	}

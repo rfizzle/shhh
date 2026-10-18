@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/shell"
 )
 
@@ -13,10 +13,10 @@ func testShell() shell.Info {
 	return shell.Info{Shell: "bash", OS: "linux", Cwd: "/tmp"}
 }
 
-func toolList(names ...string) []provider.Tool {
-	out := make([]provider.Tool, len(names))
+func toolList(names ...string) []llm.Tool {
+	out := make([]llm.Tool, len(names))
 	for i, n := range names {
-		out[i] = provider.Tool{Name: n}
+		out[i] = llm.Tool{Name: n}
 	}
 	return out
 }
@@ -194,7 +194,7 @@ func TestToolbox_SendsADocumentsHeadingsToTheOutline(t *testing.T) {
 // prompts and the model has no tool for is a message to the user about a
 // child the user was not watching.
 func TestToolboxSaysWhatARepeatedlySteeredAgentMeans(t *testing.T) {
-	got := Toolbox([]provider.Tool{{Name: "spawn_agent"}, {Name: "agent_report"}, {Name: "agent_steer"}}, false)
+	got := Toolbox([]llm.Tool{{Name: "spawn_agent"}, {Name: "agent_report"}, {Name: "agent_steer"}}, false)
 	for _, want := range []string{"steered more than once", "agent_steer", "what it should do instead"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the toolbox does not state %q:\n%s", want, got)
@@ -206,7 +206,7 @@ func TestToolboxSaysWhatARepeatedlySteeredAgentMeans(t *testing.T) {
 	if !strings.Contains(got, "lane") {
 		t.Errorf("the toolbox does not say where a child is ended:\n%s", got)
 	}
-	if got := Toolbox([]provider.Tool{{Name: "read_file"}}, false); strings.Contains(got, "steer") {
+	if got := Toolbox([]llm.Tool{{Name: "read_file"}}, false); strings.Contains(got, "steer") {
 		t.Errorf("a session with no agents was told about one:\n%s", got)
 	}
 }
@@ -216,13 +216,13 @@ func TestToolboxSaysWhatARepeatedlySteeredAgentMeans(t *testing.T) {
 // that might not have registered it and said nothing to a coding session
 // that had.
 func TestToolboxStatesTheNotebook(t *testing.T) {
-	got := Toolbox([]provider.Tool{{Name: "write_note"}, {Name: "read_note"}}, false)
+	got := Toolbox([]llm.Tool{{Name: "write_note"}, {Name: "read_note"}}, false)
 	for _, want := range []string{"write_note —", "read_note —", "shared notebook", "before delegating"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the toolbox does not state %q:\n%s", want, got)
 		}
 	}
-	if got := Toolbox([]provider.Tool{{Name: "read_file"}}, false); strings.Contains(got, "notebook") {
+	if got := Toolbox([]llm.Tool{{Name: "read_file"}}, false); strings.Contains(got, "notebook") {
 		t.Errorf("a session with no notebook was told about one:\n%s", got)
 	}
 }
@@ -249,7 +249,7 @@ func TestToolbox_DiagnosticsIsAskedForOnTheUncheckedAnswer(t *testing.T) {
 // depth is not a request to delegate, proactive says divisible work is
 // divided. See docs/capabilities/subagents.md#spawning-is-a-decision.
 func TestToolboxSpawnLineStatesTheDelegationPolicy(t *testing.T) {
-	spawn := []provider.Tool{{Name: "spawn_agent"}}
+	spawn := []llm.Tool{{Name: "spawn_agent"}}
 	explicit, proactive := Toolbox(spawn, false), Toolbox(spawn, true)
 	for _, got := range []string{explicit, proactive} {
 		for _, want := range []string{"one self-contained task", "paths that do not overlap", "one agent_report wait on the set"} {
@@ -264,7 +264,7 @@ func TestToolboxSpawnLineStatesTheDelegationPolicy(t *testing.T) {
 	if !strings.Contains(proactive, spawnProactive) || strings.Contains(proactive, spawnOnRequest) {
 		t.Errorf("the proactive line should carry only the dividing sentence:\n%s", proactive)
 	}
-	if got := Toolbox([]provider.Tool{{Name: "fd"}}, true); strings.Contains(got, spawnProactive) {
+	if got := Toolbox([]llm.Tool{{Name: "fd"}}, true); strings.Contains(got, spawnProactive) {
 		t.Errorf("a session with no spawn_agent was told a policy:\n%s", got)
 	}
 }

@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -80,7 +80,7 @@ func TestGolden_SandboxWriterSpawnCard(t *testing.T) {
 	captureGolden(t, "sandbox-writer-spawn-card", "a writer's spawn card in a sandbox session", goldenWidths, func(width int) []golden.Panel {
 		m := gatedModelWith(t, func(context.Context, string, json.RawMessage) (string, error) { return "started", nil },
 			map[string]GatedPreviewFunc{subagent.SpawnToolName: preview}, Wiring{Containment: sandboxContainment()})
-		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 			spawnCall("s1", `{"role":"writer","task":"make the build pass","name":"writer-1","paths":["internal/agent/loop.go"]}`),
 		}})
 		m = handover(t, updated.(Model))

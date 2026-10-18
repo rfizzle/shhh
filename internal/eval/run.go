@@ -36,8 +36,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hostgit"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // Options is how a run is parameterised. The zero value runs each case once,
@@ -66,7 +66,7 @@ type Options struct {
 	// other two shapes run in this process and have no binary to resolve one,
 	// so the harness makes the requests itself and needs somewhere to send
 	// them.
-	Provider provider.Provider
+	Provider llm.Provider
 	// ClassifierBackend is how a classifier case's rows are asked: empty or
 	// "completion" for the verdict in words, "decisions" for a probability
 	// from a model that offers the Decisions API, held against the built-in

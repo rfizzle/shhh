@@ -16,9 +16,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
@@ -162,7 +162,7 @@ func (m Model) receiptOf(e entry) receipt.Receipt {
 
 // callReceipt is the receipt of one tool call, told what this session knows
 // about the server the tool belongs to, if any.
-func (m Model) callReceipt(name, args, result string, value json.RawMessage, atts ...provider.Attachment) receipt.Receipt {
+func (m Model) callReceipt(name, args, result string, value json.RawMessage, atts ...llm.Attachment) receipt.Receipt {
 	served := m.mcp.Has != nil && m.mcp.Has(name)
 	return receipt.Build(receipt.Call{Name: name, Args: args, Result: result, Value: value,
 		Served: served, ReadOnly: served && m.mcp.ReadOnly(name), Attachments: atts})
@@ -991,7 +991,7 @@ func (m *Model) monoCommand(parts []string) string {
 // blob, and nothing about the call is true until the blob closes — no target,
 // no outcome, no duration — so the transcript's last act stays whatever the
 // model said before it started, for as long as the write takes. The fragments
-// the stream reports (internal/provider) are counted here and stated as a
+// the stream reports (github.com/rfizzle/llm) are counted here and stated as a
 // size on one row.
 //
 // It is a reading of the round in flight and not an entry in the history: it
@@ -1024,7 +1024,7 @@ const composeMark = "✻"
 const composeFloor = 1 << 10
 
 // toolDeltaMsg is one fragment of a tool call's arguments, off the stream.
-type toolDeltaMsg struct{ delta provider.ToolCallDelta }
+type toolDeltaMsg struct{ delta llm.ToolCallDelta }
 
 // repaintsOnTick reports whether a token batch that ended on this message can
 // leave its repaint to the spinner's tick. Nothing terminal can — a round
@@ -1046,7 +1046,7 @@ func repaintsOnTick(final tea.Msg) bool {
 // (think.go): a round writing three calls at once is one wait to the person
 // watching it, and three numbers counting interleaved fragments are three
 // numbers nobody can add up.
-func (m *Model) appendCompose(d provider.ToolCallDelta) {
+func (m *Model) appendCompose(d llm.ToolCallDelta) {
 	if m.compacting {
 		// A compaction is housekeeping, not a turn, and it calls no tools; a
 		// reading of one would be a reading of something that never happened

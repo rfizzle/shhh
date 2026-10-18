@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
@@ -21,7 +22,6 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/raw"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -150,12 +150,12 @@ func newCmdCmd() *cobra.Command {
 				return run.runPiped()
 			}
 
-			messages := []provider.Message{
-				{Role: provider.RoleSystem, Content: run.sysPrompt},
-				{Role: provider.RoleUser, Content: userPrompt},
+			messages := []llm.Message{
+				{Role: llm.RoleSystem, Content: run.sysPrompt},
+				{Role: llm.RoleUser, Content: userPrompt},
 			}
 
-			compOpts := provider.CompletionOpts{Model: run.resolved.Model, Effort: run.effort}
+			compOpts := llm.CompletionOpts{Model: run.resolved.Model, Effort: run.effort}
 			p := run.p
 
 			ctx, cancel := context.WithCancel(cmd.Context())
@@ -170,7 +170,7 @@ func newCmdCmd() *cobra.Command {
 			var metrics *storage.StreamMetrics
 			events, metrics = storage.InstrumentStream(events)
 
-			newStream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			newStream := func(msgs []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 				sCtx, sCancel := context.WithCancel(cmd.Context())
 				ev, sErr := p.StreamCompletion(sCtx, msgs, compOpts)
 				if sErr != nil {
@@ -180,11 +180,11 @@ func newCmdCmd() *cobra.Command {
 				return ev, sCancel, nil
 			}
 
-			newExplain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			newExplain := func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 				eCtx, eCancel := context.WithCancel(cmd.Context())
-				eMsgs := []provider.Message{
-					{Role: provider.RoleSystem, Content: prompt.BuildExplain(long)},
-					{Role: provider.RoleUser, Content: command},
+				eMsgs := []llm.Message{
+					{Role: llm.RoleSystem, Content: prompt.BuildExplain(long)},
+					{Role: llm.RoleUser, Content: command},
 				}
 				ev, eErr := p.StreamCompletion(eCtx, eMsgs, compOpts)
 				if eErr != nil {
@@ -279,12 +279,12 @@ type oneShotRun struct {
 	cmd         *cobra.Command
 	cfg         config.Config
 	resolved    resolve.Resolved
-	p           provider.Provider
+	p           llm.Provider
 	info        shell.Info
 	promptExtra string
 	sysPrompt   string
 	userPrompt  string
-	effort      provider.Effort
+	effort      llm.Effort
 	ledger      *meter.Ledger
 	pending     *pendingRecord
 	timer       *oneShotTimer
@@ -323,7 +323,7 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 	// field at all, whatever the flag said, so it is stamped off —
 	// the record keeps what was in force, not what was asked for.
 	var sysPrompt string
-	var effort provider.Effort
+	var effort llm.Effort
 	if pipeMode {
 		sysPrompt = raw.SystemPrompt(info, promptExtra)
 	} else {
@@ -339,7 +339,7 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 		// down. The row this used to leave said a one-shot completed
 		// when what happened was that a word on the command line was
 		// not one of six.
-		if effort, err = provider.ParseEffort(resolved.Reasoning); err != nil {
+		if effort, err = llm.ParseEffort(resolved.Reasoning); err != nil {
 			return nil, err
 		}
 	}

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // markerReduce is a stand-in reduction pipeline that tags what it processed.
@@ -21,7 +21,7 @@ func TestEvidence_ExecResultReducedConsistently(t *testing.T) {
 	m.wiring.Evidence = Evidence{Reduce: markerReduce}
 	m.agent.StoreElided(m.wiring.Evidence.Keep)
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
 	m = updated.(Model)
@@ -29,7 +29,7 @@ func TestEvidence_ExecResultReducedConsistently(t *testing.T) {
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "[reduced execute_command]") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "[reduced execute_command]") {
 		t.Fatalf("exec tool result should be reduced, got %+v", last)
 	}
 	// Display consistency: the transcript entry carries the same reduced view.
@@ -45,9 +45,9 @@ func TestEvidence_ExecResultReducedConsistently(t *testing.T) {
 }
 
 func TestEvidence_UserRunNotReduced(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleAssistant, Content: "```\necho hi\n```"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleAssistant, Content: "```\necho hi\n```"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner:   legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }),

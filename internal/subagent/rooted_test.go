@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/lsp"
-	"github.com/rfizzle/shhh/internal/provider"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -111,7 +111,7 @@ func TestAWriterQueriesAFileOnlyItsCopyHolds(t *testing.T) {
 	repo := initTestRepo(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "q1", Name: tools.QueryName,
+		{calls: []llm.ToolCall{{ID: "q1", Name: tools.QueryName,
 			Arguments: `{"expression":".held","paths":["conf/only.json","conf/*.json"]}`}}},
 		{text: "read it"},
 	}}

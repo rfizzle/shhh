@@ -28,7 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // titleAttempts is how many readings a session gets: the first, and one
@@ -120,7 +120,7 @@ func (m *Model) titleCloseCmd(prev Model) tea.Cmd {
 func (m Model) titleRequest() sidejobs.TitleRequest {
 	var req sidejobs.TitleRequest
 	for _, msg := range m.agent.Messages() {
-		if msg.Role == provider.RoleUser && strings.TrimSpace(msg.Content) != "" {
+		if msg.Role == llm.RoleUser && strings.TrimSpace(msg.Content) != "" {
 			req.User = msg.Content
 			break
 		}

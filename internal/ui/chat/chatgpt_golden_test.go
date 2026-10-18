@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -48,7 +48,7 @@ func TestGolden_PlanPanels(t *testing.T) {
 // sign-in and no paste prompt.
 func TestGolden_PlanFailures(t *testing.T) {
 	captureGolden(t, "plan-failures", "the plan's failure cards", goldenWidths, func(width int) []golden.Panel {
-		build := func(f *provider.Failure) string {
+		build := func(f *llm.Failure) string {
 			m := frameModel(t, width, 40)
 			m.modelName = "gpt-5.6-terra"
 			m.providerName = "chatgpt"
@@ -64,20 +64,20 @@ func TestGolden_PlanFailures(t *testing.T) {
 			return m.renderHistory()
 		}
 		return []golden.Panel{
-			{Label: "usage limit · Manage usage leads, the switch is second", View: build(&provider.Failure{
-				Class: provider.ClassUsageLimit, Status: 429, Provider: "chatgpt",
+			{Label: "usage limit · Manage usage leads, the switch is second", View: build(&llm.Failure{
+				Class: llm.ClassUsageLimit, Status: 429, Provider: "chatgpt",
 				Code: "subscription_sharing_usage_limit_exceeded", Message: "You have reached your usage limit.",
 			})},
-			{Label: "not eligible · the switch alone, no retry", View: build(&provider.Failure{
-				Class: provider.ClassNotEligible, Status: 403, Provider: "chatgpt",
+			{Label: "not eligible · the switch alone, no retry", View: build(&llm.Failure{
+				Class: llm.ClassNotEligible, Status: 403, Provider: "chatgpt",
 				Code: "subscription_sharing_user_not_eligible", Message: "This account cannot use plan sharing.",
 			})},
-			{Label: "unsupported · the part the route refused is named", View: build(&provider.Failure{
-				Class: provider.ClassUnsupported, Status: 400, Provider: "chatgpt", Param: "input_audio",
+			{Label: "unsupported · the part the route refused is named", View: build(&llm.Failure{
+				Class: llm.ClassUnsupported, Status: 400, Provider: "chatgpt", Param: "input_audio",
 				Code: "subscription_sharing_unsupported_capability", Message: "Audio input is not supported.",
 			})},
-			{Label: "auth on the plan · the sign-in stands where the paste prompt was", View: build(&provider.Failure{
-				Class: provider.ClassAuth, Status: 401, Provider: "chatgpt",
+			{Label: "auth on the plan · the sign-in stands where the paste prompt was", View: build(&llm.Failure{
+				Class: llm.ClassAuth, Status: 401, Provider: "chatgpt",
 				Message: "the ChatGPT sign-in has expired",
 			})},
 		}

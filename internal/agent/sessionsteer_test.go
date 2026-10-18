@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestSessionSteer_NamesTheSenderAndEndsOnTheLine(t *testing.T) {
@@ -48,7 +48,7 @@ func TestStartMachineTurn_StartsATurnInTheSessionsOwnVoice(t *testing.T) {
 	a.StartMachineTurn("from another session")
 	msgs := a.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleUser || !last.Machine || last.Content != "from another session" {
+	if last.Role != llm.RoleUser || !last.Machine || last.Content != "from another session" {
 		t.Errorf("got %+v", last)
 	}
 	if a.Rounds() != 0 {

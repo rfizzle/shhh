@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -38,8 +38,8 @@ func TestARefusedCommandFiresNoHook(t *testing.T) {
 			base := env.factory()
 			factory := func(ctx context.Context, spec Spec) (Env, error) {
 				e, err := base(ctx, spec)
-				e.WrapGated = func(_ Seam, next func(provider.ToolCall) string) func(provider.ToolCall) string {
-					return func(call provider.ToolCall) string {
+				e.WrapGated = func(_ Seam, next func(llm.ToolCall) string) func(llm.ToolCall) string {
+					return func(call llm.ToolCall) string {
 						hooks.Add(1)
 						return next(call)
 					}

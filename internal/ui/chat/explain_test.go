@@ -14,8 +14,8 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -29,24 +29,24 @@ type paragraphProvider struct {
 	calls int
 	// seen is the last request's messages, so a test can assert what was
 	// sent and — more to the point — what was not.
-	seen []provider.Message
+	seen []llm.Message
 }
 
-func (p *paragraphProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *paragraphProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.calls++
 	p.seen = msgs
 	if p.err != nil {
 		return nil, p.err
 	}
-	ch := make(chan provider.StreamEvent, 1)
+	ch := make(chan llm.StreamEvent, 1)
 	if p.hang {
 		// Never written to and never closed: the reading ends on its own
 		// deadline, which is the timeout the card has to survive.
 		return ch, nil
 	}
-	ch <- provider.StreamEvent{
+	ch <- llm.StreamEvent{
 		Token: p.text,
-		Usage: &provider.Usage{PromptTokens: 210, CompletionTokens: 88},
+		Usage: &llm.Usage{PromptTokens: 210, CompletionTokens: 88},
 		Done:  true,
 	}
 	close(ch)
@@ -65,7 +65,7 @@ const explainWording = "Explain this shell command concisely."
 // command does, wired the way the session wires it: the explainer reaches the
 // provider through the gate, so what it spends is billed without the model
 // counting anything itself (internal/cli/approvals.go).
-func explainerModel(t *testing.T, p provider.Provider, cfg sidejobs.ExplainConfig) Model {
+func explainerModel(t *testing.T, p llm.Provider, cfg sidejobs.ExplainConfig) Model {
 	t.Helper()
 	var bare, contained []string
 	ledger := meter.New(nil)
@@ -144,7 +144,7 @@ func TestApprovalCard_TheFullViewExplainsAndDecidesNothing(t *testing.T) {
 		if strings.Contains(msg.Content, "deletes anything in dst/") {
 			t.Fatalf("an explanation must never reach the conversation: %+v", msg)
 		}
-		if msg.Role == provider.RoleTool {
+		if msg.Role == llm.RoleTool {
 			t.Fatalf("an explanation must never answer the call: %+v", msg)
 		}
 	}
@@ -173,7 +173,7 @@ func TestApprovalCard_TheFullViewExplainsAndDecidesNothing(t *testing.T) {
 	}
 	// The command travelled as evidence rather than as an instruction.
 	last := p.seen[len(p.seen)-1]
-	if last.Role != provider.RoleUser || !strings.Contains(last.Content, "UNTRUSTED COMMAND") {
+	if last.Role != llm.RoleUser || !strings.Contains(last.Content, "UNTRUSTED COMMAND") {
 		t.Fatalf("the command should be labelled as the untrusted data it is, got %+v", last)
 	}
 }
@@ -255,7 +255,7 @@ func TestApprovalCard_AFailedExplanationSaysSoAndReturns(t *testing.T) {
 				t.Fatalf("the decision should still be waiting, got state %d pending %v", m.state, m.approval.request)
 			}
 			for _, msg := range m.Messages() {
-				if msg.Role == provider.RoleTool {
+				if msg.Role == llm.RoleTool {
 					t.Fatalf("a failed explanation must never answer the call: %+v", msg)
 				}
 			}

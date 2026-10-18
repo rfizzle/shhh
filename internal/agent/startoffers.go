@@ -23,7 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 const (
@@ -101,7 +101,7 @@ type StartOffer struct {
 type StartOffersVerdict struct {
 	Offers []StartOffer
 	Model  string
-	Usage  provider.Usage
+	Usage  llm.Usage
 	Failed bool
 	Err    string
 }
@@ -109,11 +109,11 @@ type StartOffersVerdict struct {
 // StartOfferer writes the start screen's offers through the session's
 // provider.
 type StartOfferer struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      StartOffersConfig
 }
 
-func NewStartOfferer(p provider.Provider, cfg StartOffersConfig) *StartOfferer {
+func NewStartOfferer(p llm.Provider, cfg StartOffersConfig) *StartOfferer {
 	return &StartOfferer{provider: p, cfg: cfg}
 }
 
@@ -181,21 +181,21 @@ func (s *StartOfferer) Offer(ctx context.Context, req StartOffersRequest) StartO
 	defer cancel()
 	// The instruction and the evidence travel apart, for the reason the
 	// suggester gives.
-	events, err := s.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: s.cfg.prompt()},
-		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
-	}, provider.CompletionOpts{
+	events, err := s.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: s.cfg.prompt()},
+		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
+	}, llm.CompletionOpts{
 		Model:      v.Model,
-		Flow:       provider.FlowStartOffers,
+		Flow:       llm.FlowStartOffers,
 		MaxTokens:  s.cfg.maxTokens(),
-		Effort:     provider.EffortLow,
-		ToolChoice: provider.ToolChoiceNone,
+		Effort:     llm.EffortLow,
+		ToolChoice: llm.ToolChoiceNone,
 	})
 	if err != nil {
 		v.Err = "the start offers could not be read: " + err.Error()
 		return v
 	}
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	if reply.Usage != nil {
 		v.Usage = *reply.Usage
 	}

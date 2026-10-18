@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // HandoffToolName is the tool the writer is asked to call with its answer.
@@ -76,14 +76,14 @@ type HandoffRequest struct {
 // HandoffRequestFrom reads the evidence out of a conversation the way
 // AccountRequestFrom does: the person's own asks and the assistant's prose,
 // never a tool result and never the session's machine messages.
-func HandoffRequestFrom(note, account string, msgs []provider.Message) HandoffRequest {
+func HandoffRequestFrom(note, account string, msgs []llm.Message) HandoffRequest {
 	req := HandoffRequest{Note: strings.TrimSpace(note), Account: strings.TrimSpace(account)}
 	var asks, answers []string
 	for _, msg := range msgs {
 		switch {
-		case msg.Role == provider.RoleUser && !msg.Machine && strings.TrimSpace(msg.Content) != "":
+		case msg.Role == llm.RoleUser && !msg.Machine && strings.TrimSpace(msg.Content) != "":
 			asks = append(asks, msg.Content)
-		case msg.Role == provider.RoleAssistant && strings.TrimSpace(msg.Content) != "":
+		case msg.Role == llm.RoleAssistant && strings.TrimSpace(msg.Content) != "":
 			answers = append(answers, msg.Content)
 		}
 	}
@@ -163,18 +163,18 @@ func HandoffFirstLine(text string) string {
 type HandoffVerdict struct {
 	Handoff Handoff
 	Model   string
-	Usage   provider.Usage
+	Usage   llm.Usage
 	Failed  bool
 	Err     string
 }
 
 // HandoffWriter writes a handoff through the session's provider.
 type HandoffWriter struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      HandoffConfig
 }
 
-func NewHandoffWriter(p provider.Provider, cfg HandoffConfig) *HandoffWriter {
+func NewHandoffWriter(p llm.Provider, cfg HandoffConfig) *HandoffWriter {
 	return &HandoffWriter{provider: p, cfg: cfg}
 }
 
@@ -244,15 +244,15 @@ func (w *HandoffWriter) Write(ctx context.Context, req HandoffRequest) HandoffVe
 	defer cancel()
 	// The instruction and the evidence travel in separate messages, so the
 	// dialect's own instruction channel keeps them apart (classifier.go).
-	events, err := w.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: handoffPrompt},
-		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
-	}, provider.CompletionOpts{
+	events, err := w.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: handoffPrompt},
+		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
+	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      provider.FlowReading,
+		Flow:      llm.FlowReading,
 		MaxTokens: maxTokens,
-		Effort:    provider.EffortLow,
-		Tools: []provider.Tool{{
+		Effort:    llm.EffortLow,
+		Tools: []llm.Tool{{
 			Name:        HandoffToolName,
 			Description: "State where the work stands for the next sitting.",
 			Parameters:  handoffSchema,
@@ -263,7 +263,7 @@ func (w *HandoffWriter) Write(ctx context.Context, req HandoffRequest) HandoffVe
 		v.Err = "the handoff could not be written: " + err.Error()
 		return v
 	}
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	if reply.Usage != nil {
 		v.Usage = *reply.Usage
 	}

@@ -7,10 +7,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
@@ -111,7 +111,7 @@ func (m spawnModels) endpoint() *endpointModels {
 func (m spawnModels) ids() []string {
 	var catalog []string
 	if m.env.prov != nil {
-		catalog = provider.KnownModels(m.env.prov.Name())
+		catalog = llm.KnownModels(m.env.prov.Name())
 	}
 	return spawnableModels(m.env.cfg, m.agents, catalog, m.env.childModel(), m.strict())
 }
@@ -166,10 +166,10 @@ func (m spawnModels) check(model string) (string, error) {
 // for a caller still assembling one. The definitions are built before the
 // toolset is edited, because the edit runs under the lock the session's
 // model is read under.
-func (m spawnModels) offerOn(profiles subagent.Profiles, defs []provider.Tool) []provider.Tool {
+func (m spawnModels) offerOn(profiles subagent.Profiles, defs []llm.Tool) []llm.Tool {
 	fresh := subagent.Definitions(profiles, m.offer())
 	if m.env.replaceTools != nil {
-		m.env.replaceTools(func(current []provider.Tool) []provider.Tool { return replaceDefinitions(current, fresh) })
+		m.env.replaceTools(func(current []llm.Tool) []llm.Tool { return replaceDefinitions(current, fresh) })
 	}
 	return replaceDefinitions(defs, fresh)
 }

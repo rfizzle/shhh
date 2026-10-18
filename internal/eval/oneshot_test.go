@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // answerProvider replies to each request with the next scripted answer and
@@ -19,14 +19,14 @@ type answerProvider struct {
 
 func (p *answerProvider) Name() string { return "answers" }
 
-func (p *answerProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *answerProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.systems = append(p.systems, msgs[0].Content)
 	answer := p.answers[0]
 	p.answers = p.answers[1:]
-	ch := make(chan provider.StreamEvent, 3)
-	ch <- provider.StreamEvent{Token: answer}
-	ch <- provider.StreamEvent{Usage: &provider.Usage{PromptTokens: 7, CompletionTokens: 3}}
-	ch <- provider.StreamEvent{Done: true}
+	ch := make(chan llm.StreamEvent, 3)
+	ch <- llm.StreamEvent{Token: answer}
+	ch <- llm.StreamEvent{Usage: &llm.Usage{PromptTokens: 7, CompletionTokens: 3}}
+	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 	return ch, nil
 }

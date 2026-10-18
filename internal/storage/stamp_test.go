@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/notebook"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -63,7 +63,7 @@ func TestStoredStampsAreWrittenAtOneWidth(t *testing.T) {
 	if err := db.SaveSnippet("deploy", "kubectl apply -f deploy.yaml"); err != nil {
 		t.Fatalf("save snippet: %v", err)
 	}
-	if err := db.SaveChat(slot, []provider.Message{{Role: provider.RoleUser, Content: "q"}}); err != nil {
+	if err := db.SaveChat(slot, []llm.Message{{Role: llm.RoleUser, Content: "q"}}); err != nil {
 		t.Fatalf("save chat: %v", err)
 	}
 	if _, err := db.SaveNote(slot, notebook.Note{Author: "researcher-1", Title: "t", Body: "b", Written: time.Now()}); err != nil {
@@ -206,7 +206,7 @@ func TestListSnippets_SavedInOneTickListNewestFirst(t *testing.T) {
 func TestListChats_SavedInOneTickListNewestFirst(t *testing.T) {
 	db := openTestDB(t)
 	for _, name := range []string{"first", "second", "third"} {
-		if err := db.SaveChat(name, []provider.Message{{Role: provider.RoleUser, Content: name}}); err != nil {
+		if err := db.SaveChat(name, []llm.Message{{Role: llm.RoleUser, Content: name}}); err != nil {
 			t.Fatalf("save %s: %v", name, err)
 		}
 	}

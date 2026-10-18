@@ -14,7 +14,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // How full the window may get, as shares of it. They live here rather than
@@ -158,7 +158,7 @@ func EstimateBytesTokens(b []byte) int64 {
 // off disk carries none and estimates lower than the one it continues —
 // which is the honest answer, because the request it will send is smaller
 // too.
-func EstimateMessageTokens(msgs []provider.Message) int64 {
+func EstimateMessageTokens(msgs []llm.Message) int64 {
 	var n int64
 	for _, msg := range msgs {
 		n += EstimateTokens(msg.Content)
@@ -181,7 +181,7 @@ func EstimateMessageTokens(msgs []provider.Message) int64 {
 // of it. That is the safe direction of the two: an over-count trims early,
 // where an under-count sends the request that overflows.
 // See docs/capabilities/providers.md#only-the-chain-being-worked-on-now-goes-back.
-func estimateReasoningTokens(blocks []provider.ReasoningBlock) int64 {
+func estimateReasoningTokens(blocks []llm.ReasoningBlock) int64 {
 	var b int
 	for _, r := range blocks {
 		b += len(r.Text) + len(r.Redacted)
@@ -198,11 +198,11 @@ const estimatedImageTokens = 1500
 
 // EstimateAttachmentTokens roughly estimates what a message's attachments
 // occupy: text goes in verbatim, images cost about a screenshot each.
-func EstimateAttachmentTokens(atts []provider.Attachment) int64 {
+func EstimateAttachmentTokens(atts []llm.Attachment) int64 {
 	var n int64
 	for _, a := range atts {
 		switch a.Kind {
-		case provider.AttachmentText:
+		case llm.AttachmentText:
 			n += EstimateBytesTokens(a.Data)
 		default:
 			n += estimatedImageTokens
@@ -349,7 +349,7 @@ func (a *Agent) TrimOldToolResults(est, threshold, mark int64, cal Calibration) 
 	}
 	lastUser := 0
 	for i := len(a.messages) - 1; i >= 0; i-- {
-		if a.messages[i].Role == provider.RoleUser {
+		if a.messages[i].Role == llm.RoleUser {
 			lastUser = i
 			break
 		}
@@ -378,7 +378,7 @@ func (a *Agent) TrimOldToolResults(est, threshold, mark int64, cal Calibration) 
 	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
 	for i := 0; i < lastUser && est > mark; i++ {
 		msg := &a.messages[i]
-		if msg.Role != provider.RoleTool || strings.HasPrefix(msg.Content, elidedPrefix) {
+		if msg.Role != llm.RoleTool || strings.HasPrefix(msg.Content, elidedPrefix) {
 			continue
 		}
 		if a.keep != nil && a.keep(msg.Content) {

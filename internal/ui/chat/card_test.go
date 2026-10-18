@@ -11,7 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -687,7 +687,7 @@ func TestCard_AStepWhoseCallsReturnedStopsItsClock(t *testing.T) {
 		}
 	}
 
-	m.agent.BeginToolRound("", []provider.ToolCall{{ID: "r4", Name: "read_file",
+	m.agent.BeginToolRound("", []llm.ToolCall{{ID: "r4", Name: "read_file",
 		Arguments: `{"path":"internal/ui/rail.go"}`}}, nil)
 	m.invalidateRenderCache()
 	if h := strings.TrimRight(cardLine(cardLines(m), "read 3 files"), " "); !strings.HasSuffix(h, " running · 1.2s") {

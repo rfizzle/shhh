@@ -4,19 +4,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // long is a request long enough to have been cached anywhere, reporting no
 // cache figure and no cache field.
-var long = provider.Usage{PromptTokens: 20_000, CompletionTokens: 10}
+var long = llm.Usage{PromptTokens: 20_000, CompletionTokens: 10}
 
 // An endpoint with no cache answers nothing on every request, and so does
 // the first request on a fresh prefix somewhere that has one; it takes three
 // silent requests, each long enough to have been cached, to tell them apart.
 func TestLedger_CacheReadingNeedsThreeSilentRequests(t *testing.T) {
 	l := New(nil)
-	l.ObserveCache("vllm-local", "qwen3", provider.Usage{PromptTokens: 900})
+	l.ObserveCache("vllm-local", "qwen3", llm.Usage{PromptTokens: 900})
 	for i := range 2 {
 		l.ObserveCache("vllm-local", "qwen3", long)
 		if got := l.CacheReadingFor("vllm-local", "qwen3").State(); got != CacheNoneYet {
@@ -36,10 +36,10 @@ func TestLedger_CacheReadingNeedsThreeSilentRequests(t *testing.T) {
 // One figure is enough: a read or a write means the cache is there.
 func TestLedger_CacheReadingWorksOnOneFigure(t *testing.T) {
 	at := time.Date(2026, 10, 10, 14, 2, 0, 0, time.UTC)
-	for _, u := range []provider.Usage{
+	for _, u := range []llm.Usage{
 		{PromptTokens: 20_000, CacheCreationTokens: 19_000, CacheCreation1h: 19_000,
-			Reports: provider.FieldCacheRead | provider.FieldCacheCreation | provider.FieldCacheLease},
-		{PromptTokens: 2_000, CachedTokens: 1_900, Reports: provider.FieldCachedTokens},
+			Reports: llm.FieldCacheRead | llm.FieldCacheCreation | llm.FieldCacheLease},
+		{PromptTokens: 2_000, CachedTokens: 1_900, Reports: llm.FieldCachedTokens},
 	} {
 		l := New(nil)
 		l.now = func() time.Time { return at }
@@ -56,18 +56,18 @@ func TestLedger_CacheReadingWorksOnOneFigure(t *testing.T) {
 
 	l := New(nil)
 	l.SetCacheLease("1h")
-	l.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CachedTokens: 19_000, CacheCreationTokens: 500, CacheCreation1h: 500})
+	l.ObserveCache("gateway", "claude-sonnet-5-5", llm.Usage{PromptTokens: 20_000, CachedTokens: 19_000, CacheCreationTokens: 500, CacheCreation1h: 500})
 	r := l.CacheReadingFor("gateway", "claude-sonnet-5-5")
 	if r.LastShare() != 95 || r.Confirmed != "1h" || r.Downgraded() {
 		t.Errorf("an hour honoured: share %d, %+v", r.LastShare(), r)
 	}
-	l.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
+	l.ObserveCache("gateway", "claude-sonnet-5-5", llm.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
 	if r := l.CacheReadingFor("gateway", "claude-sonnet-5-5"); r.Confirmed != "5m" || !r.Downgraded() || r.Requests != 2 || r.LastShare() != 0 {
 		t.Errorf("an hour written as five minutes: %+v", r)
 	}
 	// A write that says nothing about its lease leaves the last word as it
 	// was.
-	l.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CachedTokens: 20_000})
+	l.ObserveCache("gateway", "claude-sonnet-5-5", llm.Usage{PromptTokens: 20_000, CachedTokens: 20_000})
 	if r := l.CacheReadingFor("gateway", "claude-sonnet-5-5"); r.Confirmed != "5m" {
 		t.Errorf("a read alone revised the lease: %+v", r)
 	}
@@ -76,16 +76,16 @@ func TestLedger_CacheReadingWorksOnOneFigure(t *testing.T) {
 // A profile's prompt_cache = false outranks every figure: the reading says
 // what the person declared, and the figures are still billed.
 func TestLedger_ADeclaredOffOutranksAFigure(t *testing.T) {
-	provider.RegisterDeclarations("stub", map[string]provider.Declared{
-		"claude-sonnet-5-5": {Model: map[string]any{provider.KeyPromptCache: false}},
+	llm.RegisterDeclarations("stub", map[string]llm.Declared{
+		"claude-sonnet-5-5": {Model: map[string]any{llm.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { provider.RegisterDeclarations("stub", nil) })
+	t.Cleanup(func() { llm.RegisterDeclarations("stub", nil) })
 
 	l := New(testPrices())
 	if r := l.CacheReadingFor("stub", "claude-sonnet-5-5"); r.State() != CacheOff {
 		t.Errorf("before any request the declaration is the reading, got %q", r.State())
 	}
-	p := l.For(&stubProvider{usage: provider.Usage{PromptTokens: 20_000, CachedTokens: 19_000}}, SourceAgent)
+	p := l.For(&stubProvider{usage: llm.Usage{PromptTokens: 20_000, CachedTokens: 19_000}}, SourceAgent)
 	drain(t, p, "claude-sonnet-5-5")
 	r := l.CacheReadingFor("stub", "claude-sonnet-5-5")
 	if r.State() != CacheOff || len(r.OffBy) != 1 || r.OffBy[0] != "stub" || r.WithReads != 1 {
@@ -93,7 +93,7 @@ func TestLedger_ADeclaredOffOutranksAFigure(t *testing.T) {
 	}
 	// The declaration is the profile's own endpoint's: the same model
 	// reached another way keeps the reading its responses give.
-	l.ObserveCache("anthropic", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000, CachedTokens: 19_000})
+	l.ObserveCache("anthropic", "claude-sonnet-5-5", llm.Usage{PromptTokens: 20_000, CachedTokens: 19_000})
 	if r := l.CacheReadingFor("anthropic", "claude-sonnet-5-5"); r.State() != CacheWorks {
 		t.Errorf("another endpoint read as off: %+v", r)
 	}
@@ -107,7 +107,7 @@ func TestLedger_ADeclaredOffOutranksAFigure(t *testing.T) {
 // accounting over and not what was learned about the endpoint.
 func TestGate_ReadsTheCacheOfTheEndpointThatAnswered(t *testing.T) {
 	l := New(nil)
-	drain(t, l.For(&stubProvider{usage: provider.Usage{PromptTokens: 20_000, CachedTokens: 5_000}}, SourceClassifier), "gpt-5")
+	drain(t, l.For(&stubProvider{usage: llm.Usage{PromptTokens: 20_000, CachedTokens: 5_000}}, SourceClassifier), "gpt-5")
 	l.Reset()
 	got := l.CacheReadings()
 	if len(got) != 1 || got[0].Provider != "stub" || got[0].Model != "gpt-5" || got[0].State() != CacheWorks {

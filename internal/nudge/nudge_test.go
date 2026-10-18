@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -132,16 +132,16 @@ func TestTurn_WrapResolverNamesOnlyACommandThatRan(t *testing.T) {
 		return tools.ExecResult{Outcome: tools.ExecSucceeded}
 	})
 	refuse := false
-	resolve := n.WrapResolver(func() int64 { return 1 }, func(tc provider.ToolCall) string {
+	resolve := n.WrapResolver(func() int64 { return 1 }, func(tc llm.ToolCall) string {
 		if refuse {
 			return "error: command denied"
 		}
 		run(context.Background(), "")
 		return "exit code: 0\noutput:\n"
 	})
-	call := func(command string) provider.ToolCall {
+	call := func(command string) llm.ToolCall {
 		args, _ := json.Marshal(map[string]string{"command": command})
-		return provider.ToolCall{Name: tools.ExecCommandName, Arguments: string(args)}
+		return llm.ToolCall{Name: tools.ExecCommandName, Arguments: string(args)}
 	}
 
 	refuse = true
@@ -155,7 +155,7 @@ func TestTurn_WrapResolverNamesOnlyACommandThatRan(t *testing.T) {
 	if got := resolve(call("cat b")); strings.Contains(got, prefix) {
 		t.Errorf("the second read in the turn should not:\n%s", got)
 	}
-	if got := resolve(provider.ToolCall{Name: "edit_file", Arguments: `{"command":"cat a"}`}); strings.Contains(got, prefix) {
+	if got := resolve(llm.ToolCall{Name: "edit_file", Arguments: `{"command":"cat a"}`}); strings.Contains(got, prefix) {
 		t.Errorf("only execute_command is a command:\n%s", got)
 	}
 }

@@ -24,8 +24,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/proposal"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/raw"
 	"github.com/rfizzle/shhh/internal/safety"
 )
@@ -72,7 +72,7 @@ func oneShotRow(path string, row Row, rf rowFile) (Row, error) {
 }
 
 // askOneShot puts one row to raw.Generate and labels what came back.
-func askOneShot(ctx context.Context, p provider.Provider, model string, row Row) Answer {
+func askOneShot(ctx context.Context, p llm.Provider, model string, row Row) Answer {
 	start := time.Now()
 	// Cancelled on the way out so the metering goroutine below never waits on
 	// a reader that has gone: Generate stops reading at the first Done.
@@ -116,17 +116,17 @@ func labelCommand(row Row, command string) (label, reason string) {
 // meteredProvider sums the usage the stream reports, because Generate returns
 // the answer alone and a table attempt is priced from its rows' usage.
 type meteredProvider struct {
-	provider.Provider
+	llm.Provider
 	mu    sync.Mutex
-	usage provider.Usage
+	usage llm.Usage
 }
 
-func (m *meteredProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (m *meteredProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	in, err := m.Provider.StreamCompletion(ctx, msgs, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := make(chan provider.StreamEvent)
+	out := make(chan llm.StreamEvent)
 	go func() {
 		defer close(out)
 		for ev := range in {
@@ -146,7 +146,7 @@ func (m *meteredProvider) StreamCompletion(ctx context.Context, msgs []provider.
 	return out, nil
 }
 
-func (m *meteredProvider) total() provider.Usage {
+func (m *meteredProvider) total() llm.Usage {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.usage

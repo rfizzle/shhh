@@ -20,7 +20,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // keepAliveWord is the whole of the refresh's own turn.
@@ -35,7 +35,7 @@ const keepAliveTimeout = 2 * time.Minute
 // takes the receipt but not the next refresh.
 type keepAliveMsg struct {
 	gen   int
-	usage provider.Usage
+	usage llm.Usage
 	err   error
 }
 
@@ -49,7 +49,7 @@ func (m Model) keepAliveDue(now time.Time) bool {
 		return false
 	}
 	r, ok := m.idleReading()
-	if !ok || r.Lease != string(provider.CacheTTL1h) {
+	if !ok || r.Lease != string(llm.CacheTTL1h) {
 		return false
 	}
 	// Anthropic's own endpoint, or a gateway whose cache has been seen to
@@ -70,7 +70,7 @@ func (m Model) keepAliveDue(now time.Time) bool {
 // conversation itself is not touched.
 func (m Model) keepAliveCmd(gen int) tea.Cmd {
 	send := m.wiring.KeepAliveSend
-	msgs := append(m.agent.RequestMessages(), provider.Message{Role: provider.RoleUser, Content: keepAliveWord})
+	msgs := append(m.agent.RequestMessages(), llm.Message{Role: llm.RoleUser, Content: keepAliveWord})
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), keepAliveTimeout)
 		defer cancel()

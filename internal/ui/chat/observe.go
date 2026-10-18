@@ -11,10 +11,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -93,7 +93,7 @@ func (m Model) usageTotalCost(in, out int64) (float64, bool) {
 
 // recordToolResult records a tool call from its result text: the outcome
 // and, for a failure, its class — and, for a command, what it was for.
-func (m *Model) recordToolResult(call provider.ToolCall, duration time.Duration, result string) {
+func (m *Model) recordToolResult(call llm.ToolCall, duration time.Duration, result string) {
 	outcome, class := observe.ToolOutcome(result)
 	m.recordToolEvent(call.Name, duration, outcome, class, observe.ToolPurpose(call.Name, call.Arguments))
 }

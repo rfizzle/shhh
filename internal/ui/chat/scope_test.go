@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 )
@@ -49,13 +49,13 @@ func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
 	m := scopedModel(t, root, agent.ModeAcceptEdits)
 
 	// Inside the scope, accept-edits answers for the edit itself.
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("in", filepath.Join(root, "main.go"), "new\n")}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("in", filepath.Join(root, "main.go"), "new\n")}})
 	if inside := updated.(Model); inside.state == stateConfirmRun {
 		t.Fatal("accept-edits should not ask about an edit inside the working scope")
 	}
 
 	m = scopedModel(t, root, agent.ModeAcceptEdits)
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
 		t.Fatalf("an edit outside the working scope must ask, state = %d", m.state)
@@ -74,7 +74,7 @@ func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
 func TestApprovingAnOutOfScopeEditAddsTheDirectory(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
 	m := scopedModel(t, root, agent.ModeManual)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = updated.(Model)
 	if !m.approval.scope.any() {
 		t.Fatal("the pending decision should have resolved what it reaches")
@@ -99,7 +99,7 @@ func TestApprovingAnOutOfScopeEditAddsTheDirectory(t *testing.T) {
 func TestDecliningAnOutOfScopeEditGrantsNothing(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
 	m := scopedModel(t, root, agent.ModeManual)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
@@ -118,13 +118,13 @@ func TestMaskedPathIsRefusedRatherThanAsked(t *testing.T) {
 		t.Skip("no ~/.ssh on this host")
 	}
 	m := scopedModel(t, t.TempDir(), agent.ModeManual)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("ssh", filepath.Join(ssh, "config"), "new\n")}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("ssh", filepath.Join(ssh, "config"), "new\n")}})
 	m = updated.(Model)
 	if m.state == stateConfirmRun {
 		t.Fatal("a path behind the deny mask must not be offered as a decision")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "working scope") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "working scope") {
 		t.Fatalf("the model should be told why nothing ran, got %+v", last)
 	}
 }
@@ -278,8 +278,8 @@ func TestPermissionsNameACheckoutGrantForWriters(t *testing.T) {
 
 // machineMessagesNaming is every message the session wrote for the model that
 // names dir.
-func machineMessagesNaming(m Model, dir string) []provider.Message {
-	var out []provider.Message
+func machineMessagesNaming(m Model, dir string) []llm.Message {
+	var out []llm.Message
 	for _, msg := range m.Messages() {
 		if msg.Machine && strings.Contains(msg.Content, dir) {
 			out = append(out, msg)
@@ -302,7 +302,7 @@ func TestAddDirMidSessionIsAnnouncedToTheModelOnce(t *testing.T) {
 	m.scopeCommand([]string{"/add-dir", outside})
 	dir := m.wiring.Scope.Dirs()[0]
 	said := machineMessagesNaming(m, dir)
-	if len(said) != 1 || said[0].Role != provider.RoleUser || !strings.Contains(said[0].Content, "/add-dir") {
+	if len(said) != 1 || said[0].Role != llm.RoleUser || !strings.Contains(said[0].Content, "/add-dir") {
 		t.Fatalf("/add-dir should put one announcement naming %s into the conversation, got %+v", dir, said)
 	}
 
@@ -337,7 +337,7 @@ func TestScopeGrantsTheModelAlreadyKnowsAreNotAnnounced(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
 	m := scopedModel(t, root, agent.ModeManual)
 	m.scopeCommand([]string{"/add-dir", root})
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = handover(t, updated.(Model))
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)

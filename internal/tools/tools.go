@@ -16,14 +16,14 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 type Definition struct {
-	Tool    provider.Tool
+	Tool    llm.Tool
 	Execute func(ctx context.Context, args json.RawMessage) (string, error)
 	// Receipt is how a call to the tool reads on a receipt. It sits beside
 	// the schema rather than in it: no model reads it.
@@ -143,9 +143,9 @@ func (w *walkIgnore) file(p string) bool {
 	return w.rules[filepath.Dir(p)].Ignored(p, false)
 }
 
-func Definitions() []provider.Tool {
+func Definitions() []llm.Tool {
 	defs := ReadOnly()
-	tools := make([]provider.Tool, len(defs))
+	tools := make([]llm.Tool, len(defs))
 	for i, d := range defs {
 		tools[i] = d.Tool
 	}
@@ -185,13 +185,13 @@ const ExecCommandName = "execute_command"
 // one fact that is not the same in two sessions, so it is not here: it is
 // resolved per session and stated in the prompt beside the working scope.
 // See docs/capabilities/containment.md#the-model-is-told-what-its-commands-run-under.
-func ExecCommandTool() provider.Tool { return execCommandTool(true) }
+func ExecCommandTool() llm.Tool { return execCommandTool(true) }
 
 // ExecCommandToolNoEdits is the definition for an agent that holds commands
 // and not the edit tools — a profile granted execute and not write. Told to
 // edit with a tool it does not have, it calls one that is not there; its
 // commands are its only way to change a file, and its prompt says so.
-func ExecCommandToolNoEdits() provider.Tool { return execCommandTool(false) }
+func ExecCommandToolNoEdits() llm.Tool { return execCommandTool(false) }
 
 // execCommandReceipt is how a command the model asked for reads: a run. It
 // is declared beside the two definitions rather than in a Definition because
@@ -199,7 +199,7 @@ func ExecCommandToolNoEdits() provider.Tool { return execCommandTool(false) }
 var execCommandReceipt = describe.Describer{Kind: describe.KindRun, Verb: "run",
 	Does: "one shell command"}
 
-func execCommandTool(edits bool) provider.Tool {
+func execCommandTool(edits bool) llm.Tool {
 	jobs := "It is for building, testing and running programs, not for working with files: " +
 		"read a file, a range of it or its end with read_file (not cat, head, tail or wc), " +
 		"find text with search (not grep or rg), find files by name with glob (not find or ls -R), " +
@@ -210,7 +210,7 @@ func execCommandTool(edits bool) provider.Tool {
 	} else {
 		jobs += ". The readers run without an approval in every mode. "
 	}
-	return provider.Tool{
+	return llm.Tool{
 		Name: ExecCommandName,
 		Description: "Run a shell command in the user's working directory and return its combined stdout/stderr and exit code. " +
 			jobs +
@@ -231,7 +231,7 @@ func execCommandTool(edits bool) provider.Tool {
 
 // DefinitionsWithExec returns the read-only tool definitions plus the
 // user-approved execute_command tool.
-func DefinitionsWithExec() []provider.Tool {
+func DefinitionsWithExec() []llm.Tool {
 	return append(Definitions(), ExecCommandTool())
 }
 
@@ -331,7 +331,7 @@ func UnknownTool(name string, registered []string) error {
 var readFile = Definition{
 	Receipt: describe.Describer{Kind: describe.KindRead, Verb: "read", Count: countRead,
 		Does: "one file, or a run of its lines"},
-	Tool: provider.Tool{
+	Tool: llm.Tool{
 		Name: ReadFileName,
 		Description: "Read the contents of a file. Each line is returned as `<line number>\t<text>`; the number is a reading aid, not part of the file. " +
 			"Read the whole file by default — it is one call, and reading it in small windows is not cheaper. " +
@@ -751,17 +751,17 @@ func binaryNotice(path, mediaType string, head []byte, rest io.Reader, size int6
 // shhh can put in front of a model. A format no provider takes, or a file
 // past the attachment ceiling, is not an image as far as this is concerned:
 // it is bytes, and the notice says so.
-func imageAttachment(name, mediaType string, head []byte, rest io.Reader, size int64) (provider.Attachment, bool) {
+func imageAttachment(name, mediaType string, head []byte, rest io.Reader, size int64) (llm.Attachment, bool) {
 	if !strings.HasPrefix(mediaType, "image/") || size > attachment.MaxBytes {
-		return provider.Attachment{}, false
+		return llm.Attachment{}, false
 	}
 	tail, err := io.ReadAll(rest)
 	if err != nil {
-		return provider.Attachment{}, false
+		return llm.Attachment{}, false
 	}
 	att, err := attachment.FromBytes(name, append(head, tail...))
-	if err != nil || att.Kind != provider.AttachmentImage {
-		return provider.Attachment{}, false
+	if err != nil || att.Kind != llm.AttachmentImage {
+		return llm.Attachment{}, false
 	}
 	return att, true
 }
@@ -789,7 +789,7 @@ func numberLines(content string, start int) string {
 var listDirectory = Definition{
 	Receipt: describe.Describer{Kind: describe.KindRead, Verb: "read", Count: CountItems,
 		Does: "a directory's entries"},
-	Tool: provider.Tool{
+	Tool: llm.Tool{
 		Name: ListDirectoryName,
 		Description: "List files and directories at a given path. Returns one entry per line with type prefix (file: or dir:), and each file's size after a tab, so a file can be sized before it is opened. " +
 			"Reports .git, node_modules and vendor without descending into them, and leaves out anything .gitignore names — " +
@@ -913,5 +913,5 @@ func entrySize(e fs.DirEntry) string {
 	if err != nil {
 		return ""
 	}
-	return "\t" + provider.HumanSize(int(info.Size()))
+	return "\t" + llm.HumanSize(int(info.Size()))
 }

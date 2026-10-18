@@ -3,16 +3,16 @@ package agent
 import (
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestCompactSetsTheFoldedTurnsAsideAndKeepsThemAcrossASecondOne(t *testing.T) {
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "one"},
-		{Role: provider.RoleAssistant, Content: "a1"},
-		{Role: provider.RoleUser, Content: "two"},
-		{Role: provider.RoleAssistant, Content: "a2"},
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "one"},
+		{Role: llm.RoleAssistant, Content: "a1"},
+		{Role: llm.RoleUser, Content: "two"},
+		{Role: llm.RoleAssistant, Content: "a2"},
 	}, nil)
 	a.Compact("first", a.Messages()[3:])
 	if got := a.Folded(); len(got) != 2 || got[0].Content != "one" {

@@ -19,9 +19,9 @@ package chat
 import (
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // vitalsHistory bounds the per-turn ring. It only has to outlive the
@@ -115,7 +115,7 @@ func (v *vitals) startTurn() {
 
 // record folds one request's usage into the open turn and the session
 // totals, and appends the round's context estimate to the burn series.
-func (v *vitals) record(model string, u provider.Usage, cost float64, priced bool) {
+func (v *vitals) record(model string, u llm.Usage, cost float64, priced bool) {
 	in, out := int64(u.PromptTokens), int64(u.CompletionTokens)
 	cached := int64(u.CachedTokens)
 
@@ -248,7 +248,7 @@ func (m Model) liveSessionTokens() (in, out int64) {
 
 // usageCost prices one request against the session's model, reporting
 // whether the table knew it.
-func (m Model) usageCost(u provider.Usage) (float64, bool) {
+func (m Model) usageCost(u llm.Usage) (float64, bool) {
 	if m.wiring.Prices == nil || m.modelName == "" {
 		return 0, false
 	}
@@ -418,9 +418,9 @@ func (m Model) contextEstimateRange(from, to int) contextBreakdown {
 		// difference, or reported nothing to free at all.
 		n := agent.EstimateMessageTokens(msgs[i : i+1])
 		switch {
-		case i == 0 && msg.Role == provider.RoleSystem:
+		case i == 0 && msg.Role == llm.RoleSystem:
 			b.System += n
-		case msg.Role == provider.RoleTool:
+		case msg.Role == llm.RoleTool:
 			b.ToolResults += n
 		default:
 			b.Messages += n

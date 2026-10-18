@@ -7,15 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestHeadlessRun_EmitsCheckpointStatusBeforeFollowingTools(t *testing.T) {
-	call := provider.ToolCall{ID: "one", Name: "read_file", Arguments: `{}`}
-	next := provider.ToolCall{ID: "two", Name: "search", Arguments: `{}`}
+	call := llm.ToolCall{ID: "one", Name: "read_file", Arguments: `{}`}
+	next := llm.ToolCall{ID: "two", Name: "search", Arguments: `{}`}
 	a := New(nil, scriptedStream(t,
 		toolCallRound(call),
-		[]provider.StreamEvent{{Token: "I found the loop; next I will inspect its callers."}, {ToolCalls: []provider.ToolCall{next}}},
+		[]llm.StreamEvent{{Token: "I found the loop; next I will inspect its callers."}, {ToolCalls: []llm.ToolCall{next}}},
 		doneRound("done"),
 	))
 	a.SetProgressIntervals(1, time.Hour)
@@ -34,10 +34,10 @@ func TestHeadlessRun_EmitsCheckpointStatusBeforeFollowingTools(t *testing.T) {
 }
 
 func TestHeadlessRun_ProgressCheckpointDoesNotPolluteTextCallback(t *testing.T) {
-	call := provider.ToolCall{ID: "one", Name: "read_file", Arguments: `{}`}
+	call := llm.ToolCall{ID: "one", Name: "read_file", Arguments: `{}`}
 	a := New(nil, scriptedStream(t,
 		toolCallRound(call),
-		[]provider.StreamEvent{{Token: "status"}, {ToolCalls: []provider.ToolCall{{ID: "two", Name: "search", Arguments: `{}`}}}},
+		[]llm.StreamEvent{{Token: "status"}, {ToolCalls: []llm.ToolCall{{ID: "two", Name: "search", Arguments: `{}`}}}},
 		doneRound("answer"),
 	))
 	a.SetProgressIntervals(1, time.Hour)
@@ -56,21 +56,21 @@ func TestHeadlessRun_ProgressCheckpointDoesNotPolluteTextCallback(t *testing.T) 
 // so a round interrupted after writing it has shown it nowhere. The words the
 // conversation keeps reach the feed as status, and never as the answer.
 func TestHeadlessRun_AnInterruptedCheckpointKeepsItsStatus(t *testing.T) {
-	call := provider.ToolCall{ID: "one", Name: "read_file", Arguments: `{}`}
+	call := llm.ToolCall{ID: "one", Name: "read_file", Arguments: `{}`}
 	var h *Headless
 	n := 0
-	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		n++
-		ch := make(chan provider.StreamEvent)
+		ch := make(chan llm.StreamEvent)
 		ctx, cancel := context.WithCancel(context.Background())
 		first := n == 1
 		go func() {
 			defer close(ch)
 			if first {
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{call}}
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{call}}
 				return
 			}
-			ch <- provider.StreamEvent{Token: "status"}
+			ch <- llm.StreamEvent{Token: "status"}
 			h.Interrupt()
 			<-ctx.Done()
 		}()

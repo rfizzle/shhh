@@ -49,7 +49,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // API names the wire dialect a profile speaks. Both are backed by providers
@@ -200,26 +200,26 @@ func (m Model) validateDeclarations() error {
 	for _, wide := range []struct {
 		key   string
 		value *bool
-	}{{keyStructuredOutputs, m.StructuredOutputs}, {provider.KeyPromptCache, m.PromptCache}} {
+	}{{keyStructuredOutputs, m.StructuredOutputs}, {llm.KeyPromptCache, m.PromptCache}} {
 		if wide.value == nil {
 			continue
 		}
-		if d, ok := provider.DeclarationFor(wide.key); ok {
+		if d, ok := llm.DeclarationFor(wide.key); ok {
 			if err := d.Check(*wide.value); err != nil {
 				return err
 			}
 		}
 	}
 	for _, word := range sortedKeys(m.Flows) {
-		flow, ok := provider.ParseFlow(word)
+		flow, ok := llm.ParseFlow(word)
 		if !ok {
-			return fmt.Errorf("flows: unknown flow %q (valid: %s)", word, provider.FlowWords())
+			return fmt.Errorf("flows: unknown flow %q (valid: %s)", word, llm.FlowWords())
 		}
 		settings := m.Flows[word]
 		for _, key := range sortedKeys(settings) {
-			d, ok := provider.DeclarationFor(key)
+			d, ok := llm.DeclarationFor(key)
 			if !ok {
-				return fmt.Errorf("flows.%s: unknown setting %q (valid: %s)", word, key, provider.DeclarationKeys())
+				return fmt.Errorf("flows.%s: unknown setting %q (valid: %s)", word, key, llm.DeclarationKeys())
 			}
 			if !d.Scopes(flow) {
 				return fmt.Errorf("flows.%s.%s: `%s` %s", word, key, word, d.Unscoped)
@@ -237,8 +237,8 @@ const keyStructuredOutputs = "structured_outputs"
 
 // declared is what the model's line declares, in the registry's terms, and
 // whether it declares anything.
-func (m Model) declared() (provider.Declared, bool) {
-	var d provider.Declared
+func (m Model) declared() (llm.Declared, bool) {
+	var d llm.Declared
 	if m.StructuredOutputs != nil {
 		d.Model = map[string]any{keyStructuredOutputs: *m.StructuredOutputs}
 	}
@@ -246,16 +246,16 @@ func (m Model) declared() (provider.Declared, bool) {
 		if d.Model == nil {
 			d.Model = map[string]any{}
 		}
-		d.Model[provider.KeyPromptCache] = *m.PromptCache
+		d.Model[llm.KeyPromptCache] = *m.PromptCache
 	}
 	for word, settings := range m.Flows {
 		if len(settings) == 0 {
 			continue
 		}
 		if d.Flows == nil {
-			d.Flows = map[provider.Flow]map[string]any{}
+			d.Flows = map[llm.Flow]map[string]any{}
 		}
-		d.Flows[provider.Flow(word)] = settings
+		d.Flows[llm.Flow(word)] = settings
 	}
 	return d, d.Model != nil || d.Flows != nil
 }
@@ -302,7 +302,7 @@ func (r Reasoning) validate() error {
 		return fmt.Errorf("reasoning: unknown kind %q (valid: none, effort, budget, adaptive)", r.Kind)
 	}
 	for _, l := range r.Levels {
-		if _, err := provider.ParseEffort(l); err != nil || strings.TrimSpace(l) == "" {
+		if _, err := llm.ParseEffort(l); err != nil || strings.TrimSpace(l) == "" {
 			return fmt.Errorf("reasoning: levels: unknown level %q (valid: low, medium, high, xhigh, max)", l)
 		}
 	}
@@ -310,9 +310,9 @@ func (r Reasoning) validate() error {
 }
 
 // hasLevel reports whether Levels names the rung.
-func (r Reasoning) hasLevel(e provider.Effort) bool {
+func (r Reasoning) hasLevel(e llm.Effort) bool {
 	for _, l := range r.Levels {
-		if got, err := provider.ParseEffort(l); err == nil && got == e {
+		if got, err := llm.ParseEffort(l); err == nil && got == e {
 			return true
 		}
 	}
@@ -702,7 +702,7 @@ func (p *Profile) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("name is required")
 	}
-	if provider.IsBuiltin(p.Name) {
+	if llm.IsBuiltin(p.Name) {
 		return fmt.Errorf("%q is the name of a built-in provider, so this profile would shadow it; rename the profile", p.Name)
 	}
 	if p.BaseURL == "" {

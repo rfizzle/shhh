@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/mcp/mcpname"
-	"github.com/rfizzle/shhh/internal/provider"
 	calldescribe "github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -157,9 +157,9 @@ type Toolset struct {
 	tools     map[string]toolRef
 	prompts   map[string]promptRef
 	resources map[string]*Server
-	defs      []provider.Tool
+	defs      []llm.Tool
 	// offered is defs as the last Join left it (Offered).
-	offered []provider.Tool
+	offered []llm.Tool
 	// inflight counts the calls dispatched and not yet returned. A refresh
 	// waits for it to reach zero, which is what makes the swap a round
 	// boundary rather than something that happens under a round's own calls
@@ -336,7 +336,7 @@ func (ts *Toolset) Join() []Report {
 	ts.settled = nil
 	if joined {
 		ts.index()
-		ts.offered = append([]provider.Tool(nil), ts.defs...)
+		ts.offered = append([]llm.Tool(nil), ts.defs...)
 	}
 	return out
 }
@@ -346,13 +346,13 @@ func (ts *Toolset) Join() []Report {
 // which a list-changed Refresh rebuilds at any round boundary — a server's
 // re-listing moves what is read when it is used, never what the model was
 // offered (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
-func (ts *Toolset) Offered() []provider.Tool {
+func (ts *Toolset) Offered() []llm.Tool {
 	if ts == nil {
 		return nil
 	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
-	return append([]provider.Tool(nil), ts.offered...)
+	return append([]llm.Tool(nil), ts.offered...)
 }
 
 // FromReports is a toolset over reports that have already settled, every
@@ -366,7 +366,7 @@ func FromReports(reports []Report) *Toolset {
 		}
 	}
 	ts.index()
-	ts.offered = append([]provider.Tool(nil), ts.defs...)
+	ts.offered = append([]llm.Tool(nil), ts.defs...)
 	return ts
 }
 
@@ -407,7 +407,7 @@ func (ts *Toolset) index() {
 			}
 			taken[t.Name] = true
 			ts.tools[t.Name] = toolRef{server: s, tool: t}
-			ts.defs = append(ts.defs, provider.Tool{Name: t.Name, Description: describe(s, t), Parameters: t.InputSchema})
+			ts.defs = append(ts.defs, llm.Tool{Name: t.Name, Description: describe(s, t), Parameters: t.InputSchema})
 		}
 		for _, p := range s.Prompts {
 			if _, dup := ts.prompts[p.Name]; dup {
@@ -646,13 +646,13 @@ func describe(s *Server, t Tool) string {
 }
 
 // Definitions are the registered tools, for the provider.
-func (ts *Toolset) Definitions() []provider.Tool {
+func (ts *Toolset) Definitions() []llm.Tool {
 	if ts == nil {
 		return nil
 	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
-	return append([]provider.Tool(nil), ts.defs...)
+	return append([]llm.Tool(nil), ts.defs...)
 }
 
 // Len is how many tools are registered.
@@ -727,7 +727,7 @@ func (ts *Toolset) Gated() []string {
 // keeps it to those servers, because what a child was handed is the
 // read-only servers and nothing else
 // (docs/capabilities/mcp.md#what-a-conversation-may-reach).
-func (ts *Toolset) ReadOnlyDefinitions() []provider.Tool {
+func (ts *Toolset) ReadOnlyDefinitions() []llm.Tool {
 	defs, _ := ts.ReadOnlyView()
 	return defs
 }
@@ -737,13 +737,13 @@ func (ts *Toolset) ReadOnlyDefinitions() []provider.Tool {
 // two reads would be named to a child without its tools, or handed over
 // unnamed. A child reads the servers that have joined when it is spawned and
 // keeps that set (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
-func (ts *Toolset) ReadOnlyView() ([]provider.Tool, string) {
+func (ts *Toolset) ReadOnlyView() ([]llm.Tool, string) {
 	if ts == nil {
 		return nil, ""
 	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
-	var out []provider.Tool
+	var out []llm.Tool
 	for _, d := range ts.defs {
 		if d.Name == ResourceToolName {
 			if ts.hasReadOnlyResource() {
@@ -854,8 +854,8 @@ const resourceSchema = `{"type":"object","properties":{"uri":{"type":"string",` 
 	`"description":"The resource URI, as the MCP servers block lists it."}},"required":["uri"]}`
 
 // ResourceDefinition is the resource tool as the model is offered it.
-func ResourceDefinition() provider.Tool {
-	return provider.Tool{
+func ResourceDefinition() llm.Tool {
+	return llm.Tool{
 		Name: ResourceToolName,
 		Description: "Read one resource an MCP server publishes, by URI. Resources are the documents and " +
 			"records a server holds; reading one changes nothing and costs no approval. The MCP servers " +

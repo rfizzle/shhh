@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 )
 
@@ -240,11 +240,11 @@ func TestWrapExecutor_ScrubsResultsAndErrors(t *testing.T) {
 func TestScrubMessages_CopiesAndScrubsEveryText(t *testing.T) {
 	v := New()
 	_ = v.Add("TOKEN", "hunter2hunter2")
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "key hunter2hunter2", Attachments: []provider.Attachment{
-			{Kind: provider.AttachmentText, Data: []byte("hunter2hunter2")},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "key hunter2hunter2", Attachments: []llm.Attachment{
+			{Kind: llm.AttachmentText, Data: []byte("hunter2hunter2")},
 		}},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{Arguments: `{"c":"echo hunter2hunter2"}`}}},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{Arguments: `{"c":"echo hunter2hunter2"}`}}},
 	}
 	got := v.ScrubMessages(msgs)
 	if got[0].Content != "key [secret:TOKEN]" || string(got[0].Attachments[0].Data) != "[secret:TOKEN]" {
@@ -696,7 +696,7 @@ func TestRedact_ReachesToolOutputAMessageAndASpool(t *testing.T) {
 		}
 	}
 
-	msgs := v.ScrubMessages([]provider.Message{{Role: "user", Content: "here it is: " + token}})
+	msgs := v.ScrubMessages([]llm.Message{{Role: "user", Content: "here it is: " + token}})
 	if strings.Contains(msgs[0].Content, token) || !strings.Contains(msgs[0].Content, Redacted("github-token")) {
 		t.Fatalf("message = %q", msgs[0].Content)
 	}

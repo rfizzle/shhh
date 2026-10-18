@@ -4,22 +4,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // A batch of pings alone is a keepalive; a ping drained beside text is just
 // the text's batch, and the answer is not lost to it.
 func TestWaitForEvent_AKeepaliveBatchIsOnlyPings(t *testing.T) {
-	events := make(chan provider.StreamEvent, 3)
-	events <- provider.StreamEvent{Keepalive: true}
-	events <- provider.StreamEvent{Keepalive: true}
+	events := make(chan llm.StreamEvent, 3)
+	events <- llm.StreamEvent{Keepalive: true}
+	events <- llm.StreamEvent{Keepalive: true}
 	msg := waitForEvent(events)()
 	if _, ok := msg.(keepaliveMsg); !ok {
 		t.Errorf("two pings should batch as one keepalive, got %#v", msg)
 	}
 
-	events <- provider.StreamEvent{Keepalive: true}
-	events <- provider.StreamEvent{Token: "hi"}
+	events <- llm.StreamEvent{Keepalive: true}
+	events <- llm.StreamEvent{Token: "hi"}
 	tok, ok := waitForEvent(events)().(tokenMsg)
 	if !ok || tok.text != "hi" {
 		t.Errorf("a ping beside text should batch as the text, got %#v", tok)
@@ -31,8 +31,8 @@ func TestWaitForEvent_AKeepaliveBatchIsOnlyPings(t *testing.T) {
 // not added to the next turn's reply, and the stream is not read again.
 func TestStream_ALateMessageFromACancelledRunIsDropped(t *testing.T) {
 	m := streamingCancelModel(t)
-	events := make(chan provider.StreamEvent, 2)
-	events <- provider.StreamEvent{Token: "late tail"}
+	events := make(chan llm.StreamEvent, 2)
+	events <- llm.StreamEvent{Token: "late tail"}
 	m.events = events
 	read := m.waitForNext()
 
@@ -53,7 +53,7 @@ func TestStream_ALateMessageFromACancelledRunIsDropped(t *testing.T) {
 
 	// The current run's own read is still taken.
 	m.events = events
-	events <- provider.StreamEvent{Token: "fresh"}
+	events <- llm.StreamEvent{Token: "fresh"}
 	m.setTurnState(stateStreaming)
 	updated, _ = m.Update(m.waitForNext()())
 	m = updated.(Model)

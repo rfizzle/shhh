@@ -9,8 +9,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // draftedDeclaration is a two-line declaration as the host hands it back: the
@@ -322,7 +322,7 @@ func TestToolchainDraft_TypingTheCommandStartsIt(t *testing.T) {
 	if m.state != stateToolchainDraft {
 		t.Fatalf("typing %s did not reach the card (state %v)", toolchainCommandName, m.state)
 	}
-	_ = provider.RoleSystem
+	_ = llm.RoleSystem
 }
 
 // Enter is what opened the card, so a second tap of it writes nothing: only

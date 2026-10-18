@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // changeSlot claims a slot to hang records off, the way a session does on the
@@ -298,7 +298,7 @@ func TestChanges_AutosaveCarriesRecordsWhenTheSlotMoves(t *testing.T) {
 	if err != nil {
 		t.Fatalf("claim: %v", err)
 	}
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "mine"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "mine"}}
 	if _, err := first.AutosaveChat(slot, "fresh", msgs, nil); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -307,9 +307,9 @@ func TestChanges_AutosaveCarriesRecordsWhenTheSlotMoves(t *testing.T) {
 	if _, err := second.LoadChat(slot); err != nil {
 		t.Fatalf("load: %v", err)
 	}
-	theirs := []provider.Message{
-		{Role: provider.RoleUser, Content: "theirs"},
-		{Role: provider.RoleAssistant, Content: "ok"},
+	theirs := []llm.Message{
+		{Role: llm.RoleUser, Content: "theirs"},
+		{Role: llm.RoleAssistant, Content: "ok"},
 	}
 	if err := second.SaveChat(slot, theirs); err != nil {
 		t.Fatalf("save: %v", err)

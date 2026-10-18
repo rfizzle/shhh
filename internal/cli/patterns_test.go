@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -157,7 +157,7 @@ func TestCommandSequences_ThreeInTheSameOrder(t *testing.T) {
 func TestPatternsHost_PreviewsWritesAndDeclinesTheProposalItIsGiven(t *testing.T) {
 	db := fixtureStore(t)
 	for i := range 3 {
-		seedPatternRound(t, db, fmt.Sprintf("s%d", i), []provider.ToolCall{
+		seedPatternRound(t, db, fmt.Sprintf("s%d", i), []llm.ToolCall{
 			{ID: "a", Name: "execute_command", Arguments: `{"command":"go vet ./..."}`},
 			{ID: "b", Name: "execute_command", Arguments: `{"command":"go build ./..."}`},
 			{ID: "c", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},

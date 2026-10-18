@@ -29,8 +29,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/logs"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // SummaryToolName is the tool the summarizer is asked to call with its
@@ -356,7 +356,7 @@ type SummaryVerdict struct {
 	Round int
 	Model string
 	// Usage is what this reading cost, for the session totals.
-	Usage   provider.Usage
+	Usage   llm.Usage
 	Elapsed time.Duration
 	Failed  bool
 	// Err is why a failed reading failed, for /status and the logs. It is
@@ -367,11 +367,11 @@ type SummaryVerdict struct {
 
 // Summarizer reads a session digest through the session's provider.
 type Summarizer struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      SummaryConfig
 }
 
-func NewSummarizer(p provider.Provider, cfg SummaryConfig) *Summarizer {
+func NewSummarizer(p llm.Provider, cfg SummaryConfig) *Summarizer {
 	return &Summarizer{provider: p, cfg: cfg}
 }
 
@@ -466,21 +466,21 @@ func logSummaryFailure(model string, err error, elapsed time.Duration) {
 // instruction and the digest travel in separate messages, so the dialect's
 // own instruction channel keeps them apart rather than the sentence in the
 // prompt that says the digest is data (classifier.go).
-func (s *Summarizer) readOnce(ctx context.Context, model, instructions, digest string) (string, SummaryState, string, *provider.Usage, error) {
+func (s *Summarizer) readOnce(ctx context.Context, model, instructions, digest string) (string, SummaryState, string, *llm.Usage, error) {
 	attemptCtx, cancel := context.WithTimeout(ctx, s.cfg.timeout())
 	defer cancel()
 
-	events, err := s.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: instructions},
-		{Role: provider.RoleUser, Content: digest},
-	}, provider.CompletionOpts{
+	events, err := s.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: instructions},
+		{Role: llm.RoleUser, Content: digest},
+	}, llm.CompletionOpts{
 		Model:     model,
-		Flow:      provider.FlowReading,
+		Flow:      llm.FlowReading,
 		MaxTokens: s.cfg.maxTokens(),
 		// A shallow thought over a digest that is already assembled. Off
 		// would be the model's own depth, which is what emptied the block.
-		Effort: provider.EffortLow,
-		Tools: []provider.Tool{{
+		Effort: llm.EffortLow,
+		Tools: []llm.Tool{{
 			Name:        SummaryToolName,
 			Description: "Report the session's current state and whether it is still on target.",
 			Parameters:  summarySchema,
@@ -491,7 +491,7 @@ func (s *Summarizer) readOnce(ctx context.Context, model, instructions, digest s
 		return "", SummaryUncertain, "", nil, err
 	}
 
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	usage := reply.Usage
 	if err != nil {
 		return "", SummaryUncertain, "", usage, err

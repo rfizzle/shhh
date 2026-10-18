@@ -15,10 +15,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/chatgpt"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/testhttp"
@@ -199,11 +199,11 @@ func TestChatGPT_ResolvesFromTheSignedInAccount(t *testing.T) {
 	}))
 	api.Alias("api.openai.com")
 	t.Cleanup(api.Close)
-	p, err := provider.Resolve("chatgpt", provider.ResolveOpts{TokenSource: providerTokens("chatgpt"), HTTPClient: reg.Client()})
+	p, err := llm.Resolve("chatgpt", llm.ResolveOpts{TokenSource: providerTokens("chatgpt"), HTTPClient: reg.Client()})
 	if err != nil {
 		t.Fatalf("chatgpt did not resolve from a signed-in record: %v", err)
 	}
-	models, err := p.(provider.ModelLister).ListModels(context.Background())
+	models, err := p.(llm.ModelLister).ListModels(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +219,7 @@ func TestChatGPT_ResolvesFromTheSignedInAccount(t *testing.T) {
 	if err := a.Clear(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := provider.Resolve("chatgpt", provider.ResolveOpts{TokenSource: providerTokens("chatgpt"), HTTPClient: reg.Client()}); !errors.Is(err, provider.ErrChatGPTSignedOut) {
+	if _, err := llm.Resolve("chatgpt", llm.ResolveOpts{TokenSource: providerTokens("chatgpt"), HTTPClient: reg.Client()}); !errors.Is(err, llm.ErrChatGPTSignedOut) {
 		t.Errorf("a signed-out chatgpt resolved to %v", err)
 	}
 }
@@ -404,7 +404,7 @@ func TestChatGPTSurveyLine_NamesTheSignIn(t *testing.T) {
 		t.Errorf("another provider got %q", got)
 	}
 	line := chatGPTSurveyLine("chatgpt")
-	if line != provider.ErrChatGPTSignedOut.Error() {
+	if line != llm.ErrChatGPTSignedOut.Error() {
 		t.Fatalf("line = %q", line)
 	}
 	s := resolve.SurveyPlaces(context.Background(), resolve.SurveyOpts{Provider: "chatgpt", ChatGPT: line,

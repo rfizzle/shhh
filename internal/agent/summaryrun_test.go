@@ -9,7 +9,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // slowProvider answers a reading after a delay, so a test can tell a run that
@@ -30,7 +30,7 @@ type slowProvider struct {
 	reqs  []string
 }
 
-func (p *slowProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *slowProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.mu.Lock()
 	p.calls++
 	var b strings.Builder
@@ -55,13 +55,13 @@ func (p *slowProvider) StreamCompletion(ctx context.Context, msgs []provider.Mes
 	if text == "" {
 		text = "reading"
 	}
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{
 			ID: "s1", Name: sidejobs.SummaryToolName,
 			Arguments: `{"summary":"` + text + `","state":"` + state + `","reason":"a reason"}`,
 		}},
-		Usage: &provider.Usage{PromptTokens: 100, CompletionTokens: 10},
+		Usage: &llm.Usage{PromptTokens: 100, CompletionTokens: 10},
 		Done:  true,
 	}
 	close(ch)
@@ -82,7 +82,7 @@ func (p *slowProvider) requests() []string {
 	return append([]string(nil), p.reqs...)
 }
 
-func testSummaryRun(t *testing.T, p provider.Provider, target string) (*SummaryRun, *Recorder) {
+func testSummaryRun(t *testing.T, p llm.Provider, target string) (*SummaryRun, *Recorder) {
 	t.Helper()
 	rec := NewRecorder(0)
 	// MinGap negative removes the wall-clock floor: these tests are about the

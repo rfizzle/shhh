@@ -10,7 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -23,12 +23,12 @@ type accountProvider struct {
 
 func (p *accountProvider) Name() string { return "accounts" }
 
-func (p *accountProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *accountProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.asked = append(p.asked, msgs[len(msgs)-1].Content)
 	answer := p.answers[min(len(p.asked), len(p.answers))-1]
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "a1", Name: sidejobs.AccountToolName, Arguments: `{"account":"` + answer + `"}`}},
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{ID: "a1", Name: sidejobs.AccountToolName, Arguments: `{"account":"` + answer + `"}`}},
 		Done:      true,
 	}
 	close(ch)
@@ -37,10 +37,10 @@ func (p *accountProvider) StreamCompletion(_ context.Context, msgs []provider.Me
 
 // accountedModel is a session over a store whose standing account is revised
 // every `every` turns.
-func accountedModel(t *testing.T, p provider.Provider, every int) (Model, *storage.DB) {
+func accountedModel(t *testing.T, p llm.Provider, every int) (Model, *storage.DB) {
 	t.Helper()
 	db := rewindTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, multiTokenStream("hi there"), Wiring{
 		DB:           db,
 		Accountant:   sidejobs.NewAccountant(p, sidejobs.AccountConfig{Model: "fast"}),
@@ -137,7 +137,7 @@ type blockingAccountProvider struct {
 	release chan struct{}
 }
 
-func (p *blockingAccountProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, o provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *blockingAccountProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, o llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	select {
 	case <-p.release:
 	case <-ctx.Done():
@@ -197,7 +197,7 @@ func TestResume_TakesTheOwedReading(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	reopened := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, multiTokenStream("hi there"), Wiring{
+	reopened := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, multiTokenStream("hi there"), Wiring{
 		DB:           db,
 		Accountant:   sidejobs.NewAccountant(p, sidejobs.AccountConfig{Model: "fast"}),
 		AccountEvery: 5,

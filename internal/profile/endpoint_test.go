@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 const routedTOML = `
@@ -172,7 +172,7 @@ func TestNew_RoutesTheRequestToTheRightEndpoint(t *testing.T) {
 			Rewrite: []Rule{{Op: opSet, Path: "max_tokens", Value: int64(64), Direction: directionRequest}},
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -210,7 +210,7 @@ func TestNew_StrictModelsRejectsAnUndeclaredOpeningModel(t *testing.T) {
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k", StrictModels: true,
 		Models: []Model{{ID: "gpt-5.6-terra"}},
 	}
-	_, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-typo", HTTPClient: profileTestHTTP.Client()})
+	_, err := New(p, llm.ResolveOpts{Model: "gpt-5.6-typo", HTTPClient: profileTestHTTP.Client()})
 	if err == nil || !strings.Contains(err.Error(), "not in the declared catalog") {
 		t.Fatalf("New error = %v, want the declared-catalog refusal", err)
 	}
@@ -225,11 +225,11 @@ func TestNew_StrictModelsRejectsALaterModelSwitch(t *testing.T) {
 		Name: "gateway", BaseURL: srv.URL, APIKey: "k", StrictModels: true,
 		Models: []Model{{ID: "gpt-5.6-terra"}},
 	}
-	prov, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-terra", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "gpt-5.6-terra", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = prov.StreamCompletion(context.Background(), []provider.Message{{Role: provider.RoleUser, Content: "hi"}}, provider.CompletionOpts{Model: "gpt-5.6-typo"})
+	_, err = prov.StreamCompletion(context.Background(), []llm.Message{{Role: llm.RoleUser, Content: "hi"}}, llm.CompletionOpts{Model: "gpt-5.6-typo"})
 	if err == nil || !strings.Contains(err.Error(), "not in the declared catalog") {
 		t.Fatalf("StreamCompletion error = %v, want the declared-catalog refusal", err)
 	}
@@ -243,7 +243,7 @@ func TestNew_RoutedEndpointBuildsItsOwnDialect(t *testing.T) {
 			BaseURL: "https://gw.example/anthropic",
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -277,7 +277,7 @@ func TestNew_ExplicitBaseURLCollapsesRouting(t *testing.T) {
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
 		Endpoints: []Endpoint{{Match: []string{"*"}, API: aPIAnthropicMessage, BaseURL: "https://gw.example/anthropic"}},
 	}
-	prov, err := New(p, provider.ResolveOpts{BaseURL: "https://override.example/v1", Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{BaseURL: "https://override.example/v1", Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -296,7 +296,7 @@ func TestNew_RoutedProfileDoesNotBuildEndpointsItNeverUses(t *testing.T) {
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
 		Endpoints: []Endpoint{{Match: []string{"claude-*"}, APIKeyEnv: "NEVER_SET_KEY"}},
 	}
-	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("building the profile should not touch the unused endpoint: %v", err)
 	}
@@ -324,7 +324,7 @@ func TestRouterListModels_UnionsDeclaredAndDiscovered(t *testing.T) {
 			Models: []Model{{ID: "claude-opus-5"}},
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -394,11 +394,11 @@ func writeChatStream(w http.ResponseWriter) {
 }
 
 // drain runs one completion for a model and reads it to the end.
-func drain(t *testing.T, prov provider.Provider, model string) {
+func drain(t *testing.T, prov llm.Provider, model string) {
 	t.Helper()
 	ch, err := prov.StreamCompletion(context.Background(),
-		[]provider.Message{{Role: provider.RoleUser, Content: "hi"}},
-		provider.CompletionOpts{Model: model})
+		[]llm.Message{{Role: llm.RoleUser, Content: "hi"}},
+		llm.CompletionOpts{Model: model})
 	if err != nil {
 		t.Fatalf("%s: %v", model, err)
 	}
@@ -427,13 +427,13 @@ func TestDiscoveryDisabled_HidesTheCatalogQuery(t *testing.T) {
 		DiscoveryDisabled: &off,
 		Models:            []Model{{ID: "gpt-5.2"}},
 	}
-	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// The picker reads the capability, not the answer: a provider that is
 	// not a ModelLister sends it straight to the declared catalog.
-	if _, ok := prov.(provider.ModelLister); ok {
+	if _, ok := prov.(llm.ModelLister); ok {
 		t.Fatal("a provider with discovery off should not offer to enumerate")
 	}
 	if asked {
@@ -441,7 +441,7 @@ func TestDiscoveryDisabled_HidesTheCatalogQuery(t *testing.T) {
 	}
 	// And the declared models still seed the picker.
 	Register([]Profile{p})
-	if got := provider.KnownModels("gateway"); len(got) != 1 || got[0] != "gpt-5.2" {
+	if got := llm.KnownModels("gateway"); len(got) != 1 || got[0] != "gpt-5.2" {
 		t.Fatalf("the declared models should be the catalog, got %v", got)
 	}
 }
@@ -487,11 +487,11 @@ func TestDiscoveryDisabled_RouterAsksOnlyTheEndpointsThatAllowIt(t *testing.T) {
 			DiscoveryDisabled: &off, Models: []Model{{ID: "quiet-1"}},
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	lister, ok := prov.(provider.ModelLister)
+	lister, ok := prov.(llm.ModelLister)
 	if !ok {
 		t.Fatal("one endpoint still allows discovery, so the router should offer it")
 	}
@@ -514,11 +514,11 @@ func TestDiscoveryDisabled_SilentRouterOffersNoQuery(t *testing.T) {
 			BaseURL: "https://gw.example/anthropic",
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, ok := prov.(provider.ModelLister); ok {
+	if _, ok := prov.(llm.ModelLister); ok {
 		t.Fatal("no route can enumerate, so the router should not offer to")
 	}
 	// It is still the router underneath: routing has not been given up.

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/skill"
 )
 
@@ -37,7 +37,7 @@ func bulkyEnv(s *scriptedEnv, bytes int) EnvFactory {
 // thing it is told about the model it runs on: its name.
 func TestChildCompactsAndReportsOnItsLane(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 		{text: "the child read a large file and found the thing it was after"},
 		{text: "found it"},
 	}}
@@ -143,16 +143,16 @@ func TestNewChildAgent_ATrimIsRecoverableAndSparesSkills(t *testing.T) {
 		KeepResult:   skill.IsContent,
 		Archive:      red.Keep,
 	}, 10)
-	a.SetMessages([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "the task"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{
+	a.SetMessages([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "the task"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{
 			{ID: "c1", Name: "read_file"}, {ID: "c2", Name: "skill"}}},
-		{Role: provider.RoleTool, Content: original, ToolCallID: "c1"},
-		{Role: provider.RoleTool, Content: instructions, ToolCallID: "c2"},
+		{Role: llm.RoleTool, Content: original, ToolCallID: "c1"},
+		{Role: llm.RoleTool, Content: instructions, ToolCallID: "c2"},
 		// The turn the trim runs in front of: everything before it is what
 		// a round boundary may take.
-		{Role: provider.RoleUser, Content: "carry on"},
+		{Role: llm.RoleUser, Content: "carry on"},
 	})
 
 	if elided, _ := a.TrimOldToolResults(70000, 60000, 40000, agent.Calibration{}); elided != 1 {
@@ -179,11 +179,11 @@ func TestNewChildAgent_ATrimIsRecoverableAndSparesSkills(t *testing.T) {
 // the trim still runs, because the request that provoked it still has to fit.
 func TestNewChildAgent_NothingInstalledStillTrims(t *testing.T) {
 	a := newChildAgent(Env{SystemPrompt: "sys"}, 10)
-	a.SetMessages([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "the task"},
-		{Role: provider.RoleTool, Content: strings.Repeat("x", 4000), ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "carry on"},
+	a.SetMessages([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "the task"},
+		{Role: llm.RoleTool, Content: strings.Repeat("x", 4000), ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "carry on"},
 	})
 	if elided, _ := a.TrimOldToolResults(70000, 60000, 40000, agent.Calibration{}); elided != 1 {
 		t.Fatalf("want the result elided, got %d", elided)

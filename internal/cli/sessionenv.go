@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -16,7 +17,6 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -25,7 +25,7 @@ import (
 
 type sessionEnv struct {
 	cfg       config.Config
-	prov      provider.Provider
+	prov      llm.Provider
 	provName  string
 	modelName string
 	sysPrompt string
@@ -49,12 +49,12 @@ type sessionEnv struct {
 	// rebuilt by a compaction and a child spawned an hour in are describing
 	// the same tree, and two readings taken separately would be two answers.
 	workspace func() string
-	messages  []provider.Message
+	messages  []llm.Message
 	stream    agent.StreamFunc
 	// keepAlive sends the refresh that keeps the prompt cache warm: the
 	// session's own request with the output capped at one token, billed to
 	// the agent, its answer discarded.
-	keepAlive   func(ctx context.Context, msgs []provider.Message) (provider.Usage, error)
+	keepAlive   func(ctx context.Context, msgs []llm.Message) (llm.Usage, error)
 	switchModel func(string)
 	// model reads the session's model as it is now, which /model and a
 	// provider switch move; modelName is the one it opened on.
@@ -69,16 +69,16 @@ type sessionEnv struct {
 	// switchReasoning is what ctrl+t and /reasoning change it with.
 	// Like the model it is read by the stream closure from another
 	// goroutine, so it lives under the same mutex.
-	effort          provider.Effort
-	switchReasoning func(provider.Effort)
+	effort          llm.Effort
+	switchReasoning func(llm.Effort)
 	// reasoning reads the level that is live now, for the streams built once
 	// at session start and used for the rest of it — a sub-agent's. Without
 	// it a level set with ctrl+t would be true of the session and false of
 	// every child it spawns.
-	reasoning func() provider.Effort
+	reasoning func() llm.Effort
 	// replaceTools edits the toolset the next request carries: a profile
 	// drafted mid-session changes what spawn_agent may name.
-	replaceTools func(func([]provider.Tool) []provider.Tool)
+	replaceTools func(func([]llm.Tool) []llm.Tool)
 	// replaceKey and switchProvider are what a provider failure's [k] and
 	// [p] do: both rebuild the provider in place, and both leave the
 	// session untouched when the rebuild fails.
@@ -86,7 +86,7 @@ type sessionEnv struct {
 	switchProvider func(string) error
 	// activeProvider is the provider the stream is on now, which a switch
 	// replaces; the picker's display names are read from it.
-	activeProvider func() provider.Provider
+	activeProvider func() llm.Provider
 	// flows holds the models the config screen took for this session alone
 	// (summarizer.go). Its zero value holds none, which is every surface but
 	// the interactive session.
@@ -208,7 +208,7 @@ func (e *sessionEnv) addBuiltPrompt(block string) {
 		return
 	}
 	e.sysPrompt = prompt.CombineExtra(e.sysPrompt, block)
-	if len(e.messages) > 0 && e.messages[0].Role == provider.RoleSystem {
+	if len(e.messages) > 0 && e.messages[0].Role == llm.RoleSystem {
 		e.messages[0].Content = e.sysPrompt
 	}
 }
@@ -277,16 +277,16 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		return nil, err
 	}
 
-	messages := []provider.Message{
-		{Role: provider.RoleSystem, Content: sysPrompt},
+	messages := []llm.Message{
+		{Role: llm.RoleSystem, Content: sysPrompt},
 	}
 
-	effort, err := provider.ParseEffort(resolved.Reasoning)
+	effort, err := llm.ParseEffort(resolved.Reasoning)
 	if err != nil {
 		return nil, err
 	}
 
-	compOpts := provider.CompletionOpts{
+	compOpts := llm.CompletionOpts{
 		Model:  resolved.Model,
 		Tools:  session.toolDefs,
 		Effort: effort,
@@ -325,7 +325,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			// gateway.
 			baseURL = ""
 		}
-		next, rErr := provider.Resolve(name, provider.ResolveOpts{
+		next, rErr := llm.Resolve(name, llm.ResolveOpts{
 			APIKey:            key,
 			Model:             model,
 			BaseURL:           baseURL,
@@ -342,7 +342,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		sessionMu.Lock()
 		p, currentProvider, currentKey, currentBaseURL = next, name, key, baseURL
 		if name != resolved.Provider {
-			if model := provider.Defaults(name).Model; model != "" {
+			if model := llm.Defaults(name).Model; model != "" {
 				currentModel = model
 			}
 		}
@@ -350,7 +350,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		return nil
 	}
 
-	stream := func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		ctx, cancel := context.WithCancel(cmd.Context())
 		opts := compOpts
 		// The caller's, not the session's: a turn wants the tools open and a
@@ -382,7 +382,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		return ev, cancel, nil
 	}
 
-	keepAlive := func(ctx context.Context, msgs []provider.Message) (provider.Usage, error) {
+	keepAlive := func(ctx context.Context, msgs []llm.Message) (llm.Usage, error) {
 		opts := compOpts
 		sessionMu.Lock()
 		opts.Model = currentModel
@@ -435,17 +435,17 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		endpointModels: newEndpointModels(modelListerFor(p)),
 		resolveWith:    resolveWith,
 		effort:         effort,
-		switchReasoning: func(e provider.Effort) {
+		switchReasoning: func(e llm.Effort) {
 			sessionMu.Lock()
 			currentEffort = e
 			sessionMu.Unlock()
 		},
-		reasoning: func() provider.Effort {
+		reasoning: func() llm.Effort {
 			sessionMu.Lock()
 			defer sessionMu.Unlock()
 			return currentEffort
 		},
-		replaceTools: func(edit func([]provider.Tool) []provider.Tool) {
+		replaceTools: func(edit func([]llm.Tool) []llm.Tool) {
 			sessionMu.Lock()
 			currentTools = edit(currentTools)
 			sessionMu.Unlock()
@@ -456,7 +456,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			sessionMu.Unlock()
 			return rebuild(name, key)
 		},
-		activeProvider: func() provider.Provider {
+		activeProvider: func() llm.Provider {
 			sessionMu.Lock()
 			defer sessionMu.Unlock()
 			return p
@@ -497,11 +497,11 @@ func spendBudget(cfg config.Config) meter.Budget {
 // a registration decision rather than a gate decision — a tool the run can
 // only be refused is worse than one it never saw
 // (docs/capabilities/coding-agent.md#nobody-to-ask).
-func askToolDefs(session chatSession) []provider.Tool {
+func askToolDefs(session chatSession) []llm.Tool {
 	if !session.ask {
 		return session.toolDefs
 	}
-	return append(append([]provider.Tool{}, session.toolDefs...), ask.ToolDefinition())
+	return append(append([]llm.Tool{}, session.toolDefs...), ask.ToolDefinition())
 }
 
 // toolDefTokens roughly estimates what each registered tool definition costs
@@ -511,7 +511,7 @@ func askToolDefs(session chatSession) []provider.Tool {
 // Each definition is measured on its own rather than the whole set at once,
 // which loses the punctuation between them — a few tokens across the toolset,
 // against a per-tool answer the sum alone cannot give.
-func toolDefTokens(defs []provider.Tool) []chat.ToolTokens {
+func toolDefTokens(defs []llm.Tool) []chat.ToolTokens {
 	out := make([]chat.ToolTokens, 0, len(defs))
 	for _, def := range defs {
 		b, err := json.Marshal(def)
@@ -527,29 +527,29 @@ func toolDefTokens(defs []provider.Tool) []chat.ToolTokens {
 // cap with no tool to call, so the provider's cache of it is read and kept
 // warm. active is the session's provider behind the ledger's gate; opts and
 // msgs are the session's, its tools and the scrub already applied.
-func refreshCache(ctx context.Context, active provider.Provider, opts provider.CompletionOpts, msgs []provider.Message) (provider.Usage, error) {
+func refreshCache(ctx context.Context, active llm.Provider, opts llm.CompletionOpts, msgs []llm.Message) (llm.Usage, error) {
 	// The plan route drops the one-token cap and the tool choice the
 	// refresh is built on, so a refresh there would be a whole turn over
 	// the whole history, spent from the person's allowance, for a cache
 	// the route is not known to keep.
 	// See docs/capabilities/chatgpt-plan.md#what-a-plan-session-cannot-do.
 	if active.Name() == "chatgpt" {
-		return provider.Usage{}, errors.New("the ChatGPT plan takes no one-token refresh")
+		return llm.Usage{}, errors.New("the ChatGPT plan takes no one-token refresh")
 	}
 	// A thinking budget the one-token cap leaves no room for is dropped
 	// from the request, and a request that thinks differently reads none
 	// of the conversation's cache: the refresh would write it again at
 	// the dear rate. Adaptive thinking is sent as it was.
-	if caps := provider.CapabilitiesFor(opts.Model); opts.Effort.Fit(caps).On() && !caps.Adaptive && caps.Known {
-		return provider.Usage{}, errors.New("this model's thinking budget cannot be kept at one token")
+	if caps := llm.CapabilitiesFor(opts.Model); opts.Effort.Fit(caps).On() && !caps.Adaptive && caps.Known {
+		return llm.Usage{}, errors.New("this model's thinking budget cannot be kept at one token")
 	}
-	opts.ToolChoice = provider.ToolChoiceNone
+	opts.ToolChoice = llm.ToolChoiceNone
 	opts.MaxTokens = 1
 	events, err := active.StreamCompletion(ctx, msgs, opts)
 	if err != nil {
-		return provider.Usage{}, err
+		return llm.Usage{}, err
 	}
-	var usage provider.Usage
+	var usage llm.Usage
 	var failed error
 	for ev := range events {
 		if ev.Usage != nil {

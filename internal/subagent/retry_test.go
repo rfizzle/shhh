@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func TestRetryRunsTheFailedChildAgainOnItsTask(t *testing.T) {
@@ -81,7 +81,7 @@ func TestRetryOnlyAppliesToAFailedAgent(t *testing.T) {
 // measured against its own budget; the money is still counted.
 func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "over budget", usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 0}},
+		{text: "over budget", usage: &llm.Usage{PromptTokens: 300100, CompletionTokens: 0}},
 	}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":300000}`)
@@ -93,7 +93,7 @@ func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 	}
 
 	env.mu.Lock()
-	env.steps = []streamStep{{text: "done", usage: &provider.Usage{PromptTokens: 100}}}
+	env.steps = []streamStep{{text: "done", usage: &llm.Usage{PromptTokens: 100}}}
 	env.mu.Unlock()
 	if err := sup.Retry("researcher-1"); err != nil {
 		t.Fatalf("retry: %v", err)
@@ -114,8 +114,8 @@ func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 // to finish.
 func blockedForeverEnv() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-			ch := make(chan provider.StreamEvent)
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan llm.StreamEvent)
 			go func() {
 				<-ctx.Done()
 				close(ch)
@@ -341,7 +341,7 @@ func (s *scriptedEnv) openingTurn() string {
 		return ""
 	}
 	for _, m := range s.requests[0] {
-		if m.Role == provider.RoleUser {
+		if m.Role == llm.RoleUser {
 			return m.Content
 		}
 	}
@@ -357,7 +357,7 @@ func (s *scriptedEnv) openingTurn() string {
 func TestARetryIsToldHowTheLastAttemptEndedAndWhatItLeft(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
 		{text: "the exporter is half converted; the CSV writer is untouched",
-			usage: &provider.Usage{PromptTokens: 300100}},
+			usage: &llm.Usage{PromptTokens: 300100}},
 	}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"convert the exporter","max_tokens":300000}`)
@@ -403,7 +403,7 @@ func TestARetryIsToldHowTheLastAttemptEndedAndWhatItLeft(t *testing.T) {
 // spawn that set it.
 func TestABudgetExhaustedRetryIsGivenMoreThanKilledIt(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "out of room", usage: &provider.Usage{PromptTokens: 300100}},
+		{text: "out of room", usage: &llm.Usage{PromptTokens: 300100}},
 	}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"convert the exporter","max_tokens":300000}`)
@@ -563,8 +563,8 @@ func TestTheEnvironmentIsToldTheAttemptItIsBuiltFor(t *testing.T) {
 	// the stop that asks for a handoff.
 	overrun := func(prompt int) streamStep {
 		return streamStep{
-			calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
-			usage: &provider.Usage{PromptTokens: prompt},
+			calls: []llm.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
+			usage: &llm.Usage{PromptTokens: prompt},
 		}
 	}
 	for _, tc := range []struct {
@@ -639,7 +639,7 @@ func TestTheEnvironmentIsToldTheAttemptItIsBuiltFor(t *testing.T) {
 func TestARetryStartsWithNoWorkingList(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{{
 		text: "Surveying the loop.",
-		calls: []provider.ToolCall{
+		calls: []llm.ToolCall{
 			{ID: "c0", Name: plan.StepsToolName, Arguments: `{"steps":[{"title":"Read the loop","done":true},{"title":"Report"}]}`},
 			{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`},
 		},

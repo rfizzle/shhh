@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestChatList_ACompactedSessionsCountIsTheRuleChosen(t *testing.T) {
@@ -15,15 +15,15 @@ func TestChatList_ACompactedSessionsCountIsTheRuleChosen(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 
 	// Two live user turns at seq >= 0, two folded user turns at seq < 0.
-	live := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "summary", Machine: true},
-		{Role: provider.RoleUser, Content: "zebrafinch live"},
+	live := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "summary", Machine: true},
+		{Role: llm.RoleUser, Content: "zebrafinch live"},
 	}
-	folded := []provider.Message{
-		{Role: provider.RoleUser, Content: "first"},
-		{Role: provider.RoleAssistant, Content: "answer"},
-		{Role: provider.RoleUser, Content: "second"},
+	folded := []llm.Message{
+		{Role: llm.RoleUser, Content: "first"},
+		{Role: llm.RoleAssistant, Content: "answer"},
+		{Role: llm.RoleUser, Content: "second"},
 	}
 	if err := db.SaveChat("s", live); err != nil {
 		t.Fatal(err)

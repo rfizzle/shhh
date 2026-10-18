@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 type ChatSession struct {
@@ -134,7 +134,7 @@ type chatWrite struct {
 // Hashing the conversation on each save is work, but it is memory-speed work
 // standing in for the disk-speed work it replaces: rewriting the same bytes
 // into the store, which is what every autosave used to do.
-func chatDigest(messages []provider.Message) uint64 {
+func chatDigest(messages []llm.Message) uint64 {
 	h := fnv.New64a()
 	field := func(s string) {
 		_, _ = io.WriteString(h, s)
@@ -162,7 +162,7 @@ func chatDigest(messages []provider.Message) uint64 {
 }
 
 // rememberChat records what this process now has in a slot.
-func (db *DB) rememberChat(name string, messages []provider.Message) {
+func (db *DB) rememberChat(name string, messages []llm.Message) {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
 	db.chatWrote[name] = chatWrite{seq: len(messages) - 1, digest: chatDigest(messages)}
@@ -192,7 +192,7 @@ func (db *DB) forgetChat(name string) {
 // two autosaves overlapping, each with its own answer, could otherwise land
 // their halves in either order and leave a slot claiming a hold for a
 // conversation that no longer has one.
-func (db *DB) AutosaveChat(slot, fresh string, messages []provider.Message, hold *ChatHold) (string, error) {
+func (db *DB) AutosaveChat(slot, fresh string, messages []llm.Message, hold *ChatHold) (string, error) {
 	err := db.saveChatMarked(slot, messages, hold)
 	var taken ChatSlotConflictError
 	if !errors.As(err, &taken) {
@@ -233,13 +233,13 @@ func (db *DB) movedChatSlot(from, fresh string) (string, error) {
 // SaveChat writes a conversation to a named slot. It leaves the mid-turn mark
 // alone: the name a person typed is a copy of the conversation, and whether
 // the live session is holding a turn is not a fact about the copy.
-func (db *DB) SaveChat(name string, messages []provider.Message) error {
+func (db *DB) SaveChat(name string, messages []llm.Message) error {
 	return db.saveChat(name, messages, false, nil)
 }
 
 // saveChatMarked is SaveChat plus the mid-turn mark, written in the same
 // transaction so the two can never disagree.
-func (db *DB) saveChatMarked(name string, messages []provider.Message, hold *ChatHold) error {
+func (db *DB) saveChatMarked(name string, messages []llm.Message, hold *ChatHold) error {
 	return db.saveChat(name, messages, true, hold)
 }
 
@@ -248,7 +248,7 @@ func (db *DB) saveChatMarked(name string, messages []provider.Message, hold *Cha
 // save reads the slot before it writes, and a write refused on its way up
 // from that read has to read the slot again to be judging what is in there
 // now (storage.go).
-func (db *DB) saveChat(name string, messages []provider.Message, mark bool, hold *ChatHold) error {
+func (db *DB) saveChat(name string, messages []llm.Message, mark bool, hold *ChatHold) error {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
 
@@ -279,7 +279,7 @@ func (db *DB) saveChat(name string, messages []provider.Message, mark bool, hold
 // branch gets its own session row with parent_id pointing at the parent
 // (created as an empty session if it doesn't exist yet, so a never-saved live
 // session can still grow branches).
-func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.Message) error {
+func (db *DB) SaveChatBranch(parentName, branchName string, messages []llm.Message) error {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
 
@@ -376,7 +376,7 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 // here: a mark recorded for a transaction that then rolled back would claim
 // rows nobody wrote, and the next save would take that as licence to replace
 // whatever is really in the slot. The caller holds chatMu across both.
-func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, error) {
+func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []llm.Message) (int64, error) {
 	var sessionID int64
 	now := stamp(db.now())
 	// from is the first message this save has to write. A slot being made
@@ -442,7 +442,7 @@ func clearStrangersFold(tx *sql.Tx, sessionID int64, seen bool) error {
 }
 
 // insertChatMessage writes one message at seq in a session's slot.
-func insertChatMessage(tx *sql.Tx, sessionID int64, seq int, msg provider.Message) error {
+func insertChatMessage(tx *sql.Tx, sessionID int64, seq int, msg llm.Message) error {
 	var toolCallsJSON *string
 	if len(msg.ToolCalls) > 0 {
 		b, err := json.Marshal(msg.ToolCalls)
@@ -507,7 +507,7 @@ func storedChatSeq(tx *sql.Tx, sessionID int64) (int, error) {
 	return int(seq.Int64), nil
 }
 
-func (db *DB) LoadChat(name string) ([]provider.Message, error) {
+func (db *DB) LoadChat(name string) ([]llm.Message, error) {
 	var sessionID int64
 	err := db.sql.QueryRow(`SELECT id FROM chat_sessions WHERE name = ?`, name).Scan(&sessionID)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -543,7 +543,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 // so a save of the conversation (which owns seq zero and up) never touches
 // them and no migration is needed. An empty folded clears the slot's.
 // See docs/interface/surfaces.md#the-compaction-receipt.
-func (db *DB) SaveChatFolded(name string, folded []provider.Message) error {
+func (db *DB) SaveChatFolded(name string, folded []llm.Message) error {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
 	return retryBusy(func() error {
@@ -585,7 +585,7 @@ func (db *DB) SaveChatFolded(name string, folded []provider.Message) error {
 
 // LoadChatFolded is the turns a compaction folded out of a slot's
 // conversation, oldest first, or none for a slot that was never compacted.
-func (db *DB) LoadChatFolded(name string) ([]provider.Message, error) {
+func (db *DB) LoadChatFolded(name string) ([]llm.Message, error) {
 	return queryRows(db, scanChatMessage,
 		`SELECT m.role, m.content, m.tool_calls, m.tool_call_id, m.attachments, m.machine, m.turn, m.round, m.checkpoint, m.machine_kind, m.value
 		 FROM chat_messages m JOIN chat_sessions s ON s.id = m.session_id
@@ -598,7 +598,7 @@ func (db *DB) LoadChatFolded(name string) ([]provider.Message, error) {
 // name can be renamed out from under the row that named it, and the record's
 // link to the conversation it wrote is a reference for exactly that reason
 // (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
-func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
+func (db *DB) chatMessages(sessionID int64) ([]llm.Message, error) {
 	return queryRows(db, scanChatMessage,
 		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind, value
 		 FROM chat_messages WHERE session_id = ? AND seq >= 0 ORDER BY seq`, sessionID,
@@ -607,7 +607,7 @@ func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 
 // scanChatMessage reads one row of chatMessages' query back into the message
 // it was saved from.
-func scanChatMessage(r rowScanner) (provider.Message, error) {
+func scanChatMessage(r rowScanner) (llm.Message, error) {
 	var (
 		role, content, toolCallID      string
 		toolCallsJSON, attachmentsJSON *string
@@ -617,10 +617,10 @@ func scanChatMessage(r rowScanner) (provider.Message, error) {
 	)
 	if err := r.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine,
 		&turn, &round, &checkpoint, &machineKind, &value); err != nil {
-		return provider.Message{}, err
+		return llm.Message{}, err
 	}
-	msg := provider.Message{
-		Role:       provider.Role(role),
+	msg := llm.Message{
+		Role:       llm.Role(role),
 		Content:    content,
 		ToolCallID: toolCallID,
 		Machine:    machine,
@@ -634,19 +634,19 @@ func scanChatMessage(r rowScanner) (provider.Message, error) {
 		Checkpoint: checkpoint,
 	}
 	if machineKind != nil {
-		msg.MachineKind = provider.MachineKind(*machineKind)
+		msg.MachineKind = llm.MachineKind(*machineKind)
 	}
 	if value != nil {
 		msg.Value = json.RawMessage(*value)
 	}
 	if toolCallsJSON != nil {
 		if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {
-			return provider.Message{}, fmt.Errorf("unmarshal tool calls: %w", err)
+			return llm.Message{}, fmt.Errorf("unmarshal tool calls: %w", err)
 		}
 	}
 	if attachmentsJSON != nil {
 		if err := json.Unmarshal([]byte(*attachmentsJSON), &msg.Attachments); err != nil {
-			return provider.Message{}, fmt.Errorf("unmarshal attachments: %w", err)
+			return llm.Message{}, fmt.Errorf("unmarshal attachments: %w", err)
 		}
 	}
 	return msg, nil

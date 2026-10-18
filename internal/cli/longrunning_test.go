@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -13,8 +13,8 @@ import (
 func TestHeadless_AServerCommandIsRedirectedNotRun(t *testing.T) {
 	var ran []string
 	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&ran)})
-	call := func(command string) provider.ToolCall {
-		return provider.ToolCall{ID: "c", Name: tools.ExecCommandName, Arguments: `{"command":"` + command + `"}`}
+	call := func(command string) llm.ToolCall {
+		return llm.ToolCall{ID: "c", Name: tools.ExecCommandName, Arguments: `{"command":"` + command + `"}`}
 	}
 	want := "error: " + tools.LongRunningError{}.Error()
 	if got := resolve(call("npm run dev")); got != want {

@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -103,10 +103,10 @@ func (m Model) requestStream() tea.Cmd {
 	// stops the injection. The two blocks differ because the modes do: plan
 	// mode asks for a plan, and read-only mode says only what the bound is,
 	// which is the whole of the difference between them.
-	if block := agent.ModeInstructions(m.turnMode(), m.policy.readOnlyExtra, m.toolNames()); block != "" && len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if block := agent.ModeInstructions(m.turnMode(), m.policy.readOnlyExtra, m.toolNames()); block != "" && len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 		msgs[0].Content += "\n\n" + block
 	}
-	return m.requestStreamFor(msgs, provider.ToolChoiceAuto)
+	return m.requestStreamFor(msgs, llm.ToolChoiceAuto)
 }
 
 // toolNames is the registered toolset by name, which the mode paragraph names
@@ -123,7 +123,7 @@ func (m Model) toolNames() []string {
 // pass a copy so in-flight requests are immune to later mutation) under an
 // explicit tool choice. It asks the backend rather than the loop: the stream
 // is the first thing the screen reaches through it (backend.go).
-func (m Model) requestStreamFor(msgs []provider.Message, choice string) tea.Cmd {
+func (m Model) requestStreamFor(msgs []llm.Message, choice string) tea.Cmd {
 	return m.backend.Request(msgs, choice)
 }
 
@@ -140,7 +140,7 @@ func (m Model) waitForNext() tea.Cmd { return m.backend.Next(m.events) }
 // a stop reaches a call that is still running — a search over a large tree,
 // a query, a page slow to answer — rather than leaving it to run out
 // (docs/capabilities/coding-agent.md#a-tool-stops-with-the-turn).
-func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
+func (m *Model) execToolsCmd(calls []llm.ToolCall) tea.Cmd {
 	a := m.agent
 	runID := a.RunID()
 	m.endToolRound()
@@ -167,7 +167,7 @@ func (m *Model) endToolRound() {
 // accumulateUsage folds one request's usage into the session vitals and
 // reads the running totals back out, so the rail, the cockpit and /stats all
 // quote the same numbers from one place.
-func (m *Model) accumulateUsage(u *provider.Usage) {
+func (m *Model) accumulateUsage(u *llm.Usage) {
 	if u == nil {
 		return
 	}
@@ -222,8 +222,8 @@ func (m *Model) finishStreaming() {
 		return
 	}
 	if m.streaming != "" {
-		m.agent.Append(provider.Message{
-			Role:    provider.RoleAssistant,
+		m.agent.Append(llm.Message{
+			Role:    llm.RoleAssistant,
 			Content: m.streaming,
 		})
 		m.appendEntry(entry{kind: entryAssistant, text: m.streaming})
@@ -339,7 +339,7 @@ func (m *Model) injectSteering() (queued, fresh bool) {
 		m.turnCount++
 		m.agent.SetTurn(m.turnCount)
 		m.recordCheckpoint(item.text)
-		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: item.text, Attachments: item.atts})
+		m.agent.Append(llm.Message{Role: llm.RoleUser, Content: item.text, Attachments: item.atts})
 		m.appendSent(item.text, item.atts)
 		// What the reader has just asked for is part of what this turn is
 		// serving, so it is part of what the readings judge it against

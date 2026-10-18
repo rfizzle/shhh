@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -29,7 +29,7 @@ func TestHeadless_AGatedCallStopsWithTheRun(t *testing.T) {
 		opts:     printOpts{yes: true},
 		webTools: web.NewToolset(fetcher, nil),
 	})
-	call := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.test/page"}`}
+	call := llm.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.test/page"}`}
 
 	done := make(chan string, 1)
 	go func() { done <- resolve(call) }()

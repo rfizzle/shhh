@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -34,7 +34,7 @@ const DocumentSymbolName = "document_symbol"
 var documentSymbol = Definition{
 	Receipt: describe.Describer{Kind: describe.KindLookup, Verb: "lsp",
 		Does: "a file's outline"},
-	Tool: provider.Tool{
+	Tool: llm.Tool{
 		Name: DocumentSymbolName,
 		Description: "Outline one file: every declaration or heading in it with its line, nested as it is nested. " +
 			"A Markdown file is outlined by its headings in every session; source files are outlined where a language server answers for their language. " +
@@ -150,7 +150,7 @@ func (o scanned) writeHeadings(b *strings.Builder) {
 		fmt.Fprintf(b, "\n… and %d more (truncated at %d)", o.dropped, MaxOutlineHeadings)
 	}
 	if o.partial {
-		fmt.Fprintf(b, "\n… (stopped reading at %s; headings below that are not listed)", provider.HumanSize(MaxScanBytes))
+		fmt.Fprintf(b, "\n… (stopped reading at %s; headings below that are not listed)", llm.HumanSize(MaxScanBytes))
 	}
 }
 
@@ -346,7 +346,7 @@ func overCeiling(path string, f io.Reader, size int64) (string, error) {
 func overCeilingAnswer(path string, o scanned, size int64) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s is %s (%s bytes, %s) and read_file returns no file over %s, whatever line range is asked for. Search it for what you need",
-		path, provider.HumanSize(int(size)), commas64(size), o.lineWord(), provider.HumanSize(int(readCeiling)))
+		path, llm.HumanSize(int(size)), commas64(size), o.lineWord(), llm.HumanSize(int(readCeiling)))
 	if o.partial {
 		b.WriteString(".")
 	} else {

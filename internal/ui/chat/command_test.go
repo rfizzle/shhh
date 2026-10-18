@@ -10,8 +10,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 
@@ -146,7 +146,7 @@ func TestSurface_TurnKeepsRunningUnderneath(t *testing.T) {
 		BeforeExists: true, AfterExists: true,
 	})
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_r", Name: "read_file", Arguments: `{"path":"x.go"}`},
 	}})
 	m = updated.(Model)

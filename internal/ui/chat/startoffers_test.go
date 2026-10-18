@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // twoWritten is a reading that writes two offers, neither about anything a
@@ -33,10 +33,10 @@ func startReadingGather(context.Context) agent.StartOffersRequest {
 
 // startReadingModel is a sized session on its start screen with the reading wired
 // on p, the switch at on, recording every start-offer signal it files.
-func startReadingModel(t *testing.T, info StartInfo, p provider.Provider, on bool) (Model, *[]string) {
+func startReadingModel(t *testing.T, info StartInfo, p llm.Provider, on bool) (Model, *[]string) {
 	t.Helper()
 	var signals []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, multiTokenStream("hi there"), Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, multiTokenStream("hi there"), Wiring{
 		Observer: observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 			if code == observe.SignalStartOffer {
 				signals = append(signals, reason)
@@ -96,7 +96,7 @@ func TestStart_AReadingIsAskedOnceAtOpen(t *testing.T) {
 	if m.startOffersCmd() != nil {
 		t.Fatal("a session is read once, at its open")
 	}
-	if p.opts.Model != "fast" || p.opts.ToolChoice != provider.ToolChoiceNone || len(p.opts.Tools) != 0 {
+	if p.opts.Model != "fast" || p.opts.ToolChoice != llm.ToolChoiceNone || len(p.opts.Tools) != 0 {
 		t.Errorf("opts = %+v", p.opts)
 	}
 	evidence := p.msgs[1].Content
@@ -279,7 +279,7 @@ func TestStart_ATakenWrittenOfferIsTheSentLine(t *testing.T) {
 		if strings.Contains(mm.Content, writtenGate) || strings.Contains(mm.Content, "leaves unchecked") {
 			t.Fatalf("an offer not chosen reached the conversation: %+v", mm)
 		}
-		if mm.Role == provider.RoleUser {
+		if mm.Role == llm.RoleUser {
 			users = append(users, mm.Content)
 		}
 	}

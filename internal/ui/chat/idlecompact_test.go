@@ -4,16 +4,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
 // idleReadUsage is a request through the hour's lease that read the prefix
 // the one before it wrote.
-var idleReadUsage = provider.Usage{PromptTokens: 112_500, CachedTokens: 112_000, CacheCreationTokens: 500}
+var idleReadUsage = llm.Usage{PromptTokens: 112_500, CachedTokens: 112_000, CacheCreationTokens: 500}
 
 // idleLastStart is when the last request of idleSession was sent: the ledger
 // writes its first at 09:00 and its second twenty minutes later.
@@ -103,13 +103,13 @@ func TestIdleCompact_DeclinesWhenTheCacheIsNotSeen(t *testing.T) {
 			l := meter.New(pricing.NewTable(nil))
 			l.SetCacheLease("1h")
 			for range 14 {
-				l.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000})
+				l.ObserveCache("gateway", "claude-sonnet-5-5", llm.Usage{PromptTokens: 20_000})
 			}
 			m.wiring.Ledger = l
 		}},
 		{"an hour written as five minutes", func(m *Model) {
 			m.wiring.Ledger = idledLedger(t, "1h", "claude-sonnet-5-5", 20*time.Minute,
-				provider.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
+				llm.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
 		}},
 		{"the switch is off", func(m *Model) { m.wiring.IdleCompact.On = false }},
 	} {
@@ -125,10 +125,10 @@ func TestIdleCompact_DeclinesWhenTheCacheIsNotSeen(t *testing.T) {
 	}
 
 	m := idleSession(t, &requests)
-	provider.RegisterDeclarations("gateway", map[string]provider.Declared{
-		"claude-sonnet-5-5": {Model: map[string]any{provider.KeyPromptCache: false}},
+	llm.RegisterDeclarations("gateway", map[string]llm.Declared{
+		"claude-sonnet-5-5": {Model: map[string]any{llm.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { provider.RegisterDeclarations("gateway", nil) })
+	t.Cleanup(func() { llm.RegisterDeclarations("gateway", nil) })
 	if m.idleCompactDue(clock()) {
 		t.Error("a profile that declares the cache off: the rule fired")
 	}

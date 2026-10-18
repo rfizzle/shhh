@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // fragment is one argument fragment off the stream, the way a round writing a
 // call delivers it.
 func fragment(id string, n int) toolDeltaMsg {
-	return toolDeltaMsg{delta: provider.ToolCallDelta{ID: id, Arguments: strings.Repeat("x", n)}}
+	return toolDeltaMsg{delta: llm.ToolCallDelta{ID: id, Arguments: strings.Repeat("x", n)}}
 }
 
 // composingModel is a model with a round's stream open, which is what the
@@ -18,7 +18,7 @@ func fragment(id string, n int) toolDeltaMsg {
 func composingModel(t *testing.T) Model {
 	t.Helper()
 	m := streamingModel(t)
-	events := make(chan provider.StreamEvent)
+	events := make(chan llm.StreamEvent)
 	updated, _ := m.Update(streamStartedMsg{events: events})
 	return updated.(Model)
 }
@@ -142,7 +142,7 @@ func TestComposeRow_GoesWhenTheCallsLand(t *testing.T) {
 		t.Fatalf("expected the row while the round is open:\n%s", view)
 	}
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "write_file", Arguments: `{"path":"main.go","content":"x"}`},
 	}})
 	m = updated.(Model)
@@ -158,7 +158,7 @@ func TestComposeRow_NewRoundNewCount(t *testing.T) {
 	updated, _ := m.Update(fragment("call_1", 2500))
 	m = updated.(Model)
 
-	events := make(chan provider.StreamEvent)
+	events := make(chan llm.StreamEvent)
 	updated, _ = m.Update(streamStartedMsg{events: events})
 	m = updated.(Model)
 	if m.composed != 0 {
@@ -194,7 +194,7 @@ func TestComposeRow_SilentUntilTheCallIsWorthWatching(t *testing.T) {
 // states a size and never guesses at what is being written.
 func TestComposeRow_NamesNoTarget(t *testing.T) {
 	m := composingModel(t)
-	updated, _ := m.Update(toolDeltaMsg{delta: provider.ToolCallDelta{
+	updated, _ := m.Update(toolDeltaMsg{delta: llm.ToolCallDelta{
 		ID:        "call_1",
 		Arguments: `{"path":"internal/agent/loop.go","content":"` + strings.Repeat("x", 2000),
 	}})
@@ -302,7 +302,7 @@ func TestComposeRow_Verbosity(t *testing.T) {
 // TestComposeRow_FragmentsRouteOffTheStream: an event carrying a fragment
 // becomes the message the reading is fed by, and carries nothing else.
 func TestComposeRow_FragmentsRouteOffTheStream(t *testing.T) {
-	msg := terminalMsg(provider.StreamEvent{ToolCallDelta: &provider.ToolCallDelta{ID: "call_1", Arguments: "{"}})
+	msg := terminalMsg(llm.StreamEvent{ToolCallDelta: &llm.ToolCallDelta{ID: "call_1", Arguments: "{"}})
 	delta, ok := msg.(toolDeltaMsg)
 	if !ok {
 		t.Fatalf("expected a fragment message, got %T", msg)
@@ -310,7 +310,7 @@ func TestComposeRow_FragmentsRouteOffTheStream(t *testing.T) {
 	if delta.delta.ID != "call_1" || delta.delta.Arguments != "{" {
 		t.Errorf("unexpected fragment: %+v", delta.delta)
 	}
-	if got := terminalMsg(provider.StreamEvent{Token: "hello"}); got != nil {
+	if got := terminalMsg(llm.StreamEvent{Token: "hello"}); got != nil {
 		t.Errorf("a plain token is not a fragment: %T", got)
 	}
 }

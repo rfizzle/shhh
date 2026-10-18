@@ -10,15 +10,15 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // refusingProvider answers every request with the same classified refusal.
-type refusingProvider struct{ fail *provider.Failure }
+type refusingProvider struct{ fail *llm.Failure }
 
 func (p refusingProvider) Name() string { return "scripted" }
 
-func (p refusingProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p refusingProvider) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	return nil, p.fail
 }
 
@@ -26,11 +26,11 @@ func (p refusingProvider) StreamCompletion(context.Context, []provider.Message, 
 // session that its own esc puts away and a refused request is a failure row:
 // none of them says `Error:`.
 func TestProgram_NoticesSpeakInTheReadmesVoice(t *testing.T) {
-	p := refusingProvider{fail: &provider.Failure{
-		Class: provider.ClassAuth, Status: 401, Provider: "openai",
+	p := refusingProvider{fail: &llm.Failure{
+		Class: llm.ClassAuth, Status: 401, Provider: "openai",
 		Message: "Incorrect API key provided",
 	}}
-	tm := runProgramAt(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}), 110, 40)
+	tm := runProgramAt(t, New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}), 110, 40)
 
 	tm.Type("/copy")
 	tm.Send(programEnter)

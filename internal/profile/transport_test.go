@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // gatewayProfile is the profile the transport tests exercise: an openai-chat
@@ -213,7 +213,7 @@ func TestNew_StreamsThroughTheRewrites(t *testing.T) {
 	defer srv.Close()
 
 	p := gatewayProfile(srv.URL)
-	prov, err := New(p, provider.ResolveOpts{Model: "gemini-3.1-pro", APIKey: "k", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "gemini-3.1-pro", APIKey: "k", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -221,10 +221,10 @@ func TestNew_StreamsThroughTheRewrites(t *testing.T) {
 		t.Fatalf("the session should show the profile's name, got %q", prov.Name())
 	}
 
-	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "call_1__thought__YWJj", Name: "ls", Arguments: "{}"}}},
-		{Role: provider.RoleTool, ToolCallID: "call_1__thought__YWJj", Content: "ok"},
-	}, provider.CompletionOpts{})
+	ch, err := prov.StreamCompletion(context.Background(), []llm.Message{
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "call_1__thought__YWJj", Name: "ls", Arguments: "{}"}}},
+		{Role: llm.RoleTool, ToolCallID: "call_1__thought__YWJj", Content: "ok"},
+	}, llm.CompletionOpts{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

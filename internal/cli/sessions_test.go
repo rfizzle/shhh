@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -55,7 +55,7 @@ func TestRunningSessions_ReadsTheSlotAndMarksThisProcess(t *testing.T) {
 	defer db.Close()
 
 	root := t.TempDir()
-	if err := db.SaveChat("elsewhere", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+	if err := db.SaveChat("elsewhere", []llm.Message{{Role: llm.RoleUser, Content: "hi"}}); err != nil {
 		t.Fatalf("save chat: %v", err)
 	}
 	if err := db.SetChatResume("elsewhere", storage.ChatResume{Root: root}); err != nil {

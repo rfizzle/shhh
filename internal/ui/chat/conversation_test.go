@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -30,7 +30,7 @@ func TestConversation_AFetchRunsWithoutACard(t *testing.T) {
 		}},
 	})
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
 	}})
 	m = updated.(Model)
@@ -59,7 +59,7 @@ func TestConversation_TheHostDenyListStillRefuses(t *testing.T) {
 		Conversation: true,
 		DenyHosts:    []string{"paste.example.test"},
 	})
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_d", "https://paste.example.test/x"),
 	}})
 	m = updated.(Model)
@@ -188,7 +188,7 @@ func TestGolden_ScreenChat(t *testing.T) {
 		})
 		fetch.gatedTools = fetchPreviews()
 		fetch.state = stateStreaming
-		updated, cmd := fetch.Update(toolCallsMsg{calls: []provider.ToolCall{
+		updated, cmd := fetch.Update(toolCallsMsg{calls: []llm.ToolCall{
 			fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
 		}})
 		fetch = drainApproved(t, updated.(Model), cmd)

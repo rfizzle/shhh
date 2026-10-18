@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // readWholeFile puts the file through read_file the way a session would, so a
@@ -362,9 +362,9 @@ func TestNoteRestoredReadsRecordsEveryAnsweredRead(t *testing.T) {
 	cut := seed(t, dir, "cut.go", "alpha\nbeta\n")
 	never := seed(t, dir, "never.go", "alpha\nbeta\n")
 
-	NoteRestoredReads([]provider.Message{
-		{Role: provider.RoleUser, Content: "have a look"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{
+	NoteRestoredReads([]llm.Message{
+		{Role: llm.RoleUser, Content: "have a look"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{
 			{ID: "1", Name: ReadFileName, Arguments: `{"path":"` + read + `"}`},
 			// Answered by nothing: the round was cut short and the file was
 			// never put in front of the model.
@@ -372,8 +372,8 @@ func TestNoteRestoredReadsRecordsEveryAnsweredRead(t *testing.T) {
 			{ID: "3", Name: ExecCommandName, Arguments: `{"command":"ls"}`},
 			{ID: "4", Name: ReadFileName, Arguments: `not json`},
 		}},
-		{Role: provider.RoleTool, ToolCallID: "1", Content: "1\talpha"},
-		{Role: provider.RoleTool, ToolCallID: "3", Content: "read.go"},
+		{Role: llm.RoleTool, ToolCallID: "1", Content: "1\talpha"},
+		{Role: llm.RoleTool, ToolCallID: "3", Content: "read.go"},
 	})
 
 	edit := func(path string) error {

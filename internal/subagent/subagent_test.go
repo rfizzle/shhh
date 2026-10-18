@@ -16,10 +16,10 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -28,15 +28,15 @@ import (
 // calls, with optional usage.
 type streamStep struct {
 	text  string
-	calls []provider.ToolCall
-	usage *provider.Usage
+	calls []llm.ToolCall
+	usage *llm.Usage
 	// fail, when set, is returned instead of a stream, so a test can put a
 	// child in front of a provider that never answered.
-	fail *provider.Failure
+	fail *llm.Failure
 	// stop is why the step's reply ended, for a test that needs an ending
 	// other than the ordinary one. The zero value is a reply the model
 	// finished, which is what every step that says nothing means.
-	stop provider.StopReason
+	stop llm.StopReason
 	// held, when set, keeps the step from answering until it is closed, so a
 	// test can read the state a request is in while the request is still out
 	// instead of racing an answer that is otherwise instant.
@@ -81,7 +81,7 @@ type scriptedEnv struct {
 	// so a test can state what the child's next round actually carried —
 	// a tool result included, which is the only place a child's own view of
 	// a result can be read from.
-	requests [][]provider.Message
+	requests [][]llm.Message
 	// repeats is the circling detector the surface wraps the child's auto-run
 	// dispatcher with and then asks for sweeps, as a session wires one. Nil
 	// is a surface that wired none, which is the ordinary test child. It is
@@ -115,7 +115,7 @@ func (s *scriptedEnv) lastToolResult() string {
 	}
 	var result string
 	for _, m := range s.requests[len(s.requests)-1] {
-		if m.Role == provider.RoleTool {
+		if m.Role == llm.RoleTool {
 			result = m.Content
 		}
 	}
@@ -124,12 +124,12 @@ func (s *scriptedEnv) lastToolResult() string {
 
 func (s *scriptedEnv) factory() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			if ctx.Err() != nil {
 				return nil, nil, ctx.Err()
 			}
 			s.mu.Lock()
-			s.requests = append(s.requests, append([]provider.Message(nil), msgs...))
+			s.requests = append(s.requests, append([]llm.Message(nil), msgs...))
 			if len(s.steps) == 0 {
 				s.mu.Unlock()
 				return nil, nil, errors.New("scripted stream exhausted")
@@ -155,14 +155,14 @@ func (s *scriptedEnv) factory() EnvFactory {
 			if step.fail != nil {
 				return nil, nil, step.fail
 			}
-			ch := make(chan provider.StreamEvent, 3)
+			ch := make(chan llm.StreamEvent, 3)
 			if step.text != "" {
-				ch <- provider.StreamEvent{Token: step.text}
+				ch <- llm.StreamEvent{Token: step.text}
 			}
 			if len(step.calls) > 0 {
-				ch <- provider.StreamEvent{ToolCalls: step.calls, Usage: step.usage, Stop: step.stop}
+				ch <- llm.StreamEvent{ToolCalls: step.calls, Usage: step.usage, Stop: step.stop}
 			} else {
-				ch <- provider.StreamEvent{Done: true, Usage: step.usage, Stop: step.stop}
+				ch <- llm.StreamEvent{Done: true, Usage: step.usage, Stop: step.stop}
 			}
 			close(ch)
 			_, cancel := context.WithCancel(context.Background())
@@ -224,18 +224,18 @@ func (p *readingProvider) judgedAgainst() []string {
 	return append([]string(nil), p.digests...)
 }
 
-func (p *readingProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *readingProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.mu.Lock()
 	state := p.state
 	for _, m := range msgs {
-		if m.Role == provider.RoleUser {
+		if m.Role == llm.RoleUser {
 			p.digests = append(p.digests, m.Content)
 		}
 	}
 	p.mu.Unlock()
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{
 			ID:   "s1",
 			Name: sidejobs.SummaryToolName,
 			Arguments: `{"summary":"reading files in the importer","state":"` + state +
@@ -256,7 +256,7 @@ func (p *readingProvider) Name() string { return "reading" }
 func toolRounds(n int) []streamStep {
 	steps := make([]streamStep, 0, n+1)
 	for i := range n {
-		steps = append(steps, streamStep{calls: []provider.ToolCall{
+		steps = append(steps, streamStep{calls: []llm.ToolCall{
 			{ID: fmt.Sprintf("r%d", i), Name: "read_file", Arguments: `{"path":"importer.go"}`},
 		}})
 	}
@@ -274,7 +274,7 @@ func readRounds(n int) []streamStep {
 // is wide enough that a reading is still fresh at the boundary it is
 // collected at, since a verdict older than one interval is withheld as
 // describing work the run has left behind.
-func judgedChild(t *testing.T, reader provider.Provider, rounds int) *Supervisor {
+func judgedChild(t *testing.T, reader llm.Provider, rounds int) *Supervisor {
 	t.Helper()
 	env := &scriptedEnv{steps: readRounds(rounds), delay: 3 * time.Millisecond,
 		summarizer: sidejobs.NewSummarizer(reader,
@@ -332,7 +332,7 @@ func nextAsk(t *testing.T, sup *Supervisor) *Ask {
 }
 
 func TestSpawnAndReport(t *testing.T) {
-	env := &scriptedEnv{steps: []streamStep{{text: "my findings", usage: &provider.Usage{PromptTokens: 10, CompletionTokens: 5}}}}
+	env := &scriptedEnv{steps: []streamStep{{text: "my findings", usage: &llm.Usage{PromptTokens: 10, CompletionTokens: 5}}}}
 	sup := newTestSupervisor(t, env)
 
 	out := execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code"}`)
@@ -380,7 +380,7 @@ func TestSpawnValidation(t *testing.T) {
 // message.
 func gatedCommandSteps(command string) []streamStep {
 	return []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"` + command + `"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"` + command + `"}`}}},
 		{text: "task complete"},
 	}
 }
@@ -694,8 +694,8 @@ func TestTokenBudgetCancelsChild(t *testing.T) {
 	env := &scriptedEnv{
 		steps: []streamStep{
 			{
-				calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
-				usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 100},
+				calls: []llm.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
+				usage: &llm.Usage{PromptTokens: 300100, CompletionTokens: 100},
 			},
 		},
 	}
@@ -721,8 +721,8 @@ func TestTokenBudgetHandsOffBeforeItStops(t *testing.T) {
 	env := &scriptedEnv{
 		steps: []streamStep{
 			{
-				calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
-				usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 100},
+				calls: []llm.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
+				usage: &llm.Usage{PromptTokens: 300100, CompletionTokens: 100},
 			},
 			{text: "got as far as the parser; the lexer is untouched"},
 		},
@@ -750,7 +750,7 @@ func TestTokenBudgetOnTheFinalResponseKeepsTheReport(t *testing.T) {
 		steps: []streamStep{
 			{
 				text:  "the parser is the bottleneck; here is what to change",
-				usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 100},
+				usage: &llm.Usage{PromptTokens: 300100, CompletionTokens: 100},
 			},
 		},
 	}
@@ -780,7 +780,7 @@ func TestTokenBudgetCountsFreshTokensNotCachedOnes(t *testing.T) {
 		steps: []streamStep{
 			{
 				text:  "the parser is the bottleneck",
-				usage: &provider.Usage{PromptTokens: 300100, CachedTokens: 300000, CompletionTokens: 50},
+				usage: &llm.Usage{PromptTokens: 300100, CachedTokens: 300000, CompletionTokens: 50},
 			},
 		},
 	}
@@ -823,8 +823,8 @@ func TestTokenBudgetCountsFreshTokensNotCachedOnes(t *testing.T) {
 func TestRoundLimitChecksInAndCarriesOn(t *testing.T) {
 	env := &scriptedEnv{
 		steps: []streamStep{
-			{calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"a"}`}}},
-			{calls: []provider.ToolCall{{ID: "r2", Name: "read_file", Arguments: `{"path":"b"}`}}},
+			{calls: []llm.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"a"}`}}},
+			{calls: []llm.ToolCall{{ID: "r2", Name: "read_file", Arguments: `{"path":"b"}`}}},
 			{text: "finished after taking stock"},
 		},
 	}
@@ -912,10 +912,10 @@ func TestASteerCountBelongsToTheTurnItWasGivenIn(t *testing.T) {
 // has started acting from one that is still reading.
 func TestAChildCountsTheFilesItsOwnCallsWrote(t *testing.T) {
 	c := &child{name: "writer-1", role: RoleWriter}
-	c.noteWrite(provider.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"x"}`}, "written")
-	c.noteWrite(provider.ToolCall{Name: "edit_file", Arguments: `{"path":"a.go"}`}, "edited")
-	c.noteWrite(provider.ToolCall{Name: "edit_file", Arguments: `{"path":"b.go"}`}, "error: no such file")
-	c.noteWrite(provider.ToolCall{Name: "read_file", Arguments: `{"path":"c.go"}`}, "package main")
+	c.noteWrite(llm.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"x"}`}, "written")
+	c.noteWrite(llm.ToolCall{Name: "edit_file", Arguments: `{"path":"a.go"}`}, "edited")
+	c.noteWrite(llm.ToolCall{Name: "edit_file", Arguments: `{"path":"b.go"}`}, "error: no such file")
+	c.noteWrite(llm.ToolCall{Name: "read_file", Arguments: `{"path":"c.go"}`}, "package main")
 
 	files, added, removed := c.changed()
 	if files != 1 || added != 0 || removed != 0 {
@@ -1127,17 +1127,17 @@ func waitState(t *testing.T, sup *Supervisor, name string, want State) {
 func resumableEnv(finals ...string) EnvFactory {
 	var mu sync.Mutex
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			users := 0
 			for _, m := range msgs {
-				if m.Role == provider.RoleUser {
+				if m.Role == llm.RoleUser {
 					users++
 				}
 			}
 			mu.Lock()
 			if users <= 1 {
 				mu.Unlock()
-				ch := make(chan provider.StreamEvent)
+				ch := make(chan llm.StreamEvent)
 				sctx, cancel := context.WithCancel(ctx)
 				go func() {
 					<-sctx.Done()
@@ -1151,9 +1151,9 @@ func resumableEnv(finals ...string) EnvFactory {
 				finals = finals[1:]
 			}
 			mu.Unlock()
-			ch := make(chan provider.StreamEvent, 2)
-			ch <- provider.StreamEvent{Token: text}
-			ch <- provider.StreamEvent{Done: true}
+			ch := make(chan llm.StreamEvent, 2)
+			ch <- llm.StreamEvent{Token: text}
+			ch <- llm.StreamEvent{Done: true}
 			close(ch)
 			_, cancel := context.WithCancel(context.Background())
 			return ch, cancel, nil
@@ -1234,7 +1234,7 @@ func TestKillFailsChildAndKeepsTranscript(t *testing.T) {
 
 func TestTranscriptRecordsToolRounds(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "let me look", calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{text: "let me look", calls: []llm.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 		{text: "all done"},
 	}}
 	sup := newTestSupervisor(t, env)
@@ -1326,9 +1326,9 @@ func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
 	release := make(chan struct{})
 	var turnCount atomic.Int32
 	factory := func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			n := turnCount.Add(1)
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			if n == 1 {
 				go func() {
 					close(started)
@@ -1338,13 +1338,13 @@ func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
 						close(ch)
 						return
 					}
-					ch <- provider.StreamEvent{Token: "first done"}
-					ch <- provider.StreamEvent{Done: true}
+					ch <- llm.StreamEvent{Token: "first done"}
+					ch <- llm.StreamEvent{Done: true}
 					close(ch)
 				}()
 			} else {
-				ch <- provider.StreamEvent{Token: "second done"}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: "second done"}
+				ch <- llm.StreamEvent{Done: true}
 				close(ch)
 			}
 			_, cancel := context.WithCancel(context.Background())
@@ -1441,11 +1441,11 @@ type verdictProvider struct {
 	calls    atomic.Int32
 }
 
-func (p *verdictProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *verdictProvider) StreamCompletion(ctx context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.calls.Add(1)
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{
 			ID:        "d1",
 			Name:      agent.DecisionToolName,
 			Arguments: `{"decision":"` + p.decision + `","reason":"` + p.reason + `"}`,
@@ -1524,7 +1524,7 @@ func TestChildAutoModeUsesClassifier(t *testing.T) {
 func TestChildAutoApprovalStatesTheActOnce(t *testing.T) {
 	env := &scriptedEnv{
 		steps: []streamStep{
-			{calls: []provider.ToolCall{{ID: "e1", Name: tools.EditFileName,
+			{calls: []llm.ToolCall{{ID: "e1", Name: tools.EditFileName,
 				Arguments: `{"path":"loop.go","old_text":"alpha","new_text":"omega"}`}}},
 			{text: "task complete"},
 		},
@@ -1594,15 +1594,15 @@ func TestChildStatusNoteIsMarkedAsOne(t *testing.T) {
 	// A round of the default interval's worth of silent reads earns the
 	// request at the next boundary, and the prose that opens the round after
 	// it is what answers it.
-	silent := make([]provider.ToolCall, agent.DefaultProgressIntervalCalls)
+	silent := make([]llm.ToolCall, agent.DefaultProgressIntervalCalls)
 	for i := range silent {
-		silent[i] = provider.ToolCall{ID: fmt.Sprintf("r%d", i), Name: tools.ReadFileName,
+		silent[i] = llm.ToolCall{ID: fmt.Sprintf("r%d", i), Name: tools.ReadFileName,
 			Arguments: `{"path":"loop.go"}`}
 	}
 	const note = "The objective is the round accounting. The evidence is twelve reads. Next I will change it."
 	env := &scriptedEnv{steps: []streamStep{
 		{calls: silent},
-		{text: note, calls: []provider.ToolCall{
+		{text: note, calls: []llm.ToolCall{
 			{ID: "last", Name: tools.ReadFileName, Arguments: `{"path":"round.go"}`}}},
 		{text: "task complete"},
 	}}
@@ -1904,7 +1904,7 @@ func TestStaleChildEditIsItsOwnRow(t *testing.T) {
 
 	env := &scriptedEnv{
 		steps: []streamStep{
-			{calls: []provider.ToolCall{{ID: "e1", Name: tools.EditFileName,
+			{calls: []llm.ToolCall{{ID: "e1", Name: tools.EditFileName,
 				Arguments: `{"path":"loop.go","old_text":"alpha","new_text":"omega"}`}}},
 			{text: "task complete"},
 		},
@@ -1945,7 +1945,7 @@ func TestKillWakesAChildWaitingOutAProvider(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
 		// Longer than the cap, so the wait is the full minute and nothing but
 		// the kill can end it inside this test.
-		{fail: &provider.Failure{Class: provider.ClassOverloaded, RetryAfter: 2 * time.Minute}},
+		{fail: &llm.Failure{Class: llm.ClassOverloaded, RetryAfter: 2 * time.Minute}},
 	}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code"}`)
@@ -2082,8 +2082,8 @@ func TestHoldParksEveryChildAndOneReleaseLetsThemGo(t *testing.T) {
 	// Both children take a tool round first, whichever order they get to the
 	// scripted stream in, so each one has a boundary of its own to park at.
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
-		{calls: []provider.ToolCall{{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{calls: []llm.ToolCall{{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}}},
 		{text: "first done"},
 		{text: "second done"},
 	}}
@@ -2138,7 +2138,7 @@ func TestHoldCanBeTakenAgainAfterARelease(t *testing.T) {
 // a release nobody is going to send.
 func TestHoldDoesNotOutlastAKill(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 		{text: "done"},
 	}}
 	sup := newTestSupervisor(t, env)
@@ -2161,7 +2161,7 @@ func TestHoldDoesNotOutlastAKill(t *testing.T) {
 // a child as running that is going nowhere.
 func TestReleaseDoesNotUnparkAChildHeldByALaterHold(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 		{text: "done"},
 	}}
 	sup := newTestSupervisor(t, env)
@@ -2205,7 +2205,7 @@ func currentHold(sup *Supervisor) chan struct{} {
 // the only place anyone is looking.
 func TestChildFinishesAReplyCutAtTheCeiling(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "the first half of the answer", stop: provider.StopLength},
+		{text: "the first half of the answer", stop: llm.StopLength},
 		{text: " and the second."},
 	}}
 	sup := newTestSupervisor(t, env)
@@ -2370,7 +2370,7 @@ func TestSteerToolRedirectsAChildAndItsNextReadingIsJudgedAgainstIt(t *testing.T
 // refusal names it rather than failing quietly: the orchestrator is choosing
 // between agents by name.
 func TestSteerToolRefusesAFailedChildByName(t *testing.T) {
-	env := &scriptedEnv{steps: []streamStep{{fail: &provider.Failure{Message: "the provider refused"}}}}
+	env := &scriptedEnv{steps: []streamStep{{fail: &llm.Failure{Message: "the provider refused"}}}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
 	waitFor(t, func() bool { return statusOf(t, sup, "researcher-1").State == StateFailed })
@@ -2579,7 +2579,7 @@ func TestAReportCarriesTheReadingAndTheSteerCount(t *testing.T) {
 // never sees.
 func TestAReportCountsTheCheckInsAChildTookStockAt(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{calls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 		{text: "surveyed the loop"},
 	}}
 	sup := newTestSupervisor(t, env)
@@ -2725,19 +2725,19 @@ type writingChild struct {
 
 func (w *writingChild) factory() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			w.mu.Lock()
 			w.round++
 			round := w.round
 			w.mu.Unlock()
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			if round == 1 {
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 					{ID: "w1", Name: "write_file", Arguments: `{"path":"exporter.go"}`},
 				}}
 			} else {
-				ch <- provider.StreamEvent{Token: "wrote the exporter"}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: "wrote the exporter"}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			return ch, func() {}, nil
@@ -2803,7 +2803,7 @@ func TestAPatchNoteNamesTheFilesItTouched(t *testing.T) {
 func spendingRounds(n int, perRound int) []streamStep {
 	steps := toolRounds(n)
 	for i := range steps {
-		steps[i].usage = &provider.Usage{PromptTokens: perRound}
+		steps[i].usage = &llm.Usage{PromptTokens: perRound}
 	}
 	return steps
 }
@@ -2863,7 +2863,7 @@ func TestABudgetFailureSaysWhatTheChildHadWritten(t *testing.T) {
 func searchRounds(n int) []streamStep {
 	steps := make([]streamStep, 0, n)
 	for i := range n {
-		steps = append(steps, streamStep{calls: []provider.ToolCall{{
+		steps = append(steps, streamStep{calls: []llm.ToolCall{{
 			ID:        fmt.Sprintf("q%d", i),
 			Name:      "search",
 			Arguments: fmt.Sprintf(`{"pattern":"handler%d","path":"internal/exporter"}`, i),

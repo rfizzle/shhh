@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -42,13 +42,13 @@ func NewToolset(mgr *Manager) *Toolset { return &Toolset{Manager: mgr} }
 func (t *Toolset) UseReadRecord(r *tools.Recorder) { t.Manager.UseReadRecord(r) }
 
 // Definitions returns the provider tool definitions to register.
-func (t *Toolset) Definitions() []provider.Tool {
+func (t *Toolset) Definitions() []llm.Tool {
 	positionProps := `{
 		"path": {"type": "string", "description": "File the symbol appears in (absolute or workspace-relative)"},
 		"line": {"type": "integer", "description": "1-based line number where the symbol appears"},
 		"symbol": {"type": "string", "description": "The identifier text on that line to look up"}
 	}`
-	return []provider.Tool{
+	return []llm.Tool{
 		{
 			Name: DefinitionToolName,
 			Description: "Jump to the definition of a symbol using the project's language server. " +

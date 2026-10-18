@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 )
 
@@ -24,10 +24,10 @@ import (
 func TestProgram_TheGatesPassSettlesTheFailureBeforeIt(t *testing.T) {
 	hold, release := quietHold(t)
 	m, _ := scriptedSession(
-		programTurn{hold: hold, text: "Check where the rounds are counted\n", calls: []provider.ToolCall{
+		programTurn{hold: hold, text: "Check where the rounds are counted\n", calls: []llm.ToolCall{
 			call("c1", "execute_command", `{"command":"make test"}`),
 		}},
-		programTurn{text: "Off by one at the loop bound. Verifying against the suite\n", calls: []provider.ToolCall{
+		programTurn{text: "Off by one at the loop bound. Verifying against the suite\n", calls: []llm.ToolCall{
 			call("g1", quality.ToolName, `{"action":"run","suite":"default"}`),
 		}},
 		programTurn{text: "The bound is fixed and the suite is green."},
@@ -42,7 +42,7 @@ func TestProgram_TheGatesPassSettlesTheFailureBeforeIt(t *testing.T) {
 			t.Errorf("an unexpected auto-run call: %s", name)
 		}
 		text := pass.Format(pass.Fingerprint)
-		provider.NoteValue(name, args, pass.Summary(pass.Fingerprint).Value())
+		llm.NoteValue(name, args, pass.Summary(pass.Fingerprint).Value())
 		return text, nil
 	})
 	tm := runProgramAt(t, m, 130, 40)
@@ -61,7 +61,7 @@ func TestProgram_TheGatesPassSettlesTheFailureBeforeIt(t *testing.T) {
 // is refused before a card, and the refusal is the call's own row.
 func TestProgram_ACallRefusedBeforeItsCardIsItsOwnRow(t *testing.T) {
 	m, _ := scriptedSession(
-		programTurn{calls: []provider.ToolCall{call("e1", "edit_file", `{"old_text":"round >= cap","new_text":"round > cap"}`)}},
+		programTurn{calls: []llm.ToolCall{call("e1", "edit_file", `{"old_text":"round >= cap","new_text":"round > cap"}`)}},
 		programTurn{text: "The edit was refused before it ran."},
 	)
 	tm := runProgram(t, m)

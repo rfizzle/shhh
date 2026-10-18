@@ -6,9 +6,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -160,7 +160,7 @@ func TestArgCompletion_SavedChatNames(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "hi"}}
 	for _, name := range []string{"alpha-notes", "beta-notes"} {
 		if err := db.SaveChat(name, msgs); err != nil {
 			t.Fatal(err)
@@ -188,7 +188,7 @@ func TestArgCompletion_BranchNames(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := db.SaveChat("main", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+	if err := db.SaveChat("main", []llm.Message{{Role: llm.RoleUser, Content: "hi"}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -375,7 +375,7 @@ func TestArgCompletion_RailOffersWhatThisTerminalAllows(t *testing.T) {
 		t.Errorf("a narrow terminal offers the word and the floor, got %q", got)
 	}
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
 	wide := typeChars(t, updated.(Model), "/ui rail ")
 	if got := strings.Join(completionNames(wide), " "); got != "auto 63 46" {

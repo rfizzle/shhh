@@ -21,7 +21,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 const (
@@ -91,18 +91,18 @@ type PatternVerdict struct {
 	Description string
 	Steps       []string
 	Model       string
-	Usage       provider.Usage
+	Usage       llm.Usage
 	Failed      bool
 	Err         string
 }
 
 // PatternWriter words proposals through the session's provider.
 type PatternWriter struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      PatternsConfig
 }
 
-func NewPatternWriter(p provider.Provider, cfg PatternsConfig) *PatternWriter {
+func NewPatternWriter(p llm.Provider, cfg PatternsConfig) *PatternWriter {
 	return &PatternWriter{provider: p, cfg: cfg}
 }
 
@@ -152,21 +152,21 @@ func (w *PatternWriter) Word(ctx context.Context, req PatternRequest) PatternVer
 	}
 	attemptCtx, cancel := context.WithTimeout(ctx, w.cfg.timeout())
 	defer cancel()
-	events, err := w.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: patternsPrompt},
-		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
-	}, provider.CompletionOpts{
+	events, err := w.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: patternsPrompt},
+		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
+	}, llm.CompletionOpts{
 		Model:      v.Model,
-		Flow:       provider.FlowPatterns,
+		Flow:       llm.FlowPatterns,
 		MaxTokens:  w.cfg.maxTokens(),
-		Effort:     provider.EffortLow,
-		ToolChoice: provider.ToolChoiceNone,
+		Effort:     llm.EffortLow,
+		ToolChoice: llm.ToolChoiceNone,
 	})
 	if err != nil {
 		v.Err = "the proposal could not be worded: " + err.Error()
 		return v
 	}
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	if reply.Usage != nil {
 		v.Usage = *reply.Usage
 	}

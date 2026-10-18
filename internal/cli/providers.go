@@ -25,11 +25,11 @@ import (
 	"github.com/rfizzle/shhh/internal/chatgpt"
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
@@ -59,7 +59,7 @@ func newProvidersCmd() *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, providersJSON(profiles, errs, prices))
 			}
-			names := provider.Available()
+			names := llm.Available()
 			sort.Strings(names)
 			r := providersReport(names, sourceRows(dirs, profiles, errs), profiles, prices,
 				profileWayOut(dirs), storedCacheReadings())
@@ -697,12 +697,12 @@ func modelPrice(v float64) string {
 // rungs above high it has, from the profile when it said, otherwise from the
 // table and the family floor — the same answer the providers act on.
 func reasoningCell(m profile.Model, prices *pricing.Table) string {
-	var caps provider.Capabilities
+	var caps llm.Capabilities
 	if e, ok := prices.Entry(m.ID); ok && (e.ReasoningKnown || e.SupportsReasoning) {
-		caps = provider.Capabilities{Known: true, Reasoning: e.SupportsReasoning, Adaptive: e.AdaptiveThinking,
+		caps = llm.Capabilities{Known: true, Reasoning: e.SupportsReasoning, Adaptive: e.AdaptiveThinking,
 			Legacy: e.LegacyThinking, AlwaysOn: e.ThinkingAlwaysOn, XHigh: e.XHighEffort, Max: e.MaxEffort}
 	} else {
-		caps = provider.CapabilitiesFor(m.ID)
+		caps = llm.CapabilitiesFor(m.ID)
 	}
 	switch {
 	case !caps.Known:
@@ -715,7 +715,7 @@ func reasoningCell(m profile.Model, prices *pricing.Table) string {
 		// The public table marks some models reasoning-capable without
 		// saying how; the family floor knows the shape, and it is what
 		// the provider sends.
-		if floor := provider.CapabilitiesFor(m.ID); floor.Adaptive || floor.Legacy {
+		if floor := llm.CapabilitiesFor(m.ID); floor.Adaptive || floor.Legacy {
 			caps.Adaptive, caps.Legacy = floor.Adaptive, floor.Legacy
 		}
 	}

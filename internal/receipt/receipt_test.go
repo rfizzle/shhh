@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/mcp"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -297,16 +297,16 @@ func TestReceipt_AScopeIsWhereTheSubjectSaysItWasPut(t *testing.T) {
 // A picture the result carried reaches the receipt, so a front-end can draw
 // it and open it; a result with no image, or only text parts, carries none.
 func TestReceipt_CarriesThePictureTheResultCarried(t *testing.T) {
-	png := provider.Attachment{Kind: provider.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: []byte("x")}
-	text := provider.Attachment{Kind: provider.AttachmentText, Name: "notes.txt", Data: []byte("x")}
+	png := llm.Attachment{Kind: llm.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: []byte("x")}
+	text := llm.Attachment{Kind: llm.AttachmentText, Name: "notes.txt", Data: []byte("x")}
 	for _, tc := range []struct {
 		name string
-		atts []provider.Attachment
+		atts []llm.Attachment
 		want string
 	}{
 		{"none", nil, ""},
-		{"text only", []provider.Attachment{text}, ""},
-		{"an image after text", []provider.Attachment{text, png}, "shot.png"},
+		{"text only", []llm.Attachment{text}, ""},
+		{"an image after text", []llm.Attachment{text, png}, "shot.png"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r := Build(Call{Name: tools.ReadFileName, Args: `{"path":"shot.png"}`,

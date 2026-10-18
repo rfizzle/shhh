@@ -13,8 +13,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -33,7 +33,7 @@ func stageImage(t *testing.T, m Model, name string) Model {
 	if err != nil {
 		t.Fatal(err)
 	}
-	next, _ := m.stage([]provider.Attachment{a})
+	next, _ := m.stage([]llm.Attachment{a})
 	return next.(Model)
 }
 
@@ -58,7 +58,7 @@ func stageText(t *testing.T, m Model, name string) Model {
 	if err != nil {
 		t.Fatal(err)
 	}
-	next, _ := m.stage([]provider.Attachment{a})
+	next, _ := m.stage([]llm.Attachment{a})
 	return next.(Model)
 }
 
@@ -192,7 +192,7 @@ func stagePDFNamed(name string) func(*testing.T, Model) Model {
 		if err != nil {
 			t.Fatal(err)
 		}
-		next, _ := m.stage([]provider.Attachment{a})
+		next, _ := m.stage([]llm.Attachment{a})
 		return next.(Model)
 	}
 }

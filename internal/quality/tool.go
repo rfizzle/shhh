@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -31,8 +31,8 @@ const gateSkill = "shhh-quality-gate"
 // built-in skill that carries it, loaded only when the file is being written
 // (docs/capabilities/skills.md#shhh-carries-skills-of-its-own).
 // See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
-func ToolDefinition() provider.Tool {
-	return provider.Tool{
+func ToolDefinition() llm.Tool {
+	return llm.Tool{
 		Name: ToolName,
 		Description: "Verify your work with the repository's own quality checks (tests, linters). " +
 			"Suites are named in the project's trusted config (" + ConfigRelPath + ", whose shape the " + gateSkill + " skill has); you pick a suite by name and can never supply command text. " +
@@ -108,11 +108,11 @@ func (r *Runner) executeTool(ctx context.Context, args json.RawMessage) (string,
 			return "", err
 		}
 		text := res.Format(res.Fingerprint)
-		provider.NoteValue(ToolName, args, res.Summary(res.Fingerprint).Value())
+		llm.NoteValue(ToolName, args, res.Summary(res.Fingerprint).Value())
 		return text, nil
 	case "result":
 		text, value := r.status()
-		provider.NoteValue(ToolName, args, value)
+		llm.NoteValue(ToolName, args, value)
 		return text, nil
 	}
 	return "", fmt.Errorf("unknown action %q (valid: run, result)", a.Action)

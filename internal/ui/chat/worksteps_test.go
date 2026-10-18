@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -24,8 +24,8 @@ func stepsCalled(t *testing.T, args string) plan.Checklist {
 }
 
 // stepsCall is a steps call as a round's result delivers it.
-func stepsCall(args string) provider.ToolCall {
-	return provider.ToolCall{ID: "steps-call", Name: plan.StepsToolName, Arguments: args}
+func stepsCall(args string) llm.ToolCall {
+	return llm.ToolCall{ID: "steps-call", Name: plan.StepsToolName, Arguments: args}
 }
 
 func stepsOnRail(m Model) *components.InspectorSteps { return m.resolveInspector().Steps }
@@ -59,7 +59,7 @@ func TestWorkSteps_ACallIsTheWholeList(t *testing.T) {
 		t.Fatalf("a taken-back mark and a reworded step = %+v, want 0 of 3", *s)
 	}
 	m.noteStepsCall(stepsCall(`{"steps":[{"title":""}]}`))
-	m.noteStepsCall(provider.ToolCall{Name: "read_file", Arguments: `{"steps":[]}`})
+	m.noteStepsCall(llm.ToolCall{Name: "read_file", Arguments: `{"steps":[]}`})
 	if s := stepsOnRail(m); s == nil || s.Total != 3 {
 		t.Fatalf("a refused call or another tool moved the list: %+v", s)
 	}
@@ -116,13 +116,13 @@ func TestWorkSteps_SavedResumedAndDroppedAtTheBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	back := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages(slot, saved)
+	back := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages(slot, saved)
 	if s := stepsOnRail(back); s == nil || *s != (components.InspectorSteps{Done: 1, Total: 3, Current: "Patch"}) {
 		t.Fatalf("resumed list = %+v, want 1 of 3 on the patch", s)
 	}
 	// The model is told the list too, since the call that set it is far
 	// behind — and the copy it is told is never saved with the conversation.
-	carried := func(msgs []provider.Message) bool {
+	carried := func(msgs []llm.Message) bool {
 		for _, msg := range msgs {
 			if strings.HasPrefix(msg.Content, plan.CarriedStepsPrefix) && strings.Contains(msg.Content, "→ [ ] 2. Patch") {
 				return true
@@ -284,7 +284,7 @@ func TestWorkSteps_ACompactionCarriesTheList(t *testing.T) {
 func TestWorkSteps_TheListsAgeIsCountedAcrossTurns(t *testing.T) {
 	const set = `{"steps":[{"title":"Read","done":true},{"title":"Patch"},{"title":"Test"}]}`
 	round := func(t *testing.T, m *Model) {
-		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{ID: "read", Name: "read_file", Arguments: `{"path":"a.go"}`}}})
+		updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{{ID: "read", Name: "read_file", Arguments: `{"path":"a.go"}`}}})
 		*m = updated.(Model)
 	}
 	nextTurn := func(t *testing.T, m *Model) {

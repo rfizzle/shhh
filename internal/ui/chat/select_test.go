@@ -12,8 +12,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/clipboard"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -69,7 +69,7 @@ func (c *clip) fn() func(string) clipboard.Result {
 // its assertions are about.
 func selectModel(t *testing.T, c *clip, entries ...entry) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	m.copyFn = c.fn()
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
@@ -331,7 +331,7 @@ func TestSelection_WrappedProseCopiesAsOneSentence(t *testing.T) {
 func TestSelection_WrappedProseCopiesAsOneSentenceAtEveryWidth(t *testing.T) {
 	for _, width := range []int{72, 78, 80, 96, 130} {
 		c := &clip{}
-		msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+		msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 		m := New(msgs, mockStream, Wiring{})
 		m.copyFn = c.fn()
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
@@ -792,7 +792,7 @@ func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 	command := entry{kind: entryCommand, text: "go test ./second", toolResult: "ok"}
 	build := func(t *testing.T) Model {
 		m := selectModel(t, &clip{}, entry{kind: entryUser, text: "read the three files"})
-		m.openCallBatch([]provider.ToolCall{
+		m.openCallBatch([]llm.ToolCall{
 			readCall("call_1", "first.go"), execCall("call_2", "go test ./second"), readCall("call_3", "third.go"),
 		})
 		m.appendCallRow("call_1", read("call_1", "first.go"))

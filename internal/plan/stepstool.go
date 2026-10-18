@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -21,8 +21,8 @@ const StepsToolName = "steps"
 // list with the numbers it is drawn by, which is what lets the agent carry on
 // from it rather than from what it remembers writing.
 // See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
-func StepsToolDefinition() provider.Tool {
-	return provider.Tool{
+func StepsToolDefinition() llm.Tool {
+	return llm.Tool{
 		Name: StepsToolName,
 		Description: "Keep your working list for a task of several steps: the steps you mean to take, in order, and which are done. " +
 			"Pass the whole list on every call — it replaces the one before — so marking a step done, taking a mark back, rewording, adding, dropping or reordering a step is the same call. " +

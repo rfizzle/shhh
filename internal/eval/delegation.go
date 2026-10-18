@@ -25,9 +25,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -61,7 +61,7 @@ const (
 const delegationRounds = 6
 
 // askDelegation runs one row's instruction under its policy.
-func askDelegation(ctx context.Context, p provider.Provider, model string, row Row) Answer {
+func askDelegation(ctx context.Context, p llm.Provider, model string, row Row) Answer {
 	dir, err := os.MkdirTemp("", "shhh-eval-delegation-")
 	if err != nil {
 		return Answer{Row: row, Err: "cannot make a workspace: " + err.Error()}
@@ -88,9 +88,9 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 		prompt.Toolbox(defs, row.Delegation == config.DelegationProactive))
 	exec := subagent.RootedExecutor(dir, tools.Execute)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: sys},
-		{Role: provider.RoleUser, Content: row.Instruction},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: sys},
+		{Role: llm.RoleUser, Content: row.Instruction},
 	}
 	a := Answer{Row: row}
 	var rounds []string
@@ -129,13 +129,13 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 			a.Went = clipRunes(strings.Join(rounds, " · "), maxWent)
 			return a
 		}
-		msgs = append(msgs, provider.Message{Role: provider.RoleAssistant, Content: reply, ToolCalls: calls})
+		msgs = append(msgs, llm.Message{Role: llm.RoleAssistant, Content: reply, ToolCalls: calls})
 		for _, c := range calls {
 			out, err := exec(ctx, c.Name, json.RawMessage(c.Arguments))
 			if err != nil {
 				out = "error: " + err.Error()
 			}
-			msgs = append(msgs, provider.Message{Role: provider.RoleTool, Content: out, ToolCallID: c.ID})
+			msgs = append(msgs, llm.Message{Role: llm.RoleTool, Content: out, ToolCallID: c.ID})
 		}
 	}
 	a.Label, a.Reason = LabelAlone, fmt.Sprintf("read for %d rounds without asking for a child", delegationRounds)
@@ -147,7 +147,7 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 // part when it is a reader of file contents and a path it names has the
 // part's name as one of its segments; a glob lists names and reads nothing,
 // so a round of globs is not a read of any part.
-func partsRead(calls []provider.ToolCall, parts []string) int {
+func partsRead(calls []llm.ToolCall, parts []string) int {
 	seen := map[string]bool{}
 	for _, c := range calls {
 		switch c.Name {
@@ -178,7 +178,7 @@ const maxWent = 120
 
 // roundTools is one round's tool names in first-call order, a name called more
 // than once followed by its count: "read_file×3, glob".
-func roundTools(calls []provider.ToolCall) string {
+func roundTools(calls []llm.ToolCall) string {
 	var order []string
 	n := map[string]int{}
 	for _, c := range calls {
@@ -206,15 +206,15 @@ func clipRunes(s string, max int) string {
 
 // oneReply is one request's answer text, its whole tool calls and what it
 // cost.
-func oneReply(ctx context.Context, p provider.Provider, model string, msgs []provider.Message,
-	defs []provider.Tool) (string, []provider.ToolCall, provider.Usage, error) {
-	events, err := p.StreamCompletion(ctx, msgs, provider.CompletionOpts{Model: model, Tools: defs})
+func oneReply(ctx context.Context, p llm.Provider, model string, msgs []llm.Message,
+	defs []llm.Tool) (string, []llm.ToolCall, llm.Usage, error) {
+	events, err := p.StreamCompletion(ctx, msgs, llm.CompletionOpts{Model: model, Tools: defs})
 	if err != nil {
-		return "", nil, provider.Usage{}, err
+		return "", nil, llm.Usage{}, err
 	}
 	var text strings.Builder
-	var calls []provider.ToolCall
-	var usage provider.Usage
+	var calls []llm.ToolCall
+	var usage llm.Usage
 	for ev := range events {
 		if ev.Err != nil {
 			return "", nil, usage, ev.Err
@@ -226,5 +226,5 @@ func oneReply(ctx context.Context, p provider.Provider, model string, msgs []pro
 			usage.CompletionTokens += ev.Usage.CompletionTokens
 		}
 	}
-	return text.String(), provider.CompletedToolCalls(calls), usage, nil
+	return text.String(), llm.CompletedToolCalls(calls), usage, nil
 }

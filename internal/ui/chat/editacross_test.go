@@ -9,14 +9,14 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // acrossFiles writes three files the session has read, and the call that
 // renames old() to renamed() in each.
-func acrossFiles(t *testing.T) (paths []string, call provider.ToolCall) {
+func acrossFiles(t *testing.T) (paths []string, call llm.ToolCall) {
 	t.Helper()
 	dir := t.TempDir()
 	for i, body := range []string{"old()\n", "x\nold()\n", "old() y\n"} {
@@ -31,7 +31,7 @@ func acrossFiles(t *testing.T) (paths []string, call provider.ToolCall) {
 		paths = append(paths, p)
 	}
 	args, _ := json.Marshal(map[string]any{"paths": paths, "old_text": `old\(\)`, "new_text": "renamed()", "regex": true})
-	return paths, provider.ToolCall{ID: "call_x", Name: tools.EditFileName, Arguments: string(args)}
+	return paths, llm.ToolCall{ID: "call_x", Name: tools.EditFileName, Arguments: string(args)}
 }
 
 // approve answers the card in front of m with y and lands what it ran.
@@ -55,7 +55,7 @@ func approve(t *testing.T, m Model) Model {
 func TestEditAcrossFiles_IsOneCard(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	paths, call := acrossFiles(t)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{call}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{call}})
 	m = updated.(Model)
 	req := m.approval.request
 	if req == nil || req.kind != approvalDiff || len(req.files) != 3 || req.path != "" {
@@ -91,7 +91,7 @@ func TestEditAcrossFiles_RecordsAndUndoesEachFileOnItsOwn(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.turnCount = 1
 	paths, call := acrossFiles(t)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{call}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{call}})
 	m = approve(t, updated.(Model))
 	turn, ok := m.changes.Turn(1)
 	if !ok || turn.Files() != 3 {
@@ -125,7 +125,7 @@ func TestEditAcrossFiles_AFailureMidListRecordsWhatLanded(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.turnCount = 1
 	paths, call := acrossFiles(t)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{call}})
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{call}})
 	m = updated.(Model)
 	if err := os.Chmod(paths[1], 0o444); err != nil {
 		t.Fatal(err)

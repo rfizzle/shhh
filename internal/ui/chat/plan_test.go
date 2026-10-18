@@ -9,19 +9,19 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // planModel is a ready model sitting in plan mode with a streamed planning
 // response about to complete.
 func planModel(t *testing.T, stream StreamFunc) Model {
 	t.Helper()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "plan the change"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "plan the change"},
 	}
 	m := New(msgs, stream, Wiring{})
 	// Tall enough that the panel's 60% bound is not what decides how many
@@ -36,10 +36,10 @@ func planModel(t *testing.T, stream StreamFunc) Model {
 }
 
 // recordingStream captures the message list of each stream request.
-func recordingStream(captured *[]provider.Message) StreamFunc {
-	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+func recordingStream(captured *[]llm.Message) StreamFunc {
+	return func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		*captured = msgs
-		ch := make(chan provider.StreamEvent)
+		ch := make(chan llm.StreamEvent)
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
@@ -111,7 +111,7 @@ func TestPlan_SteeringTakesPrecedenceOverPrompt(t *testing.T) {
 }
 
 func TestPlan_ApproveExecutesInChosenMode(t *testing.T) {
-	var captured []provider.Message
+	var captured []llm.Message
 	m := planModel(t, recordingStream(&captured))
 	updated, _ := m.Update(doneMsg{})
 	m = updated.(Model)
@@ -127,13 +127,13 @@ func TestPlan_ApproveExecutesInChosenMode(t *testing.T) {
 	}
 	msgs := m.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleUser || last.Content != planApprovedMessage {
+	if last.Role != llm.RoleUser || last.Content != planApprovedMessage {
 		t.Fatalf("approval should append the execution turn, got %+v", last)
 	}
 	// The plan itself stays in context: same session, same conversation.
 	foundPlan := false
 	for _, msg := range msgs {
-		if msg.Role == provider.RoleAssistant && strings.Contains(msg.Content, "edit a.go") {
+		if msg.Role == llm.RoleAssistant && strings.Contains(msg.Content, "edit a.go") {
 			foundPlan = true
 		}
 	}
@@ -260,8 +260,8 @@ func TestPlan_NavigationAndEnterSelect(t *testing.T) {
 }
 
 func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
-	var captured []provider.Message
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	var captured []llm.Message
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, recordingStream(&captured), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -283,8 +283,8 @@ func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
 // is told what the bound is and nothing about a plan, because there is no
 // card here to approve one and a turn spent writing one is a turn wasted.
 func TestMode_ReadOnlyRequestCarriesItsOwnInstructions(t *testing.T) {
-	var captured []provider.Message
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	var captured []llm.Message
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, recordingStream(&captured), Wiring{
 		ToolDefinitions:  []ToolTokens{{Name: "read_file"}, {Name: "search"}, {Name: "execute_command"}},
 		ReadOnlyCommands: []string{"tokei"},
@@ -320,7 +320,7 @@ func TestPlan_InspectionCommandRunsWithoutPrompt(t *testing.T) {
 	m := execModel(t, &ran)
 	m.policy.mode = agent.ModePlan
 
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_i", Name: "execute_command", Arguments: `{"command":"git status"}`},
 	}})
 	m = updated.(Model)
@@ -370,7 +370,7 @@ func TestPlan_SlashPlanSave(t *testing.T) {
 }
 
 func TestPlan_SlashPlanSaveWithoutPlan(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{Workspace: t.TempDir()})
 	_, result := m.handleSlashCommand("/plan save x")
 	if !strings.Contains(result, "no plan to save yet") {
@@ -740,11 +740,11 @@ func TestPlan_CarryToNewSessionSeedsAFreshContext(t *testing.T) {
 	if len(msgs) != 2 {
 		t.Fatalf("the new session should hold the prompt and the plan and nothing else, got %d: %+v", len(msgs), msgs)
 	}
-	if msgs[0].Role != provider.RoleSystem || msgs[0].Content != "sys" {
+	if msgs[0].Role != llm.RoleSystem || msgs[0].Content != "sys" {
 		t.Fatalf("the first message should be the freshly built system prompt, got %+v", msgs[0])
 	}
 	seed := msgs[1]
-	if seed.Role != provider.RoleUser || !seed.Machine {
+	if seed.Role != llm.RoleUser || !seed.Machine {
 		t.Fatalf("the plan is the session's own message, not the reader's: %+v", seed)
 	}
 	for _, want := range []string{"plan the change", "1. Add the mode", "internal/agent/mode.go", "ev-00112233445566aa"} {
@@ -805,10 +805,10 @@ func TestPlan_CarryRefusesWhenThereIsNoPlan(t *testing.T) {
 // one request goes out — in the mode the offer names, with none of the
 // research behind the plan in it.
 func TestPlan_ImplementInNewSessionStartsTheExecutionTurn(t *testing.T) {
-	var requests [][]provider.Message
-	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		requests = append(requests, append([]provider.Message(nil), msgs...))
-		ch := make(chan provider.StreamEvent)
+	var requests [][]llm.Message
+	stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		requests = append(requests, append([]llm.Message(nil), msgs...))
+		ch := make(chan llm.StreamEvent)
 		close(ch)
 		return ch, func() {}, nil
 	}
@@ -839,14 +839,14 @@ func TestPlan_ImplementInNewSessionStartsTheExecutionTurn(t *testing.T) {
 	if len(msgs) != 3 {
 		t.Fatalf("the new session should hold the prompt, the plan and the instruction, got %d: %+v", len(msgs), msgs)
 	}
-	if msgs[0].Role != provider.RoleSystem || msgs[0].Content != "sys" {
+	if msgs[0].Role != llm.RoleSystem || msgs[0].Content != "sys" {
 		t.Fatalf("the first message should be the freshly built system prompt, got %+v", msgs[0])
 	}
 	if seed := msgs[1]; !seed.Machine || !strings.Contains(seed.Content, "1. Add the mode") ||
 		!strings.Contains(seed.Content, "internal/agent/mode.go") || !strings.Contains(seed.Content, "ev-00112233445566aa") {
 		t.Fatalf("the plan should be seeded as the session's own message: %+v", seed)
 	}
-	if last := msgs[2]; last.Role != provider.RoleUser || last.Content != planApprovedMessage {
+	if last := msgs[2]; last.Role != llm.RoleUser || last.Content != planApprovedMessage {
 		t.Fatalf("the execution turn should be the approval, got %+v", last)
 	}
 	if m.planRun == nil || len(m.planRun.doc.Steps) != 2 {

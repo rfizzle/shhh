@@ -13,7 +13,7 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -53,15 +53,15 @@ func carriesTick(cmd tea.Cmd) bool {
 // it starts stays in flight for the length of a test.
 func spinModel(t *testing.T) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, blockingStream(t), Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, blockingStream(t), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	return updated.(Model)
 }
 
 func blockingStream(t *testing.T) StreamFunc {
 	t.Helper()
-	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent)
+	return func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent)
 		return ch, func() { close(ch) }, nil
 	}
 }
@@ -100,7 +100,7 @@ func TestSpin_StartsWhenTheUserStartsATurn(t *testing.T) {
 // moved was discarded, and the chain went with it.
 func TestSpin_SurvivesEveryHandoff(t *testing.T) {
 	executor := func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "result", nil }
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, blockingStream(t), Wiring{Executor: executor})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, blockingStream(t), Wiring{Executor: executor})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)
 
@@ -122,7 +122,7 @@ func TestSpin_SurvivesEveryHandoff(t *testing.T) {
 
 	m = check("the user's prompt", sendTextModel(t, m, "run the tools"))
 
-	next, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	next, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
 	}})
 	m = check("tool dispatch", next)

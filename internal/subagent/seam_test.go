@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -25,8 +25,8 @@ import (
 func TestASurfacesSeamsReachBothOfAChildsDispatchers(t *testing.T) {
 	env := &scriptedEnv{
 		steps: []streamStep{
-			{calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}}},
-			{calls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"echo hi"}`}}},
+			{calls: []llm.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+			{calls: []llm.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"echo hi"}`}}},
 			{text: "task complete"},
 		},
 		gated:   map[string]bool{tools.ExecCommandName: true},
@@ -51,8 +51,8 @@ func TestASurfacesSeamsReachBothOfAChildsDispatchers(t *testing.T) {
 				return next(ctx, name, args)
 			}
 		}
-		e.WrapGated = func(s Seam, next func(provider.ToolCall) string) func(provider.ToolCall) string {
-			return func(tc provider.ToolCall) string {
+		e.WrapGated = func(s Seam, next func(llm.ToolCall) string) func(llm.ToolCall) string {
+			return func(tc llm.ToolCall) string {
 				mu.Lock()
 				gated = append(gated, tc.Name)
 				at = append(at, s.At())
@@ -192,7 +192,7 @@ func TestAChildsTreeReadingSubtractsItsOwnWrites(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(ws, "theirs.txt"), []byte("somebody else\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	c.noteWrite(provider.ToolCall{Name: tools.WriteFileName,
+	c.noteWrite(llm.ToolCall{Name: tools.WriteFileName,
 		Arguments: `{"path":"mine.txt","content":"the child\n"}`}, "wrote mine.txt")
 
 	n, ok := a.NextTreeNotice(false)

@@ -13,8 +13,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -91,7 +91,7 @@ func TestUndo_TakesBackAnAppend(t *testing.T) {
 	if err := os.WriteFile(path, []byte("- one"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_a", Name: tools.EditFileName,
 			Arguments: fmt.Sprintf(`{"path":%q,"append":"- two\n"}`, path)},
 	}})

@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -188,9 +188,9 @@ func TestHookApprover_AnUnattendedRunRefusesWhatItCannotAsk(t *testing.T) {
 	ran := false
 	resolve := hookApprover(r, func() hook.Pos { return hook.Pos{Turn: 1} }, hookNoteLine,
 		func(decision, reason string) { decisions = append(decisions, decision+"/"+reason) },
-		func(provider.ToolCall) string { ran = true; return "ran" })
+		func(llm.ToolCall) string { ran = true; return "ran" })
 
-	got := resolve(provider.ToolCall{Name: "execute_command", Arguments: `{"command":"go build"}`})
+	got := resolve(llm.ToolCall{Name: "execute_command", Arguments: `{"command":"go build"}`})
 	if ran {
 		t.Fatal("a run with nobody to ask must not run what a broken hook covered")
 	}
@@ -233,9 +233,9 @@ func TestHookApprover_FiresBothSeamsAroundAGatedCall(t *testing.T) {
 		}, "config.toml", "")
 		r := hook.NewRunner(set, exec, time.Second, "/work")
 		resolve := hookApprover(r, func() hook.Pos { return hook.Pos{Turn: 1} }, hookNoteLine, nil,
-			func(provider.ToolCall) string { return "ran" })
+			func(llm.ToolCall) string { return "ran" })
 
-		resolve(provider.ToolCall{Name: c.tool, Arguments: `{"path":"a.go"}`})
+		resolve(llm.ToolCall{Name: c.tool, Arguments: `{"path":"a.go"}`})
 		if len(seen) != len(c.seams) {
 			t.Errorf("%s met %v, want %v", c.name, seen, c.seams)
 			continue
@@ -261,9 +261,9 @@ func TestHookApprover_AnAskIsNotSaidAsARefusal(t *testing.T) {
 	r := hook.NewRunner(set, exec, time.Second, "/work")
 	ran := false
 	resolve := hookApprover(r, func() hook.Pos { return hook.Pos{} }, hookNoteLine, nil,
-		func(provider.ToolCall) string { ran = true; return "ran" })
+		func(llm.ToolCall) string { ran = true; return "ran" })
 
-	got := resolve(provider.ToolCall{Name: "execute_command", Arguments: `{"command":"go build"}`})
+	got := resolve(llm.ToolCall{Name: "execute_command", Arguments: `{"command":"go build"}`})
 	if ran {
 		t.Fatal("a call a hook asked about must not run where nobody can answer")
 	}
@@ -310,9 +310,9 @@ func TestUnattendedHooks_AContainmentRefusalFiresNoHook(t *testing.T) {
 		r := hook.NewRunner(set, exec, time.Second, "/work")
 		ran := false
 		resolve := unattendedHooks(r, func() hook.Pos { return hook.Pos{Turn: 1} }, hookNoteLine, nil,
-			c.refusal, nil, func(provider.ToolCall) string { ran = true; return "ran" })
+			c.refusal, nil, func(llm.ToolCall) string { ran = true; return "ran" })
 
-		got := resolve(provider.ToolCall{Name: c.tool, Arguments: `{"command":"go build"}`})
+		got := resolve(llm.ToolCall{Name: c.tool, Arguments: `{"command":"go build"}`})
 		if pre != c.pre {
 			t.Errorf("%s: the pre-tool seam fired %d times, want %d", c.name, pre, c.pre)
 		}

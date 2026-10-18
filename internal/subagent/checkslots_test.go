@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -35,15 +35,15 @@ type slotChecks struct {
 func (w *slotChecks) factory() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
 		round := 0
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			round++
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			if round == 1 {
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: spec.Name + "-c",
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: spec.Name + "-c",
 					Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`}}}
 			} else {
-				ch <- provider.StreamEvent{Token: spec.Name + " done"}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: spec.Name + " done"}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			return ch, func() {}, nil

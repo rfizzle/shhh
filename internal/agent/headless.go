@@ -24,7 +24,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // ErrRoundCap is returned by Headless.Run when a turn uses up its tool
@@ -45,13 +45,13 @@ var ErrInterrupted = errors.New("turn interrupted")
 type Headless struct {
 	Agent   *Agent
 	Gate    ApprovalGate
-	Resolve func(tc provider.ToolCall) string
+	Resolve func(tc llm.ToolCall) string
 
 	OnText func(text string) // streamed assistant tokens
 	// OnProgress receives public status that a checkpoint asked for. It stays
 	// apart from OnText so text-only output remains the run's final answer.
 	OnProgress func(text string)
-	OnToolCall func(tc provider.ToolCall) // before a call runs or is resolved
+	OnToolCall func(tc llm.ToolCall) // before a call runs or is resolved
 	// OnToolResult is told each result as it is recorded. It carries the
 	// whole ToolResult rather than the text alone because a round's auto
 	// calls run concurrently: the call is how a front-end matches a result to
@@ -59,7 +59,7 @@ type Headless struct {
 	// which is the only place it can still be measured once several are in
 	// flight at once.
 	OnToolResult func(r ToolResult)
-	OnUsage      func(u *provider.Usage) // per-request usage, when reported
+	OnUsage      func(u *llm.Usage) // per-request usage, when reported
 
 	// Steer, when set, is drained after each tool round: returned messages
 	// join the conversation as user messages before the next stream request
@@ -326,11 +326,11 @@ func (h *Headless) Run(prompt string) (string, error) {
 		if progress && h.OnProgress != nil {
 			h.OnProgress(text)
 		}
-		if stop == provider.StopLength {
+		if stop == llm.StopLength {
 			// The round asked for tools and ran out of budget while it was
 			// still writing them. What survived is whole and runs as usual;
 			// the call the ceiling landed inside of was dropped before it
-			// got here (internal/provider/partial.go), and a run whose round
+			// got here (github.com/rfizzle/llm, partial.go), and a run whose round
 			// silently lost one has no way to say so afterwards.
 			h.notifyContinue(TruncatedRoundNotice)
 		}
@@ -355,7 +355,7 @@ func (h *Headless) Run(prompt string) (string, error) {
 // reports a request that should simply be sent again (an overflow recovered,
 // or a stall waited out); err is the run's end, ErrInterrupted included, with
 // the turn already cancelled where the wait was interrupted.
-func (h *Headless) request(progressPending bool) (text string, calls []provider.ToolCall, stop provider.StopReason, again bool, err error) {
+func (h *Headless) request(progressPending bool) (text string, calls []llm.ToolCall, stop llm.StopReason, again bool, err error) {
 	text, calls, stop, err = h.streamOnce(progressPending)
 	if err != nil {
 		// A request the window could not hold is answered before the
@@ -402,7 +402,7 @@ func (h *Headless) request(progressPending bool) (text string, calls []provider.
 // whether it did; the caller returns ErrInterrupted when it did. It reads
 // and changes neither of the loop's carried values, continued and carried:
 // an interrupted turn has no answer for them to be part of.
-func (h *Headless) cancelInterrupted(text string, calls []provider.ToolCall, progressPending bool) bool {
+func (h *Headless) cancelInterrupted(text string, calls []llm.ToolCall, progressPending bool) bool {
 	if !h.wasInterrupted() {
 		return false
 	}
@@ -418,7 +418,7 @@ func (h *Headless) cancelInterrupted(text string, calls []provider.ToolCall, pro
 		if progressPending && h.OnProgress != nil {
 			h.OnProgress(text)
 		}
-		h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
+		h.Agent.Append(llm.Message{Role: llm.RoleAssistant, Content: text})
 	}
 	h.Agent.CancelTurn()
 	return true
@@ -430,7 +430,7 @@ func (h *Headless) cancelInterrupted(text string, calls []provider.ToolCall, pro
 // the loop's carried values, continued and carried, and returns them as the
 // next round must see them. done reports the turn over with answer as its
 // result; when it is false the loop goes round again.
-func (h *Headless) finishReply(text string, stop provider.StopReason, progressPending, continued bool, carried string) (answer string, done, continuedOut bool, carriedOut string) {
+func (h *Headless) finishReply(text string, stop llm.StopReason, progressPending, continued bool, carried string) (answer string, done, continuedOut bool, carriedOut string) {
 	if progressPending && text != "" && h.OnText != nil {
 		// A checkpoint request that ended the turn is still the model's
 		// answer, not progress that text-mode callers should lose.
@@ -438,7 +438,7 @@ func (h *Headless) finishReply(text string, stop provider.StopReason, progressPe
 	}
 
 	if text != "" {
-		h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
+		h.Agent.Append(llm.Message{Role: llm.RoleAssistant, Content: text})
 	}
 	// What the turn answers with is the whole of what the model
 	// wrote. A continuation was told to carry on from where the
@@ -455,12 +455,12 @@ func (h *Headless) finishReply(text string, stop provider.StopReason, progressPe
 	// it; here there is nobody to ask, so the run asks the model to
 	// carry on, once, and lets the second attempt stand whatever it
 	// is. Twice would be a turn with no ceiling at all.
-	if stop == provider.StopLength && text != "" && !continued {
+	if stop == llm.StopLength && text != "" && !continued {
 		h.Agent.AppendMachine(ContinueAfterCeiling)
 		h.notifyContinue(continueNotice)
 		return "", false, true, answer
 	}
-	if stop == provider.StopLength && text != "" {
+	if stop == llm.StopLength && text != "" {
 		// The round's one continuation is spent and the reply
 		// stopped short again, so the half answer is what this run
 		// has. What it must not do is hand that back looking like a
@@ -471,7 +471,7 @@ func (h *Headless) finishReply(text string, stop provider.StopReason, progressPe
 		h.truncated = true
 		h.notifyContinue(truncatedReplyNotice)
 	}
-	if stop == provider.StopLength && text == "" {
+	if stop == llm.StopLength && text == "" {
 		// The budget went entirely on a call the ceiling then cut,
 		// so the reply is empty and there is no sentence to
 		// continue. Saying so is all there is to do, and it is the
@@ -510,7 +510,7 @@ func (h *Headless) finishReply(text string, stop provider.StopReason, progressPe
 // ones one at a time. It reads and changes neither of the loop's carried
 // values, continued and carried; the caller has already cleared both for the
 // fresh round a tool round is.
-func (h *Headless) runTools(text string, calls []provider.ToolCall) {
+func (h *Headless) runTools(text string, calls []llm.ToolCall) {
 	h.mark((*TurnClock).Tool)
 	auto, _ := h.Agent.BeginToolRound(text, calls, h.Gate)
 	// The round's auto calls go out together, through the same bounded
@@ -621,7 +621,7 @@ func (h *Headless) steer() bool {
 	}
 	msgs := h.Steer()
 	for _, msg := range msgs {
-		h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: msg})
+		h.Agent.Append(llm.Message{Role: llm.RoleUser, Content: msg})
 		// What the person asked for is now part of what the readings judge
 		// the run against. Without this the next reading calls their own
 		// correction a departure and the steer it earns quotes the task they
@@ -659,7 +659,7 @@ func (h *Headless) recoverContext() {
 // do is shrink the conversation, which is a step it already has.
 // See docs/capabilities/headless.md#a-request-that-did-not-fit-is-not-the-end-of-the-run.
 func (h *Headless) recoverOverflow(err error) bool {
-	if !errors.Is(err, provider.ErrContextLength) || h.Compact == nil || h.wasInterrupted() {
+	if !errors.Is(err, llm.ErrContextLength) || h.Compact == nil || h.wasInterrupted() {
 		return false
 	}
 	// Once per refusal. A second one in a row is a window this run cannot
@@ -691,7 +691,7 @@ func (h *Headless) recoverOverflow(err error) bool {
 // nothing, though, unlike a turn's — this request may have gone to another
 // model, and a ratio measured on one tokenizer and applied to another is a
 // correction that is confidently wrong.
-func (h *Headless) askSummary(msgs []provider.Message, choice string) (string, error) {
+func (h *Headless) askSummary(msgs []llm.Message, choice string) (string, error) {
 	h.mark((*TurnClock).Request)
 	events, cancel, err := h.Compact.open(h.Agent, msgs, choice)
 	if err != nil {
@@ -810,17 +810,17 @@ func (h *Headless) deliverTree() {
 // consumes it, returning the assistant text, any tool calls that ended the
 // stream, and why the model stopped writing. Like the TUI's terminalMsg, a
 // tool-call event ends the stream.
-func (h *Headless) streamOnce(bufferText bool) (string, []provider.ToolCall, provider.StopReason, error) {
+func (h *Headless) streamOnce(bufferText bool) (string, []llm.ToolCall, llm.StopReason, error) {
 	h.mark((*TurnClock).Request)
 	events, cancel, err := h.Agent.Stream(h.Agent.RequestMessages())
 	if err != nil {
-		return "", nil, provider.StopEnd, err
+		return "", nil, llm.StopEnd, err
 	}
 	h.mu.Lock()
 	if h.interrupted {
 		h.mu.Unlock()
 		cancel()
-		return "", nil, provider.StopEnd, nil
+		return "", nil, llm.StopEnd, nil
 	}
 	h.streamCancel = cancel
 	h.mu.Unlock()
@@ -843,13 +843,13 @@ func (h *Headless) streamOnce(bufferText bool) (string, []provider.ToolCall, pro
 		if ev.Err != nil {
 			if h.wasInterrupted() {
 				// The abort we caused is not a real stream failure.
-				return text.String(), nil, provider.StopEnd, nil
+				return text.String(), nil, llm.StopEnd, nil
 			}
 			// The words written before the wire broke come back with the
 			// error. Nothing appends them to the conversation — a partial
 			// reply is not an answer — but a caller that has already shown
 			// them needs to know they were shown.
-			return text.String(), nil, provider.StopEnd, ev.Err
+			return text.String(), nil, llm.StopEnd, ev.Err
 		}
 		if ev.Token != "" {
 			text.WriteString(ev.Token)
@@ -881,17 +881,17 @@ func (h *Headless) streamOnce(bufferText bool) (string, []provider.ToolCall, pro
 			return text.String(), nil, ev.Stop, nil
 		}
 	}
-	return text.String(), nil, provider.StopEnd, nil
+	return text.String(), nil, llm.StopEnd, nil
 }
 
-func (h *Headless) resolveGated(tc provider.ToolCall) string {
+func (h *Headless) resolveGated(tc llm.ToolCall) string {
 	if h.Resolve == nil {
 		return "error: tool " + tc.Name + " cannot be approved in this session"
 	}
 	return h.Resolve(tc)
 }
 
-func (h *Headless) notifyCall(tc provider.ToolCall) {
+func (h *Headless) notifyCall(tc llm.ToolCall) {
 	if h.OnToolCall != nil {
 		h.OnToolCall(tc)
 	}

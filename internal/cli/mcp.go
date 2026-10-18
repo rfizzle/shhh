@@ -22,12 +22,12 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
 	"github.com/charmbracelet/x/term"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -1151,7 +1151,7 @@ func (s *chatSession) useMCP(ts *mcp.Toolset, cat *mcp.Catalog, wait bool) func(
 		return func() { _ = ts.Close() }
 	}
 	if ts.Len() > 0 {
-		s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), ts.Definitions()...)
+		s.toolDefs = append(append([]llm.Tool{}, s.toolDefs...), ts.Definitions()...)
 		s.promptExtra = prompt.CombineExtra(s.promptExtra, mcp.PromptBlock(ts))
 	}
 	return func() { _ = ts.Close() }
@@ -1163,7 +1163,7 @@ func (s *chatSession) useMCP(ts *mcp.Toolset, cat *mcp.Catalog, wait bool) func(
 // request reads either the list before a server joined or the list after it
 // — never one halfway through, and never one a server's re-listing moved
 // inside a turn.
-func (s chatSession) requestTools(registered []provider.Tool) []provider.Tool {
+func (s chatSession) requestTools(registered []llm.Tool) []llm.Tool {
 	if !s.mcpJoins {
 		return registered
 	}
@@ -1171,7 +1171,7 @@ func (s chatSession) requestTools(registered []provider.Tool) []provider.Tool {
 	if len(served) == 0 {
 		return registered
 	}
-	return append(append(make([]provider.Tool, 0, len(registered)+len(served)), registered...), served...)
+	return append(append(make([]llm.Tool, 0, len(registered)+len(served)), registered...), served...)
 }
 
 // mcpJoin is the interactive session's half of a server joining at a turn
@@ -1184,7 +1184,7 @@ type mcpJoin struct {
 	ts *mcp.Toolset
 	// registered is the session's own tools, which the toolbox is built over
 	// beside the servers'; proactive is the spawn line's lean.
-	registered []provider.Tool
+	registered []llm.Tool
 	proactive  bool
 	// launchToolbox is the toolbox a prompt built from the standing extra
 	// carries.
@@ -1227,7 +1227,7 @@ func (j *mcpJoin) take(system string) (chat.MCPJoin, bool) {
 		return out, true
 	}
 	served := j.ts.Offered()
-	all := append(append([]provider.Tool{}, j.registered...), served...)
+	all := append(append([]llm.Tool{}, j.registered...), served...)
 	block, toolbox := mcp.PromptBlock(j.ts), prompt.Toolbox(all, j.proactive)
 	j.mu.Lock()
 	out.System = resayMCP(system, j.block, block, j.toolbox, toolbox)

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/secret"
 )
@@ -49,7 +49,7 @@ func TestToolResultValue_SurvivesTheScrub(t *testing.T) {
 	exec, _ := gateChain(t)
 	a := agent.New(nil, nil)
 	a.SetExecutor(exec)
-	calls := []provider.ToolCall{{ID: "g1", Name: quality.ToolName, Arguments: `{"action":"run","suite":"fast"}`}}
+	calls := []llm.ToolCall{{ID: "g1", Name: quality.ToolName, Arguments: `{"action":"run","suite":"fast"}`}}
 	got := a.ExecuteCalls(context.Background(), calls)[0]
 	if strings.Contains(got.Result, gateSecret) {
 		t.Fatalf("the secret reached the model:\n%s", got.Result)
@@ -69,11 +69,11 @@ func TestToolResultValue_IdenticalTextsKeepTheirOwn(t *testing.T) {
 	if _, err := gate.ExecuteTool(json.RawMessage(`{"action":"run","suite":"fast"}`)); err != nil {
 		t.Fatal(err)
 	}
-	provider.TakeValue(quality.ToolName, `{"action":"run","suite":"fast"}`)
+	llm.TakeValue(quality.ToolName, `{"action":"run","suite":"fast"}`)
 	a := agent.New(nil, nil)
 	a.SetExecutor(exec)
 	args := `{"action":"result"}`
-	got := a.ExecuteCalls(context.Background(), []provider.ToolCall{
+	got := a.ExecuteCalls(context.Background(), []llm.ToolCall{
 		{ID: "r1", Name: quality.ToolName, Arguments: args},
 		{ID: "r2", Name: quality.ToolName, Arguments: args},
 	})

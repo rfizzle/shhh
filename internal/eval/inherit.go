@@ -25,10 +25,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -57,7 +57,7 @@ const (
 const inheritChildName = "child"
 
 // askInherit runs one row's child on the real model.
-func askInherit(ctx context.Context, p provider.Provider, model string, row Row) Answer {
+func askInherit(ctx context.Context, p llm.Provider, model string, row Row) Answer {
 	dir, err := os.MkdirTemp("", "shhh-eval-inherit-")
 	if err != nil {
 		return Answer{Row: row, Err: "cannot make a workspace: " + err.Error()}
@@ -92,7 +92,7 @@ func askInherit(ctx context.Context, p provider.Provider, model string, row Row)
 	sup := subagent.New(ctx, subagent.Options{Root: dir, NewEnv: child.factory()})
 	defer sup.Close()
 	defer cancel()
-	sup.SetConversation(func() []provider.Message { return row.Conversation })
+	sup.SetConversation(func() []llm.Message { return row.Conversation })
 
 	exec := sup.WrapExecutor("", func(_ context.Context, name string, _ json.RawMessage) (string, error) {
 		return "", fmt.Errorf("%s is not a tool an inherit case registers", name)
@@ -129,22 +129,22 @@ func askInherit(ctx context.Context, p provider.Provider, model string, row Row)
 // names — and a record of every file it read.
 type inheritChild struct {
 	root  string
-	p     provider.Provider
+	p     llm.Provider
 	model string
 	store *evidence.Store
 
 	mu    sync.Mutex
 	reads []string
-	usage provider.Usage
+	usage llm.Usage
 }
 
 func (c *inheritChild) factory() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		info := shell.Info{OS: runtime.GOOS, Cwd: c.root}
 		defs := append(tools.Definitions(), evidence.ToolDefinition())
-		stream := func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(ctx)
-			events, err := c.p.StreamCompletion(sctx, msgs, provider.CompletionOpts{
+			events, err := c.p.StreamCompletion(sctx, msgs, llm.CompletionOpts{
 				Model: c.model, Tools: defs, ToolChoice: choice})
 			if err != nil {
 				cancel()
@@ -203,8 +203,8 @@ func (c *inheritChild) note(next agent.ToolExecutor) agent.ToolExecutor {
 }
 
 // count forwards a stream's events and adds up what they report spending.
-func (c *inheritChild) count(in <-chan provider.StreamEvent) <-chan provider.StreamEvent {
-	out := make(chan provider.StreamEvent)
+func (c *inheritChild) count(in <-chan llm.StreamEvent) <-chan llm.StreamEvent {
+	out := make(chan llm.StreamEvent)
 	go func() {
 		defer close(out)
 		for ev := range in {
@@ -220,7 +220,7 @@ func (c *inheritChild) count(in <-chan provider.StreamEvent) <-chan provider.Str
 	return out
 }
 
-func (c *inheritChild) used() provider.Usage {
+func (c *inheritChild) used() llm.Usage {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.usage

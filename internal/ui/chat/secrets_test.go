@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestSecret_MidTurnAnnouncementIsMachineSteering(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		Secrets: Secrets{
 			Manage: func(args []string) (string, string) {
@@ -124,7 +124,7 @@ func TestSecret_RestoreSteeringExcludesMachineAnnouncements(t *testing.T) {
 
 func TestSecret_MidTurnAnnouncementRendersAsSystemRowAfterSaveAndLoad(t *testing.T) {
 	db := rewindTestDB(t)
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		DB: db,
 		Secrets: Secrets{

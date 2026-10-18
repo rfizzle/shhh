@@ -12,13 +12,13 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/resolve"
 )
 
 func TestFailureReport_ClassifiesAndOffersACommand(t *testing.T) {
-	report, ok := FailureReport(&provider.Failure{
-		Class: provider.ClassAuth, Status: 401, Provider: "openai",
+	report, ok := FailureReport(&llm.Failure{
+		Class: llm.ClassAuth, Status: 401, Provider: "openai",
 		Message: "Incorrect API key provided", KeyEnv: "SHHH_API_KEY or OPENAI_API_KEY", KeyTail: "4f9c",
 	}, "gpt-4o")
 	if !ok {
@@ -46,8 +46,8 @@ func TestFailureReport_ClassifiesAndOffersACommand(t *testing.T) {
 // send the reader at the id.
 func TestFailureReport_NamesTheModelAGatewayDoesNotServe(t *testing.T) {
 	model := "anthropic/claude-sonnet-4-6"
-	report, ok := FailureReport(&provider.Failure{
-		Class: provider.ClassModelNotFound, Status: 404, Provider: "openrouter",
+	report, ok := FailureReport(&llm.Failure{
+		Class: llm.ClassModelNotFound, Status: 404, Provider: "openrouter",
 		Message: "No endpoints found for " + model,
 	}, model)
 	if !ok {
@@ -65,14 +65,14 @@ func TestFailureReport_NamesTheModelAGatewayDoesNotServe(t *testing.T) {
 }
 
 func TestFailureReport_EveryClassSaysSomethingUseful(t *testing.T) {
-	for _, class := range []provider.Class{
-		provider.ClassAuth, provider.ClassRateLimit, provider.ClassQuota,
-		provider.ClassOverloaded, provider.ClassContextLength, provider.ClassModelNotFound,
-		provider.ClassNetwork, provider.ClassMalformed, provider.ClassCancelled,
-		provider.ClassUnclassified,
+	for _, class := range []llm.Class{
+		llm.ClassAuth, llm.ClassRateLimit, llm.ClassQuota,
+		llm.ClassOverloaded, llm.ClassContextLength, llm.ClassModelNotFound,
+		llm.ClassNetwork, llm.ClassMalformed, llm.ClassCancelled,
+		llm.ClassUnclassified,
 	} {
 		t.Run(string(class), func(t *testing.T) {
-			report, ok := FailureReport(&provider.Failure{Class: class, Message: "because"}, "gpt-4o")
+			report, ok := FailureReport(&llm.Failure{Class: class, Message: "because"}, "gpt-4o")
 			if !ok {
 				t.Fatal("every class should report")
 			}
@@ -88,8 +88,8 @@ func TestFailureReport_EveryClassSaysSomethingUseful(t *testing.T) {
 }
 
 func TestFailureReport_NamesTheWaitAProviderAskedFor(t *testing.T) {
-	report, _ := FailureReport(&provider.Failure{
-		Class: provider.ClassRateLimit, Status: 429, RetryAfter: 38 * time.Second,
+	report, _ := FailureReport(&llm.Failure{
+		Class: llm.ClassRateLimit, Status: 429, RetryAfter: 38 * time.Second,
 	}, "gpt-4o")
 	if got := ansi.Strip(report); !strings.Contains(got, "retry in 38s") {
 		t.Errorf("the wait should reach the outcome, got:\n%s", got)
@@ -106,8 +106,8 @@ func TestFailureReport_DeclinesWhatIsNotAProviderFailure(t *testing.T) {
 }
 
 func TestFailureLine_IsOneLineWithNoChrome(t *testing.T) {
-	line, ok := FailureLine(&provider.Failure{
-		Class: provider.ClassOverloaded, Status: 503,
+	line, ok := FailureLine(&llm.Failure{
+		Class: llm.ClassOverloaded, Status: 503,
 		Message: "Service Unavailable\nupstream timed out",
 	})
 	if !ok {

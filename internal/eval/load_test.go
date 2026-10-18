@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // writeCase lays out a case directory the way a suite author would.
@@ -244,10 +244,10 @@ func TestATableRowsConversationKeepsWhoSaidWhat(t *testing.T) {
 	if len(turns) != 2 {
 		t.Fatalf("turns = %v", turns)
 	}
-	if turns[0].Role != provider.RoleUser || turns[0].Content != "work out why the test fails" {
+	if turns[0].Role != llm.RoleUser || turns[0].Content != "work out why the test fails" {
 		t.Errorf("first turn = %+v", turns[0])
 	}
-	if turns[1].Role != provider.RoleAssistant || turns[1].Content != "reading it now" {
+	if turns[1].Role != llm.RoleAssistant || turns[1].Content != "reading it now" {
 		t.Errorf("second turn = %+v", turns[1])
 	}
 }
@@ -513,7 +513,7 @@ func TestConversationPairsACallWithItsResult(t *testing.T) {
 	if call.Name != "read_file" || call.Arguments != `{"path":"a.go"}` || call.ID == "" {
 		t.Fatalf("call = %+v", call)
 	}
-	if got[2].Role != provider.RoleTool || got[2].ToolCallID != call.ID {
+	if got[2].Role != llm.RoleTool || got[2].ToolCallID != call.ID {
 		t.Fatalf("tool message = %+v, want it to answer %q", got[2], call.ID)
 	}
 }

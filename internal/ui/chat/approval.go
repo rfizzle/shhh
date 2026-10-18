@@ -15,6 +15,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -24,7 +25,6 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -110,7 +110,7 @@ const (
 // approvalRequest is the head of the approval queue: one tool call awaiting
 // the user's decision, with everything needed to preview and execute it.
 type approvalRequest struct {
-	call provider.ToolCall
+	call llm.ToolCall
 	// class is the call's classification, with the host a fetch leaves for
 	// filled in from its preview: what the standing rules read it as
 	// (ruleCall).
@@ -310,7 +310,7 @@ func (m Model) holds() agent.Answers {
 // requiresApproval reports whether a tool call must go through the approval
 // queue instead of the auto-run executor path: the classifier puts it above
 // the read tier, and this session has an answer for it.
-func (m Model) requiresApproval(tc provider.ToolCall) bool {
+func (m Model) requiresApproval(tc llm.ToolCall) bool {
 	call, _ := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
 	return call.Gated
 }
@@ -318,7 +318,7 @@ func (m Model) requiresApproval(tc provider.ToolCall) bool {
 // buildApprovalRequest turns a queued tool call into its confirm prompt. What
 // the call is — its tier, the command it runs — is the classifier's; which
 // card shows it is this session's.
-func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, error) {
+func (m Model) buildApprovalRequest(tc llm.ToolCall) (*approvalRequest, error) {
 	call, callErr := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
 	if tc.Name == tools.ExecCommandName {
 		if callErr != nil {
@@ -485,7 +485,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 // skipApproval answers a queued call that cannot be carded: the model reads
 // the error as the call's result, the transcript files the skipped row, and
 // the queue moves to the next call.
-func (m Model) skipApproval(tc provider.ToolCall, err error) (tea.Model, tea.Cmd) {
+func (m Model) skipApproval(tc llm.ToolCall, err error) (tea.Model, tea.Cmd) {
 	m.approval.redirects.Spent(err)
 	m.agent.ResolveApproval(m.refusedResult(tc, "error: "+err.Error()))
 	m.appendCallRow(tc.ID, m.skippedCallEntry(tc, err))
@@ -500,7 +500,7 @@ func (m Model) skipApproval(tc provider.ToolCall, err error) (tea.Model, tea.Cmd
 // drawing and the queue does not move: the next call is not taken until this
 // one is answered. after is the hook answer that asked for the check again
 // because it rewrote the arguments, nil for the call as the model made it.
-func (m Model) startGateCheck(tc provider.ToolCall, after *preToolHookMsg) (tea.Model, tea.Cmd) {
+func (m Model) startGateCheck(tc llm.ToolCall, after *preToolHookMsg) (tea.Model, tea.Cmd) {
 	m.setTurnState(stateRunningCmd)
 	m.syncViewport()
 	check := m.approval.checks[tc.Name]
@@ -531,7 +531,7 @@ func (m Model) finishGateCheck(msg gateCheckMsg) (tea.Model, tea.Cmd) {
 // admitApproval builds the card for a queued call and puts it through the
 // standing answers: everything the queue does once a call has passed its
 // check.
-func (m Model) admitApproval(tc provider.ToolCall) (tea.Model, tea.Cmd) {
+func (m Model) admitApproval(tc llm.ToolCall) (tea.Model, tea.Cmd) {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
 		return m.skipApproval(tc, err)
@@ -914,7 +914,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 // before, rather than proposed a third time. That includes a decline the
 // reader typed: the row that says so is on their screen and not in the
 // conversation, and the model reads only the result (repeat.go).
-func (m *Model) refusedResult(tc provider.ToolCall, content string) string {
+func (m *Model) refusedResult(tc llm.ToolCall, content string) string {
 	out := m.wiring.Repeats.Notice(tc.Name, json.RawMessage(tc.Arguments), content)
 	if agent.IsRepeatNotice(out) {
 		m.signal(observe.SignalRepeat, tc.Name)
@@ -1117,8 +1117,8 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// conversation it would be reading
 	// (docs/capabilities/subagents.md#what-they-share).
 	if call.Name == subagent.SpawnToolName && m.wiring.Subagents != nil {
-		turns := append([]provider.Message(nil), a.Messages()...)
-		m.wiring.Subagents.SetConversation(func() []provider.Message { return turns })
+		turns := append([]llm.Message(nil), a.Messages()...)
+		m.wiring.Subagents.SetConversation(func() []llm.Message { return turns })
 	}
 	// Built-in mutating tools run through their own dispatcher; the session
 	// executor (the auto-run read-only path) never learns them. A registered
@@ -1922,7 +1922,7 @@ func executableField(executable bool) []GatedField {
 // is how many files, how much in each, and the replacement as it was written,
 // so the reader judges the rule and can check its every application.
 // See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
-func filesApproval(tc provider.ToolCall, call agent.Classified, mut tools.Mutation) *approvalRequest {
+func filesApproval(tc llm.ToolCall, call agent.Classified, mut tools.Mutation) *approvalRequest {
 	files := make([]editFileChange, len(mut.Files))
 	var notes []string
 	for i, f := range mut.Files {

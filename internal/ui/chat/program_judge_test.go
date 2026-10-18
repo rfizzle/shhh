@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -26,15 +26,15 @@ type judgeProvider struct {
 
 func (p *judgeProvider) Name() string { return "judge" }
 
-func (p *judgeProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *judgeProvider) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.mu.Lock()
 	v := p.verdicts[0]
 	if len(p.verdicts) > 1 {
 		p.verdicts = p.verdicts[1:]
 	}
 	p.mu.Unlock()
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{
 		ID: "d1", Name: agent.DecisionToolName,
 		Arguments: `{"decision":"` + v[0] + `","reason":"` + v[1] + `"}`,
 	}}, Done: true}
@@ -107,7 +107,7 @@ func TestProgram_ASilentRunIsAskedForItsStatus(t *testing.T) {
 	frameHas(t, finalFrame(t, tm), "The objective is where the round limit is counted")
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if !slices.ContainsFunc(p.asked, func(msg provider.Message) bool { return msg.Content == agent.ProgressPrompt }) {
+	if !slices.ContainsFunc(p.asked, func(msg llm.Message) bool { return msg.Content == agent.ProgressPrompt }) {
 		t.Fatal("no round boundary asked the silent run for its status")
 	}
 }

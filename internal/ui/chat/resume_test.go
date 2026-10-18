@@ -10,11 +10,11 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -28,7 +28,7 @@ func resumeModel(t *testing.T) Model {
 		"gpt-4o-mini": {InputCostPerToken: 0.0000006, OutputCostPerToken: 0.0000024},
 		"gpt-4.1":     {InputCostPerToken: 0.000002, OutputCostPerToken: 0.000008},
 	})
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		Prices:       table,
 		ModelName:    "gpt-4o",
@@ -61,9 +61,9 @@ func dropEntry(t *testing.T, m Model) entry {
 	return entry{}
 }
 
-func networkFailure() *provider.Failure {
-	return &provider.Failure{
-		Class: provider.ClassNetwork, Provider: "openai",
+func networkFailure() *llm.Failure {
+	return &llm.Failure{
+		Class: llm.ClassNetwork, Provider: "openai",
 		Message: "unexpected EOF",
 	}
 }
@@ -127,10 +127,10 @@ func TestStreamDrop_ContinueSendsThePartialBackAsContext(t *testing.T) {
 		t.Fatalf("continuing adds the partial turn and the instruction, got %d new", len(msgs)-before)
 	}
 	assistant := msgs[len(msgs)-2]
-	if assistant.Role != provider.RoleAssistant || assistant.Content != "half a sentence" {
+	if assistant.Role != llm.RoleAssistant || assistant.Content != "half a sentence" {
 		t.Errorf("the partial should go back as the assistant's own turn, got %+v", assistant)
 	}
-	if last := msgs[len(msgs)-1]; last.Role != provider.RoleUser || !strings.Contains(last.Content, "Continue it") {
+	if last := msgs[len(msgs)-1]; last.Role != llm.RoleUser || !strings.Contains(last.Content, "Continue it") {
 		t.Errorf("the instruction to carry on should follow it, got %+v", last)
 	}
 	// Taking the offer spends it: the same partial cannot be sent twice.
@@ -144,7 +144,7 @@ func TestStreamDrop_ContinueSendsThePartialBackAsContext(t *testing.T) {
 
 func TestStreamDrop_ContinueWithToolCallsResumesTheRound(t *testing.T) {
 	m := streamed(resumeModel(t), "reading the file first")
-	calls := []provider.ToolCall{{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`}}
+	calls := []llm.ToolCall{{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`}}
 	updated, _ := m.Update(streamErrMsg{err: networkFailure(), calls: calls})
 	next := updated.(Model)
 
@@ -164,14 +164,14 @@ func TestStreamDrop_ContinueWithToolCallsResumesTheRound(t *testing.T) {
 	after := resumed.(Model)
 	msgs := after.agent.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleAssistant || len(last.ToolCalls) != 1 {
+	if last.Role != llm.RoleAssistant || len(last.ToolCalls) != 1 {
 		t.Fatalf("continuing a call round appends the assistant turn that made them, got %+v", last)
 	}
 	if last.ToolCalls[0].ID != "call_1" {
 		t.Errorf("the call kept should be the call resumed, got %+v", last.ToolCalls[0])
 	}
 	// No second "carry on" instruction: the calls are the continuation.
-	if msgs[len(msgs)-1].Role == provider.RoleUser {
+	if msgs[len(msgs)-1].Role == llm.RoleUser {
 		t.Error("a resumed tool round should not also be nudged in prose")
 	}
 }
@@ -211,9 +211,9 @@ func TestStreamDrop_FocusOpensOnTheOffer(t *testing.T) {
 	}
 }
 
-func rateLimit(after time.Duration) *provider.Failure {
-	return &provider.Failure{
-		Class: provider.ClassRateLimit, Status: 429, Provider: "openai",
+func rateLimit(after time.Duration) *llm.Failure {
+	return &llm.Failure{
+		Class: llm.ClassRateLimit, Status: 429, Provider: "openai",
 		Message: "Rate limit reached for gpt-4o. Please try again in 20s.", RetryAfter: after,
 	}
 }
@@ -384,8 +384,8 @@ func TestRetryWait_FallbackFinishesOnACheaperModel(t *testing.T) {
 	// against the model it went to.
 	ledger := meter.New(nil)
 	after.wiring.Ledger = ledger
-	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 400, CompletionTokens: 20})
-	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4.1", provider.Usage{PromptTokens: 100, CompletionTokens: 50})
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 400, CompletionTokens: 20})
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4.1", llm.Usage{PromptTokens: 100, CompletionTokens: 50})
 	var models []string
 	for _, r := range after.spendScreenData().Rows {
 		if r.Kind == components.SpendModel {
@@ -458,7 +458,7 @@ func TestCountdownText_WholeSeconds(t *testing.T) {
 
 func TestCancelledStream_IsNeitherADropNorAWait(t *testing.T) {
 	m := streamed(resumeModel(t), "half a sentence")
-	updated, _ := m.Update(streamErrMsg{err: &provider.Failure{Class: provider.ClassCancelled}})
+	updated, _ := m.Update(streamErrMsg{err: &llm.Failure{Class: llm.ClassCancelled}})
 	next := updated.(Model)
 	for _, e := range next.transcript {
 		if e.kind == entryStreamDrop {
@@ -508,7 +508,7 @@ func TestRetryWait_IsOnTheRecord(t *testing.T) {
 // answer that is not finished, and the offer to have it finished.
 func TestCeilingStop_KeepsTheReplyAndOffersToFinishIt(t *testing.T) {
 	m := streamed(resumeModel(t), "The first half of the answer")
-	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	updated, _ := m.Update(doneMsg{stop: llm.StopLength})
 	next := updated.(Model)
 
 	for _, e := range next.transcript {
@@ -520,7 +520,7 @@ func TestCeilingStop_KeepsTheReplyAndOffersToFinishIt(t *testing.T) {
 	// model's own turn.
 	msgs := next.agent.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleAssistant || last.Content != "The first half of the answer" {
+	if last.Role != llm.RoleAssistant || last.Content != "The first half of the answer" {
 		t.Fatalf("the reply should be the last message, got %+v", last)
 	}
 	e := dropEntry(t, next)
@@ -552,7 +552,7 @@ func TestCeilingStop_KeepsTheReplyAndOffersToFinishIt(t *testing.T) {
 func TestCeilingStop_SteeringComesBackToTheInput(t *testing.T) {
 	m := streamed(resumeModel(t), "The first half of the answer")
 	m.steering = []steeringItem{{text: "and check the parser"}}
-	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	updated, _ := m.Update(doneMsg{stop: llm.StopLength})
 	next := updated.(Model)
 
 	if len(next.steering) != 0 {
@@ -568,7 +568,7 @@ func TestCeilingStop_SteeringComesBackToTheInput(t *testing.T) {
 
 func TestCeilingStop_ContinueAsksForTheRestWithoutRepeatingIt(t *testing.T) {
 	m := streamed(resumeModel(t), "The first half of the answer")
-	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	updated, _ := m.Update(doneMsg{stop: llm.StopLength})
 	next := updated.(Model)
 
 	before := len(next.agent.Messages())
@@ -588,12 +588,12 @@ func TestCeilingStop_ContinueAsksForTheRestWithoutRepeatingIt(t *testing.T) {
 	if len(msgs) != before+1 {
 		t.Fatalf("continuing a truncated reply adds the instruction alone, got %d new", len(msgs)-before)
 	}
-	if last := msgs[len(msgs)-1]; last.Role != provider.RoleUser || last.Content != agent.ContinueAfterCeiling {
+	if last := msgs[len(msgs)-1]; last.Role != llm.RoleUser || last.Content != agent.ContinueAfterCeiling {
 		t.Fatalf("the instruction should name the ceiling, got %+v", last)
 	}
 	var assistants int
 	for _, msg := range msgs {
-		if msg.Role == provider.RoleAssistant && msg.Content == "The first half of the answer" {
+		if msg.Role == llm.RoleAssistant && msg.Content == "The first half of the answer" {
 			assistants++
 		}
 	}
@@ -608,8 +608,8 @@ func TestCeilingStop_ContinueAsksForTheRestWithoutRepeatingIt(t *testing.T) {
 // writing was dropped rather than dispatched as half a request.
 func TestCeilingStop_ARoundThatLostACallSaysSo(t *testing.T) {
 	m := streamed(resumeModel(t), "reading the file first")
-	calls := []provider.ToolCall{{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`}}
-	updated, _ := m.Update(toolCallsMsg{calls: calls, stop: provider.StopLength})
+	calls := []llm.ToolCall{{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`}}
+	updated, _ := m.Update(toolCallsMsg{calls: calls, stop: llm.StopLength})
 	next := updated.(Model)
 
 	var said bool
@@ -630,7 +630,7 @@ func TestCeilingStop_ARoundThatLostACallSaysSo(t *testing.T) {
 // away, and a turn that would otherwise end on silence.
 func TestCeilingStop_AnEmptyTruncatedReplySaysWhyTheTurnEnded(t *testing.T) {
 	m := streamed(resumeModel(t), "")
-	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	updated, _ := m.Update(doneMsg{stop: llm.StopLength})
 	next := updated.(Model)
 
 	var said bool
@@ -653,7 +653,7 @@ func TestCeilingStop_AnEmptyTruncatedReplySaysWhyTheTurnEnded(t *testing.T) {
 // half answer is the one thing a truncated reply must not do.
 func TestCeilingStop_RetryIsNotLiveOnATruncatedRow(t *testing.T) {
 	m := streamed(resumeModel(t), "The first half of the answer")
-	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	updated, _ := m.Update(doneMsg{stop: llm.StopLength})
 	next := updated.(Model)
 
 	before := len(next.agent.Messages())

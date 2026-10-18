@@ -3,16 +3,16 @@ package cli
 import (
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // The bounded calls run on the provider's small model, fall back to the
 // session's own where the provider names none, and yield outright to a model
 // the person named.
 func TestAuxiliaryModel(t *testing.T) {
-	cheap := provider.Defaults("anthropic").CheapModel
+	cheap := llm.Defaults("anthropic").CheapModel
 	if cheap == "" {
 		t.Fatal("the anthropic provider should name a cheap model")
 	}
@@ -38,7 +38,7 @@ func TestAuxiliaryModel(t *testing.T) {
 // model, the session's own — and the step each answer reports is the link
 // that gave it, which is what the doctor row says.
 func TestResolveFlow_WalksTheChainInOrder(t *testing.T) {
-	small := provider.Defaults("anthropic").CheapModel
+	small := llm.Defaults("anthropic").CheapModel
 	var cfg config.Config
 	cases := []struct {
 		name    string
@@ -99,8 +99,8 @@ func TestResolveFlows_AnswersForEveryFlow(t *testing.T) {
 // classifier that quietly stopped answering.
 func TestCheapModelsAreInTheModelData(t *testing.T) {
 	table := pricing.Snapshot()
-	for _, name := range provider.Available() {
-		cheap := provider.Defaults(name).CheapModel
+	for _, name := range llm.Available() {
+		cheap := llm.Defaults(name).CheapModel
 		if cheap == "" {
 			continue
 		}

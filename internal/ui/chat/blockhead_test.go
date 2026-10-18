@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/clipboard"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -189,7 +189,7 @@ func blockSession(t *testing.T) (*program, func() []string) {
 		caught []string
 	)
 	p := &programProvider{turns: []programTurn{{text: threeBlocks}}}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
 	m.copyFn = func(text string) clipboard.Result {
 		mu.Lock()
 		defer mu.Unlock()

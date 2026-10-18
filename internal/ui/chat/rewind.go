@@ -33,11 +33,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -107,10 +107,10 @@ func (m *Model) recordCheckpoint(text string) {
 // under the reader's name, and — because the list is numbered and "turn 3"
 // cuts the conversation at the fourth of these — it would also truncate a
 // resumed conversation in the middle of the turn the check-in interrupted.
-func checkpointsFromMessages(msgs []provider.Message) []checkpoint {
+func checkpointsFromMessages(msgs []llm.Message) []checkpoint {
 	var cps []checkpoint
 	for i, msg := range msgs {
-		if msg.Role == provider.RoleUser && !msg.Machine {
+		if msg.Role == llm.RoleUser && !msg.Machine {
 			cps = append(cps, checkpoint{index: i, preview: firstLine(msg.Content)})
 		}
 	}
@@ -737,7 +737,7 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	if cp.index > len(msgs) {
 		return "rewind failed: the checkpoint no longer matches the conversation"
 	}
-	full := make([]provider.Message, len(msgs))
+	full := make([]llm.Message, len(msgs))
 	copy(full, msgs)
 	dropped := len(full) - cp.index
 	// What the cut takes back becomes a fold beside the branch: the rows the
@@ -747,7 +747,7 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	// anything is restored, while they still describe those turns.
 	fold := &rewoundFold{
 		first: n + 1, last: len(m.checkpoints),
-		tail:        append([]provider.Message(nil), full[cp.index:]...),
+		tail:        append([]llm.Message(nil), full[cp.index:]...),
 		at:          cp.index,
 		checkpoints: append([]checkpoint(nil), m.checkpoints[n:]...),
 		slot:        m.sessionName,
@@ -977,7 +977,7 @@ type rewoundFold struct {
 	// the conversation length it was cut at. A reapply appends the tail to a
 	// conversation that is still exactly that long, which is what keeps every
 	// checkpoint below a true conversation index (checkpoint.index).
-	tail []provider.Message
+	tail []llm.Message
 	at   int
 	// checkpoints are the rewound turns' own, git snapshots and ages kept.
 	checkpoints []checkpoint
@@ -1220,7 +1220,7 @@ func (m Model) reapplyKey(pressed string) (tea.Model, tea.Cmd, bool) {
 // (docs/interface/surfaces.md#the-rewind).
 func (m Model) reapplyRewind(idx int) (tea.Model, tea.Cmd) {
 	f := m.transcript[idx].rewound
-	msgs := append(append([]provider.Message(nil), m.agent.Messages()...), f.tail...)
+	msgs := append(append([]llm.Message(nil), m.agent.Messages()...), f.tail...)
 	m.agent.SetMessages(msgs)
 	m.checkpoints = append(m.checkpoints, f.checkpoints...)
 	m.recallFromMessages(msgs)

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // followUpRefusal is why a finished child cannot take a follow-up, or nil
@@ -137,12 +137,12 @@ func (s *Supervisor) finalCheckIn(c *child) {
 		return
 	}
 	msgs := append(c.agent.RequestMessages(),
-		provider.Message{Role: provider.RoleUser, Content: finalCheckInPrompt})
+		llm.Message{Role: llm.RoleUser, Content: finalCheckInPrompt})
 	// The prompt tells the child not to call a tool and the request enforces
 	// it, because nothing here reads a tool call: a handoff that arrived as
 	// one leaves the builder below empty and the parent with no report at
 	// all, which is the failure this whole call exists to prevent.
-	events, stop, err := env.Stream(msgs, provider.ToolChoiceNone)
+	events, stop, err := env.Stream(msgs, llm.ToolChoiceNone)
 	if err != nil {
 		return
 	}
@@ -221,7 +221,7 @@ func childEndReason(c *child, err error) string {
 	case c.ctx.Err() != nil:
 		return observe.ChildCancelled
 	}
-	if _, ok := provider.AsFailure(err); ok {
+	if _, ok := llm.AsFailure(err); ok {
 		return observe.ChildProvider
 	}
 	return observe.ChildFailed

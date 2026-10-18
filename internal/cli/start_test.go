@@ -11,20 +11,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
 // testChatMessages is one saved exchange: one user turn, one reply.
-func testChatMessages() []provider.Message {
-	return []provider.Message{
-		{Role: provider.RoleUser, Content: "where were we"},
-		{Role: provider.RoleAssistant, Content: "right here"},
+func testChatMessages() []llm.Message {
+	return []llm.Message{
+		{Role: llm.RoleUser, Content: "where were we"},
+		{Role: llm.RoleAssistant, Content: "right here"},
 	}
 }
 

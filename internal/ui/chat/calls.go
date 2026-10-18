@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -35,7 +35,7 @@ type callTable struct {
 
 // liveCall is one call as the manager reads it.
 type liveCall struct {
-	call    provider.ToolCall
+	call    llm.ToolCall
 	started time.Time
 	// done is the call's own context: it ends when the call returns, or when
 	// it is stopped, and stopped says which.
@@ -49,12 +49,12 @@ type liveCall struct {
 
 // add is the per-call seam (agent.CallCancel): each auto-run call of a round
 // registers itself as it starts.
-func (t *callTable) add(ctx context.Context, tc provider.ToolCall, cancel context.CancelFunc) {
+func (t *callTable) add(ctx context.Context, tc llm.ToolCall, cancel context.CancelFunc) {
 	t.put(ctx, tc, cancel, nil, "host")
 }
 
 // put records one call.
-func (t *callTable) put(ctx context.Context, tc provider.ToolCall, cancel context.CancelFunc, tail *commandTail, where string) {
+func (t *callTable) put(ctx context.Context, tc llm.ToolCall, cancel context.CancelFunc, tail *commandTail, where string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.calls = append(t.calls, &liveCall{call: tc, started: clock(), done: ctx, cancel: cancel, tail: tail, where: where})

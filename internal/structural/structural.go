@@ -41,9 +41,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/calltier"
 	"github.com/rfizzle/shhh/internal/hostgit"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -245,8 +245,8 @@ const repoProbeTimeout = 5 * time.Second
 
 // Definitions returns the provider tool definitions to register: only the
 // tools whose binaries were found.
-func (t *Toolset) Definitions() []provider.Tool {
-	var defs []provider.Tool
+func (t *Toolset) Definitions() []llm.Tool {
+	var defs []llm.Tool
 	for _, name := range toolOrder {
 		if _, ok := t.bins[name]; !ok {
 			continue
@@ -276,7 +276,7 @@ func (t *Toolset) Definitions() []provider.Tool {
 // that found everything would offer, the writing half of git included. It
 // spawns and probes nothing, which is what lets a test hold every one of
 // them to what the model is told about it.
-func Registrable() []provider.Tool {
+func Registrable() []llm.Tool {
 	bins := map[string]string{GitToolName: "", GitWriteToolName: ""}
 	for _, name := range toolOrder {
 		bins[name] = ""

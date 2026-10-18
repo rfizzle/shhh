@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -32,7 +33,6 @@ import (
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe/record"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -137,7 +137,7 @@ func sessionTools() map[string]bool {
 		structural.Registrable(),
 		subagent.Definitions(nil, subagent.Offer{}),
 		notebook.Definitions(),
-		[]provider.Tool{ask.ToolDefinition(), process.Definition(), quality.ToolDefinition(), evidence.ToolDefinition()},
+		[]llm.Tool{ask.ToolDefinition(), process.Definition(), quality.ToolDefinition(), evidence.ToolDefinition()},
 	)
 	names := map[string]bool{
 		web.FetchToolName: true, web.SearchToolName: true,

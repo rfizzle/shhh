@@ -5,28 +5,28 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // The handoff is written around the person's note, from the person's asks
 // and the assistant's prose, and the files and the item are the code's facts
 // put in as they are.
 func TestHandoffWriter_WritesTheChildsShape(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		if opts.Model != "small" {
 			t.Errorf("opts = %+v", opts)
 		}
-		return eventsOf(provider.StreamEvent{
-			ToolCalls: []provider.ToolCall{{ID: "h1", Name: HandoffToolName, Arguments: `{"summary":"Retry backoff half done","done":["capped the backoff"],"open":["the timer test flakes"],"decisions":["no jitter"]}`}},
+		return eventsOf(llm.StreamEvent{
+			ToolCalls: []llm.ToolCall{{ID: "h1", Name: HandoffToolName, Arguments: `{"summary":"Retry backoff half done","done":["capped the backoff"],"open":["the timer test flakes"],"decisions":["no jitter"]}`}},
 			Done:      true,
 		}), nil
 	}}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "fix the retry backoff"},
-		{Role: provider.RoleUser, Content: "a check-in", Machine: true},
-		{Role: provider.RoleAssistant, Content: "capped it at 30s"},
-		{Role: provider.RoleTool, Content: "a tool result nobody may read"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "fix the retry backoff"},
+		{Role: llm.RoleUser, Content: "a check-in", Machine: true},
+		{Role: llm.RoleAssistant, Content: "capped it at 30s"},
+		{Role: llm.RoleTool, Content: "a tool result nobody may read"},
 	}
 	req := HandoffRequestFrom("pick up at the flake", "", msgs)
 	req.Files, req.Item = []string{"retry.go", "retry_test.go"}, "retry-cap"

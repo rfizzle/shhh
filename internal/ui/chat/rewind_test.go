@@ -9,8 +9,8 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -36,7 +36,7 @@ func newRewindModel(t *testing.T) Model {
 // newRewindModelWith is newRewindModel built from w.
 func newRewindModelWith(t *testing.T, w Wiring) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, multiTokenStream("ok"), w)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	return updated.(Model)
@@ -91,13 +91,13 @@ func TestCheckpoints_GitSnapshotRecorded(t *testing.T) {
 // in the middle of the turn the check-in interrupted.
 func TestCheckpoints_RebuiltSkipTheMessagesTheSessionWrote(t *testing.T) {
 	steer := "You are editing a file the task did not ask about. Say why or go back."
-	m := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "add the retry"},
-		{Role: provider.RoleAssistant, Content: "editing the config"},
-		{Role: provider.RoleUser, Content: steer, Machine: true},
-		{Role: provider.RoleAssistant, Content: "going back"},
-		{Role: provider.RoleUser, Content: "now run the tests"},
+	m := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "add the retry"},
+		{Role: llm.RoleAssistant, Content: "editing the config"},
+		{Role: llm.RoleUser, Content: steer, Machine: true},
+		{Role: llm.RoleAssistant, Content: "going back"},
+		{Role: llm.RoleUser, Content: "now run the tests"},
 	})
 
 	if len(m.checkpoints) != 2 {
@@ -394,14 +394,14 @@ func TestBranches_NoneYet(t *testing.T) {
 }
 
 func TestLoadConversation_RebuildsCheckpoints(t *testing.T) {
-	saved := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "old question"},
-		{Role: provider.RoleAssistant, Content: "old answer"},
-		{Role: provider.RoleUser, Content: "follow-up"},
-		{Role: provider.RoleAssistant, Content: "more"},
+	saved := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "old question"},
+		{Role: llm.RoleAssistant, Content: "old answer"},
+		{Role: llm.RoleUser, Content: "follow-up"},
+		{Role: llm.RoleAssistant, Content: "more"},
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{}).WithResumedMessages("", saved)
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{}).WithResumedMessages("", saved)
 
 	if len(m.checkpoints) != 2 {
 		t.Fatalf("resumed sessions should have rewind checkpoints, got %d", len(m.checkpoints))

@@ -14,11 +14,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -697,10 +697,10 @@ func TestTodoRun_BlockOffersAFollowUp(t *testing.T) {
 // reportingEnv is a child that answers every request with text.
 func reportingEnv(text string) subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-			ch := make(chan provider.StreamEvent, 2)
-			ch <- provider.StreamEvent{Token: text}
-			ch <- provider.StreamEvent{Done: true}
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan llm.StreamEvent, 2)
+			ch <- llm.StreamEvent{Token: text}
+			ch <- llm.StreamEvent{Done: true}
 			close(ch)
 			return ch, func() {}, nil
 		}
@@ -1019,14 +1019,14 @@ func largeRunModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supe
 func writingEnv(content string) subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		calls := 0
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-			ch := make(chan provider.StreamEvent, 2)
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan llm.StreamEvent, 2)
 			calls++
 			if calls == 1 {
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "1", Name: "write_file", Arguments: `{"path":"` + spec.Paths[0] + `"}`}}}
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "1", Name: "write_file", Arguments: `{"path":"` + spec.Paths[0] + `"}`}}}
 			} else {
-				ch <- provider.StreamEvent{Token: "Wrote " + spec.Paths[0] + ". Wire it up."}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: "Wrote " + spec.Paths[0] + ". Wire it up."}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			return ch, func() {}, nil
@@ -1686,7 +1686,7 @@ func cutAnswer(t *testing.T, m Model, text string) Model {
 		t.Fatalf("no stage turn in flight (state %d)", m.state)
 	}
 	m.streaming = text
-	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	updated, _ := m.Update(doneMsg{stop: llm.StopLength})
 	return updated.(Model)
 }
 
@@ -1709,7 +1709,7 @@ func TestTodoRun_ACutStageAnswerIsFinishedBeforeItIsRead(t *testing.T) {
 		t.Fatal("the run should have asked for the rest of the reply itself")
 	}
 	msgs := m.agent.Messages()
-	if last := msgs[len(msgs)-1]; last.Role != provider.RoleUser || last.Content != agent.ContinueAfterCeiling {
+	if last := msgs[len(msgs)-1]; last.Role != llm.RoleUser || last.Content != agent.ContinueAfterCeiling {
 		t.Fatalf("the run sends the instruction the row's key sends, got %+v", last)
 	}
 

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -67,8 +67,8 @@ func RootAuthor(author string) string {
 // Definitions are the tool definitions every agent in a session gets — the
 // orchestrator and every delegate, in a conversation and in a coding
 // session alike.
-func Definitions() []provider.Tool {
-	return []provider.Tool{
+func Definitions() []llm.Tool {
+	return []llm.Tool{
 		{
 			Name:        WriteToolName,
 			Description: "Write a note to the session's shared notebook, which every agent in this session (the orchestrator and all delegates) can read. Use it for what the rest of the session will need: a fact established, a source and what it said, a decision the user made. One paragraph, titled. Notes persist with the session and are not the user's durable memory. Notes cannot be removed once written; only the user can drop one.",

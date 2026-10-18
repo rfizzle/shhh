@@ -40,7 +40,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // seenFile is one file as a tool last showed it: the fingerprint of the whole
@@ -384,13 +384,13 @@ func (r *Recorder) NoteUnknown(path string) {
 // directory — a conversation restored somewhere else is describing another
 // checkout, and a record filed there is one nothing will ask about.
 // See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
-func NoteRestoredReads(msgs []provider.Message) { shared.NoteRestoredReads(msgs) }
+func NoteRestoredReads(msgs []llm.Message) { shared.NoteRestoredReads(msgs) }
 
 // NoteRestoredReads filed in one owner's record.
-func (r *Recorder) NoteRestoredReads(msgs []provider.Message) {
+func (r *Recorder) NoteRestoredReads(msgs []llm.Message) {
 	answered := map[string]bool{}
 	for _, m := range msgs {
-		if m.Role == provider.RoleTool && m.ToolCallID != "" {
+		if m.Role == llm.RoleTool && m.ToolCallID != "" {
 			answered[m.ToolCallID] = true
 		}
 	}

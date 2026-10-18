@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -14,7 +15,6 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
@@ -83,7 +83,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 
 		var sysPrompt string
 		var rolePrompt func([]string) string
-		var defs []provider.Tool
+		var defs []llm.Tool
 		gated := map[string]bool{}
 		var base agent.ToolExecutor
 		def, ok := agents.definition(role)
@@ -447,9 +447,9 @@ type childStream struct {
 	sup             *subagent.Supervisor
 	spec            subagent.Spec
 	readOnlyExtra   []string
-	defs            []provider.Tool
+	defs            []llm.Tool
 	model           string
-	provider        provider.Provider
+	provider        llm.Provider
 	refusable       bool
 	commandsRefused bool
 	// sandboxChild is a child in a sandbox session, whose commands are
@@ -460,7 +460,7 @@ type childStream struct {
 // stream is the child's stream function. Each request is a fresh read of the
 // effort and the mode, because both move under a running child.
 func (c childStream) stream() agent.StreamFunc {
-	return agent.StreamFunc(func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return agent.StreamFunc(func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		sctx, cancel := context.WithCancel(c.ctx)
 		// Children think as hard as the session does unless their
 		// profile says otherwise: the level is a session setting, and
@@ -475,21 +475,21 @@ func (c childStream) stream() agent.StreamFunc {
 		// The mode is read at each request rather than taken from the
 		// spawn, because a child's mode moves under it: the parent's
 		// ceiling changes, or the person sets it from the lane.
-		if c.refusable && choice != provider.ToolChoiceNone {
+		if c.refusable && choice != llm.ToolChoiceNone {
 			mode := c.spec.Mode
 			if m, ok := c.sup.AgentMode(c.spec.Name); ok {
 				mode = m
 			}
 			msgs = withModeInstructions(msgs, mode, c.readOnlyExtra, c.defs)
 		}
-		if c.commandsRefused && choice != provider.ToolChoiceNone {
+		if c.commandsRefused && choice != llm.ToolChoiceNone {
 			if c.sandboxChild {
 				msgs = withSystemParagraph(msgs, prompt.SandboxChildInstructions)
 			} else {
 				msgs = withRefusedCommands(msgs)
 			}
 		}
-		ev, sErr := c.provider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
+		ev, sErr := c.provider.StreamCompletion(sctx, msgs, llm.CompletionOpts{
 			Model:      c.model,
 			Tools:      c.defs,
 			ToolChoice: choice,

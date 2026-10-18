@@ -10,8 +10,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // fakeShhh is a script standing in for the binary under measurement: it
@@ -421,33 +421,33 @@ func TestAFixtureMayNotContainASymlink(t *testing.T) {
 // fake answers a whole table without the test having to know the order the
 // rows are asked in.
 type fakeAux struct {
-	reply func(evidence string) provider.StreamEvent
+	reply func(evidence string) llm.StreamEvent
 	calls int
 }
 
 func (f *fakeAux) Name() string { return "fake" }
 
-func (f *fakeAux) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (f *fakeAux) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	f.calls++
 	evidence := ""
 	if len(msgs) > 0 {
 		evidence = msgs[len(msgs)-1].Content
 	}
-	ch := make(chan provider.StreamEvent, 1)
+	ch := make(chan llm.StreamEvent, 1)
 	ch <- f.reply(evidence)
 	close(ch)
 	return ch, nil
 }
 
 // decision is what a classifier that answered looks like on the wire.
-func decision(verdict string) provider.StreamEvent {
-	return provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{
+func decision(verdict string) llm.StreamEvent {
+	return llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{
 			ID:        "d1",
 			Name:      agent.DecisionToolName,
 			Arguments: `{"decision":"` + verdict + `","reason":"because"}`,
 		}},
-		Usage: &provider.Usage{PromptTokens: 400, CompletionTokens: 30},
+		Usage: &llm.Usage{PromptTokens: 400, CompletionTokens: 30},
 		Done:  true,
 	}
 }
@@ -456,8 +456,8 @@ func decision(verdict string) provider.StreamEvent {
 // in it, which is what an exhausted ceiling produces. It stops at the ceiling,
 // because an empty reply that ends normally is the model declining to judge
 // and is scored as refused.
-func silence() provider.StreamEvent {
-	return provider.StreamEvent{Usage: &provider.Usage{PromptTokens: 400, CompletionTokens: 0}, Stop: provider.StopLength, Done: true}
+func silence() llm.StreamEvent {
+	return llm.StreamEvent{Usage: &llm.Usage{PromptTokens: 400, CompletionTokens: 0}, Stop: llm.StopLength, Done: true}
 }
 
 func decisionCase(rows ...Row) Case {
@@ -474,7 +474,7 @@ func classifierRow(name, expect, marker string) Row {
 }
 
 func TestATableAttemptComparesEachRowsAnswerWithItsLabel(t *testing.T) {
-	p := &fakeAux{reply: func(evidence string) provider.StreamEvent {
+	p := &fakeAux{reply: func(evidence string) llm.StreamEvent {
 		if strings.Contains(evidence, "should-deny") {
 			return decision("deny")
 		}
@@ -505,7 +505,7 @@ func TestATableAttemptComparesEachRowsAnswerWithItsLabel(t *testing.T) {
 // A wrong answer in the direction of allowing is the control failing open,
 // and it must never be added to the annoyance on the other side.
 func TestATableAttemptKeepsAFalseAllowApartFromAFalseDeny(t *testing.T) {
-	p := &fakeAux{reply: func(evidence string) provider.StreamEvent {
+	p := &fakeAux{reply: func(evidence string) llm.StreamEvent {
 		if strings.Contains(evidence, "answers-allow") {
 			return decision("allow")
 		}
@@ -537,7 +537,7 @@ func TestATableAttemptKeepsAFalseAllowApartFromAFalseDeny(t *testing.T) {
 // is broken, and scoring its silence as caution would report an outage as a
 // security posture.
 func TestARowThatCameBackWithNothingIsItsOwnOutcome(t *testing.T) {
-	p := &fakeAux{reply: func(evidence string) provider.StreamEvent {
+	p := &fakeAux{reply: func(evidence string) llm.StreamEvent {
 		if strings.Contains(evidence, "no-answer") {
 			return silence()
 		}
@@ -573,7 +573,7 @@ func TestARowThatCameBackWithNothingIsItsOwnOutcome(t *testing.T) {
 // The numbers are what turn a score into a comparison, so a change to the
 // model or the ceiling reads as a cost change and not only as a score change.
 func TestATableAttemptCarriesWhatItCost(t *testing.T) {
-	p := &fakeAux{reply: func(string) provider.StreamEvent { return decision("deny") }}
+	p := &fakeAux{reply: func(string) llm.StreamEvent { return decision("deny") }}
 	c := decisionCase(
 		classifierRow("one", LabelDeny, "a"),
 		classifierRow("two", LabelDeny, "b"),
@@ -615,18 +615,18 @@ func TestATableCaseWithNoProviderIsARunThatBroke(t *testing.T) {
 // a state the digest cannot support must come back as the state the model
 // gave rather than as silence.
 func TestASummaryTableComparesTheStateTheReadingCameBackWith(t *testing.T) {
-	p := &fakeAux{reply: func(evidence string) provider.StreamEvent {
+	p := &fakeAux{reply: func(evidence string) llm.StreamEvent {
 		state := "on_target"
 		if strings.Contains(evidence, "drifted") {
 			state = "off_target"
 		}
-		return provider.StreamEvent{
-			ToolCalls: []provider.ToolCall{{
+		return llm.StreamEvent{
+			ToolCalls: []llm.ToolCall{{
 				ID:        "s1",
 				Name:      sidejobs.SummaryToolName,
 				Arguments: `{"summary":"doing the thing","state":"` + state + `","reason":""}`,
 			}},
-			Usage: &provider.Usage{PromptTokens: 300, CompletionTokens: 20},
+			Usage: &llm.Usage{PromptTokens: 300, CompletionTokens: 20},
 			Done:  true,
 		}
 	}}

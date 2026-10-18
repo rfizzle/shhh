@@ -20,9 +20,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -297,7 +297,7 @@ func (m Model) toolResultGroup(scaled int64) (components.ContextGroup, bool) {
 		for _, tc := range msg.ToolCalls {
 			names[tc.ID] = tc.Name
 		}
-		if msg.Role != provider.RoleTool {
+		if msg.Role != llm.RoleTool {
 			continue
 		}
 		tokens := agent.EstimateTokens(msg.Content)
@@ -338,13 +338,13 @@ func (m Model) messageTurnGroup(scaled int64) (components.ContextGroup, bool) {
 	}
 	label, tokens := "", int64(0)
 	for i, msg := range m.agent.Messages() {
-		if i == 0 && msg.Role == provider.RoleSystem {
+		if i == 0 && msg.Role == llm.RoleSystem {
 			continue
 		}
-		if msg.Role == provider.RoleTool {
+		if msg.Role == llm.RoleTool {
 			continue
 		}
-		if msg.Role == provider.RoleUser {
+		if msg.Role == llm.RoleUser {
 			add(label, tokens)
 			label, tokens = turnLabel(msg), 0
 		} else if label == "" {
@@ -371,7 +371,7 @@ func (m Model) messageTurnGroup(scaled int64) (components.ContextGroup, bool) {
 // turnLabel is the opening of the message a turn started with, on one line.
 // A message the session wrote on the reader's behalf is named rather than
 // quoted (typedByHand, recall.go).
-func turnLabel(msg provider.Message) string {
+func turnLabel(msg llm.Message) string {
 	text := strings.TrimSpace(msg.Content)
 	switch {
 	case text == "":

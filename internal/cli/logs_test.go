@@ -12,8 +12,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 	"github.com/rfizzle/shhh/internal/web"
@@ -50,7 +50,7 @@ import (
 // the goldens would pass where they were written and fail on CI, which runs
 // in UTC. Pinning makes the checked-in text mean the same thing everywhere.
 func TestMain(m *testing.M) {
-	provider.SetApp(shhhApp)
+	llm.SetApp(shhhApp)
 	pricing.SetCacheDir(datadir.CacheDir)
 	// The sandbox command helper, which the stand-in engine runs as the far
 	// end of an exec (sandboxsession_test.go): this binary is shhh there.

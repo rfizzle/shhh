@@ -21,7 +21,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -39,7 +39,7 @@ const (
 	gitSwitch = "switch"
 )
 
-var gitWriteTool = provider.Tool{
+var gitWriteTool = llm.Tool{
 	Name: GitWriteToolName,
 	Description: "Write to this repository: stage files, commit them, create a branch, switch to one. " +
 		"Use this rather than running git through execute_command — the message is a field here, so no quoting is involved and no approval is spent on punctuation. " +

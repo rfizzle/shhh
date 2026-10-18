@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
-var tokeiTool = provider.Tool{
+var tokeiTool = llm.Tool{
 	Name: TokeiToolName,
 	Description: "Summarize codebase composition with tokei: per-language file, line, code, comment, and blank counts. " +
 		"Use it to get oriented in an unfamiliar codebase before reading files.",

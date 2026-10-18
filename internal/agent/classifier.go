@@ -20,9 +20,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/logs"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -254,11 +254,11 @@ func (c ClassifierConfig) attempts() int {
 // Classifier judges proposed tool calls against the user's intent using an
 // LLM through the existing provider interface.
 type Classifier struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      ClassifierConfig
 }
 
-func NewClassifier(p provider.Provider, cfg ClassifierConfig) *Classifier {
+func NewClassifier(p llm.Provider, cfg ClassifierConfig) *Classifier {
 	return &Classifier{provider: p, cfg: cfg}
 }
 
@@ -269,7 +269,7 @@ type ClassifierRequest struct {
 	Arguments string
 	CWD       string
 	// Recent is the conversation the evidence's bounded slice is drawn from.
-	Recent []provider.Message
+	Recent []llm.Message
 	// Reading is what the public lists say about a fetch's host, and the
 	// zero value for any other call. It is evidence like the rest: the
 	// classifier weighs it, and whatever it answers, a host the lists warn
@@ -323,7 +323,7 @@ type ClassifierVerdict struct {
 	Probed      bool
 	// Usage totals every attempt's reported tokens so the session can count
 	// classifier cost.
-	Usage   provider.Usage
+	Usage   llm.Usage
 	Elapsed time.Duration
 }
 
@@ -476,15 +476,15 @@ const (
 // the same question.
 // See docs/capabilities/approvals-and-safety.md#the-classifier-can-answer-as-a-probability.
 func (c *Classifier) decide(ctx context.Context, model, input string, v ClassifierVerdict) ClassifierVerdict {
-	d, ok := c.provider.(provider.Decider)
+	d, ok := c.provider.(llm.Decider)
 	if !ok || !d.OffersDecisions(model) {
 		v.Reason = "the classifier's model " + model + " does not offer the Decisions API"
 		logs.Logger().Warn("permission classifier failed closed",
 			"model", model, "failure", classifierNotOffered, "attempts", 0)
 		return v
 	}
-	req := provider.DecisionRequest{Model: model, Input: input, Questions: []provider.DecisionQuestion{{
-		Type: provider.QuestionPredicate, Name: decisionsQuestionName, Instructions: decisionsPredicate,
+	req := llm.DecisionRequest{Model: model, Input: input, Questions: []llm.DecisionQuestion{{
+		Type: llm.QuestionPredicate, Name: decisionsQuestionName, Instructions: decisionsPredicate,
 	}}}
 	failure := classifierInvalid
 	for attempt := 1; attempt <= c.cfg.attempts(); attempt++ {
@@ -506,13 +506,13 @@ func (c *Classifier) decide(ctx context.Context, model, input string, v Classifi
 			failure = classifierInvalid
 			v.Reason = "the classifier returned no answer"
 			continue
-		case answer.Type == provider.AnswerRefusal:
+		case answer.Type == llm.AnswerRefusal:
 			v.Reason = "the classifier declined to judge this action"
 			v.Refused = true
 			logs.Logger().Warn("permission classifier failed closed",
 				"model", model, "failure", classifierRefused, "attempts", attempt)
 			return v
-		case answer.Type != provider.AnswerPredicate:
+		case answer.Type != llm.AnswerPredicate:
 			failure = classifierInvalid
 			v.Reason = "the classifier returned an invalid decision"
 			continue
@@ -556,21 +556,21 @@ var errClassifierRefused = errors.New("the classifier declined to judge this act
 //
 // The fourth result is the reply's shape as log fields, set when the reply
 // came back and said nothing usable.
-func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evidence string) (Decision, string, *provider.Usage, []any, error) {
+func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evidence string) (Decision, string, *llm.Usage, []any, error) {
 	attemptCtx, cancel := context.WithTimeout(ctx, c.cfg.timeout())
 	defer cancel()
 
-	events, err := c.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: instructions},
-		{Role: provider.RoleUser, Content: evidence},
-	}, provider.CompletionOpts{
+	events, err := c.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: instructions},
+		{Role: llm.RoleUser, Content: evidence},
+	}, llm.CompletionOpts{
 		Model:     model,
-		Flow:      provider.FlowClassifier,
+		Flow:      llm.FlowClassifier,
 		MaxTokens: c.cfg.maxTokens(),
 		// A judgement over assembled evidence wants a shallow thought, and
 		// on a model that thinks by default this is the only way to ask for
 		// one: off sends no field, which is the model's own depth.
-		Effort: provider.EffortLow,
+		Effort: llm.EffortLow,
 		// The verdict is asked for twice and sent once. A model that can be
 		// told to answer in a shape is sent the schema and no tools, and
 		// its reply is read by the same parser that reads a model's prose;
@@ -579,8 +579,8 @@ func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evid
 		// pointed at a model that takes neither still reaches a verdict —
 		// and one that reaches none still fails closed to Ask.
 		// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
-		ResponseSchema: &provider.ResponseSchema{Name: DecisionToolName, Schema: decisionSchema},
-		Tools: []provider.Tool{{
+		ResponseSchema: &llm.ResponseSchema{Name: DecisionToolName, Schema: decisionSchema},
+		Tools: []llm.Tool{{
 			Name:        DecisionToolName,
 			Description: "Return the permission decision for the proposed action.",
 			Parameters:  decisionSchema,
@@ -591,13 +591,13 @@ func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evid
 		return Ask, "", nil, nil, err
 	}
 
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	usage := reply.Usage
 	if err != nil {
 		return Ask, "", usage, nil, err
 	}
 
-	if reply.Stop == provider.StopRefusal {
+	if reply.Stop == llm.StopRefusal {
 		return Ask, "", usage, nil, errClassifierRefused
 	}
 	// A reply with no text and no tool call is a refusal too. A model that
@@ -607,7 +607,7 @@ func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evid
 	// error so the line still shows the stop was an empty end. A reply cut
 	// off at the output ceiling is not one: it ran out of room, and is read
 	// as an invalid decision like any other unfinished answer.
-	if reply.Stop == provider.StopEnd && len(reply.Calls) == 0 && strings.TrimSpace(reply.Text) == "" {
+	if reply.Stop == llm.StopEnd && len(reply.Calls) == 0 && strings.TrimSpace(reply.Text) == "" {
 		return Ask, "", usage, replyShape(reply), errClassifierRefused
 	}
 	for _, tc := range reply.Calls {
@@ -631,7 +631,7 @@ const replyShapeHead = 80
 // reason, the tool calls it made by name, and whether it had text, with the
 // first characters of it. What the model said can repeat what it was sent, so
 // the head goes through the secret scrub before it is cut.
-func replyShape(r provider.Reply) []any {
+func replyShape(r llm.Reply) []any {
 	scrub := secret.New().Scrub
 	names := make([]string, len(r.Calls))
 	for i, tc := range r.Calls {
@@ -808,12 +808,12 @@ func resolveVerdict(a Action, v ClassifierVerdict) (Decision, string) {
 // The two windows are counted separately. A session forty rounds in has far
 // more calls than sentences, so one window over both would push the request
 // itself — the thing every rule is judged against — out of the evidence.
-func RecentContext(msgs []provider.Message, maxMessages, maxChars int) string {
+func RecentContext(msgs []llm.Message, maxMessages, maxChars int) string {
 	// An outcome is read off the result the call's own tool message carries,
 	// which is the only thing that message is read for.
 	outcomes := make(map[string]string, len(msgs))
 	for _, msg := range msgs {
-		if msg.Role == provider.RoleTool && msg.ToolCallID != "" {
+		if msg.Role == llm.RoleTool && msg.ToolCallID != "" {
 			outcomes[msg.ToolCallID] = digest.Outcome(msg.Content)
 		}
 	}
@@ -839,7 +839,7 @@ func RecentContext(msgs []provider.Message, maxMessages, maxChars int) string {
 			entries = append(entries, entry{text: "[Tool] " + row, call: true})
 			calls++
 		}
-		if msg.Role != provider.RoleUser && msg.Role != provider.RoleAssistant {
+		if msg.Role != llm.RoleUser && msg.Role != llm.RoleAssistant {
 			continue
 		}
 		text := strings.TrimSpace(msg.Content)
@@ -847,7 +847,7 @@ func RecentContext(msgs []provider.Message, maxMessages, maxChars int) string {
 			continue
 		}
 		label := "User"
-		if msg.Role == provider.RoleAssistant {
+		if msg.Role == llm.RoleAssistant {
 			label = "Assistant"
 		}
 		entries = append(entries, entry{text: "[" + label + "]\n" + text})

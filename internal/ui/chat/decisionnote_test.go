@@ -15,9 +15,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -32,7 +32,7 @@ func draftedCardModel(t *testing.T, executor ToolExecutor, draft string) Model {
 		"write_file": writeFilePreview("line one\n"),
 	})
 	m.input.SetValue(draft)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"line one\nline two\n"}`},
 	}})
 	m = updated.(Model)
@@ -53,16 +53,16 @@ func noRun(t *testing.T) ToolExecutor {
 	}
 }
 
-func lastToolMessage(t *testing.T, m Model) provider.Message {
+func lastToolMessage(t *testing.T, m Model) llm.Message {
 	t.Helper()
 	msgs := m.Messages()
 	for i := len(msgs) - 1; i >= 0; i-- {
-		if msgs[i].Role == provider.RoleTool {
+		if msgs[i].Role == llm.RoleTool {
 			return msgs[i]
 		}
 	}
 	t.Fatal("no tool result in the conversation")
-	return provider.Message{}
+	return llm.Message{}
 }
 
 // The register is the nine: y, n, e, a, t, enter, esc, ? and the four
@@ -225,7 +225,7 @@ func TestApproval_EscLeavesTheRequestWaiting(t *testing.T) {
 			t.Fatalf("draft %q: esc should leave the sentence where it was, got %q", draft, m.input.Value())
 		}
 		for _, msg := range m.Messages() {
-			if msg.Role == provider.RoleTool {
+			if msg.Role == llm.RoleTool {
 				t.Fatalf("draft %q: esc must not answer the call: %+v", draft, msg)
 			}
 		}

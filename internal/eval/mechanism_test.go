@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // The label is what the mechanism did, so the test of a scripted kind is that
@@ -67,14 +67,14 @@ func TestSteerRowReadsTheWordingAndNotTheDecision(t *testing.T) {
 // and what the row asserts is what the next round still has.
 func TestCompactionRowsReadTheRebuiltConversation(t *testing.T) {
 	long := strings.Repeat("the importer reads rows in batches and flushes on close. ", 60)
-	conversation := []provider.Message{
-		{Role: provider.RoleSystem, Content: "you are shhh"},
-		{Role: provider.RoleUser, Content: "why does the importer drop the last row"},
-		{Role: provider.RoleAssistant, Content: "reading the importer"},
-		{Role: provider.RoleTool, Content: "OLDEST: " + long},
-		{Role: provider.RoleUser, Content: "and the exporter"},
-		{Role: provider.RoleAssistant, Content: "reading the exporter"},
-		{Role: provider.RoleTool, Content: "NEWEST: " + long},
+	conversation := []llm.Message{
+		{Role: llm.RoleSystem, Content: "you are shhh"},
+		{Role: llm.RoleUser, Content: "why does the importer drop the last row"},
+		{Role: llm.RoleAssistant, Content: "reading the importer"},
+		{Role: llm.RoleTool, Content: "OLDEST: " + long},
+		{Role: llm.RoleUser, Content: "and the exporter"},
+		{Role: llm.RoleAssistant, Content: "reading the exporter"},
+		{Role: llm.RoleTool, Content: "NEWEST: " + long},
 	}
 	row := Row{Conversation: conversation, Window: 1200, Summary: "read both writers",
 		Needs: []string{"NEWEST"}}
@@ -98,12 +98,12 @@ func TestCompactionRowsReadTheRebuiltConversation(t *testing.T) {
 func TestCompactionRowSeesTheRebuild(t *testing.T) {
 	prose := strings.Repeat("the session read the loader, the parser and both writers. ", 120)
 	row := Row{
-		Conversation: []provider.Message{
-			{Role: provider.RoleSystem, Content: "you are shhh"},
-			{Role: provider.RoleUser, Content: "work out why the importer drops the last row"},
-			{Role: provider.RoleAssistant, Content: prose},
-			{Role: provider.RoleUser, Content: "now say what you would change"},
-			{Role: provider.RoleTool, Content: "NEWEST: the flush happens before the last append"},
+		Conversation: []llm.Message{
+			{Role: llm.RoleSystem, Content: "you are shhh"},
+			{Role: llm.RoleUser, Content: "work out why the importer drops the last row"},
+			{Role: llm.RoleAssistant, Content: prose},
+			{Role: llm.RoleUser, Content: "now say what you would change"},
+			{Role: llm.RoleTool, Content: "NEWEST: the flush happens before the last append"},
 		},
 		Window: 1600, Summary: "read the importer and the exporter",
 		Needs: []string{agent.CompactSummaryPrefix, "now say what you would change", "NEWEST"},
@@ -184,9 +184,9 @@ func TestScriptedRowsAreRefusedWhereTheyMeasureNothing(t *testing.T) {
 			Row{Name: "r", Instruction: "x", State: "sideways"}, "is not a reading"},
 		{"a steer with nothing to quote", KindSteer, Row{Name: "r", State: LabelOffTarget}, "instruction is required"},
 		{"a compaction with no window", KindCompaction,
-			Row{Name: "r", Conversation: []provider.Message{{}}, Needs: []string{"x"}}, "window is required"},
+			Row{Name: "r", Conversation: []llm.Message{{}}, Needs: []string{"x"}}, "window is required"},
 		{"a compaction that requires nothing", KindCompaction,
-			Row{Name: "r", Conversation: []provider.Message{{}}, Window: 10}, "needs is required"},
+			Row{Name: "r", Conversation: []llm.Message{{}}, Window: 10}, "needs is required"},
 		{"a spawn with no call", KindSpawn, Row{Name: "r", Needs: []string{"x"}}, "role and task are required"},
 		{"a gate with no workspace", KindGate, Row{Name: "r"}, "config is required"},
 	} {
@@ -204,7 +204,7 @@ func TestScriptedRowsThatMeasureSomethingLoad(t *testing.T) {
 		row  Row
 	}{
 		{KindSteer, Row{Name: "r", State: LabelOffTarget, Instruction: "x"}},
-		{KindCompaction, Row{Name: "r", Conversation: []provider.Message{{}}, Window: 10, Needs: []string{"x"}}},
+		{KindCompaction, Row{Name: "r", Conversation: []llm.Message{{}}, Window: 10, Needs: []string{"x"}}},
 		{KindSpawn, Row{Name: "r", Role: "writer", Task: "t", Needs: []string{"x"}}},
 		{KindGate, Row{Name: "r", Config: "{}"}},
 	} {

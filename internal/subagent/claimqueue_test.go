@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // claimWriters scripts writers over one repository that each make one write
@@ -74,16 +74,16 @@ func (w *claimWriters) factory(repo string) EnvFactory {
 			time.Sleep(20 * time.Millisecond)
 		}
 		round := 0
-		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			round++
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			if round == 1 {
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 					{ID: spec.Name + "-w", Name: "write_file", Arguments: `{"path":"main.go"}`},
 				}}
 			} else {
-				ch <- provider.StreamEvent{Token: spec.Name + " done"}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: spec.Name + " done"}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			return ch, func() {}, nil
@@ -386,7 +386,7 @@ func TestARetriedWriterDoesNotRunBesideALaterClaim(t *testing.T) {
 					mu.Unlock()
 				}
 				round := 0
-				stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+				stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 					round++
 					if spec.Name == "writer-a" {
 						if attempt == 1 {
@@ -399,14 +399,14 @@ func TestARetriedWriterDoesNotRunBesideALaterClaim(t *testing.T) {
 							}
 						}
 					}
-					ch := make(chan provider.StreamEvent, 2)
+					ch := make(chan llm.StreamEvent, 2)
 					if round == 1 {
-						ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+						ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 							{ID: spec.Name + "-w", Name: "write_file", Arguments: `{"path":"main.go"}`},
 						}}
 					} else {
-						ch <- provider.StreamEvent{Token: spec.Name + " done"}
-						ch <- provider.StreamEvent{Done: true}
+						ch <- llm.StreamEvent{Token: spec.Name + " done"}
+						ch <- llm.StreamEvent{Done: true}
 					}
 					close(ch)
 					return ch, func() {}, nil

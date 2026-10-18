@@ -11,9 +11,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/memory"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -27,9 +27,9 @@ type savedMemory struct {
 func memoryModel(t *testing.T, mode agent.Mode) (Model, *[]savedMemory) {
 	t.Helper()
 	var saves []savedMemory
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "do the thing"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "do the thing"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Executor: func(ctx context.Context, name string, args json.RawMessage) (string, error) {
@@ -53,7 +53,7 @@ func memoryModel(t *testing.T, mode agent.Mode) (Model, *[]savedMemory) {
 }
 
 func rememberCall() toolCallsMsg {
-	return toolCallsMsg{calls: []provider.ToolCall{{
+	return toolCallsMsg{calls: []llm.ToolCall{{
 		ID:        "call_m",
 		Name:      memory.RememberToolName,
 		Arguments: `{"text":"prefers table-driven tests","kind":"convention"}`,
@@ -112,7 +112,7 @@ func TestRemember_SaveProjectScope(t *testing.T) {
 		t.Fatal("prompt state should be cleared after saving")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_m" || !strings.Contains(last.Content, "saved memory [m1]") {
+	if last.Role != llm.RoleTool || last.ToolCallID != "call_m" || !strings.Contains(last.Content, "saved memory [m1]") {
 		t.Fatalf("expected the saved-entry tool result, got %+v", last)
 	}
 	if m.state != stateStreaming {
@@ -204,7 +204,7 @@ func TestRemember_Declined(t *testing.T) {
 			t.Fatalf("%s: the decline was not written down", key)
 		}
 		last := m.Messages()[len(m.Messages())-1]
-		if last.Role != provider.RoleTool || !strings.Contains(last.Content, "declined to save this memory") {
+		if last.Role != llm.RoleTool || !strings.Contains(last.Content, "declined to save this memory") {
 			t.Fatalf("%s: expected a decline tool result, got %+v", key, last)
 		}
 		if m.state != stateStreaming {
@@ -225,7 +225,7 @@ func TestRemember_ADeclinedTextIsNotAskedAgain(t *testing.T) {
 
 	next, saves := memoryModel(t, agent.ModeAuto)
 	next = withDeclines(next, db)
-	updated, _ = next.Update(toolCallsMsg{calls: []provider.ToolCall{{
+	updated, _ = next.Update(toolCallsMsg{calls: []llm.ToolCall{{
 		ID:        "call_again",
 		Name:      memory.RememberToolName,
 		Arguments: `{"text":"Prefers  table-driven tests.","kind":"lesson"}`,
@@ -250,7 +250,7 @@ func TestRemember_ADeclinedTextIsNotAskedAgain(t *testing.T) {
 
 	other, _ := memoryModel(t, agent.ModeManual)
 	other = withDeclines(other, db)
-	updated, _ = other.Update(toolCallsMsg{calls: []provider.ToolCall{{
+	updated, _ = other.Update(toolCallsMsg{calls: []llm.ToolCall{{
 		ID: "call_other", Name: memory.RememberToolName,
 		Arguments: `{"text":"prefers short commit subjects","kind":"preference"}`,
 	}}})
@@ -272,7 +272,7 @@ func TestRemember_PlanModeRefuses(t *testing.T) {
 	}
 	var toolResult string
 	for _, msg := range m.Messages() {
-		if msg.Role == provider.RoleTool && msg.ToolCallID == "call_m" {
+		if msg.Role == llm.RoleTool && msg.ToolCallID == "call_m" {
 			toolResult = msg.Content
 		}
 	}
@@ -283,7 +283,7 @@ func TestRemember_PlanModeRefuses(t *testing.T) {
 
 func TestRemember_InvalidArgumentsSkipped(t *testing.T) {
 	m, saves := memoryModel(t, agent.ModeManual)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{{
 		ID: "call_bad", Name: memory.RememberToolName, Arguments: `{"text":"x","kind":"vibe"}`,
 	}}})
 	m = updated.(Model)
@@ -293,7 +293,7 @@ func TestRemember_InvalidArgumentsSkipped(t *testing.T) {
 	}
 	var toolResult string
 	for _, msg := range m.Messages() {
-		if msg.Role == provider.RoleTool && msg.ToolCallID == "call_bad" {
+		if msg.Role == llm.RoleTool && msg.ToolCallID == "call_bad" {
 			toolResult = msg.Content
 		}
 	}
@@ -309,7 +309,7 @@ func TestMemorySlashCommand(t *testing.T) {
 		t.Fatalf("expected /memory to route to Manage, got handled=%v out=%q", handled, out)
 	}
 
-	bare := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	bare := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	handled, out = bare.handleSlashCommand("/memory")
 	if !handled || !strings.Contains(out, "unavailable") {
 		t.Fatalf("without wiring, /memory should report unavailable, got %q", out)
@@ -321,7 +321,7 @@ func TestMemorySlashCommand(t *testing.T) {
 func editableMemoryModel(t *testing.T) (Model, *string) {
 	t.Helper()
 	stored := "a note far too long to be recalled"
-	m := New([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleUser, Content: "hi"}}, mockStream, Wiring{
 		Memory: Memory{
 			Manage:       func(args []string) string { return "managed:" + strings.Join(args, ",") },
 			ProjectScope: "/proj",
@@ -370,7 +370,7 @@ func TestMemoryEdit_RefusesWhatItCannotOpen(t *testing.T) {
 	}
 
 	// A session with no memory store cannot reach the store through this.
-	bare, _ := New([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, mockStream, Wiring{}).
+	bare, _ := New([]llm.Message{{Role: llm.RoleUser, Content: "hi"}}, mockStream, Wiring{}).
 		Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	next, _ = bare.(Model).runCommand("/memory edit m1", "/memory")
 	if got := lastSystemText(next.(Model)); !strings.Contains(got, "unavailable in this session") {

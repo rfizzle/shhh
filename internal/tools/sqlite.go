@@ -24,8 +24,8 @@ import (
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 	sqlite3 "modernc.org/sqlite/lib"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -76,7 +76,7 @@ var sqliteRowHook func()
 var sqliteTool = Definition{
 	Receipt: describe.Describer{Kind: describe.KindSearch, Verb: "search",
 		Does: "a SQLite database, read-only"},
-	Tool: provider.Tool{
+	Tool: llm.Tool{
 		Name: SqliteName,
 		Description: "Read a SQLite database file — an app's database, a test fixture, shhh's own session record — in-process and read-only. " +
 			"The file is opened in SQLite's read-only mode, and a statement that writes, attaches another file, loads an extension or sets a pragma is refused before it runs. " +

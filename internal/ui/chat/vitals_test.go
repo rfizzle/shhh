@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func vitalsModel(t *testing.T) Model {
@@ -15,7 +15,7 @@ func vitalsModel(t *testing.T) Model {
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00002, MaxInputTokens: 200000},
 	})
-	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	return New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Prices:    table,
 		ModelName: "gpt-4o",
 	})
@@ -25,7 +25,7 @@ func TestVitals_RingEvictsOldestKeepingTotals(t *testing.T) {
 	var v vitals
 	for i := 1; i <= vitalsHistory+5; i++ {
 		v.startTurn()
-		v.record("gpt-4o", provider.Usage{PromptTokens: i, CompletionTokens: 1, CachedTokens: 1}, 0.01, true)
+		v.record("gpt-4o", llm.Usage{PromptTokens: i, CompletionTokens: 1, CachedTokens: 1}, 0.01, true)
 		v.endTurn(time.Duration(i) * time.Second)
 	}
 	if got := len(v.turns); got != vitalsHistory {
@@ -55,8 +55,8 @@ func TestVitals_RingEvictsOldestKeepingTotals(t *testing.T) {
 func TestVitals_TurnAccumulatesEveryRound(t *testing.T) {
 	m := vitalsModel(t)
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 1000, CompletionTokens: 100, CachedTokens: 400})
-	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 200, CachedTokens: 0})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 1000, CompletionTokens: 100, CachedTokens: 400})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 2000, CompletionTokens: 200, CachedTokens: 0})
 	m.vitals.endTurn(3 * time.Second)
 
 	turn, ok := m.vitals.lastTurn()
@@ -89,9 +89,9 @@ func TestVitals_TurnAccumulatesEveryRound(t *testing.T) {
 }
 
 func TestVitals_UnpricedModelReportsNoCost(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 1000, CompletionTokens: 100})
 	if m.vitals.priced || m.vitals.totalCost != 0 {
 		t.Fatalf("without a pricing table there is no cost to report, got %v", m.vitals.totalCost)
 	}
@@ -101,11 +101,11 @@ func TestVitals_UnpricedModelReportsNoCost(t *testing.T) {
 }
 
 func TestContextAccounting_CategoriesSumToReportedContext(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: strings.Repeat("s", 4000)},
-		{Role: provider.RoleUser, Content: strings.Repeat("u", 2000)},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
-		{Role: provider.RoleTool, Content: strings.Repeat("t", 8000), ToolCallID: "c1"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: strings.Repeat("s", 4000)},
+		{Role: llm.RoleUser, Content: strings.Repeat("u", 2000)},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{Role: llm.RoleTool, Content: strings.Repeat("t", 8000), ToolCallID: "c1"},
 	}, mockStream, Wiring{
 		ToolDefinitions:      []ToolTokens{{Name: "read_file", Tokens: 500}},
 		ProjectContextTokens: 300,
@@ -150,7 +150,7 @@ func TestContextAccounting_CategoriesSumToReportedContext(t *testing.T) {
 
 func TestContextAccounting_FallsBackToEstimateAndSaysSo(t *testing.T) {
 	m := vitalsModel(t)
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: strings.Repeat("u", 4000)})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: strings.Repeat("u", 4000)})
 
 	b := m.contextAccounting()
 	if b.Reported || b.total() <= 0 {
@@ -165,7 +165,7 @@ func TestContextAccounting_FallsBackToEstimateAndSaysSo(t *testing.T) {
 	}
 
 	// Once the provider reports, both surfaces stop hedging.
-	m.accumulateUsage(&provider.Usage{PromptTokens: 5000, CompletionTokens: 200})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 5000, CompletionTokens: 200})
 	if got := m.contextScreenData().Source; got != "provider-reported" {
 		t.Fatalf("/context should name the provider report, got %q", got)
 	}
@@ -177,7 +177,7 @@ func TestContextAccounting_FallsBackToEstimateAndSaysSo(t *testing.T) {
 func TestStats_ReadsTheSameNumbersAsTheRail(t *testing.T) {
 	m := vitalsModel(t)
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800, CachedTokens: 2000})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 9800, CachedTokens: 2000})
 	m.vitals.endTurn(64 * time.Second)
 
 	rail := m.inspectorContext()
@@ -203,7 +203,7 @@ func TestVitals_TurnLifecycleThroughTheModel(t *testing.T) {
 	if !m.vitals.open {
 		t.Fatal("sending a message opens the turn's accounting")
 	}
-	m.accumulateUsage(&provider.Usage{PromptTokens: 100, CompletionTokens: 10})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 100, CompletionTokens: 10})
 	m.setTurnState(stateInput)
 	if m.vitals.open {
 		t.Fatal("a turn going idle closes its accounting")
@@ -219,12 +219,12 @@ func TestVitals_TurnLifecycleThroughTheModel(t *testing.T) {
 func TestVitals_SessionTotalIsTheTurnsAccountPlusTheEarlierTurns(t *testing.T) {
 	m := statusModel(t)
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 1000, CompletionTokens: 400})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 1000, CompletionTokens: 400})
 	m.vitals.endTurn(time.Second)
 	earlierIn, earlierOut := m.TotalTokensIn, m.TotalTokensOut
 
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 2000, CompletionTokens: 700})
 	m.streaming = strings.Repeat("token ", 400)
 	settleCounts(&m)
 
@@ -246,7 +246,7 @@ func TestVitals_SessionTotalIsTheTurnsAccountPlusTheEarlierTurns(t *testing.T) {
 func TestVitals_SessionTotalHoldsAcrossTheTurnBoundary(t *testing.T) {
 	m := statusModel(t)
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 2000, CompletionTokens: 700})
 	settleCounts(&m)
 	beforeIn, beforeOut := m.liveSessionTokens()
 
@@ -274,7 +274,7 @@ func TestVitals_RailCountsChangeResolutionWithTheTurn(t *testing.T) {
 	// the assertion can name.
 	m.vitals.reset()
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	settleCounts(&m)
 	if bar := stripANSI(m.renderStatusBar(160)); !strings.Contains(bar, "↑41,200 ↓9,800") {
 		t.Fatalf("a working turn should print every digit, got %q", bar)
@@ -296,7 +296,7 @@ func TestVitals_RailCountsChangeResolutionWithTheTurn(t *testing.T) {
 func TestVitals_TheRailDoesNotMoveWhenATurnGoesBackOnTheBooks(t *testing.T) {
 	m := statusModel(t)
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 2000, CompletionTokens: 700})
 	settleCounts(&m)
 
 	// The ceiling: the turn is closed with everything it spent.
@@ -326,12 +326,12 @@ func TestVitals_TheRailDoesNotMoveWhenATurnGoesBackOnTheBooks(t *testing.T) {
 // of the three kinds of number it is.
 func TestContextAccounting_CorrectedEstimateSaysSo(t *testing.T) {
 	m := vitalsModel(t)
-	m.agent.Append(provider.Message{Role: provider.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
+	m.agent.Append(llm.Message{Role: llm.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
 	raw := m.contextEstimate().total()
 
 	// Three responses each charging half again what the estimate said.
 	for range 3 {
-		m.accumulateUsage(&provider.Usage{PromptTokens: int(raw * 3 / 2), CompletionTokens: 100})
+		m.accumulateUsage(&llm.Usage{PromptTokens: int(raw * 3 / 2), CompletionTokens: 100})
 	}
 	// A trim discards the report, which described a conversation that no
 	// longer exists — from here the estimate is what governs.
@@ -376,8 +376,8 @@ func TestContextAccounting_CorrectedEstimateSaysSo(t *testing.T) {
 // provider's own the moment it does, which every surface showing it says.
 func TestContextAccounting_ReportPlusWhatLandedAfterIt(t *testing.T) {
 	m := vitalsModel(t)
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: strings.Repeat("u", 4000)})
-	m.accumulateUsage(&provider.Usage{PromptTokens: 5000, CompletionTokens: 200})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: strings.Repeat("u", 4000)})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 5000, CompletionTokens: 200})
 
 	b := m.contextAccounting()
 	if !b.Reported || b.Since || b.total() != 5000 {
@@ -390,8 +390,8 @@ func TestContextAccounting_ReportPlusWhatLandedAfterIt(t *testing.T) {
 	// The round that report was taken for then lands: an answer, and a large
 	// tool result behind it.
 	raw := m.contextEstimate().total()
-	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: "reading"})
-	m.agent.Append(provider.Message{Role: provider.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
+	m.agent.Append(llm.Message{Role: llm.RoleAssistant, Content: "reading"})
+	m.agent.Append(llm.Message{Role: llm.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
 	since := m.contextEstimate().total() - raw
 
 	b = m.contextAccounting()
@@ -419,10 +419,10 @@ func TestContextAccounting_ReportPlusWhatLandedAfterIt(t *testing.T) {
 // reports no usage leaves the whole mechanism where it was.
 func TestContextAccounting_UnreportedSessionIsUncorrected(t *testing.T) {
 	m := vitalsModel(t)
-	m.agent.Append(provider.Message{Role: provider.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
+	m.agent.Append(llm.Message{Role: llm.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
 	raw := m.contextEstimate().total()
 	for range 3 {
-		m.accumulateUsage(&provider.Usage{})
+		m.accumulateUsage(&llm.Usage{})
 	}
 
 	b := m.contextAccounting()
@@ -450,12 +450,12 @@ func TestContextEstimate_CountsAnImageTheWayCompactionDoes(t *testing.T) {
 	m := vitalsModel(t)
 	before := m.contextEstimate().total()
 
-	shot := provider.Message{Role: provider.RoleUser, Content: "what is this?",
-		Attachments: []provider.Attachment{{Kind: provider.AttachmentImage, Data: []byte("\x89PNG")}}}
+	shot := llm.Message{Role: llm.RoleUser, Content: "what is this?",
+		Attachments: []llm.Attachment{{Kind: llm.AttachmentImage, Data: []byte("\x89PNG")}}}
 	m.agent.Append(shot)
 
 	b := m.contextEstimate()
-	if grew, want := b.total()-before, agent.EstimateMessageTokens([]provider.Message{shot}); grew != want {
+	if grew, want := b.total()-before, agent.EstimateMessageTokens([]llm.Message{shot}); grew != want {
 		t.Errorf("the screenshot moved the occupancy by %d, and compaction reads it as %d", grew, want)
 	}
 	// And the whole conversation agrees with the one function, which is the
@@ -474,16 +474,16 @@ func TestContextEstimate_CountsAnImageTheWayCompactionDoes(t *testing.T) {
 func TestCompactRecovers_AnImageInTheKeptTailChangesNothing(t *testing.T) {
 	m := vitalsModel(t)
 	for range 40 {
-		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: strings.Repeat("u", 40000)})
-		m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: strings.Repeat("a", 40000)})
+		m.agent.Append(llm.Message{Role: llm.RoleUser, Content: strings.Repeat("u", 40000)})
+		m.agent.Append(llm.Message{Role: llm.RoleAssistant, Content: strings.Repeat("a", 40000)})
 	}
 	before := m.compactRecovers(m.contextAccounting())
 	if before <= 0 {
 		t.Fatal("a conversation this long has something for compaction to free")
 	}
 
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: "look at this",
-		Attachments: []provider.Attachment{{Kind: provider.AttachmentImage, Data: []byte("\x89PNG")}}})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: "look at this",
+		Attachments: []llm.Attachment{{Kind: llm.AttachmentImage, Data: []byte("\x89PNG")}}})
 	kept := m.compactKeep()
 	if len(kept) == 0 || kept[len(kept)-1].Content != "look at this" {
 		t.Fatal("the screenshot should be in the tail compaction keeps")

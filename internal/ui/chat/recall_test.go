@@ -5,15 +5,15 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // resumedModel is a session that came back from storage: a conversation
 // loaded before the first key is pressed, which is what --continue, --resume,
 // /load and a branch switch all reduce to.
-func resumedModel(t *testing.T, msgs []provider.Message) Model {
+func resumedModel(t *testing.T, msgs []llm.Message) Model {
 	t.Helper()
 	m := New(msgs[:1], multiTokenStream("ok"), Wiring{Start: &StartInfo{}}).WithResumedMessages("", msgs)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
@@ -33,12 +33,12 @@ func pressDown(t *testing.T, m Model) Model {
 }
 
 func TestResumedSession_RecallsWhatWasTyped(t *testing.T) {
-	m := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "first saved prompt"},
-		{Role: provider.RoleAssistant, Content: "an answer"},
-		{Role: provider.RoleUser, Content: "second saved prompt"},
-		{Role: provider.RoleAssistant, Content: "another answer"},
+	m := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "first saved prompt"},
+		{Role: llm.RoleAssistant, Content: "an answer"},
+		{Role: llm.RoleUser, Content: "second saved prompt"},
+		{Role: llm.RoleAssistant, Content: "another answer"},
 	})
 
 	m = pressUp(t, m)
@@ -62,10 +62,10 @@ func TestResumedSession_RecallsWhatWasTyped(t *testing.T) {
 // A prompt typed this sitting joins the recalled ones rather than replacing
 // them: resuming does not start the history over.
 func TestResumedSession_NewInputJoinsTheHistory(t *testing.T) {
-	m := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "saved prompt"},
-		{Role: provider.RoleAssistant, Content: "an answer"},
+	m := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "saved prompt"},
+		{Role: llm.RoleAssistant, Content: "an answer"},
 	})
 
 	m = sendText(t, m, "typed this sitting")
@@ -86,14 +86,14 @@ func TestResumedSession_NewInputJoinsTheHistory(t *testing.T) {
 // typed, so ↑ never offers them (recall.go). The steer is the one the old
 // prefix list did not know about.
 func TestResumedSession_SkipsWhatNobodyTyped(t *testing.T) {
-	m := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: compactContextMessage("the session so far, summarised"), Machine: true},
-		{Role: provider.RoleUser, Content: "the only thing anyone typed"},
-		{Role: provider.RoleAssistant, Content: "an answer"},
-		{Role: provider.RoleUser, Content: commandContextMessage("go test ./...", "ok", 0, nil), Machine: true},
-		{Role: provider.RoleUser, Content: continuePrompt, Machine: true},
-		{Role: provider.RoleUser, Content: "You are editing a file the task did not ask about.", Machine: true},
+	m := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: compactContextMessage("the session so far, summarised"), Machine: true},
+		{Role: llm.RoleUser, Content: "the only thing anyone typed"},
+		{Role: llm.RoleAssistant, Content: "an answer"},
+		{Role: llm.RoleUser, Content: commandContextMessage("go test ./...", "ok", 0, nil), Machine: true},
+		{Role: llm.RoleUser, Content: continuePrompt, Machine: true},
+		{Role: llm.RoleUser, Content: "You are editing a file the task did not ask about.", Machine: true},
 	})
 
 	if got := len(m.inputHistory); got != 1 {
@@ -113,13 +113,13 @@ func TestResumedSession_SkipsWhatNobodyTyped(t *testing.T) {
 // Loading a second conversation replaces the ring rather than concatenating
 // two histories: the ring belongs to the conversation on screen.
 func TestLoadConversation_ReplacesTheHistory(t *testing.T) {
-	m := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "a prompt from the first conversation"},
+	m := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "a prompt from the first conversation"},
 	})
-	m.loadConversation([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "a prompt from the second"},
+	m.loadConversation([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "a prompt from the second"},
 	})
 
 	if len(m.inputHistory) != 1 || m.inputHistory[0] != "a prompt from the second" {
@@ -133,11 +133,11 @@ func TestLoadConversation_ReplacesTheHistory(t *testing.T) {
 // recordInput's rules are the loaded conversation's rules, because it is the
 // one that does the appending: a prompt repeated back to back is one entry.
 func TestResumedSession_CollapsesRepeatedPrompts(t *testing.T) {
-	m := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "try again"},
-		{Role: provider.RoleAssistant, Content: "an answer"},
-		{Role: provider.RoleUser, Content: "try again"},
+	m := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "try again"},
+		{Role: llm.RoleAssistant, Content: "an answer"},
+		{Role: llm.RoleUser, Content: "try again"},
 	})
 
 	if got := len(m.inputHistory); got != 1 {
@@ -148,7 +148,7 @@ func TestResumedSession_CollapsesRepeatedPrompts(t *testing.T) {
 // Recall belongs to the draft wherever the draft has the keyboard (
 // A turn in flight keeps the input live, so it keeps recall.
 func TestRecall_WorksWhileTheTurnRuns(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, multiTokenStream("ok"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
@@ -228,7 +228,7 @@ func TestRecall_StaysOutOfASurfaceThatHasTheKeyboard(t *testing.T) {
 
 // An empty conversation is an empty ring, and ↑ leaves the draft alone.
 func TestResumedSession_NothingToRecall(t *testing.T) {
-	m := resumedModel(t, []provider.Message{{Role: provider.RoleSystem, Content: "sys"}})
+	m := resumedModel(t, []llm.Message{{Role: llm.RoleSystem, Content: "sys"}})
 
 	m.input.SetValue("")
 	m = pressUp(t, m)
@@ -285,11 +285,11 @@ func TestRecall_RestagesAPasteFromAReopenedSession(t *testing.T) {
 	log := strings.Repeat("loop_test.go:44: round 26 reached, still running\n", 11)
 	token := components.PasteToken("Paste#1", "11 lines")
 	sentence := "this log says the loop never stops — " + token + " — fix it"
-	m := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: sentence,
-			Attachments: []provider.Attachment{{
-				Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}}},
+	m := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: sentence,
+			Attachments: []llm.Attachment{{
+				Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}}},
 	})
 	folds := 0
 	for _, e := range m.transcript {
@@ -320,9 +320,9 @@ func TestRecall_RestagesAPasteFromAReopenedSession(t *testing.T) {
 // behind it.
 func TestRecall_StripsAFoldWithNoPasteBehindIt(t *testing.T) {
 	token := components.PasteToken("Paste#1", "214 lines")
-	m := resumedModel(t, []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "this log says the loop never stops — " + token + " — fix it"},
+	m := resumedModel(t, []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "this log says the loop never stops — " + token + " — fix it"},
 	})
 
 	m = pressUp(t, m)
@@ -342,10 +342,10 @@ func TestRecall_StripsAFoldWithNoPasteBehindIt(t *testing.T) {
 func TestRecall_RenumbersAFoldWhoseNameIsTaken(t *testing.T) {
 	log := strings.Repeat("a line of the log\n", 11)
 	m := frameModel(t, 100, 40)
-	m.attachments = []provider.Attachment{{
-		Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("some other paste\n")}}
-	sent := provider.Attachment{Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}
-	m.transcript = m.sentEntries("sent "+components.PasteToken("Paste#1", "11 lines"), []provider.Attachment{sent})
+	m.attachments = []llm.Attachment{{
+		Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("some other paste\n")}}
+	sent := llm.Attachment{Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}
+	m.transcript = m.sentEntries("sent "+components.PasteToken("Paste#1", "11 lines"), []llm.Attachment{sent})
 
 	got := m.restageRecalled(components.PasteToken("Paste#1", "11 lines"))
 	if want := components.PasteToken("Paste#2", "11 lines"); got != want {
@@ -440,8 +440,8 @@ func TestHistorySearch_EscStagesNothing(t *testing.T) {
 func TestClearKey_DropsThePastesTheDraftFolded(t *testing.T) {
 	log := strings.Repeat("a line of the log\n", 11)
 	m := frameModel(t, 100, 40)
-	m.attachments = []provider.Attachment{{
-		Kind: provider.AttachmentText, Name: "notes.md", Data: []byte("by hand\n")}}
+	m.attachments = []llm.Attachment{{
+		Kind: llm.AttachmentText, Name: "notes.md", Data: []byte("by hand\n")}}
 	updated, _ := m.Update(tea.PasteMsg{Content: log})
 	m = updated.(Model)
 	m.input.InsertString(" fix it")

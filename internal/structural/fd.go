@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
-var fdTool = provider.Tool{
+var fdTool = llm.Tool{
 	Name: FdToolName,
 	Description: "Find files and directories by name with fd: fast, gitignore-aware. Prefer this over shelling out to find or ls pipelines. " +
 		"The pattern is a regular expression by default (smart case); set glob for glob syntax or literal for a fixed string. " +

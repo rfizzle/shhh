@@ -11,10 +11,10 @@ import (
 	"encoding/json"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -206,7 +206,7 @@ func (m *Model) seedFromPlan(rec plan.Record) []entry {
 	// provider reported, and the seed has not been sent yet. The estimate the
 	// rail draws until one arrives already walks the message list, so the
 	// plan is counted by being in it.
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: rec.Prologue(), Machine: true})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: rec.Prologue(), Machine: true})
 	return []entry{{kind: entrySystem, notice: carriedPlanRow(rec)}}
 }
 
@@ -278,7 +278,7 @@ func newSessionRow(slot, resume string) *components.ActivityNotice {
 // always had.
 func (m *Model) setSystemPrompt(text string) {
 	if text == "" {
-		if msgs := m.agent.Messages(); len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+		if msgs := m.agent.Messages(); len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 			text = msgs[0].Content
 		}
 	}
@@ -288,12 +288,12 @@ func (m *Model) setSystemPrompt(text string) {
 		m.agent.SetMessages(nil)
 		return
 	}
-	m.agent.SetMessages([]provider.Message{{Role: provider.RoleSystem, Content: text}})
+	m.agent.SetMessages([]llm.Message{{Role: llm.RoleSystem, Content: text}})
 }
 
 // loadConversation replaces the current conversation and rebuilds the
 // transcript from the stored messages.
-func (m *Model) loadConversation(msgs []provider.Message) {
+func (m *Model) loadConversation(msgs []llm.Message) {
 	m.loadConversationFolded(m.agent.Folded(), msgs)
 }
 
@@ -302,7 +302,7 @@ func (m *Model) loadConversation(msgs []provider.Message) {
 // compaction replaced, which the transcript draws ahead of them out of the
 // window, as the session that compacted drew them. The model never sees
 // them; they are the record.
-func (m *Model) loadConversationFolded(folded, msgs []provider.Message) {
+func (m *Model) loadConversationFolded(folded, msgs []llm.Message) {
 	// A loaded conversation is a session with a past; the start screen does
 	// not come back after it is cleared.
 	m.spendStartScreen()
@@ -327,7 +327,7 @@ func (m *Model) loadConversationFolded(folded, msgs []provider.Message) {
 	// (recall.go). They are seeded here rather than by each of the four
 	// callers, for the same reason the transcript is: every path back to a
 	// stored conversation passes through this one function.
-	m.recallFromMessages(append(append([]provider.Message(nil), folded...), msgs...))
+	m.recallFromMessages(append(append([]llm.Message(nil), folded...), msgs...))
 }
 
 // appendMessageEntries renders a run of messages into the transcript: the
@@ -335,10 +335,10 @@ func (m *Model) loadConversationFolded(folded, msgs []provider.Message) {
 // result that followed it. It is shared by the session load and by the tail a
 // compaction carries through, so a conversation put back on screen
 // looks the same however it got there.
-func (m *Model) appendMessageEntries(msgs []provider.Message) {
+func (m *Model) appendMessageEntries(msgs []llm.Message) {
 	for i, msg := range msgs {
 		switch msg.Role {
-		case provider.RoleUser:
+		case llm.RoleUser:
 			// A user-role message the session wrote for itself comes back as
 			// the session's row, not the reader's
 			// (provider.Message.Machine). The row carries the sentence the
@@ -358,7 +358,7 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 			// with the log behind it, which is what ↑ stages back from
 			// (recall.go).
 			m.appendSent(msg.Content, msg.Attachments)
-		case provider.RoleAssistant:
+		case llm.RoleAssistant:
 			// The thinking that led to the turn comes back with it, above it,
 			// where it happened (think.go). A conversation that is still
 			// replaying its reasoning to the model and no longer showing it
@@ -382,15 +382,15 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 			}
 			for _, tc := range msg.ToolCalls {
 				var result string
-				var atts []provider.Attachment
+				var atts []llm.Attachment
 				var value json.RawMessage
 				if i+1 < len(msgs) {
 					for _, next := range msgs[i+1:] {
-						if next.Role == provider.RoleTool && next.ToolCallID == tc.ID {
+						if next.Role == llm.RoleTool && next.ToolCallID == tc.ID {
 							result, atts, value = next.Content, next.Attachments, next.Value
 							break
 						}
-						if next.Role != provider.RoleTool {
+						if next.Role != llm.RoleTool {
 							break
 						}
 					}
@@ -418,9 +418,9 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 // front of the conversation never reaches here, since the load strips it
 // first (reopen.go).
 // See docs/interface/surfaces.md#the-progress-checkpoint.
-func rowlessOnRebuild(msg provider.Message) bool {
+func rowlessOnRebuild(msg llm.Message) bool {
 	if !msg.Machine {
 		return false
 	}
-	return msg.MachineKind == provider.MachineProgress || msg.Content == agent.ProgressPrompt
+	return msg.MachineKind == llm.MachineProgress || msg.Content == agent.ProgressPrompt
 }

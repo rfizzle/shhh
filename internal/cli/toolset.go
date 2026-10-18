@@ -9,13 +9,13 @@
 package cli
 
 import (
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -95,8 +95,8 @@ type toolset struct {
 func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts toolsetOpts) (*toolset, error) {
 	cfg := ConfigFrom(cmd.Context())
 	t := &toolset{seen: opts.seen}
-	register := func(defs ...provider.Tool) {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), defs...)
+	register := func(defs ...llm.Tool) {
+		session.toolDefs = append(append([]llm.Tool{}, session.toolDefs...), defs...)
 	}
 
 	// Tool-output reduction: bulky results are reduced before the model
@@ -256,7 +256,7 @@ func (s *chatSession) openSourceLedger(db *storage.DB) {
 
 // toolNames is the names of a set of definitions, which is what the
 // reduction pipeline is declared in.
-func toolNames(defs []provider.Tool) []string {
+func toolNames(defs []llm.Tool) []string {
 	names := make([]string, 0, len(defs))
 	for _, d := range defs {
 		names = append(names, d.Name)
@@ -335,6 +335,6 @@ func registerSkills(session *chatSession) {
 	if session.skills.Len() == 0 {
 		return
 	}
-	session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), skill.ToolDefinition(session.skills))
+	session.toolDefs = append(append([]llm.Tool{}, session.toolDefs...), skill.ToolDefinition(session.skills))
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, skill.PromptBlock(session.skills))
 }

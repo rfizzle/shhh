@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -114,7 +114,7 @@ func TestRewind_TheTurnsTakenBackFoldOutOfTheWindow(t *testing.T) {
 // stands at an earlier turn.
 func TestRewind_ReapplyPutsBackExactlyWhatTheRewindTook(t *testing.T) {
 	m := threeTurnModel(t)
-	wantMsgs := append([]provider.Message(nil), m.Messages()...)
+	wantMsgs := append([]llm.Message(nil), m.Messages()...)
 	wantCps := append([]checkpoint(nil), m.checkpoints...)
 
 	m = sendText(t, m, "/rewind 1")

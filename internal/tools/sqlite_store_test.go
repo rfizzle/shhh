@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -23,7 +23,7 @@ func TestSqlite_ShhhsOwnStoreIsReadWhileTheSessionWrites(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	msgs := []provider.Message{{Role: "user", Content: "first"}}
+	msgs := []llm.Message{{Role: "user", Content: "first"}}
 	if _, err := db.AutosaveChat("sitting", "sitting-2", msgs, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +35,7 @@ func TestSqlite_ShhhsOwnStoreIsReadWhileTheSessionWrites(t *testing.T) {
 			return
 		}
 		saved = true
-		msgs = append(msgs, provider.Message{Role: "assistant", Content: "second"})
+		msgs = append(msgs, llm.Message{Role: "assistant", Content: "second"})
 		_, saveErr = db.AutosaveChat("sitting", "sitting-2", msgs, nil)
 	})
 	defer restore()

@@ -5,7 +5,7 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -32,7 +32,7 @@ var streamSeq int
 
 type StreamModel struct {
 	id        int
-	events    <-chan provider.StreamEvent
+	events    <-chan llm.StreamEvent
 	cancel    context.CancelFunc
 	spinner   spinner.Model
 	output    string
@@ -41,7 +41,7 @@ type StreamModel struct {
 	err       error
 }
 
-func NewStreamModel(events <-chan provider.StreamEvent, cancel context.CancelFunc) StreamModel {
+func NewStreamModel(events <-chan llm.StreamEvent, cancel context.CancelFunc) StreamModel {
 	// The frame set and its cadence belong to components, so the
 	// one-shot UI spins exactly like the chat surface does.
 	s := components.NewSpinnerModel()

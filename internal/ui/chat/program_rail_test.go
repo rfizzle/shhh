@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -37,7 +37,7 @@ func TestProgram_TheRailsFootLineOpensTheWholeRail(t *testing.T) {
 	lead.hold = hold
 	m, _ := agentSession(t, root, nil, children{
 		"writer-1": {
-			{calls: []provider.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
+			{calls: []llm.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
 			{text: "The counter is read at the top of the loop, and nowhere else."},
 		},
 	}, lead, programTurn{text: "The writer is on it.", hold: open})

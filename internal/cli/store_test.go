@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -112,7 +112,7 @@ func TestPruneStoreOnce_PrunesSavedChatsOnTheWindowItIsGiven(t *testing.T) {
 	}
 	defer db.Close()
 
-	must(t, db.SaveChat("ancient", []provider.Message{{Role: provider.RoleUser, Content: "hello"}}))
+	must(t, db.SaveChat("ancient", []llm.Message{{Role: llm.RoleUser, Content: "hello"}}))
 	old := time.Now().UTC().AddDate(0, 0, -400).Format(time.RFC3339Nano)
 	_, err = db.SQL().Exec(`UPDATE chat_sessions SET updated_at = ?`, old)
 	must(t, err)

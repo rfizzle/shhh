@@ -9,7 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -127,7 +127,7 @@ func TestSteps_LiveStepRunsOpen(t *testing.T) {
 	m.transcript[6].toolResult = "ok"
 	m.setTurnState(stateStreaming)
 	// A batch of the step's calls is still out, so the step is running.
-	m.agent.BeginToolRound("", []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"loop.go"}`}}, nil)
+	m.agent.BeginToolRound("", []llm.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"loop.go"}`}}, nil)
 	m.invalidateRenderCache()
 
 	view := stripANSI(m.renderHistory())

@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
@@ -19,9 +19,9 @@ func TestGate_NoRowReadsTheText(t *testing.T) {
 
 	t.Run("a reopened session", func(t *testing.T) {
 		m := New(nil, mockStream, Wiring{})
-		m.appendMessageEntries([]provider.Message{
-			{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "g1", Name: quality.ToolName, Arguments: `{"action":"run"}`}}},
-			{Role: provider.RoleTool, ToolCallID: "g1", Content: text, Value: sum.Value()},
+		m.appendMessageEntries([]llm.Message{
+			{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "g1", Name: quality.ToolName, Arguments: `{"action":"run"}`}}},
+			{Role: llm.RoleTool, ToolCallID: "g1", Content: text, Value: sum.Value()},
 		})
 		got, ok := gateVerdict(lastGateRow(t, m))
 		if !ok || got != sum {
@@ -47,14 +47,14 @@ func TestGate_NoRowReadsTheText(t *testing.T) {
 			value []byte
 			gate  bool
 		}{{"with", sum.Value(), true}, {"without", nil, false}} {
-			m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+			m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 			updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 			m = updated.(Model)
 			updated, _ = m.sendUserMessage("run the gate")
 			m = updated.(Model)
 			m.state = stateStreaming
-			call := provider.ToolCall{ID: "g1", Name: quality.ToolName, Arguments: `{"action":"run"}`}
-			m.agent.BeginToolRound("", []provider.ToolCall{call}, nil)
+			call := llm.ToolCall{ID: "g1", Name: quality.ToolName, Arguments: `{"action":"run"}`}
+			m.agent.BeginToolRound("", []llm.ToolCall{call}, nil)
 			updated, _ = m.Update(toolResultsMsg{runID: m.agent.RunID(), results: []agent.ToolResult{
 				{Call: call, Result: `Quality gate "default": FAIL — 1/3 checks passed (2s)`, Value: tc.value},
 			}})
@@ -67,9 +67,9 @@ func TestGate_NoRowReadsTheText(t *testing.T) {
 
 	t.Run("a stored session from before the value", func(t *testing.T) {
 		m := New(nil, mockStream, Wiring{})
-		m.appendMessageEntries([]provider.Message{
-			{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "g1", Name: quality.ToolName}}},
-			{Role: provider.RoleTool, ToolCallID: "g1", Content: `Quality gate "default": FAIL — 1/3 checks passed (2s)`},
+		m.appendMessageEntries([]llm.Message{
+			{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{ID: "g1", Name: quality.ToolName}}},
+			{Role: llm.RoleTool, ToolCallID: "g1", Content: `Quality gate "default": FAIL — 1/3 checks passed (2s)`},
 		})
 		if _, ok := gateVerdict(lastGateRow(t, m)); ok {
 			t.Error("a row with no value read the text")

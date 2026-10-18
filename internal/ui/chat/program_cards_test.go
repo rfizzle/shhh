@@ -12,16 +12,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // commandTurn is a turn that asks to run one command.
 func commandTurn(hold chan struct{}, command string) programTurn {
-	return programTurn{hold: hold, calls: []provider.ToolCall{
+	return programTurn{hold: hold, calls: []llm.ToolCall{
 		call("c-"+command, tools.ExecCommandName, fmt.Sprintf(`{"command":%q}`, command)),
 	}}
 }
@@ -125,7 +125,7 @@ func TestProgram_TheCancelChordStopsARunningCommand(t *testing.T) {
 // the person stopped it rather than that it failed.
 func TestProgram_TheCancelChordStopsARunningSearch(t *testing.T) {
 	m, _ := scriptedSession(
-		programTurn{calls: []provider.ToolCall{call("s1", tools.SearchName, `{"pattern":"rounds"}`)}},
+		programTurn{calls: []llm.ToolCall{call("s1", tools.SearchName, `{"pattern":"rounds"}`)}},
 	)
 	started, returned := make(chan struct{}), make(chan struct{})
 	m.agent.SetExecutor(func(ctx context.Context, _ string, _ json.RawMessage) (string, error) {
@@ -154,7 +154,7 @@ func TestProgram_TheCancelChordStopsARunningSearch(t *testing.T) {
 	frameHas(t, frame, "cancelled")
 	msgs := m.agent.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleTool || last.Content != agent.CancelledResult {
+	if last.Role != llm.RoleTool || last.Content != agent.CancelledResult {
 		t.Fatalf("the model is told %q, want %q", last.Content, agent.CancelledResult)
 	}
 }
@@ -166,7 +166,7 @@ func TestProgram_TheCancelChordStopsARunningSearch(t *testing.T) {
 func TestProgram_TheCancelChordStopsAnApprovedFetch(t *testing.T) {
 	hold, release := quietHold(t)
 	m, _ := scriptedSession(
-		programTurn{hold: hold, calls: []provider.ToolCall{call("f1", "fetch_page", `{"url":"https://example.test/a"}`)}},
+		programTurn{hold: hold, calls: []llm.ToolCall{call("f1", "fetch_page", `{"url":"https://example.test/a"}`)}},
 		programTurn{text: "The page was not read."},
 	)
 	m.gatedTools = map[string]GatedPreviewFunc{"fetch_page": func(json.RawMessage) (GatedPreview, error) {
@@ -200,7 +200,7 @@ func TestProgram_TheCancelChordStopsAnApprovedFetch(t *testing.T) {
 
 	var told string
 	for _, msg := range m.agent.Messages() {
-		if msg.Role == provider.RoleTool && msg.ToolCallID == "f1" {
+		if msg.Role == llm.RoleTool && msg.ToolCallID == "f1" {
 			told = msg.Content
 		}
 	}
@@ -409,7 +409,7 @@ func TestProgram_APlanCardImplementsInANewSession(t *testing.T) {
 // the set.
 func TestProgram_AQuestionCardIsAnsweredTabByTab(t *testing.T) {
 	m, _ := scriptedSession(
-		programTurn{calls: []provider.ToolCall{call("q1", ask.ToolName, `{"questions":[{"question":"Which store should the cache use?","shape":"choose","options":[{"label":"SQLite","detail":"in the checkout already","recommended":true},{"label":"Postgres","detail":"one more service to run"}]},{"question":"Should the migration be reversible?","shape":"confirm"}]}`)}},
+		programTurn{calls: []llm.ToolCall{call("q1", ask.ToolName, `{"questions":[{"question":"Which store should the cache use?","shape":"choose","options":[{"label":"SQLite","detail":"in the checkout already","recommended":true},{"label":"Postgres","detail":"one more service to run"}]},{"question":"Should the migration be reversible?","shape":"confirm"}]}`)}},
 		programTurn{text: "Thank you, that settles both."},
 	)
 	m.wiring.Ask = true
@@ -435,7 +435,7 @@ func TestProgram_AQuestionCardIsAnsweredTabByTab(t *testing.T) {
 func TestProgram_AYesOrNoQuestionTakesItsLetter(t *testing.T) {
 	hold, release := quietHold(t)
 	m, _ := scriptedSession(
-		programTurn{hold: hold, calls: []provider.ToolCall{call("q1", ask.ToolName, `{"question":"Should the migration be reversible?","shape":"confirm"}`)}},
+		programTurn{hold: hold, calls: []llm.ToolCall{call("q1", ask.ToolName, `{"question":"Should the migration be reversible?","shape":"confirm"}`)}},
 		programTurn{text: "Reversible it is."},
 	)
 	m.wiring.Ask = true
@@ -457,7 +457,7 @@ func TestProgram_AYesOrNoQuestionTakesItsLetter(t *testing.T) {
 func TestProgram_AFreeAnswerIsTypedBesideTheRail(t *testing.T) {
 	hold, release := quietHold(t)
 	m, p := scriptedSession(
-		programTurn{hold: hold, calls: []provider.ToolCall{call("q1", ask.ToolName, `{"question":"What should the flag be called?","shape":"text"}`)}},
+		programTurn{hold: hold, calls: []llm.ToolCall{call("q1", ask.ToolName, `{"question":"What should the flag be called?","shape":"text"}`)}},
 		programTurn{text: "max-rounds it is."},
 	)
 	m.wiring.Ask = true
@@ -487,7 +487,7 @@ func TestProgram_AFreeAnswerIsTypedBesideTheRail(t *testing.T) {
 func TestProgram_TheWaitingAndGatedRowsShedRungs(t *testing.T) {
 	hold, release := quietHold(t)
 	m, _ := scriptedSession(
-		programTurn{hold: hold, calls: []provider.ToolCall{call("q1", ask.ToolName, `{"question":"Should the migration be reversible?","shape":"confirm"}`)}},
+		programTurn{hold: hold, calls: []llm.ToolCall{call("q1", ask.ToolName, `{"question":"Should the migration be reversible?","shape":"confirm"}`)}},
 		programTurn{text: "Reversible it is."},
 	)
 	m.wiring.Ask = true

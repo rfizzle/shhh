@@ -3,7 +3,7 @@ package storage
 import (
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 type StreamMetrics struct {
@@ -14,9 +14,9 @@ type StreamMetrics struct {
 	Success   bool
 }
 
-func InstrumentStream(events <-chan provider.StreamEvent) (<-chan provider.StreamEvent, *StreamMetrics) {
+func InstrumentStream(events <-chan llm.StreamEvent) (<-chan llm.StreamEvent, *StreamMetrics) {
 	metrics := &StreamMetrics{}
-	out := make(chan provider.StreamEvent)
+	out := make(chan llm.StreamEvent)
 	go func() {
 		defer close(out)
 		start := time.Now()

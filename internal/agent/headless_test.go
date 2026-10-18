@@ -11,21 +11,21 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // scriptedStream returns a StreamFunc that serves one scripted event slice
 // per request, failing the test if more requests arrive than scripted.
-func scriptedStream(t *testing.T, rounds ...[]provider.StreamEvent) StreamFunc {
+func scriptedStream(t *testing.T, rounds ...[]llm.StreamEvent) StreamFunc {
 	t.Helper()
 	i := 0
-	return func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		if i >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", i+1)
 		}
 		evs := rounds[i]
 		i++
-		ch := make(chan provider.StreamEvent, len(evs))
+		ch := make(chan llm.StreamEvent, len(evs))
 		for _, ev := range evs {
 			ch <- ev
 		}
@@ -35,17 +35,17 @@ func scriptedStream(t *testing.T, rounds ...[]provider.StreamEvent) StreamFunc {
 	}
 }
 
-func toolCallRound(calls ...provider.ToolCall) []provider.StreamEvent {
-	return []provider.StreamEvent{{ToolCalls: calls}}
+func toolCallRound(calls ...llm.ToolCall) []llm.StreamEvent {
+	return []llm.StreamEvent{{ToolCalls: calls}}
 }
 
-func doneRound(text string) []provider.StreamEvent {
-	return []provider.StreamEvent{{Token: text}, {Done: true}}
+func doneRound(text string) []llm.StreamEvent {
+	return []llm.StreamEvent{{Token: text}, {Done: true}}
 }
 
 func TestHeadlessRun_PlainResponse(t *testing.T) {
-	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}},
-		scriptedStream(t, []provider.StreamEvent{{Token: "hello "}, {Token: "world"}, {Done: true}}))
+	a := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}},
+		scriptedStream(t, []llm.StreamEvent{{Token: "hello "}, {Token: "world"}, {Done: true}}))
 
 	var streamed strings.Builder
 	h := &Headless{Agent: a, OnText: func(s string) { streamed.WriteString(s) }}
@@ -62,14 +62,14 @@ func TestHeadlessRun_PlainResponse(t *testing.T) {
 	}
 	msgs := a.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleAssistant || last.Content != "hello world" {
+	if last.Role != llm.RoleAssistant || last.Content != "hello world" {
 		t.Fatalf("final assistant message not recorded, got %+v", last)
 	}
 }
 
 func TestHeadlessRun_AutoToolRound(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("done"),
 	))
 	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
@@ -82,7 +82,7 @@ func TestHeadlessRun_AutoToolRound(t *testing.T) {
 	var calls, results []string
 	h := &Headless{
 		Agent:        a,
-		OnToolCall:   func(tc provider.ToolCall) { calls = append(calls, tc.Name) },
+		OnToolCall:   func(tc llm.ToolCall) { calls = append(calls, tc.Name) },
 		OnToolResult: func(r ToolResult) { results = append(results, r.Result) },
 	}
 
@@ -99,9 +99,9 @@ func TestHeadlessRun_AutoToolRound(t *testing.T) {
 	if len(results) != 1 || results[0] != "contents" {
 		t.Fatalf("OnToolResult results = %v", results)
 	}
-	var toolMsg *provider.Message
+	var toolMsg *llm.Message
 	for i := range a.Messages() {
-		if a.Messages()[i].Role == provider.RoleTool {
+		if a.Messages()[i].Role == llm.RoleTool {
 			toolMsg = &a.Messages()[i]
 		}
 	}
@@ -112,14 +112,14 @@ func TestHeadlessRun_AutoToolRound(t *testing.T) {
 
 func TestHeadlessRun_GatedCallResolved(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "execute_command", Arguments: `{"command":"ls"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "execute_command", Arguments: `{"command":"ls"}`}),
 		doneRound("ok"),
 	))
 
 	h := &Headless{
 		Agent: a,
-		Gate:  func(tc provider.ToolCall) bool { return tc.Name == "execute_command" },
-		Resolve: func(tc provider.ToolCall) string {
+		Gate:  func(tc llm.ToolCall) bool { return tc.Name == "execute_command" },
+		Resolve: func(tc llm.ToolCall) string {
 			return "error: the user declined this tool call"
 		},
 	}
@@ -131,9 +131,9 @@ func TestHeadlessRun_GatedCallResolved(t *testing.T) {
 	if final != "ok" {
 		t.Fatalf("final = %q, want %q", final, "ok")
 	}
-	var toolMsg provider.Message
+	var toolMsg llm.Message
 	for _, m := range a.Messages() {
-		if m.Role == provider.RoleTool {
+		if m.Role == llm.RoleTool {
 			toolMsg = m
 		}
 	}
@@ -144,16 +144,16 @@ func TestHeadlessRun_GatedCallResolved(t *testing.T) {
 
 func TestHeadlessRun_NilResolveDeclines(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "write_file"}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "write_file"}),
 		doneRound("ok"),
 	))
-	h := &Headless{Agent: a, Gate: func(provider.ToolCall) bool { return true }}
+	h := &Headless{Agent: a, Gate: func(llm.ToolCall) bool { return true }}
 
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	for _, m := range a.Messages() {
-		if m.Role == provider.RoleTool && !strings.Contains(m.Content, "cannot be approved") {
+		if m.Role == llm.RoleTool && !strings.Contains(m.Content, "cannot be approved") {
 			t.Fatalf("nil Resolve should decline, got %q", m.Content)
 		}
 	}
@@ -162,9 +162,9 @@ func TestHeadlessRun_NilResolveDeclines(t *testing.T) {
 func TestHeadlessRun_RoundCap(t *testing.T) {
 	// Every stream requests another tool round; with a cap of 2 the run must
 	// stop with ErrRoundCap after the second round's results are recorded.
-	rounds := [][]provider.StreamEvent{
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
-		toolCallRound(provider.ToolCall{ID: "c2", Name: "search"}),
+	rounds := [][]llm.StreamEvent{
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "search"}),
+		toolCallRound(llm.ToolCall{ID: "c2", Name: "search"}),
 	}
 	a := New(nil, scriptedStream(t, rounds...))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "r", nil })
@@ -179,7 +179,7 @@ func TestHeadlessRun_RoundCap(t *testing.T) {
 	// stays well-formed.
 	var toolResults int
 	for _, m := range a.Messages() {
-		if m.Role == provider.RoleTool {
+		if m.Role == llm.RoleTool {
 			toolResults++
 		}
 	}
@@ -190,7 +190,7 @@ func TestHeadlessRun_RoundCap(t *testing.T) {
 
 func TestHeadlessRun_StreamError(t *testing.T) {
 	boom := errors.New("boom")
-	a := New(nil, scriptedStream(t, []provider.StreamEvent{{Err: boom}}))
+	a := New(nil, scriptedStream(t, []llm.StreamEvent{{Err: boom}}))
 	h := &Headless{Agent: a}
 	if _, err := h.Run("go"); !errors.Is(err, boom) {
 		t.Fatalf("expected stream error to propagate, got %v", err)
@@ -198,12 +198,12 @@ func TestHeadlessRun_StreamError(t *testing.T) {
 }
 
 func TestHeadlessRun_UsageReported(t *testing.T) {
-	a := New(nil, scriptedStream(t, []provider.StreamEvent{
+	a := New(nil, scriptedStream(t, []llm.StreamEvent{
 		{Token: "x"},
-		{Done: true, Usage: &provider.Usage{PromptTokens: 10, CompletionTokens: 5}},
+		{Done: true, Usage: &llm.Usage{PromptTokens: 10, CompletionTokens: 5}},
 	}))
-	var got provider.Usage
-	h := &Headless{Agent: a, OnUsage: func(u *provider.Usage) { got = *u }}
+	var got llm.Usage
+	h := &Headless{Agent: a, OnUsage: func(u *llm.Usage) { got = *u }}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestHeadlessRun_UsageReported(t *testing.T) {
 
 func TestHeadlessRun_SteerInjectedBetweenRounds(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "search"}),
 		doneRound("done"),
 	))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "r", nil })
@@ -236,10 +236,10 @@ func TestHeadlessRun_SteerInjectedBetweenRounds(t *testing.T) {
 	// and before the final response, and it resets the round counter.
 	steerIdx, toolIdx := -1, -1
 	for i, m := range a.Messages() {
-		if m.Role == provider.RoleUser && m.Content == "focus on x" {
+		if m.Role == llm.RoleUser && m.Content == "focus on x" {
 			steerIdx = i
 		}
-		if m.Role == provider.RoleTool {
+		if m.Role == llm.RoleTool {
 			toolIdx = i
 		}
 	}
@@ -260,9 +260,9 @@ func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
 	// for the interrupt to cancel.
 	asked := make(chan struct{})
 	var askedOnce sync.Once
-	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		defer askedOnce.Do(func() { close(asked) })
-		ch := make(chan provider.StreamEvent)
+		ch := make(chan llm.StreamEvent)
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
 			<-ctx.Done()
@@ -295,7 +295,7 @@ func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
 	}
 	// The conversation stays well-formed: no assistant message owes results.
 	for _, m := range a.Messages() {
-		if m.Role == provider.RoleAssistant && len(m.ToolCalls) > 0 {
+		if m.Role == llm.RoleAssistant && len(m.ToolCalls) > 0 {
 			t.Fatal("interrupted run must not leave dangling tool calls")
 		}
 	}
@@ -313,10 +313,10 @@ func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
 // on-target, which queues no intervention.)
 func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
-		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
-		toolCallRound(provider.ToolCall{ID: "c3", Name: "read_file", Arguments: `{"path":"z"}`}),
-		toolCallRound(provider.ToolCall{ID: "c4", Name: "read_file", Arguments: `{"path":"w"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
+		toolCallRound(llm.ToolCall{ID: "c3", Name: "read_file", Arguments: `{"path":"z"}`}),
+		toolCallRound(llm.ToolCall{ID: "c4", Name: "read_file", Arguments: `{"path":"w"}`}),
 		doneRound("done")))
 	run, _ := testSummaryRun(t, &slowProvider{}, "ship the parser")
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) {
@@ -354,7 +354,7 @@ func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 // unconditionally.
 func TestHeadlessRun_OnSummarySilentWithoutAReading(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("done")))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
@@ -373,7 +373,7 @@ func TestHeadlessRun_OnSummarySilentWithoutAReading(t *testing.T) {
 func TestHeadlessRun_TellsTheTurnTheTreeMoved(t *testing.T) {
 	ws, _ := treeFixture(t)
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"a.txt"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"a.txt"}`}),
 		doneRound("done"),
 	))
 	a.SetTreeCheck(TreeCheck{Dir: ws})
@@ -393,7 +393,7 @@ func TestHeadlessRun_TellsTheTurnTheTreeMoved(t *testing.T) {
 	msgs := a.Messages()
 	// system-less: user, assistant(tool call), tool result, tree notice, assistant.
 	notice := msgs[len(msgs)-2]
-	if notice.Role != provider.RoleUser || !strings.Contains(notice.Content, "[tree: 1 path changed outside this session: theirs.txt]") {
+	if notice.Role != llm.RoleUser || !strings.Contains(notice.Content, "[tree: 1 path changed outside this session: theirs.txt]") {
 		t.Errorf("the notice should sit between the results and the final answer, got %+v", notice)
 	}
 }
@@ -404,8 +404,8 @@ func TestHeadlessRun_TellsTheTurnTheTreeMoved(t *testing.T) {
 func TestHeadlessRun_ARoundsReadsOverlap(t *testing.T) {
 	a := New(nil, scriptedStream(t,
 		toolCallRound(
-			provider.ToolCall{ID: "slow", Name: "search", Arguments: `{"q":"slow"}`},
-			provider.ToolCall{ID: "fast", Name: "search", Arguments: `{"q":"fast"}`},
+			llm.ToolCall{ID: "slow", Name: "search", Arguments: `{"q":"slow"}`},
+			llm.ToolCall{ID: "fast", Name: "search", Arguments: `{"q":"fast"}`},
 		),
 		doneRound("done"),
 	))
@@ -451,7 +451,7 @@ func TestHeadlessRun_ARoundsReadsOverlap(t *testing.T) {
 	// addressed out of order is a result addressed to the wrong call.
 	var recorded []string
 	for _, msg := range a.Messages() {
-		if msg.Role == provider.RoleTool {
+		if msg.Role == llm.RoleTool {
 			recorded = append(recorded, msg.ToolCallID+"="+msg.Content)
 		}
 	}
@@ -466,16 +466,16 @@ func TestHeadlessRun_ARoundsReadsOverlap(t *testing.T) {
 func TestHeadlessRun_GatedCallsStaySequential(t *testing.T) {
 	a := New(nil, scriptedStream(t,
 		toolCallRound(
-			provider.ToolCall{ID: "w1", Name: "write_file", Arguments: `{"path":"a"}`},
-			provider.ToolCall{ID: "w2", Name: "write_file", Arguments: `{"path":"b"}`},
+			llm.ToolCall{ID: "w1", Name: "write_file", Arguments: `{"path":"a"}`},
+			llm.ToolCall{ID: "w2", Name: "write_file", Arguments: `{"path":"b"}`},
 		),
 		doneRound("done"),
 	))
 	var asked []string
 	h := &Headless{
 		Agent: a,
-		Gate:  func(provider.ToolCall) bool { return true },
-		Resolve: func(tc provider.ToolCall) string {
+		Gate:  func(llm.ToolCall) bool { return true },
+		Resolve: func(tc llm.ToolCall) string {
 			// The queue is what makes this sequential: a second call is only
 			// offered once this one has been resolved.
 			if a.QueuedApprovals() != 2-len(asked) {
@@ -493,7 +493,7 @@ func TestHeadlessRun_GatedCallsStaySequential(t *testing.T) {
 	}
 	var recorded []string
 	for _, msg := range a.Messages() {
-		if msg.Role == provider.RoleTool {
+		if msg.Role == llm.RoleTool {
 			recorded = append(recorded, msg.Content)
 		}
 	}
@@ -508,18 +508,18 @@ func TestHeadlessRun_GatedCallsStaySequential(t *testing.T) {
 func TestHeadlessRun_WaitsOutAnUnansweredRequest(t *testing.T) {
 	t.Parallel()
 	requests := 0
-	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++
 		if requests <= 2 {
 			// The floor is a second, so the two waits are the whole of this
 			// test's wall clock.
-			return nil, nil, &provider.Failure{
-				Class: provider.ClassOverloaded, Status: 529, RetryAfter: time.Millisecond,
+			return nil, nil, &llm.Failure{
+				Class: llm.ClassOverloaded, Status: 529, RetryAfter: time.Millisecond,
 			}
 		}
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "done"}
-		ch <- provider.StreamEvent{Done: true}
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "done"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
@@ -544,7 +544,7 @@ func TestHeadlessRun_WaitsOutAnUnansweredRequest(t *testing.T) {
 	// The turn is one user message and one answer: nothing the failures did
 	// reached the conversation.
 	msgs := a.Messages()
-	if len(msgs) != 2 || msgs[0].Role != provider.RoleUser || msgs[1].Content != "done" {
+	if len(msgs) != 2 || msgs[0].Role != llm.RoleUser || msgs[1].Content != "done" {
 		t.Fatalf("a retried request leaves the conversation alone, got %+v", msgs)
 	}
 }
@@ -552,14 +552,14 @@ func TestHeadlessRun_WaitsOutAnUnansweredRequest(t *testing.T) {
 // A failure waiting cannot fix is returned rather than slept on, so a run
 // with a rejected key fails at once instead of a minute later.
 func TestHeadlessRun_DoesNotWaitOutAFailureItCannotFix(t *testing.T) {
-	fail := &provider.Failure{Class: provider.ClassAuth, Status: 401}
+	fail := &llm.Failure{Class: llm.ClassAuth, Status: 401}
 	requests := 0
-	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++
 		return nil, nil, fail
 	})
 	h := &Headless{Agent: a, OnRetry: func(RetryNotice) { t.Error("a rejected key is not waited out") }}
-	if _, err := h.Run("go"); !errors.Is(err, provider.ErrAuth) {
+	if _, err := h.Run("go"); !errors.Is(err, llm.ErrAuth) {
 		t.Fatalf("err = %v, want the auth failure", err)
 	}
 	if requests != 1 {
@@ -572,9 +572,9 @@ func TestHeadlessRun_DoesNotWaitOutAFailureItCannotFix(t *testing.T) {
 // still slept would be the whole point of the setting missed.
 func TestHeadlessRun_ABoundOfNoneWaitsOutNothing(t *testing.T) {
 	requests := 0
-	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++
-		return nil, nil, &provider.Failure{Class: provider.ClassOverloaded, Status: 529}
+		return nil, nil, &llm.Failure{Class: llm.ClassOverloaded, Status: 529}
 	})
 	h := &Headless{Agent: a, OnRetry: func(RetryNotice) { t.Error("a bound of none makes no attempt") }}
 	none := 0
@@ -591,8 +591,8 @@ func TestHeadlessRun_ABoundOfNoneWaitsOutNothing(t *testing.T) {
 // results, so the turn ends there rather than after the countdown.
 func TestHeadlessRun_InterruptEndsAWait(t *testing.T) {
 	t.Parallel()
-	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		return nil, nil, &provider.Failure{Class: provider.ClassOverloaded, RetryAfter: maxRetryWait}
+	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		return nil, nil, &llm.Failure{Class: llm.ClassOverloaded, RetryAfter: maxRetryWait}
 	})
 	h := &Headless{Agent: a}
 	h.OnRetry = func(RetryNotice) { go h.Interrupt() }
@@ -611,17 +611,17 @@ func TestHeadlessRun_InterruptEndsAWait(t *testing.T) {
 func TestHeadlessRun_RetryHandsBackWhatItThrewAway(t *testing.T) {
 	t.Parallel()
 	requests := 0
-	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++
-		ch := make(chan provider.StreamEvent, 2)
+		ch := make(chan llm.StreamEvent, 2)
 		if requests == 1 {
-			ch <- provider.StreamEvent{Token: "half a sen"}
-			ch <- provider.StreamEvent{Err: &provider.Failure{
-				Class: provider.ClassNetwork, RetryAfter: time.Millisecond,
+			ch <- llm.StreamEvent{Token: "half a sen"}
+			ch <- llm.StreamEvent{Err: &llm.Failure{
+				Class: llm.ClassNetwork, RetryAfter: time.Millisecond,
 			}}
 		} else {
-			ch <- provider.StreamEvent{Token: "the whole answer"}
-			ch <- provider.StreamEvent{Done: true}
+			ch <- llm.StreamEvent{Token: "the whole answer"}
+			ch <- llm.StreamEvent{Done: true}
 		}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
@@ -653,16 +653,16 @@ func TestHeadlessRun_RetryHandsBackWhatItThrewAway(t *testing.T) {
 // hand the next one whatever was left of the three attempts.
 func TestHeadlessRun_EachTurnGetsItsOwnBound(t *testing.T) {
 	t.Parallel()
-	fail := &provider.Failure{Class: provider.ClassOverloaded, RetryAfter: maxRetryWait}
+	fail := &llm.Failure{Class: llm.ClassOverloaded, RetryAfter: maxRetryWait}
 	requests := 0
-	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++
 		if requests == 1 {
 			return nil, nil, fail
 		}
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "done"}
-		ch <- provider.StreamEvent{Done: true}
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "done"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
@@ -693,7 +693,7 @@ func TestHeadlessRun_EachTurnGetsItsOwnBound(t *testing.T) {
 func TestHeadlessRun_HoldsAtTheRoundTail(t *testing.T) {
 	t.Parallel()
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("carried on"),
 	))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
@@ -749,7 +749,7 @@ func TestHeadlessRun_HoldsAtTheRoundTail(t *testing.T) {
 func TestHeadlessRun_InterruptEndsAHold(t *testing.T) {
 	t.Parallel()
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 	))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
@@ -769,7 +769,7 @@ func TestHeadlessRun_InterruptEndsAHold(t *testing.T) {
 func TestHeadlessRun_ASteerGivenDuringAHoldJoinsAtThatBoundary(t *testing.T) {
 	t.Parallel()
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("carried on"),
 	))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
@@ -801,7 +801,7 @@ func TestHeadlessRun_ASteerGivenDuringAHoldJoinsAtThatBoundary(t *testing.T) {
 func TestHeadlessRun_NoHoldNoWait(t *testing.T) {
 	t.Parallel()
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
 		doneRound("done"),
 	))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
@@ -813,7 +813,7 @@ func TestHeadlessRun_NoHoldNoWait(t *testing.T) {
 }
 
 func TestHeadlessRun_OnCloseFeedsTheVerdictBackAsAnotherRound(t *testing.T) {
-	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}},
+	a := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}},
 		scriptedStream(t, doneRound("done"), doneRound("fixed it")))
 	asked := 0
 	h := &Headless{Agent: a, OnClose: func(final string) string {
@@ -840,10 +840,10 @@ func TestHeadlessRun_OnCloseFeedsTheVerdictBackAsAnotherRound(t *testing.T) {
 	msgs := a.Messages()
 	var fed bool
 	for i, m := range msgs {
-		if m.Role == provider.RoleUser && strings.Contains(m.Content, "FAIL") {
+		if m.Role == llm.RoleUser && strings.Contains(m.Content, "FAIL") {
 			fed = true
 			// The answer it is a reply to comes first.
-			if i == 0 || msgs[i-1].Role != provider.RoleAssistant || msgs[i-1].Content != "done" {
+			if i == 0 || msgs[i-1].Role != llm.RoleAssistant || msgs[i-1].Content != "done" {
 				t.Errorf("the verdict does not follow the answer it is about: %+v", msgs[i-1])
 			}
 		}
@@ -854,7 +854,7 @@ func TestHeadlessRun_OnCloseFeedsTheVerdictBackAsAnotherRound(t *testing.T) {
 }
 
 func TestHeadlessRun_OnCloseEndsTheTurnWhenItHandsBackNothing(t *testing.T) {
-	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}},
+	a := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}},
 		scriptedStream(t, doneRound("done")))
 	h := &Headless{Agent: a, OnClose: func(string) string { return "" }}
 	final, err := h.Run("go")
@@ -867,16 +867,16 @@ func TestHeadlessRun_OnCloseEndsTheTurnWhenItHandsBackNothing(t *testing.T) {
 }
 
 func TestHeadlessRun_OnCloseIsNotAskedOfAnInterruptedTurn(t *testing.T) {
-	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil)
+	a := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, nil)
 	h := &Headless{Agent: a, OnClose: func(string) string {
 		t.Error("an interrupted turn asked for its checks")
 		return "again"
 	}}
-	a.stream = func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a.stream = func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		h.Interrupt()
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "half"}
-		ch <- provider.StreamEvent{Done: true}
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "half"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil
@@ -890,8 +890,8 @@ func TestHeadlessRun_OnCloseIsNotAskedOfAnInterruptedTurn(t *testing.T) {
 // nothing but its context, so the run ends only if the round's context was
 // cancelled with the turn.
 func TestHeadlessRun_InterruptReachesARunningCall(t *testing.T) {
-	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}},
-		scriptedStream(t, toolCallRound(provider.ToolCall{ID: "c1", Name: "search", Arguments: `{}`})))
+	a := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}},
+		scriptedStream(t, toolCallRound(llm.ToolCall{ID: "c1", Name: "search", Arguments: `{}`})))
 	h := &Headless{Agent: a}
 	a.SetExecutor(func(ctx context.Context, _ string, _ json.RawMessage) (string, error) {
 		go h.Interrupt()
@@ -914,8 +914,8 @@ func TestHeadlessRun_InterruptReachesARunningCall(t *testing.T) {
 }
 
 // lengthRound is a reply the model stopped writing at its output ceiling.
-func lengthRound(text string) []provider.StreamEvent {
-	return []provider.StreamEvent{{Token: text}, {Done: true, Stop: provider.StopLength}}
+func lengthRound(text string) []llm.StreamEvent {
+	return []llm.StreamEvent{{Token: text}, {Done: true, Stop: llm.StopLength}}
 }
 
 func TestHeadlessRun_ContinuesAReplyCutAtTheCeiling(t *testing.T) {
@@ -947,10 +947,10 @@ func TestHeadlessRun_ContinuesAReplyCutAtTheCeiling(t *testing.T) {
 		t.Fatalf("messages = %+v", msgs)
 	}
 	cut, ask := msgs[len(msgs)-3], msgs[len(msgs)-2]
-	if cut.Role != provider.RoleAssistant || cut.Content != "The first half of the answer" {
+	if cut.Role != llm.RoleAssistant || cut.Content != "The first half of the answer" {
 		t.Fatalf("the half that was written should be in the conversation, got %+v", cut)
 	}
-	if ask.Role != provider.RoleUser || ask.Content != ContinueAfterCeiling {
+	if ask.Role != llm.RoleUser || ask.Content != ContinueAfterCeiling {
 		t.Fatalf("the continuation should be asked for as a user message, got %+v", ask)
 	}
 }
@@ -1007,7 +1007,7 @@ func TestHeadlessRun_AWholeAnswerIsNotTruncated(t *testing.T) {
 func TestHeadlessRun_AToolRoundEarnsItsOwnContinuation(t *testing.T) {
 	a := New(nil, scriptedStream(t,
 		lengthRound("first"),
-		[]provider.StreamEvent{{ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}, Stop: provider.StopTool}},
+		[]llm.StreamEvent{{ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}, Stop: llm.StopTool}},
 		lengthRound("after the tools"),
 		doneRound("done"),
 	))
@@ -1033,10 +1033,10 @@ func TestHeadlessRun_AToolRoundEarnsItsOwnContinuation(t *testing.T) {
 func TestHeadlessRun_ACeilingInsideAToolRoundIsSaidOutLoud(t *testing.T) {
 	a := New(nil, scriptedStream(t,
 		// The call that survived the ceiling; the one the model was still
-		// writing never reached here (internal/provider/partial.go).
-		[]provider.StreamEvent{{
-			ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}},
-			Stop:      provider.StopLength,
+		// writing never reached here (github.com/rfizzle/llm, partial.go).
+		[]llm.StreamEvent{{
+			ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}},
+			Stop:      llm.StopLength,
 		}},
 		doneRound("done"),
 	))
@@ -1058,7 +1058,7 @@ func TestHeadlessRun_ACeilingInsideAToolRoundIsSaidOutLoud(t *testing.T) {
 	// that was not finished, and nothing else.
 	var results int
 	for _, m := range a.Messages() {
-		if m.Role == provider.RoleTool {
+		if m.Role == llm.RoleTool {
 			results++
 		}
 	}
@@ -1071,7 +1071,7 @@ func TestHeadlessRun_ACeilingInsideAToolRoundIsSaidOutLoud(t *testing.T) {
 // ceiling then cut, so the reply is empty and the call never arrives. The
 // turn used to end here as though the model had answered.
 func TestHeadlessRun_AnEmptyTruncatedReplyIsNotSilent(t *testing.T) {
-	a := New(nil, scriptedStream(t, []provider.StreamEvent{{Done: true, Stop: provider.StopLength}}))
+	a := New(nil, scriptedStream(t, []llm.StreamEvent{{Done: true, Stop: llm.StopLength}}))
 	var notices []string
 	h := &Headless{Agent: a, OnContinue: func(n string) { notices = append(notices, n) }}
 
@@ -1094,7 +1094,7 @@ func TestHeadlessRun_AnEmptyTruncatedReplyIsNotSilent(t *testing.T) {
 // rather than sent.
 func TestHeadlessRun_ASteerMovesTheTargetAndRetiresTheQueuedVerdict(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "search"}),
 		doneRound("done"),
 	))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "r", nil })
@@ -1134,9 +1134,9 @@ func TestHeadlessRun_ASteerMovesTheTargetAndRetiresTheQueuedVerdict(t *testing.T
 // be seen, since nothing is said to the child at all.
 func TestHeadlessRun_AVerdictTooOldToActOnIsWithheldAndRecorded(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
-		toolCallRound(provider.ToolCall{ID: "c2", Name: "search"}),
-		toolCallRound(provider.ToolCall{ID: "c3", Name: "search"}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "search"}),
+		toolCallRound(llm.ToolCall{ID: "c2", Name: "search"}),
+		toolCallRound(llm.ToolCall{ID: "c3", Name: "search"}),
 		doneRound("done"),
 	))
 
@@ -1189,8 +1189,8 @@ func TestHeadlessRun_ClosesOnAReadingItDoesNotWaitFor(t *testing.T) {
 	// the round the first reading of a turn falls due at, so the only
 	// request this run makes is the one its close asks for.
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
-		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
 		doneRound("done")))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
@@ -1227,8 +1227,8 @@ func TestHeadlessRun_ClosesOnAReadingItDoesNotWaitFor(t *testing.T) {
 // delivered into whatever turn came next.
 func TestHeadlessRun_TheClosingVerdictSteersNothing(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
-		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
 		doneRound("done")))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
@@ -1276,8 +1276,8 @@ func TestHeadlessRun_AShortRunClosesOnNothing(t *testing.T) {
 // wrong rounds.
 func TestHeadlessRun_ASecondTurnRetiresTheClosingReading(t *testing.T) {
 	a := New(nil, scriptedStream(t,
-		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
-		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
+		toolCallRound(llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(llm.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
 		doneRound("done"),
 		doneRound("and again")))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })

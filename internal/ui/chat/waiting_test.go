@@ -7,8 +7,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // waitingModel is a turn whose request has just gone out, on a held clock
@@ -20,7 +20,7 @@ func waitingModel(t *testing.T) (m *Model, step func(time.Duration), update func
 	was := clock
 	clock = func() time.Time { return now }
 	t.Cleanup(func() { clock = was })
-	model := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	model := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	next, _ := model.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	model = next.(Model)
 	next, _ = model.sendUserMessage("run the chat tests")
@@ -94,8 +94,8 @@ func TestWaitingState_QuietIsNotSilent(t *testing.T) {
 	}
 	// After a round of calls the next request is a wait on the model too,
 	// and not the calls' phase.
-	call := provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"main.go"}`}
-	update(toolCallsMsg{calls: []provider.ToolCall{call}})
+	call := llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"main.go"}`}
+	update(toolCallsMsg{calls: []llm.ToolCall{call}})
 	m.state = stateStreaming
 	update(toolResultsMsg{runID: m.agent.RunID(), results: []agent.ToolResult{{Call: call, Result: "package main"}}})
 	step(3 * time.Second)
@@ -137,7 +137,7 @@ func TestWaitingState_NeverClaimsThinkingWithNothingArrived(t *testing.T) {
 		t.Errorf("a fresh request reads %q, want nothing arrived and no thinking", got)
 	}
 	// A call being written is the answer, drawn or not.
-	update(toolDeltaMsg{delta: provider.ToolCallDelta{ID: "c1", Arguments: `{"command":"go`}})
+	update(toolDeltaMsg{delta: llm.ToolCallDelta{ID: "c1", Arguments: `{"command":"go`}})
 	if got := statusLine(t, *m); !strings.HasPrefix(got, "streaming…") {
 		t.Errorf("with a call being written the line reads %q, want streaming…", got)
 	}
@@ -150,7 +150,7 @@ func TestWaitingState_AKeepaliveIsHeardAndDrawsNothing(t *testing.T) {
 	m, step, update := waitingModel(t)
 	retries := 2
 	m.backoff.SetLimit(&retries)
-	m.backoff.Next(&provider.Failure{Class: provider.ClassNetwork})
+	m.backoff.Next(&llm.Failure{Class: llm.ClassNetwork})
 	before := m.backoff.Attempt()
 
 	step(5 * time.Second)

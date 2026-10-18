@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -20,7 +20,7 @@ func contextModel(t *testing.T, width int) Model {
 // cacheContextModel is the same session on a gateway profile's endpoint,
 // after one reply whose usage carried cache figures: the event the gate
 // reads into the ledger and the stream into the vitals.
-func cacheContextModel(t *testing.T, width int, u provider.Usage) (Model, *meter.Ledger) {
+func cacheContextModel(t *testing.T, width int, u llm.Usage) (Model, *meter.Ledger) {
 	t.Helper()
 	ledger := meter.New(nil)
 	ledger.SetCacheLease("1h")
@@ -34,9 +34,9 @@ func cacheContextModel(t *testing.T, width int, u provider.Usage) (Model, *meter
 
 // cacheHit is a request through the hour's lease that read most of its
 // prefix and wrote the rest, and was told it was written for the hour.
-var cacheHit = provider.Usage{PromptTokens: 20_000, CompletionTokens: 200, CachedTokens: 19_000,
+var cacheHit = llm.Usage{PromptTokens: 20_000, CompletionTokens: 200, CachedTokens: 19_000,
 	CacheCreationTokens: 600, CacheCreation1h: 600,
-	Reports: provider.FieldCacheRead | provider.FieldCacheCreation | provider.FieldCacheLease}
+	Reports: llm.FieldCacheRead | llm.FieldCacheCreation | llm.FieldCacheLease}
 
 func contextModelWith(t *testing.T, width int, wire func(*Wiring)) Model {
 	t.Helper()
@@ -49,15 +49,15 @@ func contextModelWith(t *testing.T, width int, wire func(*Wiring)) Model {
 		},
 	}
 	wire(&w)
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: strings.Repeat("system prompt. ", 40)},
-		{Role: provider.RoleUser, Content: "find the round limit"},
-		{Role: provider.RoleAssistant, Content: "Searching.", ToolCalls: []provider.ToolCall{
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: strings.Repeat("system prompt. ", 40)},
+		{Role: llm.RoleUser, Content: "find the round limit"},
+		{Role: llm.RoleAssistant, Content: "Searching.", ToolCalls: []llm.ToolCall{
 			{ID: "a", Name: "search", Arguments: `{"query":"ErrRoundLimit"}`},
 			{ID: "b", Name: "read_file", Arguments: `{"path":"internal/agent/loop.go"}`},
 		}},
-		{Role: provider.RoleTool, ToolCallID: "a", Content: strings.Repeat("hit. ", 200)},
-		{Role: provider.RoleTool, ToolCallID: "b", Content: strings.Repeat("line. ", 40)},
+		{Role: llm.RoleTool, ToolCallID: "a", Content: strings.Repeat("hit. ", 200)},
+		{Role: llm.RoleTool, ToolCallID: "b", Content: strings.Repeat("line. ", 40)},
 	}, mockStream, w)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 40})
 	return updated.(Model)
@@ -101,8 +101,8 @@ func TestContext_ReportsTheLastRequestsCacheReads(t *testing.T) {
 		t.Errorf("a session with no request reported a cache reading of %q", screen.CacheRead)
 	}
 
-	m.vitals.record("claude", provider.Usage{PromptTokens: 1000, CompletionTokens: 10}, 0, false)
-	m.vitals.record("claude", provider.Usage{PromptTokens: 2000, CompletionTokens: 20, CachedTokens: 1500}, 0, false)
+	m.vitals.record("claude", llm.Usage{PromptTokens: 1000, CompletionTokens: 10}, 0, false)
+	m.vitals.record("claude", llm.Usage{PromptTokens: 2000, CompletionTokens: 20, CachedTokens: 1500}, 0, false)
 
 	// The latest request, not the turn: summing a hit and a miss reports an
 	// average that describes neither request.
@@ -159,12 +159,12 @@ func TestContext_AttributesResultsToTheCallsThatMadeThem(t *testing.T) {
 // TestContext_ItemisesTheConversationByTurn checks the fold the messages
 // category earns by being most of the window: which exchange it was.
 func TestContext_ItemisesTheConversationByTurn(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "system"},
-		{Role: provider.RoleUser, Content: "find the round limit and tell me what it does when it trips"},
-		{Role: provider.RoleAssistant, Content: strings.Repeat("long answer. ", 200)},
-		{Role: provider.RoleUser, Content: "thanks"},
-		{Role: provider.RoleAssistant, Content: "any time"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "system"},
+		{Role: llm.RoleUser, Content: "find the round limit and tell me what it does when it trips"},
+		{Role: llm.RoleAssistant, Content: strings.Repeat("long answer. ", 200)},
+		{Role: llm.RoleUser, Content: "thanks"},
+		{Role: llm.RoleAssistant, Content: "any time"},
 	}, mockStream, Wiring{})
 	group, ok := m.messageTurnGroup(m.contextAccounting().Messages)
 	if !ok {
@@ -194,14 +194,14 @@ func TestContext_ItemisesTheConversationByTurn(t *testing.T) {
 // than to the wrong name.
 func TestContext_NamesTheTurnsNobodyTyped(t *testing.T) {
 	cases := []struct {
-		msg  provider.Message
+		msg  llm.Message
 		want string
 	}{
-		{provider.Message{Content: compactContextMessage("we were refactoring the loop"), Machine: true}, "the compaction summary"},
-		{provider.Message{Content: commandContextPrefix + " go test ./...", Machine: true}, "a command's output"},
-		{provider.Message{Content: continuePrompt, Machine: true}, "carrying on from a cut-off reply"},
-		{provider.Message{Content: "You have been asked to stop and check in.", Machine: true}, "what the session said for itself"},
-		{provider.Message{Content: "what does ErrRoundLimit do"}, "what does ErrRoundLimit do"},
+		{llm.Message{Content: compactContextMessage("we were refactoring the loop"), Machine: true}, "the compaction summary"},
+		{llm.Message{Content: commandContextPrefix + " go test ./...", Machine: true}, "a command's output"},
+		{llm.Message{Content: continuePrompt, Machine: true}, "carrying on from a cut-off reply"},
+		{llm.Message{Content: "You have been asked to stop and check in.", Machine: true}, "what the session said for itself"},
+		{llm.Message{Content: "what does ErrRoundLimit do"}, "what does ErrRoundLimit do"},
 	}
 	for _, tc := range cases {
 		if got := turnLabel(tc.msg); got != tc.want {
@@ -304,25 +304,25 @@ func TestContext_SaysWhetherTheCacheWorked(t *testing.T) {
 		t.Errorf("works: %+v, want %+v", got, want)
 	}
 
-	m, _ = cacheContextModel(t, 110, provider.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
+	m, _ = cacheContextModel(t, 110, llm.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
 	if got := m.contextScreenData().Cache; got.Confirmed != "5m" || got.Lease != "1h" {
 		t.Errorf("an hour written as five minutes: %+v", got)
 	}
-	m, ledger := cacheContextModel(t, 110, provider.Usage{PromptTokens: 20_000})
+	m, ledger := cacheContextModel(t, 110, llm.Usage{PromptTokens: 20_000})
 	if got := m.contextScreenData().Cache.Verdict; got != "none yet" {
 		t.Errorf("one silent request: %q", got)
 	}
 	for range 13 {
-		ledger.ObserveCache("gateway", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000})
+		ledger.ObserveCache("gateway", "claude-sonnet-5-5", llm.Usage{PromptTokens: 20_000})
 	}
 	if got := m.contextScreenData().Cache.Verdict; got != "not seen on gateway in 14 requests" {
 		t.Errorf("not seen: %q", got)
 	}
 
-	provider.RegisterDeclarations("gateway", map[string]provider.Declared{
-		"claude-sonnet-5-5": {Model: map[string]any{provider.KeyPromptCache: false}},
+	llm.RegisterDeclarations("gateway", map[string]llm.Declared{
+		"claude-sonnet-5-5": {Model: map[string]any{llm.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { provider.RegisterDeclarations("gateway", nil) })
+	t.Cleanup(func() { llm.RegisterDeclarations("gateway", nil) })
 	if got := m.contextScreenData().Cache; got != (components.ContextCache{Verdict: "off (profile gateway)"}) {
 		t.Errorf("off: %+v", got)
 	}

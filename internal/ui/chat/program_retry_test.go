@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -21,14 +21,14 @@ import (
 type stallingProvider struct {
 	mu      sync.Mutex
 	refuse  int
-	fail    *provider.Failure
+	fail    *llm.Failure
 	answer  string
 	started int
 }
 
 func (p *stallingProvider) Name() string { return "scripted" }
 
-func (p *stallingProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *stallingProvider) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.mu.Lock()
 	p.started++
 	refused := p.started <= p.refuse
@@ -36,9 +36,9 @@ func (p *stallingProvider) StreamCompletion(context.Context, []provider.Message,
 	if refused {
 		return nil, p.fail
 	}
-	ch := make(chan provider.StreamEvent, 2)
-	ch <- provider.StreamEvent{Token: p.answer}
-	ch <- provider.StreamEvent{Done: true}
+	ch := make(chan llm.StreamEvent, 2)
+	ch <- llm.StreamEvent{Token: p.answer}
+	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 	return ch, nil
 }
@@ -53,15 +53,15 @@ func TestProgram_AStalledRequestIsWaitedOutAndAnswered(t *testing.T) {
 		// believes down to its one-second floor: it keeps the wait this test
 		// sits out at about a second rather than the two the doubling starts
 		// from, without a seam of the test's own in the session.
-		fail: &provider.Failure{
-			Class: provider.ClassOverloaded, Status: 503, Provider: "openai",
+		fail: &llm.Failure{
+			Class: llm.ClassOverloaded, Status: 503, Provider: "openai",
 			Message:    "The upstream model is overloaded, try again shortly",
 			RetryAfter: time.Millisecond,
 		},
 		answer: "The loop stops at the round cap, and nowhere else.",
 	}
 	retries := 3
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{RetryLimit: &retries})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{RetryLimit: &retries})
 	tm := runProgramAt(t, m, 110, 40)
 
 	tm.Type("why does the loop stop")
@@ -93,13 +93,13 @@ func TestProgram_TheLastFailureIsRetriedFromAHalfTypedLine(t *testing.T) {
 		refuse: 1,
 		// Unclassified is never waited out on its own, so the row is what
 		// the turn ends on and the retry is the reader's.
-		fail: &provider.Failure{
-			Class: provider.ClassUnclassified, Status: 400, Provider: "openai",
+		fail: &llm.Failure{
+			Class: llm.ClassUnclassified, Status: 400, Provider: "openai",
 			Message: "Unknown parameter: 'reasoning.effort'",
 		},
 		answer: "The loop stops at the round cap, and nowhere else.",
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
 	tm := runProgramAt(t, m, 110, 40)
 
 	tm.Type("why does the loop stop")

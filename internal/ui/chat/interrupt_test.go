@@ -15,7 +15,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -50,7 +50,7 @@ func interruptedModel(t *testing.T, draft string) Model {
 	m.width, m.height = 130, 40
 	m.syncInputWidth()
 	m.input.SetValue(draft)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"line one\nline two\n"}`},
 	}})
 	m = updated.(Model)
@@ -250,7 +250,7 @@ func TestInterrupt_ASecondDecisionArrivesWithoutTheKeyboard(t *testing.T) {
 		t.Fatal("the keyboard goes back to the draft between decisions")
 	}
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "write_file", Arguments: `{"path":"other.go","content":"x\n"}`},
 	}})
 	m = updated.(Model)
@@ -505,7 +505,7 @@ func TestSpawnCard_AYTheSendHadInFlightWaitsForTheKeys(t *testing.T) {
 		return "started", nil
 	}, map[string]GatedPreviewFunc{subagent.SpawnToolName: refused}))
 	m.lastKeypress = time.Now() // the enter that sent the sentence
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		spawnCall("s1", `{"role":"writer","task":"find every place an entry is read","name":"writer-1"}`),
 		spawnCall("s2", `{"role":"writer","task":"find where a lifetime is set","name":"writer-2"}`),
 		spawnCall("s3", `{"role":"writer","task":"find where entries are evicted","name":"writer-3"}`),

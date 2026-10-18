@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -18,10 +18,10 @@ import (
 func pressureModel(t *testing.T, width int) Model {
 	t.Helper()
 	big := strings.Repeat("y ", 30000) // ~30k tokens over two messages
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: strings.Repeat("system prompt. ", 40)},
-		{Role: provider.RoleUser, Content: big},
-		{Role: provider.RoleAssistant, Content: big},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: strings.Repeat("system prompt. ", 40)},
+		{Role: llm.RoleUser, Content: big},
+		{Role: llm.RoleAssistant, Content: big},
 	}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 40})
 	m = updated.(Model)
@@ -204,8 +204,8 @@ func TestPressure_NewSessionCarriesTheApprovedPlan(t *testing.T) {
 	updated, _ = m.Update(doneMsg{})
 	m = updated.(Model)
 	big := strings.Repeat("y ", 30000)
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: big})
-	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: big})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: big})
+	m.agent.Append(llm.Message{Role: llm.RoleAssistant, Content: big})
 	m = endTurn(t, m, "carry on")
 	if m.state != statePressure {
 		t.Fatalf("the full window should raise the card, state=%d", m.state)
@@ -219,7 +219,7 @@ func TestPressure_NewSessionCarriesTheApprovedPlan(t *testing.T) {
 	if len(msgs) != 2 || msgs[0].Content != "sys" {
 		t.Fatalf("the new session should hold the prompt and the plan, got %d: %+v", len(msgs), msgs)
 	}
-	if seed := msgs[1]; seed.Role != provider.RoleUser || !seed.Machine || seed.Content != approved.Prologue() {
+	if seed := msgs[1]; seed.Role != llm.RoleUser || !seed.Machine || seed.Content != approved.Prologue() {
 		t.Fatalf("the first message of the new session should be the plan's record, got %+v", seed)
 	}
 	var rows []entry
@@ -257,8 +257,8 @@ func TestPressure_ACarriedPlanIsNotCarriedAgain(t *testing.T) {
 	}
 
 	big := strings.Repeat("y ", 30000)
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: big})
-	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: big})
+	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: big})
+	m.agent.Append(llm.Message{Role: llm.RoleAssistant, Content: big})
 	m = endTurn(t, m, "carry on")
 	if m.state != statePressure {
 		t.Fatalf("the full window should raise the card, state=%d", m.state)
@@ -280,14 +280,14 @@ func TestPressure_ACarriedPlanIsNotCarriedAgain(t *testing.T) {
 // promise being kept.
 func TestCompact_KeepsTheMostRecentTurnsVerbatim(t *testing.T) {
 	stream := summaryStream("the summary")
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "first"},
-		{Role: provider.RoleAssistant, Content: "first answer"},
-		{Role: provider.RoleUser, Content: "second"},
-		{Role: provider.RoleAssistant, Content: "second answer"},
-		{Role: provider.RoleUser, Content: "third"},
-		{Role: provider.RoleAssistant, Content: "third answer"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "first"},
+		{Role: llm.RoleAssistant, Content: "first answer"},
+		{Role: llm.RoleUser, Content: "second"},
+		{Role: llm.RoleAssistant, Content: "second answer"},
+		{Role: llm.RoleUser, Content: "third"},
+		{Role: llm.RoleAssistant, Content: "third answer"},
 	}, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
@@ -298,7 +298,7 @@ func TestCompact_KeepsTheMostRecentTurnsVerbatim(t *testing.T) {
 	if len(msgs) != 6 {
 		t.Fatalf("system + summary + the last two turns, got %d: %+v", len(msgs), msgs)
 	}
-	if msgs[0].Role != provider.RoleSystem {
+	if msgs[0].Role != llm.RoleSystem {
 		t.Fatal("the system prompt must survive")
 	}
 	if !strings.Contains(msgs[1].Content, "the summary") {
@@ -327,10 +327,10 @@ func TestCompact_KeepsTheMostRecentTurnsVerbatim(t *testing.T) {
 // A conversation with nothing behind the tail has no tail: keeping it all
 // would leave the summary describing nothing.
 func TestCompact_KeepsNothingWhenThereIsNoOlderConversation(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "only"},
-		{Role: provider.RoleAssistant, Content: "answer"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "only"},
+		{Role: llm.RoleAssistant, Content: "answer"},
 	}, summaryStream("the summary"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
@@ -344,11 +344,11 @@ func TestCompact_KeepsNothingWhenThereIsNoOlderConversation(t *testing.T) {
 // would compact the conversation into the corner it started in.
 func TestCompact_KeepsNothingWhenTheTailIsTooBig(t *testing.T) {
 	big := strings.Repeat("y ", 40000)
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "first"},
-		{Role: provider.RoleAssistant, Content: "answer"},
-		{Role: provider.RoleUser, Content: big},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "first"},
+		{Role: llm.RoleAssistant, Content: "answer"},
+		{Role: llm.RoleUser, Content: big},
 	}, summaryStream("the summary"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
@@ -362,10 +362,10 @@ func TestCompact_KeepsNothingWhenTheTailIsTooBig(t *testing.T) {
 // states are read off a transcript compaction discards, so the run carries
 // them across.
 func TestCompact_CarriesThePlanChecklistAcross(t *testing.T) {
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "do it"},
-		{Role: provider.RoleAssistant, Content: "done"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "do it"},
+		{Role: llm.RoleAssistant, Content: "done"},
 	}, summaryStream("the summary"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
@@ -406,10 +406,10 @@ func TestCompact_CarriesThePlanChecklistAcross(t *testing.T) {
 
 // summaryStream answers one compaction request with a summary.
 func summaryStream(summary string) StreamFunc {
-	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: summary}
-		ch <- provider.StreamEvent{Done: true, Usage: &provider.Usage{PromptTokens: 100, CompletionTokens: 10}}
+	return func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: summary}
+		ch <- llm.StreamEvent{Done: true, Usage: &llm.Usage{PromptTokens: 100, CompletionTokens: 10}}
 		close(ch)
 		_, cancel := context.WithCancel(context.Background())
 		return ch, cancel, nil

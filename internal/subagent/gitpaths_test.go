@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -20,7 +20,7 @@ func TestChildWriteToAGitProgramPathIsRefusedByRule(t *testing.T) {
 		repo := initTestRepo(t)
 		env := &scriptedEnv{
 			steps: []streamStep{
-				{calls: []provider.ToolCall{{ID: "w1", Name: "write_file",
+				{calls: []llm.ToolCall{{ID: "w1", Name: "write_file",
 					Arguments: `{"path":".git/hooks/pre-commit","content":"#!/bin/sh\n"}`}}},
 				{text: "done"},
 			},

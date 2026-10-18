@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -25,7 +25,7 @@ import (
 // serves each model at. The embedded interface is nil: nothing under test
 // streams or names it.
 type endpointProvider struct {
-	provider.Provider
+	llm.Provider
 	windows map[string]int64
 	err     error
 }
@@ -75,7 +75,7 @@ func TestEndpointWindowsFor_FailureLeavesTheLookupEmpty(t *testing.T) {
 }
 
 func TestEndpointWindowsFor_ProviderWithoutTheCapability(t *testing.T) {
-	if lookup := endpointWindowsFor(struct{ provider.Provider }{}); lookup != nil {
+	if lookup := endpointWindowsFor(struct{ llm.Provider }{}); lookup != nil {
 		t.Error("a provider whose endpoint cannot answer should get no lookup")
 	}
 }
@@ -127,12 +127,12 @@ func resumeStore(t *testing.T) *storage.DB {
 // somebody else's conversation under the name the person typed.
 func TestResumeChat_ANamedChatIsNotTheMostRecent(t *testing.T) {
 	db := resumeStore(t)
-	if err := db.SaveChat("the one I want", []provider.Message{
-		{Role: provider.RoleUser, Content: "the widget"}}); err != nil {
+	if err := db.SaveChat("the one I want", []llm.Message{
+		{Role: llm.RoleUser, Content: "the widget"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
-	if err := db.SaveChat("something else", []provider.Message{
-		{Role: provider.RoleUser, Content: "the other thing"}}); err != nil {
+	if err := db.SaveChat("something else", []llm.Message{
+		{Role: llm.RoleUser, Content: "the other thing"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
@@ -152,12 +152,12 @@ func TestResumeChat_ANamedChatIsNotTheMostRecent(t *testing.T) {
 // autosaves to one of its own and "the last session" is a query.
 func TestResumeChat_ContinueTakesTheNewestSlot(t *testing.T) {
 	db := resumeStore(t)
-	if err := db.SaveChat("older", []provider.Message{
-		{Role: provider.RoleUser, Content: "then"}}); err != nil {
+	if err := db.SaveChat("older", []llm.Message{
+		{Role: llm.RoleUser, Content: "then"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
-	if err := db.SaveChat("newer", []provider.Message{
-		{Role: provider.RoleUser, Content: "now"}}); err != nil {
+	if err := db.SaveChat("newer", []llm.Message{
+		{Role: llm.RoleUser, Content: "now"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
@@ -216,8 +216,8 @@ func olderChat(t *testing.T, db *storage.DB, name string) {
 
 func heldChat(t *testing.T, db *storage.DB, name string) {
 	t.Helper()
-	if err := db.SaveChat(name, []provider.Message{
-		{Role: provider.RoleUser, Content: "theirs"}}); err != nil {
+	if err := db.SaveChat(name, []llm.Message{
+		{Role: llm.RoleUser, Content: "theirs"}}); err != nil {
 		t.Fatalf("save %s: %v", name, err)
 	}
 	id, err := db.StartAgentSession("code", "openai", "gpt-test")
@@ -240,8 +240,8 @@ func heldChat(t *testing.T, db *storage.DB, name string) {
 // whoever holds it.
 func TestResumeChat_ContinueRefusesASlotSomebodyElseHolds(t *testing.T) {
 	db := resumeStore(t)
-	if err := db.SaveChat("older", []provider.Message{
-		{Role: provider.RoleUser, Content: "mine"}}); err != nil {
+	if err := db.SaveChat("older", []llm.Message{
+		{Role: llm.RoleUser, Content: "mine"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 	olderChat(t, db, "older")
@@ -271,8 +271,8 @@ func TestResumeChat_ContinueRefusesASlotSomebodyElseHolds(t *testing.T) {
 // be read, renamed or deleted. A slot nobody holds opens as it always did.
 func TestChatBrowseRows_ASlotSomebodyElseHoldsRefusesToOpen(t *testing.T) {
 	db := resumeStore(t)
-	if err := db.SaveChat("mine", []provider.Message{
-		{Role: provider.RoleUser, Content: "ours"}}); err != nil {
+	if err := db.SaveChat("mine", []llm.Message{
+		{Role: llm.RoleUser, Content: "ours"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 	heldChat(t, db, "theirs")
@@ -308,7 +308,7 @@ func TestChatBrowseRows_ASlotSomebodyElseHoldsRefusesToOpen(t *testing.T) {
 // conversation is (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
 func TestChatBrowser_TheAccountIsUnderTheTitle(t *testing.T) {
 	db := resumeStore(t)
-	if err := db.SaveChat("mine", []provider.Message{{Role: provider.RoleUser, Content: "ours"}}); err != nil {
+	if err := db.SaveChat("mine", []llm.Message{{Role: llm.RoleUser, Content: "ours"}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := db.SetChatTitle("mine", "the retry flake"); err != nil {
@@ -340,8 +340,8 @@ func TestChatBrowser_TheAccountIsUnderTheTitle(t *testing.T) {
 func TestChatsModel_TheScreensAnswerReachesTheCommand(t *testing.T) {
 	db := resumeStore(t)
 	for _, name := range []string{"alpha", "beta"} {
-		if err := db.SaveChat(name, []provider.Message{
-			{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+		if err := db.SaveChat(name, []llm.Message{
+			{Role: llm.RoleUser, Content: "hello"}}); err != nil {
 			t.Fatalf("save %s: %v", name, err)
 		}
 	}
@@ -505,8 +505,8 @@ type assemblyProvider struct{}
 
 func (assemblyProvider) Name() string { return "assembly-test" }
 
-func (assemblyProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-	ch := make(chan provider.StreamEvent)
+func (assemblyProvider) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+	ch := make(chan llm.StreamEvent)
 	close(ch)
 	return ch, nil
 }
@@ -567,7 +567,7 @@ func assembleSessionWith(t *testing.T, extra string, args ...string) (chat.Wirin
 		t.Fatal(err)
 	}
 
-	provider.Register("assembly-test", func(provider.ResolveOpts) (provider.Provider, error) {
+	llm.Register("assembly-test", func(llm.ResolveOpts) (llm.Provider, error) {
 		return assemblyProvider{}, nil
 	})
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // descriptionChars bounds what a snippet is filed under. The description is a
@@ -42,37 +42,37 @@ const descriptionTimeout = 15 * time.Second
 // model is the session's own, which the request falls back to only where the
 // provider names no small one of its own (summarizer.go). configured is
 // behavior.description_model, which outranks both when a person named one.
-func snippetDescription(ctx context.Context, p provider.Provider, model, configured, command, explanation string) string {
+func snippetDescription(ctx context.Context, p llm.Provider, model, configured, command, explanation string) string {
 	if explanation != "" {
 		return clampDescription(explanation)
 	}
 	return generateDescription(ctx, p, model, configured, command)
 }
 
-func generateDescription(ctx context.Context, p provider.Provider, model, configured, command string) string {
+func generateDescription(ctx context.Context, p llm.Provider, model, configured, command string) string {
 	ctx, cancel := context.WithTimeout(ctx, descriptionTimeout)
 	defer cancel()
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "Summarize this shell command in under 10 words. Output only the summary, no quotes or punctuation at the end."},
-		{Role: provider.RoleUser, Content: command},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "Summarize this shell command in under 10 words. Output only the summary, no quotes or punctuation at the end."},
+		{Role: llm.RoleUser, Content: command},
 	}
 
 	// A bounded call: the small model, a ceiling, and a shallow thought asked
 	// for explicitly — which is the only way to bound one on a model that
 	// thinks whether or not it was asked.
 	// See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
-	events, err := p.StreamCompletion(ctx, msgs, provider.CompletionOpts{
+	events, err := p.StreamCompletion(ctx, msgs, llm.CompletionOpts{
 		Model:     modelOr(configured, smallModel(p.Name(), model)),
-		Flow:      provider.FlowDescription,
+		Flow:      llm.FlowDescription,
 		MaxTokens: descriptionMaxTokens,
-		Effort:    provider.EffortLow,
+		Effort:    llm.EffortLow,
 	})
 	if err != nil {
 		return ""
 	}
 
-	reply, err := provider.Collect(ctx, events)
+	reply, err := llm.Collect(ctx, events)
 	if err != nil {
 		return ""
 	}

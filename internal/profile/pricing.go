@@ -9,8 +9,8 @@ package profile
 import (
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // tokensPerMillion converts the per-million-token prices model cards publish
@@ -73,8 +73,8 @@ func (r Reasoning) fill(entry *pricing.ModelPricing) {
 	entry.AdaptiveThinking = kind == "adaptive"
 	entry.LegacyThinking = kind == "budget"
 	entry.ThinkingAlwaysOn = r.AlwaysOn
-	entry.XHighEffort = r.hasLevel(provider.EffortXHigh)
-	entry.MaxEffort = r.hasLevel(provider.EffortMax)
+	entry.XHighEffort = r.hasLevel(llm.EffortXHigh)
+	entry.MaxEffort = r.hasLevel(llm.EffortMax)
 }
 
 // declaredModels is every model a profile declares, at the top level and

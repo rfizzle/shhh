@@ -15,10 +15,10 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/testhttp"
 	openai "github.com/sashabaranov/go-openai"
@@ -89,7 +89,7 @@ func TestSpawnableModelsAreThePickersChoicesAndTheConfiguredOnes(t *testing.T) {
 
 // listingEndpoint is an openai-compatible endpoint whose /models answers
 // with ids, or with status where it is not 200, counting every request.
-func listingEndpoint(t *testing.T, status int, ids ...string) (provider.Provider, *atomic.Int32) {
+func listingEndpoint(t *testing.T, status int, ids ...string) (llm.Provider, *atomic.Int32) {
 	t.Helper()
 	var asked atomic.Int32
 	var fixtures testhttp.Registry
@@ -109,12 +109,12 @@ func listingEndpoint(t *testing.T, status int, ids ...string) (provider.Provider
 	cfg := openai.DefaultConfig("test-key")
 	cfg.BaseURL = srv.URL + "/v1"
 	cfg.HTTPClient = fixtures.Client()
-	return provider.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), "session-model", cfg.BaseURL, "listing-test"), &asked
+	return llm.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), "session-model", cfg.BaseURL, "listing-test"), &asked
 }
 
 // endpointSession is a session on prov with the endpoint's list wired the
 // way buildSessionEnv wires it.
-func endpointSession(prov provider.Provider) spawnModels {
+func endpointSession(prov llm.Provider) spawnModels {
 	env := &sessionEnv{prov: prov, modelName: "session-model", endpointModels: newEndpointModels(modelListerFor(prov))}
 	return spawnModels{env: env, agents: &agentProfiles{profiles: subagent.BuiltinProfiles()}}
 }
@@ -288,7 +288,7 @@ func TestSpawnModelListFollowsAProviderSwitch(t *testing.T) {
 					current, onProvider = name+"-default", name
 					return nil
 				},
-				replaceTools: func(edit func([]provider.Tool) []provider.Tool) { tools = edit(tools) },
+				replaceTools: func(edit func([]llm.Tool) []llm.Tool) { tools = edit(tools) },
 			}
 			agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
 			followSpawnModels(env, spawnModels{env: env, agents: agents, prices: prices}, func() subagent.Profiles { return agents.profiles })
@@ -345,7 +345,7 @@ func TestSpawnRefusalTakesNoSlotAndRaisesNoCard(t *testing.T) {
 			// reached the verdict is refused in the verdict's own words.
 			var ran []string
 			resolve := headlessApprover(t.Context(), headlessApproval{run: fakeRun(&ran), un: unattended{sup: sup}})
-			result := resolve(provider.ToolCall{ID: "s1", Name: subagent.SpawnToolName, Arguments: tc.args})
+			result := resolve(llm.ToolCall{ID: "s1", Name: subagent.SpawnToolName, Arguments: tc.args})
 			if reachedVerdict := strings.Contains(result, "headless mode denies"); tc.refused == reachedVerdict {
 				t.Fatalf("an unattended run's verdict: %s", result)
 			}

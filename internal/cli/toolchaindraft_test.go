@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 )
 
@@ -18,22 +18,22 @@ import (
 type draftAnswers struct {
 	mu      sync.Mutex
 	answers []string
-	sent    [][]provider.Message
-	offered [][]provider.Tool
+	sent    [][]llm.Message
+	offered [][]llm.Tool
 }
 
 func (p *draftAnswers) Name() string { return "fake" }
 
-func (p *draftAnswers) StreamCompletion(_ context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *draftAnswers) StreamCompletion(_ context.Context, msgs []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.mu.Lock()
 	n := len(p.sent)
 	p.sent = append(p.sent, msgs)
 	p.offered = append(p.offered, opts.Tools)
 	args := p.answers[min(n, len(p.answers)-1)]
 	p.mu.Unlock()
-	ch := make(chan provider.StreamEvent, 2)
-	ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "c1", Name: toolchainDraftToolName, Arguments: args}}}
-	ch <- provider.StreamEvent{Done: true}
+	ch := make(chan llm.StreamEvent, 2)
+	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "c1", Name: toolchainDraftToolName, Arguments: args}}}
+	ch <- llm.StreamEvent{Done: true}
 	close(ch)
 	return ch, nil
 }
@@ -58,7 +58,7 @@ func draftCheckout(t *testing.T) string {
 	return root
 }
 
-func drafterOn(p provider.Provider, root string) toolchainDrafter {
+func drafterOn(p llm.Provider, root string) toolchainDrafter {
 	return toolchainDrafter{prov: p, model: func() string { return "small" }, root: root, dir: root}
 }
 

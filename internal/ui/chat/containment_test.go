@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -16,9 +16,9 @@ import (
 // wrapper, recording which one each command ran through.
 func containedModel(t *testing.T, bare, contained *[]string, status string) Model {
 	t.Helper()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "run it"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "run it"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
@@ -48,7 +48,7 @@ func containedModel(t *testing.T, bare, contained *[]string, status string) Mode
 
 func runExecApproval(t *testing.T, m Model) Model {
 	t.Helper()
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
 	// The card arrives without the keyboard; the handover is what
@@ -88,9 +88,9 @@ func TestConfirmPromptShowsContainmentState(t *testing.T) {
 
 func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 	var bare []string
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "run it"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "run it"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
@@ -180,7 +180,7 @@ func TestApprovedCommandRunsContained(t *testing.T) {
 	updated, _ = m.Update(done)
 	m = updated.(Model)
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "contained") {
+	if last.Role != llm.RoleTool || !strings.Contains(last.Content, "contained") {
 		t.Fatalf("tool result should carry the contained output, got %+v", last)
 	}
 }
@@ -192,7 +192,7 @@ func TestWavedThroughCommandRunsContained(t *testing.T) {
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
 	m.policy.allowlist = []string{"echo"}
 	m.policy.mode = agent.ModeAuto
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
 	m = updated.(Model)
@@ -240,7 +240,7 @@ func TestSandboxSlashCommandShowsReport(t *testing.T) {
 		t.Fatalf("/sandbox doctor should print the doctor report, got %q", out)
 	}
 
-	empty := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	empty := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	handled, out = empty.handleSlashCommand("/sandbox")
 	if !handled || !strings.Contains(out, "not configured") {
 		t.Fatalf("/sandbox without containment should say so, got %q", out)
@@ -255,7 +255,7 @@ func TestSandboxSlashCommandShowsReport(t *testing.T) {
 
 func TestSandboxSlashCommandDispatchesToManager(t *testing.T) {
 	var got [][]string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Containment: Containment{
 			Report: "proc report",
 			Manage: func(args []string) string {
@@ -291,9 +291,9 @@ func TestRequiredContainmentRefusesWithoutACard(t *testing.T) {
 	const refusal = "error: this session requires containment and no mechanism is in force: " +
 		"bubblewrap (bwrap) not found on PATH\n  sudo apt install bubblewrap"
 	var bare []string
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "run it"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "run it"},
 	}, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			bare = append(bare, cmd)
@@ -310,7 +310,7 @@ func TestRequiredContainmentRefusesWithoutACard(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
 	m = updated.(Model)
@@ -323,7 +323,7 @@ func TestRequiredContainmentRefusesWithoutACard(t *testing.T) {
 	}
 	var result string
 	for _, msg := range m.Messages() {
-		if msg.Role == provider.RoleTool {
+		if msg.Role == llm.RoleTool {
 			result = msg.Content
 		}
 	}
@@ -390,7 +390,7 @@ func TestContainmentStatusWithoutTheKnob(t *testing.T) {
 		t.Fatalf("/status should name the mechanism and the profile:\n%s", text)
 	}
 
-	empty := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	empty := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	if text, _ := empty.statusCommand(); strings.Contains(text, "containment") {
 		t.Fatalf("a session with no containment wiring says nothing:\n%s", text)
 	}
@@ -400,7 +400,7 @@ func TestContainmentStatusWithoutTheKnob(t *testing.T) {
 // and a session that refuses those still runs this one.
 func TestRequiredContainmentNeverRefusesTheUsersOwnCommand(t *testing.T) {
 	var bare []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			bare = append(bare, cmd)
 			return "bare", 0
@@ -478,7 +478,7 @@ func TestACommandWhoseEndingNobodyReadSaysSo(t *testing.T) {
 // /status names the delegation policy the CLI worded, and a session told
 // none says nothing about it.
 func TestStatusNamesTheDelegationPolicy(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	if text, _ := m.statusCommand(); strings.Contains(text, "Delegation") {
 		t.Fatalf("a session told no policy states one:\n%s", text)
 	}
@@ -493,7 +493,7 @@ func TestStatusNamesTheDelegationPolicy(t *testing.T) {
 // commands unconfined still refuses a writer's by default.
 func TestContainmentStatusNamesTheWriterRule(t *testing.T) {
 	const writers = "a writer's commands: refused — no containment mechanism is in force: bwrap not found"
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Containment: Containment{
 			Status: "unconfined — bwrap not found", Detail: "bwrap not found", Network: true,
 			Writers: writers,
@@ -521,9 +521,9 @@ func TestContainment_ReadOnlyModesRequireIt(t *testing.T) {
 		{agent.ModeAcceptEdits, false},
 	} {
 		t.Run(tc.mode.String(), func(t *testing.T) {
-			m := New([]provider.Message{
-				{Role: provider.RoleSystem, Content: "sys"},
-				{Role: provider.RoleUser, Content: "run it"},
+			m := New([]llm.Message{
+				{Role: llm.RoleSystem, Content: "sys"},
+				{Role: llm.RoleUser, Content: "run it"},
 			}, mockStream, Wiring{
 				Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "bare", 0 }),
 				Containment: Containment{
@@ -537,13 +537,13 @@ func TestContainment_ReadOnlyModesRequireIt(t *testing.T) {
 			updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
 			m = updated.(Model)
 			m.state = stateStreaming
-			updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+			updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 				{ID: "call_x", Name: "execute_command", Arguments: `{"command":"touch note"}`},
 			}})
 			m = updated.(Model)
 			var result string
 			for _, msg := range m.Messages() {
-				if msg.Role == provider.RoleTool {
+				if msg.Role == llm.RoleTool {
 					result = msg.Content
 				}
 			}

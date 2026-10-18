@@ -25,6 +25,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -34,7 +35,6 @@ import (
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -193,7 +193,7 @@ type Wiring struct {
 	// to the provider, the usage read back, the answer discarded
 	// (keepalive.go). Zero, or no sender, is off.
 	KeepAliveMax  int
-	KeepAliveSend func(ctx context.Context, msgs []provider.Message) (provider.Usage, error)
+	KeepAliveSend func(ctx context.Context, msgs []llm.Message) (llm.Usage, error)
 	// ProgressCalls and ProgressElapsed are the two public-status clocks;
 	// zero keeps each one's default.
 	ProgressCalls   int
@@ -329,8 +329,8 @@ type Wiring struct {
 	// makes a change reach the next request (nil is display-only);
 	// EffortDefault and EffortOutranked are the persisted level and whatever
 	// outranks it.
-	Effort          provider.Effort
-	SwitchEffort    func(provider.Effort)
+	Effort          llm.Effort
+	SwitchEffort    func(llm.Effort)
 	EffortDefault   string
 	EffortOutranked string
 	// EndpointWindows is the endpoint's own answer for a model's context

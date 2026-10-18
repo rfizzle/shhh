@@ -8,7 +8,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -17,14 +17,14 @@ import (
 // both two-press windows are about.
 func streamingCancelModel(t *testing.T) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, multiTokenStream("partial", " content"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.input.SetValue("go")
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	events, cancel, _ := multiTokenStream("partial")(m.Messages(), provider.ToolChoiceAuto)
+	events, cancel, _ := multiTokenStream("partial")(m.Messages(), llm.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 	updated, _ = m.Update(tokenMsg{text: "partial"})
@@ -47,7 +47,7 @@ var (
 // the state the quit's first press is about.
 func idleCancelModel(t *testing.T) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model)
@@ -358,7 +358,7 @@ func TestQuit_StopsACommandTheSessionWasRunning(t *testing.T) {
 		t.Fatal("the command never started")
 	}
 
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)

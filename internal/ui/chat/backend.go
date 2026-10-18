@@ -32,8 +32,8 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // Backend is what the screen asks for a reply through and reads it back
@@ -41,7 +41,7 @@ import (
 // its events arrive on and the cancel that closes it — or the reason it did
 // not open; Next's yields what has arrived on that channel as one message.
 type Backend interface {
-	Request(msgs []provider.Message, choice string) tea.Cmd
+	Request(msgs []llm.Message, choice string) tea.Cmd
 	Next(events eventStream) tea.Cmd
 }
 
@@ -50,7 +50,7 @@ type Backend interface {
 // way in would take a goroutine between the two channels, which is the step
 // the threading model does not take yet. The screen holds it by this name
 // and gives it back to Next, and reads nothing off it itself.
-type eventStream = <-chan provider.StreamEvent
+type eventStream = <-chan llm.StreamEvent
 
 // inProcessBackend is the backend over the loop the screen holds: the
 // request opens the loop's own stream, and the read drains it the way the
@@ -71,7 +71,7 @@ type streamMsg struct {
 // Request starts a stream over an explicit message list (callers pass a
 // copy so in-flight requests are immune to later mutation) under an
 // explicit tool choice.
-func (b inProcessBackend) Request(msgs []provider.Message, choice string) tea.Cmd {
+func (b inProcessBackend) Request(msgs []llm.Message, choice string) tea.Cmd {
 	a := b.agent
 	runID := a.RunID()
 	return func() tea.Msg {
@@ -137,7 +137,7 @@ func waitForEvent(events eventStream) tea.Cmd {
 
 // terminalMsg converts a non-token stream event into its message, or returns
 // nil for a plain token event.
-func terminalMsg(ev provider.StreamEvent) tea.Msg {
+func terminalMsg(ev llm.StreamEvent) tea.Msg {
 	if ev.ToolCallDelta != nil {
 		// A fragment of a tool call's arguments. It ends the token batch
 		// rather than draining into it: what it feeds is a row of its own,

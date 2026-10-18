@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // A review stopped at its cap still ends on the line the reviewer's prompt
@@ -50,7 +50,7 @@ func firstUserTurn(t *testing.T, env *scriptedEnv) string {
 		t.Fatal("the child never made a request")
 	}
 	for _, m := range env.requests[0] {
-		if m.Role == provider.RoleUser {
+		if m.Role == llm.RoleUser {
 			return m.Content
 		}
 	}
@@ -161,7 +161,7 @@ func TestReviewPathsAreNotAWriteClaim(t *testing.T) {
 func TestReviewCapEndsInAReport(t *testing.T) {
 	env := &scriptedEnv{
 		steps: []streamStep{
-			{calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"a"}`}}},
+			{calls: []llm.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"a"}`}}},
 			{text: "no findings"},
 		},
 	}
@@ -199,7 +199,7 @@ func TestReviewCapEndsInAReport(t *testing.T) {
 // itself would be.
 func TestReviewThatSpendsItsReportAllowanceStops(t *testing.T) {
 	call := func(id string) streamStep {
-		return streamStep{calls: []provider.ToolCall{{ID: id, Name: "read_file", Arguments: `{"path":"a"}`}}}
+		return streamStep{calls: []llm.ToolCall{{ID: id, Name: "read_file", Arguments: `{"path":"a"}`}}}
 	}
 	// One inspection round, then more calls than the report allowance. A
 	// turn's round counter starts at zero, so the allowance is the report

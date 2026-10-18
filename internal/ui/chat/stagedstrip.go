@@ -29,7 +29,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -49,7 +49,7 @@ type stagedDoor struct {
 	row bool
 	// shows is the staged attachment the card is showing, which is what the
 	// card's own drop takes out.
-	shows provider.Attachment
+	shows llm.Attachment
 	// opened is the strip cell a click opened a chip from, which the same
 	// click closes (click.go).
 	opened railOpening
@@ -239,7 +239,7 @@ func (m *Model) dropStagedAt(i int) string {
 // stagedIndex is where one attachment stands in the staging area now, or -1
 // when it has left — matched by handle and name together, since a surface
 // can outlive the chip it was opened on.
-func (m Model) stagedIndex(a provider.Attachment) int {
+func (m Model) stagedIndex(a llm.Attachment) int {
 	for i, s := range m.attachments {
 		if s.Handle == a.Handle && strings.EqualFold(s.Name, a.Name) {
 			return i

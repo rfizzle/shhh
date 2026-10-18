@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -37,7 +37,7 @@ import (
 var search = Definition{
 	Receipt: describe.Describer{Kind: describe.KindSearch, Verb: "search", Count: countSearch,
 		Does: "text across the tree"},
-	Tool: provider.Tool{
+	Tool: llm.Tool{
 		Name: SearchName,
 		Description: "Search file contents with a regular expression (RE2 syntax). Case-insensitive by default. " +
 			"Returns matching lines as path:line: text. Hidden files are searched; .git, node_modules, vendor and anything .gitignore names are not. " +
@@ -141,7 +141,7 @@ func (b *inflateBudget) read(path string) (string, error) {
 		return "", err
 	case errors.Is(err, errPastCeiling):
 		b.notes = append(b.notes, fmt.Sprintf("… (%s searched only in its first %s decompressed: one search decompresses at most %s)",
-			path, provider.HumanSize(len(data)), provider.HumanSize(MaxReadFileSize)))
+			path, llm.HumanSize(len(data)), llm.HumanSize(MaxReadFileSize)))
 	case err != nil:
 		return "", err
 	}
@@ -159,7 +159,7 @@ func (b *inflateBudget) tail() []string {
 	out := b.notes
 	if b.skipped > 0 {
 		out = append(out, fmt.Sprintf("… (%d more compressed %s not searched: one search decompresses at most %s)",
-			b.skipped, noun(b.skipped, "file", "files"), provider.HumanSize(MaxReadFileSize)))
+			b.skipped, noun(b.skipped, "file", "files"), llm.HumanSize(MaxReadFileSize)))
 	}
 	return out
 }

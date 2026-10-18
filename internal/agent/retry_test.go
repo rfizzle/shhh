@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/logs"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
-func overloaded(after time.Duration) *provider.Failure {
-	return &provider.Failure{Class: provider.ClassOverloaded, Status: 529, RetryAfter: after}
+func overloaded(after time.Duration) *llm.Failure {
+	return &llm.Failure{Class: llm.ClassOverloaded, Status: 529, RetryAfter: after}
 }
 
 // steady is a Backoff whose spread is pinned to none, so a test can assert
@@ -75,14 +75,14 @@ func TestBackoff_OnlyWhatWaitingCanFix(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"a rejected key", &provider.Failure{Class: provider.ClassAuth}},
-		{"a request that did not fit", &provider.Failure{Class: provider.ClassContextLength}},
+		{"a rejected key", &llm.Failure{Class: llm.ClassAuth}},
+		{"a request that did not fit", &llm.Failure{Class: llm.ClassContextLength}},
 		// The ChatGPT plan's three: a spent allowance names no reset, and an
 		// ineligible account or an unsupported request is refused the same
 		// way however long anybody waits.
-		{"a spent plan allowance", &provider.Failure{Class: provider.ClassUsageLimit, Status: 429}},
-		{"an account the plan will not serve", &provider.Failure{Class: provider.ClassNotEligible, Status: 403}},
-		{"a request the plan does not serve", &provider.Failure{Class: provider.ClassUnsupported, Status: 400}},
+		{"a spent plan allowance", &llm.Failure{Class: llm.ClassUsageLimit, Status: 429}},
+		{"an account the plan will not serve", &llm.Failure{Class: llm.ClassNotEligible, Status: 403}},
+		{"a request the plan does not serve", &llm.Failure{Class: llm.ClassUnsupported, Status: 400}},
 		{"an unclassified error", errors.New("connection reset")},
 	} {
 		var b Backoff
@@ -99,15 +99,15 @@ func TestBackoff_OnlyWhatWaitingCanFix(t *testing.T) {
 // signal's comment gives — never the provider's own words, which are its own.
 func TestRetryNotice_SignalIsClosed(t *testing.T) {
 	for _, c := range []struct {
-		class provider.Class
+		class llm.Class
 		want  string
 	}{
-		{provider.ClassRateLimit, "rate-limit"},
-		{provider.ClassOverloaded, "overloaded"},
-		{provider.ClassNetwork, "network"},
-		{provider.ClassUnclassified, "other"},
+		{llm.ClassRateLimit, "rate-limit"},
+		{llm.ClassOverloaded, "overloaded"},
+		{llm.ClassNetwork, "network"},
+		{llm.ClassUnclassified, "other"},
 	} {
-		n := RetryNotice{Failure: &provider.Failure{Class: c.class}}
+		n := RetryNotice{Failure: &llm.Failure{Class: c.class}}
 		if got := n.Signal(); got != c.want {
 			t.Errorf("%s signals %q, want %q", c.class, got, c.want)
 		}
@@ -229,7 +229,7 @@ func TestBackoff_WritesEveryAttemptToTheLog(t *testing.T) {
 	t.Cleanup(func() { logs.To("") })
 
 	b := steady()
-	f := &provider.Failure{Class: provider.ClassRateLimit, Status: 429, Provider: "openai", RetryAfter: 30 * time.Second}
+	f := &llm.Failure{Class: llm.ClassRateLimit, Status: 429, Provider: "openai", RetryAfter: 30 * time.Second}
 	if _, ok := b.Next(f); !ok {
 		t.Fatal("a rate limit earns a wait")
 	}

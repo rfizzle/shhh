@@ -18,8 +18,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/cli/report"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
@@ -309,10 +309,10 @@ func chatsSearchReport(entries []storage.ChatListEntry, query string, now time.T
 // chatTranscript is the transcript as text: each message under its role,
 // the system prompt left out because it is the session's and not the
 // conversation's, and a tool call named on the line it was made.
-func chatTranscript(msgs []provider.Message) string {
+func chatTranscript(msgs []llm.Message) string {
 	var b strings.Builder
 	for _, m := range msgs {
-		if m.Role == provider.RoleSystem {
+		if m.Role == llm.RoleSystem {
 			continue
 		}
 		fmt.Fprintf(&b, "%s:", m.Role)

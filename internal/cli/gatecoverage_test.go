@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -40,12 +40,12 @@ var notOffered = map[string][]string{
 // would build: a call it does not gate has none.
 func gateSurfaces(t *testing.T) map[string]func(name string) bool {
 	t.Helper()
-	call := func(name string) provider.ToolCall {
+	call := func(name string) llm.ToolCall {
 		args := registeredArgs[name]
 		if args == "" {
 			args = `{}`
 		}
-		return provider.ToolCall{ID: "c", Name: name, Arguments: args}
+		return llm.ToolCall{ID: "c", Name: name, Arguments: args}
 	}
 	preview := func(json.RawMessage) (chat.GatedPreview, error) { return chat.GatedPreview{Summary: "x"}, nil }
 	screen := chat.New(nil, nil, chat.Wiring{

@@ -14,8 +14,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/notebook"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -691,16 +691,16 @@ func TestClose_ARetriedTurnCountsOnlyTheRetry(t *testing.T) {
 
 	m := sendText(t, readyModel(t), "raise the round cap")
 	m = calls(m, 13)
-	m.vitals.record("gpt-4o", provider.Usage{PromptTokens: 41000, CompletionTokens: 1200}, 1.15, true)
+	m.vitals.record("gpt-4o", llm.Usage{PromptTokens: 41000, CompletionTokens: 1200}, 1.15, true)
 	now = now.Add(98 * time.Second)
-	updated, _ := m.Update(streamErrMsg{err: &provider.Failure{Class: provider.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
+	updated, _ := m.Update(streamErrMsg{err: &llm.Failure{Class: llm.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
 	m = updated.(Model)
 	failed := lastClose(t, m)
 
 	now = now.Add(22 * time.Second)
 	next, _ := m.retryTurn()
 	m = calls(next.(Model), 9)
-	m.vitals.record("gpt-4o", provider.Usage{PromptTokens: 30000, CompletionTokens: 900}, 0.71, true)
+	m.vitals.record("gpt-4o", llm.Usage{PromptTokens: 30000, CompletionTokens: 900}, 0.71, true)
 	now = now.Add(2*time.Minute + 4*time.Second)
 	m = finishTurn(t, m)
 	retried := lastClose(t, m)
@@ -748,7 +748,7 @@ func TestRail_ThisTurnCountsOnlyTheRetry(t *testing.T) {
 
 	m := calls(sendText(t, readyModel(t), "raise the round cap"), 13)
 	now = now.Add(98 * time.Second)
-	updated, _ := m.Update(streamErrMsg{err: &provider.Failure{Class: provider.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
+	updated, _ := m.Update(streamErrMsg{err: &llm.Failure{Class: llm.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
 	m = updated.(Model)
 	now = now.Add(22 * time.Second)
 	next, _ := m.retryTurn()

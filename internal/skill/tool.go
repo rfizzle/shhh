@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -23,9 +23,9 @@ const ToolName = "skill"
 // ToolDefinition is the activation tool for this catalog. The name
 // parameter is an enum of what actually loaded, so a skill the model
 // misremembers is a schema error rather than a round spent on an apology.
-func ToolDefinition(c *Catalog) provider.Tool {
+func ToolDefinition(c *Catalog) llm.Tool {
 	names, _ := json.Marshal(c.Names())
-	return provider.Tool{
+	return llm.Tool{
 		Name:        ToolName,
 		Description: "Load a skill's full instructions by name. Call it when the current task matches one of the available skills, before starting the work; the result is the skill's instructions plus, for a skill on disk, the directory its supporting files live in.",
 		Parameters: json.RawMessage(fmt.Sprintf(`{

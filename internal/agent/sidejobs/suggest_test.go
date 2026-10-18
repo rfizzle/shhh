@@ -5,18 +5,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // One request, on the configured model, at a shallow thought, forbidding any
 // tool, with the instruction and the evidence in two messages — and the
 // prose that comes back is the suggestion.
 func TestSuggester_AsksOnceAndReadsTheProse(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-		if opts.Model != "small" || opts.Effort != provider.EffortLow || opts.ToolChoice != provider.ToolChoiceNone || len(opts.Tools) != 0 {
+	p := &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+		if opts.Model != "small" || opts.Effort != llm.EffortLow || opts.ToolChoice != llm.ToolChoiceNone || len(opts.Tools) != 0 {
 			t.Errorf("opts = %+v", opts)
 		}
-		return eventsOf(provider.StreamEvent{Token: "  \"Fix the failing timer test.\"\n", Usage: &provider.Usage{PromptTokens: 300, CompletionTokens: 9}, Done: true}), nil
+		return eventsOf(llm.StreamEvent{Token: "  \"Fix the failing timer test.\"\n", Usage: &llm.Usage{PromptTokens: 300, CompletionTokens: 9}, Done: true}), nil
 	}}
 	req := SuggestRequest{
 		Instruction: "make the retry back off",
@@ -36,7 +36,7 @@ func TestSuggester_AsksOnceAndReadsTheProse(t *testing.T) {
 	if v.Usage.PromptTokens != 300 {
 		t.Errorf("usage = %+v", v.Usage)
 	}
-	if len(p.msgs) != 2 || p.msgs[0].Role != provider.RoleSystem || p.msgs[0].Content != SuggestWording() {
+	if len(p.msgs) != 2 || p.msgs[0].Role != llm.RoleSystem || p.msgs[0].Content != SuggestWording() {
 		t.Fatalf("messages = %+v", p.msgs)
 	}
 	for _, want := range []string{"make the retry back off", "checks failed", "fix the timer test", "on target", "Fixing the retry backoff.", "one test still fails"} {
@@ -48,8 +48,8 @@ func TestSuggester_AsksOnceAndReadsTheProse(t *testing.T) {
 
 // A configured wording replaces the instruction and nothing else.
 func TestSuggester_AWordingReplacesTheInstruction(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-		return eventsOf(provider.StreamEvent{Token: "Commit it.", Done: true}), nil
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+		return eventsOf(llm.StreamEvent{Token: "Commit it.", Done: true}), nil
 	}}
 	v := NewSuggester(p, SuggestConfig{Model: "m", Prompt: "say the next step"}).Suggest(context.Background(), SuggestRequest{Instruction: "q"})
 	if v.Failed || v.Suggestion != "Commit it." {
@@ -63,8 +63,8 @@ func TestSuggester_AWordingReplacesTheInstruction(t *testing.T) {
 // An empty answer is the model saying nothing obvious follows: no
 // suggestion, not a blank one.
 func TestSuggester_AnEmptyAnswerOffersNothing(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-		return eventsOf(provider.StreamEvent{Token: "  \"\" ", Done: true}), nil
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+		return eventsOf(llm.StreamEvent{Token: "  \"\" ", Done: true}), nil
 	}}
 	if v := NewSuggester(p, SuggestConfig{Model: "m"}).Suggest(context.Background(), SuggestRequest{Instruction: "q"}); !v.Failed || v.Suggestion != "" {
 		t.Fatalf("got %+v", v)
@@ -72,7 +72,7 @@ func TestSuggester_AnEmptyAnswerOffersNothing(t *testing.T) {
 }
 
 func TestSuggester_DisabledAsksNothing(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		t.Fatal("a disabled suggester asked")
 		return nil, nil
 	}}
@@ -90,9 +90,9 @@ func TestSuggester_DisabledAsksNothing(t *testing.T) {
 // bounded reader's does.
 func TestSuggester_AsksTheModelAtTheCall(t *testing.T) {
 	var got string
-	p := &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		got = opts.Model
-		return eventsOf(provider.StreamEvent{Token: "Go on.", Done: true}), nil
+		return eventsOf(llm.StreamEvent{Token: "Go on.", Done: true}), nil
 	}}
 	s := NewSuggester(p, SuggestConfig{Model: "start", ModelAt: func() string { return "now" }})
 	s.Suggest(context.Background(), SuggestRequest{Instruction: "q"})

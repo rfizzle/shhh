@@ -6,23 +6,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
 // idleProvider answers each request with the next usage in its script.
-type idleProvider struct{ script []provider.Usage }
+type idleProvider struct{ script []llm.Usage }
 
 func (*idleProvider) Name() string { return "gateway" }
 
-func (p *idleProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *idleProvider) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	u := p.script[0]
 	p.script = p.script[1:]
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{Usage: &u, Done: true}
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{Usage: &u, Done: true}
 	close(ch)
 	return ch, nil
 }
@@ -31,7 +31,7 @@ func (p *idleProvider) StreamCompletion(context.Context, []provider.Message, pro
 // apart: the first wrote the prefix and the second came back with the usage
 // given. The model is priced at $3 a million input tokens unless it is
 // "unpriced".
-func idledLedger(t *testing.T, lease, model string, pause time.Duration, second provider.Usage) *meter.Ledger {
+func idledLedger(t *testing.T, lease, model string, pause time.Duration, second llm.Usage) *meter.Ledger {
 	t.Helper()
 	l := meter.New(pricing.NewTable(map[string]pricing.ModelPricing{
 		"claude-sonnet-5-5": {InputCostPerToken: 3e-6, OutputCostPerToken: 15e-6},
@@ -39,18 +39,18 @@ func idledLedger(t *testing.T, lease, model string, pause time.Duration, second 
 	now := time.Date(2026, 10, 10, 9, 0, 0, 0, time.UTC)
 	l.SetClock(func() time.Time { return now })
 	l.SetCacheLease(lease)
-	wrote := provider.Usage{PromptTokens: 112_000, CacheCreationTokens: 112_000}
-	p := l.For(&idleProvider{script: []provider.Usage{wrote, second}}, meter.SourceAgent)
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "one"}}
+	wrote := llm.Usage{PromptTokens: 112_000, CacheCreationTokens: 112_000}
+	p := l.For(&idleProvider{script: []llm.Usage{wrote, second}}, meter.SourceAgent)
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "one"}}
 	for i := range 2 {
-		ev, err := p.StreamCompletion(context.Background(), msgs, provider.CompletionOpts{Model: model})
+		ev, err := p.StreamCompletion(context.Background(), msgs, llm.CompletionOpts{Model: model})
 		if err != nil {
 			t.Fatal(err)
 		}
 		for range ev {
 		}
 		now = now.Add(pause)
-		msgs = append(msgs, provider.Message{Role: provider.RoleUser, Content: string(rune('a' + i))})
+		msgs = append(msgs, llm.Message{Role: llm.RoleUser, Content: string(rune('a' + i))})
 	}
 	return l
 }
@@ -58,7 +58,7 @@ func idledLedger(t *testing.T, lease, model string, pause time.Duration, second 
 // The stats screen says what the lease cost: the writes at the lease asked
 // for, and the other lease's figure with the pauses that make the difference.
 func TestStats_PrintsTheLeaseLine(t *testing.T) {
-	read := provider.Usage{PromptTokens: 112_500, CachedTokens: 112_000, CacheCreationTokens: 500}
+	read := llm.Usage{PromptTokens: 112_500, CachedTokens: 112_000, CacheCreationTokens: 500}
 	m, _ := spendModel(t)
 	m.wiring.Ledger = idledLedger(t, "1h", "claude-sonnet-5-5", 20*time.Minute, read)
 	rows := m.spendScreenData().Rows
@@ -80,7 +80,7 @@ func TestStats_PrintsTheLeaseLine(t *testing.T) {
 // What the person is told when the cache was gone after a pause.
 func TestGolden_CacheExpiredNotice(t *testing.T) {
 	captureGolden(t, "cache-expired-notice", "the receipt an expired cache leaves", goldenWidths, func(width int) []golden.Panel {
-		rewrite := provider.Usage{PromptTokens: 112_000, CacheCreationTokens: 112_000}
+		rewrite := llm.Usage{PromptTokens: 112_000, CacheCreationTokens: 112_000}
 		panel := func(model string) string {
 			m := frameModel(t, width, 40)
 			m.wiring.Ledger = idledLedger(t, "1h", model, 62*time.Minute, rewrite)

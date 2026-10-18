@@ -8,8 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/preflight"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 )
 
@@ -178,8 +178,8 @@ func TestGenerate_SelectCancelReturnsResult(t *testing.T) {
 }
 
 func TestGenerate_CancelDuringStreamQuitsImmediately(t *testing.T) {
-	ch := make(chan provider.StreamEvent, 2)
-	ch <- provider.StreamEvent{Token: "partial"}
+	ch := make(chan llm.StreamEvent, 2)
+	ch <- llm.StreamEvent{Token: "partial"}
 	cancel, called := testCancel()
 	m := NewGenerateModel(ch, cancel, nil, nil, nil, "")
 
@@ -352,9 +352,9 @@ func TestGenerate_ReviseViewShowsFeedbackPrompt(t *testing.T) {
 }
 
 func TestGenerate_MessagesPreservedFromConstructor(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "You are a shell assistant."},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "You are a shell assistant."},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, nil, nil, "")
@@ -363,7 +363,7 @@ func TestGenerate_MessagesPreservedFromConstructor(t *testing.T) {
 	if len(msgs) != 2 {
 		t.Fatalf("expected 2 initial messages, got %d", len(msgs))
 	}
-	if msgs[0].Role != provider.RoleSystem {
+	if msgs[0].Role != llm.RoleSystem {
 		t.Errorf("expected system role, got %v", msgs[0].Role)
 	}
 	if msgs[1].Content != "list files" {
@@ -372,9 +372,9 @@ func TestGenerate_MessagesPreservedFromConstructor(t *testing.T) {
 }
 
 func TestGenerate_MessagesNotAliased(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "user prompt"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "user prompt"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, nil, nil, "")
@@ -386,9 +386,9 @@ func TestGenerate_MessagesNotAliased(t *testing.T) {
 }
 
 func TestGenerate_AssistantAppendedOnStreamComplete(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls -la")
 	m := NewGenerateModel(events, noopCancel, initial, nil, nil, "")
@@ -398,7 +398,7 @@ func TestGenerate_AssistantAppendedOnStreamComplete(t *testing.T) {
 	if len(msgs) != 3 {
 		t.Fatalf("expected 3 messages after stream, got %d", len(msgs))
 	}
-	if msgs[2].Role != provider.RoleAssistant {
+	if msgs[2].Role != llm.RoleAssistant {
 		t.Errorf("expected assistant role, got %v", msgs[2].Role)
 	}
 	if msgs[2].Content != "ls -la" {
@@ -407,9 +407,9 @@ func TestGenerate_AssistantAppendedOnStreamComplete(t *testing.T) {
 }
 
 func TestGenerate_ReviseAppendsFeedbackToMessages(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, nil, nil, "")
@@ -428,10 +428,10 @@ func TestGenerate_ReviseAppendsFeedbackToMessages(t *testing.T) {
 	if len(msgs) != 4 {
 		t.Fatalf("expected 4 messages after revise, got %d", len(msgs))
 	}
-	if msgs[2].Role != provider.RoleAssistant {
+	if msgs[2].Role != llm.RoleAssistant {
 		t.Errorf("expected assistant at index 2, got %v", msgs[2].Role)
 	}
-	if msgs[3].Role != provider.RoleUser {
+	if msgs[3].Role != llm.RoleUser {
 		t.Errorf("expected user at index 3, got %v", msgs[3].Role)
 	}
 	if msgs[3].Content != "add -la" {
@@ -440,9 +440,9 @@ func TestGenerate_ReviseAppendsFeedbackToMessages(t *testing.T) {
 }
 
 func TestGenerate_ReviseEscDoesNotAppendMessage(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, nil, nil, "")
@@ -459,7 +459,7 @@ func TestGenerate_ReviseEscDoesNotAppendMessage(t *testing.T) {
 }
 
 func mockNewStream(tokens ...string) NewStreamFunc {
-	return func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(messages []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return makeEvents(tokens...), noopCancel, nil
 	}
 }
@@ -473,9 +473,9 @@ func typeKeys(m GenerateModel, s string) GenerateModel {
 }
 
 func TestGenerate_ReviseRestreamsWithNewResponse(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"), nil, "")
@@ -512,9 +512,9 @@ func TestGenerate_ReviseRestreamsWithNewResponse(t *testing.T) {
 }
 
 func TestGenerate_ReviseUpdatesCommandInResult(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"), nil, "")
@@ -535,9 +535,9 @@ func TestGenerate_ReviseUpdatesCommandInResult(t *testing.T) {
 }
 
 func TestGenerate_ReviseMessagesAccumulate(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"), nil, "")
@@ -562,7 +562,7 @@ func TestGenerate_ReviseMessagesAccumulate(t *testing.T) {
 	if len(msgs) != 5 {
 		t.Fatalf("expected 5 messages after re-stream, got %d", len(msgs))
 	}
-	if msgs[4].Role != provider.RoleAssistant {
+	if msgs[4].Role != llm.RoleAssistant {
 		t.Errorf("expected assistant at index 4, got %v", msgs[4].Role)
 	}
 	if msgs[4].Content != "ls -la" {
@@ -592,7 +592,7 @@ func TestGenerate_ReviseActionBarReappearsAfterRestream(t *testing.T) {
 
 func TestGenerate_ReviseStreamErrorQuitsWithError(t *testing.T) {
 	events := makeEvents("ls")
-	failStream := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	failStream := func(messages []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return nil, nil, errors.New("API error")
 	}
 	m := NewGenerateModel(events, noopCancel, nil, failStream, nil, "")
@@ -668,9 +668,9 @@ func TestGenerate_EditEscReturnsToAction(t *testing.T) {
 }
 
 func TestGenerate_EditSubmitUpdatesCommand(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, nil, nil, "")
@@ -697,9 +697,9 @@ func TestGenerate_EditSubmitUpdatesCommand(t *testing.T) {
 }
 
 func TestGenerate_EditUpdatesMessages(t *testing.T) {
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
 	m := NewGenerateModel(events, noopCancel, initial, nil, nil, "")
@@ -764,14 +764,14 @@ func TestGenerate_EditEmptyIgnored(t *testing.T) {
 func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	revision := 0
 	responses := []string{"ls", "ls -l", "ls -la"}
-	multiStream := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	multiStream := func(messages []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		revision++
 		return makeEvents(responses[revision]), noopCancel, nil
 	}
 
-	initial := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "list files"},
+	initial := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "list files"},
 	}
 	events := makeEvents(responses[0])
 	m := NewGenerateModel(events, noopCancel, initial, multiStream, nil, "")
@@ -812,7 +812,7 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 }
 
 func mockExplainStream(tokens ...string) ExplainStreamFunc {
-	return func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return makeEvents(tokens...), noopCancel, nil
 	}
 }
@@ -958,8 +958,8 @@ func TestGenerate_PreflightAutoCorrectsBadBinary(t *testing.T) {
 // accepting it put it there on the way to the screen. Appending it a second
 // time would send the model its own answer twice, and pay for both.
 func TestGenerate_ACorrectionDoesNotSendTheAnswerTwice(t *testing.T) {
-	var sent []provider.Message
-	corrected := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	var sent []llm.Message
+	corrected := func(messages []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		sent = append(sent[:0], messages...)
 		return makeEvents("ls -la"), noopCancel, nil
 	}
@@ -972,7 +972,7 @@ func TestGenerate_ACorrectionDoesNotSendTheAnswerTwice(t *testing.T) {
 
 	answers := 0
 	for _, msg := range sent {
-		if msg.Role == provider.RoleAssistant {
+		if msg.Role == llm.RoleAssistant {
 			answers++
 		}
 	}
@@ -984,7 +984,7 @@ func TestGenerate_ACorrectionDoesNotSendTheAnswerTwice(t *testing.T) {
 // A correction is a stream, and the surface waits on it the way it waits on a
 // revise: with the spinner, not with a row of keys over an empty command.
 func TestGenerate_ACorrectionLeavesNoKeysOverAnEmptyCommand(t *testing.T) {
-	held := func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	held := func([]llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return makeEvents("ls -la"), noopCancel, nil
 	}
 	m := NewGenerateModel(makeEvents("nonexistentbinary123 --foo"), noopCancel, nil, held, nil, "bash")
@@ -1070,7 +1070,7 @@ func TestGenerate_ACheckDoesNotInterruptWhatIsBeingTyped(t *testing.T) {
 func TestGenerate_PreflightRespectsMaxRetries(t *testing.T) {
 	// Both initial and corrected streams return bad commands
 	events := makeEvents("nonexistentbinary123 --foo")
-	badStream := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	badStream := func(messages []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return makeEvents("anothernonexistent456 --bar"), noopCancel, nil
 	}
 

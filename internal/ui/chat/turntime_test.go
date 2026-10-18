@@ -6,9 +6,9 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // A turn's time is split by what it waited on — the model before its first
@@ -29,7 +29,7 @@ func TestTurnTime_ASplitSumsToTheTurn(t *testing.T) {
 		split    agent.TurnSplit
 	}
 	var got []closed
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Observer: observe.Observer{
 			TurnTimed: func(_, _ int64, d time.Duration, outcome string, s agent.TurnSplit) {
 				got = append(got, closed{d, outcome, s})
@@ -51,8 +51,8 @@ func TestTurnTime_ASplitSumsToTheTurn(t *testing.T) {
 	step(2 * time.Second)
 	update(tokenMsg{text: "Reading it."})
 	step(time.Second)
-	call := provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"main.go"}`}
-	update(toolCallsMsg{calls: []provider.ToolCall{call}})
+	call := llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"main.go"}`}
+	update(toolCallsMsg{calls: []llm.ToolCall{call}})
 	// Half a second of tools, five at a card, one more running what was
 	// allowed.
 	step(500 * time.Millisecond)
@@ -105,7 +105,7 @@ func TestQuietStretch_APrintingCommandIsNotWaiting(t *testing.T) {
 		t.Cleanup(func() { clock = was })
 
 		var got []agent.TurnSplit
-		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 			Observer: observe.Observer{
 				TurnTimed: func(_, _ int64, _ time.Duration, _ string, s agent.TurnSplit) { got = append(got, s) },
 				Turn:      func(int64, int64, time.Duration, string) { t.Fatal("a timed turn was reported untimed") },
@@ -122,8 +122,8 @@ func TestQuietStretch_APrintingCommandIsNotWaiting(t *testing.T) {
 		}
 		now = now.Add(time.Second)
 		update(tokenMsg{text: "Building."})
-		call := provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"main.go"}`}
-		update(toolCallsMsg{calls: []provider.ToolCall{call}})
+		call := llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"main.go"}`}
+		update(toolCallsMsg{calls: []llm.ToolCall{call}})
 		m.setTurnState(stateRunningCmd)
 		tail := &commandTail{}
 		m.runTail = tail

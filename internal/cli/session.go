@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -19,7 +20,6 @@ import (
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -43,7 +43,7 @@ type chatSession struct {
 	// kind labels recorded observability sessions: "chat" or "code".
 	kind         string
 	buildPrompt  func(shell.Info, ...string) string
-	toolDefs     []provider.Tool
+	toolDefs     []llm.Tool
 	flags        *resolve.Opts
 	continueLast bool
 	resumePick   bool
@@ -261,7 +261,7 @@ func (s *chatSession) openNotebook(db *storage.DB) {
 	}
 	s.notebook = notebook.New(backend)
 	s.notebook.SetScrub(s.vault.Scrub)
-	s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), notebook.Definitions()...)
+	s.toolDefs = append(append([]llm.Tool{}, s.toolDefs...), notebook.Definitions()...)
 }
 
 // registerChat is the terminal session's registrations, in its own order: the
@@ -292,7 +292,7 @@ func registerChat(cmd *cobra.Command, a *assembly, session *chatSession) error {
 		a.agents = agents
 		// The models it may name are known once the provider is, and are
 		// put on the definition then (offerOn).
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.snapshot(), subagent.Offer{})...)
+		session.toolDefs = append(append([]llm.Tool{}, session.toolDefs...), subagent.Definitions(agents.snapshot(), subagent.Offer{})...)
 	}
 
 	db, storeErr := openSessionStore(cmd.Context())
@@ -324,7 +324,7 @@ func registerChat(cmd *cobra.Command, a *assembly, session *chatSession) error {
 	// confirmed by the user before it persists.
 	a.mem = recallMemory(cmd, session, db)
 	if a.mem != nil && session.memory {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), memory.ToolDefinition())
+		session.toolDefs = append(append([]llm.Tool{}, session.toolDefs...), memory.ToolDefinition())
 	}
 
 	// And the question tool, on the same terms and for the same reason.
@@ -334,7 +334,7 @@ func registerChat(cmd *cobra.Command, a *assembly, session *chatSession) error {
 	// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
 	if !session.conversation {
 		session.workSteps = true
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), plan.StepsToolDefinition())
+		session.toolDefs = append(append([]llm.Tool{}, session.toolDefs...), plan.StepsToolDefinition())
 	}
 
 	session.openNotebook(db)
@@ -356,7 +356,7 @@ func (s chatSession) wantsResume() bool {
 // conversation instead.
 type reopenedChat struct {
 	slot     string
-	messages []provider.Message
+	messages []llm.Message
 	// cancelled is the picker closed without a choice. It is neither a
 	// failure nor a session: the person asked to see the list and then said
 	// no, and there is nothing left for the command to do.
@@ -417,7 +417,7 @@ func (s chatSession) resumeChat(db *storage.DB) (reopenedChat, error) {
 		}
 	}
 	var (
-		messages []provider.Message
+		messages []llm.Message
 		loadErr  error
 	)
 	if name == "" {

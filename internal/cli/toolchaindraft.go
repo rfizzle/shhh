@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
@@ -78,8 +78,8 @@ var toolchainDraftSchema = json.RawMessage(`{
 // toolchainDraftTool is the definition a drafting is offered, and the only
 // one: the request can read nothing but what the session read for it and do
 // nothing but answer.
-func toolchainDraftTool() provider.Tool {
-	return provider.Tool{
+func toolchainDraftTool() llm.Tool {
+	return llm.Tool{
 		Name:        toolchainDraftToolName,
 		Description: "Return the drafted toolchain declaration — its four lists, what each install line provides, and for a review each change with its reason.",
 		Parameters:  toolchainDraftSchema,
@@ -112,7 +112,7 @@ func (a toolchainAnswer) declaration() project.Toolchain {
 
 // toolchainDrafter drafts a checkout's declaration on a provider.
 type toolchainDrafter struct {
-	prov  provider.Provider
+	prov  llm.Provider
 	model func() string
 	// root is the checkout the declaration belongs to and dir the directory
 	// the session stands in, which the survey is taken of.
@@ -140,9 +140,9 @@ func (d toolchainDrafter) draft(ctx context.Context, review bool) chat.Toolchain
 	if d.scrub != nil {
 		evidence = d.scrub(evidence)
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: prompt.ToolchainDraft(review)},
-		{Role: provider.RoleUser, Content: evidence},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: prompt.ToolchainDraft(review)},
+		{Role: llm.RoleUser, Content: evidence},
 	}
 	var refused error
 	for attempt := 0; attempt < 2; attempt++ {
@@ -166,8 +166,8 @@ func (d toolchainDrafter) draft(ctx context.Context, review bool) chat.Toolchain
 		// The loader's own sentence, once: it names the entry and says what
 		// a pinned one looks like, which is what the model needs to fix it.
 		msgs = append(msgs,
-			provider.Message{Role: provider.RoleAssistant, Content: raw},
-			provider.Message{Role: provider.RoleUser, Content: "The loader refused that answer: " + refused.Error() +
+			llm.Message{Role: llm.RoleAssistant, Content: raw},
+			llm.Message{Role: llm.RoleUser, Content: "The loader refused that answer: " + refused.Error() +
 				"\nAnswer again with " + toolchainDraftToolName + ", changing only what the refusal names."})
 	}
 	return chat.ToolchainDraft{Err: "the loader refused the draft twice — " + refused.Error()}
@@ -219,16 +219,16 @@ func sameDeclaration(a, b project.Toolchain) bool {
 
 // ask sends one request and returns the draft tool's arguments, or — from a
 // model that answered in text — the object in its reply.
-func (d toolchainDrafter) ask(ctx context.Context, msgs []provider.Message) (string, error) {
+func (d toolchainDrafter) ask(ctx context.Context, msgs []llm.Message) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, toolchainDraftTimeout)
 	defer cancel()
-	events, err := d.prov.StreamCompletion(ctx, msgs, provider.CompletionOpts{
+	events, err := d.prov.StreamCompletion(ctx, msgs, llm.CompletionOpts{
 		Model:      d.model(),
-		Flow:       provider.FlowToolchainDrafter,
+		Flow:       llm.FlowToolchainDrafter,
 		MaxTokens:  toolchainDraftMaxTokens,
-		Tools:      []provider.Tool{toolchainDraftTool()},
-		ToolChoice: provider.ToolChoiceAuto,
-		Effort:     provider.EffortLow,
+		Tools:      []llm.Tool{toolchainDraftTool()},
+		ToolChoice: llm.ToolChoiceAuto,
+		Effort:     llm.EffortLow,
 	})
 	if err != nil {
 		return "", err
@@ -334,7 +334,7 @@ func writeToolchainDraft(root string) func([]byte) (string, error) {
 // wireToolchainDraft gives the chat session's toolchain state the draft and
 // the write. Only the chat session calls it — a run with nobody to answer
 // the card, and every sub-agent, never has the command.
-func wireToolchainDraft(tc *chat.Toolchain, prov provider.Provider, model func() string, scrub func(string) string) {
+func wireToolchainDraft(tc *chat.Toolchain, prov llm.Provider, model func() string, scrub func(string) string) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return

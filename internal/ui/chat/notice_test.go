@@ -7,7 +7,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -111,8 +111,8 @@ func pictureModel(t *testing.T) Model {
 	args := `{"path":"shot.png"}`
 	result := "shot.png is an image (image/png), attached to this result for models that can see one; it has no text to return."
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: args, toolResult: result})
-	m.appendPicture("", m.callReceipt("read_file", args, result, nil, provider.Attachment{
-		Kind: provider.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: shot}))
+	m.appendPicture("", m.callReceipt("read_file", args, result, nil, llm.Attachment{
+		Kind: llm.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: shot}))
 	m.invalidateRenderCache()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()
@@ -209,7 +209,7 @@ func TestGolden_ComposeRow(t *testing.T) {
 	captureBoundedGolden(t, "compose-row", "the compose row", goldenWidths, func(width int) []golden.Panel {
 		m := frameModel(t, width, 40)
 		m.setTurnState(stateStreaming)
-		events := make(chan provider.StreamEvent)
+		events := make(chan llm.StreamEvent)
 		updated, _ := m.Update(streamStartedMsg{events: events})
 		m = updated.(Model)
 		m.appendEntry(entry{kind: entryUser, text: "write the copy handler"})

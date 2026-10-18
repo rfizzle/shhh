@@ -7,7 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // The sentence under the command is the same sentence a summarising request
@@ -120,16 +120,16 @@ func TestSavedSnippetHoldsTheDescription(t *testing.T) {
 // was asked under.
 type describeProvider struct {
 	name string
-	opts *provider.CompletionOpts
+	opts *llm.CompletionOpts
 }
 
 func (p describeProvider) Name() string { return p.name }
 
-func (p describeProvider) StreamCompletion(_ context.Context, _ []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p describeProvider) StreamCompletion(_ context.Context, _ []llm.Message, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	*p.opts = opts
-	events := make(chan provider.StreamEvent, 2)
-	events <- provider.StreamEvent{Token: "list open network ports"}
-	events <- provider.StreamEvent{Done: true}
+	events := make(chan llm.StreamEvent, 2)
+	events <- llm.StreamEvent{Token: "list open network ports"}
+	events <- llm.StreamEvent{Done: true}
 	close(events)
 	return events, nil
 }
@@ -140,27 +140,27 @@ func (p describeProvider) StreamCompletion(_ context.Context, _ []provider.Messa
 // or not it was asked, is a ten-word phrase bought at the price of a round of
 // the session's own work.
 func TestSnippetDescriptionIsAskedAsABoundedCall(t *testing.T) {
-	var opts provider.CompletionOpts
+	var opts llm.CompletionOpts
 	p := describeProvider{name: "anthropic", opts: &opts}
 
 	if got := snippetDescription(context.Background(), p, "claude-opus-5", "", "lsof -i -P -n", ""); got != "list open network ports" {
 		t.Fatalf("description = %q", got)
 	}
-	if want := provider.Defaults("anthropic").CheapModel; opts.Model != want {
+	if want := llm.Defaults("anthropic").CheapModel; opts.Model != want {
 		t.Errorf("model = %q, want the provider's small one, %q", opts.Model, want)
 	}
 	if opts.MaxTokens != descriptionMaxTokens {
 		t.Errorf("max tokens = %d, want %d", opts.MaxTokens, descriptionMaxTokens)
 	}
-	if opts.Effort != provider.EffortLow {
-		t.Errorf("effort = %v, want %v", opts.Effort, provider.EffortLow)
+	if opts.Effort != llm.EffortLow {
+		t.Errorf("effort = %v, want %v", opts.Effort, llm.EffortLow)
 	}
 }
 
 // A provider that names no small model of its own is answered on the
 // session's, which is the same rule every other bounded call follows.
 func TestSnippetDescriptionFallsBackToTheSessionModel(t *testing.T) {
-	var opts provider.CompletionOpts
+	var opts llm.CompletionOpts
 	p := describeProvider{name: "no-cheap-model-of-its-own", opts: &opts}
 
 	if got := snippetDescription(context.Background(), p, "llama3", "", "lsof -i -P -n", ""); got == "" {
@@ -174,7 +174,7 @@ func TestSnippetDescriptionFallsBackToTheSessionModel(t *testing.T) {
 // behavior.description_model outranks both halves of that rule when a person
 // named one, and a blank one leaves the rule as it was.
 func TestSnippetDescriptionTakesTheConfiguredModel(t *testing.T) {
-	var opts provider.CompletionOpts
+	var opts llm.CompletionOpts
 	p := describeProvider{name: "anthropic", opts: &opts}
 
 	if got := snippetDescription(context.Background(), p, "claude-opus-5", "my-describer", "lsof -i -P -n", ""); got == "" {

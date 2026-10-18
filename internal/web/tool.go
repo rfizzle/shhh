@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/calltier"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -150,8 +150,8 @@ func (t *Toolset) UseLedger(l *Ledger) { t.ledger = l }
 func (t *Toolset) UseObserver(report func(provider string)) { t.observe = report }
 
 // Definitions returns the provider tool definitions to register.
-func (t *Toolset) Definitions() []provider.Tool {
-	defs := []provider.Tool{{
+func (t *Toolset) Definitions() []llm.Tool {
+	defs := []llm.Tool{{
 		Name: FetchToolName,
 		Description: "Fetch a public http/https URL and return its readable content (HTML is reduced to text; PDF is read where a reader is installed; JSON and plain text pass through bounded). " +
 			"The result includes the final URL for citation. A long page is kept whole as evidence and the result says how to read on from where it was cut — page it back, never fetch the same URL again for the rest. " +
@@ -171,7 +171,7 @@ func (t *Toolset) Definitions() []provider.Tool {
 		// it, which is a thing the model can act on; a schema that varied
 		// with a setting nobody can see is not
 		// (docs/capabilities/evidence.md#a-search-is-refused-rather-than-widened).
-		defs = append(defs, provider.Tool{
+		defs = append(defs, llm.Tool{
 			Name: SearchToolName,
 			Description: "Search the web (" + t.Searcher.Name() + ") and return the top results (title, URL, description). " +
 				"Use web_fetch to read a result's full content.",

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // steerReceipt is the row a person's steer leaves on the child's lane at the
@@ -209,13 +209,13 @@ func (c *child) interruptTurnLocked() {
 // for an interrupt as soon as the stream is open. The request itself is never
 // made — a cancelled turn has nothing to ask the provider.
 func (c *child) interruptible(open agent.StreamFunc) agent.StreamFunc {
-	return func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(msgs []llm.Message, choice string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		c.mu.Lock()
 		cancelled, h := c.intClosed, c.headless
 		c.mu.Unlock()
 		if cancelled && h != nil {
 			h.Interrupt()
-			ch := make(chan provider.StreamEvent)
+			ch := make(chan llm.StreamEvent)
 			close(ch)
 			return ch, func() {}, nil
 		}
@@ -285,7 +285,7 @@ func (c *child) interruptCh() <-chan struct{} {
 // has newly taken in. PromptTokens includes the cached part by contract
 // (provider.Usage), and a dialect that reports no cache at all reports zero,
 // which leaves the two figures equal and the budget where it was.
-func (c *child) addUsage(u *provider.Usage) (over bool) {
+func (c *child) addUsage(u *llm.Usage) (over bool) {
 	if u == nil {
 		return false
 	}

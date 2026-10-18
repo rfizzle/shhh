@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -35,8 +35,8 @@ const (
 // last sentence is a promise about the result: a session that hands back an
 // id while its tool description says the first line is a URL teaches the
 // model to quote an address that stopped resolving.
-func (p *Publisher) ToolDefinition() provider.Tool {
-	return provider.Tool{
+func (p *Publisher) ToolDefinition() llm.Tool {
+	return llm.Tool{
 		Name: ToolName,
 		Description: "Publish an answer that is a page rather than a paragraph — timings, comparisons, " +
 			"structures, anything a terminal cannot hold — as a page served locally for the user's browser. " +

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -90,12 +90,12 @@ type evidenceProvider struct {
 	evidence []string
 }
 
-func (p *evidenceProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *evidenceProvider) StreamCompletion(_ context.Context, msgs []llm.Message, _ llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	p.mu.Lock()
 	p.evidence = append(p.evidence, msgs[len(msgs)-1].Content)
 	p.mu.Unlock()
-	ch := make(chan provider.StreamEvent, 1)
-	ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "d1", Name: agent.DecisionToolName,
+	ch := make(chan llm.StreamEvent, 1)
+	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "d1", Name: agent.DecisionToolName,
 		Arguments: `{"decision":"allow","reason":"ok"}`}}, Done: true}
 	close(ch)
 	return ch, nil

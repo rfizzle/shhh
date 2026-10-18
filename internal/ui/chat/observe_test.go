@@ -6,9 +6,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -26,9 +26,9 @@ func TestObserver_ModelReachesEveryHook(t *testing.T) {
 	defer db.Close()
 
 	var reached []string
-	m := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hello"},
+	m := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hello"},
 	}, mockStream, Wiring{
 		DB: db,
 		Observer: observe.Observer{
@@ -41,7 +41,7 @@ func TestObserver_ModelReachesEveryHook(t *testing.T) {
 		},
 	})
 	m.notifyUsage()
-	m.recordToolResult(provider.ToolCall{Name: "read_file"}, time.Millisecond, "data")
+	m.recordToolResult(llm.ToolCall{Name: "read_file"}, time.Millisecond, "data")
 	m.recordDecision(observe.DecisionAllow, "user")
 	m.recordTurn(observe.TurnDone)
 	m.signal(observe.SignalMode, "auto")
@@ -63,7 +63,7 @@ func TestObserver_ModelReachesEveryHook(t *testing.T) {
 
 func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 	var gotTurns, gotIn, gotOut int64
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Observer: observe.Observer{Usage: func(turns, tokensIn, tokensOut int64, _ float64, _ bool) {
 			gotTurns, gotIn, gotOut = turns, tokensIn, tokensOut
 		}},
@@ -73,7 +73,7 @@ func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 
 	updated, _ = model.sendUserMessage("hello")
 	model = updated.(Model)
-	model.accumulateUsage(&provider.Usage{PromptTokens: 10, CompletionTokens: 5})
+	model.accumulateUsage(&llm.Usage{PromptTokens: 10, CompletionTokens: 5})
 
 	if gotTurns != 1 || gotIn != 10 || gotOut != 5 {
 		t.Fatalf("expected (1, 10, 5), got (%d, %d, %d)", gotTurns, gotIn, gotOut)
@@ -82,7 +82,7 @@ func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 
 func TestObserver_ToolEventsRecorded(t *testing.T) {
 	var events []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Observer: observe.Observer{ToolCall: func(_ observe.Pos, tool string, duration time.Duration, outcome, class, purpose string) {
 			events = append(events, tool+":"+outcome+":"+purpose)
 		}},
@@ -92,9 +92,9 @@ func TestObserver_ToolEventsRecorded(t *testing.T) {
 	model.state = stateStreaming
 
 	updated, _ = model.Update(toolResultsMsg{runID: 0, results: []agent.ToolResult{
-		{Call: provider.ToolCall{ID: "1", Name: "read_file"}, Result: "data", Duration: time.Millisecond},
-		{Call: provider.ToolCall{ID: "2", Name: "search"}, Result: "error: bad pattern", Duration: time.Millisecond},
-		{Call: provider.ToolCall{ID: "3", Name: "execute_command", Arguments: `{"command":"grep -n foo main.go | head"}`},
+		{Call: llm.ToolCall{ID: "1", Name: "read_file"}, Result: "data", Duration: time.Millisecond},
+		{Call: llm.ToolCall{ID: "2", Name: "search"}, Result: "error: bad pattern", Duration: time.Millisecond},
+		{Call: llm.ToolCall{ID: "3", Name: "execute_command", Arguments: `{"command":"grep -n foo main.go | head"}`},
 			Result: "1:foo", Duration: time.Millisecond},
 	}})
 	_ = updated
@@ -119,7 +119,7 @@ func TestObserver_ToolEventsRecorded(t *testing.T) {
 // (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 func TestObserver_TheRecordedRoundIsTheRoundTheConversationCarries(t *testing.T) {
 	var at observe.Pos
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Observer: observe.Observer{ToolCall: func(p observe.Pos, _ string, _ time.Duration, _, _, _ string) {
 			at = p
 		}},
@@ -130,8 +130,8 @@ func TestObserver_TheRecordedRoundIsTheRoundTheConversationCarries(t *testing.T)
 	model = updated.(Model)
 	model.state = stateStreaming
 
-	call := provider.ToolCall{ID: "1", Name: "search", Arguments: `{"pattern":"steeringItem"}`}
-	model.agent.BeginToolRound("looking", []provider.ToolCall{call}, nil)
+	call := llm.ToolCall{ID: "1", Name: "search", Arguments: `{"pattern":"steeringItem"}`}
+	model.agent.BeginToolRound("looking", []llm.ToolCall{call}, nil)
 	updated, _ = model.Update(toolResultsMsg{runID: model.agent.RunID(), results: []agent.ToolResult{
 		{Call: call, Result: "one hit", Duration: time.Millisecond},
 	}})
@@ -163,7 +163,7 @@ func TestObserver_TheRecordedRoundIsTheRoundTheConversationCarries(t *testing.T)
 // broke on one would be missing exactly where it is wanted.
 func TestObserver_ASteerMovesTheTurnOnBothSidesOfTheJoin(t *testing.T) {
 	var at observe.Pos
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Observer: observe.Observer{Signal: func(p observe.Pos, code, _ string) {
 			if code == observe.SignalSteer {
 				at = p
@@ -193,7 +193,7 @@ func TestObserver_ASteerMovesTheTurnOnBothSidesOfTheJoin(t *testing.T) {
 
 	// And what the model does after it is written under the same turn, which
 	// is what the rest of the timeline is joined by.
-	model.agent.BeginToolRound("looking", []provider.ToolCall{{ID: "1", Name: "search"}}, nil)
+	model.agent.BeginToolRound("looking", []llm.ToolCall{{ID: "1", Name: "search"}}, nil)
 	call := model.agent.Messages()[len(model.agent.Messages())-1]
 	if call.Turn != model.turnCount {
 		t.Fatalf("the round after the steer was written at turn %d, want %d", call.Turn, model.turnCount)
@@ -202,7 +202,7 @@ func TestObserver_ASteerMovesTheTurnOnBothSidesOfTheJoin(t *testing.T) {
 
 func TestObserver_TurnRecordedOnClose(t *testing.T) {
 	var turns []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Observer: observe.Observer{Turn: func(turn, rounds int64, _ time.Duration, outcome string) {
 			turns = append(turns, fmt.Sprintf("%d:%d:%s", turn, rounds, outcome))
 		}},
@@ -228,7 +228,7 @@ func TestObserver_TurnRecordedOnClose(t *testing.T) {
 
 func TestObserver_SignalsFromResultsAndSummary(t *testing.T) {
 	var signals []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Observer: observe.Observer{Signal: func(at observe.Pos, code, reason string) {
 			signals = append(signals, fmt.Sprintf("%d/%s:%s", at.Turn, code, reason))
 		}},
@@ -240,7 +240,7 @@ func TestObserver_SignalsFromResultsAndSummary(t *testing.T) {
 	model.state = stateStreaming
 
 	updated, _ = model.Update(toolResultsMsg{runID: model.agent.RunID(), results: []agent.ToolResult{
-		{Call: provider.ToolCall{ID: "1", Name: "search"}, Result: "[repeat: this exact search call has now run 2 times]\nx"},
+		{Call: llm.ToolCall{ID: "1", Name: "search"}, Result: "[repeat: this exact search call has now run 2 times]\nx"},
 	}})
 	model = updated.(Model)
 	model.applyMode(agent.ModeAuto)

@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -18,13 +18,13 @@ import (
 func statsModel(t *testing.T) (Model, *meter.Ledger) {
 	t.Helper()
 	m, ledger := spendModel(t)
-	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 12_000, CompletionTokens: 900, CachedTokens: 8_000})
-	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", provider.Usage{PromptTokens: 3_000, CompletionTokens: 40})
-	ledger.Record(meter.Origin{Source: meter.SourceSummary}, "cheap", provider.Usage{PromptTokens: 2_000, CompletionTokens: 120})
-	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "researcher-1"}, "cheap", provider.Usage{PromptTokens: 400, CompletionTokens: 40})
-	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "gpt-4o", provider.Usage{PromptTokens: 600, CompletionTokens: 60})
-	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "cheap", provider.Usage{PromptTokens: 100, CompletionTokens: 10})
-	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 14_000, CompletionTokens: 600})
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 12_000, CompletionTokens: 900, CachedTokens: 8_000})
+	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 3_000, CompletionTokens: 40})
+	ledger.Record(meter.Origin{Source: meter.SourceSummary}, "cheap", llm.Usage{PromptTokens: 2_000, CompletionTokens: 120})
+	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "researcher-1"}, "cheap", llm.Usage{PromptTokens: 400, CompletionTokens: 40})
+	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "gpt-4o", llm.Usage{PromptTokens: 600, CompletionTokens: 60})
+	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "cheap", llm.Usage{PromptTokens: 100, CompletionTokens: 10})
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 14_000, CompletionTokens: 600})
 	m.turnCount = 2
 	m.transcript = []entry{
 		{kind: entryUser, text: "first", turn: 1},
@@ -161,7 +161,7 @@ func TestStats_APausedTurnIsOnTheBill(t *testing.T) {
 	m := turnModel(t)
 	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "fix the round accounting")
-	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 80})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 1200, CompletionTokens: 80})
 	spend := m.totalsLabel(m.turnSpend())
 	m = applyWrite(t, m, filepath.Join(t.TempDir(), "loop.go"), "package agent\n", "y")
 	if m.roundPause == nil || m.turnOpen || spend == "" {
@@ -199,9 +199,9 @@ func TestStats_APausedTurnIsOnTheBill(t *testing.T) {
 // Nothing the pricing table knew means no dollar figure anywhere on the
 // screen: a share is its tokens rather than a cost of nothing.
 func TestSpendScreen_UnpricedSaysTokensNotDollars(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.vitals.startTurn()
-	m.accumulateUsage(&provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 1000, CompletionTokens: 100})
 	s := m.spendScreenData()
 	s.MaxLines = 20
 	if view := stripANSI(s.View(130)); strings.Contains(view, "$") || !strings.Contains(view, "session total") {
@@ -272,7 +272,7 @@ func TestSpendScreen_EnterOpensTheTurnOnTheTurnsScreen(t *testing.T) {
 // A session that has spent nothing still opens the screen: the block is gone
 // then, so the command is the only door, and nothing spent is its answer.
 func TestSpendScreen_NothingSpentOpensOnASentence(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	next, _ := m.openStats()
 	m = next.(Model)
 	if m.state != stateSpend {

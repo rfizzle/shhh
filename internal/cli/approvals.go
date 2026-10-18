@@ -7,6 +7,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/config"
@@ -15,7 +16,6 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -78,7 +78,7 @@ func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools
 	if procSup != nil {
 		holds.Command = process.CommandOf
 	}
-	return func(tc provider.ToolCall) bool {
+	return func(tc llm.ToolCall) bool {
 		call, _ := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), holds)
 		return call.Gated
 	}
@@ -164,7 +164,7 @@ func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *s
 type autoJudge struct {
 	ctx        context.Context
 	classifier *agent.Classifier
-	recent     func() []provider.Message
+	recent     func() []llm.Message
 	cwd        string
 	// allowHosts and denyHosts are the person's own host lists
 	// (web.allow_hosts, web.deny_hosts). A fetch is put to the same policy a
@@ -179,7 +179,7 @@ type autoJudge struct {
 // newAutoJudge is auto mode's judge for an unattended run: the classifier,
 // the run's own conversation as it stands at each call, the directory it
 // runs in, and the person's two host lists from the configuration.
-func newAutoJudge(ctx context.Context, cfg config.Config, classifier *agent.Classifier, recent func() []provider.Message, cwd string) *autoJudge {
+func newAutoJudge(ctx context.Context, cfg config.Config, classifier *agent.Classifier, recent func() []llm.Message, cwd string) *autoJudge {
 	return &autoJudge{ctx: ctx, classifier: classifier, recent: recent, cwd: cwd,
 		allowHosts: cfg.Web.AllowHosts, denyHosts: cfg.Web.DenyHosts}
 }
@@ -190,14 +190,14 @@ func newAutoJudge(ctx context.Context, cfg config.Config, classifier *agent.Clas
 //
 // A nil judge is a run that was not put in auto mode, and its answer is the
 // flat refusal such a run has always given.
-func (j *autoJudge) decide(tc provider.ToolCall, action agent.Action) (agent.Decision, string, string) {
+func (j *autoJudge) decide(tc llm.ToolCall, action agent.Action) (agent.Decision, string, string) {
 	decision, why, code, _ := j.judge(tc, action)
 	return decision, why, code
 }
 
 // judge is decide with how long the classifier took, zero where it was not
 // asked, for the row the verdict is recorded under.
-func (j *autoJudge) judge(tc provider.ToolCall, action agent.Action) (agent.Decision, string, string, time.Duration) {
+func (j *autoJudge) judge(tc llm.ToolCall, action agent.Action) (agent.Decision, string, string, time.Duration) {
 	if j == nil {
 		return agent.Deny, "", observe.ReasonHeadlessDefault, 0
 	}
@@ -207,7 +207,7 @@ func (j *autoJudge) judge(tc provider.ToolCall, action agent.Action) (agent.Deci
 			return decision, why, observe.ReasonCode(why), 0
 		}
 	}
-	var recent []provider.Message
+	var recent []llm.Message
 	if j.recent != nil {
 		recent = j.recent()
 	}

@@ -22,7 +22,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // AccountToolName is the tool the accountant is asked to call with its answer.
@@ -102,14 +102,14 @@ func (r AccountRequest) Empty() bool {
 // front of it already taken off — and the session's own machine messages are
 // skipped, since a check-in or a tree notice is not something the person
 // asked. Tool results are never read.
-func AccountRequestFrom(previous string, msgs []provider.Message) AccountRequest {
+func AccountRequestFrom(previous string, msgs []llm.Message) AccountRequest {
 	req := AccountRequest{Previous: strings.TrimSpace(previous)}
 	var asks []string
 	for _, msg := range msgs {
 		switch {
-		case msg.Role == provider.RoleUser && !msg.Machine && strings.TrimSpace(msg.Content) != "":
+		case msg.Role == llm.RoleUser && !msg.Machine && strings.TrimSpace(msg.Content) != "":
 			asks = append(asks, msg.Content)
-		case msg.Role == provider.RoleAssistant && strings.TrimSpace(msg.Content) != "":
+		case msg.Role == llm.RoleAssistant && strings.TrimSpace(msg.Content) != "":
 			req.Assistant = msg.Content
 		}
 	}
@@ -129,18 +129,18 @@ func AccountRequestFrom(previous string, msgs []provider.Message) AccountRequest
 type AccountVerdict struct {
 	Account string
 	Model   string
-	Usage   provider.Usage
+	Usage   llm.Usage
 	Failed  bool
 	Err     string
 }
 
 // Accountant writes the standing account through the session's provider.
 type Accountant struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      AccountConfig
 }
 
-func NewAccountant(p provider.Provider, cfg AccountConfig) *Accountant {
+func NewAccountant(p llm.Provider, cfg AccountConfig) *Accountant {
 	return &Accountant{provider: p, cfg: cfg}
 }
 
@@ -199,17 +199,17 @@ func (a *Accountant) Account(ctx context.Context, req AccountRequest) AccountVer
 	// The instruction and the evidence travel in separate messages, so the
 	// dialect's own instruction channel is what keeps them apart
 	// (classifier.go).
-	events, err := a.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: a.cfg.prompt()},
-		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
-	}, provider.CompletionOpts{
+	events, err := a.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: a.cfg.prompt()},
+		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
+	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      provider.FlowAccount,
+		Flow:      llm.FlowAccount,
 		MaxTokens: a.cfg.maxTokens(),
 		// A shallow thought is the right amount for two sentences, for the
 		// reason the titler asks for one.
-		Effort: provider.EffortLow,
-		Tools: []provider.Tool{{
+		Effort: llm.EffortLow,
+		Tools: []llm.Tool{{
 			Name:        AccountToolName,
 			Description: "State what the session was doing and where it left off.",
 			Parameters:  accountSchema,
@@ -221,7 +221,7 @@ func (a *Accountant) Account(ctx context.Context, req AccountRequest) AccountVer
 		return v
 	}
 
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	if reply.Usage != nil {
 		v.Usage = *reply.Usage
 	}

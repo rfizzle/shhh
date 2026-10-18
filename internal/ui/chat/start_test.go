@@ -7,8 +7,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -46,7 +46,7 @@ func startFixture() StartInfo {
 // startModel is a sized model on its first contact with the fixture project.
 func startModel(t *testing.T, info StartInfo) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Start: new(info)})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{Start: new(info)})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	return updated.(Model)
 }
@@ -224,9 +224,9 @@ func TestStartScreen_ClearOfAGenuinelyEmptySessionKeepsIt(t *testing.T) {
 
 func TestStartScreen_LoadedConversationSpendsIt(t *testing.T) {
 	m := startModel(t, startFixture())
-	m.loadConversation([]provider.Message{
-		{Role: provider.RoleUser, Content: "hi"},
-		{Role: provider.RoleAssistant, Content: "hello"},
+	m.loadConversation([]llm.Message{
+		{Role: llm.RoleUser, Content: "hi"},
+		{Role: llm.RoleAssistant, Content: "hello"},
 	})
 	m.startNewSession()
 	if m.startScreenShowing() {
@@ -297,9 +297,9 @@ func TestStartScreen_EnterOnTheResumeOfferLoadsThatSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	saved := []provider.Message{
-		{Role: provider.RoleUser, Content: "where were we"},
-		{Role: provider.RoleAssistant, Content: "right here"},
+	saved := []llm.Message{
+		{Role: llm.RoleUser, Content: "where were we"},
+		{Role: llm.RoleAssistant, Content: "right here"},
 	}
 	if err := db.SaveChat("loop refactor", saved); err != nil {
 		t.Fatal(err)
@@ -357,7 +357,7 @@ func TestStartScreen_HistoryKeepsTheArrowsOnceThereIsHistory(t *testing.T) {
 }
 
 func TestStartScreen_AbsentSurveyKeepsThePlainWelcome(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.width = 80
 	if !strings.Contains(ansi.Strip(m.renderHistory()), "ask for anything") {
 		t.Fatal("a model with no survey should keep the welcome line")
@@ -507,7 +507,7 @@ func TestStartScreen_TheFaceIsSizedByThePaneNotTheWindow(t *testing.T) {
 		t.Fatalf("a tall window should wear the wordmark:\n%s", tall)
 	}
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Start: new(startFixture())})
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{Start: new(startFixture())})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 18})
 	short := startText(updated.(Model))
 	if strings.Contains(short, "▄▀▀▀") {

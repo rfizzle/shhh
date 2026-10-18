@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -295,7 +295,7 @@ func providerOptions(names []string) []components.SelectOption {
 	opts := make([]components.SelectOption, 0, len(names))
 	for _, name := range names {
 		desc := ""
-		if model := provider.Defaults(name).Model; model != "" {
+		if model := llm.Defaults(name).Model; model != "" {
 			desc = "starts on " + model
 		}
 		opts = append(opts, components.SelectOption{Label: name, Desc: desc})

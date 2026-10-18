@@ -35,10 +35,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/preflight"
 	"github.com/rfizzle/shhh/internal/proposal"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -75,11 +75,11 @@ const (
 	ExplainLong
 )
 
-type NewStreamFunc func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
+type NewStreamFunc func(messages []llm.Message) (<-chan llm.StreamEvent, context.CancelFunc, error)
 
 // ExplainStreamFunc streams an explanation of command. long selects the
 // flag's paragraph form over the default one-liner.
-type ExplainStreamFunc func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error)
+type ExplainStreamFunc func(command string, long bool) (<-chan llm.StreamEvent, context.CancelFunc, error)
 
 // DryRunFunc runs a command that has already been rewritten into its no-op
 // form and reports what it said. It is a field rather than a call so the
@@ -104,7 +104,7 @@ type GenerateModel struct {
 	editInput        textinput.Model
 	saveInput        textinput.Model
 	explainStream    StreamModel
-	messages         []provider.Message
+	messages         []llm.Message
 	newStream        NewStreamFunc
 	newExplain       ExplainStreamFunc
 	runDry           DryRunFunc
@@ -223,7 +223,7 @@ type GenerateResult struct {
 	Err       error
 }
 
-func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc, newExplain ExplainStreamFunc, shell string) GenerateModel {
+func NewGenerateModel(events <-chan llm.StreamEvent, cancel context.CancelFunc, messages []llm.Message, newStream NewStreamFunc, newExplain ExplainStreamFunc, shell string) GenerateModel {
 	ti := components.NewTextInput()
 	ti.Placeholder = "Describe what to change…"
 	ti.CharLimit = 500
@@ -232,7 +232,7 @@ func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelF
 	si := components.NewTextInput()
 	si.Placeholder = "Snippet name…"
 	si.CharLimit = 100
-	msgs := make([]provider.Message, len(messages))
+	msgs := make([]llm.Message, len(messages))
 	copy(msgs, messages)
 	return GenerateModel{
 		stream:      NewStreamModel(events, cancel),
@@ -269,9 +269,9 @@ func (m GenerateModel) WithDryRun(f DryRunFunc) GenerateModel {
 	return m
 }
 
-func (m GenerateModel) Result() GenerateResult       { return m.result }
-func (m GenerateModel) Phase() phase                 { return m.phase }
-func (m GenerateModel) Messages() []provider.Message { return m.messages }
+func (m GenerateModel) Result() GenerateResult  { return m.result }
+func (m GenerateModel) Phase() phase            { return m.phase }
+func (m GenerateModel) Messages() []llm.Message { return m.messages }
 
 // Reach is the resolved radius of the command on screen, for callers that
 // need what the containment line states.
@@ -417,8 +417,8 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 // to what the model actually said and the format it answered in is part of
 // that.
 func (m GenerateModel) accept(raw string, answer proposal.Proposal) (GenerateModel, tea.Cmd) {
-	m.messages = append(m.messages, provider.Message{
-		Role:    provider.RoleAssistant,
+	m.messages = append(m.messages, llm.Message{
+		Role:    llm.RoleAssistant,
 		Content: raw,
 	})
 	m.choices, m.chosen = answer.Choices, 0
@@ -461,7 +461,7 @@ func (m GenerateModel) preflightDone(msg preflightDoneMsg) (GenerateModel, tea.C
 	)
 	// The response is already in the conversation: accepting it put it there
 	// on the way to the screen. Only the complaint about it is new.
-	m.messages = append(m.messages, provider.Message{Role: provider.RoleUser, Content: correction})
+	m.messages = append(m.messages, llm.Message{Role: llm.RoleUser, Content: correction})
 	m.gen++
 	m.stream = pendingStream()
 	// The phase moves with the stream and not with its answer, the way a
@@ -934,7 +934,7 @@ func (m GenerateModel) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.stream = m.stream.WithOutput(command)
 	// The conversation follows the screen: a revise from here is a revise of
 	// the command the user chose, not of the one the model led with.
-	if len(m.messages) > 0 && m.messages[len(m.messages)-1].Role == provider.RoleAssistant {
+	if len(m.messages) > 0 && m.messages[len(m.messages)-1].Role == llm.RoleAssistant {
 		m.messages[len(m.messages)-1].Content = command
 	}
 	return m.arm(command, "")
@@ -957,14 +957,14 @@ func oneLine(command string) string {
 type explainReadyMsg struct {
 	gen    int
 	long   bool
-	events <-chan provider.StreamEvent
+	events <-chan llm.StreamEvent
 	cancel context.CancelFunc
 	err    error
 }
 
 type streamReadyMsg struct {
 	gen    int
-	events <-chan provider.StreamEvent
+	events <-chan llm.StreamEvent
 	cancel context.CancelFunc
 	err    error
 }
@@ -994,8 +994,8 @@ func runPreflight(command, shell string, gen int) tea.Cmd {
 
 // openStream copies the conversation because the model that asked keeps
 // mutating its own copy — a revise appends to it the moment this returns.
-func openStream(f NewStreamFunc, messages []provider.Message, gen int) tea.Cmd {
-	msgs := make([]provider.Message, len(messages))
+func openStream(f NewStreamFunc, messages []llm.Message, gen int) tea.Cmd {
+	msgs := make([]llm.Message, len(messages))
 	copy(msgs, messages)
 	return func() tea.Msg {
 		events, cancel, err := f(msgs)
@@ -1071,8 +1071,8 @@ func (m GenerateModel) updateRevise(msg tea.Msg) (tea.Model, tea.Cmd) {
 				choices:  m.choices,
 				chosen:   m.chosen,
 			})
-			m.messages = append(m.messages, provider.Message{
-				Role:    provider.RoleUser,
+			m.messages = append(m.messages, llm.Message{
+				Role:    llm.RoleUser,
 				Content: feedback,
 			})
 			if m.newStream == nil {
@@ -1110,7 +1110,7 @@ func (m GenerateModel) updateEdit(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.stream = m.stream.WithOutput(edited)
-			if len(m.messages) > 0 && m.messages[len(m.messages)-1].Role == provider.RoleAssistant {
+			if len(m.messages) > 0 && m.messages[len(m.messages)-1].Role == llm.RoleAssistant {
 				m.messages[len(m.messages)-1].Content = edited
 			}
 			m.editInput.Blur()

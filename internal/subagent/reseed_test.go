@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/hostgit"
-	"github.com/rfizzle/shhh/internal/provider"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -68,7 +68,7 @@ type landingWriters struct {
 	second, third func(root string)
 
 	mu       sync.Mutex
-	requests map[string][][]provider.Message
+	requests map[string][][]llm.Message
 	roots    map[string]string
 }
 
@@ -79,23 +79,23 @@ func (w *landingWriters) factory() EnvFactory {
 		w.mu.Unlock()
 		round := 0
 		calls := 0
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			w.mu.Lock()
-			w.requests[spec.Name] = append(w.requests[spec.Name], append([]provider.Message(nil), msgs...))
+			w.requests[spec.Name] = append(w.requests[spec.Name], append([]llm.Message(nil), msgs...))
 			w.mu.Unlock()
 			round++
-			ch := make(chan provider.StreamEvent, 2)
+			ch := make(chan llm.StreamEvent, 2)
 			writes := 1
 			if spec.Name == "writer-2" && w.third != nil {
 				writes = 2
 			}
 			if round <= writes {
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 					{ID: spec.Name + "-w", Name: "write_file", Arguments: `{"path":"main.go"}`},
 				}}
 			} else {
-				ch <- provider.StreamEvent{Token: spec.Name + " done"}
-				ch <- provider.StreamEvent{Done: true}
+				ch <- llm.StreamEvent{Token: spec.Name + " done"}
+				ch <- llm.StreamEvent{Done: true}
 			}
 			close(ch)
 			return ch, func() {}, nil
@@ -144,7 +144,7 @@ func runLanding(t *testing.T, w *landingWriters, repo string, approve2 bool) (*S
 	t.Helper()
 	w.landed = make(chan struct{})
 	w.copied = make(chan struct{})
-	w.requests = map[string][][]provider.Message{}
+	w.requests = map[string][][]llm.Message{}
 	w.roots = map[string]string{}
 	ctx, cancel := context.WithCancel(context.Background())
 	sup := New(ctx, Options{Root: repo, NewEnv: w.factory()})

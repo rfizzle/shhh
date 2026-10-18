@@ -8,9 +8,9 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -355,7 +355,7 @@ func TestConfigRows_TheRoleModelsAreListed(t *testing.T) {
 // what this machine actually does.
 func TestConfigRows_TheCacheLifetimeStatesItsDefault(t *testing.T) {
 	row := rowFor(configRows(config.Config{}, config.Config{}, config.Project{}), "provider.cache_ttl")
-	if row.Value != string(provider.DefaultCacheTTL) || row.Source != "default" {
+	if row.Value != string(llm.DefaultCacheTTL) || row.Source != "default" {
 		t.Fatalf("unset cache_ttl row = %q/%q, want the default", row.Value, row.Source)
 	}
 

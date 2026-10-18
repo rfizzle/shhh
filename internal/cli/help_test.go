@@ -16,7 +16,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/exp/charmtone"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
@@ -138,7 +138,7 @@ func TestModelFlagOnARecordCommandIsRejected(t *testing.T) {
 }
 
 func TestProviderFlagNamesEveryProviderTheRegistryHas(t *testing.T) {
-	names := provider.Available()
+	names := llm.Available()
 	sort.Strings(names)
 	usage := providerFlagUsage()
 	if !strings.Contains(usage, strings.Join(names, ", ")) {

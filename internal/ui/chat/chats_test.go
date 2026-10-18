@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -77,7 +77,7 @@ func TestChatPick_DeleteConfirmedRemovesTheChatAndKeepsThePicker(t *testing.T) {
 
 func TestChatPick_DeleteNamesTheBranches(t *testing.T) {
 	m := chatPickModel(t, "alpha")
-	tail := []provider.Message{{Role: provider.RoleUser, Content: "q"}}
+	tail := []llm.Message{{Role: llm.RoleUser, Content: "q"}}
 	if err := m.wiring.DB.SaveChatBranch("alpha", "alpha@turn2", tail); err != nil {
 		t.Fatal(err)
 	}
@@ -280,9 +280,9 @@ func TestChatPick_TheAccountFollowsTheReadings(t *testing.T) {
 func TestGolden_ChatPicker(t *testing.T) {
 	captureGolden(t, "chat-picker", "the saved-chat picker with housekeeping", goldenWidths, func(width int) []golden.Panel {
 		db := rewindTestDB(t)
-		msgs := []provider.Message{
-			{Role: provider.RoleUser, Content: "q"},
-			{Role: provider.RoleAssistant, Content: "a"},
+		msgs := []llm.Message{
+			{Role: llm.RoleUser, Content: "q"},
+			{Role: llm.RoleAssistant, Content: "a"},
 		}
 		for _, name := range []string{"2026-08-30 09:12:04", "release notes", "2026-08-31 14:02:11"} {
 			if err := db.SaveChat(name, msgs); err != nil {
@@ -409,12 +409,12 @@ func TestChatLoad_TheLoadedConversationsReadingsComeBackUnknown(t *testing.T) {
 		}
 	}
 	db := rewindTestDB(t)
-	if err := db.SaveChat("alpha", []provider.Message{
-		{Role: provider.RoleUser, Content: "have a look"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{
+	if err := db.SaveChat("alpha", []llm.Message{
+		{Role: llm.RoleUser, Content: "have a look"},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{
 			{ID: "1", Name: tools.ReadFileName, Arguments: `{"path":"` + read + `"}`},
 		}},
-		{Role: provider.RoleTool, ToolCallID: "1", Content: "1\talpha"},
+		{Role: llm.RoleTool, ToolCallID: "1", Content: "1\talpha"},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -483,9 +483,9 @@ func searchablePicker(t *testing.T) Model {
 		"2026-09-04 09:15": "why does the retry flake",
 		"2026-09-04 11:02": "how do I bump the version",
 	} {
-		if err := db.SaveChat(name, []provider.Message{
-			{Role: provider.RoleUser, Content: said},
-			{Role: provider.RoleAssistant, Content: "one moment"},
+		if err := db.SaveChat(name, []llm.Message{
+			{Role: llm.RoleUser, Content: said},
+			{Role: llm.RoleAssistant, Content: "one moment"},
 		}); err != nil {
 			t.Fatal(err)
 		}

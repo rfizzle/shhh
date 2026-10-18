@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func TestProgressCheckpoint_AfterSilentToolActivity(t *testing.T) {
@@ -14,11 +14,11 @@ func TestProgressCheckpoint_AfterSilentToolActivity(t *testing.T) {
 	a.now = func() time.Time { return now }
 	a.SetProgressIntervals(2, time.Hour)
 	a.StartTurn("find the loop")
-	a.BeginToolRound("", []provider.ToolCall{{ID: "one", Name: "search"}}, nil)
+	a.BeginToolRound("", []llm.ToolCall{{ID: "one", Name: "search"}}, nil)
 	if _, ok := a.TakeProgressCheckpoint(); ok {
 		t.Fatal("one call should not interrupt a coherent batch")
 	}
-	a.BeginToolRound("", []provider.ToolCall{{ID: "two", Name: "read_file"}}, nil)
+	a.BeginToolRound("", []llm.ToolCall{{ID: "two", Name: "read_file"}}, nil)
 	prompt, ok := a.TakeProgressCheckpoint()
 	if !ok {
 		t.Fatal("two silent calls should earn a public checkpoint")
@@ -49,8 +49,8 @@ func TestProgressCheckpoint_MarksTheMessageThatCarriedTheStatus(t *testing.T) {
 	a.now = func() time.Time { return now }
 	a.SetProgressIntervals(2, time.Hour)
 	a.StartTurn("find the loop")
-	a.BeginToolRound("", []provider.ToolCall{{ID: "one", Name: "search"}}, nil)
-	a.BeginToolRound("", []provider.ToolCall{{ID: "two", Name: "read_file"}}, nil)
+	a.BeginToolRound("", []llm.ToolCall{{ID: "one", Name: "search"}}, nil)
+	a.BeginToolRound("", []llm.ToolCall{{ID: "two", Name: "read_file"}}, nil)
 	if _, ok := a.TakeProgressCheckpoint(); !ok {
 		t.Fatal("two silent calls should earn a public checkpoint")
 	}
@@ -59,7 +59,7 @@ func TestProgressCheckpoint_MarksTheMessageThatCarriedTheStatus(t *testing.T) {
 	if !a.NoteProgressProse(note) {
 		t.Fatal("the prose should be read as the status that was asked for")
 	}
-	a.BeginToolRound(note, []provider.ToolCall{{ID: "three", Name: "read_file"}}, nil)
+	a.BeginToolRound(note, []llm.ToolCall{{ID: "three", Name: "read_file"}}, nil)
 
 	var marked []string
 	for _, msg := range a.Messages() {
@@ -77,7 +77,7 @@ func TestProgressCheckpoint_MarksTheMessageThatCarriedTheStatus(t *testing.T) {
 	if a.NoteProgressProse(ordinary) {
 		t.Fatal("nothing asked for a second status")
 	}
-	a.BeginToolRound(ordinary, []provider.ToolCall{{ID: "four", Name: "edit_file"}}, nil)
+	a.BeginToolRound(ordinary, []llm.ToolCall{{ID: "four", Name: "edit_file"}}, nil)
 	for _, msg := range a.Messages() {
 		if msg.Checkpoint && msg.Content != note {
 			t.Errorf("prose nobody asked for was marked as public status: %q", msg.Content)
@@ -91,7 +91,7 @@ func TestProgressCheckpoint_UsesElapsedTimeAndDoesNotResetInterventions(t *testi
 	a.now = func() time.Time { return now }
 	a.SetProgressIntervals(20, time.Minute)
 	a.StartTurn("run the tests")
-	a.BeginToolRound("", []provider.ToolCall{{ID: "one", Name: "execute_command"}}, nil)
+	a.BeginToolRound("", []llm.ToolCall{{ID: "one", Name: "execute_command"}}, nil)
 	a.NoteIntervention()
 	now = now.Add(time.Minute)
 	if _, ok := a.TakeProgressCheckpoint(); !ok {
@@ -105,7 +105,7 @@ func TestProgressCheckpoint_UsesElapsedTimeAndDoesNotResetInterventions(t *testi
 func TestProgressCheckpoint_DoesNotTreatRestoredRoundAsOverdue(t *testing.T) {
 	a := New(nil, noStream)
 	a.SetProgressIntervals(1, time.Second)
-	a.BeginToolRound("", []provider.ToolCall{{ID: "one", Name: "read_file"}}, nil)
+	a.BeginToolRound("", []llm.ToolCall{{ID: "one", Name: "read_file"}}, nil)
 	if _, ok := a.TakeProgressCheckpoint(); ok {
 		t.Fatal("a restored round with no start time should begin its clock")
 	}

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -858,13 +858,13 @@ func TestExecuteTool_LeavesTheSummaryBesideTheText(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", action, err)
 		}
-		s, ok := SummaryOf(provider.TakeValue(ToolName, action))
+		s, ok := SummaryOf(llm.TakeValue(ToolName, action))
 		if !ok || s.Suite != "good" || s.Verdict != VerdictPass || s.Total != 1 {
 			t.Errorf("%s: value = %+v, %v; want the good suite's pass", action, s, ok)
 		}
 	}
 	_, _ = (&Runner{Workspace: t.TempDir()}).ExecuteTool(json.RawMessage(`{"action":"result"}`))
-	if provider.TakeValue(ToolName, `{"action":"result"}`) != nil {
+	if llm.TakeValue(ToolName, `{"action":"result"}`) != nil {
 		t.Error("a sentence that is not a gate result carries no value")
 	}
 }

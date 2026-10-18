@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -393,7 +393,7 @@ func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 // answer without driving a terminal. It reads no hook, no batch answer and
 // no person, which come after it on the screen and have no counterpart
 // anywhere else.
-func (m Model) StandingAnswer(tc provider.ToolCall) (decision agent.Decision, result, code string) {
+func (m Model) StandingAnswer(tc llm.ToolCall) (decision agent.Decision, result, code string) {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
 		m.approval.redirects.Spent(err)

@@ -19,6 +19,7 @@ import (
 
 	"net/http"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/config"
@@ -26,7 +27,6 @@ import (
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -37,9 +37,9 @@ import (
 	"github.com/rfizzle/shhh/internal/web"
 )
 
-func execCall(command string) provider.ToolCall {
+func execCall(command string) llm.ToolCall {
 	args, _ := json.Marshal(map[string]string{"command": command})
-	return provider.ToolCall{ID: "c1", Name: "execute_command", Arguments: string(args)}
+	return llm.ToolCall{ID: "c1", Name: "execute_command", Arguments: string(args)}
 }
 
 // fakeRun records executed commands and returns a fixed result.
@@ -73,16 +73,16 @@ var commandEndings = []struct {
 // commandTurn is an agent that asks for one command and then answers.
 func commandTurn(t *testing.T) *agent.Agent {
 	t.Helper()
-	rounds := [][]provider.StreamEvent{
-		{{ToolCalls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"go build ./..."}`}}}},
+	rounds := [][]llm.StreamEvent{
+		{{ToolCalls: []llm.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"go build ./..."}`}}}},
 		{{Token: "done"}, {Done: true}},
 	}
 	var next int
-	return agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return agent.New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		if next >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", next+1)
 		}
-		ch := make(chan provider.StreamEvent, len(rounds[next]))
+		ch := make(chan llm.StreamEvent, len(rounds[next]))
 		for _, ev := range rounds[next] {
 			ch <- ev
 		}
@@ -118,7 +118,7 @@ func TestAHeadlessRunKeepsHowACommandEnded(t *testing.T) {
 			run := func(context.Context, string) tools.ExecResult { return c.exec }
 			h := &agent.Headless{
 				Agent:        a,
-				Gate:         func(tc provider.ToolCall) bool { return tc.Name == tools.ExecCommandName },
+				Gate:         func(tc llm.ToolCall) bool { return tc.Name == tools.ExecCommandName },
 				Resolve:      headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: run}),
 				OnToolResult: obs.toolResult,
 			}
@@ -128,7 +128,7 @@ func TestAHeadlessRunKeepsHowACommandEnded(t *testing.T) {
 
 			var message string
 			for _, m := range jsonMessages(a.Messages()) {
-				if m.Role == string(provider.RoleTool) {
+				if m.Role == string(llm.RoleTool) {
 					message = m.Content
 				}
 			}
@@ -163,17 +163,17 @@ func headlessChildLinesFor(t *testing.T, steps ...childStep) []string {
 	children.sup = sup
 	children.mu.Unlock()
 
-	rounds := [][]provider.StreamEvent{
-		{{ToolCalls: []provider.ToolCall{{ID: "s1", Name: subagent.SpawnToolName,
+	rounds := [][]llm.StreamEvent{
+		{{ToolCalls: []llm.ToolCall{{ID: "s1", Name: subagent.SpawnToolName,
 			Arguments: `{"role":"researcher","task":"survey the exporter"}`}}}},
 		{{Token: "spawned"}, {Done: true}},
 	}
 	var next int
-	a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := agent.New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		if next >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", next+1)
 		}
-		ch := make(chan provider.StreamEvent, len(rounds[next]))
+		ch := make(chan llm.StreamEvent, len(rounds[next]))
 		for _, ev := range rounds[next] {
 			ch <- ev
 		}
@@ -245,12 +245,12 @@ func TestAHeadlessRunsStreamSaysWhenAChildStartsAndEnds(t *testing.T) {
 // its first turn says so, while the line stays filed under the parent's turn.
 // See docs/capabilities/headless.md#a-run-can-delegate.
 func TestAnAgentLineCarriesTheChildsOwnPosition(t *testing.T) {
-	read := func(id string) provider.ToolCall {
-		return provider.ToolCall{ID: id, Name: tools.ReadFileName, Arguments: `{"path":"exporter.go"}`}
+	read := func(id string) llm.ToolCall {
+		return llm.ToolCall{ID: id, Name: tools.ReadFileName, Arguments: `{"path":"exporter.go"}`}
 	}
 	lines := headlessChildLinesFor(t,
-		childStep{calls: []provider.ToolCall{read("r1")}},
-		childStep{calls: []provider.ToolCall{read("r2")}},
+		childStep{calls: []llm.ToolCall{read("r1")}},
+		childStep{calls: []llm.ToolCall{read("r2")}},
 		childStep{text: "the exporter is fine"})
 	if len(lines) != 2 {
 		t.Fatalf("a child that started and ended wrote %d agent lines, want 2:\n%s", len(lines), strings.Join(lines, "\n"))
@@ -278,9 +278,9 @@ func TestAnAgentLineCarriesTheChildsOwnPosition(t *testing.T) {
 // reader of the stream can say "1 yours" of a child steered by both.
 // See docs/capabilities/headless.md#a-run-can-delegate.
 func TestAnAgentLineCarriesEachPartysSteers(t *testing.T) {
-	read := provider.ToolCall{ID: "r1", Name: tools.ReadFileName, Arguments: `{"path":"exporter.go"}`}
+	read := llm.ToolCall{ID: "r1", Name: tools.ReadFileName, Arguments: `{"path":"exporter.go"}`}
 	lines := headlessChildLinesFor(t,
-		childStep{calls: []provider.ToolCall{read},
+		childStep{calls: []llm.ToolCall{read},
 			steers: []subagent.SteerSource{subagent.SteerFromLane, subagent.SteerFromParent, subagent.SteerFromParent}},
 		childStep{text: "the exporter is fine"})
 	end := lines[len(lines)-1]
@@ -317,7 +317,7 @@ func TestHeadlessApprover_DeniesCommandByDefault(t *testing.T) {
 // sits outside the repeat detector so a second identical run is still seen
 // as one, and never follows a refusal, which ran nothing.
 func TestHeadlessApprover_AShellReadThatRanNamesItsToolOncePerTurn(t *testing.T) {
-	chain := func(opts printOpts) func(provider.ToolCall) string {
+	chain := func(opts printOpts) func(llm.ToolCall) string {
 		var ran []string
 		nudges := &nudge.Turn{}
 		resolve := headlessApprover(context.Background(), headlessApproval{opts: opts, run: nudges.Ran(fakeRun(&ran))})
@@ -404,7 +404,7 @@ func TestHeadlessApprover_InvalidCommandArguments(t *testing.T) {
 	var ran []string
 	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&ran)})
 
-	tc := provider.ToolCall{ID: "c1", Name: "execute_command", Arguments: `{"command":""}`}
+	tc := llm.ToolCall{ID: "c1", Name: "execute_command", Arguments: `{"command":""}`}
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") {
 		t.Fatalf("empty command must be an error result, got %q", result)
 	}
@@ -413,7 +413,7 @@ func TestHeadlessApprover_InvalidCommandArguments(t *testing.T) {
 func TestHeadlessApprover_DeniesEditsByDefault(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "f.txt")
 	args, _ := json.Marshal(map[string]string{"path": path, "content": "hi"})
-	tc := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
+	tc := llm.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
 
 	resolve := headlessApprover(context.Background(), headlessApproval{run: fakeRun(&[]string{})})
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "--yes") {
@@ -443,7 +443,7 @@ func TestHeadlessApprover_GitWriteIsAnsweredAtTheWriteTier(t *testing.T) {
 	if !st.Has(structural.GitWriteToolName) {
 		t.Skip("git is not available here")
 	}
-	tc := provider.ToolCall{ID: "c1", Name: structural.GitWriteToolName,
+	tc := llm.ToolCall{ID: "c1", Name: structural.GitWriteToolName,
 		Arguments: `{"verb":"commit","message":"feat: do it"}`}
 
 	deny := headlessApprover(context.Background(), headlessApproval{run: fakeRun(&[]string{}), structTools: st})
@@ -468,7 +468,7 @@ func TestHeadlessApprover_GitWriteIsAnsweredAtTheWriteTier(t *testing.T) {
 func TestHeadlessApprover_YesAppliesEdit(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "f.txt")
 	args, _ := json.Marshal(map[string]string{"path": path, "content": "hi"})
-	tc := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
+	tc := llm.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
 
 	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{})})
 	if result := resolve(tc); strings.HasPrefix(result, "error:") {
@@ -482,7 +482,7 @@ func TestHeadlessApprover_YesAppliesEdit(t *testing.T) {
 
 func TestHeadlessApprover_UnknownGatedToolDenied(t *testing.T) {
 	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{})})
-	tc := provider.ToolCall{ID: "c1", Name: "mystery_tool", Arguments: `{}`}
+	tc := llm.ToolCall{ID: "c1", Name: "mystery_tool", Arguments: `{}`}
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") {
 		t.Fatalf("unknown gated tool must be denied, got %q", result)
 	}
@@ -509,16 +509,16 @@ func TestHeadlessGate(t *testing.T) {
 }
 
 func TestWriteJSONTranscript(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "hi"},
-		{Role: provider.RoleAssistant, Content: "checking", ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
-		{Role: provider.RoleTool, Content: "contents", ToolCallID: "c1"},
-		{Role: provider.RoleAssistant, Content: "done"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "hi"},
+		{Role: llm.RoleAssistant, Content: "checking", ToolCalls: []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{Role: llm.RoleTool, Content: "contents", ToolCallID: "c1"},
+		{Role: llm.RoleAssistant, Content: "done"},
 	}
 	var sb strings.Builder
 	if err := writeJSONTranscript(&sb, jsonRun{messages: msgs, final: "done",
-		usage:   provider.Usage{PromptTokens: 10, CompletionTokens: 5, CachedTokens: 7},
+		usage:   llm.Usage{PromptTokens: 10, CompletionTokens: 5, CachedTokens: 7},
 		gate:    quality.ClosingPassed,
 		written: []string{"internal/a/a.go"}}); err != nil {
 		t.Fatalf("writeJSONTranscript: %v", err)
@@ -589,7 +589,7 @@ func TestWriteJSONTranscript(t *testing.T) {
 func TestHeadlessApprover_WebFetchDeniedByDefault(t *testing.T) {
 	webTools := web.NewToolset(web.NewFetcher(web.Policy{AllowPrivate: true}), nil)
 	resolve := headlessApprover(context.Background(), headlessApproval{run: fakeRun(&[]string{}), webTools: webTools})
-	tc := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.com/"}`}
+	tc := llm.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.com/"}`}
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "--yes") {
 		t.Fatalf("default must deny web fetch with guidance, got %q", result)
 	}
@@ -605,7 +605,7 @@ func TestHeadlessApprover_WebFetchRunsWithYes(t *testing.T) {
 
 	webTools := web.NewToolset(web.NewFetcherWithClient(web.Policy{AllowPrivate: true}, fixtures.Client()), nil)
 	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{}), webTools: webTools})
-	tc := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"` + srv.URL + `"}`}
+	tc := llm.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"` + srv.URL + `"}`}
 	result := resolve(tc)
 	if strings.HasPrefix(result, "error:") || !strings.Contains(result, "fetched body") {
 		t.Fatalf("--yes must fetch, got %q", result)
@@ -640,17 +640,17 @@ func TestHeadlessConversation_FetchesWithoutYes(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			rounds := [][]provider.StreamEvent{
-				{{ToolCalls: []provider.ToolCall{{ID: "f1", Name: web.FetchToolName,
+			rounds := [][]llm.StreamEvent{
+				{{ToolCalls: []llm.ToolCall{{ID: "f1", Name: web.FetchToolName,
 					Arguments: `{"url":"` + srv.URL + `"}`}}}},
 				{{Token: "read it"}, {Done: true}},
 			}
 			var next int
-			a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			a := agent.New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 				if next >= len(rounds) {
 					t.Fatalf("unexpected stream request #%d", next+1)
 				}
-				ch := make(chan provider.StreamEvent, len(rounds[next]))
+				ch := make(chan llm.StreamEvent, len(rounds[next]))
 				for _, ev := range rounds[next] {
 					ch <- ev
 				}
@@ -672,7 +672,7 @@ func TestHeadlessConversation_FetchesWithoutYes(t *testing.T) {
 
 			var result string
 			for _, m := range jsonMessages(a.Messages()) {
-				if m.Role == string(provider.RoleTool) {
+				if m.Role == string(llm.RoleTool) {
 					result = m.Content
 				}
 			}
@@ -688,7 +688,7 @@ func TestHeadlessConversation_FetchesWithoutYes(t *testing.T) {
 
 func TestHeadlessApprover_WebFetchUnregisteredWithoutToolset(t *testing.T) {
 	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{})})
-	tc := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.com/"}`}
+	tc := llm.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.com/"}`}
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") {
 		t.Fatalf("web fetch without a toolset must be denied, got %q", result)
 	}
@@ -697,7 +697,7 @@ func TestHeadlessApprover_WebFetchUnregisteredWithoutToolset(t *testing.T) {
 func TestHeadlessApprover_MutationHookAppendsDiagnostics(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "f.go")
 	args, _ := json.Marshal(map[string]string{"path": path, "content": "package main\n"})
-	tc := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
+	tc := llm.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
 
 	var hookedName, hookedPath string
 	hook := func(name string, raw json.RawMessage, result string) string {
@@ -725,7 +725,7 @@ func TestHeadlessApprover_MutationHookAppendsDiagnostics(t *testing.T) {
 func TestHeadlessApprover_MutationHookMayPrependToTheResult(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "f.go")
 	args, _ := json.Marshal(map[string]string{"path": path, "content": "package main\n"})
-	tc := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
+	tc := llm.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
 
 	hook := func(name string, raw json.RawMessage, result string) string {
 		return "[diagnostics: other.go — 1 error]\nother.go:3:1 error: boom\n\n" + result
@@ -741,9 +741,9 @@ func TestHeadlessApprover_MutationHookMayPrependToTheResult(t *testing.T) {
 }
 
 // processStartCall builds a process-tool start call for approver tests.
-func processStartCall(name, command string) provider.ToolCall {
+func processStartCall(name, command string) llm.ToolCall {
 	args, _ := json.Marshal(map[string]string{"action": "start", "name": name, "command": command})
-	return provider.ToolCall{ID: "c1", Name: "process", Arguments: string(args)}
+	return llm.ToolCall{ID: "c1", Name: "process", Arguments: string(args)}
 }
 
 func newTestProcessSupervisor(t *testing.T) *process.Supervisor {
@@ -913,7 +913,7 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 	obs.toolResult(toolResultOf("search", time.Millisecond, "[repeat: this exact search call has now run 3 times]"))
 	obs.summary(sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: 3})
 	obs.intervene(agent.Intervention{Kind: agent.InterveneSteer})
-	obs.retry(agent.RetryNotice{Failure: &provider.Failure{Class: provider.ClassOverloaded}, Attempt: 1, Max: agent.MaxRetryAttempts})
+	obs.retry(agent.RetryNotice{Failure: &llm.Failure{Class: llm.ClassOverloaded}, Attempt: 1, Max: agent.MaxRetryAttempts})
 	rec.turn(1, 3, time.Second, observe.TurnDone)
 	rec.end()
 
@@ -936,7 +936,7 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 // counter, so the observer files it at the round the reading states rather
 // than asking the agent where it is now.
 func TestHeadlessObserver_SummaryFilesAtTheReadingsRound(t *testing.T) {
-	a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := agent.New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return nil, nil, errors.New("unused")
 	})
 	var lines strings.Builder
@@ -971,17 +971,17 @@ func TestHeadlessTurnOutcome(t *testing.T) {
 		{"stream failure", errors.New("connection reset"), observe.TurnFailed},
 		// A stall and a refusal are both a turn that broke, and only the
 		// second one stays broken however long the caller waits.
-		{"a stall the waits could not sit out", &provider.Failure{Class: provider.ClassOverloaded}, observe.TurnFailed},
-		{"a key the provider would not take", &provider.Failure{Class: provider.ClassAuth}, observe.TurnRejected},
-		{"an account with nothing left", &provider.Failure{Class: provider.ClassQuota}, observe.TurnRejected},
-		{"a request past the window", &provider.Failure{Class: provider.ClassContextLength}, observe.TurnRejected},
-		{"an id the endpoint does not serve", &provider.Failure{Class: provider.ClassModelNotFound}, observe.TurnRejected},
-		{"a plan allowance that is spent", &provider.Failure{Class: provider.ClassUsageLimit}, observe.TurnRejected},
-		{"an account the plan will not serve", &provider.Failure{Class: provider.ClassNotEligible}, observe.TurnRejected},
-		{"a request the plan does not serve", &provider.Failure{Class: provider.ClassUnsupported}, observe.TurnRejected},
+		{"a stall the waits could not sit out", &llm.Failure{Class: llm.ClassOverloaded}, observe.TurnFailed},
+		{"a key the provider would not take", &llm.Failure{Class: llm.ClassAuth}, observe.TurnRejected},
+		{"an account with nothing left", &llm.Failure{Class: llm.ClassQuota}, observe.TurnRejected},
+		{"a request past the window", &llm.Failure{Class: llm.ClassContextLength}, observe.TurnRejected},
+		{"an id the endpoint does not serve", &llm.Failure{Class: llm.ClassModelNotFound}, observe.TurnRejected},
+		{"a plan allowance that is spent", &llm.Failure{Class: llm.ClassUsageLimit}, observe.TurnRejected},
+		{"an account the plan will not serve", &llm.Failure{Class: llm.ClassNotEligible}, observe.TurnRejected},
+		{"a request the plan does not serve", &llm.Failure{Class: llm.ClassUnsupported}, observe.TurnRejected},
 		// A failure nothing could name is no evidence that the request was
 		// wrong, so it keeps the ending it had before the split existed.
-		{"a failure nothing could name", &provider.Failure{Class: provider.ClassUnclassified}, observe.TurnFailed},
+		{"a failure nothing could name", &llm.Failure{Class: llm.ClassUnclassified}, observe.TurnFailed},
 	} {
 		if got := headlessTurnOutcome(c.err); got != c.want {
 			t.Errorf("%s: headlessTurnOutcome = %q, want %q", c.name, got, c.want)
@@ -993,16 +993,16 @@ func TestHeadlessTurnOutcome(t *testing.T) {
 // subtrahend the tree reading gets.
 func TestWrittenByCalls_RecordsOnlySuccessfulMutations(t *testing.T) {
 	w := &writtenByCalls{}
-	resolve := w.wrap(func(tc provider.ToolCall) string {
+	resolve := w.wrap(func(tc llm.ToolCall) string {
 		if tc.Name == "write_file" {
 			return "written"
 		}
 		return "error: declined"
 	})
-	resolve(provider.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"x"}`})
-	resolve(provider.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"y"}`})
-	resolve(provider.ToolCall{Name: "edit_file", Arguments: `{"path":"b.go"}`})
-	resolve(provider.ToolCall{Name: "read_file", Arguments: `{"path":"c.go"}`})
+	resolve(llm.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"x"}`})
+	resolve(llm.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"y"}`})
+	resolve(llm.ToolCall{Name: "edit_file", Arguments: `{"path":"b.go"}`})
+	resolve(llm.ToolCall{Name: "read_file", Arguments: `{"path":"c.go"}`})
 	if got := w.paths(); len(got) != 2 || got[0] != "a.go" || got[1] != "a.go" {
 		t.Errorf("paths = %v, want a.go twice", got)
 	}
@@ -1069,8 +1069,8 @@ func printStore(t *testing.T) *storage.DB {
 }
 
 // headlessSystem is the one message a run that continues nothing opens on.
-func headlessSystem() []provider.Message {
-	return []provider.Message{{Role: provider.RoleSystem, Content: "this run's prompt"}}
+func headlessSystem() []llm.Message {
+	return []llm.Message{{Role: llm.RoleSystem, Content: "this run's prompt"}}
 }
 
 // What --continue was documented to do and did not: the stored conversation
@@ -1078,10 +1078,10 @@ func headlessSystem() []provider.Message {
 // checkout between the two.
 func TestOpenHeadlessChat_ContinueSendsTheStoredTranscript(t *testing.T) {
 	db := printStore(t)
-	stored := []provider.Message{
-		{Role: provider.RoleSystem, Content: "the prompt it was saved under"},
-		{Role: provider.RoleUser, Content: "rename the widget"},
-		{Role: provider.RoleAssistant, Content: "renamed it"},
+	stored := []llm.Message{
+		{Role: llm.RoleSystem, Content: "the prompt it was saved under"},
+		{Role: llm.RoleUser, Content: "rename the widget"},
+		{Role: llm.RoleAssistant, Content: "renamed it"},
 	}
 	if err := db.SaveChat("yesterday", stored); err != nil {
 		t.Fatalf("save: %v", err)
@@ -1094,7 +1094,7 @@ func TestOpenHeadlessChat_ContinueSendsTheStoredTranscript(t *testing.T) {
 	if saved.slot != "yesterday" {
 		t.Fatalf("slot = %q, want the conversation it continued", saved.slot)
 	}
-	if msgs[0].Role != provider.RoleSystem || msgs[0].Content != "this run's prompt" {
+	if msgs[0].Role != llm.RoleSystem || msgs[0].Content != "this run's prompt" {
 		t.Fatalf("the system prompt is this run's, got %+v", msgs[0])
 	}
 	if saved.head == 0 {
@@ -1115,12 +1115,12 @@ func TestOpenHeadlessChat_ContinueSendsTheStoredTranscript(t *testing.T) {
 
 	// And that is what the provider is actually asked, which is the half the
 	// flag never reached.
-	var sent []provider.Message
-	a := agent.New(msgs, func(m []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		sent = append([]provider.Message{}, m...)
-		ch := make(chan provider.StreamEvent, 2)
-		ch <- provider.StreamEvent{Token: "done"}
-		ch <- provider.StreamEvent{Done: true}
+	var sent []llm.Message
+	a := agent.New(msgs, func(m []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		sent = append([]llm.Message{}, m...)
+		ch := make(chan llm.StreamEvent, 2)
+		ch <- llm.StreamEvent{Token: "done"}
+		ch <- llm.StreamEvent{Done: true}
 		close(ch)
 		return ch, func() {}, nil
 	})
@@ -1145,8 +1145,8 @@ func TestOpenHeadlessChat_ContinueSendsTheStoredTranscript(t *testing.T) {
 // whole of what the model is shown.
 func TestOpenHeadlessChat_FreshRunCarriesNoConversation(t *testing.T) {
 	db := printStore(t)
-	if err := db.SaveChat("yesterday", []provider.Message{
-		{Role: provider.RoleUser, Content: "rename the widget"}}); err != nil {
+	if err := db.SaveChat("yesterday", []llm.Message{
+		{Role: llm.RoleUser, Content: "rename the widget"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
@@ -1154,7 +1154,7 @@ func TestOpenHeadlessChat_FreshRunCarriesNoConversation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	if len(msgs) != 1 || msgs[0].Role != provider.RoleSystem {
+	if len(msgs) != 1 || msgs[0].Role != llm.RoleSystem {
 		t.Fatalf("a fresh run opens on the system prompt alone, got %d messages", len(msgs))
 	}
 	if saved.slot == "" || saved.slot == "yesterday" {
@@ -1191,8 +1191,8 @@ func TestHeadlessChat_SaveLeavesASlotToContinue(t *testing.T) {
 		t.Fatalf("open: %v", err)
 	}
 	msgs = append(msgs,
-		provider.Message{Role: provider.RoleUser, Content: "fix the parser"},
-		provider.Message{Role: provider.RoleAssistant, Content: "fixed"})
+		llm.Message{Role: llm.RoleUser, Content: "fix the parser"},
+		llm.Message{Role: llm.RoleAssistant, Content: "fixed"})
 	saved.save(msgs)
 
 	// The path a session takes when it is told to continue the last one.
@@ -1220,9 +1220,9 @@ func TestHeadlessChat_SaveLeavesASlotToContinue(t *testing.T) {
 // the slot keeps, so opening it again is told about the tree once.
 func TestHeadlessChat_SaveDropsTheReading(t *testing.T) {
 	db := printStore(t)
-	if err := db.SaveChat("yesterday", []provider.Message{
-		{Role: provider.RoleSystem, Content: "old prompt"},
-		{Role: provider.RoleUser, Content: "rename the widget"},
+	if err := db.SaveChat("yesterday", []llm.Message{
+		{Role: llm.RoleSystem, Content: "old prompt"},
+		{Role: llm.RoleUser, Content: "rename the widget"},
 	}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -1230,7 +1230,7 @@ func TestHeadlessChat_SaveDropsTheReading(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	msgs = append(msgs, provider.Message{Role: provider.RoleUser, Content: "carry on"})
+	msgs = append(msgs, llm.Message{Role: llm.RoleUser, Content: "carry on"})
 	saved.save(msgs)
 
 	back, err := db.LoadChat("yesterday")
@@ -1255,13 +1255,13 @@ func TestHeadlessChat_SaveOnTheRoundCapExit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	round := func() (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, 1)
-		ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "c1", Name: "search"}}}
+	round := func() (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, 1)
+		ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "c1", Name: "search"}}}
 		close(ch)
 		return ch, func() {}, nil
 	}
-	a := agent.New(msgs, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	a := agent.New(msgs, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		return round()
 	})
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "nothing found", nil })
@@ -1281,7 +1281,7 @@ func TestHeadlessChat_SaveOnTheRoundCapExit(t *testing.T) {
 		if m.Content == "look for it" {
 			asked = true
 		}
-		if m.Role == provider.RoleTool {
+		if m.Role == llm.RoleTool {
 			answered = true
 		}
 	}
@@ -1334,15 +1334,15 @@ func TestCodeCmdResumeCarriesAChatOrThePicker(t *testing.T) {
 // something else.
 func TestOpenHeadlessChat_ANamedChatIsWhatTheRunCarriesOn(t *testing.T) {
 	db := printStore(t)
-	if err := db.SaveChat("the one I want", []provider.Message{
-		{Role: provider.RoleSystem, Content: "old prompt"},
-		{Role: provider.RoleUser, Content: "the widget"},
+	if err := db.SaveChat("the one I want", []llm.Message{
+		{Role: llm.RoleSystem, Content: "old prompt"},
+		{Role: llm.RoleUser, Content: "the widget"},
 	}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 	// Saved after it, so "the most recent" is the wrong answer here.
-	if err := db.SaveChat("something else", []provider.Message{
-		{Role: provider.RoleUser, Content: "the other thing"}}); err != nil {
+	if err := db.SaveChat("something else", []llm.Message{
+		{Role: llm.RoleUser, Content: "the other thing"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
@@ -1637,7 +1637,7 @@ func TestHeadlessCloseGate_BlockedIsNeverAPass(t *testing.T) {
 // say: a step against a guessed window would throw away a conversation that
 // had most of its room left.
 func TestHeadlessCompactor_NeedsAWindowSomethingCanName(t *testing.T) {
-	defs := []provider.Tool{{Name: "read_file", Description: "read a file"}}
+	defs := []llm.Tool{{Name: "read_file", Description: "read a file"}}
 
 	c := headlessCompactor(t.Context(), config.Config{}, &sessionEnv{modelName: "llama-3.1"}, nil, nil, defs)
 	if c == nil {
@@ -1689,7 +1689,7 @@ func TestHeadlessCompactor_SummaryModelMustFitTheConversation(t *testing.T) {
 // the call it answers, what came back, and how long it took.
 func toolResultOf(tool string, d time.Duration, result string) agent.ToolResult {
 	return agent.ToolResult{
-		Call:     provider.ToolCall{ID: "call-" + tool, Name: tool},
+		Call:     llm.ToolCall{ID: "call-" + tool, Name: tool},
 		Result:   result,
 		Duration: d,
 	}
@@ -1751,7 +1751,7 @@ func TestHeadlessExitCode(t *testing.T) {
 		{"the round cap", fmt.Errorf("%w after 40 rounds", agent.ErrRoundCap), false, false, exitRoundCap},
 		{"an interrupt", agent.ErrInterrupted, false, false, exitInterrupted},
 		{"a provider that stopped answering", fmt.Errorf("overloaded"), false, false, exitProvider},
-		{"a request the provider would refuse again", &provider.Failure{Class: provider.ClassAuth}, false, false, exitRejected},
+		{"a request the provider would refuse again", &llm.Failure{Class: llm.ClassAuth}, false, false, exitRejected},
 		{"a failing suite", nil, true, false, exitGate},
 		{"a refusal that ended the turn", nil, false, true, exitRefused},
 		// The two readings only apply to a turn that finished. A run that was
@@ -1824,11 +1824,11 @@ func TestLastVerdictIsTheOneThatEndedTheTurn(t *testing.T) {
 
 // scriptedStream answers each request with the next round of a script, which
 // is the whole of what a provider is to the loop.
-func scriptedStream(rounds ...[]provider.StreamEvent) agent.StreamFunc {
+func scriptedStream(rounds ...[]llm.StreamEvent) agent.StreamFunc {
 	round := 0
-	return func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-		ch := make(chan provider.StreamEvent, 8)
-		var events []provider.StreamEvent
+	return func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan llm.StreamEvent, 8)
+		var events []llm.StreamEvent
 		if round < len(rounds) {
 			events = rounds[round]
 		}
@@ -1856,7 +1856,7 @@ func replayJSONL(t *testing.T, lines string) []jsonMessage {
 		if text.Len() == 0 && len(calls) == 0 {
 			return
 		}
-		out = append(out, jsonMessage{Role: string(provider.RoleAssistant), Content: text.String(), ToolCalls: calls})
+		out = append(out, jsonMessage{Role: string(llm.RoleAssistant), Content: text.String(), ToolCalls: calls})
 		text.Reset()
 		calls = nil
 	}
@@ -1872,7 +1872,7 @@ func replayJSONL(t *testing.T, lines string) []jsonMessage {
 			calls = append(calls, jsonToolCall{ID: ev.ID, Name: ev.Tool, Arguments: ev.Arguments})
 		case observe.EventToolResult:
 			flush()
-			out = append(out, jsonMessage{Role: string(provider.RoleTool), Content: ev.Result, ToolCallID: ev.ID})
+			out = append(out, jsonMessage{Role: string(llm.RoleTool), Content: ev.Result, ToolCallID: ev.ID})
 		case observe.EventClose:
 			flush()
 		}
@@ -1884,15 +1884,15 @@ func replayJSONL(t *testing.T, lines string) []jsonMessage {
 // consumer watching the events builds has to be what the transcript states at
 // the end. Anything less and a script has to read both.
 func TestJSONLStreamReplaysToTheTranscript(t *testing.T) {
-	call := provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}
-	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, scriptedStream(
-		[]provider.StreamEvent{
+	call := llm.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}
+	a := agent.New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, scriptedStream(
+		[]llm.StreamEvent{
 			{Token: "look"},
 			{Token: "ing"},
-			{Usage: &provider.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}},
-			{ToolCalls: []provider.ToolCall{call}},
+			{Usage: &llm.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}},
+			{ToolCalls: []llm.ToolCall{call}},
 		},
-		[]provider.StreamEvent{{Token: "done"}, {Done: true}},
+		[]llm.StreamEvent{{Token: "done"}, {Done: true}},
 	))
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
@@ -1901,11 +1901,11 @@ func TestJSONLStreamReplaysToTheTranscript(t *testing.T) {
 	obs := headlessObserver{rounds: a.Rounds, stream: events}
 	h := &agent.Headless{
 		Agent:        a,
-		Gate:         func(provider.ToolCall) bool { return false },
+		Gate:         func(llm.ToolCall) bool { return false },
 		OnText:       obs.text,
-		OnToolCall:   func(tc provider.ToolCall) { obs.call(tc) },
+		OnToolCall:   func(tc llm.ToolCall) { obs.call(tc) },
 		OnToolResult: obs.toolResult,
-		OnUsage:      func(u *provider.Usage) { obs.usage(*u) },
+		OnUsage:      func(u *llm.Usage) { obs.usage(*u) },
 	}
 
 	final, err := h.Run("read x")
@@ -1913,7 +1913,7 @@ func TestJSONLStreamReplaysToTheTranscript(t *testing.T) {
 		t.Fatalf("run = %q, %v", final, err)
 	}
 	events.closed(obs.pos(), headlessTurnOutcome(err), headlessExitCode(headlessTurnOutcome(err), false, false),
-		final, nil, provider.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}, headlessHandles{}, nil)
+		final, nil, llm.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}, headlessHandles{}, nil)
 
 	// The prompt and the system message are what the run opened on, not
 	// something it did; the stream carries the turn.
@@ -1968,12 +1968,12 @@ func TestJSONLStream_ProgressIsDistinctFromAnswerText(t *testing.T) {
 func TestJSONLStreamIsAQuietNoOpWhenNobodyAskedForOne(t *testing.T) {
 	obs := headlessObserver{rounds: func() int { return 1 }}
 	obs.text("hello")
-	obs.call(provider.ToolCall{ID: "c1", Name: "read_file"})
+	obs.call(llm.ToolCall{ID: "c1", Name: "read_file"})
 	obs.toolResult(toolResultOf("read_file", time.Millisecond, "contents"))
 	obs.decision(observe.DecisionDeny, observe.ReasonHeadlessDefault)
-	obs.usage(provider.Usage{PromptTokens: 1})
+	obs.usage(llm.Usage{PromptTokens: 1})
 	obs.signal(observe.SignalRetry, "overloaded")
-	obs.stream.closed(obs.pos(), observe.TurnDone, exitDone, "done", nil, provider.Usage{}, headlessHandles{}, nil)
+	obs.stream.closed(obs.pos(), observe.TurnDone, exitDone, "done", nil, llm.Usage{}, headlessHandles{}, nil)
 }
 
 // treeRepo is a checkout with one commit and a clean tree. Config is pinned
@@ -2205,13 +2205,13 @@ func TestHeadlessApprover_RequiredContainmentRefusesAProcessStart(t *testing.T) 
 }
 
 func TestOnlyRegistered_NamesWhatThisRunOffered(t *testing.T) {
-	defs := []provider.Tool{{Name: "read_file"}, {Name: "search"}, {Name: "glob"}}
-	resolve := onlyRegistered(defs, func(provider.ToolCall) string { return "ran" })
+	defs := []llm.Tool{{Name: "read_file"}, {Name: "search"}, {Name: "glob"}}
+	resolve := onlyRegistered(defs, func(llm.ToolCall) string { return "ran" })
 
-	if got := resolve(provider.ToolCall{Name: "search"}); got != "ran" {
+	if got := resolve(llm.ToolCall{Name: "search"}); got != "ran" {
 		t.Fatalf("a registered name goes through, got %q", got)
 	}
-	got := resolve(provider.ToolCall{Name: "write_file"})
+	got := resolve(llm.ToolCall{Name: "write_file"})
 	if !strings.Contains(got, "unknown tool: write_file") {
 		t.Fatalf("the name that was called should be named, got %q", got)
 	}
@@ -2298,7 +2298,7 @@ func TestHeadlessApprover_ARepeatedCommandSaysSo(t *testing.T) {
 func TestHeadlessApprover_ARepeatedRefusalSaysSo(t *testing.T) {
 	resolve := agent.NewRepeatDetector().WrapResolver(
 		headlessApprover(context.Background(), headlessApproval{run: fakeRun(&[]string{})}))
-	call := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: `{"path":"a.go","content":"package a\n"}`}
+	call := llm.ToolCall{ID: "c1", Name: "write_file", Arguments: `{"path":"a.go","content":"package a\n"}`}
 
 	_ = resolve(call)
 	second := resolve(call)

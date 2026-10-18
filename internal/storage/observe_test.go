@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/observe/record"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func TestAgentObservability_Lifecycle(t *testing.T) {
@@ -234,9 +234,9 @@ func TestAgentObservability_TurnsSignalsAndProvenance(t *testing.T) {
 	// The conversation exists before it is linked, which is the order every
 	// surface takes: a session claims its slot before it writes, and a link
 	// is a reference to a row rather than a name that might one day exist.
-	if err := db.SaveChat("2026-01-01 10:00:00", []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "fix the build"},
+	if err := db.SaveChat("2026-01-01 10:00:00", []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "fix the build"},
 	}); err != nil {
 		t.Fatalf("save chat: %v", err)
 	}
@@ -530,13 +530,13 @@ func TestListUnratedSessions_OffersWhatCanBeRemembered(t *testing.T) {
 	if err := db.EndAgentSession(unlinked, "completed"); err != nil {
 		t.Fatalf("end session: %v", err)
 	}
-	for chat, msg := range map[string]provider.Message{
+	for chat, msg := range map[string]llm.Message{
 		// Nothing the reader said at all…
-		"silent": {Role: provider.RoleAssistant, Content: "hello"},
+		"silent": {Role: llm.RoleAssistant, Content: "hello"},
 		// …and something they said that is not a reminder of anything.
-		"blank": {Role: provider.RoleUser, Content: "   \n  "},
+		"blank": {Role: llm.RoleUser, Content: "   \n  "},
 	} {
-		if err := db.SaveChat(chat, []provider.Message{msg}); err != nil {
+		if err := db.SaveChat(chat, []llm.Message{msg}); err != nil {
 			t.Fatalf("save chat %q: %v", chat, err)
 		}
 		id, err := db.StartAgentSession("chat", "anthropic", "m")
@@ -662,7 +662,7 @@ func TestRateAgentSession_LeavesTheCommandFiguresAlone(t *testing.T) {
 // which is what the walk requires before it will ask about one.
 func unratedFixture(t *testing.T, db *DB, chat, opening string) int64 {
 	t.Helper()
-	if err := db.SaveChat(chat, []provider.Message{{Role: provider.RoleUser, Content: opening}}); err != nil {
+	if err := db.SaveChat(chat, []llm.Message{{Role: llm.RoleUser, Content: opening}}); err != nil {
 		t.Fatalf("save chat %q: %v", chat, err)
 	}
 	id, err := db.StartAgentSession("chat", "anthropic", "m")
@@ -1456,18 +1456,18 @@ func sessionWithConversation(t *testing.T, db *DB, slot string) int64 {
 	if err != nil {
 		t.Fatalf("start session: %v", err)
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "where is the steering tuned?", Turn: 1},
-		{Role: provider.RoleAssistant, Turn: 1, Round: 8, ToolCalls: []provider.ToolCall{
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "where is the steering tuned?", Turn: 1},
+		{Role: llm.RoleAssistant, Turn: 1, Round: 8, ToolCalls: []llm.ToolCall{
 			{ID: "a", Name: "search", Arguments: `{"pattern":"steeringItem","path":"internal/ui/chat"}`},
 			{ID: "b", Name: "search", Arguments: `{"pattern":"checkInEvery","path":"internal/agent"}`},
 		}},
-		{Role: provider.RoleTool, ToolCallID: "a", Content: "chat/steer.go:14", Turn: 1, Round: 8},
-		{Role: provider.RoleTool, ToolCallID: "b", Content: "agent/checkin.go:9", Turn: 1, Round: 8},
-		{Role: provider.RoleAssistant, Turn: 1, Round: 9, ToolCalls: []provider.ToolCall{
+		{Role: llm.RoleTool, ToolCallID: "a", Content: "chat/steer.go:14", Turn: 1, Round: 8},
+		{Role: llm.RoleTool, ToolCallID: "b", Content: "agent/checkin.go:9", Turn: 1, Round: 8},
+		{Role: llm.RoleAssistant, Turn: 1, Round: 9, ToolCalls: []llm.ToolCall{
 			{ID: "c", Name: "read_file", Arguments: `{"path":"internal/agent/checkin.go"}`},
 		}},
-		{Role: provider.RoleTool, ToolCallID: "c", Content: "package agent", Turn: 1, Round: 9},
+		{Role: llm.RoleTool, ToolCallID: "c", Content: "package agent", Turn: 1, Round: 9},
 	}
 	if err := db.SaveChat(slot, msgs); err != nil {
 		t.Fatalf("save chat: %v", err)
@@ -1618,7 +1618,7 @@ func TestLinkAgentSession_SaysWhetherTheReferenceResolved(t *testing.T) {
 	if resolved, err := db.LinkAgentSession(id, "not saved yet"); err != nil || resolved {
 		t.Fatalf("a link to a slot that does not exist resolved (%v, %v)", resolved, err)
 	}
-	if err := db.SaveChat("not saved yet", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+	if err := db.SaveChat("not saved yet", []llm.Message{{Role: llm.RoleUser, Content: "hi"}}); err != nil {
 		t.Fatalf("save chat: %v", err)
 	}
 	if resolved, err := db.LinkAgentSession(id, "not saved yet"); err != nil || !resolved {
@@ -1638,9 +1638,9 @@ func TestLinkAgentSession_SaysWhetherTheReferenceResolved(t *testing.T) {
 // written rather than where the resume has got to.
 func TestSaveChat_KeepsWhereEachMessageWasWritten(t *testing.T) {
 	db := openTestDB(t)
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "go on", Turn: 4},
-		{Role: provider.RoleAssistant, Content: "looking", Turn: 4, Round: 2},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "go on", Turn: 4},
+		{Role: llm.RoleAssistant, Content: "looking", Turn: 4, Round: 2},
 	}
 	if err := db.SaveChat("slot", msgs); err != nil {
 		t.Fatalf("save chat: %v", err)

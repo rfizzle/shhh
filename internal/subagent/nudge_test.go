@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -15,9 +15,9 @@ import (
 func TestAChildsShellReadNamesTheToolThatAnswersItOnce(t *testing.T) {
 	env := &scriptedEnv{
 		steps: []streamStep{
-			{calls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"cat importer.go"}`}}},
-			{calls: []provider.ToolCall{{ID: "c2", Name: tools.ExecCommandName, Arguments: `{"command":"head -5 exporter.go"}`}}},
-			{calls: []provider.ToolCall{{ID: "c3", Name: tools.ExecCommandName, Arguments: `{"command":"go vet ./..."}`}}},
+			{calls: []llm.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"cat importer.go"}`}}},
+			{calls: []llm.ToolCall{{ID: "c2", Name: tools.ExecCommandName, Arguments: `{"command":"head -5 exporter.go"}`}}},
+			{calls: []llm.ToolCall{{ID: "c3", Name: tools.ExecCommandName, Arguments: `{"command":"go vet ./..."}`}}},
 			{text: "read both"},
 		},
 		gated:   map[string]bool{tools.ExecCommandName: true},
@@ -38,7 +38,7 @@ func TestAChildsShellReadNamesTheToolThatAnswersItOnce(t *testing.T) {
 	env.mu.Unlock()
 	results := map[string]string{}
 	for _, m := range last {
-		if m.Role == provider.RoleTool {
+		if m.Role == llm.RoleTool {
 			results[m.ToolCallID] = m.Content
 		}
 	}

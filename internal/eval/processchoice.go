@@ -19,9 +19,9 @@ import (
 	"encoding/json"
 	"runtime"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -44,12 +44,12 @@ const (
 )
 
 // askProcessChoice runs one row's instruction for its first round.
-func askProcessChoice(ctx context.Context, p provider.Provider, model string, row Row) Answer {
+func askProcessChoice(ctx context.Context, p llm.Provider, model string, row Row) Answer {
 	defs := append(tools.Definitions(), tools.ExecCommandTool(), process.Definition())
 	sys := prompt.BuildAgent(shell.Info{OS: runtime.GOOS, Cwd: defaultRowCWD}, prompt.Toolbox(defs, false))
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: sys},
-		{Role: provider.RoleUser, Content: row.Instruction},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: sys},
+		{Role: llm.RoleUser, Content: row.Instruction},
 	}
 	a := Answer{Row: row}
 	reply, calls, usage, err := oneReply(ctx, p, model, msgs, defs)
@@ -70,7 +70,7 @@ func askProcessChoice(ctx context.Context, p provider.Provider, model string, ro
 // firstChoice reads one call: the command tool is a command, the process
 // tool's start is a process, and every other call, a process read included,
 // is neither.
-func firstChoice(c provider.ToolCall) (label, reason string) {
+func firstChoice(c llm.ToolCall) (label, reason string) {
 	switch c.Name {
 	case tools.ExecCommandName:
 		return LabelCommand, "ran " + argOf(c, "command")
@@ -85,7 +85,7 @@ func firstChoice(c provider.ToolCall) (label, reason string) {
 
 // argOf is one string argument of a call, empty where the arguments do not
 // parse or do not name it.
-func argOf(c provider.ToolCall, key string) string {
+func argOf(c llm.ToolCall, key string) string {
 	var args map[string]any
 	if err := json.Unmarshal([]byte(c.Arguments), &args); err != nil {
 		return ""

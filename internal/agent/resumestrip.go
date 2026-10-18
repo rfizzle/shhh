@@ -3,7 +3,7 @@ package agent
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // What opens the messages a reopening puts in front of a conversation. They
@@ -49,34 +49,34 @@ const (
 // way one does is left where it is. A first turn that opened with a whole
 // bracketed line reading `[resume: …]` would still be taken for one, which is
 // the accepted cost of not keeping a count that can go stale.
-func StripResumeContext(msgs []provider.Message) []provider.Message {
+func StripResumeContext(msgs []llm.Message) []llm.Message {
 	at := 0
-	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 		at = 1
 	}
 	// The handoff is only ever the first half of a block, so it is only
 	// recognised in front of a survey.
 	survey := at
-	if survey < len(msgs) && msgs[survey].Role == provider.RoleUser && opensAHandoff(msgs[survey].Content) {
+	if survey < len(msgs) && msgs[survey].Role == llm.RoleUser && opensAHandoff(msgs[survey].Content) {
 		survey++
 	}
-	if survey >= len(msgs) || msgs[survey].Role != provider.RoleUser || !opensAReading(msgs[survey].Content) {
+	if survey >= len(msgs) || msgs[survey].Role != llm.RoleUser || !opensAReading(msgs[survey].Content) {
 		return msgs
 	}
 	end := survey + 1
 	// The summary is only ever the second half of a block, so it is only
 	// recognised behind a survey. On its own it is a message that happens to
 	// open the way one does, which is somebody's turn and stays.
-	if end < len(msgs) && msgs[end].Role == provider.RoleUser &&
+	if end < len(msgs) && msgs[end].Role == llm.RoleUser &&
 		strings.HasPrefix(msgs[end].Content, ResumeSummaryPrefix) {
 		end++
 	}
 	// And the list, which is only ever the last part of one.
-	if end < len(msgs) && msgs[end].Role == provider.RoleUser &&
+	if end < len(msgs) && msgs[end].Role == llm.RoleUser &&
 		strings.HasPrefix(msgs[end].Content, CarriedStepsPrefix) {
 		end++
 	}
-	kept := make([]provider.Message, 0, len(msgs)-(end-at))
+	kept := make([]llm.Message, 0, len(msgs)-(end-at))
 	kept = append(kept, msgs[:at]...)
 	return append(kept, msgs[end:]...)
 }
@@ -102,10 +102,10 @@ func opensAHandoff(content string) bool {
 // FoldedWithoutReading is the folded turns without the reading a reopening put
 // in front of the conversation before it was compacted: it was rebuilt from
 // the checkout every time and is not part of what was said.
-func FoldedWithoutReading(folded []provider.Message) []provider.Message {
+func FoldedWithoutReading(folded []llm.Message) []llm.Message {
 	if len(folded) == 0 {
 		return folded
 	}
-	withPrompt := append([]provider.Message{{Role: provider.RoleSystem}}, folded...)
+	withPrompt := append([]llm.Message{{Role: llm.RoleSystem}}, folded...)
 	return StripResumeContext(withPrompt)[1:]
 }

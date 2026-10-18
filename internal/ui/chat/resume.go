@@ -9,7 +9,7 @@ package chat
 //
 //   - a stream that dropped *mid-reply* already has an answer on the wire.
 //     The words are written and the tool calls the model finished are whole
-//     (internal/provider/partial.go). Asking again from the top is asking a
+//     (github.com/rfizzle/llm, partial.go). Asking again from the top is asking a
 //     different question, so the session offers to hand the partial turn back
 //     as context and let the model carry on from its own last sentence.
 //   - a request that was *never answered* — rate limited, overloaded, a
@@ -28,10 +28,10 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -70,7 +70,7 @@ const maxDropDetail = 2
 // describing rather than on whatever the session streamed most recently.
 type streamResume struct {
 	text  string
-	calls []provider.ToolCall
+	calls []llm.ToolCall
 	// tokens is the estimated size of what was kept, which is the row's
 	// qualifier. It is agent.EstimateTokens, the same arithmetic the context
 	// accounting uses, so the row says `~` and means it.
@@ -95,7 +95,7 @@ type retryWait struct {
 	// fail is the failure being waited out. It is compared by pointer against
 	// the transcript entry, so the row that stalled is the row whose keys are
 	// suspended while the wait runs.
-	fail    *provider.Failure
+	fail    *llm.Failure
 	attempt int
 	max     int
 	// wait is the whole span, deadline the moment it ends; the meter is the
@@ -126,7 +126,7 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	if c, ok := meter.AsCap(msg.err); ok && m.todo.runner.state != nil && !m.todo.runner.state.Over() {
 		m.todo.runner.overSpend = c
 	}
-	calls := provider.CompletedToolCalls(msg.calls)
+	calls := llm.CompletedToolCalls(msg.calls)
 	// The thinking behind the calls that survived the drop survives with
 	// them: continuing the partial is what re-uses them, and the request it
 	// makes needs the reasoning that produced them.
@@ -141,7 +141,7 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	// thought is a record of what happened.
 	m.recordReasoning(msg.reasoning)
 	switch {
-	case m.compacting || f.Class == provider.ClassCancelled:
+	case m.compacting || f.Class == llm.ClassCancelled:
 		// A compaction that broke discards its partial summary rather than
 		// offering to continue one (the conversation it was summarising is
 		// untouched either way), and a stop you asked for is not a stall.
@@ -158,7 +158,7 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 // the row states what was kept and offers the two ways on, because which of
 // them is right depends on whether the sentence the model was in the middle
 // of is worth having.
-func (m Model) dropStream(f *provider.Failure, partial string, calls []provider.ToolCall) (tea.Model, tea.Cmd) {
+func (m Model) dropStream(f *llm.Failure, partial string, calls []llm.ToolCall) (tea.Model, tea.Cmd) {
 	res := &streamResume{
 		text:   partial,
 		calls:  calls,
@@ -457,7 +457,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		// BeginToolRound is what stamps the mark on the round above; a round
 		// with no calls has no BeginToolRound, so the message carries it from
 		// here.
-		m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: res.text, Checkpoint: checkpoint})
+		m.agent.Append(llm.Message{Role: llm.RoleAssistant, Content: res.text, Checkpoint: checkpoint})
 		e := m.stampStep(entry{kind: entryAssistant, text: res.text})
 		if checkpoint {
 			e = m.markCheckpoint(e)
@@ -488,7 +488,7 @@ const continuePrompt = "Your previous reply was cut off by a connection failure.
 // across the whole stall, so three rate limits in a row are three attempts
 // and not three fresh chances; a request that is actually answered clears the
 // count (clearRetryChain).
-func (m Model) startRetryWait(f *provider.Failure) (tea.Model, tea.Cmd) {
+func (m Model) startRetryWait(f *llm.Failure) (tea.Model, tea.Cmd) {
 	// The count lives on the model rather than on the wait: the wait is over
 	// the moment the retry is sent, and a counter that died with it would
 	// grant every attempt a fresh bound and retry forever.

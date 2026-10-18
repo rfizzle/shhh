@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -60,7 +60,7 @@ type QA struct {
 type Outcome struct {
 	Draft     *Draft
 	Questions []string
-	Usage     provider.Usage
+	Usage     llm.Usage
 	Elapsed   time.Duration
 	Failed    bool
 	Err       string
@@ -111,12 +111,12 @@ func (c Config) maxTokens() int {
 
 // Drafter turns briefs into drafts on a provider.
 type Drafter struct {
-	provider provider.Provider
+	provider llm.Provider
 	cfg      Config
 }
 
 // NewDrafter builds a drafter; a nil provider or empty model disables it.
-func NewDrafter(p provider.Provider, cfg Config) *Drafter {
+func NewDrafter(p llm.Provider, cfg Config) *Drafter {
 	return &Drafter{provider: p, cfg: cfg}
 }
 
@@ -188,8 +188,8 @@ const draftSchemaTemplate = `{
 }`
 
 // DraftTool is the tool a drafting turn answers through.
-func DraftTool() provider.Tool {
-	return provider.Tool{
+func DraftTool() llm.Tool {
+	return llm.Tool{
 		Name:        DraftToolName,
 		Description: "Return the drafted profile, or the questions you need answered first.",
 		Parameters:  draftSchema,
@@ -225,21 +225,21 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 	}
 	attemptCtx, cancel := context.WithTimeout(ctx, d.cfg.timeout())
 	defer cancel()
-	events, err := d.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleSystem, Content: systemPrompt(req.Kind)},
-		{Role: provider.RoleUser, Content: user},
-	}, provider.CompletionOpts{
+	events, err := d.provider.StreamCompletion(attemptCtx, []llm.Message{
+		{Role: llm.RoleSystem, Content: systemPrompt(req.Kind)},
+		{Role: llm.RoleUser, Content: user},
+	}, llm.CompletionOpts{
 		Model:      model,
-		Flow:       provider.FlowProfileDrafter,
+		Flow:       llm.FlowProfileDrafter,
 		MaxTokens:  d.cfg.maxTokens(),
-		Tools:      []provider.Tool{DraftTool()},
+		Tools:      []llm.Tool{DraftTool()},
 		ToolChoice: "auto",
 	})
 	if err != nil {
 		out.Err = err.Error()
 		return finish(out)
 	}
-	reply, err := provider.Collect(attemptCtx, events)
+	reply, err := llm.Collect(attemptCtx, events)
 	if reply.Usage != nil {
 		out.Usage = *reply.Usage
 	}

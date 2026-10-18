@@ -11,17 +11,17 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // radiusModel is a session that runs the assistant's commands and shows their
 // approval cards, wide enough that the block's details are not dropped.
 func radiusModel(t *testing.T, dir string, c Containment) Model {
 	t.Helper()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "do it"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "do it"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Workspace:   dir,
@@ -41,7 +41,7 @@ func confirmFor(t *testing.T, m Model, command string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_r", Name: "execute_command", Arguments: string(args)},
 	}})
 	m = updated.(Model)
@@ -250,9 +250,9 @@ func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
 	if err := os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "edit it"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "edit it"},
 	}
 	m := New(msgs, mockStream, Wiring{Workspace: dir})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
@@ -266,7 +266,7 @@ func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_e", Name: "edit_file", Arguments: string(args)},
 	}})
 	m = updated.(Model)
@@ -282,9 +282,9 @@ func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
 // A gated tool that described its own radius carries that block.
 func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
 	dir := t.TempDir()
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "look it up"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "look it up"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Workspace: dir,
@@ -302,7 +302,7 @@ func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_f", Name: "web_fetch", Arguments: `{"url":"https://pkg.go.dev/context"}`},
 	}})
 	m = updated.(Model)
@@ -330,7 +330,7 @@ func confirmForStart(t *testing.T, m Model, name, command string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_s", Name: "process", Arguments: string(args)},
 	}})
 	m = updated.(Model)

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -27,7 +27,7 @@ func TestEdit_APersonMayWriteWhatTheModelMayNot(t *testing.T) {
 	}
 
 	args, _ := json.Marshal(map[string]string{"path": hook, "content": "#!/bin/sh\nexit 1\n"})
-	d, result, code := m.StandingAnswer(provider.ToolCall{ID: "c1", Name: tools.WriteFileName, Arguments: string(args)})
+	d, result, code := m.StandingAnswer(llm.ToolCall{ID: "c1", Name: tools.WriteFileName, Arguments: string(args)})
 	if d != agent.Deny || result != tools.GitProgramPathResult || code != observe.ReasonSafety {
 		t.Fatalf("the model's write: %v %q %q", d, result, code)
 	}

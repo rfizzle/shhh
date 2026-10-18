@@ -10,8 +10,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -229,7 +229,7 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 	for i := 1; i <= 20; i++ {
 		names = append(names, fmt.Sprintf("model-%02d", i))
 	}
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		SwitchModel:  func(string) {},
 		ModelName:    "model-01",
@@ -301,9 +301,9 @@ func chatPickModel(t *testing.T, names ...string) Model {
 	t.Helper()
 	db := rewindTestDB(t)
 	for _, name := range names {
-		msgs := []provider.Message{
-			{Role: provider.RoleUser, Content: "q for " + name},
-			{Role: provider.RoleAssistant, Content: "a for " + name},
+		msgs := []llm.Message{
+			{Role: llm.RoleUser, Content: "q for " + name},
+			{Role: llm.RoleAssistant, Content: "a for " + name},
 		}
 		if err := db.SaveChat(name, msgs); err != nil {
 			t.Fatal(err)
@@ -545,9 +545,9 @@ func TestGolden_BranchPicker(t *testing.T) {
 			tail = cut + "@turn2-20260831-152245.907"
 		)
 		db := rewindTestDB(t)
-		msgs := []provider.Message{
-			{Role: provider.RoleUser, Content: "q"},
-			{Role: provider.RoleAssistant, Content: "a"},
+		msgs := []llm.Message{
+			{Role: llm.RoleUser, Content: "q"},
+			{Role: llm.RoleAssistant, Content: "a"},
 		}
 		if err := db.SaveChat(root, msgs); err != nil {
 			t.Fatal(err)
@@ -716,9 +716,9 @@ func TestRunPick_NumberedFormSkipsPicker(t *testing.T) {
 }
 
 func TestRunPick_NoRunnerKeepsTextMessage(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleAssistant, Content: twoBlockResponse},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleAssistant, Content: twoBlockResponse},
 	}
 	updated, _ := New(msgs, mockStream, Wiring{}).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m := updated.(Model)

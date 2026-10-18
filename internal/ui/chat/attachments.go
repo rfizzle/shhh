@@ -8,7 +8,7 @@ package chat
 // from the chip or by naming it and given the whole pane while it is up
 // (preview.go, stagedstrip.go). What
 // the bytes are for is the request — they ride on the user message
-// (internal/provider), and each provider carries them the way its API takes
+// (github.com/rfizzle/llm), and each provider carries them the way its API takes
 // them.
 //
 // Four doors, one staging area. Ctrl+V reads the clipboard — a pasted
@@ -33,9 +33,9 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -53,7 +53,7 @@ type clipboardMsg struct {
 
 // attachedFileMsg carries the result of attaching one named file.
 type attachedFileMsg struct {
-	attachment provider.Attachment
+	attachment llm.Attachment
 	// path is where the file was read from, which a picture's row names the
 	// folder of once it is sent (sourcePhrase).
 	path string
@@ -122,9 +122,9 @@ func (m Model) handleAttachedFile(msg attachedFileMsg) (tea.Model, tea.Cmd) {
 	}
 	before, from := len(m.attachments), sourcePhrase(msg.path)
 	if msg.atCursor {
-		return noteFrom(m.stageAtCursor([]provider.Attachment{msg.attachment}))(before, from)
+		return noteFrom(m.stageAtCursor([]llm.Attachment{msg.attachment}))(before, from)
 	}
-	return noteFrom(m.stage([]provider.Attachment{msg.attachment}))(before, from)
+	return noteFrom(m.stage([]llm.Attachment{msg.attachment}))(before, from)
 }
 
 // noteFrom records where the pictures a door just staged came from, by the
@@ -138,7 +138,7 @@ func noteFrom(next tea.Model, cmd tea.Cmd) func(before int, from string) (tea.Mo
 			return next, cmd
 		}
 		for _, a := range nm.attachments[before:] {
-			if a.Kind != provider.AttachmentImage || a.Handle == "" {
+			if a.Kind != llm.AttachmentImage || a.Handle == "" {
 				continue
 			}
 			if nm.staged.from == nil {
@@ -178,7 +178,7 @@ func sourcePhrase(path string) string {
 // the handle the fold carries and the way to reach the chip; several at once
 // are folded side by side, a space apart, in the order they were staged.
 // What the ceiling refused leaves no fold, for stagePaste's reason.
-func (m Model) stageAtCursor(atts []provider.Attachment) (tea.Model, tea.Cmd) {
+func (m Model) stageAtCursor(atts []llm.Attachment) (tea.Model, tea.Cmd) {
 	staged, note := m.stageQuietly(atts)
 	var tokens []string
 	for _, a := range staged.attachments[len(m.attachments):] {
@@ -241,13 +241,13 @@ func (m Model) stagePaste(text string) (tea.Model, tea.Cmd) {
 	// paste that happens to begin with %PDF- is still a paste, and staging it
 	// as a document called paste-1.txt would send the provider a name that
 	// contradicts the part it was put in.
-	if a.Kind != provider.AttachmentText {
+	if a.Kind != llm.AttachmentText {
 		return m.surfaceNotice("nothing attached — that paste is not text, it reads as " + a.MediaType)
 	}
 	// Asked for by word: text is a file to the sniffer, and this door is the
 	// one that knows there was never a file behind it.
 	a.Handle = attachment.HandlePaste
-	staged, note := m.stageQuietly([]provider.Attachment{a})
+	staged, note := m.stageQuietly([]llm.Attachment{a})
 	if len(staged.attachments) == len(m.attachments) {
 		// The ceiling refused it, and the refusal is what there is to say. A
 		// fold for bytes that are not riding would be a sentence promising
@@ -271,7 +271,7 @@ func (m Model) stagePaste(text string) (tea.Model, tea.Cmd) {
 // one character, and the key that opens it. The backspace is named here and
 // not on the rail, because it is the line editor's key and not an offer: what
 // the fold changes is how much one press of it takes.
-func (m Model) insertPasteToken(a provider.Attachment) (tea.Model, tea.Cmd) {
+func (m Model) insertPasteToken(a llm.Attachment) (tea.Model, tea.Cmd) {
 	p, ok := pasteOf(a)
 	if !ok {
 		return m, nil
@@ -361,7 +361,7 @@ func (m Model) draftOffset(value string) int {
 // draft, and says what went. It is what the reader's backspace over a token
 // does and what the reader's key on the open paste does, because they are the
 // same act reached from the two places the paste is on screen.
-func (m Model) removePaste(a provider.Attachment) (tea.Model, bool) {
+func (m Model) removePaste(a llm.Attachment) (tea.Model, bool) {
 	p, ok := pasteOf(a)
 	if !ok {
 		return m, false
@@ -398,7 +398,7 @@ func (m Model) removePaste(a provider.Attachment) (tea.Model, bool) {
 // Only the first occurrence goes. A reader who copied their own token into
 // the sentence twice meant the second one to be there as text, and this is
 // not the surface that gets to decide otherwise.
-func (m *Model) dropPasteToken(a provider.Attachment) {
+func (m *Model) dropPasteToken(a llm.Attachment) {
 	p, ok := pasteOf(a)
 	if !ok {
 		return
@@ -470,7 +470,7 @@ func (m Model) stagedPastes() []stagedPaste {
 // `/paste <path>` has none — so every door that removes, repaints or
 // rebuilds a fold asks this and nothing else. An attachment with no handle,
 // which only a message saved before handles existed carries, has no fold.
-func pasteOf(a provider.Attachment) (stagedPaste, bool) {
+func pasteOf(a llm.Attachment) (stagedPaste, bool) {
 	if a.Handle == "" {
 		return stagedPaste{}, false
 	}
@@ -480,9 +480,9 @@ func pasteOf(a provider.Attachment) (stagedPaste, bool) {
 		label:  a.Handle,
 		token:  components.PasteToken(a.Handle, figure),
 		figure: figure,
-		paste:  word == attachment.HandlePaste && a.Kind == provider.AttachmentText,
+		paste:  word == attachment.HandlePaste && a.Kind == llm.AttachmentText,
 	}
-	if a.Kind == provider.AttachmentText {
+	if a.Kind == llm.AttachmentText {
 		p.lines = attachment.LineCount(a.Data)
 		p.tokens = agent.EstimateBytesTokens(a.Data)
 	}
@@ -515,7 +515,7 @@ func (m Model) pasteCost() string {
 
 // stage adds attachments to the pending set, refusing what would push it
 // past the total ceiling and saying so rather than truncating quietly.
-func (m Model) stage(atts []provider.Attachment) (tea.Model, tea.Cmd) {
+func (m Model) stage(atts []llm.Attachment) (tea.Model, tea.Cmd) {
 	next, note := m.stageQuietly(atts)
 	if note == "" {
 		return next, nil
@@ -527,14 +527,14 @@ func (m Model) stage(atts []provider.Attachment) (tea.Model, tea.Cmd) {
 // it would have said. A caller with a better one to say — the paste, which
 // has a fold in the draft to point at — takes the answer and says its own,
 // because two notices about one act read as two acts.
-func (m Model) stageQuietly(atts []provider.Attachment) (Model, string) {
+func (m Model) stageQuietly(atts []llm.Attachment) (Model, string) {
 	var added []string
 	for _, a := range atts {
-		if provider.AttachmentBytes(m.attachments)+len(a.Data) > attachment.MaxTotalBytes {
+		if llm.AttachmentBytes(m.attachments)+len(a.Data) > attachment.MaxTotalBytes {
 			m.syncViewport()
 			return m, fmt.Sprintf("%s was not attached — one message carries at most %s, and %s is already staged",
 				a.Name, attachment.HumanSize(attachment.MaxTotalBytes),
-				attachment.HumanSize(provider.AttachmentBytes(m.attachments)))
+				attachment.HumanSize(llm.AttachmentBytes(m.attachments)))
 		}
 		a = m.assignHandle(a)
 		m.attachments = append(m.attachments, a)
@@ -571,7 +571,7 @@ func (m Model) stageQuietly(atts []provider.Attachment) (Model, string) {
 // arrives carrying only a word is numbered under it; that is how a paste
 // asks to be a paste. Anything else is numbered by its kind. A paste's name
 // follows its number, so paste-3.txt is always Paste#3.
-func (m *Model) assignHandle(a provider.Attachment) provider.Attachment {
+func (m *Model) assignHandle(a llm.Attachment) llm.Attachment {
 	word, n, kept := attachment.SplitHandle(a.Handle)
 	if kept && (m.stagedHandle(a.Handle) ||
 		(word == attachment.HandlePaste && m.stagedName(attachment.PasteName(n)))) {
@@ -628,7 +628,7 @@ func (m Model) stagedName(name string) bool {
 // and about to ride into it. Nothing is stored for the count itself — every
 // handle ever sent is on the message that carried it, so the highest of each
 // word is already on the rows.
-func (m *Model) seedHandles(msgs []provider.Message) {
+func (m *Model) seedHandles(msgs []llm.Message) {
 	m.handles = attachment.Handles{}
 	// A count that starts over hands its handles out again, so what was
 	// known of where the last conversation's pictures came from goes with
@@ -653,7 +653,7 @@ func (m *Model) seedHandles(msgs []provider.Message) {
 // describeStaged is one staged attachment the way a sentence about the strip
 // names it: `Image#1 (clipboard.png, 412 KB)`, the handle first because it is
 // what the two verbs take. An attachment with no handle is named by its name.
-func describeStaged(a provider.Attachment) string {
+func describeStaged(a llm.Attachment) string {
 	size := attachment.HumanSize(len(a.Data))
 	if a.Handle == "" {
 		return fmt.Sprintf("%s (%s)", a.Name, size)
@@ -663,7 +663,7 @@ func describeStaged(a provider.Attachment) string {
 
 // describeAllStaged is the whole strip in describeStaged's words, for the
 // refusals that list what could have been meant.
-func describeAllStaged(atts []provider.Attachment) string {
+func describeAllStaged(atts []llm.Attachment) string {
 	out := make([]string, len(atts))
 	for i, a := range atts {
 		out[i] = describeStaged(a)
@@ -715,7 +715,7 @@ func (m Model) findStaged(word string) (int, string) {
 // bytes are the same attachment (recall.go) — and what a picture's row
 // opens onto the card.
 type pasteFold struct {
-	att   provider.Attachment
+	att   llm.Attachment
 	label string
 	// token is the fold the attachment left in the sentence, spelled from
 	// its handle and its figure, or "" for one with no handle. Whether the
@@ -742,7 +742,7 @@ type pasteFold struct {
 // picture reports whether the row stands for a picture, which it opens onto
 // the preview card rather than in place.
 func (p pasteFold) picture() bool {
-	return p.att.Kind == provider.AttachmentImage
+	return p.att.Kind == llm.AttachmentImage
 }
 
 // sentEntries is the transcript rows one sent message leaves: its words, and
@@ -753,7 +753,7 @@ func (p pasteFold) picture() bool {
 // to it, and an attachment staged with `/paste <path>` — which put no fold in
 // the words — or one whose fold the reader deleted is no less sent, and no
 // less something the reader may want to look at again.
-func (m Model) sentEntries(text string, atts []provider.Attachment) []entry {
+func (m Model) sentEntries(text string, atts []llm.Attachment) []entry {
 	out := []entry{{kind: entryUser, text: text, trayed: len(atts) > 0}}
 	for _, a := range atts {
 		f := &pasteFold{att: a, label: a.Handle, figure: a.Figure()}
@@ -761,12 +761,12 @@ func (m Model) sentEntries(text string, atts []provider.Attachment) []entry {
 			f.token = p.token
 		}
 		switch a.Kind {
-		case provider.AttachmentText:
+		case llm.AttachmentText:
 			f.tokens = agent.EstimateBytesTokens(a.Data)
 			f.body = strings.Split(strings.TrimSuffix(string(a.Data), "\n"), "\n")
-		case provider.AttachmentImage:
+		case llm.AttachmentImage:
 			f.from = m.staged.from[a.Handle]
-		case provider.AttachmentDocument:
+		case llm.AttachmentDocument:
 			f.pages = attachment.PageCount(a.Data)
 		}
 		out = append(out, entry{kind: entryTray, fold: f})
@@ -778,7 +778,7 @@ func (m Model) sentEntries(text string, atts []provider.Attachment) []entry {
 }
 
 // appendSent puts one sent message on the transcript, its tray with it.
-func (m *Model) appendSent(text string, atts []provider.Attachment) {
+func (m *Model) appendSent(text string, atts []llm.Attachment) {
 	for _, e := range m.sentEntries(text, atts) {
 		m.appendEntry(e)
 	}
@@ -796,14 +796,14 @@ func trayOpens(e entry) bool {
 // trayPicture is the picture a tray row opens onto the card. Every press on
 // the row opens it: the row has no open state of its own, so there is never
 // a second press that only closes something.
-func trayPicture(e entry) (provider.Attachment, bool) {
+func trayPicture(e entry) (llm.Attachment, bool) {
 	if e.kind == entryPicture && e.picture != nil {
 		// A picture a call returned opens through the same door
 		// (card.go).
 		return *e.picture, true
 	}
 	if e.kind != entryTray || e.fold == nil || !e.fold.picture() {
-		return provider.Attachment{}, false
+		return llm.Attachment{}, false
 	}
 	return e.fold.att, true
 }
@@ -831,7 +831,7 @@ func (m Model) openTrayPicture(idx int) (tea.Model, tea.Cmd) {
 // openSent opens an attachment that has already been sent on the card the
 // staging area's chips open, titled with the turn that carried it. The card
 // leaves out its drop: there is nothing staged to take back.
-func (m Model) openSent(a provider.Attachment, turn int, fromRow bool) (tea.Model, tea.Cmd) {
+func (m Model) openSent(a llm.Attachment, turn int, fromRow bool) (tea.Model, tea.Cmd) {
 	next, cmd := m.openPreview(a)
 	nm, ok := next.(Model)
 	if !ok || nm.state != statePreview || nm.preview == nil {
@@ -865,7 +865,7 @@ func trayRowFor(f *pasteFold) components.TrayRow {
 	r := components.TrayRow{Kind: stagedChipKind(a), Handle: a.Handle, Name: a.Name,
 		Size: attachment.HumanSize(len(a.Data))}
 	switch a.Kind {
-	case provider.AttachmentImage:
+	case llm.AttachmentImage:
 		// A picture that will not decode has its size as its figure, which
 		// the row already prints at the right.
 		if f.figure != r.Size {
@@ -874,9 +874,9 @@ func trayRowFor(f *pasteFold) components.TrayRow {
 		if f.from != "" {
 			r.Facts = append(r.Facts, f.from)
 		}
-	case provider.AttachmentText:
+	case llm.AttachmentText:
 		r.Facts = append(r.Facts, f.figure, components.FormatCount(f.tokens)+" tokens")
-	case provider.AttachmentDocument:
+	case llm.AttachmentDocument:
 		if f.pages > 0 {
 			r.Facts = append(r.Facts, plural(f.pages, "page"))
 		}
@@ -934,7 +934,7 @@ func pasteOutputView(e entry) *components.OutputView {
 // takeAttachments hands the staged set to the message being sent and empties
 // the staging area. Every send path goes through it, so an attachment can
 // only ever ride once.
-func (m *Model) takeAttachments() []provider.Attachment {
+func (m *Model) takeAttachments() []llm.Attachment {
 	if len(m.attachments) == 0 {
 		return nil
 	}
@@ -968,7 +968,7 @@ func (m Model) attachmentChips() []components.AttachmentChip {
 		// Only text has lines. A stat that cannot be reported is left out
 		// rather than reported as zero
 		// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
-		if a.Kind == provider.AttachmentText {
+		if a.Kind == llm.AttachmentText {
 			chip.Lines = attachment.LineCount(a.Data)
 		}
 		chips = append(chips, chip)
@@ -978,8 +978,8 @@ func (m Model) attachmentChips() []components.AttachmentChip {
 
 // stagedChipKind is chipKind with the one distinction the provider's kind
 // does not carry: text off the clipboard is a paste, whose handle says so.
-func stagedChipKind(a provider.Attachment) components.ChipKind {
-	if a.Kind == provider.AttachmentText && strings.HasPrefix(a.Handle, attachment.HandlePaste+"#") {
+func stagedChipKind(a llm.Attachment) components.ChipKind {
+	if a.Kind == llm.AttachmentText && strings.HasPrefix(a.Handle, attachment.HandlePaste+"#") {
 		return components.ChipPaste
 	}
 	return chipKind(a.Kind)
@@ -992,11 +992,11 @@ func stagedChipKind(a provider.Attachment) components.ChipKind {
 // the model takes whole and neither has lines to count, and the other reading
 // available, the text mark, promises a body in the prompt that a recording
 // has not got.
-func chipKind(k provider.AttachmentKind) components.ChipKind {
+func chipKind(k llm.AttachmentKind) components.ChipKind {
 	switch k {
-	case provider.AttachmentImage:
+	case llm.AttachmentImage:
 		return components.ChipImage
-	case provider.AttachmentDocument, provider.AttachmentAudio:
+	case llm.AttachmentDocument, llm.AttachmentAudio:
 		return components.ChipDocument
 	}
 	return components.ChipText
@@ -1149,7 +1149,7 @@ func (m Model) dropAttachments(indices []int) (tea.Model, tea.Cmd) {
 	for _, i := range indices {
 		chosen[i] = true
 	}
-	var kept []provider.Attachment
+	var kept []llm.Attachment
 	var dropped []string
 	for i, a := range m.attachments {
 		if chosen[i] {
@@ -1191,7 +1191,7 @@ func pastedFileAttachment(pasted string) (string, bool) {
 		return "", false
 	}
 	kind, err := attachment.PeekKind(path)
-	if err != nil || kind == provider.AttachmentText {
+	if err != nil || kind == llm.AttachmentText {
 		return "", false
 	}
 	return path, true

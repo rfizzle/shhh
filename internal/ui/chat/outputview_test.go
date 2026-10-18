@@ -13,7 +13,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -21,7 +21,7 @@ import (
 // lines, opened in reading mode with the cursor on it.
 func longOutputModel(t *testing.T, n int) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -160,7 +160,7 @@ func TestOutputDepths_ShortOutputSkipsFullScreen(t *testing.T) {
 // A read row's file content opens through the same depths as a command's
 // output.
 func TestOutputDepths_ReadRowsOpenTheSameWay(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -206,9 +206,9 @@ func TestApprovalCard_ScrollResetsOnABangConfirm(t *testing.T) {
 
 // The scroll describes one card's body, so it resets when the card changes.
 func TestApprovalCard_ScrollResetsWhenTheCardChanges(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "run it"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "run it"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(_ context.Context, _ string) (string, int) { return "", 0 }),
@@ -227,9 +227,9 @@ func TestApprovalCard_ScrollResetsWhenTheCardChanges(t *testing.T) {
 // esc returns to the card with the decision still pending.
 func TestApprovalCard_FullViewForCommands(t *testing.T) {
 	var ran []string
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "run it"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "run it"},
 	}
 	m := New(msgs, mockStream, Wiring{
 		Runner: legacyRunner(func(_ context.Context, cmd string) (string, int) {

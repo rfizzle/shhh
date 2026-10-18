@@ -13,6 +13,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -22,7 +23,6 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -345,7 +345,7 @@ func (b *screenBuild) openingHooks() {
 	if start.Context != "" {
 		session.promptExtra = prompt.CombineExtra(session.promptExtra, start.Context)
 		env.sysPrompt = prompt.CombineExtra(env.sysPrompt, start.Context)
-		if len(env.messages) > 0 && env.messages[0].Role == provider.RoleSystem {
+		if len(env.messages) > 0 && env.messages[0].Role == llm.RoleSystem {
 			env.messages[0].Content = env.sysPrompt
 		}
 	}
@@ -574,7 +574,7 @@ func (b *screenBuild) wiring() chat.Wiring {
 		SignOutChatGPT:   signOutChatGPT,
 		PlanWelcomed:     planWelcomed,
 		MarkPlanWelcomed: markPlanWelcomed,
-		ModelOptions:     provider.KnownModels(env.prov.Name()),
+		ModelOptions:     llm.KnownModels(env.prov.Name()),
 		ModelLister:      env.endpointModels.picker(),
 		EndpointWindows:  endpointWindowsFor(env.prov),
 		Notebook:         session.notebook,
@@ -992,7 +992,7 @@ func (b *screenBuild) opening(model chat.Model, args []string) (_ chat.Model, do
 		}
 		if reopened.slot != "" {
 			// Refresh the system prompt so shell/cwd context is current.
-			if len(reopened.messages) > 0 && reopened.messages[0].Role == provider.RoleSystem {
+			if len(reopened.messages) > 0 && reopened.messages[0].Role == llm.RoleSystem {
 				reopened.messages[0].Content = env.sysPrompt
 			}
 			// The conversation is also told what the checkout looks like now,

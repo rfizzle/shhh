@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -54,7 +54,7 @@ const (
 // and what the reader is shown are two renderings of one finding, and a
 // surface that built the second from the first would be paraphrasing it.
 type ResumeNotice struct {
-	Messages []provider.Message
+	Messages []llm.Message
 	// Subject is what the row a reopened conversation opens on is about: the
 	// branch it is looking at and how much is changed. The verb in front of
 	// it is resumeVerb, and the row is laid on the grid rather than written
@@ -106,7 +106,7 @@ func ResumeContext(db *storage.DB, slot, dir string, steps bool) ResumeNotice {
 	// compaction, and the model carries on from the numbers it is drawn by
 	// (worksteps.go).
 	if carried := plan.CarriedSteps(plan.DecodeChecklist(saved.Steps)); carried != "" {
-		n.Messages = append(n.Messages, provider.Message{Role: provider.RoleUser, Content: carried})
+		n.Messages = append(n.Messages, llm.Message{Role: llm.RoleUser, Content: carried})
 		n.Text += "\n\n" + carried
 	}
 	return n
@@ -117,15 +117,15 @@ func ResumeContext(db *storage.DB, slot, dir string, steps bool) ResumeNotice {
 // captured on facts built by hand.
 func resumeNotice(info project.Info, saved storage.ChatResume) ResumeNotice {
 	n := ResumeNotice{Subject: resumeSubject(info), Steps: saved.Steps}
-	n.Messages = append(n.Messages, provider.Message{
-		Role: provider.RoleUser, Content: resumeSurveyMessage(info, saved.Head)})
+	n.Messages = append(n.Messages, llm.Message{
+		Role: llm.RoleUser, Content: resumeSurveyMessage(info, saved.Head)})
 	// No placeholder for a conversation with no standing account. A line
 	// saying there is none is a line the model has to read and can do nothing
 	// with.
 	if summary := strings.TrimSpace(saved.Summary); summary != "" {
 		n.Summary = summary
-		n.Messages = append(n.Messages, provider.Message{
-			Role: provider.RoleUser, Content: resumeSummaryPrefix + "\n\n" + summary})
+		n.Messages = append(n.Messages, llm.Message{
+			Role: llm.RoleUser, Content: resumeSummaryPrefix + "\n\n" + summary})
 	}
 	texts := make([]string, 0, len(n.Messages))
 	for _, msg := range n.Messages {
@@ -148,8 +148,8 @@ func withHandoff(n ResumeNotice, handoff string) ResumeNotice {
 		return n
 	}
 	n.Handoff = handoff
-	n.Messages = append([]provider.Message{{
-		Role: provider.RoleUser, Content: resumeHandoffPrefix + "\n\n" + handoff}}, n.Messages...)
+	n.Messages = append([]llm.Message{{
+		Role: llm.RoleUser, Content: resumeHandoffPrefix + "\n\n" + handoff}}, n.Messages...)
 	return n
 }
 
@@ -334,12 +334,12 @@ func slotOwesReading(db *storage.DB, slot string) bool {
 // session is running — so a conversation cannot come back without the
 // reading, and the row that accounts for it cannot be forgotten by one of
 // them.
-func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
+func (m *Model) resumeConversation(slot string, msgs []llm.Message) {
 	// A compacted conversation comes back with the turns it folded, which the
 	// slot kept beside it: the model is handed the compacted list and the
 	// transcript draws both. A slot that kept none, or a session with no
 	// store, has none to draw.
-	var folded []provider.Message
+	var folded []llm.Message
 	if slot != "" && m.wiring.DB != nil {
 		folded, _ = m.wiring.DB.LoadChatFolded(slot)
 		folded = agent.FoldedWithoutReading(folded)
@@ -347,7 +347,7 @@ func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
 	m.loadConversationFolded(folded, agent.StripResumeContext(msgs))
 	// The handles go on from the highest this conversation already used, so a
 	// reopened one does not hand out a second Image#1 (attachments.go).
-	m.seedHandles(append(append([]provider.Message(nil), folded...), msgs...))
+	m.seedHandles(append(append([]llm.Message(nil), folded...), msgs...))
 	if slot != "" {
 		// The sitting being replaced has its own records in memory. They
 		// belong to that conversation; Restore would otherwise skip and
@@ -377,10 +377,10 @@ func (m *Model) injectResumeContext() {
 	n := ResumeContext(m.wiring.DB, m.sessionName, m.wiring.Workspace, m.codingSurfaces())
 	msgs := m.agent.Messages()
 	at := 0
-	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if len(msgs) > 0 && msgs[0].Role == llm.RoleSystem {
 		at = 1
 	}
-	joined := make([]provider.Message, 0, len(msgs)+len(n.Messages))
+	joined := make([]llm.Message, 0, len(msgs)+len(n.Messages))
 	joined = append(joined, msgs[:at]...)
 	joined = append(joined, n.Messages...)
 	joined = append(joined, msgs[at:]...)

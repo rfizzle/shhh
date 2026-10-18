@@ -15,8 +15,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -57,7 +57,7 @@ func changesSession(root string, turns ...programTurn) Model {
 // the write is dispatched straight to the mutating tools, which resolve a
 // relative path against the process's directory.
 func editTurn(root, name, old, new string) programTurn {
-	return programTurn{calls: []provider.ToolCall{call("e-"+new, "edit_file",
+	return programTurn{calls: []llm.ToolCall{call("e-"+new, "edit_file",
 		fmt.Sprintf(`{"path":%q,"old_text":%q,"new_text":%q}`, filepath.Join(root, name), old, new))}}
 }
 

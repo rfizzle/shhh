@@ -6,8 +6,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -60,12 +60,12 @@ func TestResume_TheHandoffIsTheFirstRow(t *testing.T) {
 	if err := db.SetChatHandoff("yesterday", handoff); err != nil {
 		t.Fatal(err)
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream,
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream,
 		Wiring{DB: db, Workspace: t.TempDir()}).WithResumedMessages("yesterday", saved)
 
 	msgs := m.Messages()
 	first, _, _ := strings.Cut(msgs[1].Content, "\n")
-	if msgs[1].Role != provider.RoleUser || first != agent.ResumeHandoffPrefix || !strings.Contains(msgs[1].Content, handoff) {
+	if msgs[1].Role != llm.RoleUser || first != agent.ResumeHandoffPrefix || !strings.Contains(msgs[1].Content, handoff) {
 		t.Fatalf("the handoff should be the first user message, labelled, got %q", msgs[1].Content)
 	}
 	if !strings.HasPrefix(msgs[2].Content, resumeMessagePrefix) {

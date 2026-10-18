@@ -15,7 +15,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // Archives and compressed files, read where they lie.
@@ -120,7 +120,7 @@ type archiveRatioError struct {
 
 func (e *archiveRatioError) Error() string {
 	return fmt.Sprintf("it inflates at %d to 1 (%s from %s compressed), past the bound of %d to 1 for a compressed file; it is refused rather than read",
-		e.inflated/max(e.packed, 1), provider.HumanSize(int(e.inflated)), provider.HumanSize(int(e.packed)), MaxArchiveRatio)
+		e.inflated/max(e.packed, 1), llm.HumanSize(int(e.inflated)), llm.HumanSize(int(e.packed)), MaxArchiveRatio)
 }
 
 // countingReader counts the bytes read through it: the compressed side of a
@@ -269,13 +269,13 @@ func readGzipForModel(p string) (data []byte, notice string, err error) {
 		return nil, fmt.Sprintf("%s is not read: %s.", p, ratio.Error()), nil
 	case errors.Is(err, errPastCeiling):
 		return nil, fmt.Sprintf("%s (%s compressed) decompresses to more than %s, and read_file returns no file over %s decompressed, whatever line range is asked for. Search it: search reads its first %s.",
-			p, provider.HumanSize(int(packed)), provider.HumanSize(MaxReadFileSize), provider.HumanSize(MaxReadFileSize), provider.HumanSize(MaxReadFileSize)), nil
+			p, llm.HumanSize(int(packed)), llm.HumanSize(MaxReadFileSize), llm.HumanSize(MaxReadFileSize), llm.HumanSize(MaxReadFileSize)), nil
 	case err != nil:
 		return nil, "", fmt.Errorf("cannot decompress %s: %w", p, err)
 	}
 	if mediaType, text := sniffText(data[:min(len(data), SniffBytes)]); len(data) > 0 && !text {
 		return nil, fmt.Sprintf("%s decompresses to a binary file (%s, %s); read_file returns text and there is none in it.",
-			p, mediaType, provider.HumanSize(len(data))), nil
+			p, mediaType, llm.HumanSize(len(data))), nil
 	}
 	return data, "", nil
 }
@@ -464,7 +464,7 @@ func stoppedNote(p string, err error) string {
 		return fmt.Sprintf("… (stopped: %s; the entries above are the ones read before it)", ratio.Error())
 	case errors.Is(err, errPastCeiling):
 		return fmt.Sprintf("… (stopped after decompressing %s, the read ceiling for one call; the entries above are the ones read before it)",
-			provider.HumanSize(MaxReadFileSize))
+			llm.HumanSize(MaxReadFileSize))
 	}
 	return fmt.Sprintf("… (stopped: %s is damaged past this point: %v)", p, err)
 }
@@ -713,7 +713,7 @@ func archiveRow(rel string, e *archiveEntry) string {
 	case e.other:
 		return "file: " + rel
 	}
-	row := "file: " + rel + "\t" + provider.HumanSize(int(e.size))
+	row := "file: " + rel + "\t" + llm.HumanSize(int(e.size))
 	if compressedName(rel) {
 		row += " (nested archive: not opened)"
 	}
@@ -802,10 +802,10 @@ func readArchiveEntry(archive, entry string) (data []byte, notice string, err er
 	case found.other:
 		return nil, fmt.Sprintf("%s is not a regular file inside the archive; it has no text to return.", display), nil
 	case compressedName(entry):
-		return nil, fmt.Sprintf("%s is an archive inside %s (%s); a nested archive is listed but not opened.", display, archive, provider.HumanSize(int(found.size))), nil
+		return nil, fmt.Sprintf("%s is an archive inside %s (%s); a nested archive is listed but not opened.", display, archive, llm.HumanSize(int(found.size))), nil
 	case found.size > MaxReadFileSize:
 		return nil, fmt.Sprintf("%s is %s decompressed, and read_file returns no entry over %s, whatever line range is asked for.",
-			display, provider.HumanSize(int(found.size)), provider.HumanSize(MaxReadFileSize)), nil
+			display, llm.HumanSize(int(found.size)), llm.HumanSize(MaxReadFileSize)), nil
 	}
 
 	if found.zf != nil {
@@ -820,13 +820,13 @@ func readArchiveEntry(archive, entry string) (data []byte, notice string, err er
 		case errors.As(readErr, &declared):
 			return nil, fmt.Sprintf("%s is not read: %s.", display, declared.Error()), nil
 		case errors.Is(readErr, errPastCeiling):
-			return nil, fmt.Sprintf("%s was not read whole: decompressing it passed %s, the read ceiling for one call.", display, provider.HumanSize(MaxReadFileSize)), nil
+			return nil, fmt.Sprintf("%s was not read whole: decompressing it passed %s, the read ceiling for one call.", display, llm.HumanSize(MaxReadFileSize)), nil
 		}
 		return nil, "", fmt.Errorf("cannot read %s: %w", display, readErr)
 	}
 	if mediaType, text := sniffText(content[:min(len(content), SniffBytes)]); len(content) > 0 && !text {
 		return nil, fmt.Sprintf("%s is a binary file inside the archive (%s, %s); read_file returns text and there is none in it.",
-			display, mediaType, provider.HumanSize(len(content))), nil
+			display, mediaType, llm.HumanSize(len(content))), nil
 	}
 	return content, "", nil
 }
@@ -862,12 +862,12 @@ type zipUnderDeclaredError struct{ declared int64 }
 
 func (e *zipUnderDeclaredError) Error() string {
 	return fmt.Sprintf("it inflates past the %s its archive declares for it, and an entry is read no further than its declared size; it is refused rather than read",
-		provider.HumanSize(int(e.declared)))
+		llm.HumanSize(int(e.declared)))
 }
 
 // archiveNotice is read_file's answer for an archive named whole: what it is
 // and the two calls that read it.
 func archiveNotice(p string, size int64) string {
 	return fmt.Sprintf("%s is a %s archive (%s); list_directory lists its entries, and read_file reads one as %s%s<entry>.",
-		p, archiveKindOf(p), provider.HumanSize(int(size)), p, archiveEntrySep)
+		p, archiveKindOf(p), llm.HumanSize(int(size)), p, archiveEntrySep)
 }

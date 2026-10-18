@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -57,7 +57,7 @@ const readOnlyRounds = 8
 type commandRunner func(ctx context.Context, dir, command string) tools.ExecResult
 
 // askReadOnly runs one row's instruction in read-only mode.
-func askReadOnly(ctx context.Context, p provider.Provider, model string, row Row, run commandRunner) Answer {
+func askReadOnly(ctx context.Context, p llm.Provider, model string, row Row, run commandRunner) Answer {
 	if run == nil {
 		return Answer{Row: row, Err: "no command runner: a read-only case runs the commands on the list"}
 	}
@@ -88,9 +88,9 @@ func askReadOnly(ctx context.Context, p provider.Provider, model string, row Row
 		"\n\n" + agent.ModeInstructions(agent.ModeReadOnly, nil, names)
 	exec := subagent.RootedExecutor(dir, tools.Execute)
 
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: sys},
-		{Role: provider.RoleUser, Content: row.Instruction},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: sys},
+		{Role: llm.RoleUser, Content: row.Instruction},
 	}
 	a := Answer{Row: row}
 	var offList []string
@@ -106,7 +106,7 @@ func askReadOnly(ctx context.Context, p provider.Provider, model string, row Row
 		if len(calls) == 0 {
 			break
 		}
-		msgs = append(msgs, provider.Message{Role: provider.RoleAssistant, Content: reply, ToolCalls: calls})
+		msgs = append(msgs, llm.Message{Role: llm.RoleAssistant, Content: reply, ToolCalls: calls})
 		for _, c := range calls {
 			var out string
 			switch {
@@ -130,7 +130,7 @@ func askReadOnly(ctx context.Context, p provider.Provider, model string, row Row
 				}
 				out = res
 			}
-			msgs = append(msgs, provider.Message{Role: provider.RoleTool, Content: out, ToolCallID: c.ID})
+			msgs = append(msgs, llm.Message{Role: llm.RoleTool, Content: out, ToolCallID: c.ID})
 		}
 	}
 	if len(offList) > 0 {

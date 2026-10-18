@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // A model offers the Decisions API where the profile declares it, on the
@@ -40,11 +40,11 @@ func TestRouter_DecisionsFollowTheModelsEndpoint(t *testing.T) {
 			Models: []Model{{ID: "claude-opus-5", Decisions: true}},
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-luna", HTTPClient: profileTestHTTP.Client()})
+	prov, err := New(p, llm.ResolveOpts{Model: "gpt-5.6-luna", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	d, ok := prov.(provider.Decider)
+	d, ok := prov.(llm.Decider)
 	if !ok {
 		t.Fatal("a profile's provider should keep the capability through its wrappers")
 	}
@@ -61,8 +61,8 @@ func TestRouter_DecisionsFollowTheModelsEndpoint(t *testing.T) {
 	}
 
 	ask := func(model string) error {
-		_, err := d.Decide(context.Background(), provider.DecisionRequest{Model: model, Input: "x",
-			Questions: []provider.DecisionQuestion{{Type: provider.QuestionPredicate, Name: "q", Instructions: "p"}}})
+		_, err := d.Decide(context.Background(), llm.DecisionRequest{Model: model, Input: "x",
+			Questions: []llm.DecisionQuestion{{Type: llm.QuestionPredicate, Name: "q", Instructions: "p"}}})
 		return err
 	}
 	if err := ask("luna-gw"); err != nil {
@@ -101,11 +101,11 @@ id = "gpt-5.6-luna"
 		t.Fatalf("unexpected error: %v", err)
 	}
 	Register(loaded)
-	t.Cleanup(func() { provider.RegisterDecisions("luna-gateway", nil) })
-	if !provider.DecisionsDeclared("luna-gateway", "gpt-6-luna") {
+	t.Cleanup(func() { llm.RegisterDecisions("luna-gateway", nil) })
+	if !llm.DecisionsDeclared("luna-gateway", "gpt-6-luna") {
 		t.Error("a declared model should be registered as offering it")
 	}
-	if provider.DecisionsDeclared("luna-gateway", "gpt-5.6-luna") {
+	if llm.DecisionsDeclared("luna-gateway", "gpt-5.6-luna") {
 		t.Error("an undeclared model should not")
 	}
 }

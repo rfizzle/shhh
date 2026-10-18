@@ -3,7 +3,7 @@ package secret
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // PromptBlock describes what this session hides from the model and how it
@@ -86,11 +86,11 @@ func namedSecrets(names []string) string {
 // A vault with nothing declared still walks the messages, because the pass
 // over credential shapes has nothing to do with what was declared and this
 // is the last door before the text leaves the machine.
-func (v *Vault) ScrubMessages(msgs []provider.Message) []provider.Message {
+func (v *Vault) ScrubMessages(msgs []llm.Message) []llm.Message {
 	if v == nil {
 		return msgs
 	}
-	out := make([]provider.Message, len(msgs))
+	out := make([]llm.Message, len(msgs))
 	for i, m := range msgs {
 		out[i] = v.ScrubMessage(m)
 	}
@@ -101,13 +101,13 @@ func (v *Vault) ScrubMessages(msgs []provider.Message) []provider.Message {
 // the tool calls it made, and any text attachment. Reasoning blocks are the
 // provider's own signed form and are left alone; a rewritten block fails
 // the next request outright, and the model wrote them without the value.
-func (v *Vault) ScrubMessage(m provider.Message) provider.Message {
+func (v *Vault) ScrubMessage(m llm.Message) llm.Message {
 	if v == nil {
 		return m
 	}
 	m.Content = v.Scrub(m.Content)
 	if len(m.ToolCalls) > 0 {
-		calls := make([]provider.ToolCall, len(m.ToolCalls))
+		calls := make([]llm.ToolCall, len(m.ToolCalls))
 		for i, tc := range m.ToolCalls {
 			tc.Arguments = v.Scrub(tc.Arguments)
 			calls[i] = tc
@@ -115,9 +115,9 @@ func (v *Vault) ScrubMessage(m provider.Message) provider.Message {
 		m.ToolCalls = calls
 	}
 	if len(m.Attachments) > 0 {
-		atts := make([]provider.Attachment, len(m.Attachments))
+		atts := make([]llm.Attachment, len(m.Attachments))
 		for i, a := range m.Attachments {
-			if a.Kind == provider.AttachmentText {
+			if a.Kind == llm.AttachmentText {
 				a.Data = []byte(v.Scrub(string(a.Data)))
 			}
 			atts[i] = a

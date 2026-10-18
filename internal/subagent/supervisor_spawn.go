@@ -8,9 +8,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -309,7 +309,7 @@ type spawnPlan struct {
 	// Written by claimSpawn.
 	waitsOn, waitsFor string
 	model             string
-	turns             []provider.Message
+	turns             []llm.Message
 	inheritTurns      int
 	// Written by admitSpawn.
 	cctx                    context.Context

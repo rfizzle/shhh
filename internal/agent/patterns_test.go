@@ -6,18 +6,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // One request on the configured model, forbidding any tool, with the
 // instruction and the evidence apart; the evidence is the pattern's facts and
 // its lines, bounded, and nothing else.
 func TestPatternWriter_WordsAMemoryFromTheFactsAndLinesAlone(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-		if opts.Model != "small" || opts.ToolChoice != provider.ToolChoiceNone || len(opts.Tools) != 0 {
+	p := &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+		if opts.Model != "small" || opts.ToolChoice != llm.ToolChoiceNone || len(opts.Tools) != 0 {
 			t.Errorf("opts = %+v", opts)
 		}
-		return eventsOf(provider.StreamEvent{Token: `{"text":"internal/cli/session.go\nbuilds every session."}`, Done: true}), nil
+		return eventsOf(llm.StreamEvent{Token: `{"text":"internal/cli/session.go\nbuilds every session."}`, Done: true}), nil
 	}}
 	var lines []string
 	for range 30 {
@@ -28,7 +28,7 @@ func TestPatternWriter_WordsAMemoryFromTheFactsAndLinesAlone(t *testing.T) {
 	if v.Failed || v.Text != "internal/cli/session.go builds every session." {
 		t.Fatalf("verdict = %+v", v)
 	}
-	if len(p.msgs) != 2 || p.msgs[0].Role != provider.RoleSystem {
+	if len(p.msgs) != 2 || p.msgs[0].Role != llm.RoleSystem {
 		t.Fatalf("messages = %+v", p.msgs)
 	}
 	ev := p.msgs[1].Content
@@ -58,7 +58,7 @@ func TestPatternWriter_ASkillAnswerIsBoundedOrRefused(t *testing.T) {
 // A request that fails, or a writer with no model, is a failed reading, and
 // the caller keeps the code's words.
 func TestPatternWriter_AFailedReadingIsFailed(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return nil, errors.New("boom")
 	}}
 	if v := NewPatternWriter(p, PatternsConfig{Model: "small"}).Word(context.Background(), PatternRequest{Want: WordMemory}); !v.Failed {

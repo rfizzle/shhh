@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 // patternCall is one call a seeded round asked for: the tool and its
@@ -32,14 +32,14 @@ func seedPatternSession(t *testing.T, db *DB, project, slot string, rounds ...pa
 	if err := db.StampAgentSession(id, AgentProvenance{Project: project}); err != nil {
 		t.Fatalf("stamp session: %v", err)
 	}
-	msgs := []provider.Message{{Role: provider.RoleUser, Content: "go", Turn: 1}}
+	msgs := []llm.Message{{Role: llm.RoleUser, Content: "go", Turn: 1}}
 	for i, r := range rounds {
-		var tcs []provider.ToolCall
+		var tcs []llm.ToolCall
 		for j, c := range r.calls {
-			tcs = append(tcs, provider.ToolCall{ID: fmt.Sprintf("c%d-%d", i, j), Name: c.tool, Arguments: c.args})
+			tcs = append(tcs, llm.ToolCall{ID: fmt.Sprintf("c%d-%d", i, j), Name: c.tool, Arguments: c.args})
 		}
 		if len(tcs) > 0 {
-			msgs = append(msgs, provider.Message{Role: provider.RoleAssistant, Turn: r.turn, Round: r.round, ToolCalls: tcs})
+			msgs = append(msgs, llm.Message{Role: llm.RoleAssistant, Turn: r.turn, Round: r.round, ToolCalls: tcs})
 		}
 		for _, e := range r.events {
 			e.Turn, e.Round = r.turn, r.round

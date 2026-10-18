@@ -8,25 +8,25 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 )
 
 func ctrlT() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 't', Mod: tea.ModCtrl} }
 
 // reasoningModel is a ready session wired the way the CLI wires one: a level,
 // and the hook that carries a change to the next request.
-func reasoningModel(t *testing.T) (Model, *provider.Effort) {
+func reasoningModel(t *testing.T) (Model, *llm.Effort) {
 	t.Helper()
 	m := activityModel(t)
-	applied := new(provider.Effort)
-	m.effort, m.wiring.SwitchEffort = provider.EffortOff, func(e provider.Effort) { *applied = e }
+	applied := new(llm.Effort)
+	m.effort, m.wiring.SwitchEffort = llm.EffortOff, func(e llm.Effort) { *applied = e }
 	return m, applied
 }
 
 func TestReasoning_ChordCyclesAndReachesTheNextRequest(t *testing.T) {
 	m, applied := reasoningModel(t)
 
-	for _, want := range []provider.Effort{provider.EffortLow, provider.EffortMedium, provider.EffortHigh, provider.EffortXHigh, provider.EffortMax, provider.EffortOff} {
+	for _, want := range []llm.Effort{llm.EffortLow, llm.EffortMedium, llm.EffortHigh, llm.EffortXHigh, llm.EffortMax, llm.EffortOff} {
 		updated, _ := m.Update(ctrlT())
 		m = updated.(Model)
 		if m.effort != want {
@@ -47,7 +47,7 @@ func TestReasoning_ChordLeavesTheDraftAlone(t *testing.T) {
 	if got := m.input.Value(); got != "half a sentence" {
 		t.Fatalf("the chord touched the draft: %q", got)
 	}
-	if m.effort != provider.EffortLow {
+	if m.effort != llm.EffortLow {
 		t.Fatalf("the chord did not cycle: %v", m.effort)
 	}
 }
@@ -59,7 +59,7 @@ func TestReasoning_CommandSetsAndReports(t *testing.T) {
 	if !handled {
 		t.Fatal("/reasoning should be handled")
 	}
-	if m.effort != provider.EffortHigh || *applied != provider.EffortHigh {
+	if m.effort != llm.EffortHigh || *applied != llm.EffortHigh {
 		t.Fatalf("level = %v, applied = %v", m.effort, *applied)
 	}
 	if !strings.Contains(out, "high") {
@@ -75,7 +75,7 @@ func TestReasoning_CommandSetsAndReports(t *testing.T) {
 	if !strings.Contains(out, "unknown reasoning level") {
 		t.Errorf("an unknown level should be refused, not read as off: %q", out)
 	}
-	if m.effort != provider.EffortHigh {
+	if m.effort != llm.EffortHigh {
 		t.Errorf("a refused level must leave the session where it was, got %v", m.effort)
 	}
 }
@@ -96,7 +96,7 @@ func TestReasoning_DefaultWritesTheConfigKey(t *testing.T) {
 		t.Errorf("unexpected failure: %q", out)
 	}
 	// The session itself is untouched by a default, and says so.
-	if m.effort != provider.EffortOff {
+	if m.effort != llm.EffortOff {
 		t.Errorf("a default must not switch this session, got %v", m.effort)
 	}
 }
@@ -140,7 +140,7 @@ func TestReasoning_WithoutAHookTheLevelDoesNotMove(t *testing.T) {
 	m := activityModel(t)
 	updated, _ := m.Update(ctrlT())
 	m = updated.(Model)
-	if m.effort != provider.EffortOff {
+	if m.effort != llm.EffortOff {
 		t.Fatalf("level moved without a hook: %v", m.effort)
 	}
 	last := m.transcript[len(m.transcript)-1]

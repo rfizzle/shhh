@@ -14,8 +14,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/chatgpt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
@@ -65,11 +65,11 @@ func chatGPTAccount() (*chatgpt.Account, error) {
 // so a sign-in can say what it unlocked. It is the plan provider's own list,
 // built on the process's account; a test replaces it.
 var listChatGPTModels = func(ctx context.Context) ([]string, error) {
-	p, err := provider.Resolve("chatgpt", provider.ResolveOpts{TokenSource: chatGPTTokens()})
+	p, err := llm.Resolve("chatgpt", llm.ResolveOpts{TokenSource: chatGPTTokens()})
 	if err != nil {
 		return nil, err
 	}
-	lister, ok := p.(provider.ModelLister)
+	lister, ok := p.(llm.ModelLister)
 	if !ok {
 		return nil, nil
 	}
@@ -78,7 +78,7 @@ var listChatGPTModels = func(ctx context.Context) ([]string, error) {
 
 // chatGPTDefaultModel picks the model a sign-in saved with --save writes to
 // provider.model, out of the ones the plan listed.
-var chatGPTDefaultModel = provider.ChatGPTDefaultModel
+var chatGPTDefaultModel = llm.ChatGPTDefaultModel
 
 // tokenRelay hands the tokens the account learns to the session vaults, in
 // either order: a vault attached after a refresh is told what was learned
@@ -222,16 +222,16 @@ func chatGPTSurveyLine(providerName string) string {
 		return ""
 	}
 	if !chatgpt.HasRecord(chatGPTStore()) {
-		return provider.ErrChatGPTSignedOut.Error()
+		return llm.ErrChatGPTSignedOut.Error()
 	}
 	a, err := chatGPTAccount()
 	if err != nil {
-		return provider.ErrChatGPTSignedOut.Error()
+		return llm.ErrChatGPTSignedOut.Error()
 	}
 	cred, err := a.Credential()
 	switch {
 	case err != nil || !cred.SignedIn():
-		return provider.ErrChatGPTSignedOut.Error()
+		return llm.ErrChatGPTSignedOut.Error()
 	case !cred.PlanGranted():
 		return chatGPTNoPlan
 	}

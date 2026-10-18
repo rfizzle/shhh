@@ -9,10 +9,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -29,7 +29,7 @@ func frameModel(t testing.TB, width, height int) Model {
 // w names a price table or a model of its own.
 func frameModelWith(t testing.TB, width, height int, w Wiring) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	if w.Prices == nil && w.ModelName == "" {
 		w.Prices = pricing.NewTable(map[string]pricing.ModelPricing{
 			"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001},
@@ -37,7 +37,7 @@ func frameModelWith(t testing.TB, width, height int, w Wiring) Model {
 		w.ModelName = "gpt-4o"
 	}
 	m := New(msgs, mockStream, w)
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: height})
 	return updated.(Model)
 }
@@ -211,11 +211,11 @@ func TestFrame_NarrowMinimalRail(t *testing.T) {
 // the narrow rail keeps it, where beside a price it would be the second
 // reading of one bill and go (docs/interface/surfaces.md#the-input-frame).
 func TestFrame_NarrowRailKeepsTheUnpricedAccount(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, mockStream, Wiring{
 		Prices:    pricing.NewTable(nil),
 		ModelName: "unpriced-model",
 	})
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 30})
 	m = updated.(Model)
 	rail := stripANSI(m.frameVitals(frameNarrow, 200))
@@ -693,7 +693,7 @@ func TestFrame_IdentityDropsBeforeTheAccount(t *testing.T) {
 func attachedModel(t *testing.T, width int) Model {
 	t.Helper()
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(),
-		NewEnv: billedEnv(provider.Usage{PromptTokens: 4200, CompletionTokens: 900})})
+		NewEnv: billedEnv(llm.Usage{PromptTokens: 4200, CompletionTokens: 900})})
 	t.Cleanup(sup.Close)
 	m := frameModel(t, width, 40)
 	m.wiring.Subagents = sup
@@ -1346,7 +1346,7 @@ func pickerModel(t testing.TB) Model {
 	for i := range names {
 		names[i] = fmt.Sprintf("model-%02d", i+1)
 	}
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		SwitchModel:  func(string) {},
 		ModelName:    "model-01",
@@ -1375,7 +1375,7 @@ func BenchmarkPickerFrame(b *testing.B) {
 // BenchmarkStreamingFrame paints one streaming frame at the widest layout —
 // the frame the surface repaints on every spinner tick.
 func BenchmarkStreamingFrame(b *testing.B) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001},
 	})
@@ -1383,7 +1383,7 @@ func BenchmarkStreamingFrame(b *testing.B) {
 		Prices:    table,
 		ModelName: "gpt-4o",
 	})
-	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	m.accumulateUsage(&llm.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	for i := range 60 {
 		m.appendEntry(entry{kind: entryUser, text: "ask number " + strings.Repeat("x", i%17)})
 		m.appendEntry(entry{kind: entryAssistant, text: strings.Repeat("answer body ", 12)})
@@ -1408,7 +1408,7 @@ func TestHeader_ShedsTheConstantsFromTheRightAndKeepsTheModel(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	m.start = new(startFixture())
 	m.wiring.Prices, m.modelName = nil, "claude-opus-5"
-	m.effort, m.wiring.SwitchEffort = provider.EffortMedium, func(provider.Effort) {}
+	m.effort, m.wiring.SwitchEffort = llm.EffortMedium, func(llm.Effort) {}
 
 	full := stripANSI(m.headerRow(200))
 	if want := " shhh chat · ~/src/shhh · main · claude-opus-5 · think medium"; full != want {
@@ -1439,7 +1439,7 @@ func TestHeader_ShedsTheConstantsFromTheRightAndKeepsTheModel(t *testing.T) {
 // the vitals rail; what stays there is what moves.
 func TestVitals_CarryNoSessionConstants(t *testing.T) {
 	m := frameModel(t, 130, 40)
-	m.effort, m.wiring.SwitchEffort = provider.EffortHigh, func(provider.Effort) {}
+	m.effort, m.wiring.SwitchEffort = llm.EffortHigh, func(llm.Effort) {}
 	rail := stripANSI(m.frameVitals(frameWide, 200))
 	for _, gone := range []string{"gpt-4o", "think"} {
 		if strings.Contains(rail, gone) {

@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -47,12 +47,12 @@ func (w *integrationScript) factory() EnvFactory {
 		}
 		stream := env.Stream
 		first := true
-		env.Stream = func(msgs []provider.Message, model string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		env.Stream = func(msgs []llm.Message, model string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			if first {
 				first = false
 				var text strings.Builder
 				for _, m := range msgs {
-					if m.Role == provider.RoleUser {
+					if m.Role == llm.RoleUser {
 						text.WriteString(m.Content + "\n")
 					}
 				}

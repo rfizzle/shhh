@@ -18,10 +18,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/persona"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
@@ -156,7 +156,7 @@ func profileFromDefinition(def config.AgentDefinition) (subagent.Profile, error)
 		p.Mode, p.HasMode = mode, true
 	}
 	if !def.InheritsReasoning() {
-		if _, err := provider.ParseEffort(def.Reasoning); err != nil {
+		if _, err := llm.ParseEffort(def.Reasoning); err != nil {
 			return p, fmt.Errorf("agent profile %s: reasoning: %w", def.Path, err)
 		}
 	}
@@ -234,7 +234,7 @@ func (a *agentProfiles) roles(cwd string) []chat.SpawnableRole {
 // effortFor is the reasoning level a child runs at: the profile's own when
 // it names one, otherwise the session's live level — a level set with
 // ctrl+t is true of the session and so of every child it spawns.
-func (a *agentProfiles) effortFor(role subagent.Role, session provider.Effort) provider.Effort {
+func (a *agentProfiles) effortFor(role subagent.Role, session llm.Effort) llm.Effort {
 	if a == nil {
 		return session
 	}
@@ -242,7 +242,7 @@ func (a *agentProfiles) effortFor(role subagent.Role, session provider.Effort) p
 	if !ok || def.InheritsReasoning() {
 		return session
 	}
-	effort, err := provider.ParseEffort(def.Reasoning)
+	effort, err := llm.ParseEffort(def.Reasoning)
 	if err != nil {
 		return session // validated at load; unreachable
 	}

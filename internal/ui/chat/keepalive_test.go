@@ -8,15 +8,15 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // keepAliveSession is idleSession on the hour's lease against Anthropic's own
 // endpoint with the fold off and three refreshes allowed. send is what the
 // sender saw, one request per refresh.
-func keepAliveSession(t *testing.T, usage provider.Usage, sent *[][]provider.Message) Model {
+func keepAliveSession(t *testing.T, usage llm.Usage, sent *[][]llm.Message) Model {
 	t.Helper()
 	requests := 0
 	m := idleSession(t, &requests)
@@ -26,7 +26,7 @@ func keepAliveSession(t *testing.T, usage provider.Usage, sent *[][]provider.Mes
 	m.wiring.Prices = pricing.NewTable(map[string]pricing.ModelPricing{
 		"claude-sonnet-5-5": {InputCostPerToken: 3e-6, OutputCostPerToken: 15e-6},
 	})
-	m.wiring.KeepAliveSend = func(_ context.Context, msgs []provider.Message) (provider.Usage, error) {
+	m.wiring.KeepAliveSend = func(_ context.Context, msgs []llm.Message) (llm.Usage, error) {
 		*sent = append(*sent, msgs)
 		return usage, nil
 	}
@@ -52,7 +52,7 @@ func fireKeepAlive(t *testing.T, m Model) (Model, tea.Cmd, bool) {
 // The refresh is bounded by the count, ends at the first cache found gone,
 // and is Anthropic's own endpoint on the hour's lease only.
 func TestKeepAlive_IsBoundedAndAnthropicOnly(t *testing.T) {
-	var sent [][]provider.Message
+	var sent [][]llm.Message
 	m := keepAliveSession(t, idleReadUsage, &sent)
 
 	for i := 1; i <= 3; i++ {
@@ -77,7 +77,7 @@ func TestKeepAlive_IsBoundedAndAnthropicOnly(t *testing.T) {
 	// A refresh that read nothing found the cache gone: the run ends, and
 	// says what it paid.
 	sent = nil
-	cold := keepAliveSession(t, provider.Usage{PromptTokens: 112_000, CacheCreationTokens: 112_000}, &sent)
+	cold := keepAliveSession(t, llm.Usage{PromptTokens: 112_000, CacheCreationTokens: 112_000}, &sent)
 	cold, tick, ok := fireKeepAlive(t, cold)
 	if !ok || tick != nil || !cold.idle.cold {
 		t.Fatalf("a cold refresh should end the run (sent %v, tick %v, cold %v)", ok, tick != nil, cold.idle.cold)
@@ -91,8 +91,8 @@ func TestKeepAlive_IsBoundedAndAnthropicOnly(t *testing.T) {
 
 	// A failed one ends it too.
 	failing := keepAliveSession(t, idleReadUsage, &sent)
-	failing.wiring.KeepAliveSend = func(context.Context, []provider.Message) (provider.Usage, error) {
-		return provider.Usage{}, errors.New("overloaded")
+	failing.wiring.KeepAliveSend = func(context.Context, []llm.Message) (llm.Usage, error) {
+		return llm.Usage{}, errors.New("overloaded")
 	}
 	if failing, _, ok = fireKeepAlive(t, failing); !ok || !failing.idle.cold {
 		t.Error("a failed refresh should end the run")
@@ -119,7 +119,7 @@ func TestKeepAlive_IsBoundedAndAnthropicOnly(t *testing.T) {
 // The fold wins where it is due, and the refresh is for the pause the fold
 // declines: a window under its floor.
 func TestKeepAlive_YieldsToTheFold(t *testing.T) {
-	var sent [][]provider.Message
+	var sent [][]llm.Message
 	m := keepAliveSession(t, idleReadUsage, &sent)
 	m.wiring.IdleCompact.On = true
 	next, cmd := m.Update(idleCompactMsg{gen: m.idle.gen})
@@ -136,7 +136,7 @@ func TestKeepAlive_YieldsToTheFold(t *testing.T) {
 // The word and its answer are nobody's turn: the conversation is as it was,
 // the request is a copy of it with the word after, and nothing starts.
 func TestKeepAlive_NeverJoinsTheConversation(t *testing.T) {
-	var sent [][]provider.Message
+	var sent [][]llm.Message
 	m := keepAliveSession(t, idleReadUsage, &sent)
 	before := m.agent.RequestMessages()
 
@@ -154,7 +154,7 @@ func TestKeepAlive_NeverJoinsTheConversation(t *testing.T) {
 		}
 	}
 	got := sent[0]
-	if len(got) != len(before)+1 || got[len(got)-1].Role != provider.RoleUser || got[len(got)-1].Content != keepAliveWord {
+	if len(got) != len(before)+1 || got[len(got)-1].Role != llm.RoleUser || got[len(got)-1].Content != keepAliveWord {
 		t.Errorf("the request was not the conversation and the word: %v", got)
 	}
 	if m.working() || m.turnInFlight() || m.compacting {
@@ -169,7 +169,7 @@ func TestKeepAlive_NeverJoinsTheConversation(t *testing.T) {
 // work and the model is a Claude one; the lease is the configured one, which
 // a gateway cannot confirm.
 func TestKeepAlive_FiresThroughAGatewayWhoseCacheWorks(t *testing.T) {
-	var sent [][]provider.Message
+	var sent [][]llm.Message
 	m := keepAliveSession(t, idleReadUsage, &sent)
 	m.providerName = "gateway"
 	if !m.keepAliveDue(clock()) {

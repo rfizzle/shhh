@@ -17,7 +17,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -439,14 +439,14 @@ func heldChildEnv() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		var mu sync.Mutex
 		first := true
-		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 			mu.Lock()
 			opening := first
 			first = false
 			mu.Unlock()
-			ch := make(chan provider.StreamEvent, 1)
+			ch := make(chan llm.StreamEvent, 1)
 			if opening {
-				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+				ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{
 					{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}}
 				close(ch)
 				return ch, func() {}, nil

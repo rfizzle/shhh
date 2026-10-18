@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/logs"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
-func summaryCall(args string) provider.StreamEvent {
-	return provider.StreamEvent{
-		ToolCalls: []provider.ToolCall{{ID: "s1", Name: SummaryToolName, Arguments: args}},
-		Usage:     &provider.Usage{PromptTokens: 900, CompletionTokens: 40},
+func summaryCall(args string) llm.StreamEvent {
+	return llm.StreamEvent{
+		ToolCalls: []llm.ToolCall{{ID: "s1", Name: SummaryToolName, Arguments: args}},
+		Usage:     &llm.Usage{PromptTokens: 900, CompletionTokens: 40},
 		Done:      true,
 	}
 }
@@ -34,7 +34,7 @@ func testSummaryRequest() SummaryRequest {
 }
 
 func TestSummarizer_ToolCallReading(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return eventsOf(summaryCall(`{"summary":"Adding the sentinel to the loop.","state":"on_target"}`)), nil
 	}}
 	v := NewSummarizer(p, SummaryConfig{Model: "m"}).Summarize(context.Background(), testSummaryRequest())
@@ -58,7 +58,7 @@ func TestSummarizer_ToolCallReading(t *testing.T) {
 // An "on target" reading has no reason row on the rail, so a model that
 // narrates one anyway does not get to put it there.
 func TestSummarizer_OnTargetDropsItsReason(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return eventsOf(summaryCall(`{"summary":"Still on the tests.","state":"on_target","reason":"everything is fine"}`)), nil
 	}}
 	v := NewSummarizer(p, SummaryConfig{Model: "m"}).Summarize(context.Background(), testSummaryRequest())
@@ -68,7 +68,7 @@ func TestSummarizer_OnTargetDropsItsReason(t *testing.T) {
 }
 
 func TestSummarizer_OffTargetKeepsItsReason(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return eventsOf(summaryCall(`{"summary":"Rewriting the README.","state":"off_target","reason":"docs were not asked for"}`)), nil
 	}}
 	v := NewSummarizer(p, SummaryConfig{Model: "m"}).Summarize(context.Background(), testSummaryRequest())
@@ -83,7 +83,7 @@ func TestSummarizer_OffTargetKeepsItsReason(t *testing.T) {
 // The state is a closed set: anything else is the reading that could not tell,
 // never a fourth state the rail has no row for and steering cannot branch on.
 func TestSummarizer_UnknownStateBecomesUnclear(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return eventsOf(summaryCall(`{"summary":"Working.","state":"probably_fine"}`)), nil
 	}}
 	v := NewSummarizer(p, SummaryConfig{Model: "m"}).Summarize(context.Background(), testSummaryRequest())
@@ -103,7 +103,7 @@ func TestSummarizer_ClampsWhatTheModelWrote(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return eventsOf(summaryCall(string(args))), nil
 	}}
 	v := NewSummarizer(p, SummaryConfig{Model: "m"}).Summarize(context.Background(), testSummaryRequest())
@@ -132,8 +132,8 @@ func TestSummarizer_TextFallbacks(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-				return eventsOf(provider.StreamEvent{Token: tc.reply, Done: true}), nil
+			p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+				return eventsOf(llm.StreamEvent{Token: tc.reply, Done: true}), nil
 			}}
 			v := NewSummarizer(p, SummaryConfig{Model: "m"}).Summarize(context.Background(), testSummaryRequest())
 			if v.Failed {
@@ -151,25 +151,25 @@ func TestSummarizer_FailsSoft(t *testing.T) {
 	cases := []struct {
 		name string
 		cfg  SummaryConfig
-		fn   func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error)
+		fn   func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error)
 	}{
 		{"no model", SummaryConfig{}, nil},
 		{"disabled", SummaryConfig{Model: "m", Disabled: true}, nil},
-		{"request error", SummaryConfig{Model: "m"}, func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		{"request error", SummaryConfig{Model: "m"}, func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 			return nil, errors.New("overloaded")
 		}},
-		{"stream error", SummaryConfig{Model: "m"}, func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-			return eventsOf(provider.StreamEvent{Err: errors.New("dropped")}), nil
+		{"stream error", SummaryConfig{Model: "m"}, func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+			return eventsOf(llm.StreamEvent{Err: errors.New("dropped")}), nil
 		}},
-		{"empty reply", SummaryConfig{Model: "m"}, func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-			return eventsOf(provider.StreamEvent{Done: true}), nil
+		{"empty reply", SummaryConfig{Model: "m"}, func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
+			return eventsOf(llm.StreamEvent{Done: true}), nil
 		}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fn := tc.fn
 			if fn == nil {
-				fn = func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+				fn = func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 					t.Fatal("no request should have been made")
 					return nil, nil
 				}
@@ -340,8 +340,8 @@ func TestSummaryConfig_Defaults(t *testing.T) {
 }
 
 func TestSummarizer_RequestCarriesTheSummaryTool(t *testing.T) {
-	var seen provider.CompletionOpts
-	p := &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	var seen llm.CompletionOpts
+	p := &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		seen = opts
 		return eventsOf(summaryCall(`{"summary":"ok","state":"on_target"}`)), nil
 	}}
@@ -357,13 +357,13 @@ func TestSummarizer_RequestCarriesTheSummaryTool(t *testing.T) {
 	}
 	// A shallow thought, asked for outright: off is the model's own depth,
 	// and the ceiling has to hold the thought and the reading together.
-	if seen.Effort != provider.EffortLow {
+	if seen.Effort != llm.EffortLow {
 		t.Fatalf("effort = %v", seen.Effort)
 	}
 	if DefaultSummaryMaxTokens <= lowBudget() {
 		t.Fatalf("the default ceiling %d does not clear a low thought", DefaultSummaryMaxTokens)
 	}
-	if len(p.msgs) != 2 || p.msgs[0].Role != provider.RoleSystem || p.msgs[1].Role != provider.RoleUser {
+	if len(p.msgs) != 2 || p.msgs[0].Role != llm.RoleSystem || p.msgs[1].Role != llm.RoleUser {
 		t.Fatalf("messages = %+v", p.msgs)
 	}
 	if !strings.Contains(p.msgs[0].Content, "status reporter") || strings.Contains(p.msgs[0].Content, "UNTRUSTED DIGEST") {
@@ -397,7 +397,7 @@ func TestSummarizer_CeilingLeavesRoomForTheThought(t *testing.T) {
 // interval, which is cheaper and quieter than asking twice for a block nobody
 // is blocked on.
 func TestSummarizer_DoesNotRetry(t *testing.T) {
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return nil, errors.New("overloaded")
 	}}
 	NewSummarizer(p, SummaryConfig{Model: "m"}).Summarize(context.Background(), testSummaryRequest())
@@ -502,9 +502,9 @@ func TestSummarizer_ATimedOutReadingReachesTheLog(t *testing.T) {
 	logs.To(path)
 	t.Cleanup(func() { logs.To("") })
 
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		// Never answers, so the attempt's own deadline is what ends it.
-		return make(chan provider.StreamEvent), nil
+		return make(chan llm.StreamEvent), nil
 	}}
 	v := NewSummarizer(p, SummaryConfig{Model: "small", Timeout: 10 * time.Millisecond}).
 		Summarize(context.Background(), testSummaryRequest())
@@ -535,7 +535,7 @@ func TestSummarizer_ACancelledReadingWritesNothing(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		return nil, context.Canceled
 	}}
 	NewSummarizer(p, SummaryConfig{Model: "small"}).Summarize(ctx, testSummaryRequest())

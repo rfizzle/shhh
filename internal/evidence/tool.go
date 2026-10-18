@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -32,8 +32,8 @@ const (
 // before the reduction saw it was never stored.
 // See docs/capabilities/evidence.md#the-reader-can-always-get-the-whole-thing-back
 // and docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
-func ToolDefinition() provider.Tool {
-	return provider.Tool{
+func ToolDefinition() llm.Tool {
+	return llm.Tool{
 		Name: ToolName,
 		Description: "Get back what a reduced tool result left out. A reduced result carries an opaque evidence id (e.g. ev-1a2b3c4d5e6f7089); ids are session-scoped tokens, never file paths. " +
 			"When you know a term the answer contains — a test name, an error message, a path — use action \"search\" first: it returns every line containing that literal text (case-insensitive, not a regular expression) with its line number and byte offset. " +

@@ -30,6 +30,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/hook"
@@ -38,7 +39,6 @@ import (
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/rpc"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -254,7 +254,7 @@ type serveLoop struct {
 	// a closure rather than a method because forking is re-running the whole
 	// assembly, and only the command that built this one holds what that
 	// takes.
-	fork func(rpc.Seams, []provider.Message) (rpc.Loop, error)
+	fork func(rpc.Seams, []llm.Message) (rpc.Loop, error)
 	// hooks is the person's own commands at this session's seams, and
 	// hookCtx what a firing of one is bounded by. Three of the five seams are
 	// wired where they happen and these two are held here, because they fire
@@ -295,9 +295,9 @@ type serveLoop struct {
 	// opens, so a session on a screen and a session on the wire spend the
 	// same allowance the same way (internal/ui/chat/question.go).
 	asked        int
-	conversation []provider.Message
+	conversation []llm.Message
 	transcript   json.RawMessage
-	usage        provider.Usage
+	usage        llm.Usage
 	// final is the answer the last turn ended on, for the seam that ends the
 	// session: a stop hook is told what the session came out with, the way an
 	// unattended run's is told the one answer that run had.
@@ -312,7 +312,7 @@ type serveLoop struct {
 // the session begins from — a fork's copy of its parent's — and takes the
 // place of both the fresh system prompt and anything the start parameters
 // asked to resume.
-func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.StartParams, seams rpc.Seams, initial []provider.Message) (rpc.Loop, error) {
+func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.StartParams, seams rpc.Seams, initial []llm.Message) (rpc.Loop, error) {
 	l := &serveLoop{}
 	// A fork opens its own session from the command, not from this copy,
 	// so it gets a holder of its own too.
@@ -501,7 +501,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet),
 		agent.ToolExecutor(hooks.WrapExecutor(l.hookPos,
 			func(name string, args json.RawMessage) bool {
-				return gate(provider.ToolCall{Name: name, Arguments: string(args)})
+				return gate(llm.ToolCall{Name: name, Arguments: string(args)})
 			},
 			hook.Executor(repeats.WrapExecutor(exec)))))
 	chat.ApplyLoop(a, loop)
@@ -541,7 +541,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// And the approver of a server told there is nobody to ask: the same
 	// standing refusals in front, the classifier where the client would have
 	// been, and a refusal wherever it cannot approve.
-	var judged func(provider.ToolCall) string
+	var judged func(llm.ToolCall) string
 	if opts.autoMode {
 		judged = headlessApprover(cmd.Context(), headlessApproval{
 			allowlist:    headlessAllowlist(cfg, printOpts{}),
@@ -598,7 +598,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// A question the model put to the person, put to whoever is watching and
 	// answered in the reader's own vocabulary. An unreadable one is the call
 	// skipped with the error, the way every other malformed call is answered.
-	askClient := func(tc provider.ToolCall) string {
+	askClient := func(tc llm.ToolCall) string {
 		qs, err := ask.Parse(json.RawMessage(tc.Arguments))
 		if err != nil {
 			return "error: invalid arguments: " + err.Error()
@@ -640,7 +640,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		}
 		return ask.Reply(qs, answers)
 	}
-	resolveCall := func(tc provider.ToolCall) string {
+	resolveCall := func(tc llm.ToolCall) string {
 		// A server in auto mode draws no card at all. The flag is the
 		// operator saying nobody is attached to answer one, and putting the
 		// call to a client that is not there would hang the turn until it
@@ -685,7 +685,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		// the session does not have falls through and is answered as one,
 		// rather than drawing a card the run never offered.
 		gated := resolveCall
-		resolveCall = func(tc provider.ToolCall) string {
+		resolveCall = func(tc llm.ToolCall) string {
 			if tc.Name == ask.ToolName {
 				return askClient(tc)
 			}
@@ -732,12 +732,12 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		OnTree:       l.obs.tree,
 		OnRetry:      l.obs.retry,
 		OnToolResult: l.obs.toolResult,
-		OnUsage: func(*provider.Usage) {
+		OnUsage: func(*llm.Usage) {
 			// Read back off the ledger rather than summed here, so anything
 			// billed at the gate that this callback never hears about is
 			// still in the figure a client reads.
 			t := l.ledger.Total()
-			u := provider.Usage{
+			u := llm.Usage{
 				PromptTokens:     int(t.In),
 				CompletionTokens: int(t.Out),
 				CachedTokens:     int(t.Cached),
@@ -758,7 +758,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			return &headlessCloseGate{ctx: cmd.Context(), gate: qgate, suite: suite, retries: retries, written: own.paths}
 		}
 	}
-	l.fork = func(s rpc.Seams, msgs []provider.Message) (rpc.Loop, error) {
+	l.fork = func(s rpc.Seams, msgs []llm.Message) (rpc.Loop, error) {
 		return openServeLoop(served, opts, db, rpc.StartParams{}, s, msgs)
 	}
 	// The two seams that close are armed last, so the failure path above
@@ -812,7 +812,7 @@ var errServeRefused = errors.New("a tool call was refused and the turn ended on 
 
 // declinedByClient is the tool result a call the client refused is recorded
 // as, in the words every other surface declines one in.
-func declinedByClient(tc provider.ToolCall) string {
+func declinedByClient(tc llm.ToolCall) string {
 	if tc.Name == tools.ExecCommandName {
 		return "error: the user declined to run this command"
 	}
@@ -1007,7 +1007,7 @@ func (l *serveLoop) Transcript() json.RawMessage {
 // Fork opens a session over a copy of this conversation.
 func (l *serveLoop) Fork(s rpc.Seams) (rpc.Loop, error) {
 	l.mu.Lock()
-	msgs := append([]provider.Message(nil), l.conversation...)
+	msgs := append([]llm.Message(nil), l.conversation...)
 	l.mu.Unlock()
 	return l.fork(s, msgs)
 }
@@ -1167,7 +1167,7 @@ func (l *serveLoop) saveConversation() {
 // running the turn, and a reader crossing it mid-round would be reading a
 // conversation that is missing the results it is about to owe.
 func (l *serveLoop) snapshot() {
-	msgs := append([]provider.Message(nil), l.agent.Messages()...)
+	msgs := append([]llm.Message(nil), l.agent.Messages()...)
 	encoded, err := json.Marshal(jsonMessages(msgs))
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -1228,7 +1228,7 @@ type servedAccount struct {
 
 // turnClosed counts a closed turn and revises the account when enough have
 // closed since the last reading.
-func (s *servedAccount) turnClosed(c *headlessChat, msgs []provider.Message) {
+func (s *servedAccount) turnClosed(c *headlessChat, msgs []llm.Message) {
 	if s.every <= 0 {
 		return
 	}
@@ -1240,7 +1240,7 @@ func (s *servedAccount) turnClosed(c *headlessChat, msgs []provider.Message) {
 
 // leaving revises the account for the turns closed since the last reading,
 // and reports whether it asked, so the caller knows a save is owed.
-func (s *servedAccount) leaving(c *headlessChat, msgs []provider.Message) bool {
+func (s *servedAccount) leaving(c *headlessChat, msgs []llm.Message) bool {
 	if s.every <= 0 || s.turns == 0 {
 		return false
 	}
@@ -1248,7 +1248,7 @@ func (s *servedAccount) leaving(c *headlessChat, msgs []provider.Message) bool {
 	return true
 }
 
-func (s *servedAccount) revise(c *headlessChat, msgs []provider.Message) {
+func (s *servedAccount) revise(c *headlessChat, msgs []llm.Message) {
 	s.turns = 0
 	c.reviseAccount(s.writer, msgs)
 }

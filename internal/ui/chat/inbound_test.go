@@ -9,9 +9,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/rpc"
 )
 
@@ -19,7 +19,7 @@ import (
 // its record's signals collected.
 func idleInbound(t *testing.T, policy string, signals *[]string) Model {
 	t.Helper()
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		Observer: observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 			*signals = append(*signals, code+":"+reason)
@@ -46,7 +46,7 @@ func sendLine(t *testing.T, m Model, from, text string) (Model, string) {
 	return updated.(Model), ""
 }
 
-func lastMessage(m Model) provider.Message {
+func lastMessage(m Model) llm.Message {
 	msgs := m.agent.RequestMessages()
 	return msgs[len(msgs)-1]
 }
@@ -63,7 +63,7 @@ func TestInbound_AnIdleSessionTakesTheLineAsItsNextInstruction(t *testing.T) {
 		t.Fatalf("an idle session starts a turn on the line, state %d", m.state)
 	}
 	last := lastMessage(m)
-	if !last.Machine || last.Role != provider.RoleUser {
+	if !last.Machine || last.Role != llm.RoleUser {
 		t.Errorf("the line joins in the session's own voice, not the reader's: %+v", last)
 	}
 	if !strings.Contains(last.Content, "session 2026-09-23 10:00:00") ||
@@ -96,7 +96,7 @@ func TestInbound_ALineWithNoSessionBehindItNamesTheCommandLine(t *testing.T) {
 
 func TestInbound_AMidTurnLineWaitsForTheBoundary(t *testing.T) {
 	executor := func(context.Context, string, json.RawMessage) (string, error) { return "result", nil }
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}, {Role: provider.RoleUser, Content: "go"}}
+	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}, {Role: llm.RoleUser, Content: "go"}}
 	m := New(msgs, mockStream, Wiring{Executor: executor}).WithInbound(Inbound{Policy: InboundAccept})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -111,7 +111,7 @@ func TestInbound_AMidTurnLineWaitsForTheBoundary(t *testing.T) {
 		t.Fatalf("the line is queued as a steer, got %+v", m.steering)
 	}
 
-	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
 	}})
 	last := lastMessage(m)

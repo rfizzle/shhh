@@ -19,8 +19,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/diff"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -325,7 +325,7 @@ func TestHistorySearch_ClosesWhenADecisionTakesTheKeyboard(t *testing.T) {
 	// card holds the keyboard (interrupt.go) — and the search must not sit
 	// invisibly on top of it, filtering the card's answer keys.
 	m.lastKeypress = time.Now().Add(-2 * graceQuiet)
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "c1", Name: "write_file", Arguments: `{"path":"a.go","content":"new\n"}`},
 	}})
 	m = updated.(Model)
@@ -517,7 +517,7 @@ func decisionCards(t *testing.T) []decisionCard {
 			open: func(t *testing.T) Model {
 				var ran []string
 				m := execModel(t, &ran)
-				updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+				updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 					execCall("c1", "echo one"),
 					execCall("c2", "echo two"),
 				}})

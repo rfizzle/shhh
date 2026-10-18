@@ -10,19 +10,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
-func noStream([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-	ch := make(chan provider.StreamEvent)
+func noStream([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
+	ch := make(chan llm.StreamEvent)
 	close(ch)
 	_, cancel := context.WithCancel(context.Background())
 	return ch, cancel, nil
 }
 
 func newTestAgent() *Agent {
-	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, noStream)
+	return New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, noStream)
 }
 
 func TestStartTurn_AppendsAndResetsRounds(t *testing.T) {
@@ -37,7 +37,7 @@ func TestStartTurn_AppendsAndResetsRounds(t *testing.T) {
 		t.Fatalf("fresh turn should reset rounds, got %d", a.Rounds())
 	}
 	last := a.Messages()[len(a.Messages())-1]
-	if last.Role != provider.RoleUser || last.Content != "hello" {
+	if last.Role != llm.RoleUser || last.Content != "hello" {
 		t.Fatalf("expected user message 'hello', got %+v", last)
 	}
 }
@@ -45,7 +45,7 @@ func TestStartTurn_AppendsAndResetsRounds(t *testing.T) {
 func TestRequestMessages_ImmuneToLaterMutation(t *testing.T) {
 	a := newTestAgent()
 	snapshot := a.RequestMessages()
-	a.Append(provider.Message{Role: provider.RoleUser, Content: "later"})
+	a.Append(llm.Message{Role: llm.RoleUser, Content: "later"})
 	if len(snapshot) != 1 {
 		t.Fatalf("snapshot should not grow with the conversation, got %d", len(snapshot))
 	}
@@ -53,12 +53,12 @@ func TestRequestMessages_ImmuneToLaterMutation(t *testing.T) {
 
 func TestBeginToolRound_SplitsByGate(t *testing.T) {
 	a := newTestAgent()
-	calls := []provider.ToolCall{
+	calls := []llm.ToolCall{
 		{ID: "c1", Name: "read_file"},
 		{ID: "c2", Name: "execute_command"},
 		{ID: "c3", Name: "search"},
 	}
-	gate := func(tc provider.ToolCall) bool { return tc.Name == "execute_command" }
+	gate := func(tc llm.ToolCall) bool { return tc.Name == "execute_command" }
 
 	auto, gated := a.BeginToolRound("checking", calls, gate)
 	if len(auto) != 2 || auto[0].ID != "c1" || auto[1].ID != "c3" {
@@ -74,14 +74,14 @@ func TestBeginToolRound_SplitsByGate(t *testing.T) {
 		t.Fatalf("expected 1 queued approval, got %d", a.QueuedApprovals())
 	}
 	last := a.Messages()[len(a.Messages())-1]
-	if last.Role != provider.RoleAssistant || last.Content != "checking" || len(last.ToolCalls) != 3 {
+	if last.Role != llm.RoleAssistant || last.Content != "checking" || len(last.ToolCalls) != 3 {
 		t.Fatalf("assistant message should carry text and all calls, got %+v", last)
 	}
 }
 
 func TestBeginToolRound_NilGateAutoRunsEverything(t *testing.T) {
 	a := newTestAgent()
-	auto, gated := a.BeginToolRound("", []provider.ToolCall{{ID: "c1", Name: "read_file"}}, nil)
+	auto, gated := a.BeginToolRound("", []llm.ToolCall{{ID: "c1", Name: "read_file"}}, nil)
 	if len(auto) != 1 || len(gated) != 0 {
 		t.Fatalf("nil gate should auto-run all calls, got auto=%d gated=%d", len(auto), len(gated))
 	}
@@ -96,7 +96,7 @@ func TestExecuteCalls_FormatsErrors(t *testing.T) {
 		return "ok:" + name, nil
 	})
 
-	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{
+	results := a.ExecuteCalls(context.Background(), []llm.ToolCall{
 		{ID: "c1", Name: "good", Arguments: `{}`},
 		{ID: "c2", Name: "bad", Arguments: `{}`},
 	})
@@ -120,9 +120,9 @@ func TestExecuteCalls_CancelReachesEveryCall(t *testing.T) {
 		<-ctx.Done()
 		return "", ctx.Err()
 	})
-	calls := make([]provider.ToolCall, n)
+	calls := make([]llm.ToolCall, n)
 	for i := range calls {
-		calls[i] = provider.ToolCall{ID: strconv.Itoa(i), Name: "wait"}
+		calls[i] = llm.ToolCall{ID: strconv.Itoa(i), Name: "wait"}
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan []ToolResult, 1)
@@ -161,14 +161,14 @@ func TestExecuteCalls_EachCallHasItsOwnCancel(t *testing.T) {
 		<-release
 		return "ran", nil
 	})
-	a.SetCallCancel(func(_ context.Context, tc provider.ToolCall, cancel context.CancelFunc) {
+	a.SetCallCancel(func(_ context.Context, tc llm.ToolCall, cancel context.CancelFunc) {
 		if tc.Name == "stop" {
 			cancel()
 		} else {
 			close(release)
 		}
 	})
-	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{
+	results := a.ExecuteCalls(context.Background(), []llm.ToolCall{
 		{ID: "a", Name: "stop"}, {ID: "b", Name: "keep"},
 	})
 	if results[0].Result != CancelledResult {
@@ -188,17 +188,17 @@ func TestExecuteWith_AFinishedCallKeepsItsResultPastTheStop(t *testing.T) {
 		cancel()
 		return "wrote a.go", nil
 	}
-	if got := ExecuteWith(ctx, wrote, provider.ToolCall{Name: "write_file"}); got != "wrote a.go" {
+	if got := ExecuteWith(ctx, wrote, llm.ToolCall{Name: "write_file"}); got != "wrote a.go" {
 		t.Errorf("a finished write reads %q", got)
 	}
 	stopped := func(ctx context.Context, _ string, _ json.RawMessage) (string, error) { return "", ctx.Err() }
-	if got := ExecuteWith(ctx, stopped, provider.ToolCall{Name: "search"}); got != CancelledResult {
+	if got := ExecuteWith(ctx, stopped, llm.ToolCall{Name: "search"}); got != CancelledResult {
 		t.Errorf("a stopped call reads %q, want %q", got, CancelledResult)
 	}
 }
 
 func TestExecuteWith_NilExecutor(t *testing.T) {
-	got := ExecuteWith(context.Background(), nil, provider.ToolCall{Name: "x"})
+	got := ExecuteWith(context.Background(), nil, llm.ToolCall{Name: "x"})
 	if !strings.Contains(got, "no tool executor") {
 		t.Fatalf("expected a no-executor error, got %q", got)
 	}
@@ -206,18 +206,18 @@ func TestExecuteWith_NilExecutor(t *testing.T) {
 
 func TestRecordAutoResults_AppendsAndOwesQueue(t *testing.T) {
 	a := newTestAgent()
-	calls := []provider.ToolCall{
+	calls := []llm.ToolCall{
 		{ID: "c1", Name: "read_file"},
 		{ID: "c2", Name: "execute_command"},
 	}
-	auto, _ := a.BeginToolRound("", calls, func(tc provider.ToolCall) bool { return tc.Name == "execute_command" })
+	auto, _ := a.BeginToolRound("", calls, func(tc llm.ToolCall) bool { return tc.Name == "execute_command" })
 
 	a.RecordAutoResults([]ToolResult{{Call: auto[0], Result: "contents"}})
 	if a.Executing() {
 		t.Fatal("recording results should end the executing phase")
 	}
 	last := a.Messages()[len(a.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "c1" || last.Content != "contents" {
+	if last.Role != llm.RoleTool || last.ToolCallID != "c1" || last.Content != "contents" {
 		t.Fatalf("expected tool result for c1, got %+v", last)
 	}
 	if a.QueuedApprovals() != 1 {
@@ -227,11 +227,11 @@ func TestRecordAutoResults_AppendsAndOwesQueue(t *testing.T) {
 
 func TestResolveApproval_PopsInOrder(t *testing.T) {
 	a := newTestAgent()
-	calls := []provider.ToolCall{
+	calls := []llm.ToolCall{
 		{ID: "c1", Name: "execute_command"},
 		{ID: "c2", Name: "write_file"},
 	}
-	a.BeginToolRound("", calls, func(provider.ToolCall) bool { return true })
+	a.BeginToolRound("", calls, func(llm.ToolCall) bool { return true })
 
 	head, ok := a.NextApproval()
 	if !ok || head.ID != "c1" {
@@ -266,11 +266,11 @@ func TestResolveApproval_PopsInOrder(t *testing.T) {
 
 func TestCancelTurn_SyntheticResultsWhileExecuting(t *testing.T) {
 	a := newTestAgent()
-	calls := []provider.ToolCall{
+	calls := []llm.ToolCall{
 		{ID: "c1", Name: "read_file"},
 		{ID: "c2", Name: "execute_command"},
 	}
-	a.BeginToolRound("", calls, func(tc provider.ToolCall) bool { return tc.Name == "execute_command" })
+	a.BeginToolRound("", calls, func(tc llm.ToolCall) bool { return tc.Name == "execute_command" })
 	runBefore := a.RunID()
 
 	cancelled := a.CancelTurn()
@@ -283,7 +283,7 @@ func TestCancelTurn_SyntheticResultsWhileExecuting(t *testing.T) {
 	msgs := a.Messages()
 	for i, id := range []string{"c1", "c2"} {
 		msg := msgs[len(msgs)-2+i]
-		if msg.Role != provider.RoleTool || msg.ToolCallID != id || msg.Content != CancelledResult {
+		if msg.Role != llm.RoleTool || msg.ToolCallID != id || msg.Content != CancelledResult {
 			t.Fatalf("expected synthetic result for %s, got %+v", id, msg)
 		}
 	}
@@ -297,8 +297,8 @@ func TestCancelTurn_SyntheticResultsWhileExecuting(t *testing.T) {
 // the conversation stays well-formed.
 func TestCancelTurn_SyntheticResultsWhileEveryCallWaits(t *testing.T) {
 	a := newTestAgent()
-	calls := []provider.ToolCall{{ID: "c1", Name: "execute_command"}}
-	a.BeginToolRound("", calls, func(provider.ToolCall) bool { return true })
+	calls := []llm.ToolCall{{ID: "c1", Name: "execute_command"}}
+	a.BeginToolRound("", calls, func(llm.ToolCall) bool { return true })
 	if a.Executing() {
 		t.Fatal("the fixture should have nothing executing")
 	}
@@ -306,7 +306,7 @@ func TestCancelTurn_SyntheticResultsWhileEveryCallWaits(t *testing.T) {
 		t.Fatalf("the waiting call should be cancelled, got %v", cancelled)
 	}
 	msgs := a.Messages()
-	if last := msgs[len(msgs)-1]; last.Role != provider.RoleTool || last.ToolCallID != "c1" || last.Content != CancelledResult {
+	if last := msgs[len(msgs)-1]; last.Role != llm.RoleTool || last.ToolCallID != "c1" || last.Content != CancelledResult {
 		t.Fatalf("expected a synthetic result for c1, got %+v", last)
 	}
 	if a.QueuedApprovals() != 0 {
@@ -383,13 +383,13 @@ func TestRoundGrant_RaisesTheCeilingForTheTurn(t *testing.T) {
 
 func TestTrimOldToolResults_ProtectsCurrentTurn(t *testing.T) {
 	big := strings.Repeat("x", 40000)
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
-		{Role: provider.RoleAssistant, Content: "answer 1"},
-		{Role: provider.RoleUser, Content: "q2"},
-		{Role: provider.RoleTool, Content: "recent result", ToolCallID: "c2"},
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: llm.RoleAssistant, Content: "answer 1"},
+		{Role: llm.RoleUser, Content: "q2"},
+		{Role: llm.RoleTool, Content: "recent result", ToolCallID: "c2"},
 	}, noStream)
 
 	elided, newEst := a.TrimOldToolResults(30000, 26000, 26000, Calibration{})
@@ -412,11 +412,11 @@ func TestTrimOldToolResults_ProtectsCurrentTurn(t *testing.T) {
 }
 
 func TestTrimOldToolResults_NoopUnderThreshold(t *testing.T) {
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleTool, Content: "small result", ToolCallID: "c1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleTool, Content: "small result", ToolCallID: "c1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, noStream)
 
 	elided, newEst := a.TrimOldToolResults(1000, 26000, 26000, Calibration{})
@@ -429,9 +429,9 @@ func TestTrimOldToolResults_NoopUnderThreshold(t *testing.T) {
 }
 
 func TestEstimateMessageTokens_CountsContentAndArgs(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: strings.Repeat("a", 400)},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{Arguments: strings.Repeat("b", 400)}}},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: strings.Repeat("a", 400)},
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{Arguments: strings.Repeat("b", 400)}}},
 	}
 	if got := EstimateMessageTokens(msgs); got != 200 {
 		t.Fatalf("expected 200 estimated tokens, got %d", got)
@@ -466,9 +466,9 @@ func TestMaxRounds_UnlimitedIsNeverReached(t *testing.T) {
 
 func TestCarryReasoning_LandsOnTheRoundAndIsConsumed(t *testing.T) {
 	a := newTestAgent()
-	blocks := []provider.ReasoningBlock{{Text: "weighing it", Signature: "sig"}}
+	blocks := []llm.ReasoningBlock{{Text: "weighing it", Signature: "sig"}}
 	a.CarryReasoning(blocks)
-	a.BeginToolRound("checking", []provider.ToolCall{{ID: "c1", Name: "read_file"}}, nil)
+	a.BeginToolRound("checking", []llm.ToolCall{{ID: "c1", Name: "read_file"}}, nil)
 
 	msgs := a.Messages()
 	last := msgs[len(msgs)-1]
@@ -478,7 +478,7 @@ func TestCarryReasoning_LandsOnTheRoundAndIsConsumed(t *testing.T) {
 
 	// And only that round: a latch left set would attach one response's
 	// thinking to another's calls.
-	a.BeginToolRound("next", []provider.ToolCall{{ID: "c2", Name: "read_file"}}, nil)
+	a.BeginToolRound("next", []llm.ToolCall{{ID: "c2", Name: "read_file"}}, nil)
 	msgs = a.Messages()
 	if got := msgs[len(msgs)-1].Reasoning; len(got) != 0 {
 		t.Fatalf("the latch must be consumed, got %+v", got)
@@ -491,18 +491,18 @@ func TestCarryReasoning_LandsOnTheRoundAndIsConsumed(t *testing.T) {
 // handful of tokens and being called again next round.
 func TestTrimOldToolResults_RunsDownToTheMark(t *testing.T) {
 	big := strings.Repeat("x", 40000) // ~10k estimated tokens each
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
+	msgs := []llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
 	}
 	for range 6 {
-		msgs = append(msgs, provider.Message{Role: provider.RoleTool, Content: big, ToolCallID: "c"})
+		msgs = append(msgs, llm.Message{Role: llm.RoleTool, Content: big, ToolCallID: "c"})
 	}
 	msgs = append(msgs,
-		provider.Message{Role: provider.RoleAssistant, Content: "answer 1"},
-		provider.Message{Role: provider.RoleUser, Content: "q2"})
+		llm.Message{Role: llm.RoleAssistant, Content: "answer 1"},
+		llm.Message{Role: llm.RoleUser, Content: "q2"})
 
-	deep := New(append([]provider.Message(nil), msgs...), noStream)
+	deep := New(append([]llm.Message(nil), msgs...), noStream)
 	elided, newEst := deep.TrimOldToolResults(70000, 60000, 40000, Calibration{})
 	if newEst > 40000 {
 		t.Fatalf("the trim stopped at %d, above the mark of 40000", newEst)
@@ -522,7 +522,7 @@ func TestTrimOldToolResults_RunsDownToTheMark(t *testing.T) {
 	// The same conversation with the mark at the threshold elides the
 	// minimum that clears the line, which is what a single-figure trim did
 	// and what leaves the next round to do it again.
-	shallow := New(append([]provider.Message(nil), msgs...), noStream)
+	shallow := New(append([]llm.Message(nil), msgs...), noStream)
 	if elided, _ := shallow.TrimOldToolResults(70000, 60000, 60000, Calibration{}); elided != 2 {
 		t.Fatalf("a mark at the threshold elided %d, want the 2 that clear it", elided)
 	}
@@ -534,13 +534,13 @@ func TestTrimOldToolResults_RunsDownToTheMark(t *testing.T) {
 // looping on a conversation it never shortens.
 func TestTrimOldToolResults_MarkAboveThresholdTrimsToTheThreshold(t *testing.T) {
 	big := strings.Repeat("x", 40000)
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c2"},
-		{Role: provider.RoleAssistant, Content: "answer 1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c2"},
+		{Role: llm.RoleAssistant, Content: "answer 1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, noStream)
 
 	elided, newEst := a.TrimOldToolResults(70000, 60000, 90000, Calibration{})
@@ -551,13 +551,13 @@ func TestTrimOldToolResults_MarkAboveThresholdTrimsToTheThreshold(t *testing.T) 
 
 func TestTrimOldToolResults_KeepsClaimedResults(t *testing.T) {
 	big := strings.Repeat("x", 40000)
-	a := New([]provider.Message{
-		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleTool, Content: "<keep>" + big, ToolCallID: "c1"},
-		{Role: provider.RoleTool, Content: big, ToolCallID: "c2"},
-		{Role: provider.RoleAssistant, Content: "answer 1"},
-		{Role: provider.RoleUser, Content: "q2"},
+	a := New([]llm.Message{
+		{Role: llm.RoleSystem, Content: "sys"},
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleTool, Content: "<keep>" + big, ToolCallID: "c1"},
+		{Role: llm.RoleTool, Content: big, ToolCallID: "c2"},
+		{Role: llm.RoleAssistant, Content: "answer 1"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, noStream)
 	a.KeepResults(func(content string) bool { return strings.HasPrefix(content, "<keep>") })
 
@@ -575,23 +575,23 @@ func TestTrimOldToolResults_KeepsClaimedResults(t *testing.T) {
 }
 
 func TestSetScrub_RewritesEveryDoor(t *testing.T) {
-	var sent []provider.Message
-	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	var sent []llm.Message
+	stream := func(msgs []llm.Message, _ string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		sent = msgs
-		return noStream(msgs, provider.ToolChoiceAuto)
+		return noStream(msgs, llm.ToolChoiceAuto)
 	}
-	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, stream)
-	a.SetScrub(func(m provider.Message) provider.Message {
+	a := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, stream)
+	a.SetScrub(func(m llm.Message) llm.Message {
 		m.Content = strings.ReplaceAll(m.Content, "hunter2", "[secret:PW]")
 		return m
 	})
 
-	a.Append(provider.Message{Role: provider.RoleUser, Content: "pw is hunter2"})
+	a.Append(llm.Message{Role: llm.RoleUser, Content: "pw is hunter2"})
 	if got := a.Messages()[1].Content; got != "pw is [secret:PW]" {
 		t.Fatalf("Append not scrubbed: %q", got)
 	}
 
-	resumed := []provider.Message{{Role: provider.RoleTool, Content: "hunter2"}}
+	resumed := []llm.Message{{Role: llm.RoleTool, Content: "hunter2"}}
 	a.SetMessages(resumed)
 	if got := a.Messages()[0].Content; got != "[secret:PW]" {
 		t.Fatalf("SetMessages not scrubbed: %q", got)
@@ -600,7 +600,7 @@ func TestSetScrub_RewritesEveryDoor(t *testing.T) {
 		t.Fatal("SetMessages must not rewrite the caller's slice")
 	}
 
-	raw := []provider.Message{{Role: provider.RoleUser, Content: "hunter2"}}
+	raw := []llm.Message{{Role: llm.RoleUser, Content: "hunter2"}}
 	if _, _, err := a.Stream(raw); err != nil {
 		t.Fatal(err)
 	}
@@ -635,9 +635,9 @@ func TestExecuteCalls_RunsConcurrentlyAndKeepsOrder(t *testing.T) {
 		return name, nil
 	})
 
-	calls := make([]provider.ToolCall, n)
+	calls := make([]llm.ToolCall, n)
 	for i := range calls {
-		calls[i] = provider.ToolCall{ID: strconv.Itoa(i), Name: "tool" + strconv.Itoa(i)}
+		calls[i] = llm.ToolCall{ID: strconv.Itoa(i), Name: "tool" + strconv.Itoa(i)}
 	}
 
 	done := make(chan []ToolResult, 1)
@@ -680,9 +680,9 @@ func TestExecuteCalls_BoundedByMaxParallel(t *testing.T) {
 		return name, nil
 	})
 
-	calls := make([]provider.ToolCall, MaxParallelToolCalls*3)
+	calls := make([]llm.ToolCall, MaxParallelToolCalls*3)
 	for i := range calls {
-		calls[i] = provider.ToolCall{ID: strconv.Itoa(i), Name: strconv.Itoa(i)}
+		calls[i] = llm.ToolCall{ID: strconv.Itoa(i), Name: strconv.Itoa(i)}
 	}
 	results := a.ExecuteCalls(context.Background(), calls)
 
@@ -701,8 +701,8 @@ func TestExecuteCalls_BoundedByMaxParallel(t *testing.T) {
 
 func TestExecuteCalls_ResultCarriesWhatTheToolAttached(t *testing.T) {
 	a := newTestAgent()
-	img := provider.Attachment{
-		Kind:      provider.AttachmentImage,
+	img := llm.Attachment{
+		Kind:      llm.AttachmentImage,
 		Name:      "logo.png",
 		MediaType: "image/png",
 		Data:      []byte{0x89, 'P', 'N', 'G'},
@@ -713,12 +713,12 @@ func TestExecuteCalls_ResultCarriesWhatTheToolAttached(t *testing.T) {
 		return notice, nil
 	})
 
-	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
+	results := a.ExecuteCalls(context.Background(), []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
 	if len(results[0].Attachments) != 1 {
 		t.Fatalf("expected the image on the result, got %d attachments", len(results[0].Attachments))
 	}
 
-	a.BeginToolRound("", []provider.ToolCall{{ID: "c1", Name: "read_file"}}, nil)
+	a.BeginToolRound("", []llm.ToolCall{{ID: "c1", Name: "read_file"}}, nil)
 	a.RecordAutoResults(results)
 	last := a.Messages()[len(a.Messages())-1]
 	if len(last.Attachments) != 1 || last.Attachments[0].MediaType != "image/png" {
@@ -730,19 +730,19 @@ func TestExecuteCalls_ResultWithNothingAttachedCarriesNothing(t *testing.T) {
 	a := newTestAgent()
 	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) { return "plain text", nil })
 
-	results := a.ExecuteCalls(context.Background(), []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
+	results := a.ExecuteCalls(context.Background(), []llm.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
 	if results[0].Attachments != nil {
 		t.Fatalf("expected no attachments, got %+v", results[0].Attachments)
 	}
 }
 
 func TestTrimOldToolResults_ElidingDropsWhatRodeOnTheResult(t *testing.T) {
-	a := New([]provider.Message{
-		{Role: provider.RoleUser, Content: "q1"},
-		{Role: provider.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1", Attachments: []provider.Attachment{
-			{Kind: provider.AttachmentImage, Name: "logo.png", MediaType: "image/png", Data: []byte{1, 2, 3}},
+	a := New([]llm.Message{
+		{Role: llm.RoleUser, Content: "q1"},
+		{Role: llm.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1", Attachments: []llm.Attachment{
+			{Kind: llm.AttachmentImage, Name: "logo.png", MediaType: "image/png", Data: []byte{1, 2, 3}},
 		}},
-		{Role: provider.RoleUser, Content: "q2"},
+		{Role: llm.RoleUser, Content: "q2"},
 	}, noStream)
 
 	if elided, _ := a.TrimOldToolResults(30000, 26000, 26000, Calibration{}); elided != 1 {
@@ -760,15 +760,15 @@ func TestExecuteCalls_ImagesSurviveAWholeRoundOfReaders(t *testing.T) {
 	// a person asks for when they did not believe the first answer.
 	a.SetExecutor(NewRepeatDetector().WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		notice := string(args) + " is an image"
-		attachment.NoteResult(notice, provider.Attachment{
-			Kind: provider.AttachmentImage, Name: "x.png", MediaType: "image/png", Data: []byte{1},
+		attachment.NoteResult(notice, llm.Attachment{
+			Kind: llm.AttachmentImage, Name: "x.png", MediaType: "image/png", Data: []byte{1},
 		})
 		return notice, nil
 	}))
 
-	var calls []provider.ToolCall
+	var calls []llm.ToolCall
 	for i := range MaxParallelToolCalls {
-		calls = append(calls, provider.ToolCall{
+		calls = append(calls, llm.ToolCall{
 			ID:        strconv.Itoa(i),
 			Name:      "read_file",
 			Arguments: `{"path":"` + strconv.Itoa(i) + `"}`,
@@ -794,8 +794,8 @@ func TestAppend_StampsThePositionTheSessionIsAt(t *testing.T) {
 	a := newTestAgent()
 	a.SetTurn(3)
 	a.StartTurn("what changed?")
-	a.BeginToolRound("looking", []provider.ToolCall{{ID: "c1", Name: "search"}}, nil)
-	a.RecordAutoResults([]ToolResult{{Call: provider.ToolCall{ID: "c1", Name: "search"}, Result: "two hits"}})
+	a.BeginToolRound("looking", []llm.ToolCall{{ID: "c1", Name: "search"}}, nil)
+	a.RecordAutoResults([]ToolResult{{Call: llm.ToolCall{ID: "c1", Name: "search"}, Result: "two hits"}})
 
 	msgs := a.Messages()
 	// The user message opens the turn, before any round has run.
@@ -814,7 +814,7 @@ func TestAppend_StampsThePositionTheSessionIsAt(t *testing.T) {
 	// positions it was saved with rather than being restamped with wherever
 	// the session has got to.
 	a.SetTurn(9)
-	a.SetMessages([]provider.Message{{Role: provider.RoleUser, Content: "earlier", Turn: 1, Round: 2}})
+	a.SetMessages([]llm.Message{{Role: llm.RoleUser, Content: "earlier", Turn: 1, Round: 2}})
 	if m := a.Messages()[0]; m.Turn != 1 || m.Round != 2 {
 		t.Fatalf("a replayed message was restamped to turn %d round %d", m.Turn, m.Round)
 	}

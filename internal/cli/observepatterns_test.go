@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
 // seedPatternRound opens a session in checkout p whose one round asked for
 // calls and recorded events, saving the conversation under slot and linking
 // it, so the reading has both sides of the join to read.
-func seedPatternRound(t *testing.T, db *storage.DB, slot string, calls []provider.ToolCall, events ...storage.AgentEvent) {
+func seedPatternRound(t *testing.T, db *storage.DB, slot string, calls []llm.ToolCall, events ...storage.AgentEvent) {
 	t.Helper()
 	id, err := db.StartAgentSession("code", "openai", "gpt-test")
 	if err != nil {
@@ -30,9 +30,9 @@ func seedPatternRound(t *testing.T, db *storage.DB, slot string, calls []provide
 			t.Fatalf("record event: %v", err)
 		}
 	}
-	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: "go", Turn: 1},
-		{Role: provider.RoleAssistant, Turn: 1, Round: 1, ToolCalls: calls},
+	msgs := []llm.Message{
+		{Role: llm.RoleUser, Content: "go", Turn: 1},
+		{Role: llm.RoleAssistant, Turn: 1, Round: 1, ToolCalls: calls},
 	}
 	if err := db.SaveChat(slot, msgs); err != nil {
 		t.Fatalf("save chat: %v", err)
@@ -54,17 +54,17 @@ func TestObservePatterns_FilesCommandsSuites(t *testing.T) {
 			answer = "deny"
 		}
 		seedPatternRound(t, db, fmt.Sprintf("read-%d", i),
-			[]provider.ToolCall{{ID: "r", Name: "read_file", Arguments: `{"path":"internal/agent/loop.go"}`}},
+			[]llm.ToolCall{{ID: "r", Name: "read_file", Arguments: `{"path":"internal/agent/loop.go"}`}},
 			storage.AgentEvent{Kind: storage.AgentEventTool, Tool: "read_file", Outcome: "ok"})
 		seedPatternRound(t, db, fmt.Sprintf("ask-%d", i),
-			[]provider.ToolCall{{ID: "c", Name: "execute_command", Arguments: `{"command":"go test ./internal/agent"}`}},
+			[]llm.ToolCall{{ID: "c", Name: "execute_command", Arguments: `{"command":"go test ./internal/agent"}`}},
 			storage.AgentEvent{Kind: storage.AgentEventDecision, Outcome: "ask", Reason: "safety"},
 			storage.AgentEvent{Kind: storage.AgentEventDecision, Outcome: answer, Reason: "user"},
 			storage.AgentEvent{Kind: storage.AgentEventSignal, Outcome: "gate", Tool: "default", Reason: "fail"},
 			storage.AgentEvent{Kind: storage.AgentEventSignal, Outcome: "gate", Tool: "default", Reason: "pass"})
 	}
 	seedPatternRound(t, db, "pruned",
-		[]provider.ToolCall{{ID: "r", Name: "read_file", Arguments: `{"path":"internal/agent/loop.go"}`}},
+		[]llm.ToolCall{{ID: "r", Name: "read_file", Arguments: `{"path":"internal/agent/loop.go"}`}},
 		storage.AgentEvent{Kind: storage.AgentEventTool, Tool: "read_file", Outcome: "ok"})
 	if err := db.DeleteChat("pruned"); err != nil {
 		t.Fatalf("delete chat: %v", err)

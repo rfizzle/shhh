@@ -21,9 +21,9 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -1227,7 +1227,7 @@ func (m Model) resolveQuestion(req *approvalRequest, qs []ask.Question, as []ask
 // buildQuestionApproval turns an ask call into its request. An unreadable
 // question is a skipped call with the parse error as its result, the way
 // every other malformed call is answered.
-func (m Model) buildQuestionApproval(tc provider.ToolCall) (*approvalRequest, error) {
+func (m Model) buildQuestionApproval(tc llm.ToolCall) (*approvalRequest, error) {
 	qs, err := ask.Parse(json.RawMessage(tc.Arguments))
 	if err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
