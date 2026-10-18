@@ -369,6 +369,22 @@ func (p *SprintPlan) row(i, width int) string {
 	if r.Note != "" {
 		rest = strings.TrimSpace(r.Title + "  ·  " + r.Note)
 	}
+	if r.Note != "" && width < CardFloor && lipgloss.Width("  "+rest) > room {
+		// Below the floor the reason gives up the right of the title before it
+		// gives up a word: it wraps whole in the column under the title.
+		indent := lipgloss.Width(lead) + 2
+		if wrapW := inner - indent; wrapW >= minDescWidth {
+			out := []string{lit(lead + sty.dim.Render(Clip("  "+r.Title, room)))}
+			for _, line := range Wrap(r.Note, wrapW) {
+				if focused {
+					out = append(out, PointerColumn()+sty.focusRow.Render(PadRight(Clip(strings.Repeat(" ", indent)+line, inner), inner)))
+					continue
+				}
+				out = append(out, PointerColumn()+strings.Repeat(" ", indent)+sty.dim.Render(line))
+			}
+			return strings.Join(out, "\n")
+		}
+	}
 	return lit(lead + sty.dim.Render(Clip("  "+rest, room)))
 }
 

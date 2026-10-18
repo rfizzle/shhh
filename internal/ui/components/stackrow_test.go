@@ -38,6 +38,39 @@ func TestSelect_StackedRowKeepsItsWordsBelowTheFloor(t *testing.T) {
 	}
 }
 
+// A detail below the floor hangs under its label whole, with the meta field
+// closing it, instead of clipping a word beside the label.
+func TestSelect_StackedDetailKeepsItsWordsBelowTheFloor(t *testing.T) {
+	opts := []SelectOption{{
+		Label:  "cap rounds instead of erroring",
+		Detail: []DetailSpan{{Text: "▎2 files +18 −12", Tone: ToneQuiet}, {Text: " and the tests", Tone: ToneQuiet}},
+		Meta:   "3m",
+	}}
+	s := &Select{Title: "Rewind", Options: opts, Stack: true, Unnumbered: true}
+	narrow := ansi.Strip(s.View(CardFloor - 6))
+	if !strings.Contains(narrow, "▎2 files +18 −12 and the tests · 3m") || strings.Contains(narrow, "…") {
+		t.Errorf("below the floor the detail and the age stay whole:\n%s", narrow)
+	}
+}
+
+// A checkbox row whose short field would clip its label moves the field under
+// it below the floor.
+func TestMultiSelect_StackedFieldKeepsItsWordsBelowTheFloor(t *testing.T) {
+	s := NewMultiSelect("Question", []SelectOption{
+		{Label: "internal/ui/components/selector", Meta: "touched by the last three rounds"},
+		{Label: "internal/cli"},
+	})
+	s.Stack = true
+	narrow := ansi.Strip(s.View(CardFloor - 12))
+	if !strings.Contains(narrow, "internal/ui/components/selector") || !strings.Contains(narrow, "touched by the last") || strings.Contains(narrow, "…") {
+		t.Errorf("below the floor the label and its field stay whole:\n%s", narrow)
+	}
+	s.Stack = false
+	if plain := ansi.Strip(s.View(CardFloor - 12)); strings.Count(plain, "\n") >= strings.Count(narrow, "\n") {
+		t.Errorf("a card that did not ask to stack keeps one row per option:\n%s", plain)
+	}
+}
+
 // The close's command never breaks inside itself: the clause moves whole to
 // the next line.
 func TestCloseRunOn_KeepsTheUndoCommandWhole(t *testing.T) {

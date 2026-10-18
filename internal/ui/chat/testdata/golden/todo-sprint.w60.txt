@@ -19,8 +19,13 @@ Make the cache expire what it should and say what it did.
 Reads as a minor release.
 
   goal  rewrite what the set is for
-❯ [x] cache-ttl  Give the cache a lifetime  ·  nothing else…
-  [x] cache-invalidate  Invalidate on write  ·  the same pa…
+❯ [x] cache-ttl  Give the cache a lifetime                  
+                 nothing else can be measured until entries 
+                 expire on a clock somebody set             
+  [x] cache-invalidate  Invalidate on write
+                        the same package, and it is the
+                        other half of what makes a stale
+                        entry impossible
 
 2 items left out · 1 unrelated, 1 too big [o]
 
@@ -37,8 +42,13 @@ Make the cache expire what it should and say what it did.
 Reads as a minor release.
 
   goal  rewrite what the set is for
-❯ [x] cache-ttl  Give the cache a lifetime  ·  nothing else…
-  [x] cache-invalidate  Invalidate on write  ·  the same pa…
+❯ [x] cache-ttl  Give the cache a lifetime                  
+                 nothing else can be measured until entries 
+                 expire on a clock somebody set             
+  [x] cache-invalidate  Invalidate on write
+                        the same package, and it is the
+                        other half of what makes a stale
+                        entry impossible
 
 2 items left out [o]
   unrelated  cache-warm  Warm the cache on start
@@ -57,8 +67,13 @@ Make the cache expire what it should and say what it did.
 Reads as a minor release.
 
   goal  rewrite what the set is for
-  [x] cache-ttl  Give the cache a lifetime  ·  nothing else…
-❯ [ ] cache-invalidate  Invalidate on write  ·  the same pa…
+  [x] cache-ttl  Give the cache a lifetime
+                 nothing else can be measured until entries
+                 expire on a clock somebody set
+❯ [ ] cache-invalidate  Invalidate on write                 
+                        the same package, and it is the     
+                        other half of what makes a stale    
+                        entry impossible                    
 
 2 items left out · 1 unrelated, 1 too big [o]
 
@@ -76,8 +91,13 @@ Reads as a minor release.
 ␛[38;5;245mReads as a minor release.␛[m
 
   ␛[94mgoal␛[m␛[38;5;245m  rewrite what the set is for␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m[x]␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mcache-ttl  Give the cache a lifetime  ·  nothing else…␛[m␛[m
-  ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;245m  Invalidate on write  ·  the same pa…␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m[x]␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mcache-ttl  Give the cache a lifetime                  ␛[m␛[m
+  ␛[1;97;48;5;61m               nothing else can be measured until entries ␛[m
+  ␛[1;97;48;5;61m               expire on a clock somebody set             ␛[m
+  ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;245m  Invalidate on write␛[m
+                        ␛[38;5;245mthe same package, and it is the␛[m
+                        ␛[38;5;245mother half of what makes a stale␛[m
+                        ␛[38;5;245mentry impossible␛[m
 
 ␛[38;5;245m2 items left out · 1 unrelated, 1 too big␛[m ␛[38;5;103m[o]␛[m
 
@@ -94,8 +114,13 @@ Reads as a minor release.
 ␛[38;5;245mReads as a minor release.␛[m
 
   ␛[94mgoal␛[m␛[38;5;245m  rewrite what the set is for␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m[x]␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mcache-ttl  Give the cache a lifetime  ·  nothing else…␛[m␛[m
-  ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;245m  Invalidate on write  ·  the same pa…␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m[x]␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mcache-ttl  Give the cache a lifetime                  ␛[m␛[m
+  ␛[1;97;48;5;61m               nothing else can be measured until entries ␛[m
+  ␛[1;97;48;5;61m               expire on a clock somebody set             ␛[m
+  ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;245m  Invalidate on write␛[m
+                        ␛[38;5;245mthe same package, and it is the␛[m
+                        ␛[38;5;245mother half of what makes a stale␛[m
+                        ␛[38;5;245mentry impossible␛[m
 
 ␛[38;5;245m2 items left out␛[m ␛[38;5;103m[o]␛[m
 ␛[38;5;245m  unrelated  cache-warm  Warm the cache on start␛[m
@@ -114,8 +139,13 @@ Reads as a minor release.
 ␛[38;5;245mReads as a minor release.␛[m
 
   ␛[94mgoal␛[m␛[38;5;245m  rewrite what the set is for␛[m
-  ␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;245m  Give the cache a lifetime  ·  nothing else…␛[m
-␛[94m❯ ␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m[ ]␛[m␛[48;5;61m ␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mcache-invalidate  Invalidate on write  ·  the same pa…␛[m␛[m
+  ␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;245m  Give the cache a lifetime␛[m
+                 ␛[38;5;245mnothing else can be measured until entries␛[m
+                 ␛[38;5;245mexpire on a clock somebody set␛[m
+␛[94m❯ ␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m[ ]␛[m␛[48;5;61m ␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mcache-invalidate  Invalidate on write                 ␛[m␛[m
+  ␛[1;97;48;5;61m                      the same package, and it is the     ␛[m
+  ␛[1;97;48;5;61m                      other half of what makes a stale    ␛[m
+  ␛[1;97;48;5;61m                      entry impossible                    ␛[m
 
 ␛[38;5;245m2 items left out · 1 unrelated, 1 too big␛[m ␛[38;5;103m[o]␛[m
 

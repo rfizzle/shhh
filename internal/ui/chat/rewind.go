@@ -190,6 +190,7 @@ func (m Model) openRewindPicker(opts []components.SelectOption, apply func(*Mode
 	// third row down, and the card opens with its query row already taking
 	// every letter, so there is nothing for the numbering column to address.
 	next.picker.card.Unnumbered = true
+	next.picker.card.Stack = true
 	next.picker.card.Actions = []keys.Binding{keys.Rewind.Diff}
 	return next, cmd
 }

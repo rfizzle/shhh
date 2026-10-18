@@ -296,6 +296,7 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 		c.multi.MaxLines = body
 		c.multi.CancelLabel = questionWayOut
 		c.multi.TakeVerb = "choose"
+		c.multi.Stack = true
 		c.multi.Actions = c.offers()
 	case ask.ShapeConfirm:
 		c.conf = &components.Confirm{Prompt: firstLine(q.Question)}

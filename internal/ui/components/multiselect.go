@@ -88,6 +88,10 @@ type MultiSelect struct {
 	// person can decide on. A card that leaves it off draws the label alone,
 	// as every checkbox list did before this field existed.
 	Columns bool
+	// Stack lets a row below CardFloor whose short field would clip its label
+	// give the field up its place at the right: it moves under the label,
+	// wrapped whole. The single-select's field of the same name.
+	Stack bool
 	// Fixed marks rows that are ticked and stay ticked, one per option like
 	// Checked: a grant every answer includes, drawn in its place so the list
 	// reads as the whole of what is granted. Space on one says why rather
@@ -368,7 +372,11 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 	// the label whole — below that width the run would be all marker and no
 	// fact.
 	if right := s.rightRun(i, opt); right != "" {
-		if room := body - lipgloss.Width(box) - 1 - lipgloss.Width(right) - 2; room > 0 {
+		room := body - lipgloss.Width(box) - 1 - lipgloss.Width(right) - 2
+		if s.Stack && inner+cardFrameWidth < CardFloor && lipgloss.Width(label) > max(room, 0) {
+			return s.stackedRow(i, opt, box, label, inner)
+		}
+		if room > 0 {
 			row = box + " " + Clip(label, room)
 			row = PadRight(row, body-lipgloss.Width(right)) + right
 		}
@@ -383,6 +391,51 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 			litRowKeeping(row, 0, lipgloss.Width(box)+1, max(body, 0))
 	}
 	return PointerColumn() + row
+}
+
+// stackedRow is a row whose short field and chip would clip its label: the
+// label whole on the first row, then the field wrapped in the column under it
+// with the chip closing the last line, the way the single-select stacks a
+// row's meta. The focused row is lit on every row it takes.
+func (s *MultiSelect) stackedRow(i int, opt SelectOption, box, label string, inner int) string {
+	body := max(inner-2, 0)
+	indent := lipgloss.Width(box) + 1
+	tone := opt.metaTone.style()
+	if opt.Dim {
+		tone = sty.dimmer
+	}
+	var tails []string
+	for _, line := range Wrap(opt.metaText(), max(body-indent, 1)) {
+		if line != "" {
+			tails = append(tails, tone.Render(line))
+		}
+	}
+	if i < len(s.Severities) {
+		if chip := severityChip(s.Severities[i], true); chip != "" {
+			last := len(tails) - 1
+			if last >= 0 && lipgloss.Width(tails[last])+2+lipgloss.Width(chip) <= body-indent {
+				tails[last] += "  " + chip
+			} else {
+				tails = append(tails, chip)
+			}
+		}
+	}
+	rows := []string{Clip(box+" "+label, body)}
+	for _, t := range tails {
+		rows = append(rows, Clip(strings.Repeat(" ", indent)+t, body))
+	}
+	out := make([]string, len(rows))
+	for j, row := range rows {
+		switch {
+		case i != s.Focus:
+			out[j] = PointerColumn() + row
+		case j == 0:
+			out[j] = sty.focusPointer.Render("❯") + " " + litRowKeeping(row, 0, lipgloss.Width(box)+1, body)
+		default:
+			out[j] = PointerColumn() + litRowKeeping(row, 0, 0, body)
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 // multiColumns is the width of the label and the value columns, read off the

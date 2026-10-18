@@ -1302,18 +1302,23 @@ func boundRows(rows []string, maxLines int) []string {
 // card at or above the floor, and a row with no column worth wrapping in; the
 // row is then laid out as ever.
 //
-// A row that carries a value or a detail is not stacked: those are fields the
-// row reads across, and moving one under the label would put it in the
-// description's place.
+// A row that carries a value is not stacked: that is a field the row reads
+// across, and moving it under the label would put it in the description's
+// place. A detail takes the description's place and is wrapped in its column,
+// in one tone: the row reads its words before its colours.
 func (s *Select) stackText(opt SelectOption, leftW int, g optionGrid, inner int) (desc, meta []string, ok bool) {
-	if !s.Stack || s.FocusDesc || opt.passive() || opt.Value != "" || len(opt.Detail) > 0 {
+	if !s.Stack || s.FocusDesc || opt.passive() || opt.Value != "" {
 		return nil, nil, false
 	}
 	if inner+cardFrameWidth >= CardFloor {
 		return nil, nil, false
 	}
 	room := max(inner-GridPointerWidth, 0)
-	descW, metaW := lipgloss.Width(opt.Desc), lipgloss.Width(opt.metaText())
+	said := opt.Desc
+	if len(opt.Detail) > 0 {
+		said = opt.detailText()
+	}
+	descW, metaW := lipgloss.Width(said), lipgloss.Width(opt.metaText())
 	if descW+metaW == 0 {
 		return nil, nil, false
 	}
@@ -1328,13 +1333,30 @@ func (s *Select) stackText(opt SelectOption, leftW int, g optionGrid, inner int)
 	if need <= room || wrapW < minDescWidth {
 		return nil, nil, false
 	}
+	if len(opt.Detail) > 0 {
+		// A detail is read after the label it belongs to, so it hangs under
+		// the label's first word on the full width the card has, and the meta
+		// field closes its last line. The first row is the label alone.
+		hang := room
+		if g.num > 0 {
+			hang -= g.num + 1
+		}
+		if hang < minDescWidth {
+			return nil, nil, false
+		}
+		text := said
+		if m := opt.metaText(); m != "" {
+			text += detailSep + m
+		}
+		return append([]string{""}, strings.Split(lipgloss.Wrap(text, hang, ""), "\n")...), nil, true
+	}
 	wrap := func(text string) []string {
 		if text == "" {
 			return nil
 		}
 		return strings.Split(lipgloss.Wrap(text, wrapW, ""), "\n")
 	}
-	return wrap(opt.Desc), wrap(opt.metaText()), true
+	return wrap(said), wrap(opt.metaText()), true
 }
 
 // stackedRow lays an option out over several rows: the label and the first
@@ -1344,6 +1366,9 @@ func (s *Select) stackText(opt SelectOption, leftW int, g optionGrid, inner int)
 func (s *Select) stackedRow(opt SelectOption, number, label string, desc, meta []string, focused bool, g optionGrid, inner int) string {
 	left := number + PadRight(label, g.label)
 	pad := strings.Repeat(" ", lipgloss.Width(left)+2)
+	if len(opt.Detail) > 0 {
+		pad = strings.Repeat(" ", lipgloss.Width(number))
+	}
 	room := max(inner-GridPointerWidth, 0)
 	type line struct {
 		text string
