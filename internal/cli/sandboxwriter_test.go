@@ -35,6 +35,11 @@ func sandboxWriterRepo(t *testing.T) string {
 // containerNamed is the name the engine's log gave the container whose one
 // mount is dir, or "" where none was made over it.
 func containerNamed(calls, dir string) string {
+	// A container mounts the resolved path; a temp directory on macOS sits
+	// behind a symlink.
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = resolved
+	}
 	for _, line := range strings.Split(calls, "\n") {
 		if !strings.HasPrefix(line, "run --detach") || !strings.Contains(line, "--volume "+dir+":/workspace") {
 			continue
