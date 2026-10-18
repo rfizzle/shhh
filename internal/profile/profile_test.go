@@ -159,6 +159,35 @@ func TestLoad_SkipsBadFilesAndKeepsGoing(t *testing.T) {
 	}
 }
 
+// A profile named like a built-in provider would replace the provider the
+// name stands for, so it is refused and reported while the rest still load.
+func TestLoad_RefusesAProfileNamedLikeABuiltIn(t *testing.T) {
+	for _, name := range []string{"chatgpt", "anthropic", "openai-responses"} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			writeProfile(t, dir, "gateway.toml", gatewayTOML)
+			writeProfile(t, dir, "shadow.toml", "name = \""+name+"\"\nbase_url = \"https://gw.example/v1\"")
+
+			profiles, errs := Load([]string{dir})
+			if len(profiles) != 1 || profiles[0].Name != "gateway" {
+				t.Fatalf("only the ordinary profile should load, got %+v", profiles)
+			}
+			if len(errs) != 1 || !strings.Contains(errs[0].Error(), "built-in provider") ||
+				!strings.Contains(errs[0].Error(), "rename the profile") {
+				t.Fatalf("the refusal should name the collision and the fix, got %v", errs)
+			}
+		})
+	}
+}
+
+func TestRegister_NeverShadowsABuiltIn(t *testing.T) {
+	t.Cleanup(func() { Register(nil) })
+	Register([]Profile{{Name: "chatgpt", BaseURL: "https://gw.example/v1"}})
+	if got := provider.Defaults("chatgpt").BaseURL; got == "https://gw.example/v1" {
+		t.Fatalf("a profile replaced the built-in's defaults: %q", got)
+	}
+}
+
 func TestLoad_FirstDirectoryWins(t *testing.T) {
 	first, second := t.TempDir(), t.TempDir()
 	writeProfile(t, first, "gateway.toml", "name = \"gateway\"\nbase_url = \"https://first.example/v1\"")

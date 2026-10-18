@@ -51,6 +51,10 @@ func Register(profiles []Profile) {
 	registered = append([]Profile(nil), profiles...)
 	for _, p := range profiles {
 		p := p
+		if provider.IsBuiltin(p.Name) {
+			// Load refuses these; one built by hand never shadows a built-in.
+			continue
+		}
 		provider.Register(p.Name, func(opts provider.ResolveOpts) (provider.Provider, error) {
 			return New(p, opts)
 		})

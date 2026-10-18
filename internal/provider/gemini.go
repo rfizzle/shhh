@@ -648,7 +648,7 @@ func jsonSchemaToAny(raw json.RawMessage) any {
 }
 
 func init() {
-	Register("gemini", func(opts ResolveOpts) (Provider, error) {
+	registerBuiltin("gemini", func(opts ResolveOpts) (Provider, error) {
 		return NewGemini(opts)
 	})
 	RegisterDefaults("gemini", ProviderDefaults{

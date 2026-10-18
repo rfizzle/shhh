@@ -647,7 +647,7 @@ func anthropicRefusal(details anthropic.RefusalStopDetails) string {
 }
 
 func init() {
-	Register("anthropic", func(opts ResolveOpts) (Provider, error) {
+	registerBuiltin("anthropic", func(opts ResolveOpts) (Provider, error) {
 		return NewAnthropic(opts)
 	})
 	RegisterDefaults("anthropic", ProviderDefaults{

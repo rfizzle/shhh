@@ -702,6 +702,9 @@ func (p *Profile) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("name is required")
 	}
+	if provider.IsBuiltin(p.Name) {
+		return fmt.Errorf("%q is the name of a built-in provider, so this profile would shadow it; rename the profile", p.Name)
+	}
 	if p.BaseURL == "" {
 		return fmt.Errorf("base_url is required — it is where a model no [[endpoint]] claims is sent")
 	}

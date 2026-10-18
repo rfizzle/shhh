@@ -261,7 +261,7 @@ func openAIAttachmentParts(m Message) []openai.ChatMessagePart {
 }
 
 func init() {
-	Register("openai", func(opts ResolveOpts) (Provider, error) {
+	registerBuiltin("openai", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenAI(opts)
 	})
 	RegisterDefaults("openai", ProviderDefaults{

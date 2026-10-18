@@ -177,7 +177,7 @@ func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, o
 }
 
 func init() {
-	Register("openrouter", func(opts ResolveOpts) (Provider, error) {
+	registerBuiltin("openrouter", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenRouter(opts)
 	})
 	RegisterDefaults("openrouter", ProviderDefaults{

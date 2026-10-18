@@ -53,8 +53,34 @@ type Factory func(ResolveOpts) (Provider, error)
 var registry = map[string]Factory{}
 var defaults = map[string]ProviderDefaults{}
 
+// builtin holds the names the provider files register as the process starts.
+// A profile is read from the person's files later, and its name must not take
+// one of these over.
+var builtin = map[string]bool{}
+
+// Register makes a provider resolvable by name, replacing any earlier one of
+// that name. It panics on a built-in's name: that is a programming error,
+// where a profile carrying one is refused at load (IsBuiltin).
 func Register(name string, f Factory) {
+	if builtin[normalizeName(name)] {
+		panic(fmt.Sprintf("provider: %q is a built-in provider and cannot be replaced", name))
+	}
 	registry[name] = f
+}
+
+// registerBuiltin registers a provider that ships with shhh, once.
+func registerBuiltin(name string, f Factory) {
+	if builtin[name] {
+		panic(fmt.Sprintf("provider: built-in %q registered twice", name))
+	}
+	builtin[name] = true
+	registry[name] = f
+}
+
+// IsBuiltin reports whether name is a provider that ships with shhh, as
+// opposed to one a profile or a test registered.
+func IsBuiltin(name string) bool {
+	return builtin[normalizeName(name)]
 }
 
 func RegisterDefaults(name string, d ProviderDefaults) {

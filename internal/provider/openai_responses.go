@@ -638,7 +638,7 @@ func responsesHTTPError(resp *http.Response) error {
 }
 
 func init() {
-	Register("openai-responses", func(opts ResolveOpts) (Provider, error) {
+	registerBuiltin("openai-responses", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenAIResponses(opts)
 	})
 	RegisterDefaults("openai-responses", ProviderDefaults{
@@ -654,7 +654,7 @@ func init() {
 	// billing between the plan and a key is a provider switch, never a
 	// fallback taken on their behalf.
 	// See docs/capabilities/chatgpt-plan.md#what-a-plan-session-cannot-do.
-	Register(chatGPTName, func(opts ResolveOpts) (Provider, error) {
+	registerBuiltin(chatGPTName, func(opts ResolveOpts) (Provider, error) {
 		return NewChatGPT(opts)
 	})
 	RegisterDefaults(chatGPTName, ProviderDefaults{

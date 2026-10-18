@@ -50,6 +50,25 @@ func TestResolve_UnderscoreNormalization(t *testing.T) {
 	}
 }
 
+func TestRegister_RefusesToReplaceABuiltIn(t *testing.T) {
+	for _, name := range []string{"chatgpt", "anthropic", "openai-responses"} {
+		if !IsBuiltin(name) {
+			t.Fatalf("%s should be a built-in", name)
+		}
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("Register(%q) should refuse to overwrite", name)
+				}
+			}()
+			Register(name, func(ResolveOpts) (Provider, error) { return &stubProvider{}, nil })
+		}()
+	}
+	if IsBuiltin("a-gateway") {
+		t.Fatal("a name nothing ships with is not a built-in")
+	}
+}
+
 func TestAvailable(t *testing.T) {
 	Register("a", func(ResolveOpts) (Provider, error) { return &stubProvider{}, nil })
 	Register("b", func(ResolveOpts) (Provider, error) { return &stubProvider{}, nil })

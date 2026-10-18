@@ -249,7 +249,7 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 }
 
 func init() {
-	Register("openai-compatible", func(opts ResolveOpts) (Provider, error) {
+	registerBuiltin("openai-compatible", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenAICompat(opts)
 	})
 	// No cheap model: this provider points at whatever endpoint the user
