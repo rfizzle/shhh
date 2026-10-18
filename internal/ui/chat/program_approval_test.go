@@ -249,7 +249,7 @@ func TestApprovalRouteByMode(t *testing.T) {
 	})
 	t.Run("auto with a classifier no asks, with the reason", func(t *testing.T) {
 		got := (approvalRig{presses: 2, judge: no}).start(t).asked("classifier: the task asked for a release check", "n")
-		wants(t, "the card", got.card, "not now — it keeps waiting", commandOffers)
+		wants(t, "the card", got.card, "keeps waiting", commandOffers)
 		if len(got.ran) != 0 || got.told != declinedCommand {
 			t.Fatalf("ran %v, told %q", got.ran, got.told)
 		}

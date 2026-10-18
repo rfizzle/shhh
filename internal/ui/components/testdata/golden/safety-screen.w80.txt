@@ -73,7 +73,7 @@ TOOLS
     asks       fetch, spawn_agent
   changed with /permissions, which decides which tiers ask
 
-[esc] back to the prompt                     a reading · nothing here changes it
+[esc] back                                   a reading · nothing here changes it
 
 · a pane shorter than the reading · the ends name the sections they fold
 /safety · manual · sandbox-exec                            [?] keys · [esc] back
@@ -99,7 +99,7 @@ CONTAINMENT
     masked:    ~/.ssh, ~/.aws, ~/.config/gh, ~/.netrc
 ↓ 5 more · web · what the checkout was let load · mcp · secrets · tools
 
-[↑↓/jk] scroll · [esc] back to the prompt    a reading · nothing here changes it
+[↑↓/jk] scroll · [esc] back                  a reading · nothing here changes it
 
 · containment unavailable, trust withheld, no servers · stated, not left out
 /safety · manual · unconfined                              [?] keys · [esc] back
@@ -162,7 +162,7 @@ TOOLS
     asks       fetch, spawn_agent
   changed with /permissions, which decides which tiers ask
 
-[esc] back to the prompt                     a reading · nothing here changes it
+[esc] back                                   a reading · nothing here changes it
 
 ── ansi ────────────────────────────────────────────────────
 · every section in force · each ends on the command that changes it
@@ -228,7 +228,7 @@ TOOLS
 ␛[38;5;252m    asks       fetch, spawn_agent␛[m
 ␛[38;5;245m  changed with /permissions, which decides which tiers ask␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                     ␛[38;5;245ma reading · nothing here changes it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m                                   ␛[38;5;245ma reading · nothing here changes it␛[m
 
 · a pane shorter than the reading · the ends name the sections they fold
 ␛[1;97m/safety␛[m␛[38;5;245m · manual · sandbox-exec␛[m                            ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -254,7 +254,7 @@ TOOLS
 ␛[38;5;252m    masked:    ~/.ssh, ~/.aws, ~/.config/gh, ~/.netrc␛[m
 ␛[38;5;245m↓ 5 more · web · what the checkout was let load · mcp · secrets · tools␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m    ␛[38;5;245ma reading · nothing here changes it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                  ␛[38;5;245ma reading · nothing here changes it␛[m
 
 · containment unavailable, trust withheld, no servers · stated, not left out
 ␛[1;97m/safety␛[m␛[38;5;245m · manual · unconfined␛[m                              ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -317,4 +317,4 @@ TOOLS
 ␛[38;5;252m    asks       fetch, spawn_agent␛[m
 ␛[38;5;245m  changed with /permissions, which decides which tiers ask␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                     ␛[38;5;245ma reading · nothing here changes it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m                                   ␛[38;5;245ma reading · nothing here changes it␛[m

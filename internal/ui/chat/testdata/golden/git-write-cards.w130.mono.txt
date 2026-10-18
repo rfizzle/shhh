@@ -19,7 +19,7 @@
 │ stages    this session's files only                                                                                        │
 │ push      no                                                                                                               │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting, nothing is denied                                             │
+│ [y] allow it · [n] deny · [?] keys · [esc] keeps waiting                                                                   │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -34,7 +34,7 @@
 │ hooks     run                                                                                                              │
 │ undo      git revert — /undo does not reach history                                                                        │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting, nothing is denied                                             │
+│ [y] allow it · [n] deny · [?] keys · [esc] keeps waiting                                                                   │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -49,7 +49,7 @@
 │ hooks     pre-commit and commit-msg skipped — the checkout is not trusted; its other hooks still run                       │
 │ undo      git revert — /undo does not reach history                                                                        │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting, nothing is denied                                             │
+│ [y] allow it · [n] deny · [?] keys · [esc] keeps waiting                                                                   │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -63,7 +63,7 @@
 │ push      no                                                                                                               │
 │ undo      git branch -d — a new branch moves no file and holds no work; deleting it is a line you type                     │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting, nothing is denied                                             │
+│ [y] allow it · [n] deny · [?] keys · [esc] keeps waiting                                                                   │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -78,7 +78,7 @@
 │ claims    gen/gokms/kms/v1/kms.pb.go · generated · dirty                                                                   │
 │ why       "written by make gen this turn"                                                                                  │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting, nothing is denied                                             │
+│ [y] allow it · [n] deny · [?] keys · [esc] keeps waiting                                                                   │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -92,7 +92,7 @@
 │ push      no                                                                                                               │
 │ undo      git switch - — the tree becomes the other branch's, and every file this session had read is re-read              │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting, nothing is denied                                             │
+│ [y] allow it · [n] deny · [?] keys · [esc] keeps waiting                                                                   │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -106,8 +106,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mstages    ␛[m␛[38;5;254mthis session's files only␛[m                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m allow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it␛[m␛[38;5;244m · ␛[m␛[38;5;244mother keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · commit · the hooks, and git revert as the way back
@@ -121,8 +121,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;254mrun␛[m                                                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mgit revert␛[m␛[38;5;244m — /undo does not reach history␛[m                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m allow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it␛[m␛[38;5;244m · ␛[m␛[38;5;244mother keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · commit · an untrusted checkout, and the two hooks it holds back
@@ -136,8 +136,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;254mpre-commit and commit-msg skipped␛[m␛[38;5;244m — the checkout is not trusted; its other hooks still run␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mgit revert␛[m␛[38;5;244m — /undo does not reach history␛[m                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m allow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it␛[m␛[38;5;244m · ␛[m␛[38;5;244mother keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · branch · deleting it is the way back
@@ -150,8 +150,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mgit branch -d␛[m␛[38;5;244m — a new branch moves no file and holds no work; deleting it is a line you type␛[m                     ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m allow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it␛[m␛[38;5;244m · ␛[m␛[38;5;244mother keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · stage · a claim, put to the person
@@ -165,8 +165,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mclaims    ␛[m␛[38;5;254mgen/gokms/kms/v1/kms.pb.go · generated · dirty␛[m                                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mwhy       ␛[m␛[38;5;254m"written by make gen this turn"␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m allow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it␛[m␛[38;5;244m · ␛[m␛[38;5;244mother keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · switch · switching back is the way back
@@ -179,6 +179,6 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mgit switch -␛[m␛[38;5;244m — the tree becomes the other branch's, and every file this session had read is re-read␛[m              ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m allow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it␛[m␛[38;5;244m · ␛[m␛[38;5;244mother keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

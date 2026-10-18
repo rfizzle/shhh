@@ -50,13 +50,13 @@ Undo turn 5? Nothing is left to restore.  [N] · [?] keys
  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed␛[m␛[38;5;244m · 1 claimed · not restorable␛[m␛[38;5;244m · all new to git␛[m
 
 · undo · restores the edit, names what it cannot
-␛[38;5;254mUndo turn 4? It restores 1 file.␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m
+␛[38;5;254mUndo turn 4? It restores 1 file.␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m
 ␛[38;5;244m· 2 files by commands are not restorable␛[m
     ␛[38;5;244mgen/kms/v1/kms.pb.go␛[m
     ␛[38;5;244mgo.sum␛[m
 
 · undo · nothing it can put back
-␛[38;5;254mUndo turn 5? Nothing is left to restore.␛[m  ␛[38;5;244m[␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m
+␛[38;5;254mUndo turn 5? Nothing is left to restore.␛[m  ␛[38;5;244m[␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m
 ␛[38;5;244m· 4 files by commands are not restorable␛[m
     ␛[38;5;244mgen/kms/v1/kms.pb.go␛[m
     ␛[38;5;244mgen/kms/v1/kms_grpc.pb.go␛[m

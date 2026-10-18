@@ -163,6 +163,6 @@ func managerShowing(m Model) any {
 
 // renderManagerHint is the one line the screen leaves where the draft box
 // was: the way out and nothing else.
-func (m Model) renderManagerHint() string {
-	return sty.SystemMsg.Render("ps · ") + segAs(keys.Agent.Back, "back to the prompt").render()
+func (m Model) renderManagerHint() []hintSeg {
+	return paneHint("ps", segAs(keys.Agent.Back, components.EscBack))
 }

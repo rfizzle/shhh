@@ -345,7 +345,7 @@
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                                                                  │
 │   2. Save globally         /home/x/.config/shhh/agents                                                                         │
 │   3. Discard                                                                                                                   │
-│ [enter] confirm · [tab] the sections · [ctrl+s] save · /repo/.shhh/agents · [esc] take none                                    │
+│ [enter] confirm · [tab] the sections · [ctrl+s] save · /repo/.shhh/agents · [esc] back                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · [?] on the draft · the drafter's keys and the glyph legend
@@ -371,7 +371,7 @@
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                                                                  │
 │   2. Save globally         /home/x/.config/shhh/agents                                                                         │
 │   3. Discard                                                                                                                   │
-│ [enter] confirm · [tab] the sections · [ctrl+s] save · /repo/.shhh/agents · [esc] take none                                    │
+│ [enter] confirm · [tab] the sections · [ctrl+s] save · /repo/.shhh/agents · [esc] back                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 [↑↓] move
@@ -746,7 +746,7 @@ $  a shell command
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                                                                                 ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                                                                   ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · [?] on the draft · the drafter's keys and the glyph legend
@@ -772,7 +772,7 @@ $  a shell command
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                                                                                 ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                                                                   ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m

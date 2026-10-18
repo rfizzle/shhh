@@ -49,12 +49,12 @@
       snap 01-list "copy which block?"
 
 ────────────────────────────────────────────────────────
-[↑↓/jk] move · [c] copy a block · [esc] prompt    1 of 1
+[↑↓/jk] move · [c] copy a block · [esc] back  row 1 of 1
 
 
 
 · a block taken · the caption on the bar
-[↑↓/jk] move · [c] copy a block · [esc] prompt
+[↑↓/jk] move · [c] copy a block · [esc] back
 
 
 
@@ -98,11 +98,11 @@
       ␛[38;5;180msnap 01-list "copy which block?"␛[m
 
 ␛[38;5;245m────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy a block␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m prompt␛[m    ␛[38;5;245m1 of 1␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy a block␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m  ␛[38;5;245mrow 1 of 1␛[m
 
 
 
 · a block taken · the caption on the bar
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy a block␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy a block␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 

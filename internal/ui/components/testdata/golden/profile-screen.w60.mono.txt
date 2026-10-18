@@ -291,7 +291,7 @@
 │   2. Save globally         ~/.config/shhh/agents         │
 │   3. Discard                                             │
 │ [enter] confirm · [tab] the sections                     │
-│ [ctrl+s] save · .shhh/agents · [esc] take none           │
+│ [ctrl+s] save · .shhh/agents · [esc] back                │
 ╰──────────────────────────────────────────────────────────╯
 
 · the file already exists · the draft asks again, saying so
@@ -337,7 +337,7 @@
 │   2. Save globally         ~/.config/shhh/agents         │
 │   3. Discard                                             │
 │ [enter] confirm · [tab] the sections                     │
-│ [ctrl+s] save · .shhh/agents · [esc] take none           │
+│ [ctrl+s] save · .shhh/agents · [esc] back                │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -622,7 +622,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m~/.config/shhh/agents␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m                     ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · .shhh/agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m           ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · .shhh/agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the file already exists · the draft asks again, saying so
@@ -668,5 +668,5 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m~/.config/shhh/agents␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m                     ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · .shhh/agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m           ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · .shhh/agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m

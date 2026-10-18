@@ -514,9 +514,8 @@ func (m *Model) closeStripCard() {
 // stripKeys is the hint bar while the cursor is on a strip: the arrows along
 // it, enter on the call under it, and the way back, which closes the card.
 func (m Model) stripKeys() []hintSeg {
-	pair := strings.Trim(keys.BracketPair(keys.Reading.StripLeft, keys.Reading.StripRight), "[]")
 	return []hintSeg{
-		{key: pair, label: "along the strip"},
+		{Key: keys.BracketPair(keys.Reading.StripLeft, keys.Reading.StripRight), Label: "along the strip"},
 		segAs(keys.Reading.Expand, "open that tool"),
 		segAs(keys.Reading.Back, "close the card"),
 	}
@@ -528,7 +527,7 @@ func stripKeysShort(segs []hintSeg) []hintSeg {
 	out := append([]hintSeg(nil), segs...)
 	for i, word := range []string{"along", "open", "close"} {
 		if i < len(out) {
-			out[i].label = word
+			out[i].Label = word
 		}
 	}
 	return out

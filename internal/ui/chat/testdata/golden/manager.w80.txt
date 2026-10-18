@@ -27,7 +27,7 @@ web                                                                 running…
   runs on     host
   last line   GET / 200 4ms
 
-[↑↓/jk] move · [enter] open · [d] stop · [esc] back to the prompt
+[↑↓/jk] move · [enter] open · [d] stop · [esc] back
 
 · d · the stop's question
 /ps · 2 processes running · 0 calls running            [?] keys · [esc] back
@@ -87,7 +87,7 @@ search                                                      cancelled by you
   ran for     41s
   runs on     host
 
-[enter] open · [esc] back to the prompt
+[enter] open · [esc] back
 
 · the command opened · its arguments whole and its output so far
 /ps · 2 processes running · 1 call running             [?] keys · [esc] back
@@ -112,7 +112,7 @@ execute_command                                                     running…
 · the panel it leaves · the way out, on one row
 ────────────────────────────────────────────────────────────────────────────
 ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51                                         
-ps · [esc] back to the prompt
+ps · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the first process running
@@ -132,7 +132,7 @@ ps · [esc] back to the prompt
   ␛[38;5;246mruns on     ␛[m␛[38;5;252mhost␛[m
   ␛[38;5;246mlast line   ␛[m␛[38;5;252mGET / 200 4ms␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m stop␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m stop␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · d · the stop's question
 ␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 0 calls running␛[m            ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -151,7 +151,7 @@ ps · [esc] back to the prompt
   ␛[38;5;246mruns on     ␛[m␛[38;5;252mhost␛[m
   ␛[38;5;246mlast line   ␛[m␛[38;5;252mGET / 200 4ms␛[m
 
-␛[38;5;252mstop the process web?␛[m  ␛[38;5;245m[y] ␛[mstop␛[38;5;245m · [k] ␛[mkill
+␛[38;5;252mstop the process web?␛[m  ␛[38;5;245m[y]␛[m stop␛[38;5;245m · ␛[m␛[38;5;245m[k]␛[m kill
 
 · esc, then enter · the process opened onto its output and its errors
 ␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 0 calls running␛[m            ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -192,7 +192,7 @@ ps · [esc] back to the prompt
   ␛[38;5;246mran for     ␛[m␛[38;5;252m41s␛[m
   ␛[38;5;246mruns on     ␛[m␛[38;5;252mhost␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · the command opened · its arguments whole and its output so far
 ␛[1;97m/ps␛[m␛[38;5;245m · 2 processes running␛[m␛[38;5;245m · 1 call running␛[m             ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -217,4 +217,4 @@ ps · [esc] back to the prompt
 · the panel it leaves · the way out, on one row
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m␛[38;5;246m · ␛[m␛[92mctx 32%␛[m ␛[92m▰▰␛[m␛[38;5;245m▱▱▱▱▱▱␛[m␛[38;5;246m · ␛[m␛[38;5;246m$0.51␛[m                                         
-␛[38;5;245mps · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;245mps␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

@@ -203,8 +203,8 @@ func TestProviderSetup_EscSaysWhichProviderItKeeps(t *testing.T) {
 	}
 	m = NewProviderSetup(resolve.Survey{}, []string{"anthropic", "openai"})
 	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})
-	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "[esc] take none") {
-		t.Fatalf("with no provider resolved the list should offer `[esc] take none`:\n%s", got)
+	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "[esc] back") {
+		t.Fatalf("with no provider resolved the list should offer `[esc] back`:\n%s", got)
 	}
 }
 

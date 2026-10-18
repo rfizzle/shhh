@@ -100,7 +100,7 @@ func TestListScreen_DrawsTheFrame(t *testing.T) {
 		t.Fatal("no width draws nothing")
 	}
 	view := ansi.Strip(s.View(80))
-	for _, want := range []string{"/test", "[?] keys · [esc] back", "❯ one", "the row is one", "[esc] back to the prompt"} {
+	for _, want := range []string{"/test", "[?] keys · [esc] back", "❯ one", "the row is one", "[esc] back"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the frame is missing %q:\n%s", want, view)
 		}

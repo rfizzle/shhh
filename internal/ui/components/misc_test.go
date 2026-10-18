@@ -148,20 +148,6 @@ func TestHintRows_WrapRatherThanClip(t *testing.T) {
 	}
 }
 
-// A surface that cannot spend a second row says which field it would rather
-// lose by putting it last, and the field goes whole.
-func TestDropToFit_GivesUpTheLastFieldWhole(t *testing.T) {
-	segments := []string{"Apply this change? [y/N]", "[ctrl+space] for [a]/[d]",
-		"any other key goes to your draft"}
-	got := FitSegments(segments, 55)
-	if want := "Apply this change? [y/N] · [ctrl+space] for [a]/[d]"; got != want {
-		t.Errorf("fitted to %q, want %q", got, want)
-	}
-	if only := FitSegments(segments, 4); only != segments[0] {
-		t.Errorf("the first field is kept whatever it costs, got %q", only)
-	}
-}
-
 // The rail must terminate at every width, including the ones where the right
 // side has just been emptied: a shedding chain that can re-widen loops for
 // ever, and it loops inside the render path of a narrow terminal.

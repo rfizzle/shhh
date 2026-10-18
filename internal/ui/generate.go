@@ -1499,7 +1499,7 @@ func (m GenerateModel) viewScreen() string {
 	}
 	body += m.reachView() + m.affectedView() + m.dryRunView() + "\n\n"
 	if m.pick == nil {
-		return body + keyStyle(toneOffer).Render("["+keys.Shown(keys.OneShot.Quit)+"]") + sty.KeyLabel.Render(" back") + m.armedFoot()
+		return body + barTones().Paint(components.KeyOffer{Key: keys.Bracket(keys.OneShot.Quit), Label: "back"}) + m.armedFoot()
 	}
 	return body + m.pick.View(min(alternativesWidth, m.width)) + m.armedFoot()
 }
@@ -1510,5 +1510,5 @@ func (m GenerateModel) armedFoot() string {
 	if m.armed.IsZero() {
 		return ""
 	}
-	return "\n" + keyStyle(toneOffer).Render("["+keys.Shown(keys.Draft.Cancel)+"]") + sty.KeyLabel.Render(" again quits")
+	return "\n" + barTones().Paint(components.KeyOffer{Key: keys.Bracket(keys.Draft.Cancel), Label: "again quits"})
 }

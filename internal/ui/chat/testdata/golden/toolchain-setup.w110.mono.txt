@@ -37,7 +37,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ workspace read-only                                                                                    │
 │ sandbox   bwrap · workspace                                                                            │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] install them · [n] no — nothing installed · [?] keys · [esc] leave — nothing installed             │
+│ [y] install them · [n] no — nothing installed · [?] keys · [esc] keeps waiting — nothing installed     │
 │ enter opened this card and installs nothing — only [y] does                                            │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -51,7 +51,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ lands in  ~/.cache/shhh/toolchain/bin — shhh's own, on every command's PATH                            │
 │ network   open — nothing contains the install, so nothing limits what it reaches                       │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] install them · [n] no — nothing installed · [?] keys · [esc] leave — nothing installed             │
+│ [y] install them · [n] no — nothing installed · [?] keys · [esc] keeps waiting — nothing installed     │
 │ enter opened this card and installs nothing — only [y] does                                            │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -83,7 +83,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[38;5;254m│␛[m ␛[38;5;244mworkspace ␛[m␛[38;5;254mread-only␛[m                                                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254minstall them␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mno — nothing installed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave — nothing installed␛[m             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m install them␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m no — nothing installed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting — nothing installed␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244menter opened this card and installs nothing — only [y] does␛[m                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -97,6 +97,6 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254m~/.cache/shhh/toolchain/bin␛[m␛[38;5;244m — shhh's own, on every command's PATH␛[m                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — nothing contains the install, so nothing limits what it reaches␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254minstall them␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mno — nothing installed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave — nothing installed␛[m             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m install them␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m no — nothing installed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting — nothing installed␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244menter opened this card and installs nothing — only [y] does␛[m                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

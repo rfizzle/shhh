@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // grants is the session's grants as one value, for the surfaces that carry
@@ -334,7 +335,7 @@ func (m Model) grantStatus() string {
 	if !g.Any() && !m.policy.turn.Any() && len(m.policy.roles) == 0 && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 &&
 		len(m.policy.allowHosts) == 0 && len(m.policy.denyHosts) == 0 && len(m.scopeDirs()) == 0 && len(m.writerDirs()) == 0 {
 		return "nothing is granted — every gated call asks.\n" +
-			"[a] on a confirm prompt offers the grants that call can make, each with when it ends; /permissions allow <commands|edits> grants the category"
+			keys.Bracket(keys.Decision.Always) + " on a confirm prompt offers the grants that call can make, each with when it ends; /permissions allow <commands|edits> grants the category"
 	}
 	var sb strings.Builder
 	sb.WriteString("Grants:\n")

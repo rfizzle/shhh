@@ -287,14 +287,14 @@ func TestProgram_AttachingMovesTheKeyboardIntoAChild(t *testing.T) {
 	tm, _ := heldChildren(t, false)
 
 	send(tm, "/attach reader-1")
-	waitForText(t, tm, "[esc] back to your session")
+	waitForText(t, tm, "[esc] back")
 	send(tm, "read round.go as well")
 	waitForText(t, tm, "1 queued for this turn")
 	programPress(t, tm, "esc")
 	waitForText(t, tm, "[enter] send")
 
 	frame := finalFrame(t, tm)
-	if strings.Contains(frame, "[esc] back to your session") {
+	if strings.Contains(frame, "[esc] back") {
 		t.Fatalf("esc did not bring the keyboard back to the session:\n%s", frame)
 	}
 }
@@ -320,9 +320,9 @@ func TestProgram_TheNextAgentChordWalksTheMap(t *testing.T) {
 	tm, _ := heldChildren(t, false)
 
 	programPress(t, tm, "shift+f8")
-	waitForText(t, tm, "[esc] back to your session")
+	waitForText(t, tm, "[esc] back")
 	programPress(t, tm, "shift+f8", "shift+f8")
-	waitForGone(t, tm, "[esc] back to your session")
+	waitForGone(t, tm, "[esc] back")
 
 	frameHas(t, finalFrame(t, tm), "[enter] send")
 }
@@ -379,7 +379,7 @@ func TestProgram_TheManagerAnswersAChildInPlace(t *testing.T) {
 	programPress(t, tm, "j")
 	waitForText(t, tm, "answer without attaching")
 	programPress(t, tm, "a")
-	waitForText(t, tm, "back to the agents")
+	waitForText(t, tm, "[esc] keeps waiting")
 	programPress(t, tm, "n")
 	waitForText(t, tm, "writer-1  declined")
 

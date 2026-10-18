@@ -70,6 +70,6 @@ func (m Model) railLines(width, height int) []string {
 
 // renderRailHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the readings screen's does.
-func (m Model) renderRailHint() string {
-	return sty.SystemMsg.Render("rail · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+func (m Model) renderRailHint() []hintSeg {
+	return paneHint("rail", segAs(keys.Screen.Quit, components.EscBack))
 }

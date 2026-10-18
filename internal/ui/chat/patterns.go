@@ -314,10 +314,10 @@ func (m Model) proposalApprovalCard() *components.ApprovalCard {
 		Answer:   "write it",
 		Decline:  "not now",
 		Never:    "never",
-		Return:   "leave — nothing written, and it is offered again",
+		Return:   components.EscWaits + " — nothing written",
 		MaxLines: m.planPanelBound(),
 		KeyList:  true,
-		Footnote: "enter opened this card and writes nothing — only [y] does",
+		Footnote: "enter opened this card and writes nothing — only " + keys.Bracket(keys.Proposal.Write) + " does",
 	}
 }
 
@@ -422,6 +422,6 @@ func (m *Model) neverProposal(p Proposal) string {
 }
 
 // renderPatternsHint is the one line the list leaves where the draft was.
-func (m Model) renderPatternsHint() string {
-	return sty.SystemMsg.Render("patterns · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+func (m Model) renderPatternsHint() []hintSeg {
+	return paneHint("patterns", segAs(keys.Screen.Quit, components.EscBack))
 }

@@ -692,7 +692,7 @@ func (m Model) retryWaitBlock(width int) string {
 			Key: keys.Bracket(keys.Wait.Fallback), Label: "finish this turn on " + r.fallback,
 		})
 	}
-	w.Keys = append(w.Keys, components.KeyOffer{Key: "[esc]", Label: m.retryStopLabel()})
+	w.Keys = append(w.Keys, components.KeyOffer{Key: keys.Bracket(keys.Wait.Stop), Label: m.retryStopLabel()})
 	return w.View(width)
 }
 

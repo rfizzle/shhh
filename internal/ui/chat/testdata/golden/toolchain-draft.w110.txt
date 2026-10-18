@@ -43,8 +43,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ + 5  check = ["golangci-lint"]                                                                         │
 │ +5 −0 · 1 hunk                                                                                         │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] write it · [n] nothing written · [e] edit first · [?] keys                                         │
-│ [esc] leave — nothing written, and the draft waits                                                     │
+│ [y] write it · [n] nothing written · [e] edit first · [?] keys · [esc] keeps waiting — nothing written │
 │ enter opened this card and writes nothing — only [y] does                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -64,8 +63,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ + 5  check = ["golangci-lint"]                                                                         │
 │ +5 −0 · 1 hunk                                                                                         │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] write it · [n] nothing written · [e] edit first · [?] keys                                         │
-│ [esc] leave — nothing written, and the draft waits                                                     │
+│ [y] write it · [n] nothing written · [e] edit first · [?] keys · [esc] keeps waiting — nothing written │
 │ enter opened this card and writes nothing — only [y] does                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -86,8 +84,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │   5  check = ["golangci-lint"]                                                                         │
 │ +4 −0 · 1 hunk                                                                                         │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] write it · [n] nothing written · [e] edit first · [?] keys                                         │
-│ [esc] leave — nothing written, and the draft waits                                                     │
+│ [y] write it · [n] nothing written · [e] edit first · [?] keys · [esc] keeps waiting — nothing written │
 │ enter opened this card and writes nothing — only [y] does                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -125,8 +122,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 5  ␛[m␛[92mcheck␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[92m]␛[m                                                                         ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245m+5 −0 · 1 hunk␛[m                                                                                         ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] leave — nothing written, and the draft waits␛[m                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m␛[38;5;252m write it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;252m nothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;252m edit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;252m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc] keeps waiting — nothing written␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245menter opened this card and writes nothing — only [y] does␛[m                                              ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -146,8 +142,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 5  ␛[m␛[92mcheck␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[92m]␛[m                                                                         ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245m+5 −0 · 1 hunk␛[m                                                                                         ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] leave — nothing written, and the draft waits␛[m                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m␛[38;5;252m write it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;252m nothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;252m edit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;252m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc] keeps waiting — nothing written␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245menter opened this card and writes nothing — only [y] does␛[m                                              ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -168,7 +163,6 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[94m│␛[m ␛[38;5;245m  5  ␛[m␛[38;5;252mcheck␛[m␛[38;5;252m ␛[m␛[38;5;248m=␛[m␛[38;5;252m ␛[m␛[38;5;248m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[38;5;248m]␛[m                                                                         ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245m+4 −0 · 1 hunk␛[m                                                                                         ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] leave — nothing written, and the draft waits␛[m                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m␛[38;5;252m write it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;252m nothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;252m edit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;252m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc] keeps waiting — nothing written␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245menter opened this card and writes nothing — only [y] does␛[m                                              ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

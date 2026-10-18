@@ -26,7 +26,7 @@
                                                                                         │ 
                                                                                         │ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[ctrl+s] save · [esc] back to the prompt                                                                          ln 1 · col 1
+[ctrl+s] save · [esc] back                                                                                        ln 1 · col 1
 
 · modified, and esc asked
 /edit loop.go · 9 lines · modified                                                                  [ctrl+]] keys · [esc] back
@@ -67,10 +67,10 @@ edit · [esc] keep editing
                                                                                         │ 
                                                                                         │ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[ctrl+s] save · [esc] back to the prompt                                                                          ln 2 · col 1
+[ctrl+s] save · [esc] back                                                                                        ln 2 · col 1
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ⏸ manual                                                                                                                      
-edit · [esc] back to the prompt
+edit · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · opened over the feed
@@ -89,7 +89,7 @@ edit · [esc] back to the prompt
                                                                                        ␛[38;5;245m │ ␛[m
                                                                                        ␛[38;5;245m │ ␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                                                          ␛[38;5;245mln 1 · col 1␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                                                                                        ␛[38;5;245mln 1 · col 1␛[m
 
 · modified, and esc asked
 ␛[1;97m/edit␛[m␛[38;5;252m loop.go␛[m␛[38;5;245m · 9 lines␛[m␛[38;5;245m · ␛[m␛[38;5;214mmodified␛[m                                                                  ␛[38;5;245m[ctrl+]] keys · [esc] back␛[m
@@ -112,7 +112,7 @@ edit · [esc] back to the prompt
 · the panel it leaves · the way out, and no letter
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m                                                                                                                      
-␛[38;5;245medit · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep editing␛[m
+␛[38;5;245medit␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep editing␛[m
 
 · ctrl+c over the modified buffer · it does nothing, and no quit window is open
 ␛[1;97m/edit␛[m␛[38;5;252m loop.go␛[m␛[38;5;245m · 9 lines␛[m␛[38;5;245m · ␛[m␛[38;5;214mmodified␛[m                                                                  ␛[38;5;245m[ctrl+]] keys · [esc] back␛[m
@@ -130,7 +130,7 @@ edit · [esc] back to the prompt
                                                                                        ␛[38;5;245m │ ␛[m
                                                                                        ␛[38;5;245m │ ␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                                                          ␛[38;5;245mln 2 · col 1␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                                                                                        ␛[38;5;245mln 2 · col 1␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m                                                                                                                      
-␛[38;5;245medit · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;245medit␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

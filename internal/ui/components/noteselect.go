@@ -180,13 +180,11 @@ func (s *NoteSelect) hintRowsFor(width int) []string {
 	}
 	hint = append(hint, keyOfferAs(keys.Select.Take, "confirm"))
 	hint = append(hint, s.Actions...)
-	// While the query row is open esc backs out of it first, so the way out
-	// it offers is the level it is on.
+	// While the query row is open esc backs out of it first, a step back
+	// like any other (filterBack).
 	switch {
-	case s.Select.Filtering && s.Select.Query != "":
-		hint = append(hint, keyOfferAs(keys.Select.Cancel, "clear"))
-	case s.Select.Filtering && s.Select.hasRowKeys():
-		hint = append(hint, keyOfferAs(keys.Select.Cancel, "row keys"))
+	case s.Select.Filtering && (s.Select.Query != "" || s.Select.hasRowKeys()):
+		hint = append(hint, s.Select.filterBack())
 	case s.Select.Filterable && !s.Select.Filtering:
 		hint = append(hint, keyOffer(keys.Select.Filter), s.Select.cancelOffer())
 	default:

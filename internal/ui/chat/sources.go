@@ -124,8 +124,8 @@ func (m Model) sourcesLines() []string {
 // renderSourcesHint is the one line the screen leaves where the draft box
 // was. The screen holds the keyboard, so the panel states the way out and
 // nothing else, the way the context surface's does.
-func (m Model) renderSourcesHint() string {
-	return sty.SystemMsg.Render("sources · ") + seg(keys.Sources.Back).render()
+func (m Model) renderSourcesHint() []hintSeg {
+	return paneHint("sources", seg(keys.Sources.Back))
 }
 
 // sourceRow is the screen's row with an id, or nil.

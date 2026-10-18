@@ -219,12 +219,12 @@ func (m Model) editPaneLines(width, height int) []string {
 // The pane states its own keys on its foot row, so the panel names the
 // surface and the way out and nothing else — and no letter, because every
 // letter is the file's.
-func (m Model) renderEditPaneHint() string {
-	hint := segAs(keys.Editor.Back, "back to the prompt")
+func (m Model) renderEditPaneHint() []hintSeg {
+	hint := segAs(keys.Editor.Back, components.EscBack)
 	if s := m.screens.editPane(); s != nil && s.pane.Asking() {
 		hint = segAs(keys.Editor.Keep, "keep editing")
 	}
-	return sty.SystemMsg.Render("edit · ") + hint.render()
+	return paneHint("edit", hint)
 }
 
 // clickEditPane is a click on the pane's outline, which puts the cursor on the

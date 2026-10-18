@@ -79,7 +79,7 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 		// Enter opened this card from /init or the offer's row; a second
 		// tap of it writes nothing (keys.ProposalKeys).
 		LetterOnly: true,
-		Footnote:   "enter opened this card and writes nothing — only [y] does",
+		Footnote:   "enter opened this card and writes nothing — only " + keys.Bracket(keys.Proposal.Write) + " does",
 		MaxLines:   m.planPanelBound(),
 	}
 	for _, path := range m.scaffold.Paths {
@@ -104,7 +104,7 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 	// denial says what outlives it, and esc says what it leaves behind, which
 	// is not what it leaves behind on a gated card.
 	card.Decline = "no — nothing written; not offered again"
-	card.Return = "leave — nothing written, and the offer stays"
+	card.Return = components.EscWaits + " — nothing written"
 	// routeOverlay answers `?` over the card with its register, so the run
 	// offers it (the scaffold row's keyList).
 	card.KeyList = true

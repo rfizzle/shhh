@@ -103,8 +103,8 @@ func (m Model) safetyLines(width, height int) []string {
 
 // renderSafetyHint is the one line the screen leaves where the draft box
 // was: the way out, and nothing else, because the screen holds the keyboard.
-func (m Model) renderSafetyHint() string {
-	return sty.SystemMsg.Render("safety · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+func (m Model) renderSafetyHint() []hintSeg {
+	return paneHint("safety", segAs(keys.Screen.Quit, components.EscBack))
 }
 
 // safetySubject is the header's field: the mode the session runs under and

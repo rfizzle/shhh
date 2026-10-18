@@ -132,10 +132,10 @@
   │                                                      │  
   │ lands in  your workspace                             │  
   │ touches   nothing                                    │  
-  │ undo      nothing to undo                            │  
-  │ network   open                                       │  
+  │ … 2 more lines · [shift+↓]                           │  
   ├──────────────────────────────────────────────────────┤  
-  │ [y] run it once · [n] deny · [?] keys · [esc] wait   │  
+  │ [y] run it once · [n] deny · [?] keys                │  
+  │ [esc] keeps waiting                                  │  
   │ [ctrl+space/ctrl+y] answer it                        │  
 
 · working · a reading of the session leads the rail
@@ -263,8 +263,8 @@
                                                             
   ────────────────────────────────────────────────────────  
   ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51                       
-  [↑↓/jk] move · [d] delete · [esc] back to the draft,      
-  cursor where you left it                                  
+  [↑↓/jk] move · [d] delete                                 
+  [esc] back to the draft, cursor where you left it         
 
 ── ansi ────────────────────────────────────────────────────
 · idle · the turn resolved and the draft has the keyboard
@@ -389,10 +389,10 @@
 ␛[48;5;233m  ␛[38;5;214m│␛[39m                                                      ␛[38;5;214m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[38;5;246mlands in  ␛[38;5;214myour workspace␛[39m                             ␛[38;5;214m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[38;5;246mtouches   ␛[92mnothing␛[39m                                    ␛[38;5;214m│␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[38;5;246mundo      ␛[92mnothing to undo␛[39m                            ␛[38;5;214m│␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[38;5;246mnetwork   ␛[38;5;214mopen␛[39m                                       ␛[38;5;214m│␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[38;5;245m… 2 more lines · [shift+↓]␛[39m                           ␛[38;5;214m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[38;5;103m[y]␛[39m ␛[38;5;252mrun it once␛[38;5;245m · ␛[38;5;103m[n]␛[39m ␛[38;5;252mdeny␛[38;5;245m · ␛[38;5;103m[?]␛[39m ␛[38;5;252mkeys␛[38;5;245m · ␛[92m[esc] wait␛[39m   ␛[38;5;214m│␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[38;5;103m[y]␛[38;5;252m run it once␛[38;5;245m · ␛[38;5;103m[n]␛[38;5;252m deny␛[38;5;245m · ␛[38;5;103m[?]␛[38;5;252m keys␛[39m                ␛[38;5;214m│␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[92m[esc] keeps waiting␛[39m                                  ␛[38;5;214m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;214m│␛[39m ␛[38;5;245m[ctrl+space/ctrl+y] answer it␛[39m                        ␛[38;5;214m│␛[39m  ␛[m
 
 · working · a reading of the session leads the rail
@@ -520,5 +520,5 @@
 ␛[48;5;233m                                                            ␛[m
 ␛[48;5;233m  ␛[38;5;245m────────────────────────────────────────────────────────␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[39m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[39m                       ␛[m
-␛[48;5;233m  ␛[38;5;103m[↑↓/jk]␛[38;5;245m move · ␛[38;5;103m[d]␛[38;5;245m delete · ␛[92m[esc]␛[38;5;245m back to the draft,␛[39m      ␛[m
-␛[48;5;233m  ␛[38;5;245mcursor where you left it␛[39m                                  ␛[m
+␛[48;5;233m  ␛[38;5;103m[↑↓/jk]␛[38;5;245m move · ␛[38;5;103m[d]␛[38;5;245m delete␛[39m                                 ␛[m
+␛[48;5;233m  ␛[92m[esc]␛[38;5;245m back to the draft, cursor where you left it␛[39m         ␛[m

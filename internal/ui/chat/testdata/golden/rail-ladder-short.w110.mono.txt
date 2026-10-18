@@ -52,11 +52,11 @@
                                                                                                               
   ↓ 5 more · agents · processes · calls · context · spend                                                     
                                                                                                               
-  [↑↓/jk] scroll · [esc] back to the prompt                            a reading · every block, nothing shed  
+  [↑↓/jk] scroll · [esc] back                                          a reading · every block, nothing shed  
   ⚠ researcher-1 · Say where the round counter is rea…                         waiting approval: run echo hi  
   ──────────────────────────────────────────────────────────────────────────────────────────────────────────  
   ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 · ◇1                                                                
-  rail · [esc] back to the prompt                                                                             
+  rail · [esc] back                                                                                           
 
 ── ansi ────────────────────────────────────────────────────
 · twenty-two rows · the static blocks go to the foot line, the asks stay
@@ -101,8 +101,8 @@
                                                                                                               
   ␛[38;5;244m↓ 5 more · agents · processes · calls · context · spend␛[m                                                     
                                                                                                               
-  ␛[38;5;254m[↑↓/jk]␛[38;5;244m scroll · ␛[38;5;254m[esc]␛[38;5;244m back to the prompt␛[m                            ␛[38;5;244ma reading · every block, nothing shed␛[m  
+  ␛[38;5;254m[↑↓/jk]␛[38;5;244m scroll · ␛[38;5;254m[esc]␛[38;5;244m back␛[m                                          ␛[38;5;244ma reading · every block, nothing shed␛[m  
   ␛[38;5;254m⚠␛[m researcher-1␛[38;5;244m · Say where the round counter is rea…␛[m                         ␛[38;5;254mwaiting approval: run echo hi␛[m  
   ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51 · ␛[38;5;254m◇1␛[m                                                                
-  ␛[38;5;244mrail · ␛[38;5;254m[esc]␛[38;5;244m back to the prompt␛[m                                                                             
+  ␛[38;5;244mrail · ␛[38;5;254m[esc]␛[38;5;244m back␛[m                                                                                           

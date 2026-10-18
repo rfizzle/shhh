@@ -533,7 +533,7 @@ func (h *HistoryScreen) footField() string {
 	if h.currentShown(h.Rows) == nil {
 		return ""
 	}
-	return "nothing is re-run until [enter]"
+	return "nothing is re-run until " + keys.Bracket(keys.Screen.Take)
 }
 
 // sync rebuilds the list from Rows. It runs before every Update and every

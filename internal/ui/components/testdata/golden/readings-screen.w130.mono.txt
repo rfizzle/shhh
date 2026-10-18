@@ -24,7 +24,7 @@
                                                  │ 
                                                  │   it steered the turn, and the steer was taken back
 
-[↑↓/jk] move · [esc] back to the prompt                                                a reader's account of the run, newest first
+[↑↓/jk] move · [esc] back                                                              a reader's account of the run, newest first
 
 · a steer that stood · the oldest let go, and the screen saying so
 /readings · 5 readings                                                                       $0.0142 spent · [?] keys · [esc] back
@@ -41,7 +41,7 @@
                                                  │ 
                                                  │   it steered the turn
 
-[↑↓/jk] move · [esc] back to the prompt                                                a reader's account of the run, newest first
+[↑↓/jk] move · [esc] back                                                              a reader's account of the run, newest first
 
 · a quiet reading · kept here though the transcript drew no row for it
 /readings · 5 readings                                                                       $0.0142 spent · [?] keys · [esc] back
@@ -54,7 +54,7 @@
 ❯ ▸ r 3 · on target                       turn 1 │     ▸ on target
                                                  │     read against: find why the loop never stops
 
-[↑↓/jk] move · [esc] back to the prompt                                                a reader's account of the run, newest first
+[↑↓/jk] move · [esc] back                                                              a reader's account of the run, newest first
 
 ── ansi ────────────────────────────────────────────────────
 · a steer taken back · the reading whole, and what became of its steer
@@ -71,7 +71,7 @@
                                                 ␛[38;5;244m │ ␛[m
                                                 ␛[38;5;244m │ ␛[m␛[38;5;244m  it steered the turn, and the steer was taken back␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                ␛[38;5;244ma reader's account of the run, newest first␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                              ␛[38;5;244ma reader's account of the run, newest first␛[m
 
 · a steer that stood · the oldest let go, and the screen saying so
 ␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                                       ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -88,7 +88,7 @@
                                                 ␛[38;5;244m │ ␛[m
                                                 ␛[38;5;244m │ ␛[m␛[38;5;244m  it steered the turn␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                ␛[38;5;244ma reader's account of the run, newest first␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                              ␛[38;5;244ma reader's account of the run, newest first␛[m
 
 · a quiet reading · kept here though the transcript drew no row for it
 ␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                                       ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -101,4 +101,4 @@
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ r 3 · on target                       turn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244m▸ on target␛[m
                                                 ␛[38;5;244m │ ␛[m    ␛[38;5;244mread against: find why the loop never stops␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                ␛[38;5;244ma reader's account of the run, newest first␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                              ␛[38;5;244ma reader's account of the run, newest first␛[m

@@ -145,8 +145,8 @@ func TestReview_IsATakeoverSurface(t *testing.T) {
 	if m.frameShowing() {
 		t.Fatal("a takeover surface replaces the prompt frame")
 	}
-	if !strings.Contains(ansi.Strip(m.renderReviewHint()), "esc") {
-		t.Fatalf("the bottom panel should say where esc goes, got %q", ansi.Strip(m.renderReviewHint()))
+	if !strings.Contains(ansi.Strip(joinSegs(m.renderReviewHint())), "esc") {
+		t.Fatalf("the bottom panel should say where esc goes, got %q", ansi.Strip(joinSegs(m.renderReviewHint())))
 	}
 }
 

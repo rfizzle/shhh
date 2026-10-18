@@ -61,7 +61,7 @@ func TestSelect_ViewShowsPointerAndFocusedDesc(t *testing.T) {
 	if !strings.Contains(view, "tell me what to change") {
 		t.Fatalf("focused option's description should show:\n%s", view)
 	}
-	if !strings.Contains(ansi.Strip(view), "[esc] take none") {
+	if !strings.Contains(ansi.Strip(view), "[esc] back") {
 		t.Fatalf("hints should render:\n%s", view)
 	}
 }

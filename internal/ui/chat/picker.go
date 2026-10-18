@@ -451,8 +451,8 @@ func (m Model) modelPickFor(t modelTarget) modelPick {
 			if !switched {
 				return fmt.Sprintf("already using %s", name), nil
 			}
-			return fmt.Sprintf("switched to %s for this session. In the picker, [%s] closes the search, then [%s] makes a choice the default",
-				name, keys.Shown(keys.Select.Cancel), keys.Shown(keys.Select.Alt)), nil
+			return fmt.Sprintf("switched to %s for this session. In the picker, %s closes the search, then %s makes a choice the default",
+				name, keys.Bracket(keys.Select.Cancel), keys.Bracket(keys.Select.Alt)), nil
 		}
 		// setModelDefault owns the writing and everything true about it —
 		// the failure wording, and the warning when something outranks the
@@ -645,7 +645,7 @@ func (m Model) openRunPick() (tea.Model, tea.Cmd, bool) {
 	if len(blocks) < 2 {
 		return m, nil, false
 	}
-	model, cmd := m.openBlockPick("Run a code block", "take none", blocks, func(m *Model, idx int) (string, tea.Cmd) {
+	model, cmd := m.openBlockPick("Run a code block", components.EscBack, blocks, func(m *Model, idx int) (string, tea.Cmd) {
 		m.pendingRun = blocks[idx].body
 		m.approval.blast = m.resolveRadius(nil)
 		m.setTurnState(stateConfirmRun)

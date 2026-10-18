@@ -887,7 +887,7 @@ func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 	// Over the manager `?` is not routed to the card (agentListKeyList), so
 	// the card does not offer it.
 	card.KeyList = false
-	card.Return = "back to the agents — the decision stays waiting"
+	card.Return = components.EscWaits
 	return card
 }
 

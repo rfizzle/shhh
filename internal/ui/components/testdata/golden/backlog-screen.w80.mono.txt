@@ -242,7 +242,7 @@ backlog · the cockpit sprint            6 items · [?] hide the keys · [esc] b
 [pgup/pgdn] page the body
 [tab] the backlog, the sprint, or what shipped
 [/] filter by ready, blocked, done, priority:high, kind:story, size:S, or a
-title
+    title
 [backspace] delete a character from the filter
 [e] edit
 [n] new item
@@ -510,7 +510,7 @@ $  a shell command
 ␛[38;5;254m[pgup/pgdn]␛[m␛[38;5;244m page the body␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m the backlog, the sprint, or what shipped␛[m
 ␛[38;5;254m[/]␛[m␛[38;5;244m filter by ready, blocked, done, priority:high, kind:story, size:S, or a␛[m
-␛[38;5;244mtitle␛[m
+    ␛[38;5;254m␛[m␛[38;5;244mtitle␛[m
 ␛[38;5;254m[backspace]␛[m␛[38;5;244m delete a character from the filter␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m
 ␛[38;5;254m[n]␛[m␛[38;5;244m new item␛[m

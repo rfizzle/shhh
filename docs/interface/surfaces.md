@@ -2676,7 +2676,7 @@ queue is never made to wait between questions.
 The decision run is written the way every other key row in the product is: a
 key in brackets, a lower-case imperative after it, and the answer that costs
 nothing in the colour of the safe answer — *[y] run it once · [e] edit the
-command · [n] deny · [esc] not now — it keeps waiting*, the way out last. A key
+command · [n] deny · [esc] keeps waiting*, the way out last. A key
 that is not offered stays on the card with its reason rather than
 disappearing. The compact `[y/n/a]` prompt this card used to print, with what
 its keys bought in parentheses beside it, was the one place two notations sat
@@ -2711,14 +2711,13 @@ thing a reader must be able to find without having pressed anything first
 run is drawn in never scrolls, so a run that wraps keeps it on screen all the
 same. The offer joins the run's last row where it fits there and otherwise
 takes a row of its own, so a narrow card breaks the run before it rather than
-inside it. The words every gated card shares give up whatever it takes to
-stay on the row — the trailing clause first, since *leave it waiting* already
-says the decision is not answered, then all but *wait*, and at the narrowest
-the words themselves, leaving the bare `[esc]` in the safe answer's colour as
-the run's last offer — so the way out never takes a row of its own for them;
-but a card's own words join whole or not at all: they are on
-the card because the first clause was not enough to tell esc from that card's
-no.
+inside it. Its words go with it whole at every width: a bare `[esc]` on a card
+holding a decision leaves the reader to guess whether the key that leaves it
+also answers it, and *keeps waiting* is what says it does not. A narrow card
+spends a row on the way out rather than its words. A card's own words give
+ground only where they are wider than a whole row, and then clause by clause:
+they are on the card because the first clause was not enough to tell esc from
+that card's no.
 A card whose own field or list holds the keyboard states that surface's esc
 instead, once: two surfaces cannot both have the key, and the nearer one wins.
 A card that does not have the keyboard at all states none — esc there belongs
@@ -3398,9 +3397,9 @@ key row and a header are read at different moments — not because there are two
 facts. The header ends with the register's key and then esc, with the act in
 its one word, `back`, wherever the screen was opened from. The foot ends with the same act
 
-under the key a reader reaches for without thinking, and there it is a phrase:
+under the key a reader reaches for without thinking:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
-browser, **back to the prompt** on the context reading, the sources ledger, the
+browser, and **back**, the header's own word, on the context reading, the sources ledger, the
 working list, the readings, the turns, the alerts, the flakes, the bill, the process manager, the tools, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 

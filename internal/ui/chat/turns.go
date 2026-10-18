@@ -92,8 +92,8 @@ func (m Model) closeTurnsScreen() (tea.Model, tea.Cmd) {
 
 // renderTurnsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the readings screen's does.
-func (m Model) renderTurnsHint() string {
-	return sty.SystemMsg.Render("turns · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+func (m Model) renderTurnsHint() []hintSeg {
+	return paneHint("turns", segAs(keys.Screen.Quit, components.EscBack))
 }
 
 // turnsScreenData builds the screen, newest first, over every number the

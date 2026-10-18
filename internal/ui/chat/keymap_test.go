@@ -524,6 +524,9 @@ func decisionCards(t *testing.T) []decisionCard {
 				return handover(t, updated.(Model))
 			},
 			card: sessionCard,
+			// At this width the way out takes a row of its own with its words
+			// whole, which puts the body one row past its panel.
+			scrolls: true,
 		},
 		{
 			name: "a child's routed command",

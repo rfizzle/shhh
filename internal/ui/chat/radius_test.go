@@ -173,7 +173,7 @@ func TestBlastRadius_FlaggedCommandSaysWhyAlwaysIsMissing(t *testing.T) {
 	}
 	// Esc is the safe answer, and on a flagged card the row says so in words
 	// rather than leaving it to the key's own colour.
-	if !strings.Contains(view, "[esc] not now — it keeps waiting") {
+	if !strings.Contains(view, "[esc] keeps waiting") {
 		t.Fatalf("a high-severity card states the safe answer in words:\n%s", view)
 	}
 }

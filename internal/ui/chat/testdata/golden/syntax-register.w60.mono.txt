@@ -35,7 +35,7 @@
 
 
 
-diff · [↑↓/jk] move · [n/N] hunk · [s] side-by-side · [esc]…
+[↑↓/jk] move · [n/N] hunk · [s] side-by-side · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · expanded · the register over the diff kinds
@@ -63,4 +63,4 @@ diff · [↑↓/jk] move · [n/N] hunk · [s] side-by-side · [esc]…
 
 
 
-␛[38;5;244mdiff · ␛[m␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n/N]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m side-by-side␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m…␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n/N]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m side-by-side␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

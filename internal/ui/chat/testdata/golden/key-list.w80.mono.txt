@@ -194,7 +194,7 @@ keys · [esc] back to reading mode
 ␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
 ␛[38;5;244m⊘␛[m  ␛[38;5;244mrefused: dim by you, red by a rule␛[m
 ␛[38;5;244m↓ 5 more · [↑↓/jk] read on␛[m
-␛[38;5;244mkeys · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the approval card and the /run confirm␛[m
+␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the approval card and the /run confirm␛[m
 
 · over reading mode · the cursor on a row with offers of its own
 ␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m                                                 ␛[38;5;244m[?] back␛[m
@@ -231,7 +231,7 @@ keys · [esc] back to reading mode
 ␛[38;5;244m∗␛[m  ␛[38;5;244ma turn's close␛[m
 ␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
 ␛[38;5;244m↓ 6 more · [↑↓/jk] read on␛[m
-␛[38;5;244mkeys · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
+␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
 
 · over reading mode · the cursor on an open card
 ␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m                                                 ␛[38;5;244m[?] back␛[m
@@ -268,7 +268,7 @@ keys · [esc] back to reading mode
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
 ␛[38;5;244m∗␛[m  ␛[38;5;244ma turn's close␛[m
 ␛[38;5;244m↓ 7 more · [↑↓/jk] read on␛[m
-␛[38;5;244mkeys · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
+␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
 
 · over reading mode · the cursor on the card's strip
 ␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m                                                 ␛[38;5;244m[?] back␛[m
@@ -305,4 +305,4 @@ keys · [esc] back to reading mode
 ␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
 ␛[38;5;244m↓ 8 more · [↑↓/jk] read on␛[m
-␛[38;5;244mkeys · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
+␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m

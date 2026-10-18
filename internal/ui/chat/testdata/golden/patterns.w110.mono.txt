@@ -22,7 +22,7 @@
                                                       │ keeps a convention memory every session here is
                                                       │ told
 
-[enter] open its card · [esc] back to the prompt             from what this checkout's sessions kept doing
+[↑↓/jk] move · [enter] open its card · [esc] back            from what this checkout's sessions kept doing
 
 · the allowlist card · nothing written yet
 ╭─ Approve allowlist line ───────────────────────────────────────────────────────────────────────────────╮
@@ -33,8 +33,7 @@
 │ + 3  command_allowlist = ["go test"]                                                                   │
 │ +1 −0 · 1 hunk                                                                                         │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] write it · [n] not now · [N] never · [?] keys                                                      │
-│ [esc] leave — nothing written, and it is offered again                                                 │
+│ [y] write it · [n] not now · [N] never · [?] keys · [esc] keeps waiting — nothing written              │
 │ enter opened this card and writes nothing — only [y] does                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -51,7 +50,7 @@
                                                      ␛[38;5;244m │ ␛[m␛[38;5;244mkeeps a convention memory every session here is␛[m
                                                      ␛[38;5;244m │ ␛[m␛[38;5;244mtold␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m open its card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mfrom what this checkout's sessions kept doing␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open its card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m            ␛[38;5;244mfrom what this checkout's sessions kept doing␛[m
 
 · the allowlist card · nothing written yet
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove allowlist line ␛[m␛[38;5;254m───────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -62,7 +61,6 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m+␛[m␛[38;5;244m 3  ␛[m␛[38;5;254mcommand_allowlist = ["go test"]␛[m                                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+1 −0 · 1 hunk␛[m                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mwrite it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mnot now␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mnever␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave — nothing written, and it is offered again␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m write it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m not now␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m␛[38;5;254m never␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting — nothing written␛[m              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244menter opened this card and writes nothing — only [y] does␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

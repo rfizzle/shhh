@@ -159,7 +159,7 @@ func TestClassifierFlow_ANoIsACardCarryingItsReason(t *testing.T) {
 	if card.Judged != why {
 		t.Fatalf("the card should carry the classifier's sentence, got %q", card.Judged)
 	}
-	if card.Return != "not now — it keeps waiting" {
+	if card.Return != "keeps waiting" {
 		t.Fatalf("the safe answer should be named as a flagged card names it, got %q", card.Return)
 	}
 	// No grant, as a flagged card offers none: a grant answers before the

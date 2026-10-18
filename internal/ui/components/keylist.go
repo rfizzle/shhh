@@ -138,8 +138,6 @@ func withKeyListOffer(offers []KeyOffer) []KeyOffer {
 // KeyListOffers is withKeyListOffer for a run a host lays itself.
 func KeyListOffers(offers []KeyOffer) []KeyOffer { return withKeyListOffer(offers) }
 
-// keyListSegment is `[?] keys` as a painted segment of a run whose way out
-// the caller lays after it.
-func keyListSegment() string {
-	return offerSegment(keys.Bracket(keys.Screen.List), keys.Words(keys.Screen.List))
-}
+// keyListSegment is `[?] keys` as a segment of a run whose way out the
+// caller lays after it.
+func keyListSegment() KeyOffer { return keyOffer(keys.Screen.List) }

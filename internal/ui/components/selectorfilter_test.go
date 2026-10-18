@@ -156,11 +156,25 @@ func TestSelectFilter_ClearAndLeave(t *testing.T) {
 // esc has a second reading on an empty query: it closes the row and gives
 // the card its own keys back, without leaving it. The key row names which of
 // the two readings the key has.
+// A card holding a decision says its decision keeps waiting at every level
+// of esc, the filter row's included: `back` on a card asking for an answer
+// reads as dismissing it.
+func TestSelectFilter_ADecisionCardKeepsWaitingWhileFiltering(t *testing.T) {
+	for _, query := range []string{"", "son"} {
+		s := filtered(query)
+		s.CancelLabel = EscWaits
+		view := ansi.Strip(s.View(70))
+		if !strings.Contains(view, "[esc] "+EscWaits) || strings.Contains(view, "[esc] "+EscBack) {
+			t.Fatalf("query %q: the filter row's esc should keep the decision waiting:\n%s", query, view)
+		}
+	}
+}
+
 func TestSelectFilter_ClearingAnEmptyQueryClosesTheRow(t *testing.T) {
 	s := filtered("")
 	s.AltKey, s.AltLabel = "m", "and make it default"
 
-	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[esc] row keys") {
+	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[esc] back") {
 		t.Fatalf("an empty query offers the way back to the row's keys:\n%s", view)
 	}
 
@@ -257,7 +271,7 @@ func TestSelectFilter_NoMatchIsARowNotAnEmptyPane(t *testing.T) {
 	view := ansi.Strip(s.View(70))
 	for _, want := range []string{
 		"0 of 24 match", `no match for "sonnet-5"`,
-		"closest is claude-sonnet-4.6", "[esc] clear",
+		"closest is claude-sonnet-4.6", "[esc] back",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the empty card:\n%s", want, view)
@@ -420,7 +434,7 @@ func TestNoteSelectFilter_PinsItsQueryRowAndKeepsTheNote(t *testing.T) {
 		t.Fatalf("digits are text on an open query line, got %q", ns.Select.Query)
 	}
 	view := ansi.Strip(ns.View(70))
-	for _, want := range []string{"▸ 19█", "20 of 20 match", "note (optional)", "[esc] clear"} {
+	for _, want := range []string{"▸ 19█", "20 of 20 match", "note (optional)", "[esc] back"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the card:\n%s", want, view)
 		}

@@ -687,7 +687,7 @@ func (m Model) updateCommitMessage(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) makeCommit() (tea.Model, tea.Cmd) {
 	st := *m.commit
 	if strings.TrimSpace(st.message) == "" {
-		st.failure = "a commit needs a message; [e] writes one"
+		st.failure = "a commit needs a message; " + keys.Bracket(keys.Commit.Edit) + " writes one"
 		m.commit = &st
 		return m, nil
 	}

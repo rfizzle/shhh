@@ -81,7 +81,7 @@ func (c *Confirm) withKeyList(answers string, room int) string {
 	if !c.KeyList {
 		return answers
 	}
-	with := answers + sty.dim.Render(" · ") + keyListSegment()
+	with := answers + sty.dim.Render(" · ") + cardTones().Paint(keyListSegment())
 	if lipgloss.Width(with) > room {
 		return answers
 	}

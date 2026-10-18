@@ -501,4 +501,4 @@ func formatWindowSize(n int64) string {
 }
 
 // contextKeyHint is what the status bar offers while the surface is up.
-func contextKeyHint() string { return seg(keys.Context.Back).render() }
+func contextKeyHint() hintSeg { return seg(keys.Context.Back) }

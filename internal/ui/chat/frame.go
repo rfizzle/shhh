@@ -356,7 +356,7 @@ func (m Model) frameHints(room int) string {
 		hints = []hintSeg{
 			segAs(keys.Draft.Send, "answer the question"),
 			segAs(keys.Draft.Answer, "show the card again"),
-			segAs(keys.Draft.Queue, "queue for after the turn").givesUp(1),
+			segAs(keys.Draft.Queue, "queue for after the turn").At(1),
 		}
 	case m.decisionGated():
 		// The card above holds the keyboard, so not one of the draft's keys
@@ -370,19 +370,18 @@ func (m Model) frameHints(room int) string {
 		// the rest of the card's keys are, and the card's own row is short so
 		// that it can be
 		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-		list := segAs(keys.Screen.List, keys.Words(keys.Screen.List)).render()
+		list := segAs(keys.Screen.List, keys.Words(keys.Screen.List))
 		//
 		// The row is a ladder like the others: the key list is the handover
 		// floor, and the draft's position is the rung that leaves when the
 		// width cannot hold both, whole and never cut against the corner.
+		// The position is the draft's own words, in the draft's own tone.
 		if m.input.Value() == "" {
-			return list
+			return hintTones().Paint(list)
 		}
-		both := m.draftPosition() + sty.Hint.Dim.Render(" · ") + list
-		if lipgloss.Width(both) > room {
-			return list
-		}
-		return both
+		tones := hintTones()
+		tones.Fact = lipgloss.NewStyle()
+		return tones.Fit([]hintSeg{{Label: m.draftPosition(), Priority: 1}, list}, room)
 	case m.decisionUngated():
 		// The three keys that matter while a decision waits. Stopping the run
 		// is the cancel chord, never esc: esc on this surface goes back rather
@@ -396,17 +395,17 @@ func (m Model) frameHints(room int) string {
 		// so no width cuts a word against the corner.
 		hints = []hintSeg{
 			segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)),
-			segAs(keys.Draft.Send, "add to this turn").givesUp(1),
-			m.ctrlCHint().givesUp(2),
+			segAs(keys.Draft.Send, "add to this turn").At(1),
+			m.ctrlCHint().At(2),
 		}
 		if m.attachedTo == "" {
-			hints = append(hints, m.keyListHint().givesUp(3))
+			hints = append(hints, m.keyListHint().At(3))
 		}
 		ladder = true
 	case m.attachedTo != "":
 		hints = []hintSeg{
-			segAs(keys.Agent.Detach, "back to your session"),
-			segAs(keys.Draft.Agents, "agents").givesUp(1),
+			segAs(keys.Agent.Detach, components.EscBack),
+			segAs(keys.Draft.Agents, "agents").At(1),
 		}
 		// A child that has answered is still listening, and what is typed
 		// here is its next question rather than text with nowhere to go.
@@ -427,9 +426,9 @@ func (m Model) frameHints(room int) string {
 		// (docs/interface/surfaces.md#the-agent-manager).
 		if n := m.othersWaiting(); n > 0 {
 			hints = []hintSeg{
-				{label: "⚠ " + plural(n, "other agent") + " waiting"},
+				{Label: "⚠ " + plural(n, "other agent") + " waiting"},
 				segAs(keys.Draft.Agents, "agents"),
-				segAs(keys.Agent.Detach, "back to your session").givesUp(1),
+				segAs(keys.Agent.Detach, components.EscBack).At(1),
 			}
 		}
 	case m.heldAtBoundary():
@@ -444,7 +443,7 @@ func (m Model) frameHints(room int) string {
 		}
 		hints = []hintSeg{
 			segAs(keys.Draft.Pause, "resume the turn"),
-			segAs(keys.Draft.Send, "add to this turn").givesUp(1),
+			segAs(keys.Draft.Send, "add to this turn").At(1),
 			m.ctrlCHint(),
 		}
 	case m.working():
@@ -468,16 +467,16 @@ func (m Model) frameHints(room int) string {
 		hints = []hintSeg{
 			segAs(keys.Draft.Pause, "hold"),
 			m.ctrlCHint(),
-			segAs(keys.Draft.Send, "add to this turn").givesUp(1),
+			segAs(keys.Draft.Send, "add to this turn").At(1),
 		}
 		if active, _ := m.activeAgents(); active > 0 {
-			hints = append(hints, segAs(keys.Draft.Agents, "agents").givesUp(2))
+			hints = append(hints, segAs(keys.Draft.Agents, "agents").At(2))
 		}
 		hints = append(hints, m.modeHint(2)...)
 		hints = append(hints,
-			segAs(keys.Draft.Palette, "commands").givesUp(3),
-			m.keyListHint().givesUp(4),
-			segAs(keys.Draft.Queue, "queue").givesUp(5),
+			segAs(keys.Draft.Palette, "commands").At(3),
+			m.keyListHint().At(4),
+			segAs(keys.Draft.Queue, "queue").At(5),
 		)
 		ladder = true
 	default:
@@ -509,10 +508,10 @@ func (m Model) frameHints(room int) string {
 		hints = []hintSeg{segAs(keys.Draft.Send, "send")}
 		hints = append(hints, m.modeHint(1)...)
 		hints = append(hints,
-			segAs(keys.Draft.Palette, "commands").givesUp(2),
+			segAs(keys.Draft.Palette, "commands").At(2),
 			m.keyListHint(),
-			segAs(keys.Draft.Queue, "queue").givesUp(3),
-			m.ctrlCHint().givesUp(4),
+			segAs(keys.Draft.Queue, "queue").At(3),
+			m.ctrlCHint().At(4),
 		)
 		// An offered next step leads the rail while it is drawn, because the
 		// arrow that takes it is the one key on this row nobody would press
@@ -530,7 +529,7 @@ func (m Model) frameHints(room int) string {
 		// row says about the wait, ahead of the keys, so a person who types
 		// into it knows why the account has not moved (account.go).
 		if m.readingOwed() {
-			hints = append([]hintSeg{{label: "reading the session…"}}, hints...)
+			hints = append([]hintSeg{{Label: "reading the session…"}}, hints...)
 		}
 		ladder = true
 	}
@@ -541,9 +540,9 @@ func (m Model) frameHints(room int) string {
 	// pointed at a child and the orchestrator's register is not what it is
 	// about — so the rail does not offer it.
 	if !armed && !ladder && m.attachedTo == "" && len(hints) > 0 {
-		hints = append(hints, segAs(keys.Draft.KeyList, keys.Words(keys.Screen.List)).givesUp(1))
+		hints = append(hints, segAs(keys.Draft.KeyList, keys.Words(keys.Screen.List)).At(1))
 	}
-	return joinSegs(fitSegs(hints, room))
+	return hintTones().Fit(hints, room)
 }
 
 // modeHint is the mode chord's rung at the place the ladder gives it, and
@@ -553,7 +552,7 @@ func (m Model) modeHint(give int) []hintSeg {
 	if m.wiring.Conversation {
 		return nil
 	}
-	return []hintSeg{segAs(keys.Draft.Mode, "mode").givesUp(give)}
+	return []hintSeg{segAs(keys.Draft.Mode, "mode").At(give)}
 }
 
 // keyListHint is the key list's rung, spelled as the chord that opens it
@@ -573,11 +572,11 @@ func (m Model) ctrlCHint() hintSeg {
 	chord := quitChord()
 	switch {
 	case m.heldAtBoundary():
-		return hintSeg{key: chord, label: "cancel it"}
+		return hintSeg{Key: keys.Bracketed(chord), Label: "cancel it"}
 	case m.working() || m.decisionUngated():
-		return hintSeg{key: chord, label: "stop the run"}
+		return hintSeg{Key: keys.Bracketed(chord), Label: "stop the run"}
 	case strings.TrimSpace(m.input.Value()) != "":
-		return hintSeg{key: chord, label: "clear"}
+		return hintSeg{Key: keys.Bracketed(chord), Label: "clear"}
 	}
 	return twoPress(keys.Draft.Cancel, "quit")
 }
@@ -811,17 +810,17 @@ func (m Model) noticeLine() string {
 	handover := m.handoverNotice()
 	if !m.footRail() {
 		if note, ok := m.armedHint(); ok {
-			parts = append(parts, noticePart{text: note.render()})
+			parts = append(parts, noticePart{text: hintTones().Paint(note)})
 		}
 		if handover {
-			parts = append(parts, noticePart{text: segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)).render()})
+			parts = append(parts, noticePart{text: hintTones().Paint(segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)))})
 		}
 		// The offered next step has no key bar to name its arrow here, and the
 		// dim words in the box are not a sentence anyone would think to take
 		// with it; it asks the one predicate the words and the key do, so the
 		// note goes with the offer (suggest.go).
 		if m.suggestionShown() {
-			parts = append(parts, noticePart{text: segAs(keys.Draft.TakeSuggestion, "take it").render()})
+			parts = append(parts, noticePart{text: hintTones().Paint(segAs(keys.Draft.TakeSuggestion, "take it"))})
 		}
 	}
 	// What the last esc folded, or why it folded nothing (readinghint.go).

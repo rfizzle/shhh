@@ -183,6 +183,6 @@ func toolsShowing(m Model) any {
 
 // renderToolsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the spend screen's does.
-func (m Model) renderToolsHint() string {
-	return sty.SystemMsg.Render("tools · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+func (m Model) renderToolsHint() []hintSeg {
+	return paneHint("tools", segAs(keys.Screen.Quit, components.EscBack))
 }

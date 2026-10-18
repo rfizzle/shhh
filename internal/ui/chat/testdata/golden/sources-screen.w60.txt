@@ -29,7 +29,7 @@ https://example.com/gone                  web-researcher
   status 404
   when turn 2
 
-[↑↓/jk] move · [esc] back to the prompt
+[esc] back        recorded by the tool, not by the model
 
 · a page that was kept · the preview opens it
 /sources                           [?] keys · [esc] back
@@ -58,7 +58,7 @@ https://docs.rs/tokio/latest/tokio/         orchestrator
   Tokio is an asynchronous runtime.
   It provides the building blocks.
 
-[↑↓/jk] move · [enter] open · [esc] back to the prompt
+[↑↓/jk] move · [enter] open · [esc] back
 
 · the panel it leaves · the way out, on one row
 ────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ sources · [esc] back
   ␛[38;5;246mstatus ␛[m␛[38;5;252m404␛[m
   ␛[38;5;246mwhen ␛[m␛[38;5;252mturn 2␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m        ␛[38;5;245mrecorded by the tool, not by the model␛[m
 
 · a page that was kept · the preview opens it
 ␛[1;97m/sources␛[m                           ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -114,9 +114,9 @@ sources · [esc] back
   ␛[38;5;245mTokio is an asynchronous runtime.␛[m
   ␛[38;5;245mIt provides the building blocks.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · the panel it leaves · the way out, on one row
 ␛[38;5;245m────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m                                                
-␛[38;5;245msources · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;245msources␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

@@ -941,6 +941,6 @@ func todoBlockedBy(s *todo.Store, slug string) []string {
 // screen. It says what is up and offers nothing: the screen's header already
 // carries `[esc] back`, and a key drawn twice on one frame says nothing the
 // second time.
-func (m Model) renderTodoScreenHint() string {
-	return sty.SystemMsg.Render("backlog")
+func (m Model) renderTodoScreenHint() []hintSeg {
+	return paneHint("backlog")
 }

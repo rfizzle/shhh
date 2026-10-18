@@ -22,8 +22,7 @@
 │ sandbox   bwrap · workspace                          │
 ├──────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [g] attach to writer-1  │
-│ [f12] agents · [?] keys                              │
-│ [esc] not now — it keeps waiting                     │
+│ [f12] agents · [?] keys · [esc] keeps waiting        │
 │ [a] always — not offered: shhh flagged this command  │
 ╰──────────────────────────────────────────────────────╯
 
@@ -39,7 +38,7 @@
 │ sandbox   bwrap · workspace                          │
 ├──────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [?] keys                │
-│ [esc] not now — it keeps waiting                     │
+│ [esc] keeps waiting                                  │
 │ [a] always — not offered: shhh flagged this command  │
 ╰──────────────────────────────────────────────────────╯
 
@@ -72,7 +71,7 @@
 │ [a] allow "go test" for every agent until this turn  │
 │     ends                                             │
 │ [g] attach to writer-1 · [f12] agents · [?] keys     │
-│ [esc] leave it waiting, nothing is denied            │
+│ [esc] keeps waiting                                  │
 ╰──────────────────────────────────────────────────────╯
 
 · a long grant · the offer folds under its words, never clipped
@@ -90,7 +89,7 @@
 │ [a] allow "go run tools generate-fixtures" for every │
 │     agent until this turn ends                       │
 │ [g] attach to writer-1 · [f12] agents · [?] keys     │
-│ [esc] leave it waiting, nothing is denied            │
+│ [esc] keeps waiting                                  │
 ╰──────────────────────────────────────────────────────╯
 
 · answered in place on the manager · esc goes back, the decision stays waiting
@@ -106,7 +105,8 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                           │
 │ [a] allow "go test" for every agent until this turn  │
-│     ends · [esc] back to the agents                  │
+│     ends                                             │
+│ [esc] keeps waiting                                  │
 ╰──────────────────────────────────────────────────────╯
 
 · a writer's patch · your files, and the diff behind a counted tail
@@ -124,7 +124,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the patch to your workspace · [n] deny     │
 │ [enter] full diff · [g] attach to writer-1           │
-│ [f12] agents · [?] keys · [esc] leave it waiting     │
+│ [f12] agents · [?] keys · [esc] keeps waiting        │
 ╰──────────────────────────────────────────────────────╯
 
 · a patch your checkout moved under · the merge is the diff, and the card says so
@@ -142,7 +142,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the patch to your workspace · [n] deny     │
 │ [enter] full diff · [g] attach to writer-1           │
-│ [f12] agents · [?] keys · [esc] leave it waiting     │
+│ [f12] agents · [?] keys · [esc] keeps waiting        │
 ╰──────────────────────────────────────────────────────╯
 
 · a patch that touched a golden file · its generator wrote it, and the card names the command
@@ -160,7 +160,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the patch to your workspace · [n] deny     │
 │ [enter] full diff · [g] attach to writer-1           │
-│ [f12] agents · [?] keys · [esc] leave it waiting     │
+│ [f12] agents · [?] keys · [esc] keeps waiting        │
 ╰──────────────────────────────────────────────────────╯
 
 · an integration writer's patch · the reconciliation is a fact, not a clash
@@ -178,7 +178,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the patch to your workspace · [n] deny     │
 │ [enter] full diff · [g] attach to integrator-1       │
-│ [f12] agents · [?] keys · [esc] leave it waiting     │
+│ [f12] agents · [?] keys · [esc] keeps waiting        │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -193,9 +193,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — it keeps waiting␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;254m attach to writer-1␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m␛[38;5;254m agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: shhh flagged this command␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
@@ -210,8 +209,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — it keeps waiting␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: shhh flagged this command␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
@@ -240,11 +239,11 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" for every agent until this turn␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow "go test" for every agent until this turn␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254mends␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[g]␛[m␛[38;5;254m attach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f12]␛[m␛[38;5;254m agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · a long grant · the offer folds under its words, never clipped
@@ -258,11 +257,11 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go run tools generate-fixtures" for every␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow "go run tools generate-fixtures" for every␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254magent until this turn ends␛[m                       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[g]␛[m␛[38;5;254m attach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f12]␛[m␛[38;5;254m agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · answered in place on the manager · esc goes back, the decision stays waiting
@@ -276,9 +275,10 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" for every agent until this turn␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254mends␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] back to the agents␛[m                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow "go test" for every agent until this turn␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254mends␛[m                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · a writer's patch · your files, and the diff behind a counted tail
@@ -294,9 +294,9 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m   2  ␛[m␛[38;5;244mkeep 0␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 118 more lines · [shift+↓]␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mfull diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m apply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m full diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;254m attach to writer-1␛[m           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m␛[38;5;254m agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · a patch your checkout moved under · the merge is the diff, and the card says so
@@ -312,9 +312,9 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m+␛[m␛[38;5;244m  1  ␛[m␛[38;5;254mline 0␛[m␛[38;5;254;48;5;237m changed␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 119 more lines · [shift+↓]␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mfull diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m apply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m full diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;254m attach to writer-1␛[m           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m␛[38;5;254m agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · a patch that touched a golden file · its generator wrote it, and the card names the command
@@ -330,9 +330,9 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m+␛[m␛[38;5;244m  1  ␛[m␛[38;5;254mline 0␛[m␛[38;5;254;48;5;237m changed␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 119 more lines · [shift+↓]␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mfull diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m apply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m full diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;254m attach to writer-1␛[m           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m␛[38;5;254m agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · an integration writer's patch · the reconciliation is a fact, not a clash
@@ -348,7 +348,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m+␛[m␛[38;5;244m  1  ␛[m␛[38;5;254mline 0␛[m␛[38;5;254;48;5;237m changed␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 119 more lines · [shift+↓]␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mfull diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to integrator-1␛[m       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m apply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m full diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;254m attach to integrator-1␛[m       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[f12]␛[m␛[38;5;254m agents␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m

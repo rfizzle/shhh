@@ -216,9 +216,9 @@ func (m Model) toolchainDraftCard() *components.ApprovalCard {
 		Syntax:     diffSyntax(project.ToolchainFile),
 		Answer:     "write it",
 		LetterOnly: true,
-		Footnote:   "enter opened this card and writes nothing — only [y] does",
+		Footnote:   "enter opened this card and writes nothing — only " + keys.Bracket(keys.Proposal.Write) + " does",
 		Decline:    "nothing written",
-		Return:     "leave — nothing written, and the draft waits",
+		Return:     components.EscWaits + " — nothing written",
 		ExtraHints: []components.KeyOffer{
 			{Key: keys.Bracket(keys.Decision.Revise), Label: "edit first"},
 		},

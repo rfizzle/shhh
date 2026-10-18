@@ -18,7 +18,7 @@
 │   2. Postgres          one more service to run                                                                                   9 files │
 │   3. ⊘ Redis                                                                                                   no client in this project │
 │   4. Something else …  answer in your own words                                                                                          │
-│ [tab] note or list · [enter] confirm · [v] the full answer · [?] keys · [esc] back to the draft — the question waits                     │
+│ [tab] note or list · [enter] confirm · [v] the full answer · [?] keys · [esc] keeps waiting                                              │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -31,7 +31,7 @@
 │   4. Something else …  answer in your own words                                                                                          │
 │ ┄ note (optional)                                                                                                                        │
 │   ┃ note (optional)                                                                                                                      │
-│ [tab] note or list · [enter] confirm · [v] the full answer · [esc] back to the draft — the question waits                                │
+│ [tab] note or list · [enter] confirm · [v] the full answer · [esc] keeps waiting                                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · pick several · the boxes, and the note only once its key opens it
@@ -42,8 +42,7 @@
 │   [ ] internal/cli                                                                                                                       │
 │   [ ] internal/ui/chat                                                                                                                   │
 │   [ ] Something else …                                                                                                                   │
-│ [tab] note or list · [space] toggle · [a] all/none · [v] the full answer · [enter] choose (0) · [?] keys                                 │
-│ [esc] back to the draft — the question waits                                                                                             │
+│ [tab] note or list · [space] toggle · [a] all/none · [v] the full answer · [enter] choose (0) · [?] keys · [esc] keeps waiting           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a short answer in your own words · the field and no rows above it
@@ -52,7 +51,7 @@
 │                                                                                                                                          │
 │ ┄ note (required)                                                                                                                        │
 │   ┃ note (required)                                                                                                                      │
-│ [enter] confirm · [esc] back to the draft — the question waits                                                                           │
+│ [enter] confirm · [esc] keeps waiting                                                                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
@@ -158,7 +157,7 @@ Should the migration be reversible?
   │                                                                                                                                          │  
   │ ┄ note (required)                                                                                                                        │  
   │   ┃ note (required)                                                                                                                      │  
-  │ [enter] confirm · [esc] back to the draft — the question waits                                                                           │  
+  │ [enter] confirm · [esc] keeps waiting                                                                                                    │  
   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  
   ──── DECISION 1/1 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
@@ -195,7 +194,7 @@ Should the migration be reversible?
   │   2. Postgres          one more service to run                                                                                   9 files │  
   │   3. ⊘ Redis                                                                                                   no client in this project │  
   │   4. Something else …  answer in your own words                                                                                          │  
-  │ [tab] note or list · [enter] confirm · [v] the full answer · [?] keys · [esc] back to the draft — the question waits                     │  
+  │ [tab] note or list · [enter] confirm · [v] the full answer · [?] keys · [esc] keeps waiting                                              │  
   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  
 
 ── ansi ────────────────────────────────────────────────────
@@ -207,7 +206,7 @@ Should the migration be reversible?
 ␛[94m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;245mone more service to run␛[m                                                                                   ␛[38;5;252m9 files␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;248m3. ␛[m␛[38;5;248m⊘ Redis␛[m                                                                                                   ␛[38;5;248mno client in this project␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;245manswer in your own words␛[m                                                                                          ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keeps waiting␛[m                                              ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -220,7 +219,7 @@ Should the migration be reversible?
 ␛[94m│␛[m   ␛[38;5;245m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;245manswer in your own words␛[m                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245m┄ note (optional)␛[m                                                                                                                        ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;61mn␛[m␛[m␛[38;5;252m␛[38;5;245mote (optional)␛[m␛[m␛[38;5;252m                                                                                                                     ␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                                ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keeps waiting␛[m                                                         ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · pick several · the boxes, and the note only once its key opens it
@@ -231,8 +230,7 @@ Should the migration be reversible?
 ␛[94m│␛[m   ␛[38;5;245m[ ]␛[m internal/cli                                                                                                                       ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m[ ]␛[m internal/ui/chat                                                                                                                   ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m[ ]␛[m Something else …                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;245m all/none␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m choose (0)␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;245m all/none␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m choose (0)␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keeps waiting␛[m           ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a short answer in your own words · the field and no rows above it
@@ -241,7 +239,7 @@ Should the migration be reversible?
 ␛[94m│␛[m                                                                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245m┄ note (required)␛[m                                                                                                                        ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;61mn␛[m␛[m␛[38;5;252m␛[38;5;245mote (required)␛[m␛[m␛[38;5;252m                                                                                                                     ␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                                                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keeps waiting␛[m                                                                                                    ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
@@ -347,7 +345,7 @@ Should the migration be reversible?
 ␛[48;5;233m  ␛[94m│␛[39m                                                                                                                                          ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;245m┄ note (required)␛[39m                                                                                                                        ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;245m┃ ␛[38;5;61;7mn␛[38;5;245;27mote (required)␛[38;5;252m                                                                                                                     ␛[39m ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;103m[enter]␛[38;5;245m confirm · ␛[92m[esc]␛[38;5;245m back to the draft — the question waits␛[39m                                                                           ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;103m[enter]␛[38;5;245m confirm · ␛[92m[esc]␛[38;5;245m keeps waiting␛[39m                                                                                                    ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;245m────␛[39m ␛[94;1mDECISION 1/1␛[39;22m ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;245m╭─␛[39m ␛[38;5;214;1m⏸ 1 waiting␛[39;22m ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[39m  ␛[m
@@ -384,5 +382,5 @@ Should the migration be reversible?
 ␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;245m2. ␛[38;5;252mPostgres␛[39m          ␛[38;5;245mone more service to run␛[39m                                                                                   ␛[38;5;252m9 files␛[39m ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;248m3. ⊘ Redis␛[39m                                                                                                   ␛[38;5;248mno client in this project␛[39m ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;245m4. ␛[38;5;252mSomething else …␛[39m  ␛[38;5;245manswer in your own words␛[39m                                                                                          ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;103m[tab]␛[38;5;245m note or list · ␛[38;5;103m[enter]␛[38;5;245m confirm · ␛[38;5;103m[v]␛[38;5;245m the full answer · ␛[38;5;103m[?]␛[38;5;245m keys · ␛[92m[esc]␛[38;5;245m back to the draft — the question waits␛[39m                     ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;103m[tab]␛[38;5;245m note or list · ␛[38;5;103m[enter]␛[38;5;245m confirm · ␛[38;5;103m[v]␛[38;5;245m the full answer · ␛[38;5;103m[?]␛[38;5;245m keys · ␛[92m[esc]␛[38;5;245m keeps waiting␛[39m                                              ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[39m  ␛[m

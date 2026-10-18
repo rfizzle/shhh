@@ -15,7 +15,8 @@
 │ $ go test ./internal/agent/...                           │
 ├──────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                               │
-│ [a] allow commands without asking this session · [esc]   │
+│ [a] allow commands without asking this session           │
+│ [esc] keeps waiting                                      │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, an offer wider than the card
@@ -24,7 +25,8 @@
 ├──────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                               │
 │ [a] allow "go test" for every agent until this turn      │
-│     ends, and internal/agent with it · [esc] wait        │
+│     ends, and internal/agent with it                     │
+│ [esc] keeps waiting                                      │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, a batch waiting behind it
@@ -34,7 +36,8 @@
 ├──────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                               │
 │ [a] allow commands without asking this session, or       │
-│     answer all 3 in one list · [esc] leave it waiting    │
+│     answer all 3 in one list                             │
+│ [esc] keeps waiting                                      │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, a quiet card · values alone
@@ -47,7 +50,7 @@
 │ network   open                                           │
 │ sandbox   bwrap · workspace                              │
 ├──────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [esc] leave it waiting      │
+│ [y] run it once · [n] deny · [esc] keeps waiting         │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, flagged, contained, blast radius
@@ -60,8 +63,7 @@
 │ network   open                                           │
 │ sandbox   bwrap · workspace                              │
 ├──────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny                               │
-│ [esc] not now — it keeps waiting                         │
+│ [y] run it once · [n] deny · [esc] keeps waiting         │
 │ [a] always — not offered: shhh flagged this command      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -75,7 +77,7 @@
 │ network   2 hosts                                        │
 │ sandbox   bwrap · workspace                              │
 ├──────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [esc] leave it waiting      │
+│ [y] run it once · [n] deny · [esc] keeps waiting         │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, uncontained
@@ -88,8 +90,7 @@
 │ network   open                                           │
 │ sandbox   no sandbox                                     │
 ├──────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny                               │
-│ [esc] not now — it keeps waiting                         │
+│ [y] run it once · [n] deny · [esc] keeps waiting         │
 │ no sandbox this session · /sandbox doctor says why       │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -102,7 +103,7 @@
 │ undo      none                                           │
 │ … 2 more lines · [shift+↓]                               │
 ├──────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [esc] leave it waiting      │
+│ [y] run it once · [n] deny · [esc] keeps waiting         │
 ╰──────────────────────────────────────────────────────────╯
 ╭─ Approve command ───────────────────────────── ⚠ medium ─╮
 │ … 2 lines above · [shift+↑]                              │
@@ -112,14 +113,14 @@
 │ network   open — it pushes the artefacts it builds       │
 │ sandbox   bwrap — workspace profile                      │
 ├──────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [esc] leave it waiting      │
+│ [y] run it once · [n] deny · [esc] keeps waiting         │
 ╰──────────────────────────────────────────────────────────╯
 
 · bound · a wide body, panned right
 ╭─ Approve command ────────────────────────────────────────╮
 │ x-amd64.tar.gz --exclude .git --exclude node_modules --… │
 ├──────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [esc] leave it waiting      │
+│ [y] run it once · [n] deny · [esc] keeps waiting         │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · edit, diff body
@@ -137,7 +138,7 @@
 │ +2 −1 · 1 hunk · undo yes — recorded, and git has this … │
 ├──────────────────────────────────────────────────────────┤
 │ [y] apply the change · [n] deny                          │
-│ [enter] open the full view · [esc] leave it waiting      │
+│ [enter] open the full view · [esc] keeps waiting         │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · edit, adds a secret
@@ -156,7 +157,7 @@
 │ +2 −1 · 1 hunk · undo yes — recorded, and it needs no g… │
 ├──────────────────────────────────────────────────────────┤
 │ [y] apply the change · [n] deny                          │
-│ [enter] open the full view · [esc] leave it waiting      │
+│ [enter] open the full view · [esc] keeps waiting         │
 ╰──────────────────────────────────────────────────────────╯
 
 · state · not yet live, beside a draft that has the keyboard
@@ -187,14 +188,15 @@
 │ receives  page text, kept whole; the first 16 KB into t… │
 ├──────────────────────────────────────────────────────────┤
 │ [y] fetch it · [n] deny                                  │
-│ [a] allow pkg.go.dev without asking · [esc] wait         │
+│ [a] allow pkg.go.dev without asking                      │
+│ [esc] keeps waiting                                      │
 ╰──────────────────────────────────────────────────────────╯
 
 · answered · the row it leaves in the transcript
 ╭─ Approve command ────────────────────────────────────────╮
 │ $ go test ./internal/agent/...                           │
 ├──────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [esc] leave it waiting      │
+│ [y] run it once · [n] deny · [esc] keeps waiting         │
 ╰──────────────────────────────────────────────────────────╯
 
   ▎$ run     go test ./internal/agent/.…  ok · 1 line  12.4s
@@ -205,17 +207,19 @@
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow commands without asking this session␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow commands without asking this session␛[m           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, an offer wider than the card
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" for every agent until this turn␛[m      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254mends, and internal/agent with it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] wait␛[m        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow "go test" for every agent until this turn␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254mends, and internal/agent with it␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a batch waiting behind it
@@ -223,9 +227,10 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ low␛[m␛[38;5;244m · changes no files␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow commands without asking this session, or␛[m       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254manswer all 3 in one list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow commands without asking this session, or␛[m       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254manswer all 3 in one list␛[m                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a quiet card · values alone
@@ -238,7 +243,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, flagged, contained, blast radius
@@ -251,8 +256,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — it keeps waiting␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: shhh flagged this command␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -266,7 +270,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254m2 hosts␛[m                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, uncontained
@@ -279,8 +283,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;254mno sandbox␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — it keeps waiting␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mno sandbox this session · /sandbox doctor says why␛[m       ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -293,7 +296,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m───────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 lines above · [shift+↑]␛[m                              ␛[38;5;254m│␛[m
@@ -303,14 +306,14 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — it pushes the artefacts it builds␛[m       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;254mbwrap␛[m␛[38;5;244m — workspace profile␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · bound · a wide body, panned right
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m␛[m␛[38;5;254mx-amd64.tar.gz --exclude .git --exclude node_modules --␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · edit, diff body
@@ -327,8 +330,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m  143  ␛[m␛[38;5;244m    }␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+2 −1 · 1 hunk · undo yes — recorded, and git has this ␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mopen the full view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m apply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m open the full view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · edit, adds a secret
@@ -346,8 +349,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m  143  ␛[m␛[38;5;244m    }␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+2 −1 · 1 hunk · undo yes — recorded, and it needs no g␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mopen the full view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m apply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m open the full view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · state · not yet live, beside a draft that has the keyboard
@@ -377,15 +380,16 @@
 ␛[38;5;254m│␛[m ␛[38;5;244msends     ␛[m␛[38;5;254mthe URL and a shhh-web/1.0 user-agent␛[m          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mreceives  ␛[m␛[38;5;254mpage text, kept whole; the first 16 KB into t␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mfetch it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow pkg.go.dev without asking␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] wait␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m fetch it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow pkg.go.dev without asking␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · answered · the row it leaves in the transcript
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] keeps waiting␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/.…␛[m  ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m  ␛[38;5;244m12.4s␛[m

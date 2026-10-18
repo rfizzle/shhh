@@ -26,7 +26,7 @@ snap 04-third-turn "The sentinel goes in the loop"
 # Reading mode: the cursor goes in the column the fold marks already stand
 # in, so nothing in the transcript moves sideways when the keyboard arrives.
 keys C-o
-snap 05-reading "back to the prompt"
+snap 05-reading "[?] keys · [esc] back"
 keys k
 keys k
 snap 06-cursor "open it" "❯ ⚙ read 2 files"

@@ -1433,6 +1433,6 @@ func (m Model) personaPane(width, height int) string {
 
 // renderPersonaHint is the surface's bottom panel: it holds the keyboard, so
 // the panel states what it is and nothing else.
-func (m Model) renderPersonaHint() string {
-	return sty.SystemMsg.Render("drafting a profile · ") + seg(keys.Profile.Back).render()
+func (m Model) renderPersonaHint() []hintSeg {
+	return paneHint("drafting a profile", seg(keys.Profile.Back))
 }

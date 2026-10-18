@@ -139,7 +139,7 @@ https://docs.rs/tokio/latest/tokio/             orchestrator
 
 … (+10 more rows)
 
-[↑↓/jk] move · [enter] open · [esc] back to the prompt
+[↑↓/jk] move · [enter] open · [esc] back
 
 · safety · the reading, its subject beside the title and the way back on the right
 /safety · manual · sandbox-exec        [?] keys · [esc] back
@@ -153,7 +153,7 @@ MODE AND POLICY
       turn ends
 ↓ 7 more · where it may write · containment · web · what th…
 
-[↑↓/jk] scroll · [esc] back to the prompt
+[↑↓/jk] scroll · [esc] back
 
 · steps · the session's own list, the run the transcript titled for the step beside it
 /steps · 1 of 7                        [?] keys · [esc] back
@@ -167,7 +167,7 @@ MODE AND POLICY
 
 … (+6 more rows)
 
-[esc] back to the prompt    the agent's own list, not a plan
+[↑↓/jk] move · [esc] back   the agent's own list, not a plan
 
 · readings · every reading the session took, the one under the pointer whole beside it
 /readings              $0.0142 spent · [?] keys · [esc] back
@@ -181,7 +181,7 @@ r 11 · off target                                     turn 2
 
 … (+7 more rows)
 
-[esc] back to the prompt
+[esc] back       a reader's account of the run, newest first
 
 · turns · every turn the session ran, the close of the one under the pointer beside it
 /turns · 6 turns       $0.1580 spent · [?] keys · [esc] back
@@ -195,7 +195,7 @@ turn 4                                                  done
 
 … (+6 more rows)
 
-[enter] review turn 4 · [esc] back to the prompt
+[enter] review turn 4 · [esc] back
 
 · alerts · every command the session broke, standing first, the one under the pointer's account beside it
 /alerts · 2 standing · 2 superseded    [?] keys · [esc] back
@@ -209,7 +209,7 @@ make test                                           standing
 
 … (+4 more rows)
 
-[enter] show each run · [esc] back to the prompt
+[enter] show each run · [esc] back
 
 · spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
 /stats · 2 models      $0.4210 spent · [?] keys · [esc] back
@@ -223,7 +223,7 @@ claude-opus-5-5                                        model
 
 … (+8 more rows)
 
-[enter] open the turn · [esc] back to the prompt
+[enter] open the turn · [esc] back
 
 · tools · where the session's tools came from, the source under the pointer's account beside it
 /mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
@@ -237,7 +237,7 @@ linear                                                 error
 
 … (+12 more rows)
 
-[esc] back to the prompt
+[esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
@@ -369,7 +369,7 @@ linear                                                 error
 
 ␛[38;5;244m… (+10 more rows)␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · safety · the reading, its subject beside the title and the way back on the right
 ␛[1;38;5;254m/safety␛[m␛[38;5;244m · manual · sandbox-exec␛[m        ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -383,7 +383,7 @@ linear                                                 error
 ␛[38;5;254m      turn ends␛[m
 ␛[38;5;244m↓ 7 more · where it may write · containment · web · what th…␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · steps · the session's own list, the run the transcript titled for the step beside it
 ␛[1;38;5;254m/steps␛[m␛[38;5;244m · 1 of 7␛[m                        ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -397,7 +397,7 @@ linear                                                 error
 
 ␛[38;5;244m… (+6 more rows)␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m    ␛[38;5;244mthe agent's own list, not a plan␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m   ␛[38;5;244mthe agent's own list, not a plan␛[m
 
 · readings · every reading the session took, the one under the pointer whole beside it
 ␛[1;38;5;254m/readings␛[m              ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -411,7 +411,7 @@ linear                                                 error
 
 ␛[38;5;244m… (+7 more rows)␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m       ␛[38;5;244ma reader's account of the run, newest first␛[m
 
 · turns · every turn the session ran, the close of the one under the pointer beside it
 ␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m       ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -425,7 +425,7 @@ linear                                                 error
 
 ␛[38;5;244m… (+6 more rows)␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · alerts · every command the session broke, standing first, the one under the pointer's account beside it
 ␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m    ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -439,7 +439,7 @@ linear                                                 error
 
 ␛[38;5;244m… (+4 more rows)␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
 ␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m      ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -453,7 +453,7 @@ linear                                                 error
 
 ␛[38;5;244m… (+8 more rows)␛[m
 
-␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · tools · where the session's tools came from, the source under the pointer's account beside it
 ␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m           ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -467,4 +467,4 @@ linear                                                 error
 
 ␛[38;5;244m… (+12 more rows)␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

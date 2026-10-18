@@ -233,7 +233,7 @@ func TestStepsScreen_AnApprovedPlanIsTheList(t *testing.T) {
 	if len(screen.Steps) != len(m.planRun.doc.Steps) || screen.Steps[0].Title != "Locate the round accounting" {
 		t.Fatalf("the screen should list the plan's steps, got %+v", screen.Steps)
 	}
-	if hint := stripANSI(got.renderStepsHint()); !strings.HasPrefix(hint, "plan · ") {
+	if hint := stripANSI(joinSegs(got.renderStepsHint())); !strings.HasPrefix(hint, "plan · ") {
 		t.Fatalf("the hint should name the plan, got %q", hint)
 	}
 }

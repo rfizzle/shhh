@@ -1108,7 +1108,7 @@ func TestGolden_StagedRail(t *testing.T) {
 					t.Fatalf("enter on the chip did not open the card (state %d)", rm.state)
 				}
 				rm.preview.SetSize(rm.paneWidth(), 10)
-				return rm.preview.View(rm.paneWidth()) + "\n" + rm.renderPreviewHint()
+				return rm.preview.View(rm.paneWidth()) + "\n" + paneTones().Join(rm.renderPreviewHint())
 			}()},
 		}
 	})
@@ -2515,7 +2515,7 @@ func TestGolden_KeyList(t *testing.T) {
 			if m.state != stateKeyList {
 				t.Fatalf("? did not open the key list (state %d)", m.state)
 			}
-			return strings.Join(m.keyListLines(m.paneWidth(), 34), "\n") + "\n" + m.renderKeyListHint()
+			return strings.Join(m.keyListLines(m.paneWidth(), 34), "\n") + "\n" + paneTones().Join(m.renderKeyListHint())
 		}
 		card := interruptedModel(t, "also add a flag")
 		card.width, card.height = width, 40
@@ -3354,7 +3354,7 @@ func TestGolden_SentTray(t *testing.T) {
 			next, _ := two.openTrayPicture(1)
 			cm := next.(Model)
 			cm.preview.Height = 6
-			return cm.preview.View(width) + "\n" + cm.renderPreviewHint()
+			return cm.preview.View(width) + "\n" + paneTones().Join(cm.renderPreviewHint())
 		}
 		nothing := func() string {
 			m := sent(width, "before "+fold(first)+" and after "+fold(second)+" the click", first, second)

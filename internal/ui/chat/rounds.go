@@ -225,7 +225,7 @@ func (p roundPause) grant() int { return p.granted + roundGrantBlock }
 func (p roundPause) keys() []components.KeyOffer {
 	var offers []components.KeyOffer
 	if !p.spent {
-		offers = append(offers, rowOfferAs(fmt.Sprintf("[+%d]", p.grant()), "more rounds"))
+		offers = append(offers, rowOfferAs(keys.Bracketed(fmt.Sprintf("+%d", p.grant())), "more rounds"))
 		if p.granted > 0 {
 			offers = append(offers, rowOffer(keys.Row.Uncap, uncapRoundsLabel))
 		}

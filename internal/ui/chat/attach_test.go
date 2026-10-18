@@ -253,7 +253,7 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	if !strings.Contains(view, "orchestrator ▸ researcher-1") {
 		t.Fatalf("attached view missing breadcrumb:\n%s", view)
 	}
-	if !strings.Contains(ansi.Strip(view), "[esc] back to your session") {
+	if !strings.Contains(ansi.Strip(view), "[esc] back") {
 		t.Fatalf("attached view missing detach hint:\n%s", view)
 	}
 	if !strings.Contains(view, "long survey") {
@@ -739,7 +739,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	plain := ansi.Strip(view)
 	if strings.Count(plain, "[esc]") != 1 ||
-		!strings.Contains(plain, "[esc] back to the agents — the decision stays waiting") {
+		!strings.Contains(plain, "[esc] keeps waiting") {
 		t.Fatalf("the card over the list states its own esc, once:\n%s", plain)
 	}
 

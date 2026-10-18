@@ -161,7 +161,7 @@ func (m Model) closeOutputFull() (tea.Model, tea.Cmd) {
 }
 
 // renderOutputFullHint fills the input area while the full screen shows.
-func (m Model) renderOutputFullHint() string {
+func (m Model) renderOutputFullHint() []hintSeg {
 	label := seg(keys.Output.Back)
 	switch m.outputReturn {
 	case stateConfirmRun:
@@ -173,5 +173,5 @@ func (m Model) renderOutputFullHint() string {
 		// its runs rather than to the prompt the screen itself goes back to.
 		label = segAs(keys.Output.Back, "back to the alerts")
 	}
-	return label.render()
+	return []hintSeg{label}
 }

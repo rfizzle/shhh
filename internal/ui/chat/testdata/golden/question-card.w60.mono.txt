@@ -19,8 +19,7 @@
 │   3. ⊘ Redis               no client in this project │
 │   4. Something else …  answer in your own words      │
 │ [tab] note or list · [enter] confirm                 │
-│ [v] the full answer · [?] keys                       │
-│ [esc] back to the draft — the question waits         │
+│ [v] the full answer · [?] keys · [esc] keeps waiting │
 ╰──────────────────────────────────────────────────────╯
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -34,8 +33,7 @@
 │ ┄ note (optional)                                    │
 │   ┃ note (optional)                                  │
 │ [tab] note or list · [enter] confirm                 │
-│ [v] the full answer                                  │
-│ [esc] back to the draft — the question waits         │
+│ [v] the full answer · [esc] keeps waiting            │
 ╰──────────────────────────────────────────────────────╯
 
 · pick several · the boxes, and the note only once its key opens it
@@ -48,7 +46,7 @@
 │   [ ] Something else …                               │
 │ [tab] note or list · [space] toggle · [a] all/none   │
 │ [v] the full answer · [enter] choose (0) · [?] keys  │
-│ [esc] back to the draft — the question waits         │
+│ [esc] keeps waiting                                  │
 ╰──────────────────────────────────────────────────────╯
 
 · a short answer in your own words · the field and no rows above it
@@ -57,8 +55,7 @@
 │                                                      │
 │ ┄ note (required)                                    │
 │   ┃ note (required)                                  │
-│ [enter] confirm                                      │
-│ [esc] back to the draft — the question waits         │
+│ [enter] confirm · [esc] keeps waiting                │
 ╰──────────────────────────────────────────────────────╯
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
@@ -118,8 +115,7 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;244m⊘ Redis␛[m               ␛[38;5;244mno client in this project␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m                       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keeps waiting␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -133,8 +129,7 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mn␛[m␛[m␛[38;5;254m␛[38;5;244mote (optional)␛[m␛[m␛[38;5;254m                                 ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m                                  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keeps waiting␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · pick several · the boxes, and the note only once its key opens it
@@ -147,7 +142,7 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[v]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m choose (0)␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m keeps waiting␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · a short answer in your own words · the field and no rows above it
@@ -156,8 +151,7 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (required)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mn␛[m␛[m␛[38;5;254m␛[38;5;244mote (required)␛[m␛[m␛[38;5;254m                                 ␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keeps waiting␛[m                ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing

@@ -222,8 +222,8 @@ func (m Model) notesLines() []string {
 // renderNotesHint is the one line the screen leaves where the draft box was.
 // The screen holds the keyboard, so the panel states the way out and nothing
 // else, the way the sources screen's does.
-func (m Model) renderNotesHint() string {
-	return sty.SystemMsg.Render("notes · ") + seg(keys.Notes.Back).render()
+func (m Model) renderNotesHint() []hintSeg {
+	return paneHint("notes", seg(keys.Notes.Back))
 }
 
 // notesScreenData builds the screen from the notebook. Every field is

@@ -155,13 +155,8 @@ func (c CommitCard) stagesRow(inner int) string {
 // surface it opens, which is the product's word for it and not theirs. `?`
 // takes the last slot: the host answers it with the card's register and
 // the glyph legend, as every surface holding the keyboard does.
-func commitRun() []string {
-	return []string{
-		offerSegment(keys.Bracket(keys.Commit.Take), keys.Words(keys.Commit.Take)),
-		offerSegment(keys.Bracket(keys.Commit.Edit), keys.Words(keys.Commit.Edit)),
-		offerSegment(keys.Bracket(keys.Commit.Hunks), keys.Words(keys.Commit.Hunks)),
-		offerSegment(keys.Bracket(keys.Screen.List), keys.Words(keys.Screen.List)),
-	}
+func commitRun() []KeyOffer {
+	return append(plainCommitRun(), keyListSegment())
 }
 
 // committingWords is what the key row says while git has the question. It is
@@ -175,22 +170,19 @@ const committingWords = "committing — git has it"
 
 // plainCommitRun is the card's keys unpainted, for the row that draws the
 // whole run in one grey because none of them is live.
-func plainCommitRun() []string {
-	return []string{
-		keys.Bracket(keys.Commit.Take) + " " + keys.Words(keys.Commit.Take),
-		keys.Bracket(keys.Commit.Edit) + " " + keys.Words(keys.Commit.Edit),
-		keys.Bracket(keys.Commit.Hunks) + " " + keys.Words(keys.Commit.Hunks),
-	}
+func plainCommitRun() []KeyOffer {
+	return []KeyOffer{keyOffer(keys.Commit.Take), keyOffer(keys.Commit.Edit), keyOffer(keys.Commit.Hunks)}
 }
 
 // commitEscRow is the row the card ends on. Esc is the safe answer here in
 // the fullest sense the product has: nothing was written, the changeset is
-// where it was, and the key that opened this card is still on the row
+// where it was, and the key that opened this card is still on the row. The
+// card holds an offer, so esc says it keeps waiting rather than `back`, which
+// on a card asking for an answer reads as dismissing it
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func commitEscRow(inner int) string {
-	esc := keys.Shown(keys.Commit.Cancel)
-	words := keys.Words(keys.Commit.Cancel) + " — nothing is committed, and the offer stays"
-	return Clip(safeSegment(esc, fitClauses("["+esc+"] ", words, inner)), inner)
+	return Clip(cardTones().Paint(safeOffer(keys.Commit.Cancel,
+		EscWaits+" — nothing is committed", inner)), inner)
 }
 
 // commitOverrideRow is the override on a row of its own, above esc, in the
@@ -247,11 +239,10 @@ func (c CommitMessage) View(width int) string {
 	for _, r := range c.Rows {
 		rows = append(rows, sty.info.Render("▸ ")+r)
 	}
+	tones := cardTones()
 	rows = append(rows, cardRule,
-		offerSegment(keys.Bracket(keys.Select.Take), "commit with this"))
-	esc := keys.Shown(keys.Select.Cancel)
-	rows = append(rows, Clip(safeSegment(esc,
-		fitClauses("["+esc+"] ", "back to the card, edits kept", inner)), inner))
+		tones.Paint(keyOfferAs(keys.Select.Take, "commit with this")),
+		Clip(tones.Paint(safeOffer(keys.Select.Cancel, "back to the card, edits kept", inner)), inner))
 	// The frame is Add rather than the decision tone: what is inside it is
 	// the text that will be written, and the surface is the one place in
 	// this flow where nothing is being decided — the decision was taken on

@@ -65,7 +65,7 @@ func TestProgram_AJudgedNoIsACardTheReaderAnswers(t *testing.T) {
 	waitForText(t, tm, "⏵⏵ auto")
 	send(tm, "publish the release")
 	waitForText(t, tm, "classifier: the task asked for a release check")
-	waitForText(t, tm, "not now — it keeps waiting")
+	waitForText(t, tm, "keeps waiting")
 	if len(ran) != 0 {
 		t.Fatalf("a command the classifier said no to ran before anyone answered: %v", ran)
 	}

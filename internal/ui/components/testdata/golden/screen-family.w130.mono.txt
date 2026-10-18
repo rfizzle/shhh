@@ -139,7 +139,7 @@ docs.rs                                                          │
                                                                  │   asked for https://docs.rs/tokio
                                                                  │   status 200
 
-[↑↓/jk] move · [enter] open · [esc] back to the prompt                                      recorded by the tool, not by the model
+[↑↓/jk] move · [enter] open · [esc] back                                                    recorded by the tool, not by the model
 
 · safety · the reading, its subject beside the title and the way back on the right
 /safety · manual · sandbox-exec                                                                              [?] keys · [esc] back
@@ -153,7 +153,7 @@ MODE AND POLICY
     config     2 command patterns from behavior.command_allowlist — not this session's to revoke
 ↓ 7 more · where it may write · containment · web · what the checkout was let load · mcp · secrets · tools
 
-[↑↓/jk] scroll · [esc] back to the prompt                                                      a reading · nothing here changes it
+[↑↓/jk] scroll · [esc] back                                                                    a reading · nothing here changes it
 
 · steps · the session's own list, the run the transcript titled for the step beside it
 /steps · 1 of 7                                                                                              [?] keys · [esc] back
@@ -167,7 +167,7 @@ MODE AND POLICY
   6. · Run the whole suite                   not started │   in the transcript · 2 tools · 4.1s
   7. · Write the report                      not started │   ▎✎ edit    internal/agent/round.go            +12 −4 · 2 hunks   1.1s
 
-[↑↓/jk] move · [esc] back to the prompt                                                           the agent's own list, not a plan
+[↑↓/jk] move · [esc] back                                                                         the agent's own list, not a plan
 
 · readings · every reading the session took, the one under the pointer whole beside it
 /readings · 5 readings                                                                       $0.0142 spent · [?] keys · [esc] back
@@ -181,7 +181,7 @@ MODE AND POLICY
                                                  │       the instruction was the exporter; docs were not asked for
                                                  │     read against: fix the CSV exporter's quoting
 
-[↑↓/jk] move · [esc] back to the prompt                                                a reader's account of the run, newest first
+[↑↓/jk] move · [esc] back                                                              a reader's account of the run, newest first
 
 · turns · every turn the session ran, the close of the one under the pointer beside it
 /turns · 6 turns · 26 tools                                                                  $0.1580 spent · [?] keys · [esc] back
@@ -195,7 +195,7 @@ MODE AND POLICY
   ⊘ turn 1  cancelled                            $0.0060 │ 
                                                          │   files internal/agent/loop.go +12 −4
 
-[↑↓/jk] move · [enter] review turn 4 · [esc] back to the prompt                                each turn as its close row reads it
+[↑↓/jk] move · [enter] review turn 4 · [esc] back                                              each turn as its close row reads it
 
 · alerts · every command the session broke, standing first, the one under the pointer's account beside it
 /alerts · 2 standing · 2 superseded                                                                          [?] keys · [esc] back
@@ -208,7 +208,7 @@ MODE AND POLICY
                                                                │   broke     turn 3
                                                                │   answered  not yet
 
-[↑↓/jk] move · [enter] show each run · [esc] back to the prompt             every command this session broke, as the rail reads it
+[↑↓/jk] move · [enter] show each run · [esc] back                           every command this session broke, as the rail reads it
 
 · spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
 /stats · 2 models · 2 children · 3 turns                                                     $0.4210 spent · [?] keys · [esc] back
@@ -222,7 +222,7 @@ by child                                                     │   requests     
   ◇ writer-1 · claude-opus-5-5                       $0.0520 │ 
 ↓ 4 more                                                     │   by kind of request
 
-[↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
+[↑↓/jk] move · [enter] open the turn · [esc] back                           the session's bill, as the rail's SPEND block reads it
 
 · tools · where the session's tools came from, the source under the pointer's account beside it
 /mcp · 3 servers · 2 of 4 up                                                                                 [?] keys · [esc] back
@@ -236,7 +236,7 @@ mcp servers                                              │
 definitions not loaded                                   │   costs     its tools are not in this session
 ↓ 7 more                                                 │ 
 
-[↑↓/jk] move · [esc] back to the prompt                                 where this session's tools came from, as the rail reads it
+[↑↓/jk] move · [esc] back                                               where this session's tools came from, as the rail reads it
 
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
@@ -368,7 +368,7 @@ definitions not loaded                                   │   costs     its too
                                                                 ␛[38;5;244m │ ␛[m  ␛[38;5;244masked for ␛[m␛[38;5;254mhttps://docs.rs/tokio␛[m
                                                                 ␛[38;5;244m │ ␛[m  ␛[38;5;244mstatus ␛[m␛[38;5;254m200␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                      ␛[38;5;244mrecorded by the tool, not by the model␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                    ␛[38;5;244mrecorded by the tool, not by the model␛[m
 
 · safety · the reading, its subject beside the title and the way back on the right
 ␛[1;38;5;254m/safety␛[m␛[38;5;244m · manual · sandbox-exec␛[m                                                                              ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -382,7 +382,7 @@ definitions not loaded                                   │   costs     its too
 ␛[38;5;254m    config     2 command patterns from behavior.command_allowlist — not this session's to revoke␛[m
 ␛[38;5;244m↓ 7 more · where it may write · containment · web · what the checkout was let load · mcp · secrets · tools␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                      ␛[38;5;244ma reading · nothing here changes it␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                    ␛[38;5;244ma reading · nothing here changes it␛[m
 
 · steps · the session's own list, the run the transcript titled for the step beside it
 ␛[1;38;5;254m/steps␛[m␛[38;5;244m · 1 of 7␛[m                                                                                              ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -396,7 +396,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;244m6. ␛[m␛[38;5;254m· Run the whole suite␛[m                   ␛[38;5;244mnot started␛[m␛[38;5;244m │ ␛[m␛[38;5;244m  in the transcript · 2 tools · 4.1s␛[m
   ␛[38;5;244m7. ␛[m␛[38;5;254m· Write the report␛[m                      ␛[38;5;244mnot started␛[m␛[38;5;244m │ ␛[m  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/round.go␛[m            ␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 hunks␛[m   ␛[38;5;244m1.1s␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                           ␛[38;5;244mthe agent's own list, not a plan␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                         ␛[38;5;244mthe agent's own list, not a plan␛[m
 
 · readings · every reading the session took, the one under the pointer whole beside it
 ␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                                       ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -410,7 +410,7 @@ definitions not loaded                                   │   costs     its too
                                                 ␛[38;5;244m │ ␛[m    ␛[38;5;244m  the instruction was the exporter; docs were not asked for␛[m
                                                 ␛[38;5;244m │ ␛[m    ␛[38;5;244mread against: fix the CSV exporter's quoting␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                ␛[38;5;244ma reader's account of the run, newest first␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                              ␛[38;5;244ma reader's account of the run, newest first␛[m
 
 · turns · every turn the session ran, the close of the one under the pointer beside it
 ␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                  ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -424,7 +424,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;254m⊘ turn 1␛[m  ␛[38;5;244mcancelled␛[m                            ␛[38;5;244m$0.0060␛[m␛[38;5;244m │ ␛[m
                                                         ␛[38;5;244m │ ␛[m  ␛[38;5;244mfiles ␛[m␛[38;5;254minternal/agent/loop.go␛[m ␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                ␛[38;5;244meach turn as its close row reads it␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                              ␛[38;5;244meach turn as its close row reads it␛[m
 
 · alerts · every command the session broke, standing first, the one under the pointer's account beside it
 ␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m                                                                          ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -437,7 +437,7 @@ definitions not loaded                                   │   costs     its too
                                                               ␛[38;5;244m │ ␛[m  ␛[38;5;244mbroke     ␛[m␛[38;5;254mturn 3␛[m
                                                               ␛[38;5;244m │ ␛[m  ␛[38;5;244manswered  ␛[m␛[38;5;254mnot yet␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mevery command this session broke, as the rail reads it␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                           ␛[38;5;244mevery command this session broke, as the rail reads it␛[m
 
 · spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
 ␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                     ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -451,7 +451,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;254m◇ writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;244mclaude-opus-5-5␛[m                       ␛[38;5;244m$0.0520␛[m␛[38;5;244m │ ␛[m
 ␛[38;5;244m↓ 4 more␛[m                                                    ␛[38;5;244m │ ␛[m  ␛[38;5;244mby kind of request␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                           ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
 · tools · where the session's tools came from, the source under the pointer's account beside it
 ␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                 ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -465,4 +465,4 @@ definitions not loaded                                   │   costs     its too
 ␛[1;38;5;254mdefinitions not loaded␛[m                                  ␛[38;5;244m │ ␛[m  ␛[38;5;244mcosts     ␛[m␛[38;5;254mits tools are not in this session␛[m
 ␛[38;5;244m↓ 7 more␛[m                                                ␛[38;5;244m │ ␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                 ␛[38;5;244mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                               ␛[38;5;244mwhere this session's tools came from, as the rail reads it␛[m

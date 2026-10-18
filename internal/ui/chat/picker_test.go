@@ -74,8 +74,8 @@ func TestModelPick_EscSaysWhichModelItKeeps(t *testing.T) {
 	}
 	// The card opens as a search; esc first closes the row (and says so),
 	// and with the row closed it names the model it keeps.
-	if view := ansi.Strip(m.picker.card.View(110)); !strings.Contains(view, "[esc] row keys") {
-		t.Fatalf("the open row should offer `[esc] row keys`:\n%s", view)
+	if view := ansi.Strip(m.picker.card.View(110)); !strings.Contains(view, "[esc] back") {
+		t.Fatalf("the open row should offer `[esc] back`:\n%s", view)
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
@@ -1168,7 +1168,7 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	}
 	// The open query row offers the way back to the card's own keys rather
 	// than a clear that would do nothing.
-	if hint := ansi.Strip(m.picker.card.View(110)); !strings.Contains(hint, "[esc] row keys") {
+	if hint := ansi.Strip(m.picker.card.View(110)); !strings.Contains(hint, "[esc] back") {
 		t.Errorf("the searching card should name the way back to its keys:\n%s", hint)
 	}
 	updated, _ = m.Update(escK)

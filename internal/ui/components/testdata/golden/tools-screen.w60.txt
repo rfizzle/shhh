@@ -30,7 +30,7 @@ linear                                              starting
   costs     its tools are not in this session yet; they join
 … (+5 more rows)
 
-[esc] back to the prompt
+[esc] back
 
 · the built-in toolset · every tool it registered
 /mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
@@ -62,7 +62,7 @@ built-in                                                  up
     edit_file, execute_command, process, steps, question,
     remember, evidence, report, query
 
-[esc] back to the prompt
+[esc] back
 
 · a project server · waiting on the checkout, [a] answers after asking
 /mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
@@ -94,7 +94,7 @@ tracker                                              blocked
     checkout
     shhh trust   # or [a] on this row
 
-[a] trust this checkout · [esc] back to the prompt
+[a] trust this checkout · [esc] back
 
 · a server that did not start · what it costs, and /mcp's words for what would move it
 /mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
@@ -126,7 +126,7 @@ linear                                                 error
     the server's own output is above; check the command or
 … (+3 more rows)
 
-[esc] back to the prompt
+[esc] back
 
 · nothing outside shhh · the session's own tools and the web
 /mcp                                   [?] keys · [esc] back
@@ -145,7 +145,7 @@ built-in                                                  up
 
 … (+4 more rows)
 
-[esc] back to the prompt
+[esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · a server still starting · what it costs until it answers, and how long it has
@@ -168,7 +168,7 @@ built-in                                                  up
   ␛[38;5;246mcosts     ␛[m␛[38;5;252mits tools are not in this session yet; they join␛[m
 ␛[38;5;245m… (+5 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · the built-in toolset · every tool it registered
 ␛[1;97m/mcp␛[m␛[38;5;245m · 3 servers␛[m␛[38;5;245m · 2 of 4 up␛[m           ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -200,7 +200,7 @@ built-in                                                  up
     ␛[38;5;252medit_file, execute_command, process, steps, question,␛[m
     ␛[38;5;252mremember, evidence, report, query␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a project server · waiting on the checkout, [a] answers after asking
 ␛[1;97m/mcp␛[m␛[38;5;245m · 3 servers␛[m␛[38;5;245m · 2 of 4 up␛[m           ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -232,7 +232,7 @@ built-in                                                  up
     ␛[38;5;245mcheckout␛[m
     ␛[38;5;245mshhh trust   # or [a] on this row␛[m
 
-␛[38;5;103m[a]␛[m␛[38;5;245m trust this checkout␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[a]␛[m␛[38;5;245m trust this checkout␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a server that did not start · what it costs, and /mcp's words for what would move it
 ␛[1;97m/mcp␛[m␛[38;5;245m · 3 servers␛[m␛[38;5;245m · 2 of 4 up␛[m           ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -264,7 +264,7 @@ built-in                                                  up
     ␛[38;5;245mthe server's own output is above; check the command or␛[m
 ␛[38;5;245m… (+3 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · nothing outside shhh · the session's own tools and the web
 ␛[1;97m/mcp␛[m                                   ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -283,4 +283,4 @@ built-in                                                  up
 
 ␛[38;5;245m… (+4 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m

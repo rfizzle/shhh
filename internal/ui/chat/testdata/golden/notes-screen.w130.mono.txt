@@ -22,7 +22,7 @@ researcher-1                                                    │   its note f
   Where the goldens live           n3                    turn 4 │ 
 ❯ The reviewer's own delegate      n4                    turn 4 │ 
 
-[↑↓/jk] move · [enter] open · [d] delete · [esc] back to the prompt               written by the agents; dropping one is yours
+[↑↓/jk] move · [enter] open · [d] delete · [esc] back                             written by the agents; dropping one is yours
 
 · a note from the fan-out · the preview reads it
 /notes · 4 notes · 4 agents                                                                              [?] keys · [esc] back
@@ -36,7 +36,7 @@ researcher-1                                                    │   the verb i
   Where the goldens live           n3                    turn 4 │ 
   The reviewer's own delegate      n4                    turn 4 │ 
 
-[↑↓/jk] move · [enter] open · [d] delete · [esc] back to the prompt               written by the agents; dropping one is yours
+[↑↓/jk] move · [enter] open · [d] delete · [esc] back                             written by the agents; dropping one is yours
 
 · [d] · the one key that takes something out asks first
 /notes · 4 notes · 4 agents                                                                              [?] keys · [esc] back
@@ -84,7 +84,7 @@ notes · [esc] back
   ␛[38;5;254mWhere the goldens live␛[m           ␛[38;5;254mn3␛[m                    ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mThe reviewer's own delegate      n4                    turn 4␛[m␛[38;5;244m │ ␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m               ␛[38;5;244mwritten by the agents; dropping one is yours␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                             ␛[38;5;244mwritten by the agents; dropping one is yours␛[m
 
 · a note from the fan-out · the preview reads it
 ␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                                                                              ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -98,7 +98,7 @@ notes · [esc] back
   ␛[38;5;254mWhere the goldens live␛[m           ␛[38;5;254mn3␛[m                    ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
   ␛[38;5;254mThe reviewer's own delegate␛[m      ␛[38;5;254mn4␛[m                    ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m               ␛[38;5;244mwritten by the agents; dropping one is yours␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                             ␛[38;5;244mwritten by the agents; dropping one is yours␛[m
 
 · [d] · the one key that takes something out asks first
 ␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                                                                              ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -131,4 +131,4 @@ notes · [esc] back
 · the panel it leaves · the way out, on one row
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m⏸ manual␛[m␛[38;5;244m · ␛[m␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.51␛[m                                                                                       
-␛[38;5;244mnotes · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;244mnotes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

@@ -446,6 +446,6 @@ func (m Model) closeFlakesScreen() (tea.Model, tea.Cmd) {
 
 // renderFlakesHint is the one line the screen leaves where the draft box
 // was: the way out and nothing else, the way the readings screen's does.
-func (m Model) renderFlakesHint() string {
-	return sty.SystemMsg.Render("flakes · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+func (m Model) renderFlakesHint() []hintSeg {
+	return paneHint("flakes", segAs(keys.Screen.Quit, components.EscBack))
 }

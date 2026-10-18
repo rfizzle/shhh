@@ -89,7 +89,7 @@
   ⠋ redrafting every section  0.0s
 
   [esc] stop drafting · every section keeps its last
-  text
+        text
 
 · the result · each changed section marked, the kept one says so, the note's row selected
 /agents new               [?] keys · [esc] discard the draft
@@ -212,7 +212,7 @@
   ␛[38;5;205m⠋ redrafting every section␛[m␛[38;5;245m  0.0s␛[m
 
   ␛[92m[esc]␛[m␛[38;5;245m stop drafting · every section keeps its last␛[m
-  ␛[38;5;245mtext␛[m
+        ␛[92m␛[m␛[38;5;245mtext␛[m
 
 · the result · each changed section marked, the kept one says so, the note's row selected
 ␛[1;97m/agents new␛[m               ␛[38;5;245m[?] keys · [esc] discard the draft␛[m

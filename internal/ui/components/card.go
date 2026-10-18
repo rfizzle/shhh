@@ -307,13 +307,11 @@ func NotYetLiveRows(handover string, room int) []string {
 // out, on the one state that still answers it — at the end of the dimmed
 // rows, in its own colour and by the same rule a live run closes on; nil
 // leaves the run wholly dim.
-func deadRows(run []string, closeLive func(rows []string, inner int) []string, words string, width int) []string {
+func deadRows(run []KeyOffer, closeLive func(rows []string, inner int) []string, words string, width int) []string {
 	inner := Card{}.Inner(width)
-	dim := make([]string, len(run))
-	for i, seg := range run {
-		dim[i] = sty.dimmer.Render(seg)
-	}
-	rows := runRows(dim, inner)
+	dim := toneTones(sty.dimmer)
+	dim.Sep = sty.dim
+	rows := dim.Pack(run, inner)
 	if closeLive != nil {
 		rows = closeLive(rows, inner)
 	}
@@ -339,8 +337,8 @@ const graceWords = "keys work in a moment"
 // glance (invariant 1: the dimming never carries the meaning alone) — with
 // no handover row, because the card already holds the keyboard. esc is not
 // among the keys the window discards, so closeEsc ends the run on it live,
-// cut to stay on the run's last row the way a live card's is.
-func graceRows(run []string, closeEsc func(rows []string, inner int) []string, width int) []string {
+// its words whole, the way a live card's run ends.
+func graceRows(run []KeyOffer, closeEsc func(rows []string, inner int) []string, width int) []string {
 	return deadRows(run, closeEsc, graceWords, width)
 }
 
@@ -361,7 +359,7 @@ const typingWords = "these letters go into the field"
 // typingRows renders that key row: the not-yet-live row's shape, with no
 // handover under it, because nothing is being handed anywhere — the field is
 // already where the keyboard is.
-func typingRows(run []string, width int) []string { return deadRows(run, nil, typingWords, width) }
+func typingRows(run []KeyOffer, width int) []string { return deadRows(run, nil, typingWords, width) }
 
 // chosenWords is the state of a decision surface holding a list under itself
 // rather than a field: the card's keys are drawn and none of them is a key,
@@ -377,7 +375,7 @@ const chosenWords = "the list below has the keyboard"
 // chosenRows renders that key row. It is typingRows with the other phrase,
 // for the reason those two share a shape: what changed is which surface holds
 // the keyboard, not how a card says its keys are dead.
-func chosenRows(run []string, width int) []string { return deadRows(run, nil, chosenWords, width) }
+func chosenRows(run []KeyOffer, width int) []string { return deadRows(run, nil, chosenWords, width) }
 
 // handoverImperative is what the handover key does, and it is a constant
 // because the pointer aims at it: a key owns its bracket and the imperative
@@ -391,7 +389,7 @@ const handoverImperative = " answer it"
 // are going until it is pressed — in the words a card that took the keyboard
 // by arriving says the same thing in, because it is the same handover.
 func handoverRow(key string, inner int) string {
-	head := sty.key.Render("["+key+"]") + sty.body.Render(handoverImperative)
+	head := handoverOffer(key, strings.TrimPrefix(handoverImperative, " "))
 	tail := sty.dim.Render(" · " + arrivalDraftWords)
 	if lipgloss.Width(head)+lipgloss.Width(tail) > inner {
 		return Clip(head, inner)

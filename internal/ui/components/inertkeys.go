@@ -22,9 +22,7 @@ package components
 // the handover goes last, because a key that is not live yet is not an offer
 // and the key that turns it into one is.
 
-import (
-	"strings"
-)
+import "github.com/rfizzle/shhh/internal/ui/keys"
 
 // handoverWords trail the key that hands a row the keyboard. They are the
 // row-sized form of the card's `not live yet`, and they are the component's
@@ -38,48 +36,19 @@ const handoverWord = "read"
 
 // keyOffers renders a run of offers live: every key the interface offers is
 // info, the words for it dim.
-func keyOffers(keys []TurnKey) string {
-	var parts []string
-	for _, k := range keys {
-		tone := sty.key
-		switch {
-		case k.inert:
-			tone = sty.dimmer
-		case k.Safe:
-			tone = sty.add
-		}
-		parts = append(parts, tone.Render(k.Key)+offerWords(k.Label))
-	}
-	return strings.Join(parts, sty.dim.Render(" · "))
-}
-
-// offerWords is the words after a key. A key offered bare — the tone
-// carrying what it does, where a row had no room left for its words — gets
-// no trailing space either, since that space is a column the row is short of.
-func offerWords(label string) string {
-	if label == "" {
-		return ""
-	}
-	return sty.dim.Render(" " + label)
-}
+func keyOffers(keys []TurnKey) string { return liveTones().Join(keys) }
 
 // inertOffers renders the same run for a surface that does not hold the
 // keyboard. The keys drop out of info — which is the colour that means "you
 // can press this" — and go grey with their words, the same treatment
 // the card's not-yet-live key row takes.
-func inertOffers(keys []TurnKey) string {
-	var parts []string
-	for _, k := range keys {
-		parts = append(parts, sty.dimmer.Render(k.Key)+offerWords(k.Label))
-	}
-	return strings.Join(parts, sty.dim.Render(" · "))
-}
+func inertOffers(keys []TurnKey) string { return inertTones().Join(keys) }
 
 // handoverOffer is the one live key on a row whose own keys are not: the key
 // in Key, its words in body text, so the live half of the run is the half
 // that reads as an offer.
 func handoverOffer(key, words string) string {
-	return sty.key.Render("["+key+"]") + sty.body.Render(" "+words)
+	return cardTones().Paint(KeyOffer{Key: keys.Bracketed(key), Label: words})
 }
 
 // chorded reports that every offer in the run carries the chord that reaches

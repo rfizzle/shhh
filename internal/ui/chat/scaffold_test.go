@@ -190,7 +190,7 @@ func TestScaffold_EscLeavesTheOfferStanding(t *testing.T) {
 	// And the card says as much, because the two ways of not writing differ
 	// in what they leave behind.
 	view := ansi.Strip(strings.Join(m.scaffoldLines(), "\n"))
-	if !strings.Contains(view, "the offer stays") {
+	if !strings.Contains(view, "[esc] keeps waiting — nothing written") {
 		t.Fatalf("the card never says what esc leaves:\n%s", view)
 	}
 }

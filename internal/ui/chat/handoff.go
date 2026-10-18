@@ -211,9 +211,9 @@ func (m Model) handoffCard() *components.ApprovalCard {
 		// Enter is what typed the command, so a second tap of it keeps
 		// nothing: only the letter does, and the card says so.
 		LetterOnly: true,
-		Footnote:   "enter opened this card and keeps nothing — only [y] does",
+		Footnote:   "enter opened this card and keeps nothing — only " + keys.Bracket(keys.Proposal.Write) + " does",
 		Decline:    "nothing kept",
-		Return:     "leave — nothing kept, and the draft waits",
+		Return:     components.EscWaits + " — nothing kept",
 		ExtraHints: []components.KeyOffer{
 			{Key: keys.Bracket(keys.Decision.Revise), Label: "edit first"},
 		},

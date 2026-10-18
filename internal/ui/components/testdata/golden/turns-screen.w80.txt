@@ -28,7 +28,7 @@ turn 6                                                                  running�
 
   files internal/agent/loop.go +4 −1
 
-[enter] review turn 6 · [esc] back to the prompt
+[enter] review turn 6 · [esc] back           each turn as its close row reads it
 
 · a turn that wrote nothing · the review offered grey
 /turns · 6 turns · 26 tools                $0.1580 spent · [?] keys · [esc] back
@@ -46,7 +46,7 @@ turn 5                                                                      done
   ∗ worked 12s · 3 tools · $0.0210
  ▎✎ changed no files
 
-[enter] review turn 5 · [esc] back to the prompt
+[enter] review turn 5 · [esc] back           each turn as its close row reads it
 
 · a turn that committed · its close whole, and its files
 /turns · 6 turns · 26 tools                $0.1580 spent · [?] keys · [esc] back
@@ -67,7 +67,7 @@ turn 4                                                                      done
 
 … (+2 more rows)
 
-[enter] review turn 4 · [esc] back to the prompt
+[enter] review turn 4 · [esc] back           each turn as its close row reads it
 
 · a failing check · the close's verdict, none of the row's keys
 /turns · 6 turns · 26 tools                $0.1580 spent · [?] keys · [esc] back
@@ -88,7 +88,7 @@ turn 3                                                                      done
 
   files internal/agent/policy.go +3 −3
 
-[enter] review turn 3 · [esc] back to the prompt
+[enter] review turn 3 · [esc] back           each turn as its close row reads it
 
 · a restored turn · its files, and no figures kept
 /turns · 6 turns · 26 tools                $0.1580 spent · [?] keys · [esc] back
@@ -109,7 +109,7 @@ turn 2                                                           no figures kept
   files README.md +9 −0
         docs/loop.md +2 −1
 
-[enter] review turn 2 · [esc] back to the prompt
+[enter] review turn 2 · [esc] back           each turn as its close row reads it
 
 · a turn paused at its round limit · the pause row's rounds, time and cost
 /turns · 6 turns · 26 tools                $0.1580 spent · [?] keys · [esc] back
@@ -129,7 +129,7 @@ turn 6                                                                    paused
 
   files internal/agent/loop.go +4 −1
 
-[enter] review turn 6 · [esc] back to the prompt
+[enter] review turn 6 · [esc] back           each turn as its close row reads it
 
 ── ansi ────────────────────────────────────────────────────
 · the turn in flight · the rail's reading of it, on the close's grid
@@ -150,7 +150,7 @@ turn 6                                                                    paused
 
   ␛[38;5;246mfiles ␛[m␛[38;5;252minternal/agent/loop.go␛[m ␛[92m+4␛[m ␛[91m−1␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 6␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 6␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m           ␛[38;5;245meach turn as its close row reads it␛[m
 
 · a turn that wrote nothing · the review offered grey
 ␛[1;97m/turns␛[m␛[38;5;245m · 6 turns␛[m␛[38;5;245m · 26 tools␛[m                ␛[38;5;245m$0.1580 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -168,7 +168,7 @@ turn 6                                                                    paused
   ␛[38;5;245m∗␛[m ␛[38;5;245mworked 12s · 3 tools · $0.0210␛[m
  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mchanged no files␛[m
 
-␛[38;5;248m[enter]␛[m␛[38;5;245m review turn 5␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;248m[enter]␛[m␛[38;5;245m review turn 5␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m           ␛[38;5;245meach turn as its close row reads it␛[m
 
 · a turn that committed · its close whole, and its files
 ␛[1;97m/turns␛[m␛[38;5;245m · 6 turns␛[m␛[38;5;245m · 26 tools␛[m                ␛[38;5;245m$0.1580 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -189,7 +189,7 @@ turn 6                                                                    paused
 
 ␛[38;5;245m… (+2 more rows)␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 4␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 4␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m           ␛[38;5;245meach turn as its close row reads it␛[m
 
 · a failing check · the close's verdict, none of the row's keys
 ␛[1;97m/turns␛[m␛[38;5;245m · 6 turns␛[m␛[38;5;245m · 26 tools␛[m                ␛[38;5;245m$0.1580 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -210,7 +210,7 @@ turn 6                                                                    paused
 
   ␛[38;5;246mfiles ␛[m␛[38;5;252minternal/agent/policy.go␛[m ␛[92m+3␛[m ␛[91m−3␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 3␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 3␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m           ␛[38;5;245meach turn as its close row reads it␛[m
 
 · a restored turn · its files, and no figures kept
 ␛[1;97m/turns␛[m␛[38;5;245m · 6 turns␛[m␛[38;5;245m · 26 tools␛[m                ␛[38;5;245m$0.1580 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -231,7 +231,7 @@ turn 6                                                                    paused
   ␛[38;5;246mfiles ␛[m␛[38;5;252mREADME.md␛[m ␛[92m+9␛[m ␛[91m−0␛[m
         ␛[38;5;252mdocs/loop.md␛[m ␛[92m+2␛[m ␛[91m−1␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 2␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 2␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m           ␛[38;5;245meach turn as its close row reads it␛[m
 
 · a turn paused at its round limit · the pause row's rounds, time and cost
 ␛[1;97m/turns␛[m␛[38;5;245m · 6 turns␛[m␛[38;5;245m · 26 tools␛[m                ␛[38;5;245m$0.1580 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -251,4 +251,4 @@ turn 6                                                                    paused
 
   ␛[38;5;246mfiles ␛[m␛[38;5;252minternal/agent/loop.go␛[m ␛[92m+4␛[m ␛[91m−1␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 6␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 6␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m           ␛[38;5;245meach turn as its close row reads it␛[m

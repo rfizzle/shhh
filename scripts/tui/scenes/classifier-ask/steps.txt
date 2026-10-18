@@ -20,7 +20,7 @@ keys BTab
 snap 02-auto "⏵⏵ auto"
 keys "publish the release" Enter
 # The judge says no, and the call is put to the reader with its reason.
-snap 03-card "classifier: the task asked for a release check" "not now — it keeps waiting"
+snap 03-card "classifier: the task asked for a release check" "[esc] keeps waiting"
 # The card landed just after the Enter, inside the grace window; a decision
 # key pressed in it is discarded by design.
 sleep 1

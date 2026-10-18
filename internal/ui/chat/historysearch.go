@@ -186,10 +186,10 @@ func (m Model) historySearchLines() []string {
 	// border rather than shedding, so the row has to fit the narrow layouts
 	// whole. The keys are still the register's, in the brackets and the tone
 	// every offered key wears.
-	hint := joinSegs([]hintSeg{
+	hint := hintTones().Fit([]hintSeg{
 		segAs(keys.Search.Older, "older"),
 		segAs(keys.Search.Keep, "keep"),
 		seg(keys.Search.Cancel),
-	})
-	return []string{clipRow(row, width), clipRow(hint, width)}
+	}, width)
+	return []string{clipRow(row, width), hint}
 }

@@ -268,7 +268,7 @@ func (m *Model) openQuestion(req *approvalRequest) {
 // again — so the row says both halves: a card whose safe answer read `cancel`
 // would leave the reader to guess whether the model is still waiting
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
-const questionWayOut = "back to the draft — the question waits"
+const questionWayOut = components.EscWaits
 
 // questionPage builds one question's card in the dressing its shape asks for.
 func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard {

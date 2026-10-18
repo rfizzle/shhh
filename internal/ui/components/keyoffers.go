@@ -49,6 +49,15 @@ func keyOfferAs(b keys.Binding, label string) KeyOffer {
 // safeSpelling is how the register spells the key that changes nothing.
 const safeSpelling = "esc"
 
+// safeOffer is the way out as a card's own row offers it: the key, and the
+// card's words for what it leaves, given ground clause by clause until they
+// fit inner (fitClauses). It is the safe answer whatever key the card spells
+// it with, because the row it ends is the card's way out.
+func safeOffer(b keys.Binding, words string, inner int) KeyOffer {
+	key := keys.Bracket(b)
+	return KeyOffer{Key: key, Label: fitClauses(key+" ", words, inner), Safe: true}
+}
+
 // Offer is a binding as one offer on a key row, for a surface outside this
 // package that lays its own. It is the door the brackets are written behind:
 // a host that spelled a key itself would be the second place a rebind has to
@@ -73,11 +82,24 @@ func cancelOffer(surface, family string) KeyOffer {
 	return keyOfferAs(keys.Select.Cancel, surface)
 }
 
-// The two family wordings. A single-select's enter takes a row and a
-// multi-select's applies the boxes, so what esc leaves is none of the one and
-// none of the other.
+// The two words esc is glossed with, out of the three things it can say.
+// EscBack is esc leaving a screen or a picker, or backing out of the level
+// open on one, with nothing staged. EscWaits is esc leaving a card that holds
+// a decision: the decision is not answered, and the gloss says so rather than
+// `back`, which on a card asking for an answer reads as dismissing it. The
+// third is the question a screen asks before esc drops staged work, which is
+// a confirm and not a gloss. Nothing on a card that waits reads as a deny
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 const (
-	takeNone  = "take none"
+	EscBack  = "back"
+	EscWaits = "keeps waiting"
+)
+
+// The two family wordings. A single-select's enter takes a row, and esc
+// leaving one takes nothing, which is the plain way back; a multi-select's
+// enter applies the boxes, so what its esc leaves is none of them.
+const (
+	takeNone  = EscBack
 	applyNone = "apply none"
 )
 
@@ -85,10 +107,11 @@ const (
 // screen uses is a fact about where the reader was when they opened it and
 // nothing else, and there is no third: leaving a screen that changes nothing
 // is one act, and an act worded three ways is three acts to read
-// (docs/interface/surfaces.md#the-supporting-screens).
+// (docs/interface/surfaces.md#the-supporting-screens). A screen a session
+// opened says it in the word its header already does.
 const (
 	backToShell  = "back to the shell"
-	backToPrompt = "back to the prompt"
+	backToPrompt = EscBack
 )
 
 // wayOut is the way out as a screen's footer offers it. The header carries

@@ -67,11 +67,11 @@ func (c RewindCard) View(width int) string {
 // spelling offered is the spelling answered. Both leads, because it is the
 // usual reading of "go back" and the one a reader who did not come here to
 // think about scope means.
-func rewindRun() []string {
-	return []string{
-		offerSegment(keys.Bracket(keys.Rewind.Both), keys.Words(keys.Rewind.Both)+" — the usual meaning of going back"),
-		offerSegment(keys.Bracket(keys.Rewind.Code), keys.Words(keys.Rewind.Code)),
-		offerSegment(keys.Bracket(keys.Rewind.Talk), keys.Words(keys.Rewind.Talk)),
+func rewindRun() []KeyOffer {
+	return []KeyOffer{
+		keyOfferAs(keys.Rewind.Both, keys.Words(keys.Rewind.Both)+" — the usual meaning of going back"),
+		keyOffer(keys.Rewind.Code),
+		keyOffer(keys.Rewind.Talk),
 	}
 }
 
@@ -80,7 +80,6 @@ func rewindRun() []string {
 // window, and the picker that offered this is still there
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func rewindEscRow(inner int) string {
-	esc := keys.Shown(keys.Rewind.Cancel)
-	words := keys.Words(keys.Rewind.Cancel) + " — back to the picker, nothing restored"
-	return Clip(safeSegment(esc, fitClauses("["+esc+"] ", words, inner)), inner)
+	return Clip(cardTones().Paint(safeOffer(keys.Rewind.Cancel,
+		keys.Words(keys.Rewind.Cancel)+" — nothing restored", inner)), inner)
 }

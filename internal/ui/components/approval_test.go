@@ -193,7 +193,7 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 			{Label: "network", Value: "open", Detail: "the workspace profile allows it", Tone: ToneOpen},
 		},
 		Answer:   "run it once",
-		Return:   "not now — it keeps waiting",
+		Return:   "keeps waiting",
 		Footnote: "[a] always — not offered: shhh flagged this command",
 	}
 	lines := strings.Split(ansi.Strip(c.View(90)), "\n")
@@ -202,7 +202,7 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 		"touches   ./dist — 412 files, 84.0 MB",
 		"undo      none — rm bypasses the changeset",
 		"network   open — the workspace profile allows it",
-		"[esc] not now — it keeps waiting",
+		"[esc] keeps waiting",
 		"[a] always — not offered",
 	} {
 		if !strings.Contains(view, want) {
@@ -560,7 +560,7 @@ func TestApprovalCard_TheRunIsBracketedOffers(t *testing.T) {
 	view := ansi.Strip(c.View(130))
 	for _, want := range []string{
 		"[y] run it once", "[n] deny", `[a] allow "go test" without asking`,
-		"[enter] full view", "[esc] leave it waiting",
+		"[enter] full view", "[esc] keeps waiting",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the run should offer %q:\n%s", want, view)
@@ -895,8 +895,7 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 	}
 
 	// At 60 columns a held card's esc ends the offers row, in the grace
-	// window as well as out of it: the shared words give up their clauses
-	// rather than put the way out on a row of its own.
+	// window as well as out of it: its words are short enough to join it.
 	for _, grace := range []bool{false, true} {
 		c := held()
 		c.Grace = grace
@@ -910,18 +909,16 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 		}
 	}
 
-	// Where even `leave it waiting` would wrap, the shared words cut to one
-	// word, and where that would wrap too, to the bare key.
-	for _, tc := range []struct{ hint, tail string }{
-		{"allow go test without asking", " · [esc] " + waitWord},
-		{"allow commands without asking this session", " · [esc]"},
-	} {
+	// Where the way out will not fit beside the run's last row it takes a
+	// row of its own, and never gives up its words for one: a bare `[esc]`
+	// on a card holding a decision does not say the decision stays.
+	for _, hint := range []string{"allow go test without asking", "allow commands without asking this session"} {
 		c = held()
-		c.AlwaysHint = tc.hint
+		c.AlwaysHint = hint
 		c.HeldOnArrival, c.Handover = false, ""
 		rows = keyBlock(c, 60)
-		if last := rows[len(rows)-1]; !strings.HasSuffix(last, tc.tail) {
-			t.Fatalf("the run should end on %q at 60 columns: %q", tc.tail, rows)
+		if last := rows[len(rows)-1]; !strings.HasSuffix(last, "[esc] "+EscWaits) {
+			t.Fatalf("the run should end on the whole way out at 60 columns: %q", rows)
 		}
 	}
 }

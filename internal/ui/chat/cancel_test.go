@@ -281,7 +281,7 @@ func TestQuit_IdleTakesTwoPresses(t *testing.T) {
 	if m.quitting {
 		t.Fatal("a single ctrl+c must not quit")
 	}
-	if note, ok := m.armedHint(); !ok || note.render() != armedQuitHint() {
+	if note, ok := m.armedHint(); !ok || hintTones().Paint(note) != armedQuitHint() {
 		t.Fatalf("the rail must offer the second press, got %+v", note)
 	}
 
@@ -323,7 +323,7 @@ func TestQuit_ExpiredWindowArmsAgain(t *testing.T) {
 	if m.quitting || cmd == nil {
 		t.Fatal("a press after the window expired must arm again, not quit")
 	}
-	if note, ok := m.armedHint(); !ok || note.render() != armedQuitHint() {
+	if note, ok := m.armedHint(); !ok || hintTones().Paint(note) != armedQuitHint() {
 		t.Fatal("the late press should have re-armed the window")
 	}
 }
@@ -378,5 +378,5 @@ func TestQuit_StopsACommandTheSessionWasRunning(t *testing.T) {
 // the rail builds it so a change to the grammar moves the test with the code
 // rather than against it.
 func armedQuitHint() string {
-	return hintSeg{key: keys.Shown(keys.Draft.Cancel), label: "again quits"}.render()
+	return hintTones().Paint(hintSeg{Key: keys.Bracket(keys.Draft.Cancel), Label: "again quits"})
 }

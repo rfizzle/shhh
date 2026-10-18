@@ -956,57 +956,32 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	if !c.HeldOnArrival {
 		for _, o := range c.ExtraHints {
-			segments = append(segments, offerSegment(o.Key, o.Label))
+			segments = append(segments, KeyOffer{Key: o.Key, Label: o.Label})
 		}
 	}
 	if c.KeyList {
-		segments = append(segments, offerSegment(keys.Bracket(keys.Screen.List), keys.Words(keys.Screen.List)))
+		segments = append(segments, keyListSegment())
 	}
-	return append(c.closeRun(runRows(segments, inner), inner), c.footnoteRows(inner)...)
+	segments = append(segments, c.escSegment(inner))
+	return append(runRows(segments, inner), c.footnoteRows(inner)...)
 }
 
-// closeRun puts the way out at the end of the run, so the card ends on its
-// keys rather than on a sentence about the keyboard. The block under the rule
-// is pinned, so a run that wraps keeps it on screen all the same
-// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+// closeRun puts the way out at the end of a dimmed run whose way out is
+// still live — the grace window's — so the card ends on its keys rather than
+// on a sentence about the keyboard, as a live card's run does. The block
+// under the rule is pinned, so a run that wraps keeps it on screen all the
+// same.
 //
 // The offer joins the run's last row where it fits there, and otherwise
-// takes a row of its own. The words every gated card shares may give up
-// their trailing clause to stay on the row — `leave it waiting` already says
-// the decision is not answered, and a row spent on the rest is a row the
-// transcript gives up. A card's own words may not: they are on the card
-// because the first clause was not enough to tell esc from the card's no
-// (`leave — nothing written, and the offer stays` beside a no that is never
-// offered again), so they join whole or not at all.
-//
-// Where even `leave it waiting` would wrap, the shared words cut harder:
-// to `wait`, and where that would wrap too, to the bare key in the add
-// tone. A row of its own for the way out is the one thing the run is built
-// to avoid, and a bare `[esc]` last on the run is still the key every card
-// answers the same way, so the words give up before the row does
-// (docs/interface/surfaces.md#the-approval-card).
+// takes a row of its own, its words whole. They are the last thing on the
+// card a narrow terminal may take: a bare `[esc]` on a card holding a
+// decision leaves the reader to guess whether the key that leaves it also
+// answers it, and the gloss is what says it does not
+// (docs/interface/principles.md#esc-is-always-the-safe-answer). A card's own
+// words give ground only where they are wider than a whole row, clause by
+// clause (fitClauses).
 func (c *ApprovalCard) closeRun(rows []string, inner int) []string {
-	sep := sty.dim.Render(" · ")
-	if n := len(rows); n > 0 {
-		if room := inner - lipgloss.Width(rows[n-1]) - lipgloss.Width(sep); room > 0 {
-			fit := inner
-			if c.Return == "" {
-				fit = room
-			}
-			esc := c.escSegment(fit)
-			if c.Return == "" && lipgloss.Width(esc) > room {
-				esc = safeSegment(keys.Shown(keys.Select.Cancel), waitWord)
-			}
-			if c.Return == "" && lipgloss.Width(esc) > room {
-				esc = sty.add.Render("[" + keys.Shown(keys.Select.Cancel) + "]")
-			}
-			if lipgloss.Width(esc) <= room {
-				rows[n-1] += sep + esc
-				return rows
-			}
-		}
-	}
-	return append(rows, c.escSegment(inner))
+	return cardTones().CloseOn(rows, c.escSegment(inner), inner)
 }
 
 // escSegment is the offer every live card's run ends on: esc and what it
@@ -1019,9 +994,8 @@ func (c *ApprovalCard) closeRun(rows []string, inner int) []string {
 // Decision.Deny, which binds the same keystroke under the letter `n`: what
 // this offer needs is a spelling, and `esc` is the spelling the register
 // gives that keystroke wherever a surface holds the whole keyboard.
-func (c *ApprovalCard) escSegment(inner int) string {
-	esc := keys.Shown(keys.Select.Cancel)
-	return safeSegment(esc, fitClauses("["+esc+"] ", c.returnWords(), inner))
+func (c *ApprovalCard) escSegment(inner int) KeyOffer {
+	return safeOffer(keys.Select.Cancel, c.returnWords(), inner)
 }
 
 // footnoteRows is the one dim line a card may carry under its run, and it
@@ -1051,7 +1025,7 @@ func (c *ApprovalCard) footnoteRows(inner int) []string {
 		// a card is drawn in may take at most 40% of the terminal
 		// (docs/interface/principles.md#one-interaction-panel), so a row
 		// spent on it is a row the transcript gives up.
-		return []string{sty.dim.Render(FitSegments(note, inner))}
+		return []string{toneTones(sty.dim).Fit(note, inner)}
 	}
 	return nil
 }
@@ -1090,108 +1064,20 @@ func (c *ApprovalCard) returnWords() string {
 }
 
 // waitingWords is what esc does on a card that said nothing else about it:
-// the keyboard goes back to the draft and the decision is still there. It is
-// not a denial, and that difference is the whole reason the offer is worth
-// its words (docs/interface/principles.md#esc-is-always-the-safe-answer).
-const waitingWords = "leave it waiting, nothing is denied"
+// the keyboard goes back to the draft and the decision is still there,
+// unanswered. It is not a denial, and that difference is the whole reason the
+// offer is worth its words (docs/interface/principles.md#esc-is-always-the-safe-answer).
+const waitingWords = EscWaits
 
-// waitWord is waitingWords cut to the one word that still says the decision
-// is left standing, for a run whose last row has no room for more.
-const waitWord = "wait"
-
-// offerSegment is one offer in the card's grammar: the key in Key, the
-// imperative after it in Body. The mark arrives already bracketed, because
-// the register is what spells a key and this only paints it.
-func offerSegment(mark, label string) string {
-	if label == "" {
-		return sty.key.Render(mark)
-	}
-	return sty.key.Render(mark) + " " + sty.body.Render(label)
-}
-
-// safeSegment is the same offer for the answer that costs nothing: one run in
-// Add, the key and its words together, because what makes it the safe answer
-// is the whole clause and not the letter
+// runRows packs the card's run into rows by the rule every key row is laid
+// by — a row too long for its frame takes another row rather than losing an
+// offer (docs/interface/principles.md#fold-never-hide) — in the card's
+// grammar: the key in Key, the imperative after it in body text, and the
+// answer that costs nothing in add, the key and its words together, because
+// what makes it the safe answer is the whole clause and not the letter
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
-func safeSegment(key, label string) string {
-	return sty.add.Render("[" + key + "] " + label)
-}
-
-// runRows packs the painted run into rows. It is the rule hintRows applies —
-// a row too long for its frame takes another row rather than losing an offer
-// (docs/interface/principles.md#fold-never-hide) — over segments that carry
-// their own colour: painting the joined run would put one style around a run
-// that has three in it, and the separator travels with the row so a wrapped
-// row never opens on one.
-func runRows(segments []string, inner int) []string {
-	var rows []string
-	var line []string
-	sep := sty.dim.Render(" · ")
-	flush := func() {
-		if len(line) > 0 {
-			rows = append(rows, strings.Join(line, sep))
-			line = nil
-		}
-	}
-	for _, seg := range segments {
-		// One offer wider than the whole row is folded onto rows of its own:
-		// left whole, the frame would clip its tail, and the tail is the half
-		// of an offer that states what the key costs. Below the width a card
-		// is framed at the rows are drawn bare and nothing is readable, and
-		// a fold there would spend the body's rows one word at a time.
-		if lipgloss.Width(seg) > inner && inner >= minCardWidth-cardFrameWidth {
-			flush()
-			rows = append(rows, foldSegment(seg, inner)...)
-			continue
-		}
-		next := strings.Join(append(append([]string{}, line...), seg), " · ")
-		if len(line) > 0 && lipgloss.Width(next) > inner {
-			flush()
-		}
-		line = append(line, seg)
-	}
-	flush()
-	return rows
-}
-
-// foldSegment breaks one painted offer at word boundaries into rows no wider
-// than inner. The key stays in front of the first row and every continuation
-// is indented under the words rather than under the bracket, so the key
-// column reads down the block as keys and nothing else. It never ends on an
-// ellipsis, which is the frame's mark for a clipped target: an offer's tail
-// is the part that states the consequence
-// (docs/interface/principles.md#fold-never-hide).
-func foldSegment(seg string, inner int) []string {
-	plain := ansi.Strip(seg)
-	indent := 0
-	if strings.HasPrefix(plain, "[") {
-		if i := strings.Index(plain, "] "); i >= 0 {
-			indent = ansi.StringWidth(plain[:i+2])
-		}
-	}
-	// A key so wide that little is left beside it gives the continuation the
-	// whole row instead.
-	if indent > inner/2 {
-		indent = 0
-	}
-	var rows []string
-	lo, col, room := 0, 0, inner
-	end := 0 // the column the current row's last word ends at
-	for _, word := range strings.Split(plain, " ") {
-		w := ansi.StringWidth(word)
-		if end > lo && col+w-lo > room {
-			rows = append(rows, ansi.Cut(seg, lo, end))
-			lo, room = col, inner-indent
-		}
-		end = col + w
-		col = end + 1
-	}
-	rows = append(rows, ansi.Cut(seg, lo, end))
-	pad := strings.Repeat(" ", indent)
-	for i := 1; i < len(rows); i++ {
-		rows[i] = pad + rows[i]
-	}
-	return rows
+func runRows(segments []KeyOffer, inner int) []string {
+	return cardTones().Pack(segments, inner)
 }
 
 // cardKey is one key of the decision run: the spelling the card printed, the
@@ -1208,7 +1094,7 @@ type cardKey struct {
 }
 
 // mark is the key as the run prints it.
-func (k cardKey) mark() string { return "[" + k.shown + "]" }
+func (k cardKey) mark() string { return keys.Bracketed(k.shown) }
 
 // KeyRun is the decision keys in the order the card draws them, each with the
 // words it is offered under. [a] appears only where a grant is allowed or
@@ -1269,25 +1155,19 @@ func (c *ApprovalCard) alwaysWords() string {
 }
 
 // paintedRun is the run as the card draws it.
-func (c *ApprovalCard) paintedRun() []string {
+func (c *ApprovalCard) paintedRun() []KeyOffer {
 	run := c.KeyRun()
-	segs := make([]string, len(run))
+	segs := make([]KeyOffer, len(run))
 	for i, k := range run {
-		segs[i] = offerSegment(k.mark(), k.label)
+		segs[i] = KeyOffer{Key: k.mark(), Label: k.label}
 	}
 	return segs
 }
 
-// plainRun is the same run unpainted, for the rows that draw the whole of it
-// in one grey because none of its keys is live.
-func (c *ApprovalCard) plainRun() []string {
-	run := c.KeyRun()
-	segs := make([]string, len(run))
-	for i, k := range run {
-		segs[i] = k.mark() + " " + k.label
-	}
-	return segs
-}
+// plainRun is the same run for the rows that draw the whole of it in one
+// grey because none of its keys is live. The segments are the same; which
+// treatment they take is the row's to say (deadRows).
+func (c *ApprovalCard) plainRun() []KeyOffer { return c.paintedRun() }
 
 // KeyAt reports which decision key covers display column col of a rendered
 // row, and whether the row carries one at all.
@@ -1339,7 +1219,7 @@ func (c *ApprovalCard) HandoverAt(row string, col int) bool {
 	if c.Handover == "" {
 		return false
 	}
-	mark := "[" + c.Handover + "]"
+	mark := keys.Bracketed(c.Handover)
 	plain := ansi.Strip(row)
 	i := strings.Index(plain, mark)
 	if i < 0 {
@@ -1361,14 +1241,15 @@ func (c *ApprovalCard) HandoverAt(row string, col int) bool {
 // is named whether or not there is a key left for it to buy, because what it
 // hands over is the keyboard, and the keyboard is what a reader who meant to
 // type is asking after.
-func (c *ApprovalCard) handoverNote() []string {
+func (c *ApprovalCard) handoverNote() []KeyOffer {
 	if !c.HeldOnArrival {
 		return nil
 	}
+	words := KeyOffer{Label: arrivalDraftWords, Priority: 1}
 	if c.Handover == "" {
-		return []string{arrivalDraftWords}
+		return []KeyOffer{words}
 	}
-	return []string{"[" + c.Handover + "]" + handoverImperative, arrivalDraftWords}
+	return []KeyOffer{{Key: keys.Bracketed(c.Handover), Label: strings.TrimPrefix(handoverImperative, " ")}, words}
 }
 
 // arrivalDraftWords is what a card that took the keyboard by arriving says

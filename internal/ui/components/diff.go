@@ -548,13 +548,16 @@ func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
 	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + paintCounts(d.statsLabel(), sty.dim)
-	// Clipped to the screen it is drawn on: a key row wider than the
+	// Fitted to the screen it is drawn on: a key row wider than the
 	// terminal wraps onto the body's last line and takes a line of the diff
-	// with it, which costs the reader more than the last offer costs.
-	footer := Clip(sty.dim.Render("diff · ")+keyOffers([]KeyOffer{
-		keyOffer(keys.Diff.Scroll), keyOffer(keys.Diff.Hunk),
-		keyOffer(keys.Diff.SideBySide), keyOffer(keys.Diff.Back),
-	}), width)
+	// with it, which costs the reader more than an offer costs. The screen's
+	// name goes first and the way back last, so a narrow terminal still says
+	// what esc does (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	footer := liveTones().Fit([]KeyOffer{
+		{Label: "diff", Priority: 4},
+		keyOffer(keys.Diff.Scroll).At(1), keyOffer(keys.Diff.Hunk).At(2),
+		keyOffer(keys.Diff.SideBySide).At(3), keyOffer(keys.Diff.Back),
+	}, width)
 
 	p := Pager{Offset: d.Offset, Height: d.bodyHeight()}
 	visible := p.Window(d.fullBody(width))

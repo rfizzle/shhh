@@ -182,12 +182,12 @@ func (m Model) closeStepsScreen() (tea.Model, tea.Cmd) {
 // renderStepsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the sources screen's does, under the
 // name of the list it is showing.
-func (m Model) renderStepsHint() string {
-	name := "steps · "
+func (m Model) renderStepsHint() []hintSeg {
+	name := "steps"
 	if s := m.screens.steps(); s != nil && s.Plan {
-		name = "plan · "
+		name = "plan"
 	}
-	return sty.SystemMsg.Render(name) + segAs(keys.Screen.Quit, "back to the prompt").render()
+	return paneHint(name, segAs(keys.Screen.Quit, components.EscBack))
 }
 
 // stepsScreenData builds the screen from the session's checklist and its own

@@ -121,7 +121,7 @@ func TestConfig_TheCommandOpensTheScreen(t *testing.T) {
 			t.Errorf("the screen is missing %q:\n%s", want, view)
 		}
 	}
-	if hint := m.renderConfigHint(); !strings.Contains(hint, "config") {
+	if hint := joinSegs(m.renderConfigHint()); !strings.Contains(hint, "config") {
 		t.Errorf("the panel does not say which surface has the keyboard: %q", hint)
 	}
 }

@@ -122,9 +122,9 @@ func (m Model) configScreenLines(width, height int) []string {
 // The screen holds the keyboard and states its own keys at its foot, so the
 // panel says which surface has them and nothing else, the way the sources
 // screen's does.
-func (m Model) renderConfigHint() string {
-	hint := segAs(keys.Screen.Quit, "back to the prompt")
-	return sty.SystemMsg.Render("config · ") + hint.render()
+func (m Model) renderConfigHint() []hintSeg {
+	hint := segAs(keys.Screen.Quit, components.EscBack)
+	return paneHint("config", hint)
 }
 
 // heldTake is what the settings screen had the session take while a turn

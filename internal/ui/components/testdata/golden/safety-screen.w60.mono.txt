@@ -83,7 +83,7 @@ TOOLS
     asks       fetch, spawn_agent
   changed with /permissions, which decides which tiers ask
 
-[esc] back to the prompt
+[esc] back               a reading · nothing here changes it
 
 · a pane shorter than the reading · the ends name the sections they fold
 /safety · manual · sandbox-exec        [?] keys · [esc] back
@@ -109,7 +109,7 @@ CONTAINMENT
 
 ↓ 5 more · web · what the checkout was let load · mcp · sec…
 
-[↑↓/jk] scroll · [esc] back to the prompt
+[↑↓/jk] scroll · [esc] back
 
 · containment unavailable, trust withheld, no servers · stated, not left out
 /safety · manual · unconfined          [?] keys · [esc] back
@@ -181,7 +181,7 @@ TOOLS
     asks       fetch, spawn_agent
   changed with /permissions, which decides which tiers ask
 
-[esc] back to the prompt
+[esc] back               a reading · nothing here changes it
 
 ── ansi ────────────────────────────────────────────────────
 · every section in force · each ends on the command that changes it
@@ -257,7 +257,7 @@ TOOLS
 ␛[38;5;254m    asks       fetch, spawn_agent␛[m
 ␛[38;5;244m  changed with /permissions, which decides which tiers ask␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m               ␛[38;5;244ma reading · nothing here changes it␛[m
 
 · a pane shorter than the reading · the ends name the sections they fold
 ␛[1;38;5;254m/safety␛[m␛[38;5;244m · manual · sandbox-exec␛[m        ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -283,7 +283,7 @@ TOOLS
 ␛[38;5;254m␛[m
 ␛[38;5;244m↓ 5 more · web · what the checkout was let load · mcp · sec…␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · containment unavailable, trust withheld, no servers · stated, not left out
 ␛[1;38;5;254m/safety␛[m␛[38;5;244m · manual · unconfined␛[m          ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -355,4 +355,4 @@ TOOLS
 ␛[38;5;254m    asks       fetch, spawn_agent␛[m
 ␛[38;5;244m  changed with /permissions, which decides which tiers ask␛[m
 
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m               ␛[38;5;244ma reading · nothing here changes it␛[m

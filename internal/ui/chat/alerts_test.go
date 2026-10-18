@@ -208,7 +208,7 @@ func TestAlertsScreen_EnterOnAKeptRunOpensItsOutputAndComesBack(t *testing.T) {
 			t.Errorf("the opened output is missing %q:\n%s", want, view)
 		}
 	}
-	if hint := stripANSI(m.renderOutputFullHint()); !strings.Contains(hint, "back to the alerts") {
+	if hint := stripANSI(joinSegs(m.renderOutputFullHint())); !strings.Contains(hint, "back to the alerts") {
 		t.Errorf("the viewer should say where esc goes: %q", hint)
 	}
 	m = alertsPress(t, m, tea.KeyEscape)

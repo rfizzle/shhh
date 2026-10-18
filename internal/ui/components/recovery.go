@@ -24,37 +24,6 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// KeyOffer is one bracketed key and the words for what it does. A key row has
-// three states and this carries the two a live row can be in: an offer is
-// info, and the answer that costs nothing is add. A key in any other colour
-// is not an offer — the row is not live, or the key is not
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-type KeyOffer struct {
-	Key, Label string
-	// Chord is the same offer spelled as the chord that reaches it while the
-	// row's letters are not live — from the draft, where `r` under `[r]
-	// try again` is a letter of the sentence being typed. A row draws whichever
-	// of the two is true where it stands, and an offer with no chord is one
-	// whose surface holds the keyboard, so its key is live as it is
-	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-	Chord string
-	// Safe marks the answer that changes nothing. It is esc, everywhere, and
-	// it is set off the register's spelling rather than at each row
-	// (keyoffers.go), so a surface cannot forget it
-	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Safe bool
-	// inert marks an offer that cannot act where it stands — the turns
-	// screen's review on a turn that changed nothing. It keeps its place in
-	// the row, grey with its words, the treatment a key that is not live
-	// takes everywhere (inertOffers), so the row does not change shape under
-	// a pointer walking a list.
-	inert bool
-}
-
-// TurnKey is the turn close's name for the same thing; the two were
-// separate structs until recovery rows needed the third.
-type TurnKey = KeyOffer
-
 // RecoveryState is how the row ended, and which glyph says so. `⚠` is a
 // recoverable stall — it will resume, or you can steer it; `✗` is a call that
 // failed; `⊘` is a stop you asked for. The distinction is the whole reason

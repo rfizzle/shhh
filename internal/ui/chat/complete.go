@@ -448,13 +448,13 @@ func (m Model) completionMenuLines() []string {
 	}
 	segments := m.completionHint()
 	if len(m.complete.items) > visible {
-		segments = append([]string{fmt.Sprintf("%d/%d", m.complete.idx+1, len(m.complete.items))}, segments...)
+		segments = append([]hintSeg{{Label: fmt.Sprintf("%d/%d", m.complete.idx+1, len(m.complete.items))}}, segments...)
 	}
 	// The row sheds a whole segment rather than being cut where the pane ends:
 	// half an offer is worse than no offer, because a reader cannot tell it
 	// from a key that is spelled that way
 	// (docs/interface/principles.md#fold-never-hide).
-	return append(lines, sty.Complete.Hint.Render(components.FitSegments(segments, width)))
+	return append(lines, components.ToneTones(sty.Complete.Hint).Fit(segments, width))
 }
 
 // completionHint is the menu's key row, in the order it may be given up.
@@ -465,29 +465,37 @@ func (m Model) completionMenuLines() []string {
 //
 // Tab leads because completing is what the menu is for; running is what
 // happens once there is nothing left to complete.
-func (m Model) completionHint() []string {
-	complete := keys.Bracket(keys.Draft.Complete) + " complete"
-	move := keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext) + " move"
-	dismiss := keys.Bracket(keys.Draft.Clear) + " dismiss"
+func (m Model) completionHint() []hintSeg {
+	pair := keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext)
+	complete := segAs(keys.Draft.Complete, "complete")
+	move := hintSeg{Key: pair, Label: "move"}
+	dismiss := segAs(keys.Draft.Clear, "dismiss")
+	var run []hintSeg
 	switch {
 	case m.complete.files:
 		// A file row is inserted, never run: the sentence goes on.
-		return []string{
-			keys.Bracket(keys.Draft.Complete) + "/" + keys.Bracket(keys.Draft.Send) + " insert",
+		run = []hintSeg{
+			{Key: keys.Bracket(keys.Draft.Complete) + "/" + keys.Bracket(keys.Draft.Send), Label: "insert"},
 			move, dismiss,
 		}
 	case m.completionRunsInput():
 		// Enter runs the line as it stands here, so the row says which line
 		// that is: a reader who tab-completed "/model" is about to get the
 		// picker, not the first row under the cursor.
-		return []string{
+		run = []hintSeg{
 			complete,
-			keys.Bracket(keys.Draft.Send) + " run " + strings.TrimSpace(m.complete.forInput),
-			keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext) + " pick",
+			segAs(keys.Draft.Send, "run "+strings.TrimSpace(m.complete.forInput)),
+			{Key: pair, Label: "pick"},
 			dismiss,
 		}
+	default:
+		run = []hintSeg{complete, segAs(keys.Draft.Send, "run"), move, dismiss}
 	}
-	return []string{complete, keys.Bracket(keys.Draft.Send) + " run", move, dismiss}
+	// The row gives its offers up from the end, the order they are written in.
+	for i := range run {
+		run[i].Priority = i + 1
+	}
+	return run
 }
 
 // completionMenuWidth is the columns a menu row is drawn in. The frame's box

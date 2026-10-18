@@ -314,12 +314,12 @@ func (m Model) transcriptSearchLines(width int) []string {
 		}
 	}
 	row := m.transcriptSearchHead() + sty.Search.State.Render(" · "+state)
-	hint := joinSegs([]hintSeg{seg(keys.Find.Keep), seg(keys.Find.Clear)})
+	hint := hintTones().Fit([]hintSeg{seg(keys.Find.Keep), seg(keys.Find.Clear)}, width)
 	lines := []string{clipRow(row, width)}
 	if empty {
 		lines = append(lines, m.noMatchLines(width)...)
 	}
-	return append(lines, clipRow(hint, width))
+	return append(lines, hint)
 }
 
 // noMatchLines are what an empty result says. "No match" on its own is a
@@ -432,7 +432,7 @@ func (m Model) followNotice() string {
 	}
 	// The word carries it, the glyph repeats it, and neither needs the colour
 	// (invariant 1).
-	return fmt.Sprintf("↓ %d %s below · [pgdn] the live end", below, line)
+	return fmt.Sprintf("↓ %d %s below · %s the live end", below, line, keys.Bracket(keys.Draft.PageDown))
 }
 
 // transcriptBody is the viewport with its scroll gutter glued to the right

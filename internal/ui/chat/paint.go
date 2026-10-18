@@ -458,7 +458,7 @@ func (m Model) takeoverPanel(width int) string {
 // leaves in the box's place while it holds the keyboard.
 func (m Model) draftPanel() string {
 	if o := overlayFor(m.state); o != nil && o.hint != nil {
-		return m.paneHint(o)
+		return m.paneHintRows(o)
 	}
 	inputView := m.draftView()
 	// Below minFrameWidth there is no box, and the draft would otherwise be
@@ -476,13 +476,13 @@ func (m Model) draftPanel() string {
 	return inputView
 }
 
-// paneHint is the hint a full-screen surface leaves in the draft's place,
+// paneHintRows is the hint a full-screen surface leaves in the draft's place,
 // wrapped at the panel's width. A hint is a run of offers, and a terminal
 // narrower than the run stacks the rest onto the next row rather than cutting
 // the way out off at the edge; the row it stacks onto is one the vertical
 // split pays for (resolvePanel), which is why both read this one rendering.
-func (m Model) paneHint(o *mode) string {
-	return lipgloss.Wrap(o.hint(m), m.contentWidth(), "")
+func (m Model) paneHintRows(o *mode) string {
+	return strings.Join(paneTones().Pack(o.hint(m), m.contentWidth()), "\n")
 }
 
 // plainPrompt is the prompt glyph the frameless layout draws in the box's

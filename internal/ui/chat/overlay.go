@@ -139,7 +139,7 @@ type mode struct {
 	// bound caps the panel rows; nil takes the panel's own bound.
 	bound func(m Model) int
 	// hint is the one line a pane overlay leaves where the draft box was.
-	hint func(m Model) string
+	hint func(m Model) []hintSeg
 	// cursor is where the terminal's own cursor stands inside the mode's
 	// rows, for a mode that is typed into. nil is a mode that is read rather
 	// than written, which is most of them, and the terminal hides its cursor

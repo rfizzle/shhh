@@ -16,7 +16,7 @@
 setup printf 'package agent\n\n// limit is how many rounds a turn may run.\nconst limit = 25\n\nfunc rounds() int {\n\treturn limit\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "/edit loop.go" Enter
-wide 130 snap 02-open "OUTLINE 2 declarations" "/edit loop.go · 8 lines" "[ctrl+s] save · [esc] back to the prompt" "ln 1 · col 1"
+wide 130 snap 02-open "OUTLINE 2 declarations" "/edit loop.go · 8 lines" "[ctrl+s] save · [esc] back" "ln 1 · col 1"
 narrow 130 snap 02-open "1:1" "/edit loop.go" "[ctrl+s] save · [esc] back"
 keys "// mine" Enter
 snap 03-modified "· modified" "▎"

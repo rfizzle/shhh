@@ -94,17 +94,17 @@ shhh config · project file             [?] keys · [esc] back
 
 [↑↓/jk] move between settings
 [enter] open the setting under the pointer, and take what is
-in it
+        in it
 [/] filter the settings by name
 [backspace] delete a character from the filter or the field
-being typed into
+            being typed into
 [ctrl+r] reset this setting to its default
 [ctrl+s] write every staged change to the project file,
-.shhh/config.toml
+         .shhh/config.toml
 [shift+tab] switch the write between the project file and
-the global one
+            the global one
 [esc] clear the filter, then close it; leave the picker, or
-leave the screen writing nothing
+      leave the screen writing nothing
 [esc] leave the screen writing nothing
 
 glyphs
@@ -216,17 +216,17 @@ $  a shell command
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move between settings␛[m
 ␛[38;5;103m[enter]␛[m␛[38;5;245m open the setting under the pointer, and take what is␛[m
-␛[38;5;245min it␛[m
+        ␛[38;5;103m␛[m␛[38;5;245min it␛[m
 ␛[38;5;103m[/]␛[m␛[38;5;245m filter the settings by name␛[m
 ␛[38;5;103m[backspace]␛[m␛[38;5;245m delete a character from the filter or the field␛[m
-␛[38;5;245mbeing typed into␛[m
+            ␛[38;5;103m␛[m␛[38;5;245mbeing typed into␛[m
 ␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset this setting to its default␛[m
 ␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write every staged change to the project file,␛[m
-␛[38;5;245m.shhh/config.toml␛[m
+         ␛[38;5;103m␛[m␛[38;5;245m.shhh/config.toml␛[m
 ␛[38;5;103m[shift+tab]␛[m␛[38;5;245m switch the write between the project file and␛[m
-␛[38;5;245mthe global one␛[m
+            ␛[38;5;103m␛[m␛[38;5;245mthe global one␛[m
 ␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it; leave the picker, or␛[m
-␛[38;5;245mleave the screen writing nothing␛[m
+      ␛[92m␛[m␛[38;5;245mleave the screen writing nothing␛[m
 ␛[92m[esc]␛[m␛[38;5;245m leave the screen writing nothing␛[m
 
 ␛[38;5;245mglyphs␛[m

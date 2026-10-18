@@ -33,7 +33,7 @@
    52     return nil                                                                        │ 
    53 }                                                                                     │ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[ctrl+s] save · [esc] back to the prompt                                                                             ln 43 · col 5
+[ctrl+s] save · [esc] back                                                                                           ln 43 · col 5
 
 · modified · the person's lines marked, a selection on the cursor's line
 /edit internal/agent/loop.go · 58 lines · modified                                                      [ctrl+]] keys · [esc] back
@@ -58,7 +58,7 @@
    52     }                                                                                 │ 
    53     return nil                                                                        │ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[ctrl+s] save · [esc] back to the prompt                                                                            ln 41 · col 19
+[ctrl+s] save · [esc] back                                                                                          ln 41 · col 19
 
 · esc on a modified buffer · the foot row asks
 /edit internal/agent/loop.go · 58 lines · modified                                                      [ctrl+]] keys · [esc] back
@@ -138,7 +138,7 @@ wrote 58 lines to internal/agent/loop.go                                        
  ␛[38;5;244m  52␛[m ␛[38;5;254m    return nil␛[m                                                                       ␛[38;5;244m │ ␛[m
  ␛[38;5;244m  53␛[m ␛[38;5;254m}␛[m                                                                                    ␛[38;5;244m │ ␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                                             ␛[38;5;244mln 43 · col 5␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                                           ␛[38;5;244mln 43 · col 5␛[m
 
 · modified · the person's lines marked, a selection on the cursor's line
 ␛[1;38;5;254m/edit␛[m␛[38;5;254m internal/agent/loop.go␛[m␛[38;5;244m · 58 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254mmodified␛[m                                                      ␛[38;5;244m[ctrl+]] keys · [esc] back␛[m
@@ -163,7 +163,7 @@ wrote 58 lines to internal/agent/loop.go                                        
  ␛[38;5;244m  52␛[m ␛[38;5;254m    }␛[m                                                                                ␛[38;5;244m │ ␛[m
  ␛[38;5;244m  53␛[m ␛[38;5;254m    return nil␛[m                                                                       ␛[38;5;244m │ ␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                                            ␛[38;5;244mln 41 · col 19␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                                          ␛[38;5;244mln 41 · col 19␛[m
 
 · esc on a modified buffer · the foot row asks
 ␛[1;38;5;254m/edit␛[m␛[38;5;254m internal/agent/loop.go␛[m␛[38;5;244m · 58 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254mmodified␛[m                                                      ␛[38;5;244m[ctrl+]] keys · [esc] back␛[m

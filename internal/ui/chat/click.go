@@ -656,7 +656,7 @@ func (m Model) clickRowOffer(pt selPoint) (tea.Model, tea.Cmd, bool) {
 	if m.pointerLit() && m.focusIdx == idx {
 		sel = rowPointed
 	}
-	if h := m.rowHandover(e, sel); h != "" && markAt(plain, "["+h+"]", pt.col) {
+	if h := m.rowHandover(e, sel); h != "" && markAt(plain, keys.Bracketed(h), pt.col) {
 		next, cmd := m.giveRowKeyboard(idx)
 		return next, cmd, true
 	}

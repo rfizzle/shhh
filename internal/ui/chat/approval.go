@@ -1450,7 +1450,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 			}
 			card.Hunks, card.FullDiff = nil, false
 			if len(card.Warnings) == 0 && card.Footnote == "" {
-				card.Footnote = "[a] always — not offered: an edit across files is answered once"
+				card.Footnote = keys.Bracket(keys.Decision.Always) + " always — not offered: an edit across files is answered once"
 			}
 			break
 		}
@@ -1492,7 +1492,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		case req.host == "" || len(card.Warnings) > 0:
 		case req.hostWarns:
 			if card.Footnote == "" {
-				card.Footnote = "[a] always — not offered: the lists warn about it"
+				card.Footnote = keys.Bracket(keys.Decision.Always) + " always — not offered: the lists warn about it"
 			}
 		default:
 			card.AllowAlways = true
@@ -1632,11 +1632,11 @@ func judgedBy(card *components.ApprovalCard, reason string) {
 		return
 	}
 	card.Judged = reason
-	card.Return = "not now — it keeps waiting"
+	card.Return = components.EscWaits
 	if card.AllowAlways {
 		card.AllowAlways, card.AlwaysHint = false, ""
 		if card.Footnote == "" {
-			card.Footnote = "[a] always — not offered: the classifier would refuse this"
+			card.Footnote = keys.Bracket(keys.Decision.Always) + " always — not offered: the classifier would refuse this"
 		}
 	}
 }
@@ -1855,7 +1855,7 @@ func (m Model) resolvePanel() panelBody {
 			// same ceiling every panel grows to.
 			rows := minDraftRows
 			if o.hint != nil {
-				rows = max(rows, lipgloss.Height(m.paneHint(o)))
+				rows = max(rows, lipgloss.Height(m.paneHintRows(o)))
 			}
 			return panelBody{lines: cover, height: min(rows, m.maxConfirmPanelHeight())}
 		}

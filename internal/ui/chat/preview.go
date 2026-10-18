@@ -297,7 +297,7 @@ func (m *Model) closePreview() overlayAction {
 // the drop and one of the two ways out, the way every other takeover's hint
 // names its way out — and the way out says where it goes when that is the
 // strip rather than the draft.
-func (m Model) renderPreviewHint() string {
+func (m Model) renderPreviewHint() []hintSeg {
 	back := seg(keys.Preview.Back)
 	if m.staged.back {
 		back = segAs(keys.Preview.Back, "back to the strip")
@@ -310,9 +310,9 @@ func (m Model) renderPreviewHint() string {
 		if m.staged.row {
 			back = segAs(keys.Preview.Back, "back to reading")
 		}
-		return joinSegs([]hintSeg{back})
+		return []hintSeg{back}
 	}
-	return joinSegs([]hintSeg{seg(keys.Preview.Remove), back})
+	return []hintSeg{seg(keys.Preview.Remove), back}
 }
 
 // pasteReader is the staged paste opened for reading — the surface the fold
@@ -446,7 +446,7 @@ func (m *Model) closePasteReader() {
 // renderPasteReaderHint fills the input area while the paste is open, the way
 // every other pane overlay's hint does. Opened from the strip, the way out
 // says it goes back there, since that is where the reader came from.
-func (m Model) renderPasteReaderHint() string {
+func (m Model) renderPasteReaderHint() []hintSeg {
 	leave := segAs(keys.Paste.Back, "back to the draft, cursor where you left it")
 	if m.staged.back {
 		leave = segAs(keys.Paste.Back, "back to the strip")
@@ -454,9 +454,9 @@ func (m Model) renderPasteReaderHint() string {
 	// A paste reached by its handle after the send is no longer staged, so
 	// there is nothing for the drop to take.
 	if !m.pasteReadStaged() {
-		return joinSegs([]hintSeg{seg(keys.Paste.Scroll), leave})
+		return []hintSeg{seg(keys.Paste.Scroll), leave}
 	}
-	return joinSegs([]hintSeg{seg(keys.Paste.Scroll), seg(keys.Paste.Remove), leave})
+	return []hintSeg{seg(keys.Paste.Scroll), seg(keys.Paste.Remove), leave}
 }
 
 // pasteReadStaged reports whether the paste the reader shows is still in the

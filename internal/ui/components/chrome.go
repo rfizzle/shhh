@@ -349,37 +349,11 @@ func packOffers(offers []KeyOffer, width int) []string {
 // in. A takeover surface holds the keyboard by definition and always
 // passes true; only a transcript row has the other state.
 func packOffersIn(offers []KeyOffer, width int, live bool) []string {
-	paint := keyOffers
+	tones := liveTones()
 	if !live {
-		paint = inertOffers
+		tones = inertTones()
 	}
-	var rows []string
-	line := []KeyOffer{}
-	flush := func() {
-		if len(line) == 0 {
-			return
-		}
-		row := paint(line)
-		line = nil
-		// Only an offer alone on its row can be wider than the room, since
-		// a second one would have started a row of its own. It takes the
-		// next row for its tail rather than leaving the caller to clip it,
-		// because the tail is the words that say what the key does.
-		if width > 0 && lipgloss.Width(row) > width {
-			rows = append(rows, strings.Split(lipgloss.Wrap(row, width, ""), "\n")...)
-			return
-		}
-		rows = append(rows, row)
-	}
-	for _, o := range offers {
-		next := append(append([]KeyOffer{}, line...), o)
-		if len(line) > 0 && lipgloss.Width(paint(next)) > width {
-			flush()
-		}
-		line = append(line, o)
-	}
-	flush()
-	return rows
+	return tones.Pack(offers, width)
 }
 
 // hintRows renders a run of hint offers — a selector's `[↑↓] move`, a
@@ -425,30 +399,4 @@ func CardHintRows(offers []KeyOffer, width int) []string {
 // leave, which is the one clause invariant 5 exists to keep.
 func HintRows(offers []KeyOffer, room int) []string {
 	return packOffers(offers, room)
-}
-
-// dropToFit is the segments that fit in room, given up from the end and never
-// cut into. The first is kept whatever it costs: a row with nothing on it
-// says less than a row whose one offer is too wide for the terminal, and
-// there is nothing further to give up.
-//
-// It is the other answer to a row that will not fit, for the rows that cannot
-// spend a second one — a card bounded to a share of the screen, a run drawn
-// dim beside the words that say why it is not live yet. A caller orders the
-// segments by what it would rather lose, the way the header's rail and the
-// key footer's field are ordered.
-func dropToFit(segments []string, room int) []string {
-	for len(segments) > 1 && lipgloss.Width(strings.Join(segments, " · ")) > room {
-		segments = segments[:len(segments)-1]
-	}
-	return segments
-}
-
-// FitSegments is dropToFit as the one row it renders to.
-//
-// It is exported because the completion menu's key row is drawn outside this
-// package and against the pane rather than a card frame, and a second copy of
-// the rule is how the surfaces came to disagree about it in the first place.
-func FitSegments(segments []string, room int) string {
-	return strings.Join(dropToFit(segments, room), " · ")
 }

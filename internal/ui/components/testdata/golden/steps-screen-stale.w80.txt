@@ -26,7 +26,7 @@
           internal/agent/round_test.go
 … (+4 more rows)
 
-[↑↓/jk] move · [esc] back to the prompt         the agent's own list, not a plan
+[↑↓/jk] move · [esc] back                       the agent's own list, not a plan
 
 ── ansi ────────────────────────────────────────────────────
 · the header · the count, then how long the list has stood
@@ -45,4 +45,4 @@
           ␛[38;5;252minternal/agent/round_test.go␛[m
 ␛[38;5;245m… (+4 more rows)␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m         ␛[38;5;245mthe agent's own list, not a plan␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                       ␛[38;5;245mthe agent's own list, not a plan␛[m

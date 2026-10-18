@@ -151,7 +151,7 @@ func TestReadingHint_CarriesTheModeKeysInOrder(t *testing.T) {
 	m.moveFocus(-1)
 	line := ansi.Strip(m.readingKeyLine(m.contentWidth()))
 
-	for i, want := range []string{"[↑↓/jk] move", "[enter] expand", "[esc] back to the prompt"} {
+	for i, want := range []string{"[↑↓/jk] move", "[enter] expand", "[esc] back"} {
 		idx := strings.Index(line, want)
 		if idx < 0 {
 			t.Fatalf("the bar should offer %q, got %q", want, line)
@@ -273,7 +273,7 @@ func TestReadingMode_OnlyOnePaneIsDressedAtATime(t *testing.T) {
 	if reading.frameShowing() {
 		t.Fatal("the frame goes when the transcript takes the keyboard")
 	}
-	if !strings.Contains(ansi.Strip(readingView), "[esc] back to the prompt") {
+	if !strings.Contains(ansi.Strip(readingView), "[esc] back") {
 		t.Fatal("the hint bar stands where the frame was")
 	}
 }
@@ -308,7 +308,7 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 	if !strings.Contains(view, "READING") {
 		t.Fatal("the rail's word is what carries it, so mono keeps it")
 	}
-	if !strings.Contains(view, "[esc] back to the prompt") {
+	if !strings.Contains(view, "[esc] back") {
 		t.Fatal("the hint bar is words before it is colours")
 	}
 	// The background's own parameters, which the row may carry inside a

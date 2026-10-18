@@ -56,8 +56,13 @@ func (c *StopConfirm) answers() string {
 	if yes == "" {
 		yes = "cancel"
 	}
-	return sty.dim.Render("["+keys.Shown(keys.Confirm.Yes)+"] ") + yes +
-		sty.dim.Render(" · ["+keys.Shown(keys.Agent.Kill)+"] ") + "kill"
+	// The keys and the separator in chrome, the words in the terminal's own
+	// tone: the prompt beside them is the body, and the answers are not.
+	tones := HintTones{Key: sty.dim, Sep: sty.dim, Safe: sty.dim}
+	return tones.Join([]KeyOffer{
+		{Key: keys.Bracket(keys.Confirm.Yes), Label: yes},
+		{Key: keys.Bracket(keys.Agent.Kill), Label: "kill"},
+	})
 }
 
 func (c *StopConfirm) View(width int) string {

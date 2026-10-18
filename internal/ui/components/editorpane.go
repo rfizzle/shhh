@@ -918,8 +918,8 @@ func (p *EditorPane) footRow(width int, narrow bool) string {
 		forms = []form{{sty.dim.Render(p.Notice), long}, {sty.dim.Render(p.Notice), short}}
 	default:
 		forms = []form{
-			{keyOffers([]KeyOffer{OfferAs(keys.Editor.Save, "save"), OfferAs(keys.Editor.Back, "back to the prompt")}), long},
-			{keyOffers([]KeyOffer{OfferAs(keys.Editor.Save, "save"), OfferAs(keys.Editor.Back, "back")}), short},
+			{keyOffers([]KeyOffer{OfferAs(keys.Editor.Save, "save"), OfferAs(keys.Editor.Back, EscBack)}), long},
+			{keyOffers([]KeyOffer{OfferAs(keys.Editor.Save, "save"), OfferAs(keys.Editor.Back, EscBack)}), short},
 		}
 	}
 	if folded {

@@ -78,8 +78,8 @@ func (m Model) closeAlertsScreen() (tea.Model, tea.Cmd) {
 
 // renderAlertsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the turns screen's does.
-func (m Model) renderAlertsHint() string {
-	return sty.SystemMsg.Render("alerts · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+func (m Model) renderAlertsHint() []hintSeg {
+	return paneHint("alerts", segAs(keys.Screen.Quit, components.EscBack))
 }
 
 // alertsScreenData builds the screen from the walk: standing episodes first,

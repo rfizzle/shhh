@@ -206,10 +206,10 @@ func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
 }
 
 // renderDiffFullHint fills the input area while the full-screen diff shows.
-func (m Model) renderDiffFullHint() string {
+func (m Model) renderDiffFullHint() []hintSeg {
 	label := seg(keys.Diff.Back)
 	if m.diffReturn == stateConfirmRun {
 		label = segAs(keys.Diff.Back, "back to the approval prompt")
 	}
-	return label.render()
+	return []hintSeg{label}
 }

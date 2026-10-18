@@ -98,14 +98,14 @@ func TestKeyRowsComeFromTheRegister(t *testing.T) {
 	// The menu says three different things depending on what it is
 	// completing, and each of the three is a row a reader is shown.
 	var m Model
-	checkKeyRow(t, "the completion menu", m.completionHint(), shown)
+	checkKeyRow(t, "the completion menu", offerRow(m.completionHint()), shown)
 	m.complete.files = true
-	checkKeyRow(t, "the completion menu over files", m.completionHint(), shown)
+	checkKeyRow(t, "the completion menu over files", offerRow(m.completionHint()), shown)
 	m.complete.files, m.complete.arg = false, true
 	if !m.completionRunsInput() {
 		t.Fatal("an argument menu on an empty token is the row enter runs the line from")
 	}
-	checkKeyRow(t, "the completion menu over arguments", m.completionHint(), shown)
+	checkKeyRow(t, "the completion menu over arguments", offerRow(m.completionHint()), shown)
 }
 
 // And every one of those rows brackets its keys. A row that spelled a live
@@ -116,7 +116,7 @@ func TestKeyRowsBracketTheirKeys(t *testing.T) {
 	rows := map[string][]string{
 		"the palette":         offerRow(paletteHint()),
 		"the plan card":       offerRow(planHint()),
-		"the completion menu": m.completionHint(),
+		"the completion menu": offerRow(m.completionHint()),
 	}
 	for surface, segments := range rows {
 		for _, seg := range segments {

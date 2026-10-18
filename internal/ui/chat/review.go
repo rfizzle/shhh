@@ -260,16 +260,16 @@ func (m Model) closeReview() (tea.Model, tea.Cmd) {
 
 // renderContextHint is the context surface's bottom panel: it holds the
 // keyboard, so the panel states the way out and nothing else.
-func (m Model) renderContextHint() string {
-	return sty.SystemMsg.Render("context · ") + contextKeyHint()
+func (m Model) renderContextHint() []hintSeg {
+	return paneHint("context", contextKeyHint())
 }
 
 // renderReviewHint fills the input area while review has the screen. The
 // surface's own footer carries the keys; this says where esc goes.
-func (m Model) renderReviewHint() string {
+func (m Model) renderReviewHint() []hintSeg {
 	label := segAs(keys.Review.Back, "back")
 	if m.reviewReturn == stateFocus {
 		label = segAs(keys.Review.Back, "back to the transcript")
 	}
-	return sty.SystemMsg.Render("review · ") + label.render()
+	return paneHint("review", label)
 }

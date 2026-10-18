@@ -60,7 +60,7 @@ keys y
 snap 12-spawned "reader-1"
 sleep 2
 keys "/attach reader-1" Enter
-snap 13-attached "[esc] back to your session" "⏸ manual" "parent round 1 of 150 · reader-1"
+snap 13-attached "[esc] back · [f12] agents" "⏸ manual" "parent round 1 of 150 · reader-1"
 sleep 1
 keys Escape
 snap 14-detached "[enter] send"

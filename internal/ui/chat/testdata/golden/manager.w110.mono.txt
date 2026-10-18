@@ -21,7 +21,7 @@ processes                                             │ web                   
 tools · nothing running                               │   runs on     host
                                                       │   last line   GET / 200 4ms
 
-[↑↓/jk] move · [enter] open · [d] stop · [esc] back to the prompt
+[↑↓/jk] move · [enter] open · [d] stop · [esc] back
 
 · d · the stop's question
 /ps · 2 processes running · 0 calls running                                          [?] keys · [esc] back
@@ -69,7 +69,7 @@ tools                                                 │   runs on     host
 ❯ ⊘ search  cancelled by you · 41s · host             │ 
   ▸ execute_command  running… · 8.0s · container      │ 
 
-[enter] open · [esc] back to the prompt                a stopped call leaves the rest of its round running
+[↑↓/jk] move · [enter] open · [esc] back               a stopped call leaves the rest of its round running
 
 · the command opened · its arguments whole and its output so far
 /ps · 2 processes running · 1 call running                                           [?] keys · [esc] back
@@ -94,7 +94,7 @@ execute_command                                                                 
 · the panel it leaves · the way out, on one row
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51                                                                   
-ps · [esc] back to the prompt
+ps · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the first process running
@@ -108,7 +108,7 @@ ps · [esc] back to the prompt
 ␛[1;38;5;254mtools · nothing running␛[m                              ␛[38;5;244m │ ␛[m  ␛[38;5;244mruns on     ␛[m␛[38;5;254mhost␛[m
                                                      ␛[38;5;244m │ ␛[m  ␛[38;5;244mlast line   ␛[m␛[38;5;254mGET / 200 4ms␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · d · the stop's question
 ␛[1;38;5;254m/ps␛[m␛[38;5;244m · 2 processes running␛[m␛[38;5;244m · 0 calls running␛[m                                          ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -121,7 +121,7 @@ ps · [esc] back to the prompt
 ␛[1;38;5;254mtools · nothing running␛[m                              ␛[38;5;244m │ ␛[m  ␛[38;5;244mruns on     ␛[m␛[38;5;254mhost␛[m
                                                      ␛[38;5;244m │ ␛[m  ␛[38;5;244mlast line   ␛[m␛[38;5;254mGET / 200 4ms␛[m
 
-␛[38;5;254mstop the process web?␛[m  ␛[38;5;244m[y] ␛[mstop␛[38;5;244m · [k] ␛[mkill
+␛[38;5;254mstop the process web?␛[m  ␛[38;5;244m[y]␛[m stop␛[38;5;244m · ␛[m␛[38;5;244m[k]␛[m kill
 
 · esc, then enter · the process opened onto its output and its errors
 ␛[1;38;5;254m/ps␛[m␛[38;5;244m · 2 processes running␛[m␛[38;5;244m · 0 calls running␛[m                                          ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -156,7 +156,7 @@ ps · [esc] back to the prompt
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⊘ search  cancelled by you · 41s · host            ␛[m␛[38;5;244m │ ␛[m
   ␛[38;5;254m▸ execute_command␛[m  ␛[38;5;254mrunning…␛[m␛[38;5;244m · ␛[m␛[38;5;244m8.0s␛[m␛[38;5;244m · container␛[m     ␛[38;5;244m │ ␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                ␛[38;5;244ma stopped call leaves the rest of its round running␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m               ␛[38;5;244ma stopped call leaves the rest of its round running␛[m
 
 · the command opened · its arguments whole and its output so far
 ␛[1;38;5;254m/ps␛[m␛[38;5;244m · 2 processes running␛[m␛[38;5;244m · 1 call running␛[m                                           ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -181,4 +181,4 @@ ps · [esc] back to the prompt
 · the panel it leaves · the way out, on one row
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m⏸ manual␛[m␛[38;5;244m · ␛[m␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.51␛[m                                                                   
-␛[38;5;244mps · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;244mps␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

@@ -29,7 +29,7 @@
     ▸ tool results · 2 tools · 310
     ▸ messages · 1 turn · 21
 
-[↑↓/jk] move · [enter] expand or fold · [esc] back to the prompt
+[↑↓/jk] move · [enter] expand or fold · [esc] back
 
 · the tool definitions opened
 /context · this session · 32.8k window                                      ~11.8k · [?] keys · [esc] back
@@ -54,7 +54,7 @@
     ▸ tool results · 2 tools · 310
     ▸ messages · 1 turn · 21
 
-[↑↓/jk] move · [enter] expand or fold · [esc] back to the prompt
+[↑↓/jk] move · [enter] expand or fold · [esc] back
 
 · the cache row · works, lease confirmed
 /context · this session · 1m window                                         ~20.0k · [?] keys · [esc] back
@@ -78,7 +78,7 @@
     ▸ tool results · 2 tools · 526
     ▸ messages · 1 turn · 35
 
-[↑↓/jk] move · [enter] expand or fold · [esc] back to the prompt
+[↑↓/jk] move · [enter] expand or fold · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · both groups folded
@@ -100,7 +100,7 @@
     ␛[38;5;244m▸ ␛[m␛[38;5;254mtool results␛[m␛[38;5;244m · 2 tools · 310␛[m
     ␛[38;5;244m▸ ␛[m␛[38;5;254mmessages␛[m␛[38;5;244m · 1 turn · 21␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · the tool definitions opened
 ␛[1;38;5;254m/context␛[m␛[38;5;244m · this session · 32.8k window␛[m                                      ␛[38;5;254m~11.8k␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -125,7 +125,7 @@
     ␛[38;5;244m▸ ␛[m␛[38;5;254mtool results␛[m␛[38;5;244m · 2 tools · 310␛[m
     ␛[38;5;244m▸ ␛[m␛[38;5;254mmessages␛[m␛[38;5;244m · 1 turn · 21␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · the cache row · works, lease confirmed
 ␛[1;38;5;254m/context␛[m␛[38;5;244m · this session · 1m window␛[m                                         ␛[38;5;254m~20.0k␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -149,4 +149,4 @@
     ␛[38;5;244m▸ ␛[m␛[38;5;254mtool results␛[m␛[38;5;244m · 2 tools · 526␛[m
     ␛[38;5;244m▸ ␛[m␛[38;5;254mmessages␛[m␛[38;5;244m · 1 turn · 35␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

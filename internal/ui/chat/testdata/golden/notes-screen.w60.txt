@@ -28,8 +28,7 @@ The reviewer's own delegate     researcher-1/reviewer-1a
   A grandchild signs with its spawner's name in front,
   so its note files under researcher-1.
 
-[↑↓/jk] move · [enter] open · [d] delete
-[esc] back to the prompt
+[↑↓/jk] move · [enter] open · [d] delete · [esc] back
 
 · a note from the fan-out · the preview reads it
 /notes · 4 notes · 4 agents        [?] keys · [esc] back
@@ -49,8 +48,7 @@ The deny list is read before the tier         reviewer-1
   policy.Decide matches on the command, so an entry
   refuses the verb in every mode.
 
-[↑↓/jk] move · [enter] open · [d] delete
-[esc] back to the prompt
+[↑↓/jk] move · [enter] open · [d] delete · [esc] back
 
 · [d] · the one key that takes something out asks first
 /notes · 4 notes · 4 agents        [?] keys · [esc] back
@@ -116,8 +114,7 @@ notes · [esc] back
   ␛[38;5;245mA grandchild signs with its spawner's name in front,␛[m
   ␛[38;5;245mso its note files under researcher-1.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a note from the fan-out · the preview reads it
 ␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m        ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -137,8 +134,7 @@ notes · [esc] back
   ␛[38;5;245mpolicy.Decide matches on the command, so an entry␛[m
   ␛[38;5;245mrefuses the verb in every mode.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · [d] · the one key that takes something out asks first
 ␛[1;97m/notes␛[m␛[38;5;245m · 4 notes · 4 agents␛[m        ␛[38;5;245m[?] keys · [esc] back␛[m
@@ -183,4 +179,4 @@ notes · [esc] back
 · the panel it leaves · the way out, on one row
 ␛[38;5;245m────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m␛[38;5;246m · ␛[m␛[92mctx 32%␛[m ␛[92m▰▰␛[m␛[38;5;245m▱▱▱▱▱▱␛[m␛[38;5;246m · ␛[m␛[38;5;246m$0.51␛[m                     
-␛[38;5;245mnotes · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;245mnotes␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

@@ -286,7 +286,7 @@ func (m Model) stripKeyLine(width int) string {
 		return full
 	}
 	segs[len(segs)-1] = segAs(keys.Staged.Back, "back")
-	return clipRow(joinSegs(segs), width)
+	return hintTones().Fit(segs, width)
 }
 
 // chipShowing is the surface a chip opened, while it is the one up.

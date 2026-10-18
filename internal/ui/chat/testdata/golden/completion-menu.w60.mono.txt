@@ -16,7 +16,7 @@
 │ ❯ /copy [code]  copy the last response (or just its… │
 │   /context      the window as a meter, itemised dow… │
 │   /compact      continue from a summary plus the mo… │
-│ [tab] complete · [enter] run · [↑↓] move             │
+│ [tab] complete · [enter] run · [esc] dismiss         │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
@@ -26,7 +26,7 @@
 │ ❯ /copy [code]  copy the last response (or just its… │
 │   /context      the window as a meter, itemised dow… │
 │   ⊘ /compact    continue from a summary …  idle only │
-│ [tab] complete · [enter] run · [↑↓] move             │
+│ [tab] complete · [enter] run · [esc] dismiss         │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [ctrl+p] hold · [ctrl+c] stop the run ──────────────╯
 
@@ -34,7 +34,7 @@
 ╭─ ⠋ waiting… ─────────────────────────────────────────╮
 │ ▸ /comp                                              │
 │ ❯ ⊘ /compact  continue from a summary pl…  idle only │
-│ [tab] complete · [enter] run · [↑↓] move             │
+│ [tab] complete · [enter] run · [esc] dismiss         │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [ctrl+p] hold · [ctrl+c] stop the run ──────────────╯
 
@@ -55,7 +55,7 @@
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254;48;5;237;1m/copy [code]  copy the last response (or just its…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/context␛[m      ␛[38;5;244mthe window as a meter, itemised dow…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/compact␛[m      ␛[38;5;244mcontinue from a summary plus the mo…␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move␛[m             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [esc] dismiss␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m
 ␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m
 
@@ -65,7 +65,7 @@
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254;48;5;237;1m/copy [code]  copy the last response (or just its…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/context␛[m      ␛[38;5;244mthe window as a meter, itemised dow…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m  ⊘ /compact    continue from a summary …  idle only␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move␛[m             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [esc] dismiss␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m
 ␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run␛[m ␛[38;5;244m──────────────╯␛[m
 
@@ -73,7 +73,7 @@
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m/comp                                             ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254;48;5;237;1m⊘ /compact  continue from a summary pl…  idle only␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move␛[m             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [esc] dismiss␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m
 ␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run␛[m ␛[38;5;244m──────────────╯␛[m
 

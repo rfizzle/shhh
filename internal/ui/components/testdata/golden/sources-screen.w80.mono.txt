@@ -26,7 +26,7 @@ https://docs.rs/tokio/latest/tokio/                                 orchestrator
   kind fetch
 … (+9 more rows)
 
-[enter] open · [esc] back to the prompt   recorded by the tool, not by the model
+[↑↓/jk] move · [enter] open · [esc] back  recorded by the tool, not by the model
 
 · a server's read · ⇄, and the way it came in place of a status
 /sources · 2 pages · 1 via mcp · 2 hosts · 1 search        [?] keys · [esc] back
@@ -44,7 +44,7 @@ https://example.com/guide                                           orchestrator
   url https://example.com/guide
 … (+3 more rows)
 
-[↑↓/jk] move · [esc] back to the prompt   recorded by the tool, not by the model
+[↑↓/jk] move · [esc] back                 recorded by the tool, not by the model
 
 ── ansi ────────────────────────────────────────────────────
 · a fetch · the fetcher's own read, under ⚙
@@ -63,7 +63,7 @@ https://example.com/guide                                           orchestrator
   ␛[38;5;244mkind ␛[m␛[38;5;254mfetch␛[m
 ␛[38;5;244m… (+9 more rows)␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m   ␛[38;5;244mrecorded by the tool, not by the model␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m  ␛[38;5;244mrecorded by the tool, not by the model␛[m
 
 · a server's read · ⇄, and the way it came in place of a status
 ␛[1;38;5;254m/sources␛[m␛[38;5;244m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m        ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -81,4 +81,4 @@ https://example.com/guide                                           orchestrator
   ␛[38;5;244murl ␛[m␛[38;5;254mhttps://example.com/guide␛[m
 ␛[38;5;244m… (+3 more rows)␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m   ␛[38;5;244mrecorded by the tool, not by the model␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                 ␛[38;5;244mrecorded by the tool, not by the model␛[m

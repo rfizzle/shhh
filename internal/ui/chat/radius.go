@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // blastRadius is one decision's resolved context: everything the card shows
@@ -143,10 +144,10 @@ func (m Model) commandRadiusIn(in radiusIn, command string, reach scopeReach, co
 		}
 	}
 	if len(res.Risks) > 0 {
-		b.footnote = "[a] always — not offered: shhh flagged this command"
+		b.footnote = keys.Bracket(keys.Decision.Always) + " always — not offered: shhh flagged this command"
 	}
 	if b.severity == components.SeverityHigh || b.uncontained {
-		b.safe = "not now — it keeps waiting"
+		b.safe = components.EscWaits
 	}
 	if b.uncontained {
 		b.fields = append(b.fields, components.CardField{
@@ -299,7 +300,7 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 		b.fields = append(b.fields, f)
 		if m.approval.scope.class != scope.Ordinary {
 			b.severity, b.reason = components.SeverityHigh, "edits a file outside the working scope"
-			b.safe = "not now — it keeps waiting"
+			b.safe = components.EscWaits
 		}
 	}
 	if req.secret != "" {
@@ -592,7 +593,7 @@ func (m Model) patchRadius(ask *subagent.Ask) blastRadius {
 		// separate worktrees and the second patch is about to land on the
 		// first, which is the one way isolated writers can still collide.
 		b.severity, b.reason = components.SeverityHigh, ""
-		b.safe = "not now — it keeps waiting"
+		b.safe = components.EscWaits
 	}
 	value, detail := patchTouches(ask.Files)
 	b.fields = append(b.fields, landsInField(ask), components.CardField{

@@ -276,7 +276,7 @@ func TestPasteShow_ASentHandleOpensItsCard(t *testing.T) {
 	if card.state != statePreview || card.preview == nil || card.preview.Sent != "sent with turn 1" {
 		t.Fatalf("the sent handle did not open its card: state %d, %+v", card.state, card.preview)
 	}
-	if hint := stripANSI(card.renderPreviewHint()); !strings.Contains(hint, "back to the draft") || strings.Contains(hint, "remove") {
+	if hint := stripANSI(joinSegs(card.renderPreviewHint())); !strings.Contains(hint, "back to the draft") || strings.Contains(hint, "remove") {
 		t.Fatalf("the card's hint is %q", hint)
 	}
 
@@ -338,7 +338,7 @@ func TestPreview_ASentPictureSaysWhichTurnCarriedIt(t *testing.T) {
 	if top := stripANSI(strings.Split(card.preview.View(108), "\n")[0]); !strings.Contains(top, "clipboard.png · sent with turn 2") {
 		t.Fatalf("the card's title is %q", top)
 	}
-	if hint := stripANSI(card.renderPreviewHint()); hint != "[esc] back to the draft" {
+	if hint := stripANSI(joinSegs(card.renderPreviewHint())); hint != "[esc] back to the draft" {
 		t.Fatalf("opened from the draft, the hint is %q", hint)
 	}
 
@@ -347,7 +347,7 @@ func TestPreview_ASentPictureSaysWhichTurnCarriedIt(t *testing.T) {
 	rm.focusIdx = idx
 	opened, _ = rm.openCursorRow(stateFocus)
 	card = opened.(Model)
-	if hint := stripANSI(card.renderPreviewHint()); hint != "[esc] back to reading" {
+	if hint := stripANSI(joinSegs(card.renderPreviewHint())); hint != "[esc] back to reading" {
 		t.Fatalf("opened from reading, the hint is %q", hint)
 	}
 	if back := pressOn(t, card, tea.KeyPressMsg{Code: tea.KeyEscape}); back.state != stateFocus || back.focusIdx != idx {
@@ -360,7 +360,7 @@ func TestPreview_ASentPictureSaysWhichTurnCarriedIt(t *testing.T) {
 	rm.attachments = []provider.Attachment{pic}
 	opened, _ = rm.openCursorRow(stateFocus)
 	card = opened.(Model)
-	if hint := stripANSI(card.renderPreviewHint()); hint != "[esc] back to reading" {
+	if hint := stripANSI(joinSegs(card.renderPreviewHint())); hint != "[esc] back to reading" {
 		t.Fatalf("with its recalled copy staged, the sent card's hint is %q", hint)
 	}
 	if kept := pressOn(t, card, tea.KeyPressMsg{Code: 'd', Text: "d"}); len(kept.attachments) != 1 {

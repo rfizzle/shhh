@@ -691,7 +691,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					{Label: "sandbox", Value: "bwrap · workspace", Tone: ToneChrome},
 				}
 				c.Footnote = "[a] always — not offered: shhh flagged this command"
-				c.Return = "not now — it keeps waiting"
+				c.Return = "keeps waiting"
 			})},
 			// A host list is neither open nor closed: the count is the value
 			// and the hosts are the detail, in the neutral tone of a fact.
@@ -716,7 +716,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					{Label: "sandbox", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you", Tone: ToneRisk},
 				}
 				c.Footnote = "no sandbox this session · /sandbox doctor says why"
-				c.Return = "not now — it keeps waiting"
+				c.Return = "keeps waiting"
 			})},
 			// A body taller than the panel: the last row becomes the counted
 			// tail, the decision block never moves, and one press of shift+↓

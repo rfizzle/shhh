@@ -42,7 +42,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ +5 −0 · 1 hunk                                                           │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] write it · [n] nothing written · [e] edit first · [?] keys           │
-│ [esc] leave — nothing written, and the draft waits                       │
+│ [esc] keeps waiting — nothing written                                    │
 │ enter opened this card and writes nothing — only [y] does                │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
@@ -63,7 +63,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ +5 −0 · 1 hunk                                                           │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] write it · [n] nothing written · [e] edit first · [?] keys           │
-│ [esc] leave — nothing written, and the draft waits                       │
+│ [esc] keeps waiting — nothing written                                    │
 │ enter opened this card and writes nothing — only [y] does                │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
@@ -85,7 +85,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ +4 −0 · 1 hunk                                                           │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] write it · [n] nothing written · [e] edit first · [?] keys           │
-│ [esc] leave — nothing written, and the draft waits                       │
+│ [esc] keeps waiting — nothing written                                    │
 │ enter opened this card and writes nothing — only [y] does                │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
@@ -121,8 +121,8 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[38;5;254m│␛[m ␛[38;5;254m+␛[m␛[38;5;244m 5  ␛[m␛[38;5;254mcheck = ["golangci-lint"]␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+5 −0 · 1 hunk␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mwrite it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mnothing written␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave — nothing written, and the draft waits␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m write it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m nothing written␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;254m edit first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting — nothing written␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244menter opened this card and writes nothing — only [y] does␛[m                ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -142,8 +142,8 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[38;5;254m│␛[m ␛[38;5;254m+␛[m␛[38;5;244m 5  ␛[m␛[38;5;254mcheck = ["golangci-lint"]␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+5 −0 · 1 hunk␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mwrite it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mnothing written␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave — nothing written, and the draft waits␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m write it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m nothing written␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;254m edit first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting — nothing written␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244menter opened this card and writes nothing — only [y] does␛[m                ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -164,7 +164,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[38;5;254m│␛[m ␛[38;5;244m  5  ␛[m␛[38;5;244mcheck = ["golangci-lint"]␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+4 −0 · 1 hunk␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mwrite it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mnothing written␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave — nothing written, and the draft waits␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m write it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m nothing written␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;254m edit first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting — nothing written␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244menter opened this card and writes nothing — only [y] does␛[m                ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m

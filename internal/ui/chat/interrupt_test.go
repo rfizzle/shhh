@@ -200,7 +200,7 @@ func TestInterrupt_EscLeavesTheDecisionWaitingRatherThanDenyingIt(t *testing.T) 
 	// And the card says so while it holds the keyboard, because the safe
 	// answer here is not obvious (invariant 3).
 	gatedView := ansi.Strip(handover(t, m).View().Content)
-	if !strings.Contains(gatedView, "[esc] leave it waiting") && !strings.Contains(gatedView, "[esc] wait") {
+	if !strings.Contains(gatedView, "[esc] keeps waiting") && !strings.Contains(gatedView, "[esc] wait") {
 		t.Fatalf("the gated card should state what esc does:\n%s", gatedView)
 	}
 	// Saying no is still [n].

@@ -107,7 +107,7 @@ func (m *Model) disarm() { m.armed = armedPress{kind: armNone, seq: m.armed.seq}
 // wears (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) armedHint() (hintSeg, bool) {
 	if m.armed.open(armQuit) && !m.working() {
-		return hintSeg{key: m.armed.key, label: "again quits"}, true
+		return hintSeg{Key: keys.Bracketed(m.armed.key), Label: "again quits"}, true
 	}
 	return hintSeg{}, false
 }

@@ -68,11 +68,7 @@ func (m Model) readingListOffers() []components.KeyOffer {
 			segs = append(segs, segAs(keys.Reading.Back, cardCloseWords))
 		}
 	}
-	offers := make([]components.KeyOffer, 0, len(segs))
-	for _, s := range segs {
-		offers = append(offers, components.KeyOffer{Key: "[" + s.key + "]", Label: s.label, Safe: s.safe})
-	}
-	return append(offers, m.readingRowOffers()...)
+	return append(segs, m.readingRowOffers()...)
 }
 
 // openKeyList puts a surface's register on the pane. ret is the state the
@@ -137,12 +133,12 @@ func (m Model) keyListLines(width, height int) []string {
 // renderKeyListHint is the one line the list leaves where the draft was: the
 // way back, in the spelling that means it on every surface, to the surface
 // the list was opened over.
-func (m Model) renderKeyListHint() string {
+func (m Model) renderKeyListHint() []hintSeg {
 	back := "back"
 	if m.keyList != nil && m.keyList.screen.Surface != "" {
 		back = "back to " + m.keyList.screen.Surface
 	}
-	return sty.SystemMsg.Render("keys · ") + segAs(keys.Select.Cancel, back).render()
+	return paneHint("keys", segAs(keys.Select.Cancel, back))
 }
 
 // The register rows a card's `?` lists. Each answers false while a field on

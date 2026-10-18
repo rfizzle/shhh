@@ -91,7 +91,7 @@ snap 06-report-fold "report ·" "▸ report · 6 lines" "· 2 assump"
 # the spawn is its body and no stop of its own — whatever else the turn has
 # landed by then.
 keys C-o
-snap 06-reading "[esc] back to the prompt"
+snap 06-reading "[?] keys · [esc] back"
 keys k k k k k k k k k k
 keys Enter
 snap 07-report-open "▾ report · 6 lines" "## Assumptions"

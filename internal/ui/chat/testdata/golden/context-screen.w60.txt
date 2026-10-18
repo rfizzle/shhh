@@ -38,7 +38,7 @@
     ▸ tool results · 2 tools · 310
     ▸ messages · 1 turn · 21
 
-[enter] expand or fold · [esc] back to the prompt
+[↑↓/jk] move · [enter] expand or fold · [esc] back
 
 · the tool definitions opened
 /context                  ~11.8k · [?] keys · [esc] back
@@ -72,7 +72,7 @@
     ▸ tool results · 2 tools · 310
     ▸ messages · 1 turn · 21
 
-[enter] expand or fold · [esc] back to the prompt
+[↑↓/jk] move · [enter] expand or fold · [esc] back
 
 · the cache row · works, lease confirmed
 /context                  ~20.0k · [?] keys · [esc] back
@@ -107,7 +107,7 @@
     ▸ tool results · 2 tools · 526
     ▸ messages · 1 turn · 35
 
-[enter] expand or fold · [esc] back to the prompt
+[↑↓/jk] move · [enter] expand or fold · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · both groups folded
@@ -138,7 +138,7 @@
     ␛[38;5;245m▸ ␛[m␛[38;5;252mtool results␛[m␛[38;5;245m · 2 tools · 310␛[m
     ␛[38;5;245m▸ ␛[m␛[38;5;252mmessages␛[m␛[38;5;245m · 1 turn · 21␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m expand or fold␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m expand or fold␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · the tool definitions opened
 ␛[1;97m/context␛[m                  ␛[92m~11.8k␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -172,7 +172,7 @@
     ␛[38;5;245m▸ ␛[m␛[38;5;252mtool results␛[m␛[38;5;245m · 2 tools · 310␛[m
     ␛[38;5;245m▸ ␛[m␛[38;5;252mmessages␛[m␛[38;5;245m · 1 turn · 21␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m expand or fold␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m expand or fold␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · the cache row · works, lease confirmed
 ␛[1;97m/context␛[m                  ␛[92m~20.0k␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -207,4 +207,4 @@
     ␛[38;5;245m▸ ␛[m␛[38;5;252mtool results␛[m␛[38;5;245m · 2 tools · 526␛[m
     ␛[38;5;245m▸ ␛[m␛[38;5;252mmessages␛[m␛[38;5;245m · 1 turn · 35␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m expand or fold␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m expand or fold␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

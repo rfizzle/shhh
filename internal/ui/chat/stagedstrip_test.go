@@ -124,7 +124,7 @@ func TestStrip_TheCardGoesBackToTheStrip(t *testing.T) {
 	if m.state != statePreview || m.preview == nil || m.preview.Name != "two.png" {
 		t.Fatalf("enter opens the chip under the cursor: state %v", m.state)
 	}
-	if hint := stripANSI(m.renderPreviewHint()); !strings.Contains(hint, "[d] delete") || !strings.Contains(hint, "back to the strip") {
+	if hint := stripANSI(joinSegs(m.renderPreviewHint())); !strings.Contains(hint, "[d] delete") || !strings.Contains(hint, "back to the strip") {
 		t.Fatalf("the card offers the drop and says where back is: %q", hint)
 	}
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})

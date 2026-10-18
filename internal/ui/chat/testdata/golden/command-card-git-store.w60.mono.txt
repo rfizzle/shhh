@@ -24,7 +24,7 @@
 │ [y] run it once · [n] deny                           │
 │ [a] allow "go test" without asking                   │
 │ [enter] full view · [e] edit the command · [?] keys  │
-│ [esc] leave it waiting, nothing is denied            │
+│ [esc] keeps waiting                                  │
 ╰──────────────────────────────────────────────────────╯
 
 · nothing masked — no repository, or the store granted
@@ -41,7 +41,7 @@
 │ [y] run it once · [n] deny                           │
 │ [a] allow "go test" without asking                   │
 │ [enter] full view · [e] edit the command · [?] keys  │
-│ [esc] leave it waiting, nothing is denied            │
+│ [esc] keeps waiting                                  │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -56,10 +56,10 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace · read-only git hooks a␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" without asking␛[m                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow "go test" without asking␛[m                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m full view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;254m edit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · nothing masked — no repository, or the store granted
@@ -73,8 +73,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" without asking␛[m                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;254m run it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;254m deny␛[m                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m␛[38;5;254m allow "go test" without asking␛[m                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m full view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;254m edit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;254m keys␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m

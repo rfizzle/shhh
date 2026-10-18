@@ -27,7 +27,7 @@ r 11 · off target                                     turn 2
     ⚠ off target
 … (+4 more rows)
 
-[esc] back to the prompt
+[esc] back       a reader's account of the run, newest first
 
 · a steer that stood · the oldest let go, and the screen saying so
 /readings              $0.0142 spent · [?] keys · [esc] back
@@ -46,7 +46,7 @@ r 6 · off target                                      turn 2
     Editing the importer's tests, which the exporter does n…
 … (+5 more rows)
 
-[esc] back to the prompt
+[esc] back       a reader's account of the run, newest first
 
 · a quiet reading · kept here though the transcript drew no row for it
 /readings              $0.0142 spent · [?] keys · [esc] back
@@ -65,7 +65,7 @@ r 3 · on target                                       turn 1
     ▸ on target
     read against: find why the loop never stops
 
-[esc] back to the prompt
+[esc] back       a reader's account of the run, newest first
 
 ── ansi ────────────────────────────────────────────────────
 · a steer taken back · the reading whole, and what became of its steer
@@ -85,7 +85,7 @@ r 3 · on target                                       turn 1
     ␛[38;5;248m⚠ off target␛[m
 ␛[38;5;245m… (+4 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m       ␛[38;5;245ma reader's account of the run, newest first␛[m
 
 · a steer that stood · the oldest let go, and the screen saying so
 ␛[1;97m/readings␛[m              ␛[38;5;245m$0.0142 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -104,7 +104,7 @@ r 3 · on target                                       turn 1
     ␛[38;5;248mEditing the importer's tests, which the exporter does n…␛[m
 ␛[38;5;245m… (+5 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m       ␛[38;5;245ma reader's account of the run, newest first␛[m
 
 · a quiet reading · kept here though the transcript drew no row for it
 ␛[1;97m/readings␛[m              ␛[38;5;245m$0.0142 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
@@ -123,4 +123,4 @@ r 3 · on target                                       turn 1
     ␛[38;5;248m▸ on target␛[m
     ␛[38;5;248mread against: find why the loop never stops␛[m
 
-␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m       ␛[38;5;245ma reader's account of the run, newest first␛[m

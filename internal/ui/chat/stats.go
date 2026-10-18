@@ -119,8 +119,8 @@ func statsShowing(m Model) any {
 
 // renderStatsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the turns screen's does.
-func (m Model) renderStatsHint() string {
-	return sty.SystemMsg.Render("spend · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+func (m Model) renderStatsHint() []hintSeg {
+	return paneHint("spend", segAs(keys.Screen.Quit, components.EscBack))
 }
 
 // spendScreenData builds the screen from the ledger the SPEND block reads:

@@ -211,7 +211,7 @@ func TestTodoScreen_KeysGoThroughTheSameVerbs(t *testing.T) {
 func TestTodoScreen_TheRowUnderItOffersNoKey(t *testing.T) {
 	m := todoModel(t, todoTestRoot(t))
 	opened, _ := m.openTodoScreen()
-	if hint := ansi.Strip(opened.(Model).renderTodoScreenHint()); hint != "backlog" {
+	if hint := ansi.Strip(joinSegs(opened.(Model).renderTodoScreenHint())); hint != "backlog" {
 		t.Fatalf("the row under the backlog screen = %q", hint)
 	}
 }

@@ -518,7 +518,7 @@ func (s *ManagerScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Agent.Move, "move between rows, or scroll an opened one"),
 		keyOfferAs(keys.Agent.Attach, "open the row: a process's output and errors, a call's arguments and output"),
 		keyOfferAs(keys.Agent.Stop, "stop it — after asking, where "+keys.Bracket(keys.Agent.Kill)+" kills it instead"),
-		keyOfferAs(keys.Agent.Back, "back to the list, or "+backToPrompt),
+		keyOfferAs(keys.Agent.Back, EscBack),
 	}
 }
 

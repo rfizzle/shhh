@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // undoCommand handles `/undo [turn]`: bare undoes the most recent turn that
@@ -265,9 +266,9 @@ func undoOutcomeNotice(of undoSubject, out changeset.UndoOutcome) string {
 	var parts []string
 	if len(out.Skipped) > 0 {
 		parts = append(parts, fmt.Sprintf(
-			"%s changed since %s and %s left alone: %s. %s again and answer [f] to overwrite.",
+			"%s changed since %s and %s left alone: %s. %s again and answer %s to overwrite.",
 			plural(len(out.Skipped), "file"), of.since, wasWere(len(out.Skipped)),
-			strings.Join(out.Skipped, ", "), of.again))
+			strings.Join(out.Skipped, ", "), of.again, keys.Bracket(keys.Confirm.Force)))
 	}
 	for _, f := range out.Failed {
 		parts = append(parts, fmt.Sprintf("%s could not be restored: %v.", f.Path, f.Err))

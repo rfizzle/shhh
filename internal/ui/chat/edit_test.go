@@ -318,7 +318,7 @@ func TestProgram_AnEditInThePaneIsCountedOnTheClose(t *testing.T) {
 	programPress(t, tm, "esc")
 	waitForText(t, tm, "leave without saving?")
 	programPress(t, tm, "esc")
-	waitForText(t, tm, "[ctrl+s] save · [esc] back to the prompt")
+	waitForText(t, tm, "[ctrl+s] save · [esc] back")
 	programPress(t, tm, "ctrl+s")
 	waitForText(t, tm, "wrote 9 lines to loop.go")
 	programPress(t, tm, "esc")

@@ -63,8 +63,30 @@ transcript until the eye stops looking for the accent at all.
 
 ### Esc is always the safe answer
 
-Wherever the safe answer is not obvious, the surface says what Esc will do —
-`[esc] leave review, change nothing`.
+Every surface that holds the keyboard says what Esc will do. Where Esc is the
+safe answer — it leaves, and nothing changes — the words for it are one of
+three, and the list is closed:
+
+- **`back`** — Esc leaves a screen or a picker, or backs out of the level open
+  on one, and nothing is staged. Clearing a picker's query and closing its
+  filter row are this act too: each is one step back.
+- **`keeps waiting`** — Esc leaves a card that holds a decision. The decision
+  is not answered and nothing is denied; the card is still there to answer. A
+  card asking for an answer never says `back`, which there reads as
+  dismissing it, and nothing on a card that waits reads as a deny.
+- **The staged-work question** — Esc over staged work asks before it drops it
+  (below). It is a confirm, not a gloss.
+
+Either word may take a clause after it saying what is left as it was, where a
+surface's no could be mistaken for its Esc — *keeps waiting — nothing is
+committed*, *back — nothing restored*. The clause adds to the word; it never
+replaces it.
+
+A fourth wording is a fourth act for the reader to learn, and Esc is the one
+key they must be able to press without reading. So the words are the last
+thing a key row gives up: a row too narrow for its offers drops the others
+first, and a row that packs onto several lines gives the way out a line of
+its own before it gives up its words.
 
 Esc backs out one level and never destroys: it closes what is open, clears a
 query, then leaves, asking first over staged work. On the draft it leaves the

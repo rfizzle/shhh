@@ -588,6 +588,17 @@ func (s *Select) proseRows(width, budget int) []string {
 // them, and the single-select family's where it does not.
 func (s *Select) cancelOffer() KeyOffer { return cancelOffer(s.CancelLabel, takeNone) }
 
+// filterBack is esc while the query row is open. On a card holding a
+// decision — one whose way out keeps it waiting — it says that at every
+// level, because `back` on a card asking for an answer reads as dismissing
+// it; everywhere else it is the plain way back.
+func (s *Select) filterBack() KeyOffer {
+	if s.CancelLabel == EscWaits {
+		return s.cancelOffer()
+	}
+	return keyOfferAs(keys.Select.Cancel, EscBack)
+}
+
 // hintSegments is the card's key row, and the order it gives things up in.
 // The filter changes it twice: an open query line offers the key that clears
 // it, and a card that matched nothing offers only that one and esc, because
@@ -623,22 +634,14 @@ func (s *Select) hintSegments(width int) []KeyOffer {
 		return s.HintKeys
 	}
 	if s.Filtering {
-		// esc is one key with three readings while the row is open, and the
-		// row names the one it has: with something typed it clears; with
-		// nothing typed it closes the row, which is what a card whose rows
-		// carry their own keys — /model's [m], the saved chats' [d] and [e]
-		// — needs said, because those keys are text until it does; and on a
-		// card with nothing behind the row it leaves.
-		if s.Query != "" {
-			clear := keyOfferAs(keys.Select.Cancel, "clear")
-			if s.selectable() == 0 {
-				return presentSegments([]KeyOffer{s.Target, clear})
-			}
-			return presentSegments([]KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take), s.Target, clear})
-		}
-		back := s.cancelOffer()
-		if s.hasRowKeys() {
-			back = keyOfferAs(keys.Select.Cancel, "row keys")
+		// esc is one level per press while the row is open: with something
+		// typed it clears, with nothing typed it closes the row, and on a
+		// card with nothing behind the row it leaves. Each is a step back
+		// with nothing staged, so the row says `back` for all three
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+		back := s.filterBack()
+		if s.Query != "" && s.selectable() == 0 {
+			return presentSegments([]KeyOffer{s.Target, back})
 		}
 		return presentSegments([]KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take), s.Target, back})
 	}

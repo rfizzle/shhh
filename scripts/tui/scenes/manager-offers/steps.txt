@@ -85,7 +85,7 @@ snap 08-mid-sentence "and check the exit condition too"
 keys F12
 keys j
 keys a
-snap 09-answer-in-place "back to the agents"
+snap 09-answer-in-place "[esc] keeps waiting"
 # Esc leaves the decision waiting: the list comes back and the row it comes
 # back to still says the child needs somebody
 # (docs/interface/principles.md#esc-is-always-the-safe-answer).
