@@ -4,7 +4,8 @@ package eval
 //
 // The session under measurement is a real one: the shhh binary that is doing
 // the measuring, invoked as `code --print --output jsonl` (`chat --print
-// --output jsonl` for a chat case) in a copy of the case's workspace. Driving the agent in-process would be less code and would
+// --output jsonl` for a chat case, `serve --stdio` for a case with a persona,
+// serve.go) in a copy of the case's workspace. Driving the agent in-process would be less code and would
 // measure less of the thing — the system prompt is assembled from the
 // project, the machine and the config, and a harness that skipped that
 // assembly could not tell you whether a change to it helped.
@@ -184,21 +185,31 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 
 	fx := fixtureFiles(dir)
 
-	cmd := exec.CommandContext(runCtx, bin, c.sessionArgv(opts.Args)...)
-	cmd.Dir = dir
-	// XDG_CONFIG_HOME is left alone: the configuration is part of what is
-	// measured, and the key resolves from flags, env or config, never the store.
-	cmd.Env = append(os.Environ(), "XDG_DATA_HOME="+dataDir)
-	var out, errOut strings.Builder
-	cmd.Stdout = &out
-	cmd.Stderr = &errOut
-	runErr := cmd.Run()
-
-	// The stream is read whatever the exit status: a session that failed
-	// late still did work, and the numbers from it are the ones that say how
-	// far it got. A line that is not an event ends the reading and keeps what
-	// came before it.
-	t, decodeErr := decodeStream(strings.NewReader(out.String()))
+	var t trace
+	var decodeErr, runErr error
+	var errOut strings.Builder
+	if c.persona != nil {
+		// The server lives under the suite's context and not the attempt's:
+		// at the ceiling its turn is interrupted and its session ended, so
+		// what it did before then is still read, rather than the process
+		// being killed mid-line.
+		sv := serveAttempt(runCtx, sessionCommand(ctx, bin, dir, dataDir, c.sessionArgv(opts.Args)), c.Prompt, c.persona)
+		t, a.Turns, a.Unscripted = sv.trace, sv.turns, sv.unscripted
+		if sv.failed != "" {
+			runErr = errors.New(sv.failed)
+		}
+	} else {
+		cmd := sessionCommand(runCtx, bin, dir, dataDir, c.sessionArgv(opts.Args))
+		var out strings.Builder
+		cmd.Stdout = &out
+		cmd.Stderr = &errOut
+		runErr = cmd.Run()
+		// The stream is read whatever the exit status: a session that failed
+		// late still did work, and the numbers from it are the ones that say
+		// how far it got. A line that is not an event ends the reading and
+		// keeps what came before it.
+		t, decodeErr = decodeStream(strings.NewReader(out.String()))
+	}
 	a.Rounds, a.Calls = t.rounds()
 	a.Behaviour = t.behaviour()
 	a.TokensIn, a.TokensOut = t.usage()
@@ -210,6 +221,10 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	switch {
 	case errors.Is(runCtx.Err(), context.DeadlineExceeded):
 		a.Err = fmt.Errorf("the session did not finish inside %s", opts.Timeout)
+	case runErr != nil && c.persona != nil:
+		// A served conversation names its own reason: a close line's error
+		// here could be an earlier turn's, which ended well.
+		a.Err = fmt.Errorf("the session failed: %w", runErr)
 	case runErr != nil:
 		a.Err = fmt.Errorf("the session failed: %s", firstLine(closeErr, errOut.String(), runErr.Error()))
 	case len(c.Assertions) > 0 && (decodeErr != nil || !closed):
@@ -238,6 +253,18 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	}
 	a.Elapsed = time.Since(start)
 	return a
+}
+
+// sessionCommand is the one way an attempt starts the binary under
+// measurement, printed or served: in the copied workspace, with the reader's
+// environment and a data directory of the attempt's own. XDG_CONFIG_HOME is
+// left alone: the configuration is part of what is measured, and the key
+// resolves from flags, env or config, never the store.
+func sessionCommand(ctx context.Context, bin, dir, dataDir string, argv []string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, bin, argv...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "XDG_DATA_HOME="+dataDir)
+	return cmd
 }
 
 // tableAttempt puts every row of a table case to the real call once — the

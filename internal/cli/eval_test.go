@@ -894,6 +894,27 @@ func TestEvalReportSaysNothingOfAssertionsACaseNeverDeclared(t *testing.T) {
 	}
 }
 
+// A served case says who was on the other side, in words and never as a
+// zero-dollar figure, and counts the questions its script had no rule for. A
+// case settled by one prompt says nothing of it.
+func TestEvalReportNamesTheSimulatedUser(t *testing.T) {
+	res := eval.Result{Case: eval.Case{Name: "served", Kind: eval.KindWorkspace}, Attempts: []eval.Attempt{
+		{Passed: true, CheckPassed: true, Turns: 2, Unscripted: 1, Cost: 0.25, Priced: true},
+		{Passed: true, CheckPassed: true, Turns: 2, Cost: 0.25, Priced: true},
+	}}
+	out := evalReport(eval.Summary{Results: []eval.Result{res}}, "").Render(200)
+	if !strings.Contains(out, "simulated user: scripted · 2 turns · 1 question unscripted") {
+		t.Errorf("the simulated-user line is missing:\n%s", out)
+	}
+	if !strings.Contains(out, "$0.50") || strings.Contains(out, "$0.00") {
+		t.Errorf("the session's own cost is priced and nothing is priced at zero for the asking side:\n%s", out)
+	}
+	plain := evalReport(eval.Summary{Results: []eval.Result{workspaceRun("plain", 3, true)}}, "").Render(160)
+	if strings.Contains(plain, "simulated user") {
+		t.Errorf("a one-prompt case has nobody on the other side:\n%s", plain)
+	}
+}
+
 // The comparison draws the count that moved, beside the rest.
 func TestCompareReportShowsAssertionsThatBrokeFurther(t *testing.T) {
 	before := eval.CaseBaseline{Name: "asserted", Verdict: "failed", Rounds: 4, Assertions: &eval.AssertionsBaseline{Declared: 3, MedianBroken: 1}}

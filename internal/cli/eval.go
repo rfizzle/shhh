@@ -505,6 +505,9 @@ func evalRow(res eval.Result) report.Row {
 		if line := assertionDetail(res); line != "" {
 			row.Body = append(row.Body, line)
 		}
+		if line := simulatedUserDetail(res); line != "" {
+			row.Body = append(row.Body, line)
+		}
 	}
 	if score, ok := res.Score(); ok {
 		if c := tableConsequence(score); c != "" {
@@ -794,6 +797,47 @@ func assertionDetail(res eval.Result) string {
 		}
 	}
 	return "assertions: " + strings.Join(parts, " · ")
+}
+
+// simulatedUserDetail says who was on the other side of a served case. The
+// asking side is a script and spends nothing, so the row says so in words
+// rather than pricing it at zero beside the session's own cost: zero dollars
+// would read as a measurement of something that was never asked. A question
+// the script had no rule for is counted, because the answer it got instead is
+// then part of what the case measured.
+// See docs/capabilities/evals.md#a-case-can-have-somebody-on-the-other-side.
+func simulatedUserDetail(res eval.Result) string {
+	// Over the attempts that held a conversation: one that broke before its
+	// first turn says nothing about how many turns the case takes.
+	conversed := eval.Result{Case: res.Case}
+	for _, a := range res.Attempts {
+		if a.Turns > 0 {
+			conversed.Attempts = append(conversed.Attempts, a)
+		}
+	}
+	if len(conversed.Attempts) == 0 {
+		return ""
+	}
+	turns := conversed.Median(func(a eval.Attempt) float64 { return float64(a.Turns) })
+	if turns == 0 {
+		// Every conversation broke; Median reads only the ones that did not.
+		turns = float64(conversed.Attempts[0].Turns)
+	}
+	line := "simulated user: scripted · " + eval.FormatRounds(turns) + " turns"
+	if turns == 1 {
+		line = "simulated user: scripted · 1 turn"
+	}
+	unscripted := 0
+	for _, a := range res.Attempts {
+		unscripted += a.Unscripted
+	}
+	switch {
+	case unscripted == 1:
+		line += " · 1 question unscripted"
+	case unscripted > 1:
+		line += fmt.Sprintf(" · %d questions unscripted", unscripted)
+	}
+	return line
 }
 
 // evalBody is why a case did not pass, which is the only thing a failing row

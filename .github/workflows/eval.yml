@@ -2,7 +2,7 @@ name: Eval
 
 # The suite is run by a person asking for it and never by a push.
 #
-# Every case that names a model costs real requests: 29 cases, 4 scripted and
+# Every case that names a model costs real requests: 30 cases, 4 scripted and
 # free, several minutes of wall clock for the rest — more with --repeat, which
 # is what a flaky case needs to be told from a failing one. That is a thing to
 # spend deliberately, and a workflow that spent it on every commit would be a

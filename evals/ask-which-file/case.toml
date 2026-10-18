@@ -1,0 +1,20 @@
+name = "ask-which-file"
+prompt = "The Sum function is wrong and its test fails. Fix the failing Sum, and nothing else."
+
+requires = ["sh", "go", "git"]
+
+# Two packages each hold a Sum whose test fails, and the prompt names neither,
+# so the work cannot be done right without asking which one is meant. The
+# person means calc. The check passes only when calc's test passes and stats is
+# exactly as it was: an agent that fixed both, or the other one, did not use
+# the answer.
+check = ["sh", "-c", "go test ./calc/ && git diff --quiet HEAD -- stats"]
+
+assert = ["asks"]
+
+persona = [
+  "question .* => the Sum in package calc, calc/sum.go; leave stats as it is",
+  "close (?i)\\bstats\\b => only calc was meant: put stats back the way it was",
+  "close .* => stop",
+]
+turns = 2

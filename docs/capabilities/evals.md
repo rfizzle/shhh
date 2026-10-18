@@ -61,7 +61,7 @@ in memory, and dropped with the attempt.
 | `no-mutation` | no call that writes a file, runs a command or a process, or writes to git, and no result saying the session asked for a tool it was never offered | the final tree; an analysis-only case measures that as unintended mutations |
 | `no-shell` | no call to the shell | what the shell did |
 | `no-denial` | no call was refused, and the report names the reason code of each refusal | whether a refusal, once made, was final: that is an invariant the approval path is tested for, not a measurement |
-| `asks` | the session asked at least one question | what it asked; only a conversation somebody can answer holds it, so the loader refuses it elsewhere |
+| `asks` | the session asked at least one question | what it asked; only a conversation somebody can answer holds it, so the loader takes it only on a case with a persona |
 
 A tool the session was never offered is also a misspelt one. Both are asking
 for a tool that is not there, which is the fact a read-only conversation is
@@ -88,6 +88,56 @@ A case that declares none is graded on its check as it always was. Declaring
 one changes the case's digest, so the row reads as a different test until its
 baseline is refreshed: the first declarations on an existing case belong in
 the change that refreshes it.
+
+## A case can have somebody on the other side
+
+Some journeys are not settled by one prompt: the request is ambiguous and the
+right move is to ask, or the agent proposes something and the person says no.
+A case with a `persona` measures those. It is served — the binary runs as
+`serve --stdio` in the copied workspace, started exactly as any other attempt
+starts it, with the same forwarded flags and its own data directory — and the
+harness is its only client. The case's prompt is the first turn. Every
+question and every gated call the session puts to the client is answered from
+the persona, and when a turn closes the persona says what comes next.
+
+The served surface is the only one this can be measured on. The question tool
+is offered only where somebody can answer, so "the agent never asked" is only a
+finding where it could have; and a printed run approves everything up front,
+so it cannot be told no for one call. Served with no mode, every gated call is
+put to the client one at a time.
+
+A persona is a script, never a model. Each line is
+`<event> <expression> => <answer>`, the event one of `question`, `approval` and
+`close`, and the first line whose expression matches answers:
+
+- `question` is matched against the question's text. An answer that is one of
+  the offered labels is a pick from the card; any other is the person's own
+  words. A question no line matches is answered "no preference" and counted on
+  the row, because the case is then measuring that answer.
+- `approval` is matched against the tool's name and answers `allow` or `deny`.
+  A call no line matches is allowed, which is what a printed case answers.
+- `close` is matched against the final text of the turn that closed. Its
+  answer is the next turn's prompt, or `stop`; a close no line matches stops.
+
+`turns` caps the user turns, the first one included, and the run's `--timeout`
+still bounds the attempt: at the ceiling the turn is interrupted and the
+session ended. A malformed line is refused when the suite loads, naming the
+line.
+
+**The persona sees what the wire shows and nothing else**: a question's text
+and the labels it offers, an approval's tool name, and a turn's final text.
+Never a tool result, the workspace, the check or the facts. Its answers are a
+pure function of those, so the asking side cannot drift between attempts and
+`--repeat` reads the agent's side exactly as it does for one turn.
+
+**The persona answers; it never grades.** The verdict is the check and the
+declared assertions, as for any case: `asks` for "it asked", and a check that
+tests the thing the answer named for "the answer was used". Every turn's events
+are the stream's own lines, read as one trace, so rounds, calls, usage and
+every assertion span the whole conversation. The session's tokens are its own
+across every turn and priced as any session's are. The asking side spends
+nothing, and the row says "simulated user: scripted" with the turns it took
+rather than putting a zero-dollar figure beside the session's cost.
 
 ## Flaky is its own verdict
 

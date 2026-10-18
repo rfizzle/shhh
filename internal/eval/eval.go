@@ -74,6 +74,9 @@ type Case struct {
 	// decided from the stream the session wrote (assert.go). A case that
 	// declares none is graded on its check alone.
 	Assertions []Assertion
+	// persona is the other side of a served conversation, nil for a case
+	// settled by one prompt (persona.go).
+	persona *persona
 	// Requires names the commands the case cannot run without, and Skip,
 	// when set, is which of them this machine has not got — a case needing a
 	// toolchain that is absent says so rather than failing as though the
@@ -123,6 +126,13 @@ type Attempt struct {
 	Cost      float64
 	Priced    bool
 	Elapsed   time.Duration
+	// Turns is how many user turns a served conversation took, the first
+	// prompt included, and zero for an attempt that was one prompt. Unscripted
+	// is how many of its questions no persona rule matched, each answered "no
+	// preference": a case whose script misses what the agent asks is measuring
+	// that answer, and the row says so.
+	Turns      int
+	Unscripted int
 	// Behaviour is a workspace attempt's operational evidence. It is separate
 	// from Passed: the check still decides whether the task was done.
 	Behaviour Behaviour

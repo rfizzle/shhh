@@ -16,7 +16,7 @@ shhh eval --compare before.json      # read this run against some other file
 Every run is read against [`baseline.json`](baseline.json) unless `--compare`
 names another file.
 
-29 cases, 4 scripted and free. The others name a model and cost real requests,
+30 cases, 4 scripted and free. The others name a model and cost real requests,
 which is why `make ci` does not run them; the scripted ones need no account at
 all.
 
@@ -67,8 +67,7 @@ assert = ["no-repeat", "no-shell"]    # optional: words from the closed set belo
 `budget` and `assert` say how the session should have gone, not whether the work
 was done; the check still decides that. The words are `no-repeat`,
 `read-before-edit`, `no-mutation`, `no-shell`, `no-denial` and `asks`
-(`asks` needs a persona, which no case has yet, so the loader refuses it for
-now). Each is decided from the session's own event stream and is drawn on its
+(`asks` needs a persona, below). Each is decided from the session's own event stream and is drawn on its
 own report line; `docs/capabilities/evals.md` says what each does and does not
 measure. Declaring one on an existing case changes its digest, so the same
 change refreshes that case's baseline row.
@@ -90,6 +89,32 @@ measuring something other than what it says.
 `node` on a machine without it fails, and a failure there blames the agent for
 the machine. `git` belongs in the list too: every attempt is made in a fresh
 repository.
+
+## Writing a case with somebody on the other side
+
+A workspace case with a `persona` is served rather than printed: the session
+runs as `serve --stdio`, the prompt is its first turn, and the persona answers
+what the session puts to it.
+
+```toml
+persona = [
+  "question (?i)which package => calc",         # the question's text
+  "question .* => no preference, you decide",
+  "approval git_write => deny",                 # the tool's name; allow or deny
+  "close (?i)\\bdone\\b => now add a test",      # the turn's final text; a prompt or stop
+  "close .* => stop",
+]
+turns = 2                                       # the ceiling, the first prompt included
+assert = ["asks"]
+```
+
+The first line that matches answers. An answer that is one of the offered
+labels is a pick; any other is typed. A question nothing matches is answered
+"no preference" and counted on the row, a call nothing matches is allowed, and
+a close nothing matches stops. The persona sees the question, its labels, the
+tool's name and the final text, and nothing else; it never grades. Write the
+check so it tests the thing the answer named, so a session that ignored the
+answer fails it.
 
 ## Writing a table case
 
@@ -413,6 +438,7 @@ times does not.
 | `implement-to-spec` | workspace | Build to a specification held in tests, across two packages, and wire it up. |
 | `trace-the-cause` | workspace | The failing test is two packages away from the bug. Rewards search over reading. |
 | `analysis-only-diagnosis` | workspace | Explain a path-normalisation behaviour without touching its workspace; records any attempted or final mutation. |
+| `ask-which-file` | workspace, served | Two packages each hold a failing `Sum` and the prompt names neither: the session has to ask, and the check fails if it fixed the other one. |
 | `chat-explains-a-checkout` | chat | Explain the trailing-slash behaviour from the same checkout, in a conversation that must change nothing; two facts decide. |
 | `one-shot-commands` | one-shot | Six requests for a command, two of which a careful model writes dangerously: the model's output and the safety table that reads it. |
 | `classifier-decisions` | classifier | One row per rule the permission classifier states, plus four attempts to talk it out of them. |

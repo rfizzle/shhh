@@ -68,6 +68,10 @@ type caseFile struct {
 	// (assert.go).
 	Budget []string `toml:"budget"`
 	Assert []string `toml:"assert"`
+	// Persona is the other side of a served conversation, one rule a line,
+	// and Turns the ceiling on its user turns (persona.go).
+	Persona []string `toml:"persona"`
+	Turns   int      `toml:"turns"`
 }
 
 // Load reads every case directory under root, in name order so a report reads
@@ -124,6 +128,9 @@ func loadCase(dir string) (Case, error) {
 	if !kind.workspaceShaped() && len(f.Budget)+len(f.Assert) > 0 {
 		return Case{}, fmt.Errorf("%s: budget and assert are about a session's calls, and a %s case runs none", path, kind)
 	}
+	if kind != KindWorkspace && (len(f.Persona) > 0 || f.Turns != 0) {
+		return Case{}, fmt.Errorf("%s: persona and turns belong to a workspace case, which is served to answer them; a %s case is one prompt with nobody on the other side", path, kind)
+	}
 
 	switch kind {
 	case KindWorkspace:
@@ -138,13 +145,15 @@ func loadCase(dir string) (Case, error) {
 			return Case{}, fmt.Errorf("%s: no %s/ directory — a case needs a workspace to work in", dir, workspaceDir)
 		}
 		c.Workspace, c.Prompt, c.Check, c.AnalysisOnly = ws, strings.TrimSpace(f.Prompt), f.Check, f.AnalysisOnly
-		// No case file has a persona key yet, so asks is refused everywhere
-		// until a case can be served and answered.
-		as, err := parseAssertions(f.Budget, f.Assert, path, false)
+		p, err := parsePersona(f.Persona, f.Turns, path)
 		if err != nil {
 			return Case{}, err
 		}
-		c.Assertions = as
+		as, err := parseAssertions(f.Budget, f.Assert, path, p != nil)
+		if err != nil {
+			return Case{}, err
+		}
+		c.Assertions, c.persona = as, p
 	case KindChat:
 		if strings.TrimSpace(f.Prompt) == "" {
 			return Case{}, fmt.Errorf("%s: prompt is required — it is the question", path)

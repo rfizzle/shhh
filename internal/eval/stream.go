@@ -68,8 +68,8 @@ func decodeStream(r io.Reader) (trace, error) {
 	for n := 1; ; n++ {
 		line, err := br.ReadBytes('\n')
 		if text := strings.TrimSpace(string(line)); text != "" {
-			var ev event
-			if jerr := json.Unmarshal([]byte(text), &ev); jerr != nil {
+			ev, jerr := decodeEvent([]byte(text))
+			if jerr != nil {
 				return t, fmt.Errorf("stream line %d is not an event: %w", n, jerr)
 			}
 			t.events = append(t.events, ev)
@@ -81,6 +81,15 @@ func decodeStream(r io.Reader) (trace, error) {
 			return t, err
 		}
 	}
+}
+
+// decodeEvent reads one line of the stream. It is the one decoder: a printed
+// run's lines and a served conversation's are the same lines, and two readers
+// of them could come to count the same session two ways.
+func decodeEvent(line []byte) (event, error) {
+	var ev event
+	err := json.Unmarshal(line, &ev)
+	return ev, err
 }
 
 // rounds and calls are the shape of the work: a round is a distinct

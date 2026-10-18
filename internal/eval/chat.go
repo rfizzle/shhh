@@ -35,8 +35,14 @@ func (k Kind) workspaceShaped() bool {
 // binary. A chat session is not given --yes: a conversation's reads run
 // unasked, and a flag that silenced a prompt chat never raises would only
 // make the case read as one that approved something.
+//
+// A case with a persona is served, and its prompt is the first turn it puts
+// rather than an argument (serve.go).
 func (c Case) sessionArgv(forwarded []string) []string {
 	var args []string
+	if c.persona != nil {
+		return append([]string{"serve", "--stdio"}, forwarded...)
+	}
 	if c.Kind == KindChat {
 		args = []string{"chat", "--print", "--output", "jsonl"}
 	} else {
@@ -62,17 +68,20 @@ func withBuiltIn(declared []Assertion, word string) []Assertion {
 // matched as the text it is written as.
 func (t trace) finalText() (string, bool) {
 	for i := len(t.events) - 1; i >= 0; i-- {
-		ev := t.events[i]
-		if ev.Kind != record.EventClose {
-			continue
+		if ev := t.events[i]; ev.Kind == record.EventClose {
+			return ev.finalText()
 		}
-		var s string
-		if json.Unmarshal(ev.Final, &s) == nil {
-			return s, true
-		}
-		return strings.TrimSpace(string(ev.Final)), len(ev.Final) > 0
 	}
 	return "", false
+}
+
+// finalText is one close line's final answer as text.
+func (ev event) finalText() (string, bool) {
+	var s string
+	if json.Unmarshal(ev.Final, &s) == nil {
+		return s, true
+	}
+	return strings.TrimSpace(string(ev.Final)), len(ev.Final) > 0
 }
 
 // factsMissing is how many of the facts the answer does not state.
