@@ -135,12 +135,15 @@ func exitStatus(err error) int {
 }
 
 // watchHangup blocks until fd hangs up and reports true, or reports false
-// when there is nothing to watch. It polls without reading: with
-// --stdin=inherit the descriptor's bytes are the child's, and a read here
-// would take them. A poll that asks for no input events is woken only by the
-// hang-up and an error, so a stream that is merely quiet costs nothing.
+// when there is nothing to watch. It never reads: with --stdin=inherit the
+// descriptor's bytes are the child's, and a read here would take them. Where
+// a poll that asks for no input events is woken by the hang-up and an error
+// alone (Linux), a stream that is merely quiet costs nothing. Where it is
+// not (macOS reports nothing for a pipe polled that way), the poll asks for
+// input too, and a wake with bytes waiting is told from end-of-file by how
+// many bytes are queued, still without reading them.
 func watchHangup(fd int) bool {
-	fds := []unix.PollFd{{Fd: int32(fd), Events: pollHangupEvents}}
+	fds := []unix.PollFd{{Fd: int32(fd), Events: pollHangupEvents | pollInputEvents}}
 	for {
 		_, err := unix.Poll(fds, -1)
 		if errors.Is(err, unix.EINTR) {
@@ -152,5 +155,18 @@ func watchHangup(fd int) bool {
 		if fds[0].Revents&(unix.POLLHUP|unix.POLLERR|pollHangupEvents) != 0 {
 			return true
 		}
+		if fds[0].Revents&unix.POLLIN != 0 {
+			n, err := queuedInput(fd)
+			if err != nil || n == 0 {
+				return true
+			}
+			// Bytes the child has not read yet keep the poll ready; look
+			// again after a pause rather than spinning on them.
+			time.Sleep(pendingInputBackoff)
+		}
 	}
 }
+
+// pendingInputBackoff is the pause between looks while unread input keeps
+// the descriptor readable.
+const pendingInputBackoff = 50 * time.Millisecond
