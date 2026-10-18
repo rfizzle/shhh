@@ -315,9 +315,11 @@ by having failed in fewer rounds. Under a verdict that held, a control that
 let more through comes next — a classifier's false allow, a research write-up's
 citation of a page the run never fetched — and the medians last.
 
-**Two runs over different case sets are refused.** A suite that gained a case
-has totals that moved for a reason that is not the change being measured, and
-comparing the overlap would hide it. Add the case, run both sides again — with
+**A case the baseline lacks is listed, not compared.** A suite that gained a
+case is behind its baseline by exactly that case, so the report names it and
+leaves it out of the totals, which say they cover only the cases both runs
+hold. A case the baseline holds and the run did not measure is still refused:
+that run skipped part of the suite. Add the case, then refresh with
 `--refresh-baseline`, whose diff is the review.
 
 **A case edited since the baseline is not compared.** Each row records a
@@ -327,8 +329,8 @@ baseline when the edit is meant; its diff shows the digest that moved under
 the case's name.
 
 **A run narrowed with `--case` is compared against those rows alone.** The
-reader said which cases they wanted; that is not the overlap the rule above
-refuses.
+reader said which cases they wanted; that is not a skipped part of the suite,
+which the rule above refuses.
 
 **A machine with no account still measures the scripted cases.** The rest are
 skipped and say why, on every row and once at the top, and the baseline such a
