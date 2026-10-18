@@ -75,6 +75,36 @@ func (m Model) gateMode() agent.Mode {
 	return flow
 }
 
+// personsTurn reports a turn in flight that the person started while a
+// backlog run holds a policy: a skill activation, a compaction, an MCP
+// prompt. A steer is not one: it joins the stage turn it steers, which is
+// why this reads runFrom, the turn opened, and not turnCount. The run's own
+// stage turn is the one opened under the number the run recorded when it
+// sent it (todoRunStep); any other turn the
+// run did not send, and the run's policy was granted to its stages, not to
+// whatever happens to be talking while it waits. Between turns nothing is in
+// flight and this is false, so the children's ceiling and the frame go on
+// reading the run's policy.
+func (m Model) personsTurn() bool {
+	st := m.todo.runner.state
+	return st != nil && !st.Over() && m.turnInFlight() && int(m.runFrom) != m.todo.runner.turn
+}
+
+// turnMode is the mode the calls of the turn in flight are answered under,
+// and so the mode the model is told: the session's mode on a turn the person
+// started, the gate's otherwise. It is the verdict's reader and the
+// paragraph's, and they read the same value because the model has to be told
+// the mode its calls are answered under. The children's ceiling is not one of
+// them: it reads gateMode, the run's policy, so that a writer a lane spawned
+// is not clamped to manual mid-build by a skill turn.
+// See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
+func (m Model) turnMode() agent.Mode {
+	if m.personsTurn() {
+		return m.policy.mode
+	}
+	return m.gateMode()
+}
+
 // flowPolicyLine is the sentence `/permissions` and the help's policy
 // section add under the mode while a flow answers in another one, and empty
 // while none does: the mode those lines name is the person's, and without
@@ -95,7 +125,7 @@ func (m Model) flowPolicyLine() string {
 // reads and the rules the queue asks first are the same lists.
 func (m Model) modePolicy() agent.ModePolicy {
 	return m.rules().Policy(agent.ModePolicy{
-		Mode:             m.gateMode(),
+		Mode:             m.turnMode(),
 		AllowEdits:       m.policy.allEdits,
 		AllowCommands:    m.policy.allCommands,
 		EditDirs:         m.policy.editDirs,
@@ -117,7 +147,7 @@ func (m Model) modePolicy() agent.ModePolicy {
 // See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
 func (m Model) rules() approval.Router {
 	refusal := m.containment.Refusal
-	if refusal == "" && m.gateMode().ReadOnly() {
+	if refusal == "" && m.turnMode().ReadOnly() {
 		refusal = m.containment.ReadOnlyRefusal
 	}
 	return approval.Router{

@@ -110,6 +110,15 @@ func TestPipeline_ValidateRefusesTheShapesARunCannotTake(t *testing.T) {
 		}},
 		"no turn after it integrates them",
 	}, {
+		"a spawning fan-out after a split that declares read",
+		Pipeline{Name: "c2", Steps: []PipelineStep{
+			{Name: "split", Kind: KindFanOut, Access: Read},
+			{Name: "spawn", Kind: KindFanOut, Access: Read},
+			{Name: "build", Kind: KindTurn, Access: Write},
+			{Name: "file", Kind: KindFinish, Finish: FinishArchive},
+		}},
+		"writers spawned under a plan policy cannot write",
+	}, {
 		"a commit in a run that never writes",
 		Pipeline{Name: "d", Steps: []PipelineStep{
 			{Name: "read", Kind: KindTurn, Access: Read},

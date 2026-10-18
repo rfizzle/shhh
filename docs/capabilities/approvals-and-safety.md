@@ -144,6 +144,13 @@ The deny lists, the working scope and the containment refusal are answered
 before a flow's policy exactly as they are before a mode
 ([below](#a-deny-list-is-answered-before-anything-can-allow)).
 
+A turn the person starts while a run is going is theirs, not the run's: a
+skill typed during the fan-out, a compaction or an MCP prompt is answered
+under the session's mode, and the model is told that mode, so in a manual
+session an edit on such a turn asks while the run's own stage turns go on
+under the stage's policy. The run's writers keep the run's policy as their
+ceiling, so a turn of the person's never holds a lane to manual mid-build.
+
 ## A deny list is answered before anything can allow
 
 Two lists of command prefixes belong to the person and to nobody else. The

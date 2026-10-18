@@ -103,7 +103,7 @@ func (m Model) requestStream() tea.Cmd {
 	// stops the injection. The two blocks differ because the modes do: plan
 	// mode asks for a plan, and read-only mode says only what the bound is,
 	// which is the whole of the difference between them.
-	if block := agent.ModeInstructions(m.gateMode(), m.policy.readOnlyExtra, m.toolNames()); block != "" && len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if block := agent.ModeInstructions(m.turnMode(), m.policy.readOnlyExtra, m.toolNames()); block != "" && len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
 		msgs[0].Content += "\n\n" + block
 	}
 	return m.requestStreamFor(msgs, provider.ToolChoiceAuto)

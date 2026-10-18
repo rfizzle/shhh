@@ -641,10 +641,26 @@ func (p Pipeline) validateGates() error {
 // are written blind to each other and land as patches on one tree; without a
 // turn after them to make them fit, a run would hand a tree nobody has read
 // as one piece to whatever comes next.
+//
+// It also refuses a spawning step that cannot write. The division is the
+// fan-out step that declares Access: read; the fan-out after it spawns the
+// writers (afterSplit hands whatever fan-out follows to the front-end to
+// spawn), and the run's policy at that step is its access's. A spawning step
+// that declares read is a plan policy, so the writers would be clamped to it
+// and could not write: the profile is refused rather than left to spawn
+// lanes that fail mid-build.
 func (p Pipeline) validateFanOut() error {
+	split := ""
 	for i, ps := range p.Steps {
 		if ps.Kind != KindFanOut {
 			continue
+		}
+		if split != "" && ps.Access != Write {
+			return fmt.Errorf("pipeline %q: the %s step spawns the lanes the %s step divided and declares access %q; writers spawned under a plan policy cannot write, so it must declare write", p.Name, ps.Name, split, ps.Access)
+		}
+		split = ""
+		if ps.Access != Write {
+			split = ps.Name
 		}
 		integrated := false
 		for _, after := range p.Steps[i+1:] {
