@@ -203,8 +203,8 @@ func TestOutcomeExit_ANegativeCodeIsNotAnExitStatus(t *testing.T) {
 		t.Errorf("a command that exited says so: %q", got)
 	}
 	for _, code := range []int{-1, -2, -9} {
-		if got := OutcomeExit(code); got != OutcomeStopped {
-			t.Errorf("OutcomeExit(%d) = %q, want %q", code, got, OutcomeStopped)
+		if got := OutcomeExit(code); got != OutcomeCancelled {
+			t.Errorf("OutcomeExit(%d) = %q, want %q", code, got, OutcomeCancelled)
 		}
 	}
 	if got := SignalAccount(9); got != "signal 9" {

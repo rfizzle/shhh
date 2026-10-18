@@ -250,17 +250,17 @@ func stepLabel(step StepsItem) string {
 func (s *StepsScreen) stepState(step StepsItem) string {
 	switch {
 	case step.Failed:
-		return "failed"
+		return StateFailed.Word()
 	case step.Done:
-		return "done"
+		return StateDone.Word()
 	case step.Current && s.Plan:
-		return "running"
+		return StateRunning.Word()
 	case step.Current:
-		return "current"
+		return StateCurrent.Word()
 	case s.Plan:
-		return OutcomeQueued
+		return StateQueued.Word()
 	}
-	return "to do"
+	return StateToDo.Word()
 }
 
 // stepGlyph is the row's leading mark, the step header's own: ✓ for a step
@@ -269,16 +269,20 @@ func (s *StepsScreen) stepState(step StepsItem) string {
 // for the sources screen's reason — the label runs through the card's
 // emphasis — and the word beside it says the same thing, so the mark never
 // carries the state alone (invariant 1).
-func stepGlyph(step StepsItem) string {
+func stepGlyph(step StepsItem, plan bool) string {
 	switch {
 	case step.Failed:
-		return "✗"
+		return StateFailed.Glyph()
 	case step.Done:
-		return "✓"
+		return StateDone.Glyph()
+	case step.Current && plan:
+		return StateRunning.Glyph()
 	case step.Current:
-		return "▸"
+		return StateCurrent.Glyph()
+	case plan:
+		return StateQueued.Glyph()
 	}
-	return "·"
+	return StateToDo.Glyph()
 }
 
 // header names the surface and what it is over: /steps over the working list,
@@ -336,7 +340,7 @@ func (s *StepsScreen) sync() {
 	opts := make([]SelectOption, 0, len(s.Steps))
 	for _, step := range s.Steps {
 		opt := SelectOption{
-			Label:  stepGlyph(step) + " " + oneLine(step.Title),
+			Label:  stepGlyph(step, s.Plan) + " " + oneLine(step.Title),
 			Number: step.Number,
 		}
 		switch {

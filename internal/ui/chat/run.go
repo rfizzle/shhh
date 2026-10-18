@@ -276,7 +276,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		switch end.outcome {
 		case components.OutcomeTimedOut:
 			result.Outcome = tools.ExecTimedOut
-		case components.OutcomeStopped:
+		case components.OutcomeCancelled:
 			result.Outcome = tools.ExecStopped
 		}
 		if assistant {
@@ -424,7 +424,7 @@ func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		switch end.outcome {
 		case components.OutcomeTimedOut:
 			result.Outcome = tools.ExecTimedOut
-		case components.OutcomeStopped:
+		case components.OutcomeCancelled:
 			result.Outcome = tools.ExecStopped
 		}
 		return dryRunDoneMsg{runID: runID, call: call, command: command,

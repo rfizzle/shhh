@@ -466,6 +466,18 @@ it. The product's own nouns — a steer, a changeset, a hunk, the classifier's
 target — belong in these documents and not on the screen. The lists
 themselves are spelled in [the surfaces](surfaces.md).
 
+A state is spelled once. Running, done, failed, cancelled, refused and waiting
+each have one glyph, one colour and one word, and every row, close, agent row
+and screen draws them from the same table, so a state learned on a tool row is
+the state on a turn's close. `ok` and `✓` stay two states because they are two
+claims: a command returned, and a check passed. A stopped request is `⊘
+cancelled`, the mark the reader's own no already wore wherever it appeared; it
+shares the mark with a refusal and is told from it by its word, which is drawn
+wherever the mark is or mapped under the glyph legend. A surface's exception —
+a read's glyph is chrome, a fan-out lane keeps its kind glyph, a turn's close
+draws `∗` for a finished turn — is a parameter on that surface and not a second
+table.
+
 ### Two denials are not one denial
 
 "You said no" and "a rule said no" are different facts and are reported

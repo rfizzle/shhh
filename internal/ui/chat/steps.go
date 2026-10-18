@@ -442,13 +442,13 @@ func (h stepHeader) tones() (ptr, title, dur lipgloss.Style) {
 func (h stepHeader) glyph() string {
 	switch h.State {
 	case stepRunning:
-		return sty.Step.Run.Render("▸")
+		return components.StateRunning.Mark()
 	case stepFailed:
-		return sty.Step.Fail.Render("✗")
+		return components.StateFailed.Mark()
 	case stepQueued:
-		return sty.Step.Dim.Render("·")
+		return components.StateQueued.Mark()
 	}
-	return sty.Step.Done.Render("✓")
+	return components.StateDone.Mark()
 }
 
 // countLabel names what the step holds, in words, so the glyph never carries

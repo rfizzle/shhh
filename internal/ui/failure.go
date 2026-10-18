@@ -105,7 +105,7 @@ func failureOutcome(f *provider.Failure) string {
 	case provider.ClassMalformed:
 		return "unreadable reply"
 	case provider.ClassCancelled:
-		return "stopped"
+		return components.OutcomeCancelled
 	}
 	return "message below"
 }

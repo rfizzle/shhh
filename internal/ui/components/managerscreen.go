@@ -102,11 +102,11 @@ func (r ManagerRow) Word() string {
 		}
 		return fmt.Sprintf("exited %d", r.Code)
 	case ManagerStopped:
-		return OutcomeStopped
+		return OutcomeCancelled
 	case ManagerStoppedByYou:
-		return "stopped by you"
+		return StateCancelled.WordBy("you")
 	}
-	return "running"
+	return StateRunning.Word()
 }
 
 // Live reports whether the row can still be stopped.
@@ -119,13 +119,13 @@ func (r ManagerRow) Failed() bool { return r.State == ManagerExited && r.Code !=
 func managerGlyph(r ManagerRow) string {
 	switch {
 	case r.Live():
-		return "▸"
+		return StateRunning.Glyph()
 	case r.Failed():
-		return "✗"
+		return StateFailed.Glyph()
 	case r.State == ManagerExited:
-		return "✓"
+		return StateDone.Glyph()
 	}
-	return "⊘"
+	return StateCancelled.Glyph()
 }
 
 // ManagerAct is what a confirmed stop asks the host to do.

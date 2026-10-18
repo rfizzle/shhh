@@ -283,19 +283,19 @@ func (c TurnClose) readOnly() TurnClose {
 func turnWord(t TurnsItem) (string, FieldTone) {
 	switch {
 	case t.Running != nil:
-		return "running", ToneOpen
+		return StateRunning.Word(), ToneOpen
 	case t.Paused != nil:
-		return "paused", ToneOpen
+		return StatePaused.Word(), ToneOpen
 	case t.Close == nil:
 		return noFiguresKept, ToneQuiet
 	}
 	switch t.Close.State {
 	case TurnCancelled:
-		return "cancelled", ToneQuiet
+		return StateCancelled.Word(), ToneQuiet
 	case TurnFailed:
-		return "failed", ToneRisk
+		return StateFailed.Word(), ToneRisk
 	}
-	return "done", ToneSafe
+	return StateDone.Word(), ToneSafe
 }
 
 // turnGlyph is the row's leading mark: the close's own glyph for a turn that
@@ -306,19 +306,19 @@ func turnWord(t TurnsItem) (string, FieldTone) {
 func turnGlyph(t TurnsItem) string {
 	switch {
 	case t.Running != nil:
-		return "▸"
+		return StateRunning.Glyph()
 	case t.Paused != nil:
-		return "⚠"
+		return StatePaused.Glyph()
 	case t.Close == nil:
-		return "·"
+		return StateUnknown.Glyph()
 	}
 	switch t.Close.State {
 	case TurnCancelled:
-		return "⊘"
+		return StateCancelled.Glyph()
 	case TurnFailed:
-		return "✗"
+		return StateFailed.Glyph()
 	}
-	return "✓"
+	return StateDone.Glyph()
 }
 
 // turnDetail is what the turn wrote, in the rewind picker's own spelling of

@@ -255,11 +255,11 @@ type turnTotal struct {
 func (t turnTotal) glyph() string {
 	switch t.state {
 	case TurnCancelled:
-		return sty.dim.Render("⊘")
+		return StateCancelled.Mark()
 	case TurnFailed:
-		return sty.del.Render("✗")
+		return StateFailed.Mark()
 	}
-	return sty.dim.Render("∗")
+	return StateClosed.Mark()
 }
 
 // text is the line's words. A turn that worked leads with how long it

@@ -372,8 +372,15 @@ $  a shell command
 ·  accepted, not started
 ▸  running
 ✦  the classifier is deciding
+✓  a check passed, a turn or a compaction came out well
+∗  a turn's close
 ✗  failed
 ⊘  refused: dim by you, red by a rule
+⊘  stopped by you while it ran
+⚠  stalled, and will resume or can be steered
+⚠  stopped on something only you can answer
+↺  picked up from a checkpoint
+⊘  not in play
 [?] hide the keys
 
 · the theme row · its value is the theme file's, and a write goes there
@@ -797,8 +804,15 @@ shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] ba
 ␛[38;5;245m·␛[m  ␛[38;5;245maccepted, not started␛[m
 ␛[38;5;205m▸␛[m  ␛[38;5;245mrunning␛[m
 ␛[38;5;205m✦␛[m  ␛[38;5;245mthe classifier is deciding␛[m
+␛[92m✓␛[m  ␛[38;5;245ma check passed, a turn or a compaction came out well␛[m
+␛[38;5;245m∗␛[m  ␛[38;5;245ma turn's close␛[m
 ␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
 ␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mstopped by you while it ran␛[m
+␛[38;5;214m⚠␛[m  ␛[38;5;245mstalled, and will resume or can be steered␛[m
+␛[91m⚠␛[m  ␛[38;5;245mstopped on something only you can answer␛[m
+␛[38;5;245m↺␛[m  ␛[38;5;245mpicked up from a checkpoint␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mnot in play␛[m
 ␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m
 
 · the theme row · its value is the theme file's, and a write goes there

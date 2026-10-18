@@ -1323,7 +1323,7 @@ A command that ran is never one of these. A shell answering `command not
 found` for a program that is not installed ran perfectly and printed a fact
 about the line, and a command whose ending nobody could read — it started,
 printed, and the wait for it failed — says `did not complete` on its row
-rather than `stopped`, which is the reader's own cancel, or `did not start`,
+rather than `cancelled`, which is the reader's own cancel, or `did not start`,
 which its output would contradict.
 
 ## Related

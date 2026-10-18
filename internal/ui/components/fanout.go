@@ -357,13 +357,13 @@ func (p AgentProgress) glyph() string { return p.kindTone().Render("◇") }
 func (p AgentProgress) rowGlyph() string {
 	switch p.State {
 	case FanoutBlocked:
-		return sty.err.Render("⚠")
+		return StateWaiting.Mark()
 	case FanoutFailed:
-		return sty.err.Render("✗")
+		return StateFailed.Mark()
 	case FanoutQueued:
-		return sty.dim.Render("·")
+		return StateQueued.Mark()
 	case FanoutIdle:
-		return sty.dim.Render("⊘")
+		return StateIdle.Mark()
 	}
 	return p.glyph()
 }
@@ -409,7 +409,7 @@ func (p AgentProgress) progress() string {
 		}
 		return sty.dim.Render("queued")
 	case FanoutIdle:
-		return sty.dim.Render("idle")
+		return StateIdle.Painted()
 	case FanoutHeld:
 		// A parked child and an idle one are both stopped, and only one of
 		// them was stopped on purpose: a hold is something the reader did to
@@ -483,7 +483,7 @@ func LaneWord(writes bool) string {
 	if writes {
 		return "writing"
 	}
-	return "running"
+	return StateRunning.Word()
 }
 
 // countedMeter is a running child's bar with its count beside it in dim. The

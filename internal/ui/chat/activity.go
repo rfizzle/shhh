@@ -260,7 +260,7 @@ func approvalAccount(req *approvalRequest) string {
 // from the outcome vocabulary, and the number that qualifies it. It is empty
 // on every command that exited on its own, which is nearly all of them.
 type commandEnd struct {
-	// outcome is components.OutcomeStopped, OutcomeKilled or OutcomeTimedOut.
+	// outcome is components.OutcomeCancelled, OutcomeKilled or OutcomeTimedOut.
 	outcome string
 	// account is the number beside the word — `signal 9`, `30s` — and is
 	// empty where there is none to name.
@@ -286,7 +286,7 @@ func commandEnding(ctxErr error, code int, limit time.Duration) commandEnd {
 	case errors.Is(ctxErr, context.DeadlineExceeded):
 		return commandEnd{outcome: components.OutcomeTimedOut, account: turnDuration(limit)}
 	case ctxErr != nil:
-		return commandEnd{outcome: components.OutcomeStopped}
+		return commandEnd{outcome: components.OutcomeCancelled}
 	case code < -1:
 		return commandEnd{outcome: components.OutcomeKilled, account: components.SignalAccount(-code)}
 	}
@@ -397,7 +397,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// would name a signal nobody saw.
 			row.State = components.ActivityFailed
 			row.Outcome = components.OutcomeDidNotComplete
-		case e.end.outcome == components.OutcomeStopped:
+		case e.end.outcome == components.OutcomeCancelled:
 			// The reader stopped it themselves, so the row is as quiet as
 			// their refusal is: ⊘ and dim, not ✗ and del. Nothing broke —
 			// they changed their mind while it was running
@@ -405,7 +405,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// The duration stays: unlike a call that was never put, this one
 			// ran, and how long for is why they stopped it.
 			row.State = components.ActivityDenied
-			row.Outcome = components.OutcomeStopped
+			row.Outcome = components.OutcomeCancelled
 		case e.end.outcome != "":
 			// The ceiling, or a signal from outside the session. Neither is
 			// the reader's doing and neither did what it was asked to, so
@@ -534,7 +534,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// denied, and the row says which of the two happened
 			// (docs/interface/principles.md#two-denials-are-not-one-denial).
 			row.State = components.ActivityDenied
-			row.Outcome = components.OutcomeStopped
+			row.Outcome = components.OutcomeCancelled
 			row.Duration = components.NoDuration
 			result = ""
 		case rc.Failed():

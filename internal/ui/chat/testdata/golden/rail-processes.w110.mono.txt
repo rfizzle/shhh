@@ -12,12 +12,12 @@
 ── layout ──────────────────────────────────────────────────
 · three processes and a round of two calls
   PROCESSES               2 running · 1 failed
-  ▸ web                      running · 12m 04s
-  ▸ watch         running · 1m 30s · container
+  ▸ web                     running… · 12m 04s
+  ▸ watch        running… · 1m 30s · container
   ✗ tests                       exited 1 · 29s
 
   CALLS                            ▸ 1 running
-  ⊘ search round limit ./inter… stopped by you
+  ⊘ search round limit ./int… cancelled by you
   ▸ run go test ./...                     8.0s
 
   CONTEXT                          32% of 128k
@@ -29,12 +29,12 @@
 
 · the same rail in 11 rows · what is static goes first
   PROCESSES               2 running · 1 failed
-  ▸ web                      running · 12m 04s
-  ▸ watch         running · 1m 30s · container
+  ▸ web                     running… · 12m 04s
+  ▸ watch        running… · 1m 30s · container
   ✗ tests                       exited 1 · 29s
 
   CALLS                            ▸ 1 running
-  ⊘ search round limit ./inter… stopped by you
+  ⊘ search round limit ./int… cancelled by you
   ▸ run go test ./...                     8.0s
 
   CONTEXT                          32% of 128k
@@ -51,12 +51,12 @@
 ── ansi ────────────────────────────────────────────────────
 · three processes and a round of two calls
   ␛[1;38;5;254mPROCESSES␛[m               ␛[38;5;244m2 running · 1 failed␛[m
-  ␛[38;5;254m▸␛[m ␛[38;5;254mweb␛[m                      ␛[38;5;244mrunning␛[m␛[38;5;244m · 12m 04s␛[m
-  ␛[38;5;254m▸␛[m ␛[38;5;254mwatch␛[m         ␛[38;5;244mrunning␛[m␛[38;5;244m · 1m 30s␛[m␛[38;5;244m · container␛[m
+  ␛[38;5;254m▸␛[m ␛[38;5;254mweb␛[m                     ␛[38;5;244mrunning…␛[m␛[38;5;244m · 12m 04s␛[m
+  ␛[38;5;254m▸␛[m ␛[38;5;254mwatch␛[m        ␛[38;5;244mrunning…␛[m␛[38;5;244m · 1m 30s␛[m␛[38;5;244m · container␛[m
   ␛[38;5;254m✗␛[m ␛[38;5;254mtests␛[m                       ␛[38;5;254mexited 1␛[m␛[38;5;244m · 29s␛[m
 
   ␛[1;38;5;254mCALLS␛[m                            ␛[38;5;254m▸␛[m␛[38;5;244m 1 running␛[m
-  ␛[38;5;244m⊘␛[m ␛[38;5;254msearch round limit ./inter…␛[m ␛[38;5;244mstopped by you␛[m
+  ␛[38;5;244m⊘␛[m ␛[38;5;254msearch round limit ./int…␛[m ␛[38;5;244mcancelled by you␛[m
   ␛[38;5;254m▸␛[m ␛[38;5;254mrun go test ./...␛[m                     ␛[38;5;244m8.0s␛[m
 
   ␛[1;38;5;254mCONTEXT␛[m                          ␛[38;5;254m32% of 128k␛[m
@@ -68,12 +68,12 @@
 
 · the same rail in 11 rows · what is static goes first
   ␛[1;38;5;254mPROCESSES␛[m               ␛[38;5;244m2 running · 1 failed␛[m
-  ␛[38;5;254m▸␛[m ␛[38;5;254mweb␛[m                      ␛[38;5;244mrunning␛[m␛[38;5;244m · 12m 04s␛[m
-  ␛[38;5;254m▸␛[m ␛[38;5;254mwatch␛[m         ␛[38;5;244mrunning␛[m␛[38;5;244m · 1m 30s␛[m␛[38;5;244m · container␛[m
+  ␛[38;5;254m▸␛[m ␛[38;5;254mweb␛[m                     ␛[38;5;244mrunning…␛[m␛[38;5;244m · 12m 04s␛[m
+  ␛[38;5;254m▸␛[m ␛[38;5;254mwatch␛[m        ␛[38;5;244mrunning…␛[m␛[38;5;244m · 1m 30s␛[m␛[38;5;244m · container␛[m
   ␛[38;5;254m✗␛[m ␛[38;5;254mtests␛[m                       ␛[38;5;254mexited 1␛[m␛[38;5;244m · 29s␛[m
 
   ␛[1;38;5;254mCALLS␛[m                            ␛[38;5;254m▸␛[m␛[38;5;244m 1 running␛[m
-  ␛[38;5;244m⊘␛[m ␛[38;5;254msearch round limit ./inter…␛[m ␛[38;5;244mstopped by you␛[m
+  ␛[38;5;244m⊘␛[m ␛[38;5;254msearch round limit ./int…␛[m ␛[38;5;244mcancelled by you␛[m
   ␛[38;5;254m▸␛[m ␛[38;5;254mrun go test ./...␛[m                     ␛[38;5;244m8.0s␛[m
 
   ␛[1;38;5;254mCONTEXT␛[m                          ␛[38;5;254m32% of 128k␛[m

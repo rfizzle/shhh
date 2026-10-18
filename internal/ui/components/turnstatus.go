@@ -148,9 +148,9 @@ type TurnStatus struct {
 // the transcript's close row is capitalised: a status line is read
 // while it happens, a row in history after the fact.
 var doneWords = map[TurnState]string{
-	TurnDone:      "done",
-	TurnCancelled: "cancelled",
-	TurnFailed:    "failed",
+	TurnDone:      StateDone.Word(),
+	TurnCancelled: StateCancelled.Word(),
+	TurnFailed:    StateFailed.Word(),
 }
 
 // doneGlyph is the resolved line's glyph and word. Both carry the outcome, so
@@ -158,11 +158,11 @@ var doneWords = map[TurnState]string{
 func (s TurnStatus) doneGlyph() (string, string, lipgloss.Style) {
 	switch s.Outcome {
 	case TurnCancelled:
-		return "⊘", doneWords[TurnCancelled], sty.dim
+		return StateCancelled.Glyph(), doneWords[TurnCancelled], sty.dim
 	case TurnFailed:
-		return "✗", doneWords[TurnFailed], sty.del
+		return StateFailed.Glyph(), doneWords[TurnFailed], sty.del
 	}
-	return "✓", doneWords[TurnDone], sty.add
+	return StateDone.Glyph(), doneWords[TurnDone], sty.add
 }
 
 // ModelWait is a request's wait as the line states it. Every field is

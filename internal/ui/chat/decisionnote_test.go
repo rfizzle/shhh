@@ -269,7 +269,7 @@ func TestApproval_CtrlCStopsTheRunNotTheRequest(t *testing.T) {
 			t.Fatalf("draft %q: the call should be abandoned by the stop, got %+v", draft, row)
 		}
 		detail := m.activityRowDetail(*row, false, m.contentWidth())
-		if detail.Outcome != components.OutcomeStopped {
+		if detail.Outcome != components.OutcomeCancelled {
 			t.Fatalf("draft %q: the row should read stopped, got %q", draft, detail.Outcome)
 		}
 		if m.pressed.openOn(armQuit, quitChord()) || m.armed.openOn(armQuit, quitChord()) {

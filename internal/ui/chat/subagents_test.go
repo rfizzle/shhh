@@ -1099,7 +1099,7 @@ func TestAgents_TheCompactRowSaysTheLanesWord(t *testing.T) {
 		name, row, word string
 	}{
 		{"writer-1", "◇ writer-1 · docs/loop.md writing", "writing"},
-		{"reader-3", "◇ reader-3 · survey internal/ui running", "running"},
+		{"reader-3", "◇ reader-3 · survey internal/ui running…", "running…"},
 	} {
 		var row string
 		for _, r := range rows {

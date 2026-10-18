@@ -14,9 +14,9 @@
 /plan · make the round limit recoverable · 2 of 4 done                                   [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-  1. ✓ Locate the round accounting  done         1 tool │ 3. Return it from runRound                   running
+  1. ✓ Locate the round accounting  done         1 tool │ 3. Return it from runRound                  running…
   2. ✗ Add a RoundsExhausted sentinel  failed    1 tool │ 
-❯ 3. ▸ Return it from runRound    running        1 tool │   touches internal/agent/loop.go
+❯ 3. ▸ Return it from runRound    running…       1 tool │   touches internal/agent/loop.go
   4. · Offer more rounds in the chat model  not started │ 
                                                         │   in the transcript · 1 tool · 1.1s
 no drift · every step so far is one the plan named, in  │   ▎✎ edit    internal/agent/…  +6 −1 · 1 hunk   1.1s
@@ -30,7 +30,7 @@ the order it named them                                 │
 
   1. ✓ Locate the round accounting  done         1 tool │ 2. Add a RoundsExhausted sentinel             failed
 ❯ 2. ✗ Add a RoundsExhausted sentinel  failed    1 tool │ 
-  3. ▸ Return it from runRound    running        1 tool │   touches internal/agent/errors.go
+  3. ▸ Return it from runRound    running…       1 tool │   touches internal/agent/errors.go
   4. · Offer more rounds in the chat model  not started │ 
                                                         │   in the transcript · 1 tool · 3.0s
 no drift · every step so far is one the plan named, in  │   ▎$ run     go test ./int…  exit 1 · 4 lines   3.0s
@@ -44,7 +44,7 @@ the order it named them                                 │
 
   1. ✓ Locate the round accounting  done         1 tool │ 4. Offer more rounds in the chat model        queued
   2. ✗ Add a RoundsExhausted sentinel  failed    1 tool │ 
-  3. ▸ Return it from runRound    running        1 tool │   touches internal/ui/chat/model.go
+  3. ▸ Return it from runRound    running…       1 tool │   touches internal/ui/chat/model.go
 ❯ 4. · Offer more rounds in the chat model  not started │ 
                                                         │   not started · nothing in the transcript has carri…
 ⚠ 1 step off the plan ("Rebuild the changeset store     │ 
@@ -58,9 +58,9 @@ from scratch")                                          │
 ␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m                                   ␛[38;5;245m[?] keys · [esc] back␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m  ␛[92mdone␛[m         ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m␛[1;97m3. Return it from runRound␛[m                   ␛[38;5;245mrunning␛[m
+  ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m  ␛[92mdone␛[m         ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m␛[1;97m3. Return it from runRound␛[m                  ␛[38;5;245mrunning…␛[m
   ␛[38;5;245m2. ␛[m␛[38;5;252m✗ Add a RoundsExhausted sentinel␛[m  ␛[91mfailed␛[m    ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m3. ▸ Return it from runRound    running        1 tool␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/agent/loop.go␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m3. ▸ Return it from runRound    running…       1 tool␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/agent/loop.go␛[m
   ␛[38;5;245m4. ␛[m␛[38;5;252m· Offer more rounds in the chat model␛[m  ␛[38;5;245mnot started␛[m␛[38;5;245m │ ␛[m
                                                        ␛[38;5;245m │ ␛[m␛[38;5;248m  in the transcript · 1 tool · 1.1s␛[m
 ␛[38;5;245mno drift · every step so far is one the plan named, in␛[m ␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/…␛[m  ␛[92m+6␛[m ␛[91m−1␛[m␛[38;5;248m · ␛[m␛[38;5;248m1 hunk␛[m   ␛[38;5;245m1.1s␛[m
@@ -74,7 +74,7 @@ from scratch")                                          │
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m  ␛[92mdone␛[m         ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m␛[1;97m2. Add a RoundsExhausted sentinel␛[m             ␛[38;5;245mfailed␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;61m2. ✗ Add a RoundsExhausted sentinel  failed    1 tool␛[m␛[38;5;245m │ ␛[m
-  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m    ␛[38;5;252mrunning␛[m        ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/agent/errors.go␛[m
+  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m    ␛[38;5;252mrunning…␛[m       ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/agent/errors.go␛[m
   ␛[38;5;245m4. ␛[m␛[38;5;252m· Offer more rounds in the chat model␛[m  ␛[38;5;245mnot started␛[m␛[38;5;245m │ ␛[m
                                                        ␛[38;5;245m │ ␛[m␛[38;5;248m  in the transcript · 1 tool · 3.0s␛[m
 ␛[38;5;245mno drift · every step so far is one the plan named, in␛[m ␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./int…␛[m  ␛[92mexit 1␛[m␛[38;5;245m · ␛[m␛[38;5;248m4 lines␛[m   ␛[38;5;245m3.0s␛[m
@@ -88,7 +88,7 @@ from scratch")                                          │
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m  ␛[92mdone␛[m         ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m␛[1;97m4. Offer more rounds in the chat model␛[m        ␛[38;5;245mqueued␛[m
   ␛[38;5;245m2. ␛[m␛[38;5;252m✗ Add a RoundsExhausted sentinel␛[m  ␛[91mfailed␛[m    ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m
-  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m    ␛[38;5;252mrunning␛[m        ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m
+  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m    ␛[38;5;252mrunning…␛[m       ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;61m4. · Offer more rounds in the chat model  not started␛[m␛[38;5;245m │ ␛[m
                                                        ␛[38;5;245m │ ␛[m␛[38;5;245m  not started · nothing in the transcript has carri…␛[m
 ␛[91m⚠ 1 step off the plan ("Rebuild the changeset store␛[m    ␛[38;5;245m │ ␛[m

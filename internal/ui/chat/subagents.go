@@ -867,13 +867,14 @@ func (m Model) renderAgentRows(width int) string {
 
 // agentRowDetail is a working child's status as its compact row says it: the
 // supervisor's words, with the lane's word for a child still working in
-// place of its `running`, so a writer says `writing` here as it does on its
-// lane one screen up. See docs/interface/surfaces.md#the-input-frame.
+// place of its `running` (the supervisor's own word, not the state table's),
+// so a writer says `writing` here as it does on its lane one screen up. See
+// docs/interface/surfaces.md#the-input-frame.
 func (m Model) agentRowDetail(st subagent.Status) string {
 	if st.State != subagent.StateRunning || st.Held {
 		return st.Detail
 	}
-	rest, ok := strings.CutPrefix(st.Detail, components.LaneWord(false))
+	rest, ok := strings.CutPrefix(st.Detail, "running")
 	if !ok || (rest != "" && !strings.HasPrefix(rest, " ")) {
 		return st.Detail
 	}

@@ -2464,7 +2464,7 @@ beside AGENTS whenever a process has been started.
 
 It is one list in two sections. **processes** has a row for each process the
 session started: its name, whether it is running or how it ended — `exited 0`,
-`exited 1`, `stopped` where the end was asked for, `killed` where a signal
+`exited 1`, `cancelled` where the end was asked for, `killed` where a signal
 nobody here sent ended it — how long it has been up or ran for, and where it
 runs, `host` or `container`. **tools** has a row for each call running now:
 a round's calls, a call you approved, a command the model ran — the tool, its

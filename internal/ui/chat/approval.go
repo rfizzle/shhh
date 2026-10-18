@@ -1339,16 +1339,11 @@ func (m Model) applyCommandEdit(card *components.ApprovalCard) {
 // with every other call that touched nothing of the workspace.
 func actGlyph(kind components.ActivityKind) string {
 	switch kind {
-	case components.ActivityCommand:
-		return "$"
-	case components.ActivityEdit:
-		return "✎"
-	case components.ActivityRemote:
-		return "⇄"
-	case components.ActivitySubagent:
-		return "◇"
+	case components.ActivityCommand, components.ActivityEdit,
+		components.ActivityRemote, components.ActivitySubagent:
+		return components.KindGlyph(kind)
 	}
-	return "⚙"
+	return components.KindGlyph(components.ActivityTool)
 }
 
 func (m Model) buildApprovalCard() *components.ApprovalCard {

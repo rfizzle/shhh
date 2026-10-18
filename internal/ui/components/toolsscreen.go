@@ -291,15 +291,15 @@ func toolsField(label, value string, width int) []string {
 func toolsGlyph(st ToolSourceState) string {
 	switch st {
 	case ToolSourceUp:
-		return "✓"
+		return StateUp.Glyph()
 	case ToolSourceBlocked:
-		return "⚠"
+		return StateBlocked.Glyph()
 	case ToolSourceOff:
-		return "⊘"
+		return StateOff.Glyph()
 	case ToolSourceStarting:
-		return "▸"
+		return StateStarting.Glyph()
 	}
-	return "✗"
+	return StateError.Glyph()
 }
 
 // toolsTone is the weight a state word carries in the list: the rail's own

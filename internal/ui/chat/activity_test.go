@@ -261,7 +261,7 @@ func TestActivityRow_CancelledReadsAsStopped(t *testing.T) {
 	m := activityModel(t)
 	view := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "write_file",
 		toolArgs: `{"path":"a.go"}`, toolResult: agent.CancelledResult}, 80))
-	for _, want := range []string{"⊘", "stopped", "—"} {
+	for _, want := range []string{"⊘", "cancelled", "—"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a cancelled call should read %q:\n%s", want, view)
 		}
@@ -994,8 +994,8 @@ func TestCommandRow_ANegativeExitCodeIsNeverPrintedAsAnExitStatus(t *testing.T) 
 		want []string
 	}{
 		{"the reader stopped it", -2,
-			commandEnd{outcome: components.OutcomeStopped},
-			[]string{"⊘", "stopped"}},
+			commandEnd{outcome: components.OutcomeCancelled},
+			[]string{"⊘", "cancelled"}},
 		{"a signal from off the machine", -9,
 			commandEnd{outcome: components.OutcomeKilled, account: components.SignalAccount(9)},
 			[]string{"✗", "killed · signal 9"}},
@@ -1050,7 +1050,7 @@ func TestCommandEnding_NamesWhatEndedTheCommand(t *testing.T) {
 	}{
 		{name: "a command that exited on its own says nothing", code: 1},
 		{name: "the reader's cancel", ctxErr: context.Canceled, code: -2,
-			want: components.OutcomeStopped},
+			want: components.OutcomeCancelled},
 		{name: "the ceiling", ctxErr: context.DeadlineExceeded, code: -9, limit: 30 * time.Second,
 			want: components.OutcomeTimedOut, account: "30s"},
 		{name: "a signal nobody here sent", code: -9,

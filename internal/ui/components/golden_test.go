@@ -268,7 +268,7 @@ func TestGolden_ActivityRows(t *testing.T) {
 			// breaks, and the number that qualifies each is the account.
 			{Label: "state · stopped by you", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "for i in 1 2 3 4; do echo round $i; sleep 1; done"
-				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeStopped, "3.7s"
+				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeCancelled, "3.7s"
 			})},
 			{Label: "state · killed from outside", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go build ./..."

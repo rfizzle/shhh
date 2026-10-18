@@ -581,7 +581,7 @@ func alertEpisodes(es []entry, flaky []alertEpisode) []alertEpisode {
 		// episode exactly as it found it, rather than overwriting the failure
 		// the run before it reported.
 		outcome := commandOutcome(e)
-		if outcome == components.OutcomeStopped {
+		if outcome == components.OutcomeCancelled {
 			continue
 		}
 		name := alertName(label)

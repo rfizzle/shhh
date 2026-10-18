@@ -79,7 +79,7 @@ func TestResolvedChecks_FailWithNoRetry(t *testing.T) {
 // turn reports nor a failure a later pass gets credit for answering.
 func TestResolvedChecks_CancelledThenPass(t *testing.T) {
 	stopped := entry{kind: entryCommand, text: "go test ./...", exitCode: -1,
-		end: commandEnd{outcome: components.OutcomeStopped}}
+		end: commandEnd{outcome: components.OutcomeCancelled}}
 	c := turnChecksRow([]entry{stopped, passingGate()}, false)
 	if c == nil || c.Failed {
 		t.Fatalf("the suite's pass is the verdict, got %+v", c)

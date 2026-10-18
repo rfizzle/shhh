@@ -228,7 +228,7 @@ func resolveChecks(es []entry) resolvedChecks {
 			case e.end.outcome != "":
 				counts = append(counts, e.end.outcome)
 				outcome = checkFailed
-				if e.end.outcome == components.OutcomeStopped {
+				if e.end.outcome == components.OutcomeCancelled {
 					outcome = checkStopped
 				}
 			case e.exitCode != 0:

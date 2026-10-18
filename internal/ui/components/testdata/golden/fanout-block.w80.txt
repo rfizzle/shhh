@@ -44,9 +44,9 @@
 · no declared step count · every lane spins
                                                                                 
   ◇ spawned 2 agents                                         in parallel · 22s  
-    ◇ researcher-1 survey the round accounting running · 4 tools · $0.01 · 22s  
+    ◇ researcher-1 survey the round accounting        running… · 4 tools · 22s  
       steered from parent                                                       
-    ◇ researcher-2 survey the fold state       running · 2 tools · $0.01 · 19s  
+    ◇ researcher-2 survey the fold state      running… · 2 tools · $0.01 · 19s  
       steered ×2 · 1 yours · last read off target                               
                                                                                 
 
@@ -55,7 +55,7 @@
   ◇ spawned 3 agents                                  2 held · 1 running · 48s  
     ◇ writer-1  docs/loop.md                    ⏸ held · 7 tools · $0.03 · 48s  
     ◇ writer-2  internal/agent/round.go         ⏸ held · 4 tools · $0.02 · 44s  
-    ◇ reader-3  survey internal/ui             running · 2 tools · $0.01 · 39s  
+    ◇ reader-3  survey internal/ui            running… · 2 tools · $0.01 · 39s  
                                                                                 
 
 · a child that delegated · its lane says how many are under it
@@ -64,7 +64,7 @@
     ◇ writer-1  docs/loop.md              ▰▰▰▱▱ 3/5 · 14 tools · $0.05 · 1m40s  
       2 agents under it                                                         
    └◇ reviewer-1a blocked · waiting approval: read interna… [f12] agents · 22s  
-   └◇ tester-1b run the package tests            running · 1 tool · $0.01 · 9s  
+   └◇ tester-1b run the package tests           running… · 1 tool · $0.01 · 9s  
     ◇ reader-2  the rails and the frame are one component         ✓ done · 55s  
                                                                                 
 
@@ -73,7 +73,7 @@
   ◇ spawned 3 agents                                       in parallel · 2m05s  
     ◇ writer-1  docs/loop.md · wire the flag   3 of 7 steps · 11 tools · 2m05s  
     ◇ writer-2  the round cap is a pause     ✓ 5 of 7 steps · 19 tools · 1m52s  
-    ◇ reader-3  survey internal/ui     running · 12% of budget · 4 tools · 58s  
+    ◇ reader-3  survey internal/ui    running… · 12% of budget · 4 tools · 58s  
                                                                                 
 
 · writers queued behind a claim · each waits for the writer it overlaps, in spawn order
@@ -136,9 +136,9 @@
 · no declared step count · every lane spins
 ␛[48;5;234m                                                                                ␛[m
 ␛[48;5;234m  ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mspawned␛[m␛[48;5;234m␛[38;5;245m 2 agents␛[m␛[48;5;234m                                         ␛[38;5;245min parallel␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m22s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mresearcher-1␛[m␛[48;5;234m ␛[38;5;245msurvey the round accounting␛[m␛[48;5;234m ␛[38;5;205mrunning␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m4 tools · $0.01␛[m␛[48;5;234m␛[38;5;245m · 22s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mresearcher-1␛[m␛[48;5;234m ␛[38;5;245msurvey the round accounting␛[m␛[48;5;234m        ␛[38;5;205mrunning…␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m4 tools␛[m␛[48;5;234m␛[38;5;245m · 22s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m      ␛[38;5;248msteered from parent␛[m␛[48;5;234m                                                       ␛[m
-␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mresearcher-2␛[m␛[48;5;234m ␛[38;5;245msurvey the fold state␛[m␛[48;5;234m       ␛[38;5;205mrunning␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m2 tools · $0.01␛[m␛[48;5;234m␛[38;5;245m · 19s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mresearcher-2␛[m␛[48;5;234m ␛[38;5;245msurvey the fold state␛[m␛[48;5;234m      ␛[38;5;205mrunning…␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m2 tools · $0.01␛[m␛[48;5;234m␛[38;5;245m · 19s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m      ␛[38;5;248msteered ×2 · 1 yours · last read off target␛[m␛[48;5;234m                               ␛[m
 ␛[48;5;234m                                                                                ␛[m
 
@@ -147,7 +147,7 @@
 ␛[48;5;234m  ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mspawned␛[m␛[48;5;234m␛[38;5;245m 3 agents␛[m␛[48;5;234m                                  ␛[38;5;245m2 held␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m1 running␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m48s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;245m◇␛[m␛[48;5;234m ␛[38;5;252mwriter-1␛[m␛[48;5;234m  ␛[38;5;245mdocs/loop.md␛[m␛[48;5;234m                    ␛[38;5;245m⏸ held␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m7 tools · $0.03␛[m␛[48;5;234m␛[38;5;245m · 48s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;245m◇␛[m␛[48;5;234m ␛[38;5;252mwriter-2␛[m␛[48;5;234m  ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m         ␛[38;5;245m⏸ held␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m4 tools · $0.02␛[m␛[48;5;234m␛[38;5;245m · 44s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mreader-3␛[m␛[48;5;234m  ␛[38;5;245msurvey internal/ui␛[m␛[48;5;234m             ␛[38;5;205mrunning␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m2 tools · $0.01␛[m␛[48;5;234m␛[38;5;245m · 39s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mreader-3␛[m␛[48;5;234m  ␛[38;5;245msurvey internal/ui␛[m␛[48;5;234m            ␛[38;5;205mrunning…␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m2 tools · $0.01␛[m␛[48;5;234m␛[38;5;245m · 39s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                ␛[m
 
 · a child that delegated · its lane says how many are under it
@@ -156,7 +156,7 @@
 ␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mwriter-1␛[m␛[48;5;234m  ␛[38;5;245mdocs/loop.md␛[m␛[48;5;234m              ␛[94m▰▰▰␛[m␛[48;5;234m␛[38;5;245m▱▱␛[m␛[48;5;234m ␛[38;5;245m3/5␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m14 tools · $0.05␛[m␛[48;5;234m␛[38;5;245m · 1m40s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m      ␛[38;5;248m2 agents under it␛[m␛[48;5;234m                                                         ␛[m
 ␛[48;5;234m   ␛[38;5;248m└␛[m␛[48;5;234m␛[91m◇␛[m␛[48;5;234m ␛[38;5;252mreviewer-1a␛[m␛[48;5;234m ␛[91mblocked␛[m␛[48;5;234m␛[38;5;245m · waiting approval: read interna…␛[m␛[48;5;234m ␛[38;5;103m[f12]␛[m␛[48;5;234m␛[38;5;245m agents␛[m␛[48;5;234m␛[38;5;245m · 22s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m   ␛[38;5;248m└␛[m␛[48;5;234m␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mtester-1b␛[m␛[48;5;234m ␛[38;5;245mrun the package tests␛[m␛[48;5;234m            ␛[38;5;205mrunning␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m1 tool · $0.01␛[m␛[48;5;234m␛[38;5;245m · 9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m   ␛[38;5;248m└␛[m␛[48;5;234m␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mtester-1b␛[m␛[48;5;234m ␛[38;5;245mrun the package tests␛[m␛[48;5;234m           ␛[38;5;205mrunning…␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m1 tool · $0.01␛[m␛[48;5;234m␛[38;5;245m · 9s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[92m◇␛[m␛[48;5;234m ␛[38;5;252mreader-2␛[m␛[48;5;234m  ␛[38;5;245mthe rails and the frame are one component␛[m␛[48;5;234m         ␛[92m✓ done␛[m␛[48;5;234m␛[38;5;245m · 55s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                ␛[m
 
@@ -165,7 +165,7 @@
 ␛[48;5;234m  ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mspawned␛[m␛[48;5;234m␛[38;5;245m 3 agents␛[m␛[48;5;234m                                       ␛[38;5;245min parallel␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m2m05s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mwriter-1␛[m␛[48;5;234m  ␛[38;5;245mdocs/loop.md · wire the flag␛[m␛[48;5;234m   ␛[38;5;245m3 of 7 steps␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m11 tools␛[m␛[48;5;234m␛[38;5;245m · 2m05s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[92m◇␛[m␛[48;5;234m ␛[38;5;252mwriter-2␛[m␛[48;5;234m  ␛[38;5;245mthe round cap is a pause␛[m␛[48;5;234m     ␛[92m✓ 5 of 7 steps␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m19 tools␛[m␛[48;5;234m␛[38;5;245m · 1m52s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mreader-3␛[m␛[48;5;234m  ␛[38;5;245msurvey internal/ui␛[m␛[48;5;234m     ␛[38;5;205mrunning␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m12% of budget␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m4 tools␛[m␛[48;5;234m␛[38;5;245m · 58s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[94m◇␛[m␛[48;5;234m ␛[38;5;252mreader-3␛[m␛[48;5;234m  ␛[38;5;245msurvey internal/ui␛[m␛[48;5;234m    ␛[38;5;205mrunning…␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m12% of budget␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m4 tools␛[m␛[48;5;234m␛[38;5;245m · 58s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                ␛[m
 
 · writers queued behind a claim · each waits for the writer it overlaps, in spawn order

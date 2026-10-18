@@ -101,7 +101,7 @@ func TestApprovalCard_ADryRunStoppedOnTheManagerSaysSo(t *testing.T) {
 		t.Fatalf("the row should read stopped by you, got %+v", rows)
 	}
 	done := drainDryRun(t, cmd)
-	if done.result.Outcome != tools.ExecStopped || done.end.outcome != components.OutcomeStopped {
+	if done.result.Outcome != tools.ExecStopped || done.end.outcome != components.OutcomeCancelled {
 		t.Fatalf("the dry run should end stopped, got %+v", done)
 	}
 	if got := tools.FormatExecResult(done.result); !strings.HasPrefix(got, "error: command was stopped before it finished") {
@@ -115,7 +115,7 @@ func TestApprovalCard_ADryRunStoppedOnTheManagerSaysSo(t *testing.T) {
 	if view := m.View().Content; !strings.Contains(view, "command was stopped before it finished") {
 		t.Fatalf("the screen should carry the sentence:\n%s", view)
 	}
-	if got := m.activityRowFor(m.transcript[len(m.transcript)-1]).Outcome; got != "stopped · local · container" {
+	if got := m.activityRowFor(m.transcript[len(m.transcript)-1]).Outcome; got != "cancelled · local · container" {
 		t.Fatalf("outcome = %q", got)
 	}
 }

@@ -126,11 +126,11 @@ type RecoveryRow struct {
 func (r RecoveryRow) glyph() string {
 	switch r.State {
 	case RecoveryStalled:
-		return sty.accent.Render("⚠") + " "
+		return StateStalled.Mark() + " "
 	case RecoveryStopped:
-		return sty.dim.Render("⊘") + " "
+		return StateCancelled.Mark() + " "
 	}
-	return sty.err.Render("✗") + " "
+	return StateFailed.Mark() + " "
 }
 
 // target assembles the growing field: the subject in body text, the qualifier

@@ -15,7 +15,7 @@
 
 
 · a sandbox session · the dry run stopped from the manager
-  ▎⊘ run     rsync --dry-run --delete src/ …  stopped · local · container
+  ▎⊘ run     rsync --dry-run --delete src…  cancelled · local · container
 
 
 · a host session · the dry run says only that it stayed local
@@ -28,7 +28,7 @@
 
 
 · a sandbox session · the dry run stopped from the manager
-  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mrun␛[m     ␛[38;5;244mrsync --dry-run --delete src/ …␛[m  ␛[38;5;244mstopped · local · container␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mrun␛[m     ␛[38;5;244mrsync --dry-run --delete src…␛[m  ␛[38;5;244mcancelled · local · container␛[m
 
 
 · a host session · the dry run says only that it stayed local

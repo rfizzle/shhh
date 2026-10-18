@@ -15,12 +15,12 @@
 ────────────────────────────────────────────────────────────────────────────
 
 processes
-❯ ▸ web  running · 12m 04s · host                                           
-  ▸ watch  running · 1m 30s · container
+❯ ▸ web  running… · 12m 04s · host                                          
+  ▸ watch  running… · 1m 30s · container
   ✗ tests  exited 1 · 29s · host
 tools · nothing running
 ────────────────────────────────────────────────────────────────────────────
-web                                                                  running
+web                                                                 running…
 
   command     npm run dev
   up          12m 04s
@@ -34,12 +34,12 @@ web                                                                  running
 ────────────────────────────────────────────────────────────────────────────
 
 processes
-❯ ▸ web  running · 12m 04s · host                                           
-  ▸ watch  running · 1m 30s · container
+❯ ▸ web  running… · 12m 04s · host                                          
+  ▸ watch  running… · 1m 30s · container
   ✗ tests  exited 1 · 29s · host
 tools · nothing running
 ────────────────────────────────────────────────────────────────────────────
-web                                                                  running
+web                                                                 running…
 
   command     npm run dev
   up          12m 04s
@@ -52,7 +52,7 @@ stop the process web?  [y] stop · [k] kill
 /ps · 2 processes running · 0 calls running            [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────
 
-web                                                                  running
+web                                                                 running…
 
   command     npm run dev
   up          12m 04s
@@ -74,14 +74,14 @@ web                                                                  running
 ────────────────────────────────────────────────────────────────────────────
 
 processes
-  ▸ web  running · 12m 04s · host
-  ▸ watch  running · 1m 30s · container
+  ▸ web  running… · 12m 04s · host
+  ▸ watch  running… · 1m 30s · container
   ✗ tests  exited 1 · 29s · host
 tools
-❯ ⊘ search  stopped by you · 41s · host                                     
-  ▸ execute_command  running · 8.0s · container
+❯ ⊘ search  cancelled by you · 41s · host                                   
+  ▸ execute_command  running… · 8.0s · container
 ────────────────────────────────────────────────────────────────────────────
-search                                                        stopped by you
+search                                                      cancelled by you
 
   call        search round limit ./internal/agent
   ran for     41s
@@ -93,7 +93,7 @@ search                                                        stopped by you
 /ps · 2 processes running · 1 call running             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────
 
-execute_command                                                      running
+execute_command                                                     running…
 
   call        run go test ./...
   running for 8.0s
@@ -120,12 +120,12 @@ ps · [esc] back to the prompt
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254mprocesses␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ web  running · 12m 04s · host                                           ␛[m
-  ␛[38;5;254m▸ watch␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m 30s␛[m␛[38;5;244m · container␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ web  running… · 12m 04s · host                                          ␛[m
+  ␛[38;5;254m▸ watch␛[m  ␛[38;5;254mrunning…␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m 30s␛[m␛[38;5;244m · container␛[m
   ␛[38;5;254m✗ tests␛[m  ␛[38;5;254mexited 1␛[m␛[38;5;244m · ␛[m␛[38;5;244m29s␛[m␛[38;5;244m · host␛[m
 ␛[1;38;5;254mtools · nothing running␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;38;5;254mweb␛[m                                                                  ␛[38;5;244mrunning␛[m
+␛[1;38;5;254mweb␛[m                                                                 ␛[38;5;244mrunning…␛[m
 
   ␛[38;5;244mcommand     ␛[m␛[38;5;254mnpm run dev␛[m
   ␛[38;5;244mup          ␛[m␛[38;5;254m12m 04s␛[m
@@ -139,12 +139,12 @@ ps · [esc] back to the prompt
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254mprocesses␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ web  running · 12m 04s · host                                           ␛[m
-  ␛[38;5;254m▸ watch␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m 30s␛[m␛[38;5;244m · container␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ web  running… · 12m 04s · host                                          ␛[m
+  ␛[38;5;254m▸ watch␛[m  ␛[38;5;254mrunning…␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m 30s␛[m␛[38;5;244m · container␛[m
   ␛[38;5;254m✗ tests␛[m  ␛[38;5;254mexited 1␛[m␛[38;5;244m · ␛[m␛[38;5;244m29s␛[m␛[38;5;244m · host␛[m
 ␛[1;38;5;254mtools · nothing running␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;38;5;254mweb␛[m                                                                  ␛[38;5;244mrunning␛[m
+␛[1;38;5;254mweb␛[m                                                                 ␛[38;5;244mrunning…␛[m
 
   ␛[38;5;244mcommand     ␛[m␛[38;5;254mnpm run dev␛[m
   ␛[38;5;244mup          ␛[m␛[38;5;254m12m 04s␛[m
@@ -157,7 +157,7 @@ ps · [esc] back to the prompt
 ␛[1;38;5;254m/ps␛[m␛[38;5;244m · 2 processes running␛[m␛[38;5;244m · 0 calls running␛[m            ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254mweb␛[m                                                                  ␛[38;5;244mrunning␛[m
+␛[1;38;5;254mweb␛[m                                                                 ␛[38;5;244mrunning…␛[m
 
   ␛[38;5;244mcommand     ␛[m␛[38;5;254mnpm run dev␛[m
   ␛[38;5;244mup          ␛[m␛[38;5;254m12m 04s␛[m
@@ -179,14 +179,14 @@ ps · [esc] back to the prompt
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254mprocesses␛[m
-  ␛[38;5;254m▸ web␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m12m 04s␛[m␛[38;5;244m · host␛[m
-  ␛[38;5;254m▸ watch␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m 30s␛[m␛[38;5;244m · container␛[m
+  ␛[38;5;254m▸ web␛[m  ␛[38;5;254mrunning…␛[m␛[38;5;244m · ␛[m␛[38;5;244m12m 04s␛[m␛[38;5;244m · host␛[m
+  ␛[38;5;254m▸ watch␛[m  ␛[38;5;254mrunning…␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m 30s␛[m␛[38;5;244m · container␛[m
   ␛[38;5;254m✗ tests␛[m  ␛[38;5;254mexited 1␛[m␛[38;5;244m · ␛[m␛[38;5;244m29s␛[m␛[38;5;244m · host␛[m
 ␛[1;38;5;254mtools␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⊘ search  stopped by you · 41s · host                                     ␛[m
-  ␛[38;5;254m▸ execute_command␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m8.0s␛[m␛[38;5;244m · container␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⊘ search  cancelled by you · 41s · host                                   ␛[m
+  ␛[38;5;254m▸ execute_command␛[m  ␛[38;5;254mrunning…␛[m␛[38;5;244m · ␛[m␛[38;5;244m8.0s␛[m␛[38;5;244m · container␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;38;5;254msearch␛[m                                                        ␛[38;5;244mstopped by you␛[m
+␛[1;38;5;254msearch␛[m                                                      ␛[38;5;244mcancelled by you␛[m
 
   ␛[38;5;244mcall        ␛[m␛[38;5;254msearch round limit ./internal/agent␛[m
   ␛[38;5;244mran for     ␛[m␛[38;5;254m41s␛[m
@@ -198,7 +198,7 @@ ps · [esc] back to the prompt
 ␛[1;38;5;254m/ps␛[m␛[38;5;244m · 2 processes running␛[m␛[38;5;244m · 1 call running␛[m             ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254mexecute_command␛[m                                                      ␛[38;5;244mrunning␛[m
+␛[1;38;5;254mexecute_command␛[m                                                     ␛[38;5;244mrunning…␛[m
 
   ␛[38;5;244mcall        ␛[m␛[38;5;254mrun go test ./...␛[m
   ␛[38;5;244mrunning for ␛[m␛[38;5;254m8.0s␛[m

@@ -114,13 +114,13 @@ func (r InspectorRail) processesBlock(width int) (railBlock, bool) {
 func processTone(p InspectorProcess) (string, lipgloss.Style) {
 	switch {
 	case p.Running:
-		return sty.spinText.Render("▸"), sty.dim
+		return StateRunning.Mark(), sty.dim
 	case p.Failed:
-		return sty.err.Render("✗"), sty.body
+		return StateFailed.Mark(), sty.body
 	case p.Ended:
-		return sty.add.Render("✓"), sty.dim
+		return StateDone.Mark(), sty.dim
 	}
-	return sty.dim.Render("⊘"), sty.dim
+	return StateCancelled.Mark(), sty.dim
 }
 
 // callsBlock is CALLS: the calls of the round in flight, one row each, drawn
@@ -136,7 +136,7 @@ func (r InspectorRail) callsBlock(width int) (railBlock, bool) {
 			running++
 		}
 	}
-	meta := sty.spinText.Render("▸") + sty.dim.Render(fmt.Sprintf(" %d running", running))
+	meta := StateRunning.Mark() + sty.dim.Render(fmt.Sprintf(" %d running", running))
 	if running == 0 {
 		meta = sty.dim.Render(fmt.Sprintf("%d stopped", len(r.Calls)))
 	}
@@ -160,7 +160,7 @@ func (r InspectorRail) callsBlock(width int) (railBlock, bool) {
 	for _, c := range r.Calls {
 		glyph, right := sty.spinText.Render("▸"), sty.dim.Render(FormatElapsed(c.Age))
 		if c.Stopped {
-			glyph, right = sty.dim.Render("⊘"), sty.dim.Render("stopped by you")
+			glyph, right = StateCancelled.Mark(), sty.dim.Render(StateCancelled.WordBy("you"))
 		}
 		// The receipt's title says what the call does in its own verb, which
 		// is the tool's name said as an act; the bare name is the fallback.

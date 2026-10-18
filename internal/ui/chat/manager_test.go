@@ -94,7 +94,7 @@ func TestProgram_TheManagerStopsAProcess(t *testing.T) {
 	waitForText(t, tm, "stop the process web?")
 	tm.Send(letter('y'))
 	waitForText(t, tm, "1 process running")
-	frameHas(t, finalFrame(t, tm), "stopped")
+	frameHas(t, finalFrame(t, tm), "cancelled")
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if len(h.stopped) != 1 || h.stopped[0] != "web" {
@@ -149,7 +149,7 @@ func TestProgram_TheManagerStopsOneCallAndTheRoundGoesOn(t *testing.T) {
 	case <-time.After(factBound):
 		t.Fatal("the stop did not reach the one call")
 	}
-	waitForText(t, tm, "stopped by you")
+	waitForText(t, tm, "cancelled by you")
 	close(release)
 	tm.Send(keyEsc)
 	waitForText(t, tm, "The round went on.")
@@ -311,7 +311,7 @@ func TestManager_StopsAProcess(t *testing.T) {
 	m, _ = onManager(t, m)
 	next, _ := m.Update(msg)
 	m = next.(Model)
-	if view := managerView(m); !strings.Contains(view, "stopped") {
+	if view := managerView(m); !strings.Contains(view, "cancelled") {
 		t.Errorf("the stopped process should read stopped:\n%s", view)
 	}
 	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySystem || !strings.Contains(last.text, "process web: exited") {

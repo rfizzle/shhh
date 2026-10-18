@@ -154,15 +154,15 @@ func (m Model) liveTodoRunBlock(blocks []transcriptBlock) int {
 func runRowGlyph(mark runMark) string {
 	switch mark {
 	case runPassed:
-		return sty.Step.Done.Render("✓")
+		return components.StateDone.Mark()
 	case runLive:
-		return sty.Step.Run.Render("▸")
+		return components.StateRunning.Mark()
 	case runStopped:
-		return sty.Step.Fail.Render("✗")
+		return components.StateFailed.Mark()
 	case runRestored:
-		return sty.Step.Dim.Render("↺")
+		return components.StateRestored.Mark()
 	}
-	return sty.Step.Dim.Render("·")
+	return components.StateQueued.Mark()
 }
 
 // outcome is what the row's stats field states: where the run is, in the
@@ -186,13 +186,13 @@ func (r *todoRunRow) outcome() string {
 func (r *todoRunRow) glyph() string {
 	switch {
 	case r.st.Stage == run.StageBlocked:
-		return sty.Step.Fail.Render("✗")
+		return components.StateFailed.Mark()
 	case r.st.Stage == run.StageDone:
-		return sty.Step.Done.Render("✓")
+		return components.StateDone.Mark()
 	case r.closed != "", r.st.Paused != "":
-		return sty.Step.Dim.Render("·")
+		return components.StateQueued.Mark()
 	}
-	return sty.Step.Run.Render("▸")
+	return components.StateRunning.Mark()
 }
 
 // elapsed is the run's span as of its last transition, in the whole-turn

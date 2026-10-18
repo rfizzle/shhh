@@ -86,7 +86,7 @@
     … 2 more lines
 
 · state · stopped by you
-  ▎⊘ run     for i in 1 2 3 4; do echo round $i; sleep 1; done                                  stopped   3.7s
+  ▎⊘ run     for i in 1 2 3 4; do echo round $i; sleep 1; done                                cancelled   3.7s
 
 · state · killed from outside
   ▎✗ run     go build ./...                                                           killed · signal 9    41s
@@ -192,7 +192,7 @@
     ␛[38;5;244m… 2 more lines␛[m
 
 · state · stopped by you
-  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mrun␛[m     ␛[38;5;244mfor i in 1 2 3 4; do echo round $i; sleep 1; done␛[m                                  ␛[38;5;244mstopped␛[m   ␛[38;5;244m3.7s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mrun␛[m     ␛[38;5;244mfor i in 1 2 3 4; do echo round $i; sleep 1; done␛[m                                ␛[38;5;244mcancelled␛[m   ␛[38;5;244m3.7s␛[m
 
 · state · killed from outside
   ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo build ./...␛[m                                                           ␛[38;5;254mkilled␛[m␛[38;5;244m · ␛[m␛[38;5;244msignal 9␛[m    ␛[38;5;244m41s␛[m

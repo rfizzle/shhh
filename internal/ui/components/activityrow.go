@@ -94,11 +94,12 @@ const (
 // act is: nothing, wait for the machine, raise the ceiling, or look at what
 // the command left behind (docs/interface/principles.md#closed-vocabularies).
 const (
-	// OutcomeStopped is the reader's own cancel — the chord, the quit, a
+	// OutcomeCancelled is the reader's own cancel — the chord, the quit, a
 	// session boundary that took the command with it. It is their decision
 	// and not a break, so the row carries it as quietly as `denied · you`
-	// (docs/interface/principles.md#two-denials-are-not-one-denial).
-	OutcomeStopped = "stopped"
+	// (docs/interface/principles.md#two-denials-are-not-one-denial). It is
+	// the state table's word for cancelled and the only spelling of it.
+	OutcomeCancelled = "cancelled"
 	// OutcomeKilled is a signal nobody in this session sent: the OOM killer,
 	// an operator, a supervisor above the session. Which signal is the
 	// account beside it, because that is the whole of what a reader can act
@@ -116,7 +117,7 @@ const (
 	// OutcomeDidNotComplete is a command that ran and whose ending nobody
 	// could read: the wait itself failed, so there is no status and no signal
 	// to name it by. It is its own word because every neighbour would be a
-	// claim the row cannot make — `stopped` says somebody stopped it,
+	// claim the row cannot make — `cancelled` says somebody stopped it,
 	// `killed` names a signal that was never seen, and `did not start` is
 	// untrue of a command whose output is right there under the row.
 	OutcomeDidNotComplete = "did not complete"
@@ -126,16 +127,16 @@ const (
 // own. A negative code is not one — no program returns -1; it is what Go
 // reports for a process a signal ended, and what internal/runner passes on —
 // so it is never rendered as an exit status. A caller that knows what ended
-// the command says so with one of the words above: `stopped`, `killed` and
+// the command says so with one of the words above: `cancelled`, `killed` and
 // `timed out` for the three things that end a command, and the fourth
 // reading, `did not complete`, for a command whose ending nobody could read
 // at all — which is only knowable from the typed result, never from the
 // code, since the code is the same -1 either way. One that has only the code
-// left gets `stopped`, which is the reading true of the first three: a
+// left gets `cancelled`, which is the reading true of the first three: a
 // command that stopped rather than a command that failed.
 func OutcomeExit(code int) string {
 	if code < 0 {
-		return OutcomeStopped
+		return OutcomeCancelled
 	}
 	return "exit " + strconv.Itoa(code)
 }
@@ -373,7 +374,7 @@ func (r ActivityRow) pointer() string {
 // the same one.
 func (r ActivityRow) runningGlyph() string {
 	if !r.Spin {
-		return "▸"
+		return StateRunning.Glyph()
 	}
 	return Spinner{Frame: r.Frame}.Glyph()
 }
@@ -415,20 +416,7 @@ var kindGlyphs = [...]glyphRow{
 	activityThink:      {"✻", dimTone, "the model writing its calls, counted as they arrive"},
 	ActivityReport:     {"⛁", dimTone, "a published report page"},
 	ActivitySummary:    {"≡", dimTone, "a reading of the session"},
-	ActivityCompaction: {"✓", func(s styles) lipgloss.Style { return s.add }, "a compaction that brought the window back"},
-}
-
-// stateGlyphs is the states worth a glyph of their own, each overriding the
-// kind glyph. A row that simply finished is ActivityDone and has no mark
-// here, so `$`, `⚙` and `✎` stay visible on the rows that succeeded.
-var stateGlyphs = [...]glyphRow{
-	ActivityQueued:   {"·", dimTone, "accepted, not started"},
-	ActivityRunning:  {"▸", spinTone, "running"},
-	ActivityChecking: {"✦", spinTone, "the classifier is deciding"},
-	ActivityFailed:   {"✗", func(s styles) lipgloss.Style { return s.err }, "failed"},
-	// A refusal a rule made is painted del and yours dim. The mark is the
-	// same, so the legend says both.
-	ActivityDenied: {"⊘", dimTone, "refused: dim by you, red by a rule"},
+	ActivityCompaction: {stateTable[StateDone].mark, addTone, "a compaction that brought the window back"},
 }
 
 // glyph renders the 2-column glyph field: the state where it overrides, the
@@ -439,9 +427,9 @@ func (r ActivityRow) glyph() string {
 	case r.State == ActivityRunning:
 		g = spinTone(sty).Render(r.runningGlyph())
 	case r.State == ActivityDenied && r.ByRule:
-		g = sty.del.Render(stateGlyphs[ActivityDenied].mark)
-	case r.State != ActivityDone && int(r.State) < len(stateGlyphs):
-		g = stateGlyphs[r.State].render()
+		g = sty.del.Render(StateDenied.Glyph())
+	case r.State != ActivityDone && r.State.state() != StateOK:
+		g = r.State.state().Mark()
 	case int(r.Kind) < len(kindGlyphs):
 		g = kindGlyphs[r.Kind].render()
 	default:
@@ -456,21 +444,25 @@ func (g glyphRow) render() string { return g.tone(sty).Render(g.mark) }
 // glyphLegend is the glyph table as the key list draws it under a surface's
 // keys: one row per glyph, painted as the grid paints it, with its meaning
 // beside it — the kinds of act in the order they are declared, then the
-// states that override them. Words too long for the width fold onto the next
+// states that override them, from the state table. Words too long for the width fold onto the next
 // row rather than being cut (docs/interface/principles.md#fold-never-hide).
 func glyphLegend(width int) []string {
 	rows := []string{sty.dim.Render(Clip("glyphs", width))}
-	for _, set := range [][]glyphRow{kindGlyphs[:], stateGlyphs[ActivityQueued:]} {
-		for _, g := range set {
-			lead := g.render() + "  "
-			pad := strings.Repeat(" ", lipgloss.Width(lead))
-			room := max(width-lipgloss.Width(lead), 1)
-			for i, line := range strings.Split(lipgloss.Wrap(g.means, room, ""), "\n") {
-				if i > 0 {
-					lead = pad
-				}
-				rows = append(rows, lead+sty.dim.Render(line))
+	var set []glyphRow
+	set = append(set, kindGlyphs[:]...)
+	for _, st := range stateLegend {
+		row := stateTable[st]
+		set = append(set, glyphRow{row.mark, row.tone, row.means})
+	}
+	for _, g := range set {
+		lead := g.render() + "  "
+		pad := strings.Repeat(" ", lipgloss.Width(lead))
+		room := max(width-lipgloss.Width(lead), 1)
+		for i, line := range strings.Split(lipgloss.Wrap(g.means, room, ""), "\n") {
+			if i > 0 {
+				lead = pad
 			}
+			rows = append(rows, lead+sty.dim.Render(line))
 		}
 	}
 	return rows

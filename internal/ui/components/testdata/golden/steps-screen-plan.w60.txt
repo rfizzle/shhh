@@ -16,10 +16,10 @@
 
   1. ✓ Locate the round accounting   done             1 tool
   2. ✗ Add a RoundsExhausted sentinel  failed         1 tool
-❯ 3. ▸ Return it from runRound       running          1 tool
+❯ 3. ▸ Return it from runRound       running…         1 tool
   4. · Offer more rounds in the chat model       not started
 ────────────────────────────────────────────────────────────
-3. Return it from runRound                           running
+3. Return it from runRound                          running…
 
   touches internal/agent/loop.go
 
@@ -33,7 +33,7 @@
 
   1. ✓ Locate the round accounting   done             1 tool
 ❯ 2. ✗ Add a RoundsExhausted sentinel  failed         1 tool
-  3. ▸ Return it from runRound       running          1 tool
+  3. ▸ Return it from runRound       running…         1 tool
   4. · Offer more rounds in the chat model       not started
 ────────────────────────────────────────────────────────────
 2. Add a RoundsExhausted sentinel                     failed
@@ -50,7 +50,7 @@
 
   1. ✓ Locate the round accounting   done             1 tool
   2. ✗ Add a RoundsExhausted sentinel  failed         1 tool
-  3. ▸ Return it from runRound       running          1 tool
+  3. ▸ Return it from runRound       running…         1 tool
 ❯ 4. · Offer more rounds in the chat model       not started
 ────────────────────────────────────────────────────────────
 4. Offer more rounds in the chat model                queued
@@ -68,10 +68,10 @@
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m   ␛[92mdone␛[m             ␛[38;5;252m1 tool␛[m
   ␛[38;5;245m2. ␛[m␛[38;5;252m✗ Add a RoundsExhausted sentinel␛[m  ␛[91mfailed␛[m         ␛[38;5;252m1 tool␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m3. ▸ Return it from runRound       running          1 tool␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m3. ▸ Return it from runRound       running…         1 tool␛[m
   ␛[38;5;245m4. ␛[m␛[38;5;252m· Offer more rounds in the chat model␛[m       ␛[38;5;245mnot started␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
-␛[1;97m3. Return it from runRound␛[m                           ␛[38;5;245mrunning␛[m
+␛[1;97m3. Return it from runRound␛[m                          ␛[38;5;245mrunning…␛[m
 
   ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/agent/loop.go␛[m
 
@@ -85,7 +85,7 @@
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m   ␛[92mdone␛[m             ␛[38;5;252m1 tool␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;61m2. ✗ Add a RoundsExhausted sentinel  failed         1 tool␛[m
-  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m       ␛[38;5;252mrunning␛[m          ␛[38;5;252m1 tool␛[m
+  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m       ␛[38;5;252mrunning…␛[m         ␛[38;5;252m1 tool␛[m
   ␛[38;5;245m4. ␛[m␛[38;5;252m· Offer more rounds in the chat model␛[m       ␛[38;5;245mnot started␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 ␛[1;97m2. Add a RoundsExhausted sentinel␛[m                     ␛[38;5;245mfailed␛[m
@@ -102,7 +102,7 @@
 
   ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m   ␛[92mdone␛[m             ␛[38;5;252m1 tool␛[m
   ␛[38;5;245m2. ␛[m␛[38;5;252m✗ Add a RoundsExhausted sentinel␛[m  ␛[91mfailed␛[m         ␛[38;5;252m1 tool␛[m
-  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m       ␛[38;5;252mrunning␛[m          ␛[38;5;252m1 tool␛[m
+  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m       ␛[38;5;252mrunning…␛[m         ␛[38;5;252m1 tool␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;61m4. · Offer more rounds in the chat model       not started␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 ␛[1;97m4. Offer more rounds in the chat model␛[m                ␛[38;5;245mqueued␛[m

@@ -433,11 +433,11 @@ func (c StepCard) glyph() string {
 	switch c.State {
 	case ActivityDenied:
 		if c.ByRule {
-			return sty.del.Render(stateGlyphs[ActivityDenied].mark)
+			return sty.del.Render(StateDenied.Glyph())
 		}
-		return stateGlyphs[ActivityDenied].render()
+		return StateDenied.Mark()
 	case ActivityFailed, ActivityQueued, ActivityChecking:
-		return stateGlyphs[c.State].render()
+		return c.State.state().Mark()
 	}
 	if c.Kind == ActivityTool {
 		return sty.accent.Render(kindGlyphs[ActivityTool].mark)
@@ -543,11 +543,11 @@ func stepStripRun(cells []StripCell, room int) string {
 func stripCell(cell StripCell) string {
 	switch cell.State {
 	case ActivityFailed:
-		return sty.del.Render(stateGlyphs[ActivityFailed].mark)
+		return sty.del.Render(StateFailed.Glyph())
 	case ActivityDenied:
-		return stateGlyphs[ActivityDenied].render()
+		return StateDenied.Mark()
 	case ActivityRunning:
-		return sty.spinText.Render(stateGlyphs[ActivityRunning].mark)
+		return StateRunning.Mark()
 	}
 	if int(cell.Kind) < len(kindGlyphs) && cell.Kind != ActivityTool {
 		return kindGlyphs[cell.Kind].render()

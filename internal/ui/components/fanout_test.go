@@ -900,7 +900,7 @@ func TestFanout_ARunningLaneIsStatic(t *testing.T) {
 		{"a writer", FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
 			Writes: true, Elapsed: "41s"}, "◇ writer-1 docs/loop.md writing · 41s"},
 		{"a reader", FanoutLane{State: FanoutRunning, Name: "reader-3", Task: "survey internal/ui",
-			Tools: 2, Elapsed: "39s"}, "◇ reader-3 survey internal/ui running · 2 tools · 39s"},
+			Tools: 2, Elapsed: "39s"}, "◇ reader-3 survey internal/ui running… · 2 tools · 39s"},
 		{"a declared count", FanoutLane{State: FanoutRunning, Name: "writer-2", Task: "internal/agent/round.go",
 			Writes: true, Step: 2, Steps: 5, Elapsed: "1m10s"}, "◇ writer-2 internal/agent/round.go ▰▰▱▱▱ 2/5 · 1m10s"},
 		{"a blocked child", FanoutLane{State: FanoutBlocked, Name: "writer-3", Waiting: "approve a write",

@@ -786,7 +786,7 @@ func TestInspectorAlerts_AStoppedRunNeitherRaisesNorClears(t *testing.T) {
 	m.turnCount = 2
 	m.appendEntry(entry{kind: entryUser, text: "try again"})
 	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: -1,
-		end: commandEnd{outcome: components.OutcomeStopped}})
+		end: commandEnd{outcome: components.OutcomeCancelled}})
 	live := m.inspectorAlerts().Live()
 	if len(live) != 1 || live[0].Turn != 1 {
 		t.Fatalf("a cancelled run answers nothing: %+v", live)
@@ -799,7 +799,7 @@ func TestInspectorAlerts_AStoppedRunNeitherRaisesNorClears(t *testing.T) {
 	// nothing about it at all.
 	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 2})
 	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: -1,
-		end: commandEnd{outcome: components.OutcomeStopped}})
+		end: commandEnd{outcome: components.OutcomeCancelled}})
 	live = m.inspectorAlerts().Live()
 	if len(live) != 2 {
 		t.Fatalf("a stop cannot take a standing failure off the rail: %+v", live)

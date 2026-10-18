@@ -152,13 +152,13 @@ func ToolSourceWord(s ToolSourceState) string {
 func toolSourceTone(s ToolSourceState) (string, string, lipgloss.Style) {
 	switch s {
 	case ToolSourceUp:
-		return sty.add.Render("✓"), "up", sty.dim
+		return StateUp.Mark(), StateUp.Word(), sty.dim
 	case ToolSourceBlocked:
-		return sty.accent.Render("⚠"), "blocked", sty.body
+		return StateBlocked.Mark(), StateBlocked.Word(), sty.body
 	case ToolSourceOff:
-		return sty.dim.Render("⊘"), "off", sty.dim
+		return StateOff.Mark(), StateOff.Word(), sty.dim
 	case ToolSourceStarting:
-		return sty.spinText.Render("▸"), "starting", sty.dim
+		return StateStarting.Mark(), StateStarting.Word(), sty.dim
 	}
-	return sty.err.Render("✗"), "error", sty.body
+	return StateError.Mark(), StateError.Word(), sty.body
 }

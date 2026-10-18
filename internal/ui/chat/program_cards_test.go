@@ -113,10 +113,10 @@ func TestProgram_TheCancelChordStopsARunningCommand(t *testing.T) {
 	<-started
 	waitForText(t, tm, "running…")
 	tm.Send(programCancel)
-	waitForText(t, tm, "stopped")
+	waitForText(t, tm, "cancelled")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "stopped")
+	frameHas(t, frame, "cancelled")
 }
 
 // The cancel chord while a search runs stops the search itself, not only the
@@ -148,10 +148,10 @@ func TestProgram_TheCancelChordStopsARunningSearch(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("the stop did not reach the running search")
 	}
-	waitForText(t, tm, "stopped")
+	waitForText(t, tm, "cancelled")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "stopped")
+	frameHas(t, frame, "cancelled")
 	msgs := m.agent.Messages()
 	last := msgs[len(msgs)-1]
 	if last.Role != provider.RoleTool || last.Content != agent.CancelledResult {
@@ -207,7 +207,7 @@ func TestProgram_TheCancelChordStopsAnApprovedFetch(t *testing.T) {
 	if told != agent.CancelledResult {
 		t.Fatalf("the model is told %q, want %q", told, agent.CancelledResult)
 	}
-	frameHas(t, finalFrame(t, tm), "stopped")
+	frameHas(t, finalFrame(t, tm), "cancelled")
 }
 
 // A long command's row tails what it prints while it runs, and settles when
