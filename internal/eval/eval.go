@@ -77,6 +77,9 @@ type Case struct {
 	// own claim, and what is missing is this machine's answer to it.
 	Requires []string
 	Skip     string
+	// Digest identifies what the case directory held when it was loaded,
+	// and is empty for a case that was not loaded from one (load.go).
+	Digest string
 }
 
 // Attempt is one run of one case. A case is run more than once because the

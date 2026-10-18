@@ -50,6 +50,21 @@ func TestTwoAttemptsCannotRegressTheGate(t *testing.T) {
 	}
 }
 
+// A case edited since the baseline is a different test: it is not a
+// regression the gate stops on, and not a case the tally counts as held.
+func TestAChangedCaseIsNeitherARegressionNorAPassForTheGate(t *testing.T) {
+	before, after := repeated("a", 3, 3), repeated("a", 3, 0)
+	before.Case.Digest, after.Case.Digest = "old", "new"
+	cmp := compareOf(t, baselineOf("m", before), baselineOf("m", after))
+	if err := regressionError(cmp.Regressions()); err != nil {
+		t.Errorf("a changed case stopped the gate: %v", err)
+	}
+	if improved, regressed, unchanged, incomparable := cmp.Tally(); improved+regressed+unchanged != 0 || incomparable != 1 {
+		t.Errorf("tally = %d improved, %d regressed, %d unchanged, %d not comparable",
+			improved, regressed, unchanged, incomparable)
+	}
+}
+
 func TestEvalFailOnRegressionNeedsEnoughAttempts(t *testing.T) {
 	suite := skippableSuite(t, "alpha")
 	_, err := runEval(t, suite, "--fail-on-regression", "--repeat", "2")

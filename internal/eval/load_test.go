@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -514,5 +515,133 @@ func TestConversationPairsACallWithItsResult(t *testing.T) {
 	}
 	if got[2].Role != provider.RoleTool || got[2].ToolCallID != call.ID {
 		t.Fatalf("tool message = %+v, want it to answer %q", got[2], call.ID)
+	}
+}
+
+// writeTree lays files out under root, path to contents.
+func writeTree(t *testing.T, root string, files map[string]string) {
+	t.Helper()
+	for rel, body := range files {
+		path := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// digestCase is a workspace case as a suite author would lay one out.
+var digestCase = map[string]string{
+	CaseFile:             "prompt = \"make the tests pass\"\ncheck = [\"sh\", \"check.sh\"]\n",
+	"workspace/check.sh": "go test ./...\n",
+	"workspace/pkg/a.go": "package pkg\n",
+}
+
+// A baseline is recorded on one machine and read on the next, so nothing a
+// checkout can vary without changing the case may move the digest: where the
+// suite is, what the directory is called, line endings, permission bits,
+// timestamps, an empty directory, or the litter a desktop leaves behind.
+func TestCaseDigest_StableAcrossHosts(t *testing.T) {
+	here := filepath.Join(t.TempDir(), "suite", "fix-it")
+	writeTree(t, here, digestCase)
+
+	there := filepath.Join(t.TempDir(), "elsewhere")
+	crlf := make(map[string]string, len(digestCase))
+	for rel, body := range digestCase {
+		crlf[rel] = strings.ReplaceAll(body, "\n", "\r\n")
+	}
+	writeTree(t, there, crlf)
+	if err := os.Chmod(filepath.Join(there, "workspace", "check.sh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC)
+	if err := os.Chtimes(filepath.Join(there, CaseFile), old, old); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(there, "workspace", "empty"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(there, "workspace", ".DS_Store"), []byte{0, 1, 2}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	a, err := caseDigest(here)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := caseDigest(there)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a != b {
+		t.Errorf("one case checked out two ways has two digests:\n  %s\n  %s", a, b)
+	}
+	// The value itself is pinned: a change to how the digest is taken reads
+	// every row of every committed baseline as a changed case.
+	const want = "cd68242b7578a0173738eeb7501394d4eb3323502f23fcc740450c25b1797222"
+	if a != want {
+		t.Errorf("the digest of a fixed case moved to %s — every committed baseline would read as changed cases", a)
+	}
+}
+
+// Everything that defines a case moves its digest, the check included.
+func TestCaseDigest_MovesWithWhatDefinesTheCase(t *testing.T) {
+	base := filepath.Join(t.TempDir(), "base")
+	writeTree(t, base, digestCase)
+	want, err := caseDigest(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name  string
+		files map[string]string
+	}{
+		{"the check", map[string]string{CaseFile: "prompt = \"make the tests pass\"\ncheck = [\"sh\", \"verify.sh\"]\n"}},
+		{"the task", map[string]string{CaseFile: "prompt = \"make the tests fail\"\ncheck = [\"sh\", \"check.sh\"]\n"}},
+		{"a fixture's contents", map[string]string{"workspace/pkg/a.go": "package other\n"}},
+		{"a fixture added", map[string]string{"workspace/pkg/b.go": "package pkg\n"}},
+		{"a table", map[string]string{TableFile: "[[row]]\nexpect = [\"allow\"]\n"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "edited")
+			writeTree(t, dir, digestCase)
+			writeTree(t, dir, tc.files)
+			got, err := caseDigest(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got == want {
+				t.Errorf("editing %s left the digest where it was", tc.name)
+			}
+		})
+	}
+	t.Run("a fixture renamed", func(t *testing.T) {
+		dir := filepath.Join(t.TempDir(), "renamed")
+		writeTree(t, dir, map[string]string{
+			CaseFile:             digestCase[CaseFile],
+			"workspace/check.sh": digestCase["workspace/check.sh"],
+			"workspace/pkg/z.go": digestCase["workspace/pkg/a.go"],
+		})
+		if got, err := caseDigest(dir); err != nil || got == want {
+			t.Errorf("renaming a fixture left the digest where it was (%v)", err)
+		}
+	})
+}
+
+// A loaded case carries the digest its baseline row records.
+func TestLoadCaseRecordsItsDigest(t *testing.T) {
+	dir := writeCase(t, t.TempDir(), "fix-it", goodCase)
+	c, err := loadCase(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := caseDigest(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Digest == "" || c.Digest != want {
+		t.Errorf("digest = %q, want %q", c.Digest, want)
 	}
 }

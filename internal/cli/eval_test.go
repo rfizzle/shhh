@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/eval"
 )
 
@@ -692,6 +693,56 @@ func TestEvalReadsTheSuitesOwnBaselineWithoutBeingAsked(t *testing.T) {
 	}
 	if !strings.Contains(out, "--compare") {
 		t.Errorf("the run was not read against the suite's baseline:\n%s", out)
+	}
+}
+
+// A refresh records which version of each case it measured, and a case
+// edited after it reads as a different test on the next run.
+func TestEvalReadsACaseEditedSinceTheRefreshAsADifferentTest(t *testing.T) {
+	suite := skippableSuite(t, "alpha")
+	if _, err := runEval(t, suite, "--refresh-baseline"); err != nil {
+		t.Fatal(err)
+	}
+	recorded, err := eval.ReadBaseline(filepath.Join(suite, eval.BaselineFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if recorded.Cases[0].Digest == "" {
+		t.Fatal("the refresh recorded no digest for the case")
+	}
+
+	body := "prompt = \"make the tests pass, and only those\"\ncheck = [\"true\"]\nrequires = [\"a-toolchain-nobody-has\"]\n"
+	if err := os.WriteFile(filepath.Join(suite, "alpha", "case.toml"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runEval(t, suite)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if flat := strings.Join(strings.Fields(out), " "); !strings.Contains(flat, "the case changed") {
+		t.Errorf("an edited case should read as a different test:\n%s", out)
+	}
+}
+
+// A baseline from before rows recorded their case's version is compared as
+// it always was, and the report says so once rather than on every row.
+func TestCompareReportSaysOnceThatAnOlderBaselineRecordsNoVersions(t *testing.T) {
+	after := baselineOf("m", workspaceRun("a", 9, true), workspaceRun("b", 9, true))
+	before := after
+	before.Version = 1
+	count := func(r report.Report) (n int) {
+		for _, note := range r.Notes {
+			if strings.Contains(note.Text, "does not record which version") {
+				n++
+			}
+		}
+		return n
+	}
+	if n := count(compareReport(compareOf(t, before, after), time.Now())); n != 1 {
+		t.Errorf("the older baseline was noted %d times, want once", n)
+	}
+	if n := count(compareReport(compareOf(t, after, after), time.Now())); n != 0 {
+		t.Errorf("a baseline that records versions was noted as one that does not")
 	}
 }
 

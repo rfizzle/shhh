@@ -8,7 +8,11 @@ package eval
 // editable nor runnable on its own.
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -154,7 +158,75 @@ func loadCase(dir string) (Case, error) {
 
 	c.Requires = f.Requires
 	c.Skip = missingRequirement(f.Requires)
+	digest, err := caseDigest(dir)
+	if err != nil {
+		return Case{}, fmt.Errorf("%s: cannot read the case to record which version of it ran: %w", dir, err)
+	}
+	c.Digest = digest
 	return c, nil
+}
+
+// caseDigest is a SHA-256 over every file in a case directory: the case file,
+// its table, and the workspace or site it brings. The check's argv is in the
+// case file, so a changed check is a changed case.
+//
+// It is the whole directory rather than the files each kind reads because a
+// kind that starts reading one more file would otherwise have to remember to
+// add it here, and forgetting would let an edited case compare as the old one,
+// which is the reading this exists to prevent.
+//
+// The digest has to come out the same on every machine that checks the suite
+// out, or a baseline recorded on one would read as a suite of changed cases
+// on the next. So it reads only what git carries the same everywhere: paths
+// relative to the case and slash-separated, and contents with CRLF read as LF,
+// since a Windows checkout converts them. It reads no timestamp, owner or
+// permission bit — a umask or a filesystem without an executable bit would
+// change those and not the case — and skips the .DS_Store Finder leaves in a
+// directory someone opened. A directory is not hashed on its own, because git
+// does not keep an empty one.
+// See docs/capabilities/evals.md#a-case-that-changed-is-a-different-test.
+func caseDigest(dir string) (string, error) {
+	h := sha256.New()
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || d.Name() == ".DS_Store" {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		var data []byte
+		switch {
+		case d.Type()&fs.ModeSymlink != 0:
+			// A run refuses a fixture holding one; the target is still what
+			// the file says, so an edited one is an edited case.
+			target, linkErr := os.Readlink(path)
+			if linkErr != nil {
+				return linkErr
+			}
+			data = []byte("symlink " + filepath.ToSlash(target))
+		case d.Type().IsRegular():
+			body, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+			data = bytes.ReplaceAll(body, []byte("\r\n"), []byte("\n"))
+		default:
+			return nil
+		}
+		// The length is written before the contents so that no two different
+		// trees can produce the same stream of bytes.
+		fmt.Fprintf(h, "%s\x00%d\x00", filepath.ToSlash(rel), len(data))
+		h.Write(data)
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // kindNames is every kind a case file may name, in the order the shapes were

@@ -320,6 +320,12 @@ has totals that moved for a reason that is not the change being measured, and
 comparing the overlap would hide it. Add the case, run both sides again — with
 `--refresh-baseline`, whose diff is the review.
 
+**A case edited since the baseline is not compared.** Each row records a
+digest of its case's directory, so a row whose case file, table or fixture
+changed reads "not comparable", never improved or regressed. Refresh the
+baseline when the edit is meant; its diff shows the digest that moved under
+the case's name.
+
 **A run narrowed with `--case` is compared against those rows alone.** The
 reader said which cases they wanted; that is not the overlap the rule above
 refuses.

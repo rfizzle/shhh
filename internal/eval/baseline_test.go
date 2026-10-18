@@ -409,3 +409,123 @@ func TestNarrowKeepsTheNamedCasesInTheFilesOwnOrder(t *testing.T) {
 		t.Error("narrowing to nothing is nothing, not everything")
 	}
 }
+
+// withDigest is a result whose case was loaded holding the given version.
+func withDigest(res Result, digest string) Result {
+	res.Case.Digest = digest
+	return res
+}
+
+// A refreshed file is reviewed as a diff, so each row's digest sits under its
+// case's name where that diff shows which case changed.
+func TestBaselineWritesEachCasesDigestUnderItsName(t *testing.T) {
+	sum := Summary{Results: []Result{withDigest(workspaceResult("fix-it", []int{9}, true), "d1")}}
+	b := sum.Baseline()
+	if b.Version != BaselineVersion || b.Cases[0].Digest != "d1" {
+		t.Fatalf("baseline = version %d, digest %q", b.Version, b.Cases[0].Digest)
+	}
+	path := filepath.Join(t.TempDir(), "baseline.json")
+	if err := WriteBaseline(path, b); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "\"name\": \"fix-it\",\n      \"kind\": \"workspace\",\n      \"digest\": \"d1\","; !strings.Contains(string(data), want) {
+		t.Errorf("the digest is not under the case's name:\n%s", data)
+	}
+	got, err := ReadBaseline(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Cases[0].Digest != "d1" {
+		t.Errorf("read back digest %q", got.Cases[0].Digest)
+	}
+}
+
+// An edited case is a different test, so neither direction can be read off
+// it, and the gate never counts it.
+func TestCompare_AChangedCaseIsNotComparable(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		before, after Result
+	}{
+		{"passed then failed every attempt",
+			workspaceResult("a", []int{9, 9, 9}, true, true, true), workspaceResult("a", []int{9, 9, 9}, false, false, false)},
+		{"failed then passed",
+			workspaceResult("a", []int{9, 9, 9}, false, false, false), workspaceResult("a", []int{9, 9, 9}, true, true, true)},
+		{"a table that let more through",
+			tableCaseResult("a", 18, 2), tableCaseResult("a", 15, 5)},
+		{"the same result", workspaceResult("a", []int{9}, true), workspaceResult("a", []int{9}, true)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			before := Summary{Results: []Result{withDigest(tc.before, "old")}}.Baseline()
+			after := Summary{Results: []Result{withDigest(tc.after, "new")}}.Baseline()
+			cmp, err := Compare(before, after)
+			if err != nil {
+				t.Fatal(err)
+			}
+			d := cmp.Cases[0]
+			if d.Change != Incomparable {
+				t.Errorf("change = %v, want Incomparable", d.Change)
+			}
+			if !strings.Contains(d.Why, "the case changed since the baseline was recorded") {
+				t.Errorf("why = %q", d.Why)
+			}
+			if regs := cmp.Regressions(); len(regs) != 0 {
+				t.Errorf("a changed case stopped the gate: %+v", regs)
+			}
+			improved, regressed, unchanged, incomparable := cmp.Tally()
+			if improved != 0 || regressed != 0 || unchanged != 0 || incomparable != 1 {
+				t.Errorf("tally = %d improved, %d regressed, %d unchanged, %d not comparable",
+					improved, regressed, unchanged, incomparable)
+			}
+		})
+	}
+}
+
+// The same version of a case either side is compared on its numbers.
+func TestCompare_AnUnchangedDigestComparesTheNumbers(t *testing.T) {
+	before := Summary{Results: []Result{withDigest(workspaceResult("a", []int{9, 9, 9}, true, true, true), "same")}}.Baseline()
+	after := Summary{Results: []Result{withDigest(workspaceResult("a", []int{9, 9, 9}, false, false, false), "same")}}.Baseline()
+	cmp, err := Compare(before, after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cmp.Cases[0].Change != Regressed || len(cmp.Regressions()) != 1 {
+		t.Errorf("change = %v, regressions = %d", cmp.Cases[0].Change, len(cmp.Regressions()))
+	}
+	if cmp.Undigested {
+		t.Error("a baseline that records digests was read as one that does not")
+	}
+}
+
+// A file written before rows had a digest is still read, and its rows compare
+// as they always did rather than every one refusing until it is refreshed.
+func TestCompare_ABaselineWithoutDigestsComparesAsBefore(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "baseline.json")
+	body := `{"version":1,"cases":[{"name":"a","kind":"workspace","verdict":"passed","attempts":3,"passes":3,"median_rounds":9}]}`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	before, err := ReadBaseline(path)
+	if err != nil {
+		t.Fatalf("a format 1 baseline was refused: %v", err)
+	}
+	if before.Cases[0].Digest != "" {
+		t.Errorf("digest = %q, want none", before.Cases[0].Digest)
+	}
+	after := Summary{Results: []Result{withDigest(workspaceResult("a", []int{9, 9, 9}, false, false, false), "now")}}.Baseline()
+	cmp, err := Compare(before, after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cmp.Undigested {
+		t.Error("the comparison should say the baseline records no digests")
+	}
+	if cmp.Cases[0].Change != Regressed || len(cmp.Regressions()) != 1 {
+		t.Errorf("change = %v, regressions = %d — a row with no digest compares as it always did",
+			cmp.Cases[0].Change, len(cmp.Regressions()))
+	}
+}

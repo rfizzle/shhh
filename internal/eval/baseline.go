@@ -41,7 +41,15 @@ const BaselineFile = "baseline.json"
 // so that a file from a future shhh is refused with a sentence rather than
 // silently decoded into zero medians, which would read as a run in which
 // everything got faster.
-const BaselineVersion = 1
+//
+// Format 2 added each row's case digest. A format 1 file is still read: its
+// rows have none, compare the way they always did, and the comparison says
+// so once (Comparison.Undigested).
+const BaselineVersion = 2
+
+// firstDigestVersion is the first format whose rows record their case's
+// digest.
+const firstDigestVersion = 2
 
 // MinRateSamples is how many samples a side needs before a delta prints a
 // rate. Under it the row carries its counts and no ratio.
@@ -85,6 +93,10 @@ type Baseline struct {
 type CaseBaseline struct {
 	Name string `json:"name"`
 	Kind Kind   `json:"kind"`
+	// Digest is which version of the case this row measured, and empty in a
+	// file written before rows recorded one. It sits under the name so that
+	// a refreshed file's diff shows which cases changed beside their names.
+	Digest string `json:"digest,omitempty"`
 	// Verdict is the word, not the enum: a baseline is read by a person
 	// editing prompts, and a file of small integers is one they cannot check
 	// against the report they are holding.
@@ -169,6 +181,7 @@ func (s Summary) Baseline() Baseline {
 		c := CaseBaseline{
 			Name:     res.Case.Name,
 			Kind:     res.Case.Kind,
+			Digest:   res.Case.Digest,
 			Verdict:  res.Verdict().String(),
 			Attempts: len(res.Attempts),
 			Passes:   res.Passes(),
@@ -247,8 +260,8 @@ func ReadBaseline(path string) (Baseline, error) {
 	if err := json.Unmarshal(data, &b); err != nil {
 		return Baseline{}, fmt.Errorf("%s: %w", path, err)
 	}
-	if b.Version != BaselineVersion {
-		return Baseline{}, fmt.Errorf("%s: written by a different shhh (format %d, this one reads %d)",
+	if b.Version < 1 || b.Version > BaselineVersion {
+		return Baseline{}, fmt.Errorf("%s: written by a different shhh (format %d, this one reads 1 to %d)",
 			path, b.Version, BaselineVersion)
 	}
 	if len(b.Cases) == 0 {
@@ -317,6 +330,11 @@ type Comparison struct {
 	// NotInBaseline names the cases this run measured and the baseline does
 	// not hold, so the report can say the totals leave them out.
 	NotInBaseline []string
+	// Undigested is set when the baseline predates rows recording their
+	// case's digest. Its rows are compared as they always were, so a case
+	// edited since reads as the same test, and the report says so once
+	// rather than refusing every row until the file is refreshed.
+	Undigested bool
 }
 
 // Tally counts the deltas by direction.
@@ -402,7 +420,8 @@ func Compare(before, after Baseline) (Comparison, error) {
 			strings.Join(parts, "; "))
 	}
 
-	cmp := Comparison{Before: before, After: after, NotInBaseline: added}
+	cmp := Comparison{Before: before, After: after, NotInBaseline: added,
+		Undigested: before.Version < firstDigestVersion}
 	for _, a := range after.Cases {
 		b, ok := byName[a.Name]
 		if !ok {
@@ -432,13 +451,16 @@ const roundsBand = 0.25
 // that let more through comes next, because a classifier failing further open
 // is the one regression here that costs something outside the suite. The
 // medians are last: they are what says a change was paid for.
+//
+// Before any of that, a case edited since the baseline is a different test,
+// and nothing it did can be read as a direction.
 func delta(before, after CaseBaseline) Delta {
 	d := Delta{Name: after.Name, Before: before, After: after}
 
 	bv, bErr := parseVerdict(before.Verdict)
 	av, aErr := parseVerdict(after.Verdict)
 	switch {
-	case bErr != nil || aErr != nil, !hasNumbers(bv), !hasNumbers(av):
+	case caseChanged(before, after), bErr != nil || aErr != nil, !hasNumbers(bv), !hasNumbers(av):
 		d.Change, d.Why = Incomparable, incomparableWhy(before, after)
 		return d
 	case rank(av) > rank(bv):
@@ -538,7 +560,23 @@ func verdictMeans(after Verdict) string {
 // never ran and an errored one broke, and neither is evidence about the task.
 func hasNumbers(v Verdict) bool { return v == Passed || v == Flaky || v == Failed }
 
+// caseChanged reports whether the two rows measured different versions of
+// their case. A row with no digest was written before rows had one, and is
+// compared as it always was: refusing it would turn the first comparison
+// against an older file into a refusal on every row.
+//
+// A run that changed its case and its prompt at once cannot say which of the
+// two moved the result, so a changed case is never read as improved or
+// regressed: the suite is frozen while a prompt is measured against it.
+// See docs/capabilities/evals.md#a-case-that-changed-is-a-different-test.
+func caseChanged(before, after CaseBaseline) bool {
+	return before.Digest != "" && after.Digest != "" && before.Digest != after.Digest
+}
+
 func incomparableWhy(before, after CaseBaseline) string {
+	if caseChanged(before, after) {
+		return "the case changed since the baseline was recorded, so the two runs measured different tests"
+	}
 	if before.Verdict == after.Verdict {
 		return after.Verdict + " both times, so there is nothing to compare"
 	}

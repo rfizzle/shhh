@@ -820,6 +820,16 @@ func compareReport(cmp eval.Comparison, now time.Time) report.Report {
 			Text: fmt.Sprintf("the baseline asked the classifier on %s and this run on %s, so its rows carry that change too",
 				backendOrDefault(cmp.Before.ClassifierBackend), backendOrDefault(cmp.After.ClassifierBackend))})
 	}
+	// A baseline from before rows recorded their case's version is compared
+	// as it always was, which cannot tell an edited case from one left
+	// alone. That is said once here rather than on every row, so reading an
+	// older file is not a report of refusals.
+	// See docs/capabilities/evals.md#a-case-that-changed-is-a-different-test.
+	if cmp.Undigested {
+		r.Notes = append(r.Notes, report.Note{State: report.Skip,
+			Text: "the baseline does not record which version of each case it measured, so a case edited since " +
+				"is compared as the same test — --refresh-baseline records them"})
+	}
 	// The totals below cover the cases both runs hold. Saying so beside the
 	// names left out keeps a partial tally from being read as a whole one.
 	if len(cmp.NotInBaseline) > 0 {

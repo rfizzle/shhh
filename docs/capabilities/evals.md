@@ -263,6 +263,35 @@ whose toolchain is not installed. The report says so on every row and once at
 the top, so a mistyped key cannot read as a suite that passed, and the
 baseline such a run writes names no model, because it asked none.
 
+## A case that changed is a different test
+
+A comparison measures one change only if everything else held still. A
+prompt edit measured against a suite whose cases were edited in the same week
+cannot say which of the two moved a row, and a case whose task or check was
+rewritten is not the test its baseline row measured. So the set of cases is
+held fixed while a prompt is measured against it, and the baseline is what
+holds it: each row records a digest of everything in its case's directory —
+the case file and with it the check, the table, the workspace or site it
+brings.
+
+A row whose case has changed since is not comparable, with the reason saying
+so, and never improved or regressed. Like any row that could not be compared,
+`--fail-on-regression` does not count it either way. Refreshing the baseline
+records the case as it is now, and because each digest sits under its case's
+name in the file, the diff a reviewer reads names each case that changed.
+
+The digest comes out the same on every machine that checks the suite out, or a
+baseline recorded on one would read as a suite of changed cases on the next. It
+reads paths relative to the case and contents with line endings normalised,
+and nothing a checkout can vary without changing the case: no timestamp, owner
+or permission bit, no empty directory, and no file the desktop leaves in a
+folder someone opened.
+
+A baseline written before rows carried a digest is still read. Its rows compare
+the way they always did, and the report says once that an edited case cannot
+be told from one left alone there, rather than refusing every row until the
+file is refreshed.
+
 ## A rate needs enough samples to be a rate
 
 A delta prints counts always and a percentage only where there are enough
