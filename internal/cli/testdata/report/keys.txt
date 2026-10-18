@@ -206,6 +206,7 @@
   · refine_all   R · refine the whole draft with one note  [shipped]
   · edit         e · edit  [shipped]
   · clear        d · delete  [shipped]
+  · undo         u · take back its last revision  [shipped]
   · migrate      m · move it into sections  [shipped]
   · note         tab · the sections or the card  [shipped]
   · scroll_up    shift+up · scroll the profile up  [shipped]
@@ -338,4 +339,4 @@
   · local     o · a local model  [shipped]
   · chat_gpt  t · continue with ChatGPT  [shipped]
 
-  239 keys · 1 moved
+  240 keys · 1 moved

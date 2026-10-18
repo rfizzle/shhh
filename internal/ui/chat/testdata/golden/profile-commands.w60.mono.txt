@@ -19,7 +19,6 @@
 test-writer — adds table-driven tests for a package and run…
 
 ⋮ 2 more sections above · [shift+↑] scroll up
-  The package you were pointed at and its _test.go files.
 
   Restrictions
   Never change an expected value to make a case pass.
@@ -43,7 +42,8 @@ test-writer — adds table-driven tests for a package and run…
 
 [↑↓] section · [enter] refine it with a note
 [e] edit it yourself · [d] clear it · [R] all
-[tab] the card · [?] keys · [esc] discard the draft
+[tab] the card · [?] keys
+[esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents            │
@@ -126,8 +126,8 @@ test-writer — adds table-driven tests for a package and run…
 
 [↑↓] section · [enter] refine it with a note
 [e] edit it yourself · [d] clear it · [R] all
-[tab] the card · [?] keys
-[esc] take back its last revision
+[tab] the card · [u] take back its last revision
+[?] keys · [esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents            │
@@ -168,8 +168,8 @@ test-writer — adds table-driven tests for a package and run…
 
 [↑↓] section · [enter] refine it with a note
 [e] edit it yourself · [d] clear it · [R] all
-[tab] the card · [?] keys
-[esc] take back its last revision
+[tab] the card · [u] take back its last revision
+[?] keys · [esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents            │
@@ -187,7 +187,6 @@ test-writer — adds table-driven tests for a package and run…
 test-writer — adds table-driven tests for a package and run…
 
 ⋮ 2 more sections above · [shift+↑] scroll up
-
   Restrictions
   Never change an expected value to make a case pass.
 
@@ -209,7 +208,8 @@ test-writer — adds table-driven tests for a package and run…
 
 [↑↓] section · [enter] refine it with a note
 [e] edit it yourself · [R] all · [tab] the card
-[?] keys · [esc] take back its last revision
+[u] take back its last revision · [?] keys
+[esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents            │
@@ -228,7 +228,6 @@ test-writer — adds table-driven tests for a package and run…
 ␛[38;5;254mtest-writer — adds table-driven tests for a package and run…␛[m
 
 ␛[38;5;244m⋮ 2 more sections above · [shift+↑] scroll up␛[m
-  ␛[38;5;244mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;254mRestrictions␛[m
   ␛[38;5;244mNever change an expected value to make a case pass.␛[m
@@ -252,7 +251,8 @@ test-writer — adds table-driven tests for a package and run…
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
-␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
+␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m            ␛[38;5;244m│␛[m
@@ -335,8 +335,8 @@ test-writer — adds table-driven tests for a package and run…
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
-␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m            ␛[38;5;244m│␛[m
@@ -377,8 +377,8 @@ test-writer — adds table-driven tests for a package and run…
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
-␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m            ␛[38;5;244m│␛[m
@@ -396,7 +396,6 @@ test-writer — adds table-driven tests for a package and run…
 ␛[38;5;254mtest-writer — adds table-driven tests for a package and run…␛[m
 
 ␛[38;5;244m⋮ 2 more sections above · [shift+↑] scroll up␛[m
-
   ␛[38;5;254mRestrictions␛[m
   ␛[38;5;244mNever change an expected value to make a case pass.␛[m
 
@@ -418,7 +417,8 @@ test-writer — adds table-driven tests for a package and run…
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
-␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[u]␛[m␛[38;5;244m take back its last revision␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m            ␛[38;5;244m│␛[m

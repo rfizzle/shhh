@@ -88,7 +88,7 @@ context; Restrictions, which you edited, is kept
 ⠋ redrafting every section  0.0s
 
 [?] keys
-[esc] stop drafting · every section keeps its last text
+[esc] back — every section keeps its last text
 
 · the result · each changed section marked, the kept one says so, the note's row selected
 /agents new · a coding agent · researcher
@@ -99,7 +99,6 @@ context; Restrictions, which you edited, is kept
 test-writer — adds table-driven tests for a package and run…
 
 ⋮ 4 more sections above · [shift+↑] scroll up
-  Read the package and its tests; write the missing cases;
   run the tests after each file.
 
   Report
@@ -121,8 +120,9 @@ test-writer — adds table-driven tests for a package and run…
   Purpose, Scope and Method changed · Restrictions kept as
   you wrote it
 
-[↑↓] section · [R] all · [tab] the card · [?] keys
-[esc] take it back from every section it changed
+[↑↓] section · [R] all · [tab] the card
+[u] take it back from every section it changed
+[?] keys · [esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents            │
@@ -210,7 +210,7 @@ test-writer — adds table-driven tests for a package and run…
 ␛[38;5;205m⠋ redrafting every section␛[m␛[38;5;245m  0.0s␛[m
 
 ␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
-␛[92m[esc]␛[m␛[38;5;245m stop drafting · every section keeps its last text␛[m
+␛[92m[esc]␛[m␛[38;5;245m back — every section keeps its last text␛[m
 
 · the result · each changed section marked, the kept one says so, the note's row selected
 ␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m
@@ -221,7 +221,6 @@ test-writer — adds table-driven tests for a package and run…
 ␛[38;5;252mtest-writer — adds table-driven tests for a package and run…␛[m
 
 ␛[38;5;245m⋮ 4 more sections above · [shift+↑] scroll up␛[m
-  ␛[38;5;246mRead the package and its tests; write the missing cases;␛[m
   ␛[38;5;246mrun the tests after each file.␛[m
 
   ␛[38;5;252mReport␛[m
@@ -243,8 +242,9 @@ test-writer — adds table-driven tests for a package and run…
   ␛[38;5;245mPurpose, Scope and Method changed · Restrictions kept as␛[m
   ␛[38;5;245myou wrote it␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
-␛[92m[esc]␛[m␛[38;5;245m take it back from every section it changed␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m
+␛[38;5;103m[u]␛[m␛[38;5;245m take it back from every section it changed␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back — asks before it drops the draft␛[m
 
 ␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m            ␛[38;5;245m│␛[m

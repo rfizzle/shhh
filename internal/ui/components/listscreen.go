@@ -237,7 +237,7 @@ func (l *listScreen[T]) hiddenRows(total int, hidden func(n int) string, width i
 	// esc is the safe answer and stays whole: a narrow pane first says the
 	// count in fewer words, and only then lets it go, so the row is fitted
 	// through Fit rather than clipped through the clear-it offer.
-	clear := keyOfferAs(keys.Screen.Quit, "clear it")
+	clear := keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears it")
 	tones := liveTones()
 	row := tones.Fit([]KeyOffer{{Label: hidden(n) + " hidden"}, clear}, width)
 	full := []KeyOffer{{Label: hidden(n) + " hidden by the filter"}, clear}

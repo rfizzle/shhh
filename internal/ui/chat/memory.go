@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // Memory wires durable memory into the chat TUI. The zero value
@@ -110,10 +111,12 @@ func (m Model) buildMemoryApproval(tc provider.ToolCall) (*approvalRequest, erro
 // — or don't save.
 func (m *Model) openMemoryAsk(req *approvalRequest) {
 	ns := m.memorySelect(req.memoryDraft.Scope == memory.GlobalScope)
-	// Esc is the third row said as a key, and it says so: nothing is written
-	// and the proposal is declined
+	// Esc leaves the proposal waiting and never declines it: a card holding a
+	// decision does not read a way out as a no. The no is its own key, drawn
+	// on the card beside the third row
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	ns.Select.CancelLabel = "don't remember it"
+	ns.Select.CancelLabel = components.EscWaits
+	ns.Actions = []components.KeyOffer{components.OfferAs(keys.Decision.Deny, "don't save")}
 	m.memoryAsk = ns
 }
 
@@ -138,9 +141,23 @@ func (m Model) memorySelect(global bool) *components.NoteSelect {
 }
 
 // updateMemoryAsk routes confirm-prompt keys while the memory prompt shows.
-// Saving resolves the remember call with the saved entry as its result;
-// anything else declines it.
+// Saving resolves the remember call with the saved entry as its result; the
+// third row and `n` decline it. Esc declines nothing: the card stays and the
+// decision keeps waiting, with the note field (if it holds the keyboard)
+// handing the keyboard back to the list.
 func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	pressed := msg.String()
+	if keys.Is(pressed, keys.Select.Cancel) {
+		if m.memoryAsk.FocusNote {
+			m.memoryAsk.FocusNote = false
+			m.memoryAsk.Note.Blur()
+		}
+		return m, nil
+	}
+	if keys.Is(pressed, keys.Decision.Deny) && !m.memoryAsk.FocusNote && !m.memoryAsk.Select.Filtering {
+		m.memoryAsk = nil
+		return m.declineApproval()
+	}
 	done, res := m.memoryAsk.Update(msg)
 	if !done {
 		return m, nil

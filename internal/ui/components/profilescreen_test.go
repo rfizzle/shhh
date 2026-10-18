@@ -90,7 +90,7 @@ func TestProfileScreen_RailAndTheWait(t *testing.T) {
 	if !strings.Contains(view, "● brief") {
 		t.Fatalf("the wait should keep the step it was started from:\n%s", view)
 	}
-	if !strings.Contains(view, "drafting") || !strings.Contains(view, "stop drafting") {
+	if !strings.Contains(view, "drafting") || !strings.Contains(view, "[esc] back — nothing is drafted") {
 		t.Fatalf("the wait should say what it waits for and how to stop:\n%s", view)
 	}
 	if done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done || result.Action != ProfileAbort {
@@ -162,15 +162,38 @@ func TestProfileScreen_DecisionRows(t *testing.T) {
 // and esc do is the selected section's.
 func TestProfileScreen_TheSelectedSectionIsRevised(t *testing.T) {
 	p := draftScreen()
-	// Purpose has a revision, so esc takes it back rather than leaving.
-	if done, res := p.Update(key("esc")); !done || res.Action != ProfileUndo || res.Index != 0 {
-		t.Fatalf("esc on a revised section = %+v", res)
+	// Purpose has a revision, so u takes it back; esc is only ever the way
+	// back and never rewrites a section.
+	if done, res := p.Update(key("u")); !done || res.Action != ProfileUndo || res.Index != 0 {
+		t.Fatalf("u on a revised section = %+v", res)
 	}
-	// Scope has none, so esc is the step's own: the draft is discarded.
+	// Scope has none, so u does nothing there.
 	p.Update(key("down"))
-	if done, res := p.Update(key("esc")); !done || res.Action != profileDiscard {
-		t.Fatalf("esc on an unrevised section = %+v", res)
+	if done, res := p.Update(key("u")); done {
+		t.Fatalf("u on an unrevised section = %+v", res)
 	}
+	// esc over a draft asks first (the staged-work question); declining it
+	// by n, enter or esc keeps the draft exactly as it was.
+	for _, no := range []string{"n", "enter", "esc"} {
+		if done, _ := p.Update(key("esc")); done {
+			t.Fatal("esc over a draft dropped it without asking")
+		}
+		if view := ansi.Strip(p.View(100)); !strings.Contains(view, "Discard the draft?") {
+			t.Fatalf("esc over a draft should ask:\n%s", view)
+		}
+		if done, _ := p.Update(key(no)); done {
+			t.Fatalf("%s should keep the draft", no)
+		}
+		if view := ansi.Strip(p.View(100)); strings.Contains(view, "Discard the draft?") || !strings.Contains(view, "Scope") {
+			t.Fatalf("%s should take the question down and leave the draft:\n%s", no, view)
+		}
+	}
+	p.Update(key("esc"))
+	if done, res := p.Update(key("y")); !done || res.Action != profileDiscard {
+		t.Fatalf("yes should drop the draft: %+v", res)
+	}
+	p = draftScreen()
+	p.Update(key("down"))
 	if done, res := p.Update(key("e")); !done || res.Action != ProfileEdit || res.Index != 1 {
 		t.Fatalf("e = %+v", res)
 	}
@@ -342,5 +365,30 @@ func TestProfileScreen_CtrlSSavesThroughTheFirstRow(t *testing.T) {
 	}
 	if done, res := p.Update(key("ctrl+s")); !done || res.Action != ProfileSave || res.Index != 0 {
 		t.Fatalf("ctrl+s on the card: done=%v res=%#v", done, res)
+	}
+}
+
+// A profile opened from its file and left alone has nothing to lose, so esc
+// leaves on the press; once the host has changed it in a way no section
+// records (a tools pick, a migration), esc asks like any draft.
+func TestProfileScreen_EscOverAnUntouchedFileAsksNothing(t *testing.T) {
+	p := draftScreen()
+	p.FromFile = true
+	for i := range p.sections.draft.Sections {
+		p.sections.draft.Sections[i].Revised, p.sections.draft.Sections[i].Mine = false, false
+	}
+	if done, res := p.Update(key("esc")); !done || res.Action != profileDiscard {
+		t.Fatalf("esc over an untouched file = done %v, %+v", done, res)
+	}
+	p = draftScreen()
+	p.FromFile, p.Touched = true, true
+	for i := range p.sections.draft.Sections {
+		p.sections.draft.Sections[i].Revised, p.sections.draft.Sections[i].Mine = false, false
+	}
+	if done, _ := p.Update(key("esc")); done {
+		t.Fatal("esc over a file the host changed dropped it without asking")
+	}
+	if view := ansi.Strip(p.View(100)); !strings.Contains(view, "Discard the draft?") {
+		t.Fatalf("esc over a touched file should ask:\n%s", view)
 	}
 }

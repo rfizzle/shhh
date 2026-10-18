@@ -61,7 +61,7 @@ critic — reads a diff and argues
   ⠋ moving critic into sections  0.0s · the author's senten…
 
 [?] keys
-[esc] stop · the profile stays as the file has it
+[esc] back — the profile stays as the file has it
 
 · the migrated draft · each moved section marked, the gap marked, the file's prompt beside them
 critic · /repo/.shhh/agents/critic.toml · project
@@ -239,7 +239,7 @@ critic — reads a diff and argues · moved into sections, not…
   ␛[38;5;205m⠋ moving critic into sections␛[m␛[38;5;245m  0.0s · the author's senten…␛[m
 
 ␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
-␛[92m[esc]␛[m␛[38;5;245m stop · the profile stays as the file has it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back — the profile stays as the file has it␛[m
 
 · the migrated draft · each moved section marked, the gap marked, the file's prompt beside them
 ␛[1;97mcritic␛[m␛[38;5;245m · /repo/.shhh/agents/critic.toml · project␛[m

@@ -101,7 +101,7 @@ keys · reading mode
 [pgdn] page down
 [esc] back
 ▎[enter] close it
-▎[esc] collapse
+▎[esc] back
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -139,7 +139,7 @@ keys · reading mode
 [esc] back
 ▎[←→] along the strip
 ▎[enter] open that tool
-▎[esc] collapse
+▎[esc] back
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -250,7 +250,7 @@ keys · [esc] back
 ␛[38;5;254m[pgdn]␛[m␛[38;5;244m page down␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m close it␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m collapse␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m
@@ -288,7 +288,7 @@ keys · [esc] back
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m[←→]␛[m␛[38;5;244m along the strip␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open that tool␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m collapse␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m

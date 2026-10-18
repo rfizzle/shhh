@@ -1382,6 +1382,7 @@ func (m Model) finishMigration(o persona.Outcome) (tea.Model, tea.Cmd) {
 	}
 	f.draft = o.Draft
 	f.migrated = true
+	m.personaScreen.Touched = true
 	f.resetSections()
 	m.personaScreen.Select(0)
 	m.openPersonaCard()

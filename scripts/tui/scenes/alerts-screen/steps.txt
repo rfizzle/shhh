@@ -17,7 +17,7 @@
 # heading has put the screen over the pane and the rail, the episode standing
 # with `answered  not yet`; at 07 enter shows both runs, the pointer on the
 # first; at 07b enter on that run has opened its kept output full screen,
-# `[esc] back to the alerts` where the draft was, and esc comes back to the
+# `[esc] back` where the draft was, and esc comes back to the
 # runs; at 08 a click on the same cell has put the rail back, and the
 # half-typed draft is still in the box; at 11 the third turn has answered the alert, the block is gone, and
 # /alerts, the key twin, lists the episode as superseded by the clean run in
@@ -38,7 +38,7 @@ snap 06-heading-opens "/alerts · 1 standing" "not yet"
 keys Enter
 snap 07-each-run "each run" "open its output"
 keys Enter
-snap 07b-output-opens "$ make check" "back to the alerts"
+snap 07b-output-opens "$ make check" "[esc] back"
 keys Escape
 keys -l "$(printf '\033[<0;85;6M\033[<0;85;6m')"
 snap 08-cell-closes "ALERTS" "wait"

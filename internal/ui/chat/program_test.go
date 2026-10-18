@@ -432,7 +432,7 @@ func TestProgram_TheDraftIsRevisedOneSectionAtATime(t *testing.T) {
 	waitForText(t, tm, "Method · refined once")
 
 	frame := finalFrame(t, tm)
-	for _, want := range []string{"Run go vet after each file.", "Add tests.", "[esc] take back its last revision"} {
+	for _, want := range []string{"Run go vet after each file.", "Add tests.", "[u] take back its last revision"} {
 		if !strings.Contains(frame, want) {
 			t.Fatalf("the revised draft lacks %q:\n%s", want, frame)
 		}

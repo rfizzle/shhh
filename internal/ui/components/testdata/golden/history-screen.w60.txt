@@ -85,7 +85,7 @@ shhh history · 6 entries · 2 run
 ❯ $ delete every log file older than a week  exit 0     1.4s
   · count the log lines by level  not run · Aug 14
 ────────────────────────────────────────────────────────────
-4 entries hidden by the filter · [esc] clear it
+4 entries hidden by the filter · [esc] back — clears it
 ────────────────────────────────────────────────────────────
 4m ago · openai/gpt-5.2                                  run
   delete every log file older than a week
@@ -95,7 +95,7 @@ shhh history · 6 entries · 2 run
   ↑ 412 · ↓ 38 tokens
 
 [↑↓/jk] move · [enter] re-run it
-[esc] clear the filter, then close it
+[esc] back — clears the filter first
 
 · a filter that matched nothing · a row, not an empty pane
 shhh history · 6 entries · 2 run
@@ -105,11 +105,11 @@ shhh history · 6 entries · 2 run
 ────────────────────────────────────────────────────────────
   no match for "kubectl"
 ────────────────────────────────────────────────────────────
-6 entries hidden by the filter · [esc] clear it
+6 entries hidden by the filter · [esc] back — clears it
 ────────────────────────────────────────────────────────────
 no entry selected
 
-[↑↓/jk] move · [esc] clear the filter, then close it
+[↑↓/jk] move · [esc] back — clears the filter first
 
 · [d] · the inline confirm, naming what it would take, defaulting to no
 shhh history · 6 entries · 2 run
@@ -167,7 +167,7 @@ shhh history · 6 entries · 2 run
 [d] delete the entry, after confirming it
 [/] filter by what was asked or by what came back
 [backspace] delete a character from the filter
-[esc] clear the filter, then close it
+[esc] back — clears the filter first
 [esc] back
 
 glyphs
@@ -269,7 +269,7 @@ $  a shell command
 ␛[94m❯␛[m ␛[1;97;48;5;61m$ delete every log file older than a week  exit 0     1.4s␛[m
   ␛[38;5;252m· count the ␛[m␛[1;38;5;252mlog␛[m␛[38;5;252m lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
-␛[38;5;245m4 entries hidden by the filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear it␛[m
+␛[38;5;245m4 entries hidden by the filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back — clears it␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 ␛[1;97m4m ago␛[m␛[38;5;245m · openai/gpt-5.2␛[m                                  ␛[38;5;245mrun␛[m
   ␛[38;5;245mdelete every log file older than a week␛[m
@@ -279,7 +279,7 @@ $  a shell command
   ␛[38;5;248m↑ 412 · ↓ 38 tokens␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m re-run it␛[m
-␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back — clears the filter first␛[m
 
 · a filter that matched nothing · a row, not an empty pane
 ␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m
@@ -289,11 +289,11 @@ $  a shell command
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 ␛[38;5;245m  no match for "kubectl"␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
-␛[38;5;245m6 entries hidden by the filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear it␛[m
+␛[38;5;245m6 entries hidden by the filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back — clears it␛[m
 ␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 ␛[38;5;245mno entry selected␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back — clears the filter first␛[m
 
 · [d] · the inline confirm, naming what it would take, defaulting to no
 ␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m
@@ -351,7 +351,7 @@ $  a shell command
 ␛[38;5;103m[d]␛[m␛[38;5;245m delete the entry, after confirming it␛[m
 ␛[38;5;103m[/]␛[m␛[38;5;245m filter by what was asked or by what came back␛[m
 ␛[38;5;103m[backspace]␛[m␛[38;5;245m delete a character from the filter␛[m
-␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back — clears the filter first␛[m
 ␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 ␛[38;5;245mglyphs␛[m

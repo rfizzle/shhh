@@ -22,7 +22,7 @@
 # its card, titled `clipboard.png · sent with turn 1`, with `[esc] back to the
 # draft`. At 10 reading mode's cursor stands on Image#2's row and the bar says
 # `[enter] open it`; at 11 and again at 13 enter on that same row opens the
-# card with `[esc] back to reading`. At 16 `/paste show Image#1` opens the first
+# card with `[esc] back`. At 16 `/paste show Image#1` opens the first
 # picture's card by name.
 setup mkdir -p a b
 setup echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' | base64 -d > a/clipboard.png
@@ -51,11 +51,11 @@ snap 09-reading "[↑↓/jk] move"
 keys k k k
 snap 10-on-image-2 "[enter] open it" "❯ ⟨▣ Image#2⟩"
 keys Enter
-snap 11-enter-opens "sent with turn 1" "back to reading"
+snap 11-enter-opens "sent with turn 1" "[esc] back"
 keys Escape
 snap 12-back-on-the-row "[enter] open it" "❯ ⟨▣ Image#2⟩"
 keys Enter
-snap 13-opens-again "sent with turn 1" "back to reading"
+snap 13-opens-again "sent with turn 1" "[esc] back"
 keys Escape
 snap 14-row-again "[enter] open it" "❯ ⟨▣ Image#2⟩"
 keys Escape

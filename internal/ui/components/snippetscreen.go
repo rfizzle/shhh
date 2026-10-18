@@ -319,7 +319,7 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 		acts = append(acts, keyOfferAs(keys.Screen.Take, "run it"))
 	}
 	if s.list.Filtering {
-		acts = append(acts, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
+		acts = append(acts, keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first"))
 	} else {
 		if s.currentShown(s.Rows) != nil {
 			acts = append(acts,
@@ -347,7 +347,7 @@ func (s *SnippetScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Delete, "delete it, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what the command is"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the rename row"),
-		keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"),
+		keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first"),
 		keyOfferAs(keys.Screen.Quit, EscBack+escClause+"keeps the name, in the rename row"),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}

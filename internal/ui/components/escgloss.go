@@ -31,41 +31,10 @@ func EscGlossOnList(gloss string) bool {
 // binary asks to hear every esc gloss a row paints. Nil outside a test.
 var safeGlossSeen atomic.Pointer[func(string)]
 
-// pendingEscRulings are the glosses of an esc that does a different act, each
-// waiting on the person's ruling: call it one of the closed list because it is
-// in fact the safe answer, or say esc should not carry the act. Nothing else is
-// exempt from the audit, and a ruling removes its row.
-var pendingEscRulings = []string{
-	// esc ends a running act
-	"stop",
-	"stop, keeping every answer already given",
-	"stop drafting",
-	"stop drafting · every section keeps its last text",
-	"stop drafting · the section keeps its last text",
-	"stop · the profile stays as the file has it",
-	"cancel the sign-in",
-	// esc throws the draft away
-	"discard the draft",
-	"drop it",
-	"don't remember it",
-	// esc undoes a revision
-	"take back its last revision",
-	"take it back from every section it changed",
-	// esc folds what is open
-	"collapse",
-	// esc clears the filter first
-	"clear it",
-	"clear the filter",
-	"clear the filter, then close it",
-	"clear, then close",
-}
-
 // AuditEscGlosses is how a test binary holds every rendered esc segment to the
 // closed list: it starts listening to the glosses key rows paint and returns
-// the verdict, the glosses heard that are neither on the list nor awaiting a
-// ruling.
+// the verdict, the glosses heard that are not on the list.
 func AuditEscGlosses() (verdict func() []string) {
-	exempt := pendingEscRulings
 	var mu sync.Mutex
 	seen := map[string]bool{}
 	hear := func(g string) {
@@ -82,15 +51,7 @@ func AuditEscGlosses() (verdict func() []string) {
 			if EscGlossOnList(g) {
 				continue
 			}
-			named := false
-			for _, e := range exempt {
-				if g == e {
-					named = true
-				}
-			}
-			if !named {
-				bad = append(bad, g)
-			}
+			bad = append(bad, g)
 		}
 		sort.Strings(bad)
 		return bad

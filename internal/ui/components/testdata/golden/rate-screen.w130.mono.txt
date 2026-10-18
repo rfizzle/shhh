@@ -20,7 +20,7 @@ shhh rate · 1 of 5
 │   ▎$ run     find . -name '*.log' -mtime +7 -delete                                                              exit 0        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 
 · answered · the next card already, and this one never ran at all
 shhh rate · 2 of 5
@@ -32,7 +32,7 @@ shhh rate · 2 of 5
 │   ▎$ run     du -ah . | sort -rh | head -10                                                                      copied        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 
 · a long command · continued under its own row, never clipped away
 shhh rate · 4 of 5
@@ -44,7 +44,7 @@ shhh rate · 4 of 5
 │   ▎$ run     rg --hidden --glob '!.git' --line-number 'ErrRoundLimit' internal/agent internal/ui | sort -u       exit 0        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 
 · a session · the same card over an agent run, and no rail on a good one
 shhh rate · 5 of 5
@@ -56,7 +56,7 @@ shhh rate · 5 of 5
 │    ◇ agent   2026-09-01T18-02 · chat · claude-opus-5 · 14 turns                                               completed        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 
 · a session that was given up on · the rail and the glyph every broken row takes
 shhh rate · 5 of 5
@@ -68,7 +68,7 @@ shhh rate · 5 of 5
 │   ▎⊘ agent   2026-09-01T18-02 · chat · claude-opus-5 · 14 turns                                               abandoned        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 
 · a short terminal · the card folds behind a counted tail
 shhh rate · 4 of 5
@@ -80,7 +80,7 @@ shhh rate · 4 of 5
 │   ▎$ run     rg --hidden --glob '!.git' --line-number 'ErrRoundLimit' internal/agent internal/ui | sort -u       exit 0        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 
 · a write that failed · the notice, and the entry left unrated
 shhh rate · 3 of 5
@@ -92,7 +92,7 @@ shhh rate · 3 of 5
 │   ▎✗ run     git rebase main && git push --force-with-lease                                                    exit 128        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 rate: database is locked
 
 · nothing left to answer · the three answers are gone from the row
@@ -101,7 +101,7 @@ shhh rate · 5 asked
 
 every one of them has been asked about
 
-[?] keys · [esc] stop
+[?] keys · [esc] back
 
 · [?] · every key the screen has
 shhh rate · 1 of 5
@@ -113,8 +113,7 @@ delete every log file older than a week
 [y] it did what was asked
 [n] it did not
 [s] no answer; it stays unrated
-[esc] stop, keeping every answer already given
-[esc] stop, keeping every answer already given
+[esc] back — every answer given is kept
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -150,7 +149,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mfind . -name '*.log' -mtime +7 -delete␛[m                                                              ␛[38;5;254mexit 0␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · answered · the next card already, and this one never ran at all
 ␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 2 of 5␛[m
@@ -162,7 +161,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mdu -ah . | sort -rh | head -10␛[m                                                                      ␛[38;5;254mcopied␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a long command · continued under its own row, never clipped away
 ␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 4 of 5␛[m
@@ -174,7 +173,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mrg --hidden --glob '!.git' --line-number 'ErrRoundLimit' internal/agent internal/ui | sort -u␛[m       ␛[38;5;254mexit 0␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a session · the same card over an agent run, and no rail on a good one
 ␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 5 of 5␛[m
@@ -186,7 +185,7 @@ $  a shell command
 ␛[38;5;244m│␛[m    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254m2026-09-01T18-02 · chat · claude-opus-5 · 14 turns␛[m                                               ␛[38;5;254mcompleted␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a session that was given up on · the rail and the glyph every broken row takes
 ␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 5 of 5␛[m
@@ -198,7 +197,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244magent␛[m   ␛[38;5;244m2026-09-01T18-02 · chat · claude-opus-5 · 14 turns␛[m                                               ␛[38;5;244mabandoned␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a short terminal · the card folds behind a counted tail
 ␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 4 of 5␛[m
@@ -210,7 +209,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mrg --hidden --glob '!.git' --line-number 'ErrRoundLimit' internal/agent internal/ui | sort -u␛[m       ␛[38;5;254mexit 0␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a write that failed · the notice, and the entry left unrated
 ␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 3 of 5␛[m
@@ -222,7 +221,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgit rebase main && git push --force-with-lease␛[m                                                    ␛[38;5;254mexit 128␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;244mrate: database is locked␛[m
 
 · nothing left to answer · the three answers are gone from the row
@@ -231,7 +230,7 @@ $  a shell command
 
 ␛[38;5;244mevery one of them has been asked about␛[m
 
-␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · [?] · every key the screen has
 ␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 1 of 5␛[m
@@ -243,8 +242,7 @@ $  a shell command
 ␛[38;5;254m[y]␛[m␛[38;5;244m it did what was asked␛[m
 ␛[38;5;254m[n]␛[m␛[38;5;244m it did not␛[m
 ␛[38;5;254m[s]␛[m␛[38;5;244m no answer; it stays unrated␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m stop, keeping every answer already given␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m stop, keeping every answer already given␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — every answer given is kept␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m

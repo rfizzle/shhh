@@ -2559,6 +2559,11 @@ card is showing, and draws the rest of the queue in one grey: five ratings in
 three colours over one decision is a wall of warnings, and the words on those
 rows do not change.
 
+The memory proposal is one of those cards, and its esc is `keeps waiting`: the card
+stays and nothing is declined or written. The no is its own key, `[n] don't save`,
+and the card's third row says the same thing; with the note field holding the
+keyboard, esc hands it back to the list and still declines nothing.
+
 Resolution is honest about its limits: where the blast radius cannot be
 determined, the card says so rather than reporting a confident nothing. What
 the containment profile allows is reported from what is actually in force, not
@@ -4065,8 +4070,9 @@ that section alone with the rest sent as fixed context; the editor takes its
 text and hands it back as the person's own; a key clears it — so fixing one
 section never redrafts another. A mark after each heading says what has
 happened to it: refined, written by the person, or empty. Every revision is
-kept while the flow lasts, and esc on a revised block takes back its last one;
-on a block with none it is the step's own esc and drops the draft. The card
+kept while the flow lasts, and `u` on a revised block takes back its last one;
+esc is only ever the way back, and over a draft it asks `Discard the draft?`
+before it drops anything, which no, enter or esc keep as it was. The card
 lost its refine row and its note, since revision lives on the sections now:
 it is the ways out and nothing else, and tab moves the keyboard between it
 and the sections.
@@ -4080,10 +4086,10 @@ sent: pressing the key again while the note is still empty takes those
 sections in too, and the note says that instead. The wait is drawn under the
 note, and a note that fails, is stopped or is answered with a question
 leaves the draft as it was. What comes back lands one section at a time —
-each section it changed is marked refined and takes its own revision, so esc
+each section it changed is marked refined and takes its own revision, so `u`
 on that block takes back that section alone — and the note leaves a row of
 its own under the sections, with the pointer on it, naming what it changed
-and what it kept: esc there takes the note back from every section still
+and what it kept: `u` there takes the note back from every section still
 standing where it left them, and never a revision made since.
 
 Enter on the tools and permissions block opens a selector where the card

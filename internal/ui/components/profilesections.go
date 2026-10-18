@@ -89,7 +89,7 @@ func (p *profileSections) updateSections(msg tea.KeyPressMsg, migratable bool) (
 	sec, ok := p.selected()
 	if !ok {
 		if keys.Is(msg.String(), keys.Profile.Back) {
-			return true, profileResult{Action: profileDiscard}
+			return true, profileResult{Action: profileLeave}
 		}
 		return false, profileResult{}
 	}
@@ -122,15 +122,12 @@ func (p *profileSections) updateSections(msg tea.KeyPressMsg, migratable bool) (
 		return true, profileResult{Action: ProfileClear, Index: p.section}
 	case keys.Is(pressed, keys.Profile.Migrate) && migratable:
 		return true, profileResult{Action: ProfileMigrate, Index: p.section}
+	case keys.Is(pressed, keys.Profile.Undo) && (sec.Revised || sec.Whole):
+		// Every revision is kept for the life of the flow, so the way back
+		// through them is a key of its own and never esc's.
+		return true, profileResult{Action: ProfileUndo, Index: p.section}
 	case keys.Is(pressed, keys.Profile.Back):
-		// esc takes back the selected section's last revision while it has
-		// one, and is the step's own esc on a section with none: every
-		// revision is kept for the life of the flow, so the way back through
-		// them is the key that is always the safe answer.
-		if sec.Revised || sec.Whole {
-			return true, profileResult{Action: ProfileUndo, Index: p.section}
-		}
-		return true, profileResult{Action: profileDiscard}
+		return true, profileResult{Action: profileLeave}
 	}
 	return false, profileResult{}
 }
@@ -248,10 +245,9 @@ func (p *profileSections) sectionHint(idle, migratable bool, wayOut string) []Ke
 		keyOfferAs(keys.Profile.RefineAll, "all"),
 		keyOfferAs(keys.Profile.Note, "the card"))
 	if ok && sec.Whole {
-		return append(segments, keyOfferAs(keys.Profile.Back, "take it back from every section it changed"))
-	}
-	if ok && sec.Revised {
-		return append(segments, keyOfferAs(keys.Profile.Back, "take back its last revision"))
+		segments = append(segments, keyOfferAs(keys.Profile.Undo, "take it back from every section it changed"))
+	} else if ok && sec.Revised {
+		segments = append(segments, keyOfferAs(keys.Profile.Undo, "take back its last revision"))
 	}
 	return append(segments, keyOfferAs(keys.Profile.Back, wayOut))
 }

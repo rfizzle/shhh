@@ -165,20 +165,20 @@ func TestReadingHint_CarriesTheModeKeysInOrder(t *testing.T) {
 	}
 }
 
-// esc says "collapse" only while the row under the cursor is open, and with
-// nothing open it says it leaves.
-func TestReadingHint_EscSaysCollapseOnlyWhenSomethingIsOpen(t *testing.T) {
+// esc says `back` whether the row under the cursor is open (it folds it) or
+// not (it leaves): one key, one spelling.
+func TestReadingHint_EscSaysBackWhetherOrNotSomethingIsOpen(t *testing.T) {
 	m := readingModel(t, 130)
 	m.moveFocus(-1)
 	m.moveFocus(-1)
-	if strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[esc] collapse") {
-		t.Fatal("nothing is open yet, so nothing should offer to close it")
+	if !strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[esc] back") {
+		t.Fatal("nothing is open yet, and esc still says back")
 	}
 
 	opened, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = opened.(Model)
-	if !strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[esc] collapse") {
-		t.Fatalf("an open row should offer to close it, got %q", ansi.Strip(m.readingKeyLine(m.contentWidth())))
+	if !strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[esc] back") {
+		t.Fatalf("an open row should offer esc as back, got %q", ansi.Strip(m.readingKeyLine(m.contentWidth())))
 	}
 	// The position narrows before the keys give up a word, and at this width
 	// the longer move key has taken the room "1 row expanded" had.

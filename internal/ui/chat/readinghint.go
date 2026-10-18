@@ -30,7 +30,7 @@ import (
 // The two things esc does here, offered by the row under the cursor: it
 // collapses an open row, and with nothing open it leaves reading mode.
 const (
-	collapseWords     = "collapse"
+	collapseWords     = components.EscBack
 	backToPromptWords = components.EscBack
 )
 

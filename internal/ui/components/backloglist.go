@@ -74,7 +74,7 @@ func (b *BacklogScreen) hiddenRows(width int) []string {
 	}
 	row := sty.dim.Render(fmt.Sprintf("%d hidden", hidden))
 	if b.filter.filtering && b.filter.query != "" {
-		row += sty.dim.Render(" · ") + sty.key.Render(keys.Bracket(keys.Backlog.Back)) + sty.dim.Render(" clear it")
+		row += sty.dim.Render(" · ") + sty.key.Render(keys.Bracket(keys.Backlog.Back)) + sty.dim.Render(" "+EscBack+escClause+"clears the filter first")
 	}
 	return []string{screenRule(width), Clip(row, width)}
 }

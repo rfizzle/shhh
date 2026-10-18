@@ -189,7 +189,7 @@ func TestCard_TheStripWalksTheCalls(t *testing.T) {
 		t.Errorf("the failed command's row should be lit with its glyph, got %q", l)
 	}
 	if bar := stripANSI(m.readingKeyLine(110)); !strings.Contains(bar, "[←→] along the strip") ||
-		!strings.Contains(bar, "[enter] open that tool") || !strings.Contains(bar, "collapse") ||
+		!strings.Contains(bar, "[enter] open that tool") || !strings.Contains(bar, "[esc] back") ||
 		!strings.Contains(bar, "tool 22 of 22 · exit 1") {
 		t.Errorf("the bar should name the strip's keys and the call: %q", bar)
 	}

@@ -195,7 +195,7 @@ func TestApproval_TheDraftIsTheNote(t *testing.T) {
 	t.Run("a memory proposal keeps its sentence", func(t *testing.T) {
 		m, _ := memoryModel(t, agent.ModeManual)
 		updated, _ := m.Update(rememberCall())
-		m = press(t, handover(t, updated.(Model)), "esc")
+		m = press(t, handover(t, updated.(Model)), "n")
 		const want = "error: the user declined to save this memory; do not re-propose it this session"
 		if got := lastToolMessage(t, m).Content; got != want {
 			t.Fatalf("the memory decline changed: %q", got)

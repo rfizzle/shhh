@@ -60,7 +60,7 @@ func TestScreenChrome_TheHeaderCarriesNoKeysAndTheFootKeepsTheWayOut(t *testing.
 		{"metrics", 44, "[esc] back", "3 models", func(w int) string { return metricsScreen().View(w) }},
 		{"config", 44, "[esc] back", "config.toml", func(w int) string { return configFixture().View(w) }},
 		{"history", 44, "[esc] back", "4 entries", func(w int) string { return historyScreen().View(w) }},
-		{"rate", 30, "[esc] stop", "1 of 3", func(w int) string { return rateScreen().View(w) }},
+		{"rate", 30, "[esc] back", "1 of 3", func(w int) string { return rateScreen().View(w) }},
 		{"context", 44, "[esc] back", "this session", func(w int) string { return context.View(w) }},
 		{"profile", 44, "[esc] back — nothing is drafted", "reviewer tester", func(w int) string { return profile().View(w) }},
 		{"snippets", 44, "[esc] back", "3 snippets", func(w int) string { return snippetScreen().View(w) }},

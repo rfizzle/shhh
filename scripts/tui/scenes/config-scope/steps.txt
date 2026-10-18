@@ -46,7 +46,7 @@ snap 04-global "/config · global file" "[shift+tab] write project"
 keys BTab
 snap 05-back "/config · project file" "[shift+tab] write global"
 keys Enter
-snap 06-flow-picker "[enter] set it" "[esc] back — stays on"
+snap 06-flow-picker "[enter] set it" "[esc] back — keeps"
 keys "/"
 keys "fast" Enter
 snap 07-staged "1 change unwritten" "· unwritten" "[ctrl+s] write 1 change"

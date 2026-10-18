@@ -58,7 +58,7 @@ or start from one of these
 
 ⠸ drafting  4.2s
 
-[?] keys · [esc] stop drafting
+[?] keys · [esc] back — nothing is drafted
 
 · one question · the answers already given stay above it
 /agents new · a coding agent · reviewer tester
@@ -115,8 +115,8 @@ test-writer — adds table-driven tests for a package and runs them
   inherited from this session · reasoning medium · 8.0k tokens
 
 [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-[d] clear it · [R] all · [tab] the card · [?] keys
-[esc] take back its last revision
+[d] clear it · [R] all · [tab] the card · [u] take back its last revision
+[?] keys · [esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  .shhh/agents                                      │
@@ -163,8 +163,8 @@ test-writer — adds table-driven tests for a package and runs them
   inherited from this session · reasoning medium · 8.0k tokens
 
 [↑↓] section · [enter] refine it with a note · [e] edit it yourself
-[d] clear it · [R] all · [tab] the card · [?] keys
-[esc] take back its last revision
+[d] clear it · [R] all · [tab] the card · [u] take back its last revision
+[?] keys · [esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  .shhh/agents                                      │
@@ -260,7 +260,7 @@ test-writer — adds table-driven tests for a package and runs them
   Model
   inherited from this session · reasoning medium · 8.0k tokens
 
-[?] keys · [esc] stop drafting · the section keeps its last text
+[?] keys · [esc] back — the section keeps its last text
 
 · a short surface · the card holds the keyboard and never gives ground, the pane folds
 /agents new · a coding agent · reviewer tester
@@ -384,7 +384,7 @@ test-writer — adds table-driven tests for a package and runs them
 
 ␛[38;5;254m⠸ drafting␛[m␛[38;5;244m  4.2s␛[m
 
-␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop drafting␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — nothing is drafted␛[m
 
 · one question · the answers already given stay above it
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m
@@ -441,8 +441,8 @@ test-writer — adds table-driven tests for a package and runs them
   ␛[38;5;254minherited from this session␛[m␛[38;5;244m · reasoning medium · 8.0k tokens␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
-␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m.shhh/agents␛[m                                      ␛[38;5;244m│␛[m
@@ -489,8 +489,8 @@ test-writer — adds table-driven tests for a package and runs them
   ␛[38;5;254minherited from this session␛[m␛[38;5;244m · reasoning medium · 8.0k tokens␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
-␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m.shhh/agents␛[m                                      ␛[38;5;244m│␛[m
@@ -586,7 +586,7 @@ test-writer — adds table-driven tests for a package and runs them
   ␛[38;5;254mModel␛[m
   ␛[38;5;254minherited from this session␛[m␛[38;5;244m · reasoning medium · 8.0k tokens␛[m
 
-␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop drafting · the section keeps its last text␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — the section keeps its last text␛[m
 
 · a short surface · the card holds the keyboard and never gives ground, the pane folds
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m

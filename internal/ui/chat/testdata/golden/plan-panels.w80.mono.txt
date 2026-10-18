@@ -16,7 +16,7 @@
 │                                                                          │
 │ Esc cancels the sign-in, closes the listener and changes nothing.        │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [esc] cancel the sign-in                                                 │
+│ [esc] back — the sign-in is cancelled                                    │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · waiting · the browser opened, and the port it will come back to
@@ -26,7 +26,7 @@
 │                                                                          │
 │ Esc cancels the sign-in, closes the listener and changes nothing.        │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [esc] cancel the sign-in                                                 │
+│ [esc] back — the sign-in is cancelled                                    │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · waiting · no browser, so the address is the panel's to show
@@ -40,7 +40,7 @@
 │                                                                          │
 │ Esc cancels the sign-in, closes the listener and changes nothing.        │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [esc] cancel the sign-in                                                 │
+│ [esc] back — the sign-in is cancelled                                    │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · signed in without plan use · the way to ask for it again
@@ -72,7 +72,7 @@
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mEsc cancels the sign-in, closes the listener and changes nothing.␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel the sign-in␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back — the sign-in is cancelled␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · waiting · the browser opened, and the port it will come back to
@@ -82,7 +82,7 @@
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mEsc cancels the sign-in, closes the listener and changes nothing.␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel the sign-in␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back — the sign-in is cancelled␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · waiting · no browser, so the address is the panel's to show
@@ -96,7 +96,7 @@
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mEsc cancels the sign-in, closes the listener and changes nothing.␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel the sign-in␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back — the sign-in is cancelled␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · signed in without plan use · the way to ask for it again

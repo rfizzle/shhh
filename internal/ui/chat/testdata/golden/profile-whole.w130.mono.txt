@@ -91,7 +91,7 @@ Restrictions, which you edited, is kept
 
 ⠋ redrafting every section  0.0s
 
-[?] keys · [esc] stop drafting · every section keeps its last text
+[?] keys · [esc] back — every section keeps its last text
 
 · the result · each changed section marked, the kept one says so, the note's row selected
 /agents new · a coding agent · researcher
@@ -102,7 +102,6 @@ Restrictions, which you edited, is kept
 test-writer — adds table-driven tests for a package and runs them
 
 ⋮ 2 more sections above · [shift+↑] scroll up
-  The package named and its _test.go files; nothing else.
 
   Restrictions · edited by you · kept
   Never change an expected value to make a case pass. Never delete a test.
@@ -125,7 +124,8 @@ test-writer — adds table-driven tests for a package and runs them
 ❯ Whole draft · redrafted on your note
   "terser throughout — one sentence each where it will go" · Purpose, Scope and Method changed · Restrictions kept as you wrote it
 
-[↑↓] section · [R] all · [tab] the card · [?] keys · [esc] take it back from every section it changed
+[↑↓] section · [R] all · [tab] the card · [u] take it back from every section it changed · [?] keys
+[esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                                                                  │
@@ -216,7 +216,7 @@ test-writer — adds table-driven tests for a package and runs them
 
 ␛[38;5;254m⠋ redrafting every section␛[m␛[38;5;244m  0.0s␛[m
 
-␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop drafting · every section keeps its last text␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — every section keeps its last text␛[m
 
 · the result · each changed section marked, the kept one says so, the note's row selected
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
@@ -227,7 +227,6 @@ test-writer — adds table-driven tests for a package and runs them
 ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
 ␛[38;5;244m⋮ 2 more sections above · [shift+↑] scroll up␛[m
-  ␛[38;5;244mThe package named and its _test.go files; nothing else.␛[m
 
   ␛[38;5;254mRestrictions␛[m ␛[38;5;254m· edited by you · kept␛[m
   ␛[38;5;244mNever change an expected value to make a case pass. Never delete a test.␛[m
@@ -250,7 +249,8 @@ test-writer — adds table-driven tests for a package and runs them
 ␛[38;5;254m❯␛[m ␛[38;5;254mWhole draft␛[m ␛[38;5;244m· redrafted on your note␛[m
   ␛[38;5;244m"terser throughout — one sentence each where it will go"␛[m␛[38;5;244m · Purpose, Scope and Method changed · Restrictions kept as you wrote it␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take it back from every section it changed␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m take it back from every section it changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;244m│␛[m

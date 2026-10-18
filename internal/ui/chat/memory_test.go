@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -175,10 +176,11 @@ func withDeclines(m Model, db *storage.DB) Model {
 }
 
 // Declining saves no memory and writes the no down, whichever way it is
-// said: the card's own row and Esc are the same answer.
+// said: the card's own row and `n` are the same answer. Esc is not one of
+// them (TestRemember_EscLeavesTheProposalWaiting).
 func TestRemember_Declined(t *testing.T) {
 	for _, key := range []tea.KeyPressMsg{
-		{Code: tea.KeyEscape},
+		{Code: 'n', Text: "n"},
 		{Code: '3', Text: "3"},
 	} {
 		db := declineStore(t)
@@ -219,7 +221,7 @@ func TestRemember_ADeclinedTextIsNotAskedAgain(t *testing.T) {
 	first, _ := memoryModel(t, agent.ModeManual)
 	first = withDeclines(first, db)
 	updated, _ := first.Update(rememberCall())
-	press(t, handover(t, updated.(Model)), "esc")
+	press(t, handover(t, updated.(Model)), "n")
 
 	next, saves := memoryModel(t, agent.ModeAuto)
 	next = withDeclines(next, db)
@@ -437,5 +439,55 @@ func TestInspectorTools_CountsOmittedMemories(t *testing.T) {
 	tools := m.inspectorTools()
 	if tools == nil || tools.MemoryOmitted != 2 {
 		t.Fatalf("the omitted count should reach the rail, got %+v", tools)
+	}
+}
+
+// Esc on the memory proposal is the safe answer: the card stays, nothing is
+// declined and nothing is written, and a decline needs `n` or the third row.
+// With the note field holding the keyboard, esc hands it back to the list
+// and still declines nothing.
+func TestRemember_EscLeavesTheProposalWaiting(t *testing.T) {
+	db := declineStore(t)
+	m, saves := memoryModel(t, agent.ModeManual)
+	m = withDeclines(m, db)
+	updated, _ := m.Update(rememberCall())
+	m = handover(t, updated.(Model))
+
+	m = press(t, m, "esc")
+	if m.memoryAsk == nil || m.approval.request == nil {
+		t.Fatal("esc closed the memory proposal")
+	}
+	if db.ProposalDeclined("/proj", storage.ProposalMemory, "prefers table-driven tests") {
+		t.Fatal("esc wrote a decline down")
+	}
+	if len(*saves) != 0 {
+		t.Fatal("esc saved a memory")
+	}
+	view := ansi.Strip(m.memoryAsk.View(100))
+	if !strings.Contains(view, "[esc] keeps waiting") || !strings.Contains(view, "[n] don't save") {
+		t.Fatalf("the card should offer esc as waiting and n as the no:\n%s", view)
+	}
+
+	// A note being typed: esc gives the list the keyboard and the card stays.
+	tabbed, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m = tabbed.(Model)
+	if !m.memoryAsk.FocusNote {
+		t.Fatal("tab should open the note")
+	}
+	m = press(t, m, "n")
+	if m.memoryAsk == nil || !strings.Contains(m.memoryAsk.Note.Value(), "n") {
+		t.Fatal("n is text while the note holds the keyboard")
+	}
+	m = press(t, m, "esc")
+	if m.memoryAsk == nil || m.memoryAsk.FocusNote {
+		t.Fatal("esc should hand the keyboard back to the list and keep the card")
+	}
+	if db.ProposalDeclined("/proj", storage.ProposalMemory, "prefers table-driven tests") {
+		t.Fatal("esc from the note wrote a decline down")
+	}
+
+	m = press(t, m, "n")
+	if m.memoryAsk != nil || !db.ProposalDeclined("/proj", storage.ProposalMemory, "prefers table-driven tests") {
+		t.Fatal("n should decline and write the no down")
 	}
 }

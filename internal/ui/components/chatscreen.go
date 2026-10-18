@@ -358,7 +358,7 @@ func (c *ChatScreen) offers() []KeyOffer {
 		offers = append(offers, keyOfferAs(keys.Screen.Take, "open it"))
 	}
 	if c.list.Filtering {
-		return append(offers, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
+		return append(offers, keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first"))
 	}
 	if c.currentShown(c.Rows) != nil {
 		offers = append(offers, keyOffer(keys.Screen.Rename), keyOffer(keys.Screen.Delete))
@@ -376,7 +376,7 @@ func (c *ChatScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Delete, "delete it and its branches, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what it was about"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the rename row"),
-		keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"),
+		keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first"),
 		keyOfferAs(keys.Screen.Quit, EscBack+escClause+"keeps the name, in the rename row"),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}

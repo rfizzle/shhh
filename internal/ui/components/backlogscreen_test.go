@@ -409,7 +409,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 				t.Errorf("at %d columns the filter's foot sheds %q: %s", width, want, foot)
 			}
 		}
-		if width >= 80 && !strings.Contains(foot, "[esc] clear the filter, then close it") {
+		if width >= 80 && !strings.Contains(foot, "[esc] back — clears the filter first") {
 			t.Errorf("at %d columns the filter's foot gives up esc's words with room for them: %s", width, foot)
 		}
 	}
@@ -417,7 +417,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 	// With words narrowing the list the way out says it clears them first.
 	held := goldenBacklogScreen()
 	query(held, "ready")
-	if foot := ansi.Strip(strings.Join(held.foot().rows(110), "\n")); !strings.Contains(foot, "[esc] clear the filter") {
+	if foot := ansi.Strip(strings.Join(held.foot().rows(110), "\n")); !strings.Contains(foot, "[esc] back — clears the filter first") {
 		t.Errorf("a held query's foot never says esc clears it: %s", foot)
 	}
 

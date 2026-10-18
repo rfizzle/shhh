@@ -294,7 +294,7 @@ func planPanel(f planFlow) components.PlanPanel {
 	return components.PlanPanel{
 		Title:  "Signing in with ChatGPT",
 		Body:   body,
-		Offers: []components.KeyOffer{components.OfferAs(keys.Select.Cancel, "cancel the sign-in")},
+		Offers: []components.KeyOffer{components.OfferAs(keys.Select.Cancel, components.EscBack+" — the sign-in is cancelled")},
 	}
 }
 

@@ -127,9 +127,7 @@ var owed = map[string]string{}
 
 // over is every surface carrying more than three letters of its own, with
 // those letters. Like owed it only shrinks.
-var over = map[string]string{
-	"the profile draft": "R m",
-}
+var over = map[string]string{}
 
 func isApart(name string, list []string) bool {
 	for _, p := range list {

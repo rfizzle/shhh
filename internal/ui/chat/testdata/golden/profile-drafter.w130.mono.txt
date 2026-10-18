@@ -93,7 +93,7 @@ test-writer — adds table-driven tests for a package and runs them
   inherited from this session · 8.0k tokens
 
 [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all · [tab] the card · [?] keys
-[esc] discard the draft
+[esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                                                                  │
@@ -135,7 +135,7 @@ test-writer — adds table-driven tests for a package and runs them
   inherited from this session · 8.0k tokens
 
 [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all · [tab] the card · [?] keys
-[esc] discard the draft
+[esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                                                                  │
@@ -220,7 +220,7 @@ test-writer — adds table-driven tests for a package and runs them
   Model
   inherited from this session · 8.0k tokens
 
-[?] keys · [esc] stop drafting · the section keeps its last text
+[?] keys · [esc] back — the section keeps its last text
 
 · the section refined · marked, and esc now takes it back
 /agents new · a coding agent · researcher
@@ -254,8 +254,8 @@ test-writer — adds table-driven tests for a package and runs them
 
 ⋮ 1 more section · [shift+↓] scroll the profile
 
-[↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all · [tab] the card · [?] keys
-[esc] take back its last revision
+[↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all · [tab] the card
+[u] take back its last revision · [?] keys · [esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                                                                  │
@@ -297,7 +297,7 @@ test-writer — adds table-driven tests for a package and runs them
 ⋮ 1 more section · [shift+↓] scroll the profile
 
 [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all · [tab] the card · [?] keys
-[esc] discard the draft
+[esc] back — asks before it drops the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                                                                  │
@@ -365,7 +365,6 @@ test-writer — adds table-driven tests for a package and runs them
 
   Scope
   The package you were pointed at and its _test.go files. Leave the exported API and every other package alone.
-
 ⋮ 6 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -381,6 +380,7 @@ test-writer — adds table-driven tests for a package and runs them
 [R] refine the whole draft with one note
 [e] edit
 [d] delete
+[u] take back its last revision
 [tab] the sections or the card
 [ctrl+s] write
 [shift+↑] scroll the profile up
@@ -494,7 +494,7 @@ $  a shell command
   ␛[38;5;254minherited from this session␛[m␛[38;5;244m · 8.0k tokens␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;244m│␛[m
@@ -536,7 +536,7 @@ $  a shell command
   ␛[38;5;254minherited from this session␛[m␛[38;5;244m · 8.0k tokens␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;244m│␛[m
@@ -621,7 +621,7 @@ $  a shell command
   ␛[38;5;254mModel␛[m
   ␛[38;5;254minherited from this session␛[m␛[38;5;244m · 8.0k tokens␛[m
 
-␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop drafting · the section keeps its last text␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — the section keeps its last text␛[m
 
 · the section refined · marked, and esc now takes it back
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m
@@ -655,8 +655,8 @@ $  a shell command
 
 ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
+␛[38;5;254m[u]␛[m␛[38;5;244m take back its last revision␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;244m│␛[m
@@ -698,7 +698,7 @@ $  a shell command
 ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it drops the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;244m│␛[m
@@ -766,7 +766,6 @@ $  a shell command
 
   ␛[38;5;254mScope␛[m
   ␛[38;5;244mThe package you were pointed at and its _test.go files. Leave the exported API and every other package alone.␛[m
-
 ␛[38;5;244m⋮ 6 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -782,6 +781,7 @@ $  a shell command
 ␛[38;5;254m[R]␛[m␛[38;5;244m refine the whole draft with one note␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m
 ␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m
+␛[38;5;254m[u]␛[m␛[38;5;244m take back its last revision␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m the sections or the card␛[m
 ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write␛[m
 ␛[38;5;254m[shift+↑]␛[m␛[38;5;244m scroll the profile up␛[m

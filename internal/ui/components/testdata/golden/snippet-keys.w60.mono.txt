@@ -25,7 +25,7 @@ shhh snippets · 3 snippets
 [/] filter by name or by what the command is
 [backspace] delete a character from the filter or the rename
             row
-[esc] clear the filter, then close it
+[esc] back — clears the filter first
 [esc] back — keeps the name, in the rename row
 [esc] back
 
@@ -68,7 +68,7 @@ $  a shell command
 ␛[38;5;254m[/]␛[m␛[38;5;244m filter by name or by what the command is␛[m
 ␛[38;5;254m[backspace]␛[m␛[38;5;244m delete a character from the filter or the rename␛[m
             ␛[38;5;254m␛[m␛[38;5;244mrow␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — clears the filter first␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back — keeps the name, in the rename row␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 

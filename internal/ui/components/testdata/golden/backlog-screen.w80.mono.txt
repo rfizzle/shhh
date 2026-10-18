@@ -81,7 +81,7 @@ backlog · matching sprint · the cockpit sprint                      1 of 6 ite
 ────────────────────────────────────────────────────────────────────────────────
 ❯ ! sprint-file  MM  blocked  The sprint is a file that names its items         
 ────────────────────────────────────────────────────────────────────────────────
-5 hidden · [esc] clear it
+5 hidden · [esc] back — clears the filter first
 ────────────────────────────────────────────────────────────────────────────────
 sprint-file
 The sprint is a file that names its items
@@ -92,7 +92,7 @@ story · medium · size M · blocked · written 2026-09-01 · in the cockpit spr
 
 Waiting on a decision about where the file lives.
 
-[↑↓] move · [enter] keep it · [esc] clear the filter, then close it
+[↑↓] move · [enter] keep it · [esc] back — clears the filter first
 
 · [/] ready p:low [enter] · the words held over the list, and what they hid under it
 backlog · matching ready p:low · the cockpit sprint                 2 of 6 items
@@ -110,7 +110,7 @@ bug · low · ungraded · open
 
 The verb deletes the file and the sentence should say so.
 
-[↑↓/jk] move · [enter] read · [/] filter · [?] keys · [esc] clear the filter
+[↑↓/jk] move · [enter] read · [?] keys · [esc] back — clears the filter first
 
 · [s] · the status picker beside the list, where the item stands now marked
 backlog · the cockpit sprint                                             6 items
@@ -348,7 +348,7 @@ $  a shell command
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m!␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237msprint-file  MM  blocked  The sprint is a file that names its items         ␛[m␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;244m5 hidden␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear it␛[m
+␛[38;5;244m5 hidden␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — clears the filter first␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254msprint-file␛[m
 ␛[38;5;244mThe sprint is a file that names its items␛[m
@@ -359,7 +359,7 @@ $  a shell command
 
 ␛[38;5;244mWaiting on a decision about where the file lives.␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m keep it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m keep it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — clears the filter first␛[m
 
 · [/] ready p:low [enter] · the words held over the list, and what they hid under it
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · matching ready p:low␛[m␛[38;5;244m · the cockpit sprint␛[m                 ␛[38;5;244m2 of 6 items␛[m
@@ -377,7 +377,7 @@ $  a shell command
 
 ␛[38;5;244mThe verb deletes the file and the sentence should say so.␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — clears the filter first␛[m
 
 · [s] · the status picker beside the list, where the item stands now marked
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                             ␛[38;5;244m6 items␛[m

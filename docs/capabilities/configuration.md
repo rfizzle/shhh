@@ -1002,6 +1002,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `profile.refine_all` | `R` | refine the whole draft with one note | yes |
 | `profile.edit` | `e` | edit | yes |
 | `profile.clear` | `d` | delete | yes |
+| `profile.undo` | `u` | take back its last revision | yes |
 | `profile.migrate` | `m` | move it into sections | yes |
 | `profile.note` | `tab` | the sections or the card | yes |
 | `profile.scroll_up` | `shift+up` | scroll the profile up | yes |

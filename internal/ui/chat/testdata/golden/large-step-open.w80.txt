@@ -87,7 +87,7 @@
                                                                           
 
 ────────────────────────────────────────────────────────────────────────────
-[←→] along the strip · [enter] open that tool · [esc] collapse         22/22
+[←→] along the strip · [enter] open that tool · [esc] back     tool 22 of 22
 
 
 
@@ -169,6 +169,6 @@
 ␛[48;5;234m                                                                          ␛[m
 
 ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[←→]␛[m␛[38;5;245m along the strip␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open that tool␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m collapse␛[m         ␛[38;5;245m22/22␛[m
+␛[38;5;103m[←→]␛[m␛[38;5;245m along the strip␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open that tool␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m     ␛[38;5;245mtool 22 of 22␛[m
 
 

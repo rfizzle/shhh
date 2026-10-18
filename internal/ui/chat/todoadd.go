@@ -523,7 +523,7 @@ func (d *todoDraft) hint() []components.KeyOffer {
 	return append(segs,
 		components.OfferAs(keys.Backlog.Edit, "the editor"),
 		components.OfferAs(keys.Select.Take, "write it"),
-		components.OfferAs(keys.Select.Cancel, "drop it"))
+		components.OfferAs(keys.Select.Cancel, components.EscBack+" — nothing is added"))
 }
 
 // missing names the dependencies the draft gave that nothing answers. They

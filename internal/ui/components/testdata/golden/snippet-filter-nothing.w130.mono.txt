@@ -18,9 +18,9 @@ shhh snippets · 3 snippets · filtered by "zzz"
 ──────────────────────────────────────────── │ 
   no match for "zzz"                         │ 
 ──────────────────────────────────────────── │ 
-3 snippets hidden · [esc] clear it           │ 
+3 snippets hidden · [esc] back — clears it   │ 
 
-[↑↓/jk] move · [esc] clear the filter, then close it
+[↑↓/jk] move · [esc] back — clears the filter first
 
 ── ansi ────────────────────────────────────────────────────
 · a query that left nothing
@@ -31,6 +31,6 @@ shhh snippets · 3 snippets · filtered by "zzz"
 ␛[38;5;244m────────────────────────────────────────────␛[m␛[38;5;244m │ ␛[m
 ␛[38;5;244m  no match for "zzz"␛[m                        ␛[38;5;244m │ ␛[m
 ␛[38;5;244m────────────────────────────────────────────␛[m␛[38;5;244m │ ␛[m
-␛[38;5;244m3 snippets hidden␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear it␛[m          ␛[38;5;244m │ ␛[m
+␛[38;5;244m3 snippets hidden␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — clears it␛[m  ␛[38;5;244m │ ␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — clears the filter first␛[m

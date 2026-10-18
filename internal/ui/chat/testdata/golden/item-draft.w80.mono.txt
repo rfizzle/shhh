@@ -25,7 +25,7 @@
 │ nothing in the backlog is named nothing-like-this — dropped rather than  │
 │ written as a dependency on nothing                                       │
 │ [↑↓] move · [space] change · [e] the editor · [enter] write it           │
-│ [esc] drop it                                                            │
+│ [esc] back — nothing is added                                            │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · the dependency row opened on the backlog
@@ -54,7 +54,7 @@
 ␛[38;5;244m│␛[m ␛[38;5;254mnothing in the backlog is named nothing-like-this — dropped rather than␛[m  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254mwritten as a dependency on nothing␛[m                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m the editor␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write it␛[m           ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m drop it␛[m                                                            ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back — nothing is added␛[m                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the dependency row opened on the backlog

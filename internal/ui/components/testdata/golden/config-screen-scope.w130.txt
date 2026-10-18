@@ -99,7 +99,7 @@ shhh config · project file · .shhh/config.toml
 [ctrl+r] reset this setting to its default
 [ctrl+s] write every staged change to the project file, .shhh/config.toml
 [shift+tab] switch the write between the project file and the global one
-[esc] clear the filter, then close it
+[esc] back — clears the filter first
 [esc] back — leaves the picker, or the screen, writing nothing
 
 glyphs
@@ -215,7 +215,7 @@ $  a shell command
 ␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset this setting to its default␛[m
 ␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write every staged change to the project file, .shhh/config.toml␛[m
 ␛[38;5;103m[shift+tab]␛[m␛[38;5;245m switch the write between the project file and the global one␛[m
-␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back — clears the filter first␛[m
 ␛[92m[esc]␛[m␛[38;5;245m back — leaves the picker, or the screen, writing nothing␛[m
 
 ␛[38;5;245mglyphs␛[m

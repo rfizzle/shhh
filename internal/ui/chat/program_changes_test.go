@@ -345,7 +345,7 @@ func TestProgram_ASelectedEditRowKeepsItsOwnEnter(t *testing.T) {
 	waitForText(t, tm, "@@ -1,3 +1,3 @@")
 
 	frame := finalFrame(t, tm)
-	for _, never := range []string{"Undo turn", "[esc] back"} {
+	for _, never := range []string{"Undo turn", "REVIEW turn"} {
 		if strings.Contains(frame, never) {
 			t.Fatalf("the edit row answered with another row's act (%q):\n%s", never, frame)
 		}

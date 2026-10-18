@@ -688,7 +688,7 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		if c.picker.Filtering {
 			// esc steps out of the row before it keeps the value, so while
 			// the row is open that is what it offers.
-			keep = keyOfferAs(keys.Screen.Quit, "clear the filter, then close it")
+			keep = keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first")
 		} else {
 			offers = append(offers, keyOffer(keys.Screen.Filter))
 		}
@@ -706,7 +706,7 @@ func (c *ConfigScreen) offers() []KeyOffer {
 	}
 	offers := []KeyOffer{keyOffer(keys.Screen.Move), keyOfferAs(keys.Screen.Take, "change")}
 	if c.list.Filtering {
-		return append(offers, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
+		return append(offers, keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first"))
 	} else {
 		offers = append(offers, keyOffer(keys.Screen.Filter), keyOffer(keys.Screen.Reset))
 		if c.Scoped {
@@ -755,7 +755,7 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 	if c.Scoped {
 		list = append(list, keyOfferAs(keys.Screen.Scope, "switch the write between the project file and the global one"))
 	}
-	return append(list, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"), keyOfferAs(keys.Screen.Quit, quit))
+	return append(list, keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first"), keyOfferAs(keys.Screen.Quit, quit))
 }
 
 // footField annotates the key row. It is the count of settings until

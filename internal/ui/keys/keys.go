@@ -1261,12 +1261,16 @@ var Agent = AgentKeys{
 // the safe answer at every step — nothing on this surface writes until the
 // draft card's own row does (invariant 3).
 type ProfileKeys struct {
-	Move       Binding
-	Take       Binding
-	Refine     Binding
-	RefineAll  Binding
-	Edit       Binding
-	Clear      Binding
+	Move      Binding
+	Take      Binding
+	Refine    Binding
+	RefineAll Binding
+	Edit      Binding
+	Clear     Binding
+	// Undo takes back the selected section's last revision, or the revisions
+	// a whole-draft note made. It is its own key because esc is only ever the
+	// way back: a key that is always the safe answer does not also rewrite.
+	Undo       Binding
 	Migrate    Binding
 	Note       Binding
 	ScrollUp   Binding
@@ -1290,6 +1294,7 @@ var Profile = ProfileKeys{
 	Refine: bind("enter", "refine it with a note", "enter"),
 	Edit:   bind("e", "edit", "e"),
 	Clear:  bind("d", "delete", "d"),
+	Undo:   bind("u", "take back its last revision", "u"),
 	// The one note for every section is refine widened, and a widened act
 	// is the capital here the way the manager's kill all is: R is free on
 	// the draft step, and pressed again while its note is still empty it

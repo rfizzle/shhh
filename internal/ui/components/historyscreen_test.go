@@ -175,7 +175,7 @@ func TestHistoryScreen_FilterRowIsTheSharedOne(t *testing.T) {
 	h.Update(key("/"))
 	typeIntoHistory(h, "log")
 	out := plainView(h, 130)
-	for _, want := range []string{"› log█", "2 of 4 match", "2 entries hidden by the filter", "[esc] clear it"} {
+	for _, want := range []string{"› log█", "2 of 4 match", "2 entries hidden by the filter", "[esc] back — clears it"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("filtered view is missing %q:\n%s", want, out)
 		}
@@ -225,7 +225,7 @@ func TestHistoryScreen_NoMatchSaysSo(t *testing.T) {
 	if !strings.Contains(out, `no match for "zzz"`) {
 		t.Fatalf("a filter that matched nothing said nothing:\n%s", out)
 	}
-	if !strings.Contains(out, "[esc] clear it") {
+	if !strings.Contains(out, "[esc] back — clears it") {
 		t.Fatalf("the key that clears the filter is gone:\n%s", out)
 	}
 	if !strings.Contains(out, "no entry selected") {

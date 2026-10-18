@@ -206,7 +206,7 @@ func TestRateScreen_ASessionIsTheSameCard(t *testing.T) {
 	for _, want := range []string{
 		"╭─ mon ", "get the observe dashboard to show the gate pass rate",
 		"◇ agent", "2026-09-01T18-02 · chat · claude-opus-5 · 14 turns", "completed",
-		"[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop",
+		"[y] worked · [n] did not · [s] skip · [?] keys · [esc] back",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the session card does not say %q:\n%s", want, got)

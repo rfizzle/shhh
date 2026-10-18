@@ -473,7 +473,7 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 		acts = append(acts, keyOfferAs(keys.Screen.Take, "re-run it"))
 	}
 	if h.list.Filtering {
-		acts = append(acts, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
+		acts = append(acts, keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first"))
 	} else {
 		if h.currentShown(h.Rows) != nil {
 			acts = append(acts,
@@ -523,7 +523,7 @@ func (h *HistoryScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Delete, "delete the entry, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by what was asked or by what came back"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter"),
-		keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"),
+		keyOfferAs(keys.Screen.Quit, EscBack+escClause+"clears the filter first"),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }

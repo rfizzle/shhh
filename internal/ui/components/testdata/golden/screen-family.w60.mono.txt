@@ -74,7 +74,7 @@ shhh rate · 1 of 5
 │     +7 -delete                                           │
 ╰──────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 
 · context · the occupancy is the tally beside the keys
 /context · this session · 1m window                  ~312.4k
@@ -304,7 +304,7 @@ linear                                                 error
 ␛[38;5;244m│␛[m     ␛[38;5;244m+7 -delete␛[m                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · context · the occupancy is the tally beside the keys
 ␛[1;38;5;254m/context␛[m␛[38;5;244m · this session · 1m window␛[m                  ␛[38;5;254m~312.4k␛[m

@@ -138,8 +138,8 @@ func filterOffers(width int) []KeyOffer {
 		// esc and not a letter: a row being typed into keeps every letter
 		// as text, so esc is what backs out of it, one level a press
 		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-		{move, keep, wayOut("clear the filter, then close it")},
-		{move, keep, wayOut("clear, then close")},
+		{move, keep, wayOut(EscBack + escClause + "clears the filter first")},
+		{move, keep, wayOut(EscBack + escClause + "clears it first")},
 		{move, keep, wayOut("")},
 	}
 	for _, rung := range rungs {
@@ -178,7 +178,7 @@ func (b backlogFoot) listOffers(width int) []KeyOffer {
 	// With words narrowing the list, esc takes them off before it leaves,
 	// and the row says which of the two it will do.
 	if b.query != "" {
-		out = append(out, wayOut("clear the filter"))
+		out = append(out, wayOut(EscBack+escClause+"clears the filter first"))
 	} else {
 		out = append(out, wayOut("back"))
 	}

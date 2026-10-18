@@ -73,7 +73,7 @@ shhh rate · 1 of 5
 │   ▎$ run     find . -name '*.log' -mtime +7 -delete                                                              exit 0        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-[y] worked · [n] did not · [s] skip · [?] keys · [esc] stop
+[y] worked · [n] did not · [s] skip · [?] keys · [esc] back
 
 · context · the occupancy is the tally beside the keys
 /context · this session · 1m window                                                                                        ~312.4k
@@ -302,7 +302,7 @@ definitions not loaded                                   │   costs     its too
 ␛[38;5;245m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7 -delete␛[m                                                              ␛[92mexit 0␛[m        ␛[38;5;245m│␛[m
 ␛[38;5;245m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;103m[y]␛[m␛[38;5;245m worked␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m did not␛[m␛[38;5;245m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;245m skip␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m stop␛[m
+␛[38;5;103m[y]␛[m␛[38;5;245m worked␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m did not␛[m␛[38;5;245m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;245m skip␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · context · the occupancy is the tally beside the keys
 ␛[1;97m/context␛[m␛[38;5;245m · this session · 1m window␛[m                                                                                        ␛[92m~312.4k␛[m

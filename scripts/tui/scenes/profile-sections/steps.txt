@@ -7,10 +7,10 @@
 # with the pointer on Purpose and Report marked empty; a note about Method is
 # sent and only Method comes back rewritten, marked refined, though the answer
 # rewrote every section; Restrictions goes through the editor and comes back
-# marked as the person's own; esc takes that back; and tab hands the keyboard
+# marked as the person's own; u takes that back; and tab hands the keyboard
 # to the card, whose pane folds rather than giving ground; then one note for
 # the whole draft rewrites every section but the one the person wrote, and
-# esc on the row it leaves takes it back; last, the Commands block is revised
+# u on the row it leaves takes it back; last, the Commands block is revised
 # on a note, cleared and given back.
 snap 01-start "Some things worth doing first"
 keys "/agents new a test writer" Enter
@@ -27,8 +27,8 @@ keys Up
 snap 04b-on-restrictions "❯ Restrictions"
 keys e
 snap 05-edited "Restrictions · edited by you" "NEVER change an expected value"
-keys Escape
-snap 06-taken-back "[esc] discard the draft" "Never change an expected value"
+keys u
+snap 06-taken-back "[esc] back — asks before it drops the draft" "Never change an expected value"
 keys Tab
 snap 07-card "[enter] confirm · [tab] the sections" "Keep test-writer?"
 # The Tools block opens its selector where the card stood: the tiers the
@@ -47,7 +47,7 @@ snap 11-taken "read + write" "[enter] open the selector"
 # One note for the whole draft: Restrictions is written in the editor first,
 # so the note under the section list names it as kept; the answer rewrites
 # every section and the fields, and only the other sections are taken, each
-# marked, with the note's own row under them holding the pointer. esc there
+# marked, with the note's own row under them holding the pointer. u there
 # takes the note back from every section it changed.
 keys Up Up Up
 snap 11b-on-restrictions "❯ Restrictions"
@@ -57,13 +57,13 @@ keys R
 snap 13-whole-note "a note on the whole draft" "edited, is kept" "[R] again to include the sections you edited"
 keys "terser throughout"
 keys Enter
-snap 14-whole "Whole draft · redrafted on your note" "Restrictions kept as you" "[esc] take it back from every section it changed"
-keys Escape
-snap 15-whole-back "❯ Model" "[esc] discard the draft"
+snap 14-whole "Whole draft · redrafted on your note" "Restrictions kept as you" "[u] take it back from every section it changed"
+keys u
+snap 15-whole-back "❯ Model" "[esc] back — asks before it drops the draft"
 # The Commands block takes the prose sections' keys: it states nothing yet,
 # a note about it comes back with its two fields — and every section
 # rewritten besides, of which nothing is taken — x clears it back to the
-# session's own lists, and esc takes the clear back.
+# session's own lists, and u takes the clear back.
 keys Up
 snap 16-commands "❯ Commands" "none stated · the session's own command lists apply" "[e] edit it yourself"
 keys Enter
@@ -73,5 +73,5 @@ keys Enter
 snap 18-commands-refined "Commands · refined once" "for: running the package's tests and go vet" "never: git push, go install"
 keys d
 snap 19-commands-cleared "Commands · you cleared it" "none stated"
-keys Escape
-snap 20-commands-back "never: git push, go install" "[esc] take back its last revision"
+keys u
+snap 20-commands-back "never: git push, go install" "[u] take back its last revision"

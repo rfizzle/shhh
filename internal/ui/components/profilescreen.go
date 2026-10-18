@@ -93,6 +93,9 @@ const (
 	ProfilePick
 	// profileDiscard drops the draft.
 	profileDiscard
+	// profileLeave is esc on the draft: it asks before it drops the draft,
+	// unless there is nothing in it to lose.
+	profileLeave
 	// ProfileAbort stops a drafting turn that is still running.
 	ProfileAbort
 	// ProfilePicked is enter on the open selector: the host reads the boxes
@@ -243,6 +246,9 @@ type ProfileScreen struct {
 	saves []SelectOption
 
 	decide *Select
+	// discarding is the question esc asks over a draft before it drops it
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	discarding *Confirm
 	// Picker is the selector a field block opened, drawn where the card is
 	// and holding the keyboard until it is taken or cancelled. The host
 	// builds it and reads its boxes; the surface only routes and draws it.
@@ -266,6 +272,9 @@ type ProfileScreen struct {
 	// rail is not drawn, and esc closes it with nothing written
 	// (docs/interface/surfaces.md#the-profile-drafter).
 	FromFile bool
+	// Touched says the host changed an opened profile's draft in a way no
+	// section's mark records: a tools pick, or a migration into sections.
+	Touched bool
 	// Migratable puts the older-shape offer at the head of the draft and
 	// makes its key live: the profile's file was written before the five
 	// sections. OlderNote is what the offer says about it.
@@ -435,6 +444,45 @@ func (p *ProfileScreen) saveWords() string {
 
 // Update routes one keystroke to the step that is up.
 func (p *ProfileScreen) Update(msg tea.KeyPressMsg) (done bool, result profileResult) {
+	if p.discarding != nil {
+		// The question holds the keyboard: yes drops the draft, and no, enter
+		// or esc keep it exactly as it was.
+		if answered, yes := confirmed(&p.discarding, msg); answered && yes {
+			return true, profileResult{Action: profileDiscard}
+		}
+		return false, profileResult{}
+	}
+	done, result = p.route(msg)
+	if done && result.Action == profileLeave {
+		if !p.holdsDraft() {
+			return true, profileResult{Action: profileDiscard}
+		}
+		p.discarding = &Confirm{Prompt: "Discard the draft?"}
+		return false, profileResult{}
+	}
+	return done, result
+}
+
+// holdsDraft reports whether leaving would lose something: a draft the flow
+// wrote, or one opened from its file that has been revised since. A profile
+// opened from its file and left untouched has nothing to put back.
+func (p *ProfileScreen) holdsDraft() bool {
+	if p.Step != ProfileDraft {
+		return false
+	}
+	if !p.FromFile || p.Touched {
+		return true
+	}
+	for _, sec := range p.sections.draft.Sections {
+		if sec.Revised || sec.Mine || sec.Whole {
+			return true
+		}
+	}
+	return false
+}
+
+// route sends the keystroke to the step that is up.
+func (p *ProfileScreen) route(msg tea.KeyPressMsg) (bool, profileResult) {
 	if keys.Is(msg.String(), keys.Screen.List) && p.listLive() {
 		p.keys = !p.keys
 		return false, profileResult{}
@@ -515,6 +563,9 @@ func (p *ProfileScreen) updateCard(msg tea.KeyPressMsg) (bool, profileResult) {
 	if !res.Canceled && res.Index < len(p.saves) {
 		return true, profileResult{Action: ProfileSave, Index: res.Index}
 	}
+	if res.Canceled {
+		return true, profileResult{Action: profileLeave}
+	}
 	return true, profileResult{Action: profileDiscard}
 }
 
@@ -539,7 +590,7 @@ func (p *ProfileScreen) keyList() []KeyOffer {
 	list := []KeyOffer{
 		keyOffer(keys.Profile.Move), keyOffer(keys.Profile.Take),
 		keyOffer(keys.Profile.Refine), keyOffer(keys.Profile.RefineAll), keyOffer(keys.Profile.Edit),
-		keyOffer(keys.Profile.Clear),
+		keyOffer(keys.Profile.Clear), keyOffer(keys.Profile.Undo),
 	}
 	if p.Migratable {
 		// Live only on a profile opened in the older shape.
@@ -598,15 +649,15 @@ func (p *ProfileScreen) header() screenHeader {
 func (p *ProfileScreen) wayOutWords() string {
 	switch {
 	case p.Step == ProfileWorking && p.review.migrating:
-		return "stop"
+		return EscBack + escClause + "the profile stays as the file has it"
 	case p.Step == ProfileWorking:
-		return "stop drafting"
+		return EscBack + escClause + "nothing is drafted"
 	case p.Step == ProfileDraft && p.FromFile && !p.sections.refining && p.Picker == nil:
 		return EscBack + escClause + "nothing is written"
 	case p.Step == ProfileDraft && (p.sections.refining || p.Picker != nil):
 		return EscBack + escClause + "it is left as it is"
 	case p.Step == ProfileDraft:
-		return "discard the draft"
+		return EscBack + escClause + "asks before it drops the draft"
 	case p.Step == ProfileQuestions && len(p.brief.asked) > 0:
 		return EscBack
 	}
@@ -740,6 +791,9 @@ func nonEmpty(parts ...string) []string {
 // (invariant 4), so a row too long for the terminal stacks its segments
 // rather than losing one to a clip — the rule every card's hints keep.
 func (p *ProfileScreen) hintFor(width int) []string {
+	if p.discarding != nil {
+		return []string{indent(p.discarding.View(width - profileIndent))}
+	}
 	var segments []KeyOffer
 	switch p.Step {
 	case ProfileBrief:
@@ -751,18 +805,18 @@ func (p *ProfileScreen) hintFor(width int) []string {
 		}
 	case ProfileWorking:
 		if p.review.migrating {
-			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop · the profile stays as the file has it")}
+			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, EscBack+escClause+"the profile stays as the file has it")}
 			break
 		}
 		if p.redrafting() && p.sections.whole {
-			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting · every section keeps its last text")}
+			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, EscBack+escClause+"every section keeps its last text")}
 			break
 		}
 		if p.redrafting() {
-			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting · the section keeps its last text")}
+			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, EscBack+escClause+"the section keeps its last text")}
 			break
 		}
-		segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting")}
+		segments = []KeyOffer{keyOfferAs(keys.Profile.Back, EscBack+escClause+"nothing is drafted")}
 	default:
 		segments = p.sections.sectionHint(p.card || p.Picker != nil, p.Migratable, p.wayOutWords())
 	}

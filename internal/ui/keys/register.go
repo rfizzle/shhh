@@ -642,7 +642,7 @@ func register() [surfaceCount]Surface {
 			Position: Takeover,
 			Reached:  "the drafter's last step",
 			Bindings: []Binding{
-				Profile.Move, Profile.Refine, Profile.RefineAll, Profile.Edit, Profile.Clear,
+				Profile.Move, Profile.Refine, Profile.RefineAll, Profile.Edit, Profile.Clear, Profile.Undo,
 				Profile.Migrate, Profile.Note, Profile.Save, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
 			},
 		},

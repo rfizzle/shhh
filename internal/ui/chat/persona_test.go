@@ -664,7 +664,7 @@ func TestPersona_EscTakesBackASectionsRevisionsOneAtATime(t *testing.T) {
 		t.Fatalf("a cleared section should say so:\n%s", view)
 	}
 	for _, want := range []string{"Only internal/agent.", "NEW scope.", "One package."} {
-		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+		m = pressOn(t, m, tea.KeyPressMsg{Code: 'u', Text: "u"})
 		if m.persona == nil || m.state != statePersona {
 			t.Fatal("esc on a revised section should not leave the step")
 		}
@@ -678,6 +678,7 @@ func TestPersona_EscTakesBackASectionsRevisionsOneAtATime(t *testing.T) {
 	// Nothing left to take back: esc is the step's own and drops the draft,
 	// and nothing was ever written.
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 	if m.persona != nil || !strings.Contains(lastNote(m), "Profile discarded.") {
 		t.Fatalf("esc on an unrevised section should discard: %q", lastNote(m))
 	}
@@ -771,7 +772,7 @@ func TestPersona_AWholeDraftNoteRevisesEverySectionButTheOnesYouWrote(t *testing
 	}
 	view = personaView(m)
 	for _, want := range []string{"Purpose · refined once", "Report · refined once", "Restrictions · edited by you · kept",
-		"Whole draft · redrafted on your note", "Purpose, Scope, Method and Report changed", "[esc] take it back from every section it changed"} {
+		"Whole draft · redrafted on your note", "Purpose, Scope, Method and Report changed", "[u] take it back from every section it changed"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the result lacks %q:\n%s", want, view)
 		}
@@ -822,7 +823,7 @@ func TestPersona_AWholeDraftNoteIsTakenBackExactly(t *testing.T) {
 	for m.personaScreen.Selected() != 1 {
 		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
 	}
-	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'u', Text: "u"})
 	if got := m.persona.draft.Sections.Scope; got != "One package." {
 		t.Fatalf("esc on Scope took it to %q", got)
 	}
@@ -841,7 +842,7 @@ func TestPersona_AWholeDraftNoteIsTakenBackExactly(t *testing.T) {
 	for m.personaScreen.Selected() != len(personaBlocks) {
 		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
 	}
-	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'u', Text: "u"})
 	s := m.persona.draft.Sections
 	if s.Purpose != "LATER purpose." || s.Scope != "One package." || s.Method != "Read, then write." ||
 		s.Report != "The cases added." || s.Restrictions != "Never delete a test." {
@@ -996,7 +997,7 @@ func TestPersona_TheCommandsSectionIsRevisedLikeAProseOne(t *testing.T) {
 		t.Fatalf("a cleared Commands block should say so:\n%s", view)
 	}
 	for _, want := range []string{"git push,go install", "git push", ""} {
-		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+		m = pressOn(t, m, tea.KeyPressMsg{Code: 'u', Text: "u"})
 		if got := strings.Join(m.persona.draft.Deny, ","); got != want {
 			t.Fatalf("esc took Commands back to %q, want %q", got, want)
 		}
@@ -1142,7 +1143,7 @@ func TestPersona_AMigrationWritesNothingUntilSaved(t *testing.T) {
 	updated, cmd := pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: tea.KeyEnter}).Update(tea.KeyPressMsg{Code: 'm', Text: "m"})
 	m = updated.(Model)
 	if waiting := personaView(m); !strings.Contains(waiting, "moving critic into sections") ||
-		!strings.Contains(waiting, "[esc] stop · the profile stays as the file has it") {
+		!strings.Contains(waiting, "[esc] back — the profile stays as the file has it") {
 		t.Fatalf("the wait should be on the surface:\n%s", waiting)
 	}
 	m = runPersonaCmd(t, m, cmd)
@@ -1162,6 +1163,7 @@ func TestPersona_AMigrationWritesNothingUntilSaved(t *testing.T) {
 		t.Fatalf("the offer should be gone once migrated:\n%s", view)
 	}
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 	if m.state == statePersona || len(*saved) != 0 {
 		t.Fatalf("esc on an unrevised migration should drop it with nothing written, saved %d", len(*saved))
 	}
@@ -1187,7 +1189,7 @@ func TestPersona_AMigratedSectionIsRevisedLikeADraftsSection(t *testing.T) {
 	if !strings.Contains(view, "Method · refined once") || !strings.Contains(view, "Read the diff, then the files it touches.") {
 		t.Fatalf("the gap should be filled the way a draft's is:\n%s", view)
 	}
-	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'u', Text: "u"})
 	if view := personaView(m); !strings.Contains(view, "Method ⚠ empty") {
 		t.Fatalf("esc should take the revision back:\n%s", view)
 	}

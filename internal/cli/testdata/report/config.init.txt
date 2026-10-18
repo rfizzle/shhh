@@ -7,6 +7,6 @@
         and the built-in words are back
         `shhh config init --wording <key>` prints a built-in's text to start one
         from; with no key it lists them
-  ✓ wrote /home/dev/.config/shhh/keybindings.toml · 239 keys, each co…  [global]
+  ✓ wrote /home/dev/.config/shhh/keybindings.toml · 240 keys, each co…  [global]
         uncomment a line to move a key; shhh keys check reads it the way a
         session will

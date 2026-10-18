@@ -289,6 +289,7 @@ func (m Model) takePersonaPick() (tea.Model, tea.Cmd) {
 		tools = nil
 	}
 	f.draft.Permissions, f.draft.Tools, f.draft.Dropped = tiers, tools, nil
+	m.personaScreen.Touched = true
 	var warning string
 	if len(f.pick.unoffered) > 0 {
 		warning = "Taken off the tools: " + strings.Join(f.pick.unoffered, ", ") + " — this session has not registered them."
