@@ -502,6 +502,9 @@ func evalRow(res eval.Result) report.Row {
 	row.Body = evalBody(res)
 	if behaviour, ok := res.Behaviour(); ok {
 		row.Body = append(row.Body, behaviourDetail(behaviour))
+		if line := assertionDetail(res); line != "" {
+			row.Body = append(row.Body, line)
+		}
 	}
 	if score, ok := res.Score(); ok {
 		if c := tableConsequence(score); c != "" {
@@ -747,6 +750,46 @@ func behaviourDetail(b eval.Behaviour) string {
 		b.MutationsAttempted, b.CallsBeforeFirstMutation, b.ValidationAttempts, b.UnintendedMutations, b.ShellCalls, b.ResultBytes)
 }
 
+// assertionDetail is the line for what the case said about how the session
+// should go, apart from the check and after the behaviour. It is made of
+// assertion words, tool names, reason codes and counts, and carries no
+// argument, path, command or answer: it is printed, and a baseline keeps the
+// counts of it.
+// See docs/capabilities/evals.md#a-case-can-say-how-the-session-should-have-gone.
+func assertionDetail(res eval.Result) string {
+	if len(res.Case.Assertions) == 0 {
+		return ""
+	}
+	ran := 0
+	for _, a := range res.Attempts {
+		if a.Err == nil {
+			ran++
+		}
+	}
+	parts := make([]string, 0, len(res.Case.Assertions))
+	for i, as := range res.Case.Assertions {
+		broken, detail := 0, ""
+		for _, a := range res.Attempts {
+			if a.Err != nil || i >= len(a.Findings) || a.Findings[i].Held {
+				continue
+			}
+			if broken == 0 {
+				detail = a.Findings[i].Detail
+			}
+			broken++
+		}
+		switch {
+		case broken == 0:
+			parts = append(parts, as.Label()+" held")
+		case ran > 1:
+			parts = append(parts, fmt.Sprintf("%s broken in %d of %d attempts (%s)", as.Label(), broken, ran, detail))
+		default:
+			parts = append(parts, fmt.Sprintf("%s broken (%s)", as.Label(), detail))
+		}
+	}
+	return "assertions: " + strings.Join(parts, " · ")
+}
+
 // evalBody is why a case did not pass, which is the only thing a failing row
 // is read for. Every attempt's reason is shown rather than the first: a case
 // that failed three different ways is a different problem from one that
@@ -764,6 +807,13 @@ func evalBody(res eval.Result) []string {
 			// What it did instead is its rows or its three rates, which are
 			// listed beside this.
 			continue
+		case !a.Passed && a.CheckPassed:
+			// The work was done and the route was not the one the case
+			// allows, which is its own finding and not a failed check.
+			line = "check passed · 1 assertion broken"
+			if n := eval.Broken(a.Findings); n != 1 {
+				line = fmt.Sprintf("check passed · %d assertions broken", n)
+			}
 		case !a.Passed:
 			line = firstLineOf(a.CheckOutput)
 		default:
@@ -977,6 +1027,9 @@ func compareDetail(d eval.Delta) string {
 	}
 	if before, after := d.Before.Behaviour, d.After.Behaviour; before != nil && after != nil {
 		parts = append(parts, behaviourShifts(*before, *after)...)
+	}
+	if before, after := d.Before.Assertions, d.After.Assertions; before != nil && after != nil && before.MedianBroken != after.MedianBroken {
+		parts = append(parts, eval.FormatRounds(before.MedianBroken)+" → "+eval.FormatRounds(after.MedianBroken)+" assertions broken")
 	}
 	if before, after := eval.FormatRounds(d.Before.Rounds), eval.FormatRounds(d.After.Rounds); before != after {
 		parts = append(parts, before+" → "+after+" rounds")

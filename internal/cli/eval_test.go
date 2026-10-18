@@ -834,3 +834,58 @@ func TestAScriptedCaseNeedsNoProviderAndTheRestAreSkipped(t *testing.T) {
 		t.Errorf("a skipped case should say what is missing: %q", skipped[1].Skip)
 	}
 }
+
+// What the case said about how the session should go is drawn on a line of its
+// own, after the behaviour, apart from the check: a session that did the work
+// by a forbidden route reads as exactly that. The line carries assertion words,
+// tool names and counts, and no argument or path.
+func TestEvalReportDrawsAssertionsApartFromTheCheck(t *testing.T) {
+	as := []eval.Assertion{
+		{Word: "no-repeat"},
+		{Word: "read-before-edit"},
+		{Word: "budget", Tool: "read_file", Limit: 6},
+	}
+	res := eval.Result{Case: eval.Case{Name: "asserted", Kind: eval.KindWorkspace, Assertions: as}, Attempts: []eval.Attempt{{
+		CheckPassed: true,
+		Findings: []eval.Finding{
+			{Assertion: as[0], Held: true},
+			{Assertion: as[1], Count: 2, Detail: "edit_file: 2 calls on a path never read"},
+			{Assertion: as[2], Count: 9, Detail: "9 calls"},
+		},
+	}}}
+	out := evalReport(eval.Summary{Results: []eval.Result{res}}, "").Render(200)
+
+	const line = "assertions: no-repeat held · read-before-edit broken (edit_file: 2 calls on a path never read) · budget read_file 6 broken (9 calls)"
+	if !strings.Contains(out, line) {
+		t.Errorf("the assertions line is missing:\n%s", out)
+	}
+	if !strings.Contains(out, "check passed · 2 assertions broken") {
+		t.Errorf("the check's own verdict should be kept beside the broken assertions:\n%s", out)
+	}
+	if strings.Index(out, "result bytes") > strings.Index(out, "assertions:") {
+		t.Errorf("the assertions line belongs after the behaviour line:\n%s", out)
+	}
+	if !strings.Contains(out, "failed") {
+		t.Errorf("a broken assertion fails the case:\n%s", out)
+	}
+}
+
+// A case that declares none gets no line at all.
+func TestEvalReportSaysNothingOfAssertionsACaseNeverDeclared(t *testing.T) {
+	out := evalReport(eval.Summary{Results: []eval.Result{workspaceRun("plain", 3, true)}}, "").Render(160)
+	if strings.Contains(out, "assertions") {
+		t.Errorf("no assertion was declared, so the report says none:\n%s", out)
+	}
+}
+
+// The comparison draws the count that moved, beside the rest.
+func TestCompareReportShowsAssertionsThatBrokeFurther(t *testing.T) {
+	before := eval.CaseBaseline{Name: "asserted", Verdict: "failed", Rounds: 4, Assertions: &eval.AssertionsBaseline{Declared: 3, MedianBroken: 1}}
+	after := eval.CaseBaseline{Name: "asserted", Verdict: "failed", Rounds: 4, Assertions: &eval.AssertionsBaseline{Declared: 3, MedianBroken: 2}}
+	row := compareReport(compareOf(t,
+		eval.Baseline{Version: eval.BaselineVersion, Cases: []eval.CaseBaseline{before}},
+		eval.Baseline{Version: eval.BaselineVersion, Cases: []eval.CaseBaseline{after}}), time.Now()).Sections[0].Rows[0]
+	if !strings.Contains(row.Detail, "1 → 2 assertions broken") {
+		t.Errorf("detail = %q", row.Detail)
+	}
+}

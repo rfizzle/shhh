@@ -70,6 +70,10 @@ type Case struct {
 	// explanation. Its final dirty paths are unintended mutations; the call
 	// metrics still record attempted direct mutations for every case.
 	AnalysisOnly bool
+	// Assertions are what the case says about how the session should go, each
+	// decided from the stream the session wrote (assert.go). A case that
+	// declares none is graded on its check alone.
+	Assertions []Assertion
 	// Requires names the commands the case cannot run without, and Skip,
 	// when set, is which of them this machine has not got — a case needing a
 	// toolchain that is absent says so rather than failing as though the
@@ -86,11 +90,19 @@ type Case struct {
 // thing being measured is not deterministic, and a single pass is not
 // evidence of anything.
 type Attempt struct {
-	// Passed is the check's verdict. Err is set when the run never got as far
-	// as being checked — the session failed, or the attempt timed out — which
-	// is a different fact from a check that ran and said no.
+	// Passed is the attempt's verdict: the check passed and every declared
+	// assertion held, which for a case that declares none is the check's alone.
+	// Err is set when the run never got as far as being checked — the session
+	// failed, or the attempt timed out — which is a different fact from a
+	// check that ran and said no.
 	Passed bool
 	Err    error
+	// CheckPassed is the check's own verdict, kept apart from Passed so that a
+	// session which did the work by a route the case forbade reads as exactly
+	// that, and not as work that was not done. Findings are the declared
+	// assertions' answers, in declaration order.
+	CheckPassed bool
+	Findings    []Finding
 	// CheckOutput is what the check printed when it failed, which is the only
 	// thing that says why.
 	CheckOutput string
@@ -199,6 +211,12 @@ func (r Result) Behaviour() (Behaviour, bool) {
 		ShellCalls:               int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.ShellCalls) })),
 		ResultBytes:              int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.ResultBytes) })),
 	}, len(r.Attempts) > 0
+}
+
+// Declared is how many assertions the case makes, and Broken the median number
+// that did not hold across the attempts that ran.
+func (r Result) Broken() float64 {
+	return r.Median(func(a Attempt) float64 { return float64(Broken(a.Findings)) })
 }
 
 // Passes is how many attempts the check accepted.

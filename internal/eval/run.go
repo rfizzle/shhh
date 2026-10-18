@@ -9,9 +9,10 @@ package eval
 // project, the machine and the config, and a harness that skipped that
 // assembly could not tell you whether a change to it helped.
 //
-// What it does not do is grade the transcript. The verdict is the case's own
-// check command, run in the workspace the session left behind; the transcript
-// is read only for what it costs to say something was done.
+// What it does not do is grade the session's words. The verdict is the case's
+// own check command, run in the workspace the session left behind, and the
+// assertions the case declares about its calls (assert.go); the stream is read
+// for what it cost to do the work, and for which calls it made.
 //
 // A table case goes the other way, and for the same reason: an auxiliary call
 // assembles its own instruction and its own bounds inside this process, with
@@ -25,7 +26,6 @@ package eval
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -92,90 +92,6 @@ func (o Options) repeats() int {
 		return 1
 	}
 	return o.Repeat
-}
-
-// transcript is the part of `--json` this needs. It is deliberately a subset:
-// the emitter owns that format, and a decoder that insisted on every field
-// would break on a field being added to it.
-type transcript struct {
-	Success bool   `json:"success"`
-	Error   string `json:"error"`
-	Usage   struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
-	} `json:"usage"`
-	Messages []struct {
-		Role      string `json:"role"`
-		Content   string `json:"content"`
-		ToolCalls []struct {
-			Name      string `json:"name"`
-			Arguments string `json:"arguments"`
-		} `json:"tool_calls"`
-	} `json:"messages"`
-}
-
-// rounds and calls are the shape of the work: an assistant message carrying
-// tool calls is one round, whatever it asked for in it.
-func (t transcript) rounds() (rounds, calls int) {
-	for _, m := range t.Messages {
-		if m.Role == "assistant" && len(m.ToolCalls) > 0 {
-			rounds++
-			calls += len(m.ToolCalls)
-		}
-	}
-	return rounds, calls
-}
-
-// behaviour reports the calls that changed or checked a workspace. It reads
-// the transcript only as operational evidence; the case's check remains the
-// sole verdict on whether the requested work was done.
-func (t transcript) behaviour() (b Behaviour) {
-	seenMutation := false
-	for _, m := range t.Messages {
-		if m.Role == "tool" {
-			b.ResultBytes += len(m.Content)
-		}
-		if m.Role != "assistant" {
-			continue
-		}
-		for _, call := range m.ToolCalls {
-			switch call.Name {
-			case "write_file", "edit_file", "git_write":
-				b.MutationsAttempted++
-				seenMutation = true
-			case "quality_gate":
-				b.ValidationAttempts++
-			case "execute_command":
-				b.ShellCalls++
-				if validationCommand(call.Arguments) {
-					b.ValidationAttempts++
-				}
-			}
-			if !seenMutation {
-				b.CallsBeforeFirstMutation++
-			}
-		}
-	}
-	return b
-}
-
-// validationCommand recognises the commands a coding session normally uses to
-// validate a change. It deliberately does not treat every command as evidence
-// of verification: a status or a reproduction command belongs to investigation.
-func validationCommand(arguments string) bool {
-	var args struct {
-		Command string `json:"command"`
-	}
-	if json.Unmarshal([]byte(arguments), &args) != nil {
-		return false
-	}
-	for _, word := range strings.Fields(strings.ToLower(args.Command)) {
-		switch word {
-		case "test", "tests", "check", "lint", "vet", "build", "compile", "verify":
-			return true
-		}
-	}
-	return false
 }
 
 // Run measures every case, in order, and returns the summary.
@@ -266,7 +182,9 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 		defer cancel()
 	}
 
-	args := append([]string{"code", "--print", "--json", "--yes"}, opts.Args...)
+	fx := fixtureFiles(dir)
+
+	args := append([]string{"code", "--print", "--output", "jsonl", "--yes"}, opts.Args...)
 	args = append(args, c.Prompt)
 	cmd := exec.CommandContext(runCtx, bin, args...)
 	cmd.Dir = dir
@@ -278,24 +196,29 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	cmd.Stderr = &errOut
 	runErr := cmd.Run()
 
-	// The transcript is read whatever the exit status: a session that failed
+	// The stream is read whatever the exit status: a session that failed
 	// late still did work, and the numbers from it are the ones that say how
-	// far it got.
-	var t transcript
-	if decodeErr := json.NewDecoder(strings.NewReader(out.String())).Decode(&t); decodeErr == nil {
-		a.Rounds, a.Calls = t.rounds()
-		a.Behaviour = t.behaviour()
-		a.TokensIn, a.TokensOut = t.Usage.PromptTokens, t.Usage.CompletionTokens
-		if opts.Price != nil {
-			a.Cost, a.Priced = opts.Price(opts.Model, a.TokensIn, a.TokensOut)
-		}
+	// far it got. A line that is not an event ends the reading and keeps what
+	// came before it.
+	t, decodeErr := decodeStream(strings.NewReader(out.String()))
+	a.Rounds, a.Calls = t.rounds()
+	a.Behaviour = t.behaviour()
+	a.TokensIn, a.TokensOut = t.usage()
+	if opts.Price != nil && len(t.events) > 0 {
+		a.Cost, a.Priced = opts.Price(opts.Model, a.TokensIn, a.TokensOut)
 	}
+	_, closeErr, _, closed := t.closeLine()
 
 	switch {
 	case errors.Is(runCtx.Err(), context.DeadlineExceeded):
 		a.Err = fmt.Errorf("the session did not finish inside %s", opts.Timeout)
 	case runErr != nil:
-		a.Err = fmt.Errorf("the session failed: %s", firstLine(t.Error, errOut.String(), runErr.Error()))
+		a.Err = fmt.Errorf("the session failed: %s", firstLine(closeErr, errOut.String(), runErr.Error()))
+	case len(c.Assertions) > 0 && (decodeErr != nil || !closed):
+		// An assertion over the part of a session that was read would hold for
+		// the calls that were not: it cannot be decided, and the run is one
+		// that broke rather than a route that was fine.
+		a.Err = errors.New("the session's stream ended before its close line, so its assertions cannot be decided")
 	}
 	if a.Err != nil {
 		a.Elapsed = time.Since(start)
@@ -305,7 +228,12 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	if c.AnalysisOnly {
 		a.Behaviour.UnintendedMutations = dirtyPaths(ctx, dir)
 	}
-	a.Passed, a.CheckOutput = check(ctx, dir, c.Check)
+	a.CheckPassed, a.CheckOutput = check(ctx, dir, c.Check)
+	a.Passed = a.CheckPassed
+	if len(c.Assertions) > 0 {
+		a.Findings = t.assert(c.Assertions, fx)
+		a.Passed = a.CheckPassed && Broken(a.Findings) == 0
+	}
 	a.Elapsed = time.Since(start)
 	return a
 }
@@ -367,6 +295,33 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 	}
 	a.Elapsed = time.Since(start)
 	return a
+}
+
+// fixtureFiles is the files the fixture holds before the session starts, as
+// slash-separated paths inside the workspace, which is what tells an edit of a
+// file from the creation of one. The root is kept under both its names, since
+// a session may be told the resolved one.
+func fixtureFiles(dir string) fixture {
+	fx := fixture{roots: []string{dir}, files: map[string]bool{}}
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil && resolved != dir {
+		fx.roots = append(fx.roots, resolved)
+	}
+	_ = filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			if d.Name() == ".git" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if rel, relErr := filepath.Rel(dir, p); relErr == nil {
+			fx.files[filepath.ToSlash(rel)] = true
+		}
+		return nil
+	})
+	return fx
 }
 
 // dirtyPaths reports the paths the session left changed in its fresh fixture.

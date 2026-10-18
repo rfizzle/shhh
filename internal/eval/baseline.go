@@ -117,6 +117,19 @@ type CaseBaseline struct {
 	// kind. It is retained even when every value is zero: zero direct mutation
 	// calls is the result an analysis-only control is meant to expose.
 	Behaviour *BehaviourBaseline `json:"behaviour,omitempty"`
+	// Assertions is how many a workspace case declares and the median number
+	// that broke, and nil for a case that declares none. It is optional and
+	// the format version did not move for it: a reader that has never heard of
+	// it ignores it, and a row without it compares as it always did.
+	Assertions *AssertionsBaseline `json:"assertions,omitempty"`
+}
+
+// AssertionsBaseline is what a case's declared assertions came to: the count
+// declared, which is part of what the case is, and the median number broken
+// across the attempts. Neither names a tool, a path or an argument.
+type AssertionsBaseline struct {
+	Declared     int     `json:"declared"`
+	MedianBroken float64 `json:"median_broken"`
 }
 
 // BehaviourBaseline is the action evidence from a workspace attempt, reduced
@@ -202,6 +215,9 @@ func (s Summary) Baseline() Baseline {
 				ShellCalls:               res.Median(func(a Attempt) float64 { return float64(a.Behaviour.ShellCalls) }),
 				ResultBytes:              res.Median(func(a Attempt) float64 { return float64(a.Behaviour.ResultBytes) }),
 			}
+		}
+		if n := len(res.Case.Assertions); n > 0 {
+			c.Assertions = &AssertionsBaseline{Declared: n, MedianBroken: res.Broken()}
 		}
 		if score, ok := res.Research(); ok {
 			c.Research = &ResearchBaseline{
@@ -526,6 +542,21 @@ func delta(before, after CaseBaseline) Delta {
 			d.Why = fmt.Sprintf("%s → %s quotes found", before.Research.Quoted, after.Research.Quoted)
 			return d
 		}
+	}
+
+	// Under a verdict that held, a broken assertion that was not broken before
+	// is a control opening further: the work still gets done, by a route the
+	// case author said it should not take.
+	if before.Assertions != nil && after.Assertions != nil &&
+		after.Assertions.MedianBroken != before.Assertions.MedianBroken {
+		d.Change = Improved
+		d.Why = fmt.Sprintf("%s → %s of %d assertions broken",
+			FormatRounds(before.Assertions.MedianBroken), FormatRounds(after.Assertions.MedianBroken), after.Assertions.Declared)
+		if after.Assertions.MedianBroken > before.Assertions.MedianBroken {
+			d.Change = Regressed
+			d.Why += " — a control is further open"
+		}
+		return d
 	}
 
 	if before.Rounds > 0 && after.Rounds > 0 {

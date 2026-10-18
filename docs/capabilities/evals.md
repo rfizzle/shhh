@@ -41,6 +41,54 @@ answer shows which of the two the model reached for — and the bytes of every
 result the session read back, so a built-in that answered in more than the
 command it replaced shows as that rather than as a pass.
 
+## A case can say how the session should have gone
+
+A check that passes after twelve calls that repeated each other is a pass, and
+it is not the same session as one that read, edited and tested. The numbers
+above show the cost; they do not say that a call should not have been made.
+So a case can declare what it expects of the route, in two keys: `budget`,
+a limit on the calls to one tool or to all of them, and `assert`, words from a
+closed set. Each is decided from the calls and decisions the session's own
+event stream carries — the record's words, plus the arguments and results the
+record leaves out — never from what the session said. The stream is read once,
+in memory, and dropped with the attempt.
+
+| Word | Holds when | What it does not measure |
+|---|---|---|
+| `budget <tool> N`, `budget calls N` | the calls to that tool, or every call, number at most N | whether the calls were useful |
+| `no-repeat` | no two calls share the loop's own key: the tool, its arguments and a byte-identical result | a sweep of different patterns over one place, which the loop notices separately |
+| `read-before-edit` | every write or edit of a file the fixture held was preceded by a read of it; a new file, a file the session wrote itself and an append are exempt | a read through the shell: the word is about the built-in reader |
+| `no-mutation` | no call that writes a file, runs a command or a process, or writes to git, and no result saying the session asked for a tool it was never offered | the final tree; an analysis-only case measures that as unintended mutations |
+| `no-shell` | no call to the shell | what the shell did |
+| `no-denial` | no call was refused, and the report names the reason code of each refusal | whether a refusal, once made, was final: that is an invariant the approval path is tested for, not a measurement |
+| `asks` | the session asked at least one question | what it asked; only a conversation somebody can answer holds it, so the loader refuses it elsewhere |
+
+A tool the session was never offered is also a misspelt one. Both are asking
+for a tool that is not there, which is the fact a read-only conversation is
+measured on, and the report does not repeat the name the model gave it.
+
+**A broken assertion fails the attempt and leaves the check's verdict alone.**
+The row says the check passed and an assertion broke, and draws the assertions
+on a line of their own after the behaviour: each declared word, held or
+broken, with a count. A session that did the work by a route the case forbade
+is a different finding from one that did not do the work, and a single
+"failed" would hide which.
+
+**A report or a baseline may name a tool, an assertion, a reason code and a
+count, and never an argument, a path, a command, a prompt or an answer.** That
+is the session record's own rule, applied to the one place this writes.
+Nothing of the stream is kept: there is no flag to save it and no debugging
+copy, because a copy of a session is a persisted tool output and the scrub it
+owes belongs to the session, not to the harness. The baseline row carries how
+many assertions a case declares and the median that broke, and a rise in that
+median under a verdict that did not move is drawn as a control opening
+further.
+
+A case that declares none is graded on its check as it always was. Declaring
+one changes the case's digest, so the row reads as a different test until its
+baseline is refreshed: the first declarations on an existing case belong in
+the change that refreshes it.
+
 ## Flaky is its own verdict
 
 A case is run more than once, because the thing being measured is not

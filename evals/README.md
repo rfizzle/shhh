@@ -59,7 +59,18 @@ name = "my-case"                      # optional; defaults to the directory
 prompt = "what the session is asked"
 requires = ["go", "git"]              # skipped, not failed, if these are absent
 check = ["go", "test", "./..."]       # exit zero is the pass
+budget = ["read_file 6", "calls 15"]  # optional: at most N calls to a tool, or to any
+assert = ["no-repeat", "no-shell"]    # optional: words from the closed set below
 ```
+
+`budget` and `assert` say how the session should have gone, not whether the work
+was done; the check still decides that. The words are `no-repeat`,
+`read-before-edit`, `no-mutation`, `no-shell`, `no-denial` and `asks`
+(`asks` needs a persona, which no case has yet, so the loader refuses it for
+now). Each is decided from the session's own event stream and is drawn on its
+own report line; `docs/capabilities/evals.md` says what each does and does not
+measure. Declaring one on an existing case changes its digest, so the same
+change refreshes that case's baseline row.
 
 Every key is top level. There are no tables on purpose — a TOML table swallows
 every key written after it, so there is no order to get wrong.

@@ -145,7 +145,7 @@ func (d *RepeatDetector) note(tool string, args json.RawMessage, result string) 
 	if d == nil {
 		return 0, sweep{}
 	}
-	key := interactionKey(tool, args, result)
+	key := InteractionKey(tool, args, result)
 	call := sweepCall{wrote: wroteSomething(tool, args)}
 	scope, swept := digest.SearchScope(tool, string(args))
 	if swept {
@@ -253,7 +253,7 @@ func (d *RepeatDetector) Notice(tool string, args json.RawMessage, result string
 func (d *RepeatDetector) AskedBefore(args json.RawMessage) string {
 	// The result is no part of a question's key, so there is none to pass:
 	// what came back is exactly what two askings of one question are allowed
-	// to disagree about (interactionKey).
+	// to disagree about (InteractionKey).
 	if n := d.Note(ask.ToolName, args, ""); n >= repeatNoticeAfter {
 		return askRepeatNotice(n)
 	}
@@ -433,9 +433,11 @@ func repeatNotice(tool string, n int, failed bool) string {
 		tool, n)
 }
 
-// interactionKey identifies one tool interaction. Arguments are canonicalised
+// InteractionKey identifies one tool interaction. Arguments are canonicalised
 // through a decode/encode round trip so the same call written two ways — a
 // different key order, different spacing — is recognised as the same call.
+// It is exported so a measurement of repeated calls reads the loop's own key
+// and cannot come to disagree with it about what a repeat is.
 //
 // A question is the one exception, and it is the exact inverse of the
 // reasoning that put the result in the key everywhere else. `go test` run
@@ -447,7 +449,7 @@ func repeatNotice(tool string, n int, failed bool) string {
 // exists for. Nothing but the question text is in it either, so a re-ask with
 // the options reworded is caught as well.
 // See docs/capabilities/coding-agent.md#the-model-can-ask.
-func interactionKey(tool string, args json.RawMessage, result string) string {
+func InteractionKey(tool string, args json.RawMessage, result string) string {
 	if tool == ask.ToolName {
 		return tool + "\x00" + ask.QuestionText(args)
 	}
@@ -462,7 +464,7 @@ func interactionKey(tool string, args json.RawMessage, result string) string {
 }
 
 // shapeSep joins a sweep's two halves. It is a byte no tool name and no path
-// contains, for the reason interactionKey uses one: a separator a value can
+// contains, for the reason InteractionKey uses one: a separator a value can
 // carry is a separator two different shapes can collide on.
 const shapeSep = "\x00"
 

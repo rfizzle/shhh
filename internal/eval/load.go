@@ -63,6 +63,11 @@ type caseFile struct {
 	// a toolchain this machine lacks is skipped and says so, because failing
 	// it would blame the agent for the machine.
 	Requires []string `toml:"requires"`
+	// Budget and Assert are what the case says about how the session should
+	// go: a limit on the calls to a tool, and words from a closed set
+	// (assert.go).
+	Budget []string `toml:"budget"`
+	Assert []string `toml:"assert"`
 }
 
 // Load reads every case directory under root, in name order so a report reads
@@ -116,6 +121,10 @@ func loadCase(dir string) (Case, error) {
 		c.Name = filepath.Base(dir)
 	}
 
+	if kind != KindWorkspace && len(f.Budget)+len(f.Assert) > 0 {
+		return Case{}, fmt.Errorf("%s: budget and assert are about a session's calls, and a %s case runs none", path, kind)
+	}
+
 	switch kind {
 	case KindWorkspace:
 		if strings.TrimSpace(f.Prompt) == "" {
@@ -129,6 +138,13 @@ func loadCase(dir string) (Case, error) {
 			return Case{}, fmt.Errorf("%s: no %s/ directory — a case needs a workspace to work in", dir, workspaceDir)
 		}
 		c.Workspace, c.Prompt, c.Check, c.AnalysisOnly = ws, strings.TrimSpace(f.Prompt), f.Check, f.AnalysisOnly
+		// No case file has a persona key yet, so asks is refused everywhere
+		// until a case can be served and answered.
+		as, err := parseAssertions(f.Budget, f.Assert, path, false)
+		if err != nil {
+			return Case{}, err
+		}
+		c.Assertions = as
 	case KindResearch:
 		if strings.TrimSpace(f.Prompt) == "" {
 			return Case{}, fmt.Errorf("%s: prompt is required — it is the question", path)

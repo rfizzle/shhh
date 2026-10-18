@@ -61,7 +61,14 @@ func requireGit(t *testing.T) {
 	}
 }
 
-const emptyTranscript = `printf '{"success":true,"final":"done","usage":{"prompt_tokens":10,"completion_tokens":2},"messages":[]}'`
+const emptyTranscript = `printf '{"kind":"close","turn":1,"round":1,"outcome":"completed","exit":0,"final":"done","usage":{"prompt_tokens":10,"completion_tokens":2}}\n'`
+
+// streamBody is a fake session's stdout: the lines, then a close line. A line
+// is written with its quotes as they are; the shell never sees them.
+func streamBody(lines ...string) string {
+	return "cat <<'STREAM'\n" + strings.Join(lines, "\n") + "\n" +
+		`{"kind":"close","turn":1,"round":9,"outcome":"completed","exit":0,"final":"done","usage":{"prompt_tokens":100,"completion_tokens":20}}` + "\nSTREAM"
+}
 
 // The verdict is the check's, and nothing else. A session that claims success
 // and changes nothing fails a case whose check says otherwise.
@@ -182,18 +189,17 @@ func TestAnAttemptKeepsItsStoreInItsOwnDirectory(t *testing.T) {
 	}
 }
 
-// The rounds are counted from the transcript rather than from anything the
+// The rounds are counted from the stream rather than from anything the
 // session says about itself.
-func TestRoundsAndCallsAreReadFromTheTranscript(t *testing.T) {
+func TestRoundsAndCallsAreReadFromTheStream(t *testing.T) {
 	requireGit(t)
-	const transcript = `printf '{"success":true,"usage":{"prompt_tokens":100,"completion_tokens":20},"messages":[` +
-		`{"role":"user","content":"go"},` +
-		`{"role":"assistant","tool_calls":[{"name":"read_file"},{"name":"search"}]},` +
-		`{"role":"tool","content":"x"},` +
-		`{"role":"assistant","tool_calls":[{"name":"execute_command","arguments":"{\\"command\\":\\"go test ./...\\"}"}]},` +
-		`{"role":"assistant","tool_calls":[{"name":"edit_file"}]},` +
-		`{"role":"assistant","content":"done"}]}'`
-	bin := fakeShhh(t, transcript)
+	bin := fakeShhh(t, streamBody(
+		`{"kind":"tool-call","turn":1,"round":1,"id":"1","tool":"read_file","arguments":"{}"}`,
+		`{"kind":"tool-call","turn":1,"round":1,"id":"2","tool":"search","arguments":"{}"}`,
+		`{"kind":"tool-result","turn":1,"round":1,"id":"1","tool":"read_file","result":"x"}`,
+		`{"kind":"tool-call","turn":1,"round":2,"id":"3","tool":"execute_command","arguments":"{\"command\":\"go test ./...\"}"}`,
+		`{"kind":"tool-call","turn":1,"round":3,"id":"4","tool":"edit_file","arguments":"{}"}`,
+	))
 	cases := suite(t, []string{"true"}, map[string]string{"a.txt": "x"})
 
 	sum, err := Run(context.Background(), cases, Options{Binary: bin})
@@ -202,7 +208,7 @@ func TestRoundsAndCallsAreReadFromTheTranscript(t *testing.T) {
 	}
 	a := sum.Results[0].Attempts[0]
 	if a.Rounds != 3 {
-		t.Errorf("rounds = %d, want 3 — a message with calls is one round however many it asked for", a.Rounds)
+		t.Errorf("rounds = %d, want 3 — a position with calls is one round however many it asked for", a.Rounds)
 	}
 	if a.Calls != 4 {
 		t.Errorf("calls = %d, want 4", a.Calls)
@@ -220,8 +226,11 @@ func TestRoundsAndCallsAreReadFromTheTranscript(t *testing.T) {
 // mutation that would otherwise be invisible beside a successful explanation.
 func TestAnalysisOnlyAttemptRecordsDirtyPathsAsUnintendedMutations(t *testing.T) {
 	requireGit(t)
-	const transcript = `printf '{"success":true,"usage":{},"messages":[{"role":"assistant","tool_calls":[{"name":"read_file"}]},{"role":"assistant","tool_calls":[{"name":"write_file"}]},{"role":"assistant","tool_calls":[{"name":"quality_gate"}]}]}'`
-	bin := fakeShhh(t, "echo changed > a.txt\n"+transcript)
+	bin := fakeShhh(t, "echo changed > a.txt\n"+streamBody(
+		`{"kind":"tool-call","turn":1,"round":1,"id":"1","tool":"read_file","arguments":"{}"}`,
+		`{"kind":"tool-call","turn":1,"round":2,"id":"2","tool":"write_file","arguments":"{}"}`,
+		`{"kind":"tool-call","turn":1,"round":3,"id":"3","tool":"quality_gate","arguments":"{}"}`,
+	))
 	cases := suite(t, []string{"git", "diff", "--exit-code"}, map[string]string{"a.txt": "original"})
 	cases[0].AnalysisOnly = true
 
@@ -236,6 +245,107 @@ func TestAnalysisOnlyAttemptRecordsDirtyPathsAsUnintendedMutations(t *testing.T)
 	want := Behaviour{MutationsAttempted: 1, CallsBeforeFirstMutation: 1, ValidationAttempts: 1, UnintendedMutations: 1}
 	if a.Behaviour != want {
 		t.Errorf("behaviour = %+v, want %+v", a.Behaviour, want)
+	}
+}
+
+// The attempt asks for the stream, not the transcript.
+func TestAnAttemptAsksForTheJSONLStream(t *testing.T) {
+	requireGit(t)
+	seen := filepath.Join(t.TempDir(), "argv")
+	bin := fakeShhh(t, "printf '%s ' \"$@\" > "+seen+"\n"+emptyTranscript)
+	cases := suite(t, []string{"true"}, map[string]string{"a.txt": "x"})
+
+	if _, err := Run(context.Background(), cases, Options{Binary: bin}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(seen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(raw), "code --print --output jsonl --yes ") {
+		t.Errorf("argv = %q", raw)
+	}
+}
+
+// The check's verdict is kept when an assertion breaks: the work was done, by
+// a route the case did not allow.
+func TestABrokenAssertionFailsTheAttemptAndKeepsTheCheckVerdict(t *testing.T) {
+	requireGit(t)
+	bin := fakeShhh(t, "touch fixed\n"+streamBody(
+		`{"kind":"tool-call","turn":1,"round":1,"id":"1","tool":"execute_command","arguments":"{\"command\":\"cat a.txt\"}"}`,
+	))
+	cases := suite(t, []string{"test", "-f", "fixed"}, map[string]string{"a.txt": "x"})
+	cases[0].Assertions = []Assertion{{Word: wordNoShell}, {Word: wordBudget, Tool: "calls", Limit: 5}}
+
+	sum, err := Run(context.Background(), cases, Options{Binary: bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := sum.Results[0].Attempts[0]
+	if !a.CheckPassed {
+		t.Error("the check's own verdict was lost")
+	}
+	if a.Passed {
+		t.Error("a broken assertion should fail the attempt")
+	}
+	if got := sum.Results[0].Verdict(); got != Failed {
+		t.Errorf("verdict = %v, want Failed", got)
+	}
+	if len(a.Findings) != 2 || a.Findings[0].Held || !a.Findings[1].Held {
+		t.Errorf("findings = %+v", a.Findings)
+	}
+}
+
+// A stream that was cut short cannot decide an assertion: the calls after the
+// cut would otherwise read as calls that were never made.
+func TestAnAssertionOverATruncatedStreamIsARunThatBroke(t *testing.T) {
+	requireGit(t)
+	bin := fakeShhh(t, `printf '{"kind":"tool-call","turn":1,"round":1,"id":"1","tool":"read_file","arguments":"{}"}\n{"kind":'`)
+	cases := suite(t, []string{"true"}, map[string]string{"a.txt": "x"})
+	cases[0].Assertions = []Assertion{{Word: wordNoShell}}
+
+	sum, err := Run(context.Background(), cases, Options{Binary: bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := sum.Results[0].Verdict(); got != Errored {
+		t.Fatalf("verdict = %v, want Errored", got)
+	}
+	cases[0].Assertions = nil
+	sum, err = Run(context.Background(), cases, Options{Binary: bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := sum.Results[0].Verdict(); got != Passed {
+		t.Errorf("a case declaring none is graded as it was: %v", got)
+	}
+}
+
+// An assertion that held changes nothing, and a case that declares none is
+// graded on its check as it always was.
+func TestACaseWithNoAssertionIsGradedAsToday(t *testing.T) {
+	requireGit(t)
+	bin := fakeShhh(t, "touch fixed\n"+streamBody(
+		`{"kind":"tool-call","turn":1,"round":1,"id":"1","tool":"execute_command","arguments":"{}"}`,
+	))
+	cases := suite(t, []string{"test", "-f", "fixed"}, map[string]string{"a.txt": "x"})
+
+	sum, err := Run(context.Background(), cases, Options{Binary: bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := sum.Results[0].Attempts[0]
+	if !a.Passed || !a.CheckPassed || a.Findings != nil {
+		t.Errorf("attempt = %+v", a)
+	}
+
+	cases[0].Assertions = []Assertion{{Word: wordNoDenial}}
+	sum, err = Run(context.Background(), cases, Options{Binary: bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a := sum.Results[0].Attempts[0]; !a.Passed || len(a.Findings) != 1 || !a.Findings[0].Held {
+		t.Errorf("a held assertion should leave the attempt passing: %+v", a)
 	}
 }
 

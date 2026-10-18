@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -527,5 +528,64 @@ func TestCompare_ABaselineWithoutDigestsComparesAsBefore(t *testing.T) {
 	if cmp.Cases[0].Change != Regressed || len(cmp.Regressions()) != 1 {
 		t.Errorf("change = %v, regressions = %d — a row with no digest compares as it always did",
 			cmp.Cases[0].Change, len(cmp.Regressions()))
+	}
+}
+
+// assertedResult is a workspace case that declares two assertions, one attempt
+// per entry of broken, each breaking that many.
+func assertedResult(name string, broken ...int) Result {
+	res := Result{Case: Case{Name: name, Kind: KindWorkspace, Assertions: []Assertion{{Word: wordNoShell}, {Word: wordNoRepeat}}}}
+	for _, n := range broken {
+		var fs []Finding
+		for i := 0; i < 2; i++ {
+			fs = append(fs, Finding{Assertion: res.Case.Assertions[i], Held: i >= n})
+		}
+		res.Attempts = append(res.Attempts, Attempt{Passed: n == 0, CheckPassed: true, Findings: fs, Rounds: 4, Elapsed: time.Minute})
+	}
+	return res
+}
+
+// The count a case declares and the median that broke are kept apart, and a
+// case that declares none carries neither.
+func TestBaselineKeepsDeclaredAndBrokenApart(t *testing.T) {
+	b := Summary{Results: []Result{assertedResult("asserted", 1, 1, 2), workspaceResult("plain", []int{3}, true)}}.Baseline()
+	got := b.Cases[0].Assertions
+	if got == nil || got.Declared != 2 || got.MedianBroken != 1 {
+		t.Errorf("assertions = %+v, want 2 declared and a median of 1 broken", got)
+	}
+	if b.Cases[1].Assertions != nil {
+		t.Errorf("a case that declares none carries no assertions: %+v", b.Cases[1].Assertions)
+	}
+	if b.Version != BaselineVersion {
+		t.Errorf("the format version moved to %d", b.Version)
+	}
+	data, err := json.Marshal(b.Cases[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), "assertions") {
+		t.Errorf("a row without assertions should not write the key: %s", data)
+	}
+}
+
+// More broken under a held verdict is a control opening further, even though
+// the case failed both times.
+func TestMoreBrokenAssertionsUnderAHeldVerdictIsAControlOpening(t *testing.T) {
+	before := Summary{Results: []Result{assertedResult("asserted", 1)}}.Baseline()
+	after := Summary{Results: []Result{assertedResult("asserted", 2)}}.Baseline()
+	cmp, err := Compare(before, after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := cmp.Cases[0]
+	if d.Change != Regressed || !strings.Contains(d.Why, "further open") || !strings.Contains(d.Why, "1 → 2") {
+		t.Errorf("delta = %v %q", d.Change, d.Why)
+	}
+	back, err := Compare(after, before)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if back.Cases[0].Change != Improved {
+		t.Errorf("fewer broken should read as improved: %v", back.Cases[0].Change)
 	}
 }

@@ -1,0 +1,13 @@
+{"kind":"text","turn":1,"round":1,"text":"looking"}
+{"kind":"tool-call","turn":1,"round":1,"id":"c1","tool":"read_file","arguments":"{\"path\":\"a.go\"}"}
+{"kind":"tool-call","turn":1,"round":1,"id":"c2","tool":"search","arguments":"{\"pattern\":\"Sum\"}"}
+{"kind":"decision","turn":1,"round":1,"decision":"allow","reason":"read-only"}
+{"kind":"tool-result","turn":1,"round":1,"id":"c1","tool":"read_file","result":"package a","outcome":"ok"}
+{"kind":"tool-result","turn":1,"round":1,"id":"c2","tool":"search","result":"match","outcome":"ok"}
+{"kind":"usage","turn":1,"round":1,"usage":{"prompt_tokens":40,"completion_tokens":10}}
+{"kind":"tool-call","turn":1,"round":2,"id":"c3","tool":"execute_command","arguments":"{\"command\":\"go test ./...\"}"}
+{"kind":"tool-result","turn":1,"round":2,"id":"c3","tool":"execute_command","result":"ok","outcome":"ok"}
+{"kind":"tool-call","turn":1,"round":3,"id":"c4","tool":"edit_file","arguments":"{\"path\":\"a.go\",\"old_text\":\"x\",\"new_text\":\"y\"}"}
+{"kind":"tool-result","turn":1,"round":3,"id":"c4","tool":"edit_file","result":"edited","outcome":"ok"}
+{"kind":"text","turn":1,"round":4,"text":"done"}
+{"kind":"close","turn":1,"round":4,"outcome":"completed","exit":0,"final":"done","usage":{"prompt_tokens":120,"completion_tokens":30}}
