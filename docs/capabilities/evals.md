@@ -332,8 +332,11 @@ run against is the failure it exists to prevent.
 
 It takes the second half of a gate — nothing that passed before fails now — and
 leaves a pass rate to a number a person sets, if they want one. The manual
-workflow does not pass the flag, and nothing schedules a run: each costs real
-requests, and what to spend them on is a decision.
+workflow passes the flag only when the person starting it ticks
+`fail_on_regression`, which is off by default: the workflow's default of one
+attempt would be refused by the flag, and a run started to read a report should
+not turn red for having found something. Nothing schedules a run: each costs
+real requests, and what to spend them on is a decision.
 
 ## The session under measurement is a real one
 

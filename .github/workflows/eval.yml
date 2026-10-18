@@ -38,6 +38,11 @@ on:
         description: "One case by name (empty runs the whole suite)"
         required: false
         type: string
+      fail_on_regression:
+        description: "Fail the run when a case that passed in the baseline fails every attempt (needs repeat of 3 or more)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -72,6 +77,7 @@ jobs:
           MODEL: ${{ inputs.model }}
           REPEAT: ${{ inputs.repeat }}
           CASE: ${{ inputs.case }}
+          FAIL_ON_REGRESSION: ${{ inputs.fail_on_regression }}
         run: |
           # Each value is quoted where it is put into the string, because
           # the string is split by a shell again inside the make recipe and a
@@ -80,4 +86,5 @@ jobs:
           if [ -n "$MODEL" ]; then args="$args --model '$MODEL'"; fi
           if [ -n "$REPEAT" ]; then args="$args --repeat '$REPEAT'"; fi
           if [ -n "$CASE" ]; then args="$args --case '$CASE'"; fi
+          if [ "$FAIL_ON_REGRESSION" = "true" ]; then args="$args --fail-on-regression"; fi
           make eval EVAL_ARGS="$args"
