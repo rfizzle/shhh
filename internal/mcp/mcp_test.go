@@ -182,7 +182,11 @@ func runTestServer() {
 		signal.Ignore(syscall.SIGTERM)
 		_ = server.Run(context.Background(), &sdk.StdioTransport{})
 		// stdin has closed and the server carries on: only SIGKILL ends it.
-		select {}
+		// A sleep, not an empty select: with nothing else running the
+		// runtime reads that as a deadlock and ends the process at once.
+		for {
+			time.Sleep(time.Hour)
+		}
 	}
 	if err := server.Run(context.Background(), &sdk.StdioTransport{}); err != nil {
 		os.Exit(1)
