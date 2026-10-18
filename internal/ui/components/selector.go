@@ -159,7 +159,7 @@ const queryCursor = "█"
 
 // queryPrompt leads the filter row. The cursor stands after it and after
 // whatever has been typed, so it is measured rather than written down twice.
-const queryPrompt = "▸ "
+const queryPrompt = "› "
 
 // Select is the single-select card (docs/interface/surfaces.md#selectors):
 // ↑↓/jk move, enter selects, number keys select immediately, esc cancels, and

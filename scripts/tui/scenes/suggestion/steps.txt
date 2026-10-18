@@ -22,4 +22,4 @@ snap 03-taken "Run the full test suite now. and report the count"
 keys Enter
 snap 04-second "212 tests" "Commit the retry backoff."
 keys "w"
-snap 05-dropped "▸ w"
+snap 05-dropped "› w"

@@ -35,11 +35,11 @@ snap 06-refused "never typed into the draft"
 keys Up
 snap 07-selected "❯ steering   fix the header too"
 keys Enter
-snap 08-edited "▸ fix the header too" "follow-up  then do the footer"
+snap 08-edited "› fix the header too" "follow-up  then do the footer"
 keys F2
 snap 09-card-again "queued · 2 messages"
 keys d
 snap 10-cancelled "cancelled" "then do the footer" "queued · 1 message"
 keys Escape
-snap 11-answer "Finished the first pass over the parser" "▸ fix the header too"
+snap 11-answer "Finished the first pass over the parser" "› fix the header too"
 snap 12-announced "Noted: DEMO_TOKEN is set"

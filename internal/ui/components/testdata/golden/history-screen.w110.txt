@@ -61,7 +61,7 @@ shhh history · 6 entries · 2 run
 shhh history · 6 entries · 2 run
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▸ log█                                     2 of 6 match │ 4m ago · openai/gpt-5.2                          run
+› log█                                     2 of 6 match │ 4m ago · openai/gpt-5.2                          run
 ─────────────────────────────────────────────────────── │   delete every log file older than a week
 ❯ $ delete every log file older than a w…  exit 0  1.4s │ 
   · count the log lines by level  not run · Aug 14      │   ▎$ run     find . -name '*.log'      exit 0   1.4s
@@ -74,7 +74,7 @@ shhh history · 6 entries · 2 run
 shhh history · 6 entries · 2 run
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▸ kubectl█                                 0 of 6 match │ no entry selected
+› kubectl█                                 0 of 6 match │ no entry selected
 ─────────────────────────────────────────────────────── │ 
   no match for "kubectl"                                │ 
 ─────────────────────────────────────────────────────── │ 
@@ -135,18 +135,17 @@ $  a shell command
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
-·  accepted, not started
+·  accepted or not reached yet
 ▸  running
 ✦  the classifier is deciding
 ✓  a check passed, a turn or a compaction came out well
 ∗  a turn's close
 ✗  failed
-⊘  refused: dim by you, red by a rule
-⊘  stopped by you while it ran
-⚠  stalled, and will resume or can be steered
-⚠  stopped on something only you can answer
+⊘  refused or turned off: dim by you, red by a rule
+■  stopped by you while it ran
+⚠  stalled, paused, blocked, or waiting on you
 ↺  picked up from a checkpoint
-⊘  not in play
+—  nothing was kept to say
 [?] hide the keys
 
 ── ansi ────────────────────────────────────────────────────
@@ -201,7 +200,7 @@ $  a shell command
 ␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m▸ ␛[m␛[97mlog█␛[m                                     ␛[38;5;245m2 of 6 match␛[m␛[38;5;245m │ ␛[m␛[1;97m4m ago␛[m␛[38;5;245m · openai/gpt-5.2␛[m                          ␛[38;5;245mrun␛[m
+␛[94m› ␛[m␛[97mlog█␛[m                                     ␛[38;5;245m2 of 6 match␛[m␛[38;5;245m │ ␛[m␛[1;97m4m ago␛[m␛[38;5;245m · openai/gpt-5.2␛[m                          ␛[38;5;245mrun␛[m
 ␛[38;5;245m───────────────────────────────────────────────────────␛[m␛[38;5;245m │ ␛[m  ␛[38;5;245mdelete every log file older than a week␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;61m$ delete every log file older than a w…  exit 0  1.4s␛[m␛[38;5;245m │ ␛[m
   ␛[38;5;252m· count the ␛[m␛[1;38;5;252mlog␛[m␛[38;5;252m lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m     ␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log'␛[m      ␛[92mexit 0␛[m   ␛[38;5;245m1.4s␛[m
@@ -214,7 +213,7 @@ $  a shell command
 ␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m▸ ␛[m␛[97mkubectl█␛[m                                 ␛[38;5;245m0 of 6 match␛[m␛[38;5;245m │ ␛[m␛[38;5;245mno entry selected␛[m
+␛[94m› ␛[m␛[97mkubectl█␛[m                                 ␛[38;5;245m0 of 6 match␛[m␛[38;5;245m │ ␛[m␛[38;5;245mno entry selected␛[m
 ␛[38;5;245m───────────────────────────────────────────────────────␛[m␛[38;5;245m │ ␛[m
 ␛[38;5;245m  no match for "kubectl"␛[m                               ␛[38;5;245m │ ␛[m
 ␛[38;5;245m───────────────────────────────────────────────────────␛[m␛[38;5;245m │ ␛[m
@@ -275,16 +274,15 @@ $  a shell command
 ␛[38;5;245m⛁␛[m  ␛[38;5;245ma published report page␛[m
 ␛[38;5;245m≡␛[m  ␛[38;5;245ma reading of the session␛[m
 ␛[92m✓␛[m  ␛[38;5;245ma compaction that brought the window back␛[m
-␛[38;5;245m·␛[m  ␛[38;5;245maccepted, not started␛[m
+␛[38;5;245m·␛[m  ␛[38;5;245maccepted or not reached yet␛[m
 ␛[38;5;205m▸␛[m  ␛[38;5;245mrunning␛[m
 ␛[38;5;205m✦␛[m  ␛[38;5;245mthe classifier is deciding␛[m
 ␛[92m✓␛[m  ␛[38;5;245ma check passed, a turn or a compaction came out well␛[m
 ␛[38;5;245m∗␛[m  ␛[38;5;245ma turn's close␛[m
 ␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
-␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
-␛[38;5;245m⊘␛[m  ␛[38;5;245mstopped by you while it ran␛[m
-␛[38;5;214m⚠␛[m  ␛[38;5;245mstalled, and will resume or can be steered␛[m
-␛[91m⚠␛[m  ␛[38;5;245mstopped on something only you can answer␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused or turned off: dim by you, red by a rule␛[m
+␛[38;5;245m■␛[m  ␛[38;5;245mstopped by you while it ran␛[m
+␛[38;5;214m⚠␛[m  ␛[38;5;245mstalled, paused, blocked, or waiting on you␛[m
 ␛[38;5;245m↺␛[m  ␛[38;5;245mpicked up from a checkpoint␛[m
-␛[38;5;245m⊘␛[m  ␛[38;5;245mnot in play␛[m
+␛[38;5;245m—␛[m  ␛[38;5;245mnothing was kept to say␛[m
 ␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m

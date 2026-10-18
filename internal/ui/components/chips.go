@@ -48,6 +48,10 @@ const (
 	// ChipDocument is a document the model reads whole — a PDF. The same
 	// lines as text, inside the boundary that makes it a single artifact.
 	ChipDocument
+	// ChipPaste is text that came off the clipboard rather than out of a
+	// file. It has a mark of its own so `≡` stays the session reading's and
+	// a staged text file's.
+	ChipPaste
 )
 
 // mark is the kind's glyph. Colour reinforces nothing here: the chips
@@ -59,6 +63,8 @@ func (k ChipKind) mark() string {
 		return "▣"
 	case ChipDocument:
 		return "▤"
+	case ChipPaste:
+		return "¶"
 	}
 	return "≡"
 }

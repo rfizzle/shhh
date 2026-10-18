@@ -121,7 +121,7 @@ func TestChatPick_RenameRowTakesTheCursor(t *testing.T) {
 	}
 	row := -1
 	for i, line := range screen {
-		if strings.Contains(line, "rename ▸") {
+		if strings.Contains(line, "rename ›") {
 			row = i
 		}
 	}
@@ -133,7 +133,7 @@ func TestChatPick_RenameRowTakesTheCursor(t *testing.T) {
 	}
 	// Prefilled with the name and the cursor left at its end, so a suffix is
 	// one keystroke away.
-	if want := len("rename ▸ ") + len("alpha"); cur.at.X != want {
+	if want := len("rename › ") + len("alpha"); cur.at.X != want {
 		t.Fatalf("cursor column %d, want %d — after the prompt and the name", cur.at.X, want)
 	}
 }
@@ -148,7 +148,7 @@ func TestChatPick_RenameCommitsOnEnter(t *testing.T) {
 	if m.chats.rename.Value() != "alpha" {
 		t.Fatalf("the row should be prefilled with the name, got %q", m.chats.rename.Value())
 	}
-	if lines := strings.Join(m.pickerLines(), "\n"); !strings.Contains(lines, "rename ▸") {
+	if lines := strings.Join(m.pickerLines(), "\n"); !strings.Contains(lines, "rename ›") {
 		t.Fatalf("the rename row should be drawn under the card, got:\n%s", lines)
 	}
 	m = press(t, m, "2")

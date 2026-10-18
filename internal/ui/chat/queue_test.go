@@ -103,10 +103,10 @@ func TestQueueStrip_ShowsPositionAndOrder(t *testing.T) {
 			t.Fatalf("strip row %d should read %q, got %q", i+1, want, lines[i+1])
 		}
 	}
-	if !strings.Contains(lines[1], "▸") {
+	if !strings.Contains(lines[1], "❯") {
 		t.Fatal("the current item should carry the pointer")
 	}
-	if strings.Contains(lines[2], "▸") || strings.Contains(lines[3], "▸") {
+	if strings.Contains(lines[2], "❯") || strings.Contains(lines[3], "❯") {
 		t.Fatal("only the current item should carry the pointer")
 	}
 	// The card says where in the round this decision sits, which the dots —

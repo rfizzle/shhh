@@ -22,7 +22,7 @@ sandbox  container · workspace-netless · no network · docker, image sha256:ab
 tools    golangci-lint — declared, not in the sandbox image
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
@@ -41,7 +41,7 @@ or just type what you want · [↑↓] choose · [enter] start
 ␛[38;5;244mtools  ␛[m  ␛[38;5;254mgolangci-lint␛[m␛[38;5;244m — declared, not in the sandbox image␛[m
 
 ␛[38;5;244mSome things worth doing first:␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 

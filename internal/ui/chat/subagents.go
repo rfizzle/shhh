@@ -339,9 +339,9 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 	m.approval.scroll, m.approval.pan = 0, 0
 	m.forgetChildBlast(ask)
 	ask.Respond(approved)
-	verdict := "⊘ " + ask.Agent + "  declined ▸ " + ask.Title
+	verdict := "⊘ " + ask.Agent + "  declined · " + ask.Title
 	if approved {
-		verdict = "✓ " + ask.Agent + "  approved ▸ " + ask.Title
+		verdict = "✓ " + ask.Agent + "  approved · " + ask.Title
 	}
 	m.appendEntry(entry{kind: entrySystem, text: verdict})
 	m.syncViewport()
@@ -383,7 +383,7 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	// The routed card answers `?` with the approval card's register, as the
 	// session's own does (childAskMode, keylist.go).
 	card.KeyList = true
-	prefix := ask.Agent + " ▸ "
+	prefix := ask.Agent + " · "
 	if m.attachedTo == ask.Agent {
 		prefix = ""
 	} else {

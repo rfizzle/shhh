@@ -19,7 +19,7 @@ tools    golangci-lint · gosec
          declared, not on PATH · /setup installs them
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago 
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago   
   ⚙ explain what changed in the working tree
     reads only, no writes
   $ install the tools this checkout declares
@@ -72,7 +72,7 @@ or just type what you want
          ␛[38;5;244mdeclared, not on PATH · /setup installs them␛[m
 
 ␛[38;5;244mSome things worth doing first:␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ pick up (last session) — 7 turns · $0.42 · 4m ago ␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpick up (last session) — 7 turns · $0.42 · 4m ago   ␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m
     ␛[38;5;244mreads only, no writes␛[m
   ␛[38;5;254m$␛[m ␛[38;5;254minstall the tools this checkout declares␛[m

@@ -453,7 +453,7 @@ second account of the same facts and a second animation beside the frame's;
 the transcript ends on what the turn is doing now. Once it is done the total
 says how long the turn worked, the calls, the spend and the time it finished,
 behind `∗`. A turn that broke says `failed` behind `✗`, and one the reader
-stopped says `cancelled` behind `⊘`; each counts what it got through and,
+stopped says `cancelled` behind `■`; each counts what it got through and,
 where it changed nothing, says `no files changed` — the question a break
 raises first. The steps are not on it: the cards above are the steps.
 
@@ -646,7 +646,7 @@ A provider's failure is a card, like a step. Its header names the model and
 what the turn had done when it broke — `model claude-opus-5-5 · after read 4
 files · searched 4 times` — with the class at the right and how long the turn
 had run; the glyph is `✗` in del for a break, `⚠` in the accent for a stall
-the session will come back from, `⊘` for a request the reader stopped. Its
+the session will come back from, `■` for a request the reader stopped. Its
 body is what the failure means for the reader, in a sentence: the one fact
 about the class that decides what to do next, and what the failure cost —
 almost always that nothing in the turn was lost. Its footer is the provider's
@@ -1091,7 +1091,7 @@ rail, so a summary that stated them too was every field of that row a second
 time at the cursor, less the steps — and the reader who had just watched the
 turn end would read the same count and the same bill twice between the last
 act and the prompt. What only the rail says there is that the turn is over and
-how it ended, so that is all the summary says: `✓ done`, `⊘ cancelled` or
+how it ended, so that is all the summary says: `✓ done`, `■ cancelled` or
 `✗ failed`, the glyph where the spinner was and the word where the phase was. The
 turn's account is the close row's, and on terminals wide enough for the
 [inspector rail](#the-inspector-rail) its THIS TURN block counts the tools as
@@ -1392,8 +1392,7 @@ Every attachment has its row whether its fold is in the words or not, so a
 picture attached by path, which put no fold in the sentence, is reached like
 any other, and its row names the folder it came from. The handle is spelled
 the way the sentence spells it, with the kind's mark inside the quotes — `▣`
-a picture, `▤` a document, `¶` text, since the transcript's summary row
-already wears the chip's `≡` — in the reader's colour and in a slot of its
+a picture, `▤` a document, `¶` a paste, `≡` a text file — in the reader's colour and in a slot of its
 own, so the fold in the words and its row line up by eye; the name is bright,
 the facts dim, the size at the right. As the pane narrows a row gives up
 where the picture came from first, then its dimensions, and never the
@@ -2217,7 +2216,7 @@ still word in the spin colour — `writing` where its role changes files,
 `running` where it does not — and a declared count keeps its meter, because
 the frame's status is the one thing on screen that moves. A row is that same child as one thing you
 are about to act on, so it keeps the rule every other row in the product
-keeps: `⚠ ✗ ▸ ⊘ ✦` take the lead column from the kind mark and `✓` never does.
+keeps: `⚠ ✗ ▸ ⊘ ■ ✦` take the lead column from the kind mark and `✓` never does.
 A blocked child leads its row with `⚠` and says what it is waiting for
 underneath; a finished one keeps `◇` and puts its tick in the outcome field.
 Both readings come from one renderer, so the lane and the row can differ in
@@ -3541,7 +3540,7 @@ instead.
 
 `/turns` is the rail's THIS TURN block read down the session: every turn it
 has run, newest first, one row each — the close's own mark and how the turn
-ended (`✓ turn 4 · done`, `⊘ turn 1 · cancelled`), what it wrote in the
+ended (`✓ turn 4 · done`, `■ turn 1 · cancelled`), what it wrote in the
 mutation mark and its lines, or `changed no files`, and what it cost. Beside the
 turn under the pointer is its close drawn whole ([the turn's
 close](#the-turns-close)) — steps, tools, time and spend, the files it

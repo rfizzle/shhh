@@ -95,10 +95,10 @@ func TestTodoRunHeadless_ACollisionIsReconciledAndVerified(t *testing.T) {
 		t.Fatalf("the row reads %q during the turn", row)
 	}
 	log := out()
-	turn := strings.Index(log, "▸ todo run b-two · remediate · reconciling a-one's landing")
+	turn := strings.Index(log, "todo run b-two · remediate · reconciling a-one's landing")
 	judged := strings.Index(log, "… b-two reconciled a-one's landing in count.txt\n")
-	verify := strings.LastIndex(log, "▸ todo run b-two · verify")
-	review := strings.LastIndex(log, "▸ todo run b-two · review")
+	verify := strings.LastIndex(log, "todo run b-two · verify")
+	review := strings.LastIndex(log, "todo run b-two · review")
 	if turn < 0 || judged < turn || verify < judged || review < verify {
 		t.Fatalf("the turn is taken, judged, verified and reviewed, in that order:\n%s", log)
 	}

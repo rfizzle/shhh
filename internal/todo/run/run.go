@@ -1281,7 +1281,7 @@ func (s *State) block(reason string) Step {
 }
 
 func (s *State) label(stage string) string {
-	return fmt.Sprintf("▸ todo run %s · %s", s.Slug, stage)
+	return fmt.Sprintf("todo run %s · %s", s.Slug, stage)
 }
 
 // Summary is the one-paragraph state for /todo status and the rail.

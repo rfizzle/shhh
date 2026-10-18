@@ -37,7 +37,7 @@ test-writer — adds tests
 │   [x] write    edit files · it works in its own copy of… │
 │   [x] execute  run commands · in the same copy           │
 │   [ ] web      fetch pages and search                    │
-│   ▸ with write or execute, test-writer is a writer: it … │
+│   with write or execute, test-writer is a writer: it wo… │
 │  tools this session registered, by tier — it gets only … │
 │   [x] glob             read     paths by pattern         │
 │       quality_gate     read     ⊘ "quality_gate" is for… │
@@ -119,7 +119,7 @@ test-writer — adds tests
 │   [x] write    edit files · it works in its own copy of… │
 │   [x] execute  run commands · in the same copy           │
 │   [ ] web      fetch pages and search                    │
-│   ▸ with write or execute, test-writer is a writer: it … │
+│   with write or execute, test-writer is a writer: it wo… │
 │  tools this session registered, by tier — it gets only … │
 │   [x] glob             read     paths by pattern         │
 │       quality_gate     read     ⊘ "quality_gate" is for… │
@@ -164,7 +164,7 @@ test-writer — adds tests
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite  ␛[m  ␛[38;5;245medit files · it works in its own copy of…␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute␛[m  ␛[38;5;245mrun commands · in the same copy␛[m           ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m[ ]␛[m ␛[38;5;252mweb    ␛[m  ␛[38;5;245mfetch pages and search␛[m                    ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m▸ with write or execute, test-writer is a writer: it …␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245mwith write or execute, test-writer is a writer: it wo…␛[m ␛[94m│␛[m
 ␛[94m│␛[m  ␛[38;5;245mtools this session registered, by tier — it gets only …␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mglob           ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;245mpaths by pattern␛[m         ␛[94m│␛[m
 ␛[94m│␛[m       ␛[38;5;248mquality_gate   ␛[m  ␛[38;5;248mread   ␛[m  ␛[38;5;248m⊘ "quality_gate" is for…␛[m ␛[94m│␛[m
@@ -246,7 +246,7 @@ test-writer — adds tests
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite  ␛[m  ␛[38;5;245medit files · it works in its own copy of…␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute␛[m  ␛[38;5;245mrun commands · in the same copy␛[m           ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m[ ]␛[m ␛[38;5;252mweb    ␛[m  ␛[38;5;245mfetch pages and search␛[m                    ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m▸ with write or execute, test-writer is a writer: it …␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245mwith write or execute, test-writer is a writer: it wo…␛[m ␛[94m│␛[m
 ␛[94m│␛[m  ␛[38;5;245mtools this session registered, by tier — it gets only …␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mglob           ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;245mpaths by pattern␛[m         ␛[94m│␛[m
 ␛[94m│␛[m       ␛[38;5;248mquality_gate   ␛[m  ␛[38;5;248mread   ␛[m  ␛[38;5;248m⊘ "quality_gate" is for…␛[m ␛[94m│␛[m

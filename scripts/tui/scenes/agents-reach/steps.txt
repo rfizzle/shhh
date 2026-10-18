@@ -49,7 +49,7 @@ keys y
 # `waiting approval: use spawn_agent` note can draw a frame before the card
 # holds the keyboard, and a `y` sent into that frame is a letter in the draft.
 # The card lands seconds after the last key, so no grace window is open on it.
-snap 03-delegates "writer-3 ▸ Approve tool" "spawn_agent"
+snap 03-delegates "writer-3 · Approve tool" "spawn_agent"
 keys y
 # And the level the session did not ask for, on the map: the grandchild under
 # the agent that spawned it, a column in behind the corner. The snap waits on
@@ -114,11 +114,11 @@ snap 09-killed "patch kept · [enter] review"
 # so the card gives the keyboard back and the press still moves.
 # The capture is the rail at the scene's own 130; below that the rail is gone,
 # and below the frame's 110 rung the path keeps its nearest two segments (`… ▸
-# writer-3 ▸ reader-3a`), and below 80 the frame has no breadcrumb at all, so
+# writer-3 · reader-3a`), and below 80 the frame has no breadcrumb at all, so
 # the snap is one per side of each and the narrowest waits on the child's own
 # task, which the pane draws at every width.
 keys Escape
-snap 09b-back "DECISION 1/2" "writer-3 ▸ Approve command"
+snap 09b-back "DECISION 1/2" "writer-3 · Approve command"
 keys S-F8
 snap 10-walk "❯ Say where the round counter is read."
 keys S-F8
@@ -126,9 +126,9 @@ snap 10-walk "❯ Say where the round limit is set."
 keys S-F8
 snap 10-walk "❯ Say where the loop exits."
 keys S-F8
-wide 130 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
-narrow 130 wide 110 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a"
-narrow 110 wide 80 snap 10-map "… ▸ writer-3 ▸ reader-3a"
+wide 130 snap 10-map "orchestrator · writer-3 · reader-3a" "└◇ reader-3a" "✗ writer-1"
+narrow 130 wide 110 snap 10-map "orchestrator · writer-3 · reader-3a"
+narrow 110 wide 80 snap 10-map "… · writer-3 · reader-3a"
 narrow 80 snap 10-map "❯ Say which package the loop's exit"
 # The chord itself, twice: it walks spawn order rather than the order the map
 # is drawn in. From the grandchild — the last thing spawned, and the deepest —
@@ -138,9 +138,9 @@ narrow 80 snap 10-map "❯ Say which package the loop's exit"
 # and the breadcrumb, which is what says so where there is no map.
 keys S-F8
 keys S-F8
-wide 130 snap 11-chord "❯ ✗ writer-1" "orchestrator ▸ writer-1"
-narrow 130 wide 80 snap 11-chord "orchestrator ▸ writer-1"
-narrow 80 snap 11-chord "Killed by the user." "writer-1 ▸"
+wide 130 snap 11-chord "❯ ✗ writer-1" "orchestrator · writer-1"
+narrow 130 wide 80 snap 11-chord "orchestrator · writer-1"
+narrow 80 snap 11-chord "Killed by the user." "writer-1 ·"
 keys Escape
 snap 11b-session "spawned 3 agents" "writer-1  cancelled"
 # And the other way out of a lineage, from the deepest session again — named
@@ -166,10 +166,10 @@ keys Escape
 # routed to — which is where the second pop has just put the keyboard: the
 # card holds nothing until it is taken, so the chord that takes it comes
 # first.
-snap 14-still-waiting "spawned 3 agents" "writer-3 ▸ Approve command"
+snap 14-still-waiting "spawned 3 agents" "writer-3 · Approve command"
 keys C-Space
 keys n
-snap 15-next-card "writer-2 ▸ Approve command"
+snap 15-next-card "writer-2 · Approve command"
 keys n
 keys C-c
 snap 16-quit-armed "again quits"

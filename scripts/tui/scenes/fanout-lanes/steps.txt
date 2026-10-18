@@ -44,7 +44,7 @@ snap 03-writing "writing · " "spawned 3 agents"
 snap 03-lanes "spawned 3 agents" "Fanning three writers over the round accounting."
 # The first routed request is the wait: it stands in front of the draft, on
 # the card's own title, once the children have read and asked.
-snap 03-asked "writer-1 ▸ Approve command"
+snap 03-asked "writer-1 · Approve command"
 # Every child then asks to run a command. Each request is routed to this
 # session to be answered, and a routed request nobody has answered is what
 # the card draws as blocked, on the child's own row with the manager's key.
@@ -55,13 +55,13 @@ snap 04-blocked "blocked · " "[f12] agents"
 keys C-Space
 keys y
 # The next card in the queue is the second child's, and it is the wait.
-snap 04-second "writer-2 ▸ Approve command"
+snap 04-second "writer-2 · Approve command"
 # The second child let through is answered at once, so its lane is the one
 # that has finished.
 # A card promoted by an answer is no new arrival to the grace window (it
 # opens none within half a second of a decision leaving), so `y` is live.
 keys y
-snap 04-third "writer-3 ▸ Approve command"
+snap 04-third "writer-3 · Approve command"
 # The third is never answered, and the card standing over the draft is left
 # standing: that lane is the one waiting on you.
 keys Escape

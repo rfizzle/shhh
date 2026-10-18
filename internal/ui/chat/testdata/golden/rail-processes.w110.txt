@@ -17,7 +17,7 @@
   ✗ tests                       exited 1 · 29s
 
   CALLS                            ▸ 1 running
-  ⊘ search round limit ./int… cancelled by you
+  ■ search round limit ./int… cancelled by you
   ▸ run go test ./...                     8.0s
 
   CONTEXT                          32% of 128k
@@ -34,7 +34,7 @@
   ✗ tests                       exited 1 · 29s
 
   CALLS                            ▸ 1 running
-  ⊘ search round limit ./int… cancelled by you
+  ■ search round limit ./int… cancelled by you
   ▸ run go test ./...                     8.0s
 
   CONTEXT                          32% of 128k
@@ -56,7 +56,7 @@
   ␛[91m✗␛[m ␛[38;5;252mtests␛[m                       ␛[38;5;252mexited 1␛[m␛[38;5;245m · 29s␛[m
 
   ␛[1;94mCALLS␛[m                            ␛[38;5;205m▸␛[m␛[38;5;245m 1 running␛[m
-  ␛[38;5;245m⊘␛[m ␛[38;5;252msearch round limit ./int…␛[m ␛[38;5;245mcancelled by you␛[m
+  ␛[38;5;245m■␛[m ␛[38;5;252msearch round limit ./int…␛[m ␛[38;5;245mcancelled by you␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;252mrun go test ./...␛[m                     ␛[38;5;245m8.0s␛[m
 
   ␛[1;94mCONTEXT␛[m                          ␛[92m32% of 128k␛[m
@@ -73,7 +73,7 @@
   ␛[91m✗␛[m ␛[38;5;252mtests␛[m                       ␛[38;5;252mexited 1␛[m␛[38;5;245m · 29s␛[m
 
   ␛[1;94mCALLS␛[m                            ␛[38;5;205m▸␛[m␛[38;5;245m 1 running␛[m
-  ␛[38;5;245m⊘␛[m ␛[38;5;252msearch round limit ./int…␛[m ␛[38;5;245mcancelled by you␛[m
+  ␛[38;5;245m■␛[m ␛[38;5;252msearch round limit ./int…␛[m ␛[38;5;245mcancelled by you␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;252mrun go test ./...␛[m                     ␛[38;5;245m8.0s␛[m
 
   ␛[1;94mCONTEXT␛[m                          ␛[92m32% of 128k␛[m

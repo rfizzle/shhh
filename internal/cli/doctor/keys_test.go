@@ -419,7 +419,7 @@ func TestDoctorOptionKey_TypingACharacterWarnsAndNamesTheTick(t *testing.T) {
 		t.Errorf("the consequence does not say what the reader loses: %q", f.Consequence)
 	}
 	fix := strings.Join(f.Fix, "\n")
-	if !strings.Contains(fix, "Terminal.app › Profiles › Basic › Keyboard") || !strings.Contains(fix, "Use Option as Meta key") {
+	if !strings.Contains(fix, "Terminal.app > Profiles > Basic > Keyboard") || !strings.Contains(fix, "Use Option as Meta key") {
 		t.Errorf("the fix is not the tick on the profile that was read: %v", f.Fix)
 	}
 	if !strings.Contains(fix, "shhh doctor") {
@@ -427,7 +427,7 @@ func TestDoctorOptionKey_TypingACharacterWarnsAndNamesTheTick(t *testing.T) {
 	}
 
 	iterm := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "iTerm.app", Profile: "Default", Sends: optionCharacter})
-	if fix := strings.Join(iterm.Fix, "\n"); !strings.Contains(fix, "iTerm2 › Profiles › Default › Keys") || !strings.Contains(fix, "Esc+") || strings.Contains(fix, "Terminal.app") {
+	if fix := strings.Join(iterm.Fix, "\n"); !strings.Contains(fix, "iTerm2 > Profiles > Default > Keys") || !strings.Contains(fix, "Esc+") || strings.Contains(fix, "Terminal.app") {
 		t.Errorf("iTerm2 is not sent to its own setting: %v", iterm.Fix)
 	}
 }
@@ -477,7 +477,7 @@ func TestDoctorOptionKey_ATerminalItDoesNotReadIsNotChecked(t *testing.T) {
 	if tmux.State != components.DoctorSkipped || !strings.Contains(tmux.Detail, "behind") {
 		t.Fatalf("tmux is not named as the thing in front: %+v", tmux)
 	}
-	if fix := strings.Join(tmux.Fix, "\n"); !strings.Contains(fix, "Terminal.app › Profiles › Keyboard") || !strings.Contains(fix, "iTerm2 › Profiles › Keys") {
+	if fix := strings.Join(tmux.Fix, "\n"); !strings.Contains(fix, "Terminal.app > Profiles > Keyboard") || !strings.Contains(fix, "iTerm2 > Profiles > Keys") {
 		t.Fatalf("tmux is not shown both ticks: %v", tmux.Fix)
 	}
 	elsewhere := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "iTerm.app", Elsewhere: "~/dotfiles/iterm"})

@@ -37,12 +37,12 @@ $  a shell command
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
-·  accepted, not started
+·  accepted or not reached yet
 ▸  running
 ✦  the classifier is deciding
 ✓  a check passed, a turn or a compaction came out well
 ∗  a turn's close
-↓ 7 more · [↑↓/jk] read on
+↓ 6 more · [↑↓/jk] read on
 
 [?] hide the keys
 keys · [esc] back to the approval card and the /run confirm
@@ -75,11 +75,11 @@ $  a shell command
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
-·  accepted, not started
+·  accepted or not reached yet
 ▸  running
 ✦  the classifier is deciding
 ✓  a check passed, a turn or a compaction came out well
-↓ 8 more · [↑↓/jk] read on
+↓ 7 more · [↑↓/jk] read on
 
 [?] hide the keys
 keys · [esc] back to reading mode
@@ -113,10 +113,10 @@ $  a shell command
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
-·  accepted, not started
+·  accepted or not reached yet
 ▸  running
 ✦  the classifier is deciding
-↓ 9 more · [↑↓/jk] read on
+↓ 8 more · [↑↓/jk] read on
 
 [?] hide the keys
 keys · [esc] back to reading mode
@@ -151,9 +151,9 @@ $  a shell command
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
-·  accepted, not started
+·  accepted or not reached yet
 ▸  running
-↓ 10 more · [↑↓/jk] read on
+↓ 9 more · [↑↓/jk] read on
 
 [?] hide the keys
 keys · [esc] back to reading mode
@@ -186,12 +186,12 @@ keys · [esc] back to reading mode
 ␛[38;5;244m⛁␛[m  ␛[38;5;244ma published report page␛[m
 ␛[38;5;244m≡␛[m  ␛[38;5;244ma reading of the session␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma compaction that brought the window back␛[m
-␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
+␛[38;5;244m·␛[m  ␛[38;5;244maccepted or not reached yet␛[m
 ␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
 ␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
 ␛[38;5;244m∗␛[m  ␛[38;5;244ma turn's close␛[m
-␛[38;5;244m↓ 7 more · [↑↓/jk] read on␛[m
+␛[38;5;244m↓ 6 more · [↑↓/jk] read on␛[m
 
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 ␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the approval card and the /run confirm␛[m
@@ -224,11 +224,11 @@ keys · [esc] back to reading mode
 ␛[38;5;244m⛁␛[m  ␛[38;5;244ma published report page␛[m
 ␛[38;5;244m≡␛[m  ␛[38;5;244ma reading of the session␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma compaction that brought the window back␛[m
-␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
+␛[38;5;244m·␛[m  ␛[38;5;244maccepted or not reached yet␛[m
 ␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
 ␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
-␛[38;5;244m↓ 8 more · [↑↓/jk] read on␛[m
+␛[38;5;244m↓ 7 more · [↑↓/jk] read on␛[m
 
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 ␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
@@ -262,10 +262,10 @@ keys · [esc] back to reading mode
 ␛[38;5;244m⛁␛[m  ␛[38;5;244ma published report page␛[m
 ␛[38;5;244m≡␛[m  ␛[38;5;244ma reading of the session␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma compaction that brought the window back␛[m
-␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
+␛[38;5;244m·␛[m  ␛[38;5;244maccepted or not reached yet␛[m
 ␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
 ␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
-␛[38;5;244m↓ 9 more · [↑↓/jk] read on␛[m
+␛[38;5;244m↓ 8 more · [↑↓/jk] read on␛[m
 
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 ␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
@@ -300,9 +300,9 @@ keys · [esc] back to reading mode
 ␛[38;5;244m⛁␛[m  ␛[38;5;244ma published report page␛[m
 ␛[38;5;244m≡␛[m  ␛[38;5;244ma reading of the session␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma compaction that brought the window back␛[m
-␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
+␛[38;5;244m·␛[m  ␛[38;5;244maccepted or not reached yet␛[m
 ␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
-␛[38;5;244m↓ 10 more · [↑↓/jk] read on␛[m
+␛[38;5;244m↓ 9 more · [↑↓/jk] read on␛[m
 
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 ␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m

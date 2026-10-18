@@ -45,7 +45,7 @@
     [r] try again · nothing in the turn was lost
 
 · cancelled · you did it on purpose, so no key is offered
-   ⊘ model   gpt-4o · cancelled               stopped      —
+   ■ model   gpt-4o · cancelled               stopped      —
     nothing in the turn was lost
 
 · unclassified · the message is the whole point of the row
@@ -97,7 +97,7 @@
     ␛[38;5;103m[r]␛[m␛[38;5;245m try again␛[m␛[38;5;245m · ␛[m␛[38;5;245mnothing in the turn was lost␛[m
 
 · cancelled · you did it on purpose, so no key is offered
-   ␛[38;5;245m⊘␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;245m · cancelled␛[m               ␛[38;5;245mstopped␛[m      ␛[38;5;245m—␛[m
+   ␛[38;5;245m■␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;245m · cancelled␛[m               ␛[38;5;245mstopped␛[m      ␛[38;5;245m—␛[m
     ␛[38;5;245mnothing in the turn was lost␛[m
 
 · unclassified · the message is the whole point of the row

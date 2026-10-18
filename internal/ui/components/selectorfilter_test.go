@@ -300,7 +300,7 @@ func TestSelectFilter_NoMatchIsARowNotAnEmptyPane(t *testing.T) {
 func TestSelectFilter_NarrowRowStacksBothCounts(t *testing.T) {
 	s := filtered("mini")
 	view := ansi.Strip(s.View(26))
-	if !strings.Contains(view, "▸ mini█") || !strings.Contains(view, "6 of 24 match") {
+	if !strings.Contains(view, "› mini█") || !strings.Contains(view, "6 of 24 match") {
 		t.Fatalf("both the query and its counts should survive a narrow card:\n%s", view)
 	}
 }
@@ -434,7 +434,7 @@ func TestNoteSelectFilter_PinsItsQueryRowAndKeepsTheNote(t *testing.T) {
 		t.Fatalf("digits are text on an open query line, got %q", ns.Select.Query)
 	}
 	view := ansi.Strip(ns.View(70))
-	for _, want := range []string{"▸ 19█", "20 of 20 match", "note (optional)", "[esc] back"} {
+	for _, want := range []string{"› 19█", "20 of 20 match", "note (optional)", "[esc] back"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the card:\n%s", want, view)
 		}

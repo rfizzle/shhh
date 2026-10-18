@@ -17,7 +17,7 @@ snap 03-draft "why does the parser"
 keys C-]
 snap 04-open "first or last" "DRAFT" "╭─ ctrl+] ─" "send the message"
 keys "reading"
-snap 05-filtered "READING" "▸ reading" "of " "[c]" "copy"
+snap 05-filtered "READING" "› reading" "of " "[c]" "copy"
 # The first esc clears the filter, the second puts the list away.
 keys Escape
 sleep 0.3

@@ -12,63 +12,63 @@
 ── layout ──────────────────────────────────────────────────
 · an offer up · dim in the empty draft, the arrow on the key bar
 ╭─ idle ───────────────────────────────────────────────╮
-│ ▸ Run the full test suite, then commit the retry ba… │
+│ › Run the full test suite, then commit the retry ba… │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [→] take it · [enter] send · [ctrl+]] keys ─────────╯
 
 · typed over · the offer waits under the letter
 ╭─ idle ───────────────────────────────────────────────╮
-│ ▸ a                                                  │
+│ › a                                                  │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
 · erased · the offer back in the empty draft
 ╭─ idle ───────────────────────────────────────────────╮
-│ ▸ Run the full test suite, then commit the retry ba… │
+│ › Run the full test suite, then commit the retry ba… │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [→] take it · [enter] send · [ctrl+]] keys ─────────╯
 
 · taken · the draft's own text, cursor at its end
 ╭─ idle ───────────────────────────────────────────────╮
-│ ▸ Run the full test suite, then commit the retry     │
+│ › Run the full test suite, then commit the retry     │
 │   backoff if it passes.                              │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
 · none · the empty draft as it always was
 ╭─ idle ───────────────────────────────────────────────╮
-│ ▸                                                    │
+│ ›                                                    │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
 ── ansi ────────────────────────────────────────────────────
 · an offer up · dim in the empty draft, the arrow on the key bar
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;245mRun the full test suite, then commit the retry ba…␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;245mRun the full test suite, then commit the retry ba…␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[→]␛[38;5;245m take it · ␛[38;5;103m[enter]␛[38;5;245m send · ␛[38;5;103m[ctrl+]]␛[38;5;245m keys␛[m ␛[38;5;245m─────────╯␛[m
 
 · typed over · the offer waits under the letter
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252ma                                                 ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252ma                                                 ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[enter]␛[38;5;245m send · ␛[38;5;103m[shift+tab]␛[38;5;245m mode · ␛[38;5;103m[ctrl+]]␛[38;5;245m keys␛[m ␛[38;5;245m────╯␛[m
 
 · erased · the offer back in the empty draft
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;245mRun the full test suite, then commit the retry ba…␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;245mRun the full test suite, then commit the retry ba…␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[→]␛[38;5;245m take it · ␛[38;5;103m[enter]␛[38;5;245m send · ␛[38;5;103m[ctrl+]]␛[38;5;245m keys␛[m ␛[38;5;245m─────────╯␛[m
 
 · taken · the draft's own text, cursor at its end
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252mRun the full test suite, then commit the retry    ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252mRun the full test suite, then commit the retry    ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252mbackoff if it passes.                             ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[enter]␛[38;5;245m send · ␛[38;5;103m[shift+tab]␛[38;5;245m mode · ␛[38;5;103m[ctrl+]]␛[38;5;245m keys␛[m ␛[38;5;245m────╯␛[m
 
 · none · the empty draft as it always was
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252m                                                  ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252m                                                  ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[enter]␛[38;5;245m send · ␛[38;5;103m[shift+tab]␛[38;5;245m mode · ␛[38;5;103m[ctrl+]]␛[38;5;245m keys␛[m ␛[38;5;245m────╯␛[m

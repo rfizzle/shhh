@@ -358,7 +358,7 @@ func (m Model) deleteChatPrompt(name string) string {
 // and the cursor at its end so a suffix is one keystroke away.
 func newRenameRow(name string, width int) *textinput.Model {
 	ti := components.NewTextInput()
-	ti.Prompt = "rename ▸ "
+	ti.Prompt = "rename › "
 	ti.SetValue(name)
 	ti.CursorEnd()
 	ti.SetWidth(max(width-len(ti.Prompt)-1, 8))

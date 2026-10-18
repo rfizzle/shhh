@@ -96,7 +96,7 @@ func TestSnippetScreen_DeleteAsksFirst(t *testing.T) {
 func TestSnippetScreen_RenameCommitsOnEnterAndKeepsOnEsc(t *testing.T) {
 	s := snippetScreen()
 	pressKey(s, 'e')
-	if view := ansi.Strip(s.View(130)); !strings.Contains(view, "rename ▸ ports") {
+	if view := ansi.Strip(s.View(130)); !strings.Contains(view, "rename › ports") {
 		t.Fatalf("the rename row did not open prefilled:\n%s", view)
 	}
 	typeIntoSnippets(s, "2")

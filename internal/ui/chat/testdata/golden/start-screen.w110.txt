@@ -21,7 +21,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
@@ -38,7 +38,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-  ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+  pick up (last session) — 7 turns · $0.42 · 4m ago
   ⚙ explain what changed in the working tree — reads only, no writes
 ❯ ⚙ run the default quality gate and triage what fails — one approval, then it reports back             
 
@@ -72,7 +72,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ walk me through what this project does — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
@@ -89,7 +89,7 @@ context  nothing read — no .shhh/project.md, AGENTS.md or CLAUDE.md
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ explain what changed in the working tree — reads only, no writes
   ✎ scaffold .shhh/ — one approval
 
@@ -106,7 +106,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
@@ -124,7 +124,7 @@ gate     withheld — this checkout is not trusted to run its own checks
 trust    withheld — skills, agent profiles, quality suites · shhh trust loads them
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run go test ./... and triage the failures — one approval, then it reports back
 
@@ -142,7 +142,7 @@ gate     default — vet, test · runs without asking
 trust    quality suites — changed since you trusted it · shhh trust off withdraws it
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
@@ -161,7 +161,7 @@ settings  .shhh/config.toml — this checkout's own, over yours
 wordings  .shhh/prompts/ — this checkout's own, over yours · steer, todo_standards, todo_review
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
@@ -188,7 +188,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                                                     
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
@@ -224,7 +224,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
@@ -241,7 +241,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-  ␛[38;5;214m▸␛[m ␛[38;5;252mpick up (last session)␛[m␛[38;5;245m — 7 turns · $0.42 · 4m ago␛[m
+  ␛[38;5;252mpick up (last session)␛[m␛[38;5;245m — 7 turns · $0.42 · 4m ago␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;61m⚙ run the default quality gate and triage what fails — one approval, then it reports back             ␛[m
 
@@ -275,7 +275,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mwalk me through what this project does␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
@@ -292,7 +292,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m✎␛[m ␛[38;5;252mscaffold .shhh/␛[m␛[38;5;245m — one approval␛[m
 
@@ -309,7 +309,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
@@ -327,7 +327,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mtrust  ␛[m  ␛[38;5;252mwithheld␛[m␛[38;5;245m — skills, agent profiles, quality suites · shhh trust loads them␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
@@ -345,7 +345,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mtrust  ␛[m  ␛[38;5;252mquality suites␛[m␛[38;5;245m — changed since you trusted it · shhh trust off withdraws it␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
@@ -364,7 +364,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mwordings␛[m  ␛[38;5;252m.shhh/prompts/␛[m␛[38;5;245m — this checkout's own, over yours · steer, todo_standards, todo_review␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
@@ -391,7 +391,7 @@ ctrl+c twice stops a run
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                                                     ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 

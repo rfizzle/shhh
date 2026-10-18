@@ -15,10 +15,10 @@ snap 01-start "Some things worth doing first"
 keys "make the retry backoff double" Enter
 snap 02-offer "stops at a minute" "Run the full test suite now." "[→] take the suggestion"
 keys "ab"
-snap 03-typed "▸ ab"
+snap 03-typed "› ab"
 keys BSpace BSpace
 snap 04-back "Run the full test suite now." "[→] take the suggestion"
 keys "/suggest" Enter
 snap 05-asked "Commit the retry backoff." "[→] take the suggestion"
 keys Right
-snap 06-taken "▸ Commit the retry backoff."
+snap 06-taken "› Commit the retry backoff."

@@ -37,10 +37,11 @@ type StartNote struct {
 	Detail string
 }
 
-// StartSuggestion is one offered piece of work. Glyph distinguishes picking
-// something up (`▸`) from starting something new (`⚙`); Detail says what it
-// will cost in permission, which is the thing a reader wants before pressing
-// enter.
+// StartSuggestion is one offered piece of work. Glyph is the kind of act the
+// row would start (`⚙`, `✎`, `$`); picking a session up has no kind of act, so
+// its Glyph is empty and the title leads the row, which keeps `▸` for a fold
+// and a running row. Detail says what it will cost in permission, which is the
+// thing a reader wants before pressing enter.
 type StartSuggestion struct {
 	Glyph  string
 	Title  string
@@ -398,18 +399,21 @@ func (s StartScreen) suggestionRows(width int) ([]string, []int) {
 	var owners []int
 	for i, sg := range s.Suggestions {
 		focused := i == s.Focus
-		head := strings.Repeat(" ", suggestionGutter) + sg.Glyph + " " + sg.Title
+		head := sg.Title
+		if sg.Glyph != "" {
+			head = sg.Glyph + " " + sg.Title
+		}
 		if sg.Detail == "" {
-			rows = append(rows, s.row(focused, head, "", width))
+			rows = append(rows, s.row(focused, sg, "", width))
 			owners = append(owners, i)
 			continue
 		}
-		if lipgloss.Width(head+" — "+sg.Detail) <= width {
-			rows = append(rows, s.row(focused, head, sg.Detail, width))
+		if lipgloss.Width(strings.Repeat(" ", suggestionGutter)+head+" — "+sg.Detail) <= width {
+			rows = append(rows, s.row(focused, sg, sg.Detail, width))
 			owners = append(owners, i)
 			continue
 		}
-		rows = append(rows, s.row(focused, head, "", width),
+		rows = append(rows, s.row(focused, sg, "", width),
 			Clip(strings.Repeat(" ", suggestionGutter+2)+sty.dim.Render(sg.Detail), width))
 		owners = append(owners, i, i)
 	}
@@ -419,16 +423,19 @@ func (s StartScreen) suggestionRows(width int) ([]string, []int) {
 // row styles one suggestion line. The focused row is highlighted whole with
 // the pointer outside it, the way a selected option is everywhere else; the
 // rest carry the glyph in accent, the title in body text and the detail dim.
-func (s StartScreen) row(focused bool, head, detail string, width int) string {
-	glyph, title, _ := strings.Cut(strings.TrimLeft(head, " "), " ")
+func (s StartScreen) row(focused bool, sg StartSuggestion, detail string, width int) string {
+	lead, plain := "", ""
+	if sg.Glyph != "" {
+		lead, plain = sty.accent.Render(sg.Glyph)+" ", sg.Glyph+" "
+	}
 	if focused {
-		line := glyph + " " + title
+		line := plain + sg.Title
 		if detail != "" {
 			line += " — " + detail
 		}
 		return LitOption(line, width)
 	}
-	line := strings.Repeat(" ", suggestionGutter) + sty.accent.Render(glyph) + " " + sty.body.Render(title)
+	line := strings.Repeat(" ", suggestionGutter) + lead + sty.body.Render(sg.Title)
 	if detail != "" {
 		line += sty.dim.Render(" — " + detail)
 	}

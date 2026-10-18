@@ -43,11 +43,11 @@ func TestQueueStrip_ListsTheStackInOrder(t *testing.T) {
 	if !strings.Contains(rows[0], "●○○○○") {
 		t.Fatalf("header should draw one dot per pending decision, got %q", rows[0])
 	}
-	if !strings.Contains(rows[1], "▸") {
+	if !strings.Contains(rows[1], "❯") {
 		t.Fatalf("the current item should carry the pointer, got %q", rows[1])
 	}
 	for _, row := range rows[2:] {
-		if strings.Contains(row, "▸") {
+		if strings.Contains(row, "❯") {
 			t.Fatalf("only the current item should carry the pointer, got %q", row)
 		}
 	}

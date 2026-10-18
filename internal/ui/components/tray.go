@@ -35,26 +35,15 @@ const trayMargin = 2
 // detail column every body in the transcript is set in.
 const trayBodyIndent = GridDetailIndent
 
-// trayMark is the kind's mark on a tray row. A paste is `¶` here where the
-// staged chip draws `≡`, because the transcript's summary row already wears
-// `≡` and a tray row under a message is read beside it; the strip above the
-// draft has no summary row to be confused with.
-func (k ChipKind) trayMark() string {
-	if k == ChipText {
-		return "¶"
-	}
-	return k.mark()
-}
-
 // trayHandle is the handle as a tray row spells it: the angle quotes the
 // sentence's fold wears, with the kind's mark inside them. An attachment with
 // no handle — only a message saved before handles existed carries one — is
 // its mark alone.
 func trayHandle(k ChipKind, handle string) string {
 	if handle == "" {
-		return string(PasteFoldOpen) + k.trayMark() + string(PasteFoldClose)
+		return string(PasteFoldOpen) + k.mark() + string(PasteFoldClose)
 	}
-	return string(PasteFoldOpen) + k.trayMark() + " " + handle + string(PasteFoldClose)
+	return string(PasteFoldOpen) + k.mark() + " " + handle + string(PasteFoldClose)
 }
 
 // TrayRow is one attachment a sent message carried, as its row draws it.

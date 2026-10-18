@@ -536,7 +536,7 @@ func (m Model) undressedDraft(width int) []string {
 	drawRail(scr, rowAt(box.area, 0), idle, "╭", "╮", topLabel, "")
 	drawIn(scr, idle.Render("│"), rowAt(box.left, 1))
 	drawIn(scr, idle.Render("│"), rowAt(box.right, 1))
-	drawIn(scr, idle.Render("▸ ")+sty.Frame.DraftHeld.Render(strings.ReplaceAll(value, "\n", " ")),
+	drawIn(scr, idle.Render("› ")+sty.Frame.DraftHeld.Render(strings.ReplaceAll(value, "\n", " ")),
 		rowAt(box.inner, 1))
 	drawRail(scr, rowAt(box.area, 2), idle, "╰", "╯", " "+m.heldDraftRail(width)+" ", "")
 	return strings.Split(renderScreen(scr), "\n")

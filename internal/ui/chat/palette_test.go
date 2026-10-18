@@ -62,7 +62,7 @@ func TestPalette_QueryRowTakesTheCursor(t *testing.T) {
 	}
 	row := -1
 	for i, line := range screen {
-		if strings.Contains(line, "▸ cl") {
+		if strings.Contains(line, "› cl") {
 			row = i
 		}
 	}
@@ -92,7 +92,7 @@ func TestPalette_CtrlKOpensGroupedResults(t *testing.T) {
 	if !m.picker.card.Filtering {
 		t.Fatal("the palette is the shared filter row always open, so the card should be filtering")
 	}
-	if !strings.Contains(ansi.Strip(m.picker.card.View(70)), "▸ ") {
+	if !strings.Contains(ansi.Strip(m.picker.card.View(70)), "› ") {
 		t.Fatalf("the palette should carry its query line:\n%s", m.picker.card.View(70))
 	}
 	// The panel places the terminal's own cursor on that row, so the card

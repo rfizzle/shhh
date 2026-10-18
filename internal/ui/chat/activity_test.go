@@ -255,13 +255,13 @@ func TestActivityKinds_ServerCallsDrawByTheUsersWord(t *testing.T) {
 }
 
 // TestActivityRow_CancelledReadsAsStopped: a call abandoned by ctrl+c never
-// ran, so it renders ⊘ rather than ✗ — and stopped rather than denied,
+// ran, so it renders ■ rather than ✗ — and stopped rather than denied,
 // because nobody answered it.
 func TestActivityRow_CancelledReadsAsStopped(t *testing.T) {
 	m := activityModel(t)
 	view := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "write_file",
 		toolArgs: `{"path":"a.go"}`, toolResult: agent.CancelledResult}, 80))
-	for _, want := range []string{"⊘", "cancelled", "—"} {
+	for _, want := range []string{"■", "cancelled", "—"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a cancelled call should read %q:\n%s", want, view)
 		}
@@ -648,7 +648,7 @@ func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
 		{kind: entryUser, text: "Do the same again"},
 		{kind: entrySystem, text: "Auto-approved (classifier, 3.4s): writer agent"},
 		row("spawn_agent"),
-		{kind: entrySystem, text: "Approved agent-4 ▸ run echo hello"},
+		{kind: entrySystem, text: "Approved agent-4 · run echo hello"},
 		row("agent_report"),
 		{kind: entrySystem, text: "Multi-line notice:\n  second line"},
 		{kind: entryAssistant, text: "Done."},
@@ -995,7 +995,7 @@ func TestCommandRow_ANegativeExitCodeIsNeverPrintedAsAnExitStatus(t *testing.T) 
 	}{
 		{"the reader stopped it", -2,
 			commandEnd{outcome: components.OutcomeCancelled},
-			[]string{"⊘", "cancelled"}},
+			[]string{"■", "cancelled"}},
 		{"a signal from off the machine", -9,
 			commandEnd{outcome: components.OutcomeKilled, account: components.SignalAccount(9)},
 			[]string{"✗", "killed · signal 9"}},

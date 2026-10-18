@@ -1300,7 +1300,7 @@ func (m GenerateModel) affectedView() string {
 // dryRunView is what the dry run row came back with, bounded and counted.
 func (m GenerateModel) dryRunView() string {
 	if m.phase == phaseDryRun {
-		return "\n" + indent(sty.Dim.Render("▸ dry run — "+m.dryCommand))
+		return "\n" + indent(sty.Dim.Render("dry run — "+m.dryCommand))
 	}
 	if m.dryOutput == "" {
 		return ""

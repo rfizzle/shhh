@@ -436,7 +436,7 @@ func TestInspector_RailStaysMarkedWhileAttached(t *testing.T) {
 	}
 	marked := ""
 	for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
-		if strings.Contains(line, "\u25b8 ") && strings.Contains(line, "-1") {
+		if strings.Contains(line, "\u276f ") && strings.Contains(line, "-1") {
 			marked = line
 		}
 	}

@@ -133,7 +133,7 @@ func (q QueueStrip) header(width int) string {
 func (item QueueItem) render(width int, current bool) string {
 	pointer := "  "
 	if current {
-		pointer = sty.spinText.Render("▸") + " "
+		pointer = sty.spinText.Render("❯") + " "
 	}
 	number := strconv.Itoa(item.Number) + " "
 	right := item.right(current)

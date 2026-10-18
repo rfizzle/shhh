@@ -175,7 +175,7 @@ func TestHistoryScreen_FilterRowIsTheSharedOne(t *testing.T) {
 	h.Update(key("/"))
 	typeIntoHistory(h, "log")
 	out := plainView(h, 130)
-	for _, want := range []string{"▸ log█", "2 of 4 match", "2 entries hidden by the filter", "[esc] clear it"} {
+	for _, want := range []string{"› log█", "2 of 4 match", "2 entries hidden by the filter", "[esc] clear it"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("filtered view is missing %q:\n%s", want, out)
 		}
@@ -243,7 +243,7 @@ func TestHistoryScreen_LettersAreTextWhileFiltering(t *testing.T) {
 	if strings.Contains(out, "Delete the entry") {
 		t.Fatalf("d opened the confirm from inside the query line:\n%s", out)
 	}
-	if !strings.Contains(out, "▸ d█") {
+	if !strings.Contains(out, "› d█") {
 		t.Fatalf("d was not typed into the query line:\n%s", out)
 	}
 	if strings.Contains(out, "[d] delete") {
@@ -258,12 +258,12 @@ func TestHistoryScreen_EscClearsThenCloses(t *testing.T) {
 	h.Update(key("/"))
 	typeIntoHistory(h, "log")
 	h.Update(key("esc"))
-	if out := plainView(h, 130); !strings.Contains(out, "▸ █") {
+	if out := plainView(h, 130); !strings.Contains(out, "› █") {
 		t.Fatalf("esc did not clear the query:\n%s", out)
 	}
 	h.Update(key("esc"))
 	out := plainView(h, 130)
-	if strings.Contains(out, "▸ ") {
+	if strings.Contains(out, "› ") {
 		t.Fatalf("a second esc did not close the query line:\n%s", out)
 	}
 	if !strings.Contains(out, "[d] delete") {
@@ -277,7 +277,7 @@ func TestHistoryScreen_SetQuerySeedsTheFilter(t *testing.T) {
 	h := historyScreen()
 	h.SetQuery("rebase")
 	out := plainView(h, 130)
-	if !strings.Contains(out, "▸ rebase█") || !strings.Contains(out, "1 of 4 match") {
+	if !strings.Contains(out, "› rebase█") || !strings.Contains(out, "1 of 4 match") {
 		t.Fatalf("the seeded query is not in the filter row:\n%s", out)
 	}
 	if !strings.Contains(out, "git rebase main") {

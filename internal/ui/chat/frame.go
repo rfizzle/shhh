@@ -255,10 +255,10 @@ func (m Model) frameIdentity(nearest bool) string {
 // elided, which is the same segment — and every child along it, its arrow
 // with it so the pair reads as one step, in Info.
 func (m Model) styledBreadcrumb(path string) string {
-	parts := strings.Split(path, " ▸ ")
+	parts := strings.Split(path, " · ")
 	out := sty.Frame.Identity.Render(parts[0])
 	for _, child := range parts[1:] {
-		out += sty.Frame.IdentityChild.Render(" ▸ " + child)
+		out += sty.Frame.IdentityChild.Render(" · " + child)
 	}
 	return out
 }
@@ -601,7 +601,7 @@ func (m Model) promptGutter() string {
 
 // draftGutter is the glyph in the draft's own column, on every tone the
 // draft can be in.
-const draftGutter = "▸"
+const draftGutter = "›"
 
 // frameBox is the prompt frame's own rectangles: the box, the
 // two border columns, what they leave between them, and the split a draft

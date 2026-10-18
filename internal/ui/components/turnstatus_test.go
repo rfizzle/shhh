@@ -105,7 +105,7 @@ func TestTurnStatus_ResolvesIntoTheOutcome(t *testing.T) {
 		want    string
 	}{
 		{TurnDone, "✓ done"},
-		{TurnCancelled, "⊘ cancelled"},
+		{TurnCancelled, "■ cancelled"},
 		{TurnFailed, "✗ failed"},
 	}
 	for _, c := range cases {

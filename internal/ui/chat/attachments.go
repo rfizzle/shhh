@@ -862,7 +862,7 @@ func sentTurn(es []entry, idx int) int {
 // lines. The handle and the size are never given up.
 func trayRowFor(f *pasteFold) components.TrayRow {
 	a := f.att
-	r := components.TrayRow{Kind: chipKind(a.Kind), Handle: a.Handle, Name: a.Name,
+	r := components.TrayRow{Kind: stagedChipKind(a), Handle: a.Handle, Name: a.Name,
 		Size: attachment.HumanSize(len(a.Data))}
 	switch a.Kind {
 	case provider.AttachmentImage:
@@ -960,7 +960,7 @@ func (m Model) attachmentChips() []components.AttachmentChip {
 	chips := make([]components.AttachmentChip, 0, len(m.attachments))
 	for _, a := range m.attachments {
 		chip := components.AttachmentChip{
-			Kind:   chipKind(a.Kind),
+			Kind:   stagedChipKind(a),
 			Handle: a.Handle,
 			Name:   a.Name,
 			Size:   attachment.HumanSize(len(a.Data)),
@@ -974,6 +974,15 @@ func (m Model) attachmentChips() []components.AttachmentChip {
 		chips = append(chips, chip)
 	}
 	return chips
+}
+
+// stagedChipKind is chipKind with the one distinction the provider's kind
+// does not carry: text off the clipboard is a paste, whose handle says so.
+func stagedChipKind(a provider.Attachment) components.ChipKind {
+	if a.Kind == provider.AttachmentText && strings.HasPrefix(a.Handle, attachment.HandlePaste+"#") {
+		return components.ChipPaste
+	}
+	return chipKind(a.Kind)
 }
 
 // chipKind maps what the sniffer decided onto the mark the strip draws. The

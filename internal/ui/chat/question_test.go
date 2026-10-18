@@ -905,7 +905,7 @@ func TestQuestion_SeveralInOneCallAreTabs(t *testing.T) {
 		t.Fatalf("pages = %d, want 3", n)
 	}
 	view := stripANSI(m.View().Content)
-	for _, want := range []string{"▸ 1", "· 2", "· 3", "submit", "1 of 3", "3 unanswered"} {
+	for _, want := range []string{"❯ 1", "· 2", "· 3", "submit", "1 of 3", "3 unanswered"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the strip does not say %q:\n%s", want, view)
 		}
@@ -914,7 +914,7 @@ func TestQuestion_SeveralInOneCallAreTabs(t *testing.T) {
 	// nothing about which tabs are done is carried by colour alone.
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	view = stripANSI(m.View().Content)
-	for _, want := range []string{"✓ 1 answered", "▸ 2", "2 of 3", "2 unanswered"} {
+	for _, want := range []string{"✓ 1 answered", "❯ 2", "2 of 3", "2 unanswered"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("after one answer the strip does not say %q:\n%s", want, view)
 		}

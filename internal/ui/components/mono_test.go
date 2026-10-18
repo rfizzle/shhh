@@ -368,7 +368,7 @@ func monoFixtures() []monoSurface {
 		s := StartScreen{
 			Facts: []StartFact{{Text: "go 1.24"}},
 			Suggestions: []StartSuggestion{
-				{Glyph: "▸", Title: "pick up (last session)", Detail: "7 turns"},
+				{Title: "pick up (last session)", Detail: "7 turns"},
 				{Glyph: "⚙", Title: "explain what changed", Detail: "reads only, no writes"},
 			},
 		}

@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
-▸ 1  · 2  · 3  · submit  1 of 3 · 3 unanswered
+❯ 1  · 2  · 3  · submit  1 of 3 · 3 unanswered
 ╭─ Question ────────────────────────────────── 1 of 3 ─╮
 │ Which store should the cache use?                    │
 │                                                      │
@@ -24,13 +24,13 @@
 ╰──────────────────────────────────────────────────────╯
 
 · one answered · the mark turns and the tail counts what is still open
-✓ 1  ▸ 2  · 3  · submit  2 of 3 · 2 unanswered
+✓ 1  ❯ 2  · 3  · submit  2 of 3 · 2 unanswered
 Should the migration be reversible?  [y/N]
 [y] yes · [N] no — the default · [tab] note
 [←→] the next question · [?] keys
 
 · the free answer · its field is shut so the arrows stay the strip's
-✓ 1  ✓ 2  ▸ 3  · submit  3 of 3 · 1 unanswered
+✓ 1  ✓ 2  ❯ 3  · submit  3 of 3 · 1 unanswered
 ╭─ Question ────────────────────────────────── 3 of 3 ─╮
 │ What should the flag be called?                      │
 │                                                      │
@@ -42,7 +42,7 @@ Should the migration be reversible?  [y/N]
 ╰──────────────────────────────────────────────────────╯
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
-✓ 1  ✓ 2  · 3  ▸ submit  submit · 1 unanswered
+✓ 1  ✓ 2  · 3  ❯ submit  submit · 1 unanswered
 ╭─ the answers ────────────────────────────────────────╮
 │ send 2 answers · 1 unanswered, sent as skipped       │
 │ [enter] send · [←→] the next question                │
@@ -50,7 +50,7 @@ Should the migration be reversible?  [y/N]
 ╰──────────────────────────────────────────────────────╯
 
 · four questions · the most one call may carry, which is where the strip is tightest
-✓ 1  · 2  ▸ 3  · 4  · submit  3 of 4 · 3 unanswered
+✓ 1  · 2  ❯ 3  · 4  · submit  3 of 4 · 3 unanswered
 ╭─ Question ────────────────────────────────── 3 of 4 ─╮
 │ Which packages should the flag reach?                │
 │                                                      │
@@ -64,7 +64,7 @@ Should the migration be reversible?  [y/N]
 
 ── ansi ────────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
-␛[1;97;48;5;61m▸ 1␛[m  ␛[38;5;245m· 2␛[m  ␛[38;5;245m· 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  1 of 3 · 3 unanswered␛[m
+␛[1;97;48;5;61m❯ 1␛[m  ␛[38;5;245m· 2␛[m  ␛[38;5;245m· 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  1 of 3 · 3 unanswered␛[m
 ␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m──────────────────────────────────␛[m␛[94m 1 of 3 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                    ␛[94m│␛[m
 ␛[94m│␛[m                                                      ␛[94m│␛[m
@@ -77,13 +77,13 @@ Should the migration be reversible?  [y/N]
 ␛[94m╰──────────────────────────────────────────────────────╯␛[m
 
 · one answered · the mark turns and the tail counts what is still open
-␛[92m✓ 1␛[m  ␛[1;97;48;5;61m▸ 2␛[m  ␛[38;5;245m· 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  2 of 3 · 2 unanswered␛[m
+␛[92m✓ 1␛[m  ␛[1;97;48;5;61m❯ 2␛[m  ␛[38;5;245m· 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  2 of 3 · 2 unanswered␛[m
 ␛[38;5;252mShould the migration be reversible?␛[m  ␛[38;5;245m[␛[m␛[38;5;245my␛[m␛[38;5;245m/␛[m␛[1;97mN␛[m␛[38;5;245m]␛[m
 ␛[38;5;103m[y]␛[m␛[38;5;245m yes␛[m␛[38;5;245m · ␛[m␛[38;5;103m[N]␛[m␛[38;5;245m no — the default␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m note␛[m
 ␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
 
 · the free answer · its field is shut so the arrows stay the strip's
-␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[1;97;48;5;61m▸ 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  3 of 3 · 1 unanswered␛[m
+␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[1;97;48;5;61m❯ 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  3 of 3 · 1 unanswered␛[m
 ␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m──────────────────────────────────␛[m␛[94m 3 of 3 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhat should the flag be called?␛[m                      ␛[94m│␛[m
 ␛[94m│␛[m                                                      ␛[94m│␛[m
@@ -95,7 +95,7 @@ Should the migration be reversible?  [y/N]
 ␛[94m╰──────────────────────────────────────────────────────╯␛[m
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
-␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[38;5;245m· 3␛[m  ␛[1;97;48;5;61m▸ submit␛[m␛[38;5;245m  submit · 1 unanswered␛[m
+␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[38;5;245m· 3␛[m  ␛[1;97;48;5;61m❯ submit␛[m␛[38;5;245m  submit · 1 unanswered␛[m
 ␛[38;5;245m╭─ ␛[m␛[1;97mthe answers ␛[m␛[38;5;245m────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m send 2 answers · 1 unanswered, sent as skipped       ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;245m send␛[m␛[38;5;245m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m                ␛[38;5;245m│␛[m
@@ -103,7 +103,7 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;245m╰──────────────────────────────────────────────────────╯␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest
-␛[92m✓ 1␛[m  ␛[38;5;245m· 2␛[m  ␛[1;97;48;5;61m▸ 3␛[m  ␛[38;5;245m· 4␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  3 of 4 · 3 unanswered␛[m
+␛[92m✓ 1␛[m  ␛[38;5;245m· 2␛[m  ␛[1;97;48;5;61m❯ 3␛[m  ␛[38;5;245m· 4␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  3 of 4 · 3 unanswered␛[m
 ␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m──────────────────────────────────␛[m␛[94m 3 of 4 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich packages should the flag reach?␛[m                ␛[94m│␛[m
 ␛[94m│␛[m                                                      ␛[94m│␛[m

@@ -366,7 +366,8 @@ test-writer — adds table-driven tests for a package and runs them
   Add table-driven tests for one package at a time. Done when every exported
   function has a case in its table and the package's tests pass.
 
-⋮ 7 more sections · [shift+↓] scroll the profile
+  Scope
+⋮ 6 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                │
@@ -398,18 +399,17 @@ $  a shell command
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
-·  accepted, not started
+·  accepted or not reached yet
 ▸  running
 ✦  the classifier is deciding
 ✓  a check passed, a turn or a compaction came out well
 ∗  a turn's close
 ✗  failed
-⊘  refused: dim by you, red by a rule
-⊘  stopped by you while it ran
-⚠  stalled, and will resume or can be steered
-⚠  stopped on something only you can answer
+⊘  refused or turned off: dim by you, red by a rule
+■  stopped by you while it ran
+⚠  stalled, paused, blocked, or waiting on you
 ↺  picked up from a checkpoint
-⊘  not in play
+—  nothing was kept to say
 [?] hide the keys
 
 ── ansi ────────────────────────────────────────────────────
@@ -769,7 +769,8 @@ $  a shell command
   ␛[38;5;246mAdd table-driven tests for one package at a time. Done when every exported␛[m
   ␛[38;5;246mfunction has a case in its table and the package's tests pass.␛[m
 
-␛[38;5;245m⋮ 7 more sections · [shift+↓] scroll the profile␛[m
+  ␛[38;5;252mScope␛[m
+␛[38;5;245m⋮ 6 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;61m1. Save to this project  /repo/.shhh/agents                               ␛[m ␛[38;5;245m│␛[m
@@ -801,16 +802,15 @@ $  a shell command
 ␛[38;5;245m⛁␛[m  ␛[38;5;245ma published report page␛[m
 ␛[38;5;245m≡␛[m  ␛[38;5;245ma reading of the session␛[m
 ␛[92m✓␛[m  ␛[38;5;245ma compaction that brought the window back␛[m
-␛[38;5;245m·␛[m  ␛[38;5;245maccepted, not started␛[m
+␛[38;5;245m·␛[m  ␛[38;5;245maccepted or not reached yet␛[m
 ␛[38;5;205m▸␛[m  ␛[38;5;245mrunning␛[m
 ␛[38;5;205m✦␛[m  ␛[38;5;245mthe classifier is deciding␛[m
 ␛[92m✓␛[m  ␛[38;5;245ma check passed, a turn or a compaction came out well␛[m
 ␛[38;5;245m∗␛[m  ␛[38;5;245ma turn's close␛[m
 ␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
-␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
-␛[38;5;245m⊘␛[m  ␛[38;5;245mstopped by you while it ran␛[m
-␛[38;5;214m⚠␛[m  ␛[38;5;245mstalled, and will resume or can be steered␛[m
-␛[91m⚠␛[m  ␛[38;5;245mstopped on something only you can answer␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused or turned off: dim by you, red by a rule␛[m
+␛[38;5;245m■␛[m  ␛[38;5;245mstopped by you while it ran␛[m
+␛[38;5;214m⚠␛[m  ␛[38;5;245mstalled, paused, blocked, or waiting on you␛[m
 ␛[38;5;245m↺␛[m  ␛[38;5;245mpicked up from a checkpoint␛[m
-␛[38;5;245m⊘␛[m  ␛[38;5;245mnot in play␛[m
+␛[38;5;245m—␛[m  ␛[38;5;245mnothing was kept to say␛[m
 ␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m

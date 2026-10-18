@@ -71,7 +71,7 @@ func TestListScreen_TheFilterIsTheLinesKeys(t *testing.T) {
 	}
 	l.showFiltered([]SelectOption{{Label: "beta"}, {Label: "delta"}}, len(rows), "type")
 	pane := ansi.Strip(strings.Join(l.queryListRows(len(rows), func(n int) string { return plural(n, "row") }, 80, 0), "\n"))
-	for _, want := range []string{"▸ ta", "2 of 4 match", "❯ delta", "2 rows hidden by the filter"} {
+	for _, want := range []string{"› ta", "2 of 4 match", "❯ delta", "2 rows hidden by the filter"} {
 		if !strings.Contains(pane, want) {
 			t.Fatalf("the pane is missing %q:\n%s", want, pane)
 		}

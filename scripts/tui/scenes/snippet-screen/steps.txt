@@ -20,7 +20,7 @@ snap 05-cleared "3 of 3 match"
 keys Escape
 snap 06-closed "[/] filter" "nothing is run until [enter]"
 keys e
-snap 07-rename "rename ▸" "[enter] rename it"
+snap 07-rename "rename ›" "[enter] rename it"
 keys Escape
 snap 08-renamed-nothing "nothing is run until [enter]"
 keys d

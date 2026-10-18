@@ -92,3 +92,56 @@ func TestGolden_StateTable(t *testing.T) {
 		}
 	})
 }
+
+// sharedMarks is the whole of the marks two states may share: seven families,
+// each a documented departure
+// (docs/interface/departures.md#seven-marks-stand-for-a-family-of-states),
+// told apart by the word drawn beside the mark. A new pair that is not here
+// is a glyph with two meanings, and a refusal sharing a mark with the
+// reader's own stop is the one pair that may never be here.
+var sharedMarks = map[string][]State{
+	"⊘": {StateDenied, StateOff},
+	"⚠": {StateStalled, StateWaiting, StatePaused, StateBlocked},
+	"▸": {StateRunning, StateCurrent, StateStarting},
+	"·": {StateQueued, StateToDo},
+	"✓": {StateDone, StateUp},
+	"✗": {StateFailed, StateError},
+	"■": {StateCancelled, StateIdle},
+}
+
+func TestStateTable_AMarkIsSharedOnlyByAFamily(t *testing.T) {
+	got := map[string][]State{}
+	for s := State(0); s < stateCount; s++ {
+		if g := s.Glyph(); g != "" {
+			got[g] = append(got[g], s)
+		}
+	}
+	for g, states := range got {
+		if len(states) < 2 {
+			continue
+		}
+		want := sharedMarks[g]
+		if len(want) != len(states) {
+			t.Errorf("%q is drawn for %d states %v; the family allows %v", g, len(states), states, want)
+			continue
+		}
+		for i := range want {
+			if want[i] != states[i] {
+				t.Errorf("%q family is %v, want %v", g, states, want)
+			}
+		}
+	}
+	if StateDenied.Glyph() == StateCancelled.Glyph() {
+		t.Errorf("a refusal and the reader's own stop share %q", StateDenied.Glyph())
+	}
+}
+
+func TestStateTable_TheLegendListsEachMarkOnce(t *testing.T) {
+	seen := map[string]State{}
+	for _, s := range stateLegend {
+		if prev, dup := seen[s.Glyph()]; dup {
+			t.Errorf("legend lists %q for %s and %s", s.Glyph(), prev.Word(), s.Word())
+		}
+		seen[s.Glyph()] = s
+	}
+}

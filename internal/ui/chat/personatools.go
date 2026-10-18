@@ -236,9 +236,9 @@ func (f *personaFlow) refreshPick(ms *components.MultiSelect, name string) {
 		opt := &ms.Options[i]
 		switch {
 		case row.writer:
-			opt.Desc = "▸ with read and web only, " + name + " changes nothing and reads your tree as it stands"
+			opt.Desc = "with read and web only, " + name + " changes nothing and reads your tree as it stands"
 			if writes {
-				opt.Desc = "▸ with write or execute, " + name + " is a writer: it works in its own copy, its patch comes to a card"
+				opt.Desc = "with write or execute, " + name + " is a writer: it works in its own copy, its patch comes to a card"
 			}
 		case row.tool != "":
 			// Asked with the tool's own tier granted, so a tool whose tier

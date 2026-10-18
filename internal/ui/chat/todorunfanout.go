@@ -56,7 +56,7 @@ func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
 		spawned = append(spawned, lane.Agent)
 	}
 	_ = st.Save(m.todo.wiring.Root)
-	return m.systemNotice(fmt.Sprintf("▸ todo run %s · fan-out: %s", st.Slug, strings.Join(spawned, ", ")))
+	return m.systemNotice(fmt.Sprintf("todo run %s · fan-out: %s", st.Slug, strings.Join(spawned, ", ")))
 }
 
 // todoLaneAsk is a routed approval from one of the run's writers. The
@@ -82,7 +82,7 @@ func (m Model) todoLaneAsk(ask *subagent.Ask) (tea.Model, tea.Cmd, bool) {
 		return next, cmd, true
 	}
 	ask.Respond(true)
-	model, _ := m.systemNotice(fmt.Sprintf("▸ todo run %s · lane %s: %s", st.Slug, lane.Name, ask.Title))
+	model, _ := m.systemNotice(fmt.Sprintf("todo run %s · lane %s: %s", st.Slug, lane.Name, ask.Title))
 	return model, nil, true
 }
 

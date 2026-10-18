@@ -51,8 +51,8 @@ func TestTurnsScreen_ThePreviewIsTheTurnsClose(t *testing.T) {
 	view := ansi.Strip(turnsScreen(2).View(130))
 	for _, want := range []string{
 		"/turns", "6 turns · 26 tools", "$0.1580 spent", "[esc] back",
-		"▸ turn 6", "running", "✓ turn 5", "changed no files", "✓ turn 4", "· turn 2", "no figures kept",
-		"⊘ turn 1", "cancelled",
+		"▸ turn 6", "running", "✓ turn 5", "changed no files", "✓ turn 4", "— turn 2", "no figures kept",
+		"■ turn 1", "cancelled",
 		"∗ worked 1m 04s · 9 tools · $0.0870", "committed a1b2c3d on main",
 		"internal/agent/loop_test.go", "[enter] review turn 4",
 	} {

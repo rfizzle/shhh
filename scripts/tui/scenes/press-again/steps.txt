@@ -27,12 +27,12 @@ keys "run the checks" Enter
 snap 04-card "[y] run it once"
 sleep 1
 keys C-c
-snap 05-over-a-card "⊘" "cancelled" "[enter] send"
+snap 05-over-a-card "■" "cancelled" "[enter] send"
 
 keys x
 # A stop ends the turn, so the model is not asked again; the draft taking
 # the key is what shows the session is still open.
-snap 06-still-open "▸ x"
+snap 06-still-open "› x"
 keys C-c
 keys C-c
 snap 07-quit-armed "again quits" "[ctrl+c] again quits"

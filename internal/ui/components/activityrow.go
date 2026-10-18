@@ -428,6 +428,10 @@ func (r ActivityRow) glyph() string {
 		g = spinTone(sty).Render(r.runningGlyph())
 	case r.State == ActivityDenied && r.ByRule:
 		g = sty.del.Render(StateDenied.Glyph())
+	case r.State == ActivityDenied && r.Outcome == OutcomeCancelled:
+		// The reader's own stop, not a refusal: its own mark, so a deny
+		// never reads as "you cancelled it".
+		g = StateCancelled.Mark()
 	case r.State != ActivityDone && r.State.state() != StateOK:
 		g = r.State.state().Mark()
 	case int(r.Kind) < len(kindGlyphs):

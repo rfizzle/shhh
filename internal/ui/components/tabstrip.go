@@ -40,7 +40,7 @@ type Tab struct {
 // The three marks. A tab is where you are, or done, or neither, and the mark
 // says which without asking the terminal for a colour.
 const (
-	tabHere = "▸"
+	tabHere = "❯"
 	tabDone = "✓"
 	tabTodo = "·"
 )

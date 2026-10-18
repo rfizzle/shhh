@@ -559,7 +559,7 @@ func (m Model) todoRunStatus() (tea.Model, tea.Cmd) {
 	// set that run is belongs to the loop above it. It is said first, so the
 	// row the answer opens on is still the last thing on screen.
 	if sp, live := run.Live(m.todo.wiring.Root); live {
-		model, _ := m.systemNotice("▸ " + sp.Summary())
+		model, _ := m.systemNotice(sp.Summary())
 		m = model.(Model)
 	}
 	idx := lastTodoRunRow(m.transcript)
@@ -569,7 +569,7 @@ func (m Model) todoRunStatus() (tea.Model, tea.Cmd) {
 	if m.attachedTo != "" {
 		// The keyboard is in a child's transcript, and the row is in this
 		// one. The sentence is what is left, and it is the whole summary.
-		return m.systemNotice("▸ " + m.transcript[idx].todorun.st.Summary())
+		return m.systemNotice(m.transcript[idx].todorun.st.Summary())
 	}
 	m.transcript[idx].expanded = true
 	m.enterSurface(stateFocus)

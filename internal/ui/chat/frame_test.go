@@ -305,7 +305,7 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	view = stripANSI(m.View().Content)
 	// The activity slot is the running turn's status line now:
 	// `WORKING` was true of every moment of every turn and said nothing.
-	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "waiting…") {
+	if !strings.Contains(view, "│ › ") || !strings.Contains(view, "waiting…") {
 		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
 	}
 	if !strings.Contains(view, "[ctrl+p] hold · [ctrl+c] stop the run · [ctrl+]] keys") {
@@ -529,7 +529,7 @@ func TestFrame_AttachedShowsChildGutterAndVitals(t *testing.T) {
 	view := stripANSI(m.View().Content)
 	// Attached, the rail is the one place that says which session the
 	// keyboard is in, so the identity it dropped at the root comes back.
-	if rail := frameTopRail(view); !strings.Contains(rail, "orchestrator ▸ researcher-1") {
+	if rail := frameTopRail(view); !strings.Contains(rail, "orchestrator · researcher-1") {
 		t.Fatalf("attached top rail missing the breadcrumb:\n%s", view)
 	}
 	if !strings.Contains(view, "│ researcher-1 "+draftGutter+" ") {
@@ -587,7 +587,7 @@ func TestFrame_AttachedBreadcrumbTakesTheFarSide(t *testing.T) {
 	m = updated.(Model)
 
 	rail := strings.TrimSpace(stripANSI(frameTopRail(m.View().Content)))
-	if !strings.Contains(rail, "orchestrator ▸ researcher-1 · ") || !strings.HasSuffix(rail, " ─╮") {
+	if !strings.Contains(rail, "orchestrator · researcher-1 · ") || !strings.HasSuffix(rail, " ─╮") {
 		t.Fatalf("the breadcrumb should close the attached rail:\n%s", rail)
 	}
 	if !strings.HasPrefix(rail, "╭─ ") {
@@ -599,7 +599,7 @@ func TestFrame_AttachedBreadcrumbTakesTheFarSide(t *testing.T) {
 	styled := frameTopRail(m.View().Content)
 	for _, want := range []string{
 		sty.Frame.Identity.Render("orchestrator"),
-		sty.Frame.IdentityChild.Render(" ▸ researcher-1"),
+		sty.Frame.IdentityChild.Render(" · researcher-1"),
 	} {
 		if !strings.Contains(styled, want) {
 			t.Fatalf("the breadcrumb should carry the palette's own tones, missing %q in:\n%q", want, styled)
@@ -620,13 +620,13 @@ func TestFrame_BreadcrumbElidesTheRootOnANarrowRail(t *testing.T) {
 	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
 	m.attach("reviewer-1")
 
-	if got, want := m.breadcrumb(), "orchestrator ▸ researcher-1 ▸ reviewer-1"; got != want {
+	if got, want := m.breadcrumb(), "orchestrator · researcher-1 · reviewer-1"; got != want {
 		t.Fatalf("breadcrumb = %q, want %q", got, want)
 	}
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
 	m = updated.(Model)
 	rail := stripANSI(frameTopRail(m.View().Content))
-	if !strings.Contains(rail, "… ▸ researcher-1 ▸ reviewer-1") {
+	if !strings.Contains(rail, "… · researcher-1 · reviewer-1") {
 		t.Fatalf("80 columns should keep the nearest two segments:\n%s", rail)
 	}
 	if strings.Contains(rail, "orchestrator") {
@@ -636,7 +636,7 @@ func TestFrame_BreadcrumbElidesTheRootOnANarrowRail(t *testing.T) {
 	updated, _ = m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
 	m = updated.(Model)
 	if rail := stripANSI(frameTopRail(m.View().Content)); !strings.Contains(rail,
-		"orchestrator ▸ researcher-1 ▸ reviewer-1") {
+		"orchestrator · researcher-1 · reviewer-1") {
 		t.Fatalf("a wide rail should state the whole path:\n%s", rail)
 	}
 	// A child of the session has two segments and loses neither: the elision
@@ -645,7 +645,7 @@ func TestFrame_BreadcrumbElidesTheRootOnANarrowRail(t *testing.T) {
 	updated, _ = m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
 	m = updated.(Model)
 	if rail := stripANSI(frameTopRail(m.View().Content)); !strings.Contains(rail,
-		"orchestrator ▸ researcher-1") {
+		"orchestrator · researcher-1") {
 		t.Fatalf("a two-segment path fits and stays whole:\n%s", rail)
 	}
 }

@@ -2395,7 +2395,7 @@ func TestGolden_StartScreen(t *testing.T) {
 				},
 				Lead: "Some things worth doing first:",
 				Suggestions: []StartSuggestion{
-					{Glyph: "▸", Title: "pick up (last session)", Detail: "7 turns · $0.42 · 4m ago"},
+					{Title: "pick up (last session)", Detail: "7 turns · $0.42 · 4m ago"},
 					{Glyph: "⚙", Title: "explain what changed in the working tree",
 						Detail: "reads only, no writes"},
 					{Glyph: "⚙", Title: "run the default quality gate and triage what fails",
@@ -2474,7 +2474,7 @@ func TestGolden_StartFace(t *testing.T) {
 				},
 				Lead: "Some things worth doing first:",
 				Suggestions: []StartSuggestion{
-					{Glyph: "▸", Title: "pick up (last session)", Detail: "7 turns · $0.42 · 4m ago"},
+					{Title: "pick up (last session)", Detail: "7 turns · $0.42 · 4m ago"},
 					{Glyph: "⚙", Title: "explain what changed in the working tree",
 						Detail: "reads only, no writes"},
 				},

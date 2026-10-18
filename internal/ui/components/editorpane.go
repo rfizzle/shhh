@@ -857,7 +857,7 @@ func (p *EditorPane) besideOutline(code []string, width, rows, top int) []string
 		e := p.outline[i]
 		marker, label := " ", sty.dim.Render(Clip(e.label, editorOutlineWidth-1))
 		if inOne && e.line == cur.line {
-			marker = sty.info.Render("▸")
+			marker = sty.info.Render("❯")
 			label = sty.bright.Render(Clip(e.label, editorOutlineWidth-1))
 		}
 		p.outlineHits[top+len(col)] = e.line

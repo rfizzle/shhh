@@ -23,7 +23,7 @@
 ╰──────────────────────────────────────────────────────────────────────────╯
 ──── DRAFT ─────────────────────────────────────────────────────────────────
 ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────╮
-│ ▸ also add a --max-rounds flag while you're in there                     │
+│ › also add a --max-rounds flag while you're in there                     │
 ├─ ⏸ manual · round 1 of 150 · ctx 0% ▱▱▱▱▱▱▱▱ · ↑41.2k ↓9.8k tok ─────────┤
 ╰─ [ctrl+space/ctrl+y] answer it · [enter] add to this turn ───────────────╯
 
@@ -41,7 +41,7 @@
 ──── DRAFT ─────────────────────────────────────────────────────────────────
 keys changed: [ctrl+]] key list · [ctrl+n] queue · [f12] agents … — [ctrl+]]
 ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────╮
-│ ▸ also add a --max-rounds flag while you're in there                     │
+│ › also add a --max-rounds flag while you're in there                     │
 ├─ ⏸ manual · round 1 of 150 · ctx 0% ▱▱▱▱▱▱▱▱ · ↑41.2k ↓9.8k tok ─────────┤
 ╰─ [ctrl+space/ctrl+y] answer it · [enter] add to this turn ───────────────╯
 
@@ -59,7 +59,7 @@ keys changed: [ctrl+]] key list · [ctrl+n] queue · [f12] agents … — [ctrl+
 ──── DRAFT ─────────────────────────────────────────────────────────────────
 ✗ auto denied: rm -rf ./build/cache ./build/intermediate… (/permissions why)
 ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────╮
-│ ▸ also add a --max-rounds flag while you're in there                     │
+│ › also add a --max-rounds flag while you're in there                     │
 ├─ ⏸ manual · round 1 of 150 · ctx 0% ▱▱▱▱▱▱▱▱ · ↑41.2k ↓9.8k tok ─────────┤
 ╰─ [ctrl+space/ctrl+y] answer it · [enter] add to this turn ───────────────╯
 
@@ -78,7 +78,7 @@ keys changed: [ctrl+]] key list · [ctrl+n] queue · [f12] agents … — [ctrl+
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────╮
-│ ▸ also add a --max-rounds flag while you're in there                     │
+│ › also add a --max-rounds flag while you're in there                     │
 ╰─ ⏸ manual · ctx 0% ▱▱▱▱▱▱▱▱ · 50 characters, cursor at 50 ───────────────╯
 
 · grace · held on a warm keyboard, keys a moment away
@@ -110,7 +110,7 @@ keys changed: [ctrl+]] key list · [ctrl+n] queue · [f12] agents … — [ctrl+
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;245m────␛[m ␛[1;94mDRAFT␛[m ␛[38;5;245m─────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;245m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;245m────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252malso add a --max-rounds flag while you're in there                    ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252malso add a --max-rounds flag while you're in there                    ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · round 1 of 150 · ␛[92mctx 0%␛[m ␛[38;5;245m▱▱▱▱▱▱▱▱␛[38;5;246m · ↑41.2k ↓9.8k tok␛[m ␛[38;5;245m─────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[38;5;245m answer it · ␛[38;5;103m[enter]␛[38;5;245m add to this turn␛[m ␛[38;5;245m───────────────╯␛[m
 
@@ -128,7 +128,7 @@ keys changed: [ctrl+]] key list · [ctrl+n] queue · [f12] agents … — [ctrl+
 ␛[38;5;245m────␛[m ␛[1;94mDRAFT␛[m ␛[38;5;245m─────────────────────────────────────────────────────────────────␛[m
 ␛[94mkeys changed: [ctrl+]] key list␛[38;5;245m · ␛[94m[ctrl+n] queue␛[38;5;245m · ␛[94m[f12] agents␛[38;5;245m …␛[94m — [ctrl+]]␛[m
 ␛[38;5;245m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;245m────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252malso add a --max-rounds flag while you're in there                    ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252malso add a --max-rounds flag while you're in there                    ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · round 1 of 150 · ␛[92mctx 0%␛[m ␛[38;5;245m▱▱▱▱▱▱▱▱␛[38;5;246m · ↑41.2k ↓9.8k tok␛[m ␛[38;5;245m─────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[38;5;245m answer it · ␛[38;5;103m[enter]␛[38;5;245m add to this turn␛[m ␛[38;5;245m───────────────╯␛[m
 
@@ -146,7 +146,7 @@ keys changed: [ctrl+]] key list · [ctrl+n] queue · [f12] agents … — [ctrl+
 ␛[38;5;245m────␛[m ␛[1;94mDRAFT␛[m ␛[38;5;245m─────────────────────────────────────────────────────────────────␛[m
 ␛[91m✗ auto denied: rm -rf ./build/cache ./build/intermediate… (/permissions why)␛[m
 ␛[38;5;245m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;245m────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252malso add a --max-rounds flag while you're in there                    ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252malso add a --max-rounds flag while you're in there                    ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · round 1 of 150 · ␛[92mctx 0%␛[m ␛[38;5;245m▱▱▱▱▱▱▱▱␛[38;5;246m · ↑41.2k ↓9.8k tok␛[m ␛[38;5;245m─────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[38;5;245m answer it · ␛[38;5;103m[enter]␛[38;5;245m add to this turn␛[m ␛[38;5;245m───────────────╯␛[m
 
@@ -165,7 +165,7 @@ keys changed: [ctrl+]] key list · [ctrl+n] queue · [f12] agents … — [ctrl+
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 ␛[38;5;245m╭─␛[m ␛[38;5;245m⏸ 1 waiting␛[m ␛[38;5;245m────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸ ␛[38;5;252malso add a --max-rounds flag while you're in there␛[m                     ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m› ␛[38;5;252malso add a --max-rounds flag while you're in there␛[m                     ␛[38;5;245m│␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;245m⏸ manual · ctx 0% ▱▱▱▱▱▱▱▱ · 50 characters, cursor at 50␛[m ␛[38;5;245m───────────────╯␛[m
 
 · grace · held on a warm keyboard, keys a moment away

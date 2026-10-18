@@ -24,12 +24,12 @@ const (
 	StateClosed                 // ∗ a turn's close: it worked, and here is what it cost
 	StateFailed                 // ✗ it broke
 	StateDenied                 // ⊘ you said no, or a rule did
-	StateCancelled              // ⊘ you stopped it while it ran
+	StateCancelled              // ■ you stopped it while it ran
 	StateStalled                // ⚠ recoverable: it will resume, or you can steer it
 	StateWaiting                // ⚠ stopped on something only you can answer
 	StateRestored               // ↺ picked up from a checkpoint
 	StateOff                    // ⊘ not in play: turned off, or waiting to be steered
-	StateUnknown                // · nothing was kept to say
+	StateUnknown                // — nothing was kept to say
 	StatePaused                 // ⚠ a turn held at its round limit
 	StateCurrent                // ▸ the working step the agent is on
 	StateToDo                   // · a step not reached yet
@@ -37,7 +37,7 @@ const (
 	StateBlocked                // ⚠ a tool source that is refused until you act
 	StateStarting               // ▸ a tool source that is still coming up
 	StateError                  // ✗ a tool source that broke
-	StateIdle                   // ⊘ a child whose turn was cancelled, waiting to be steered
+	StateIdle                   // ■ a child whose turn was cancelled, waiting to be steered
 	stateCount
 )
 
@@ -59,27 +59,28 @@ func addTone(s styles) lipgloss.Style { return s.add }
 // row that merged them would say the second of a command that only said the
 // first.
 //
-// Cancelled shares ⊘ with a refusal, because ⊘ is the mark of the reader's
-// own no wherever it already stood — on a stopped turn, a stopped command, a
-// stopped process, a request they stopped — and a new mark would have taught
-// a second glyph for a fact the reader already reads one way. The word beside
-// it is what tells the two apart, and the legend names both
-// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+// Cancelled has a mark of its own, `■`, because a refusal and the reader's
+// own stop are different facts and must never share one: a deny cannot read as
+// "you cancelled it". The marks that remain shared are seven families, each a
+// departure (docs/interface/departures.md#seven-marks-stand-for-a-family-of-states)
+// told apart by the word beside the mark: `⊘` denied and off, `⚠` stalled,
+// needs you, paused and blocked, `▸` running, current and starting, and `·`
+// queued and to do, `✓` done and up, `✗` failed and error, `■` cancelled and idle.
 var stateTable = [stateCount]stateRow{
-	StateQueued:    {"·", dimTone, "queued", "accepted, not started"},
+	StateQueued:    {"·", dimTone, "queued", "accepted or not reached yet"},
 	StateRunning:   {"▸", spinTone, "running…", "running"},
 	StateChecking:  {"✦", spinTone, "checking", "the classifier is deciding"},
 	StateOK:        {"", addTone, "ok", "a command returned"},
 	StateDone:      {"✓", addTone, "done", "a check passed, a turn or a compaction came out well"},
 	StateClosed:    {"∗", dimTone, "worked", "a turn's close"},
 	StateFailed:    {"✗", errTone, "failed", "failed"},
-	StateDenied:    {"⊘", dimTone, "denied", "refused: dim by you, red by a rule"},
-	StateCancelled: {"⊘", dimTone, "cancelled", "stopped by you while it ran"},
-	StateStalled:   {"⚠", accentTone, "stalled", "stalled, and will resume or can be steered"},
+	StateDenied:    {"⊘", dimTone, "denied", "refused or turned off: dim by you, red by a rule"},
+	StateCancelled: {"■", dimTone, "cancelled", "stopped by you while it ran"},
+	StateStalled:   {"⚠", accentTone, "stalled", "stalled, paused, blocked, or waiting on you"},
 	StateWaiting:   {"⚠", errTone, "needs you", "stopped on something only you can answer"},
 	StateRestored:  {"↺", dimTone, "restored", "picked up from a checkpoint"},
 	StateOff:       {"⊘", dimTone, "off", "not in play"},
-	StateUnknown:   {"·", dimTone, "unknown", "nothing was kept to say"},
+	StateUnknown:   {"—", dimTone, "unknown", "nothing was kept to say"},
 	StatePaused:    {"⚠", accentTone, "paused", "a turn held at its round limit"},
 	StateCurrent:   {"▸", spinTone, "current", "the step the agent is on"},
 	StateToDo:      {"·", dimTone, "to do", "a step not reached yet"},
@@ -87,7 +88,7 @@ var stateTable = [stateCount]stateRow{
 	StateBlocked:   {"⚠", accentTone, "blocked", "a tool source waiting on you"},
 	StateStarting:  {"▸", spinTone, "starting", "a tool source still coming up"},
 	StateError:     {"✗", errTone, "error", "a tool source that broke"},
-	StateIdle:      {"⊘", dimTone, "idle", "a child waiting to be steered"},
+	StateIdle:      {"■", dimTone, "idle", "a child waiting to be steered"},
 }
 
 // Glyph is the state's mark, unpainted: for the callers whose row runs the
@@ -136,11 +137,10 @@ func (s ActivityState) state() State {
 	return StateOK
 }
 
-// stateLegend is every state with a mark of its own, as the key list draws
-// them, in the order the legend reads. The marks two states share are named
-// once per state, which is the legend's half of the rule that the word is
-// drawn wherever the glyph is.
+// stateLegend is every mark the table draws once, as the key list draws
+// them, in the order the legend reads. A mark that stands for a family of
+// states is listed under the first of them with the family in its meaning.
 var stateLegend = [...]State{
 	StateQueued, StateRunning, StateChecking, StateDone, StateClosed, StateFailed,
-	StateDenied, StateCancelled, StateStalled, StateWaiting, StateRestored, StateOff,
+	StateDenied, StateCancelled, StateStalled, StateRestored, StateUnknown,
 }

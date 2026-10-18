@@ -156,7 +156,7 @@ func (m Model) finishTodoVerify(msg todoVerifyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if msg.blocked != "" {
-		said := fmt.Sprintf("▸ todo run %s · verify", st.Slug)
+		said := fmt.Sprintf("todo run %s · verify", st.Slug)
 		if msg.output != "" {
 			said += "\n" + msg.output
 		}
@@ -167,6 +167,6 @@ func (m Model) finishTodoVerify(msg todoVerifyMsg) (tea.Model, tea.Cmd) {
 	if !msg.ok {
 		label = "failed"
 	}
-	model, _ := m.systemNotice(fmt.Sprintf("▸ todo run %s · verify %s\n%s", st.Slug, label, msg.output))
+	model, _ := m.systemNotice(fmt.Sprintf("todo run %s · verify %s\n%s", st.Slug, label, msg.output))
 	return model.(Model).todoRunStep(st.VerifyResult(m.todo.runner.item, msg.ok, msg.output))
 }

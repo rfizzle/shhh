@@ -937,7 +937,7 @@ func (e *lineEdit) view() string {
 	if e.lead != "" {
 		row = sty.dim.Render(e.lead + " ")
 	}
-	row += sty.info.Render("▸ ") + sty.queryText.Render(string(e.value)+queryCursor)
+	row += sty.info.Render("› ") + sty.queryText.Render(string(e.value)+queryCursor)
 	if len(e.value) == 0 && e.hint != "" {
 		row += sty.dim.Render(" " + e.hint)
 	}

@@ -1308,7 +1308,7 @@ func readFileState(path string) fileState {
 func (m Model) approvalCard() *components.ApprovalCard {
 	card := m.buildApprovalCard()
 	if m.attachedTo != "" {
-		card.Title = "orchestrator ▸ " + card.Title
+		card.Title = "orchestrator · " + card.Title
 	}
 	// Whether the card's keys are live at all is not the card's to decide
 	// (invariant 5): it depends on which surface holds the keyboard.

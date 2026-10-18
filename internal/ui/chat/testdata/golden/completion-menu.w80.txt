@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · idle · every command on the list is runnable
 ╭─ idle ───────────────────────────────────────────────────────────────────╮
-│ ▸ /co                                                                    │
+│ › /co                                                                    │
 │ ❯ /copy [code]  copy the last response (or just its code blocks)         │
 │   /context      the window as a meter, itemised down to the tool         │
 │   /compact      continue from a summary plus the most recent turns       │
@@ -22,7 +22,7 @@
 
 · mid-turn · the greyed rows say why
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
-│ ▸ /co                                                                    │
+│ › /co                                                                    │
 │ ❯ /copy [code]  copy the last response (or just its code blocks)         │
 │   /context      the window as a meter, itemised down to the tool         │
 │   ⊘ /compact    continue from a summary plus the most recent…  idle only │
@@ -32,7 +32,7 @@
 
 · mid-turn · the one command the prefix names
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
-│ ▸ /comp                                                                  │
+│ › /comp                                                                  │
 │ ❯ ⊘ /compact  continue from a summary plus the most recent t…  idle only │
 │ [tab] complete · [enter] run · [↑↓] move · [esc] dismiss                 │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
@@ -40,7 +40,7 @@
 
 · a conversation's @ · a colleague among the files
 ╭─ idle ───────────────────────────────────────────────────────────────────╮
-│ ▸ @se                                                                    │
+│ › @se                                                                    │
 │ ❯ @security-reviewer        reads a change for what it exposes           │
 │   internal/auth/session.go  modified just now                            │
 │   docs/security.md          modified 8m ago                              │
@@ -51,7 +51,7 @@
 ── ansi ────────────────────────────────────────────────────
 · idle · every command on the list is runnable
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252m/co                                                                   ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252m/co                                                                   ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m ␛[94m❯␛[m ␛[97;48;5;61;1m/copy [code]  copy the last response (or just its code blocks)        ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252m/context␛[m      ␛[38;5;245mthe window as a meter, itemised down to the tool␛[m         ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252m/compact␛[m      ␛[38;5;245mcontinue from a summary plus the most recent turns␛[m       ␛[38;5;245m│␛[m
@@ -61,7 +61,7 @@
 
 · mid-turn · the greyed rows say why
 ␛[38;5;245m╭─␛[m ␛[38;5;205m⠋ waiting…␛[m ␛[38;5;245m─────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;205;1m▸␛[m ␛[38;5;252m/co                                                                   ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;205;1m›␛[m ␛[38;5;252m/co                                                                   ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m ␛[94m❯␛[m ␛[97;48;5;61;1m/copy [code]  copy the last response (or just its code blocks)        ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252m/context␛[m      ␛[38;5;245mthe window as a meter, itemised down to the tool␛[m         ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m ␛[38;5;248m  ⊘ /compact    continue from a summary plus the most recent…  idle only␛[m ␛[38;5;245m│␛[m
@@ -71,7 +71,7 @@
 
 · mid-turn · the one command the prefix names
 ␛[38;5;245m╭─␛[m ␛[38;5;205m⠋ waiting…␛[m ␛[38;5;245m─────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;205;1m▸␛[m ␛[38;5;252m/comp                                                                 ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;205;1m›␛[m ␛[38;5;252m/comp                                                                 ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m ␛[94m❯␛[m ␛[97;48;5;61;1m⊘ /compact  continue from a summary plus the most recent t…  idle only␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m ␛[38;5;245m[tab] complete · [enter] run · [↑↓] move · [esc] dismiss␛[m                 ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────────────────────────┤␛[m
@@ -79,7 +79,7 @@
 
 · a conversation's @ · a colleague among the files
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252m@se                                                                   ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252m@se                                                                   ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m ␛[94m❯␛[m ␛[97;48;5;61;1m@security-reviewer        reads a change for what it exposes          ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252minternal/auth/session.go␛[m  ␛[38;5;245mmodified just now␛[m                            ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252mdocs/security.md␛[m          ␛[38;5;245mmodified 8m ago␛[m                              ␛[38;5;245m│␛[m

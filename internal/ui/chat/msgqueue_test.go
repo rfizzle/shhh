@@ -250,7 +250,7 @@ func TestProgram_AQueuedLineIsCancelledOrPulledBackBeforeItIsSent(t *testing.T) 
 	tm.Send(queueCancel)
 	waitForText(t, tm, "cancelled")
 	tm.Send(queueEnter)
-	waitForText(t, tm, "▸ fix the header too")
+	waitForText(t, tm, "› fix the header too")
 
 	close(hold)
 	waitForText(t, tm, "the scripted answer")

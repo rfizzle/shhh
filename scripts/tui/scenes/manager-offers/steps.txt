@@ -43,11 +43,11 @@ snap 03-blocked "blocked · "
 # next card in the queue is writer-1's, and it is the wait.
 keys C-Space
 keys y
-snap 03b-first "writer-1 ▸ Approve command"
+snap 03b-first "writer-1 · Approve command"
 keys C-Space
 keys y
 # The card after it is writer-2's, and it is the wait.
-snap 03c-second "writer-2 ▸ Approve command"
+snap 03c-second "writer-2 · Approve command"
 # writer-2 is answered at once and says its piece — until it asks to run
 # something again, which is the request read from the manager further down.
 # writer-3's request is never answered: that child is the one waiting on you,
@@ -55,7 +55,7 @@ snap 03c-second "writer-2 ▸ Approve command"
 # keyboard back at the draft — the manager is a takeover and does not open
 # over a card.
 keys Escape
-snap 04-three-states "writer-2 ▸ Approve command" "blocked · " "writing · "
+snap 04-three-states "writer-2 · Approve command" "blocked · " "writing · "
 # The manager, with the pointer where it opens: on the orchestrator, which can
 # neither be answered nor retried. Both list-wide offers are on the row
 # anyway, which is the whole of what this scene is for. Under the three
@@ -70,7 +70,7 @@ snap 06-blocked-row "answer without attaching" "[d] stop"
 # And the way out leaves what it says it leaves: the turn, with the decision
 # that was standing over it still standing.
 keys Escape
-snap 07-back "writer-2 ▸ Approve command"
+snap 07-back "writer-2 · Approve command"
 # And the state the mid-sentence rule is about: that same routed card standing
 # over a sentence somebody is still typing. Every letter goes into the draft,
 # so the card draws the one key that would take the keyboard and none of its

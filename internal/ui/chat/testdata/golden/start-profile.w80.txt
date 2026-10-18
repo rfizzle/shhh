@@ -23,7 +23,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                       
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
@@ -43,7 +43,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                       
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
@@ -62,7 +62,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     
+❯ pick up (last session) — 7 turns · $0.42 · 4m ago                       
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
@@ -83,7 +83,7 @@ or just type what you want · [↑↓] choose · [enter] start
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                       ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;245mone approval, then it reports back␛[m
@@ -103,7 +103,7 @@ or just type what you want · [↑↓] choose · [enter] start
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                       ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;245mone approval, then it reports back␛[m
@@ -122,7 +122,7 @@ or just type what you want · [↑↓] choose · [enter] start
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
 ␛[38;5;245mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mpick up (last session) — 7 turns · $0.42 · 4m ago                       ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;245mone approval, then it reports back␛[m

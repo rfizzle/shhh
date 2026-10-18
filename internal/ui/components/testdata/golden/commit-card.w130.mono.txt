@@ -158,7 +158,7 @@
 
 · the message as a draft · the budget is the title
 ╭─ 0 left · the body wraps at 72 ────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ ▸ agent: cap rounds at the limit instead of erroring                                                                           │
+│ · agent: cap rounds at the limit instead of erroring                                                                           │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [enter] commit with this                                                                                                       │
 │ [esc] back to the card, edits kept                                                                                             │
@@ -166,7 +166,7 @@
 
 · a subject past the budget · it counts on
 ╭─ 40 over · the body wraps at 72 ───────────────────────────────────────────────────────────────────────────────────────────────╮
-│ ▸ agent: cap the number of tool rounds at the configured limit instead of returning an error                                   │
+│ · agent: cap the number of tool rounds at the configured limit instead of returning an error                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [enter] commit with this                                                                                                       │
 │ [esc] back to the card, edits kept                                                                                             │
@@ -321,7 +321,7 @@
 
 · the message as a draft · the budget is the title
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254m0 left · the body wraps at 72 ␛[m␛[38;5;254m────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m▸ ␛[magent: cap rounds at the limit instead of erroring                                                                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m· ␛[magent: cap rounds at the limit instead of erroring                                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m commit with this␛[m                                                                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to the card, edits kept␛[m                                                                                             ␛[38;5;254m│␛[m
@@ -329,7 +329,7 @@
 
 · a subject past the budget · it counts on
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254m40 over · the body wraps at 72 ␛[m␛[38;5;254m───────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m▸ ␛[magent: cap the number of tool rounds at the configured limit instead of returning an error                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m· ␛[magent: cap the number of tool rounds at the configured limit instead of returning an error                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m commit with this␛[m                                                                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to the card, edits kept␛[m                                                                                             ␛[38;5;254m│␛[m

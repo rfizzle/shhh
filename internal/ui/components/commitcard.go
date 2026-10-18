@@ -237,7 +237,7 @@ func (c CommitMessage) View(width int) string {
 	inner := Card{}.Inner(width)
 	rows := make([]string, 0, len(c.Rows)+4)
 	for _, r := range c.Rows {
-		rows = append(rows, sty.info.Render("▸ ")+r)
+		rows = append(rows, sty.info.Render("· ")+r)
 	}
 	tones := cardTones()
 	rows = append(rows, cardRule,

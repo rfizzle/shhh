@@ -271,7 +271,7 @@ func TestSelect_QueryChipsAndHint(t *testing.T) {
 			{Key: "[↑↓]", Label: "move"}, keyOfferAs(keys.Select.Cancel, "dismiss")},
 	}
 	view := s.View(70)
-	for _, want := range []string{"Palette", "12 results", "▸ mod█", "COMMANDS", "[tab] complete"} {
+	for _, want := range []string{"Palette", "12 results", "› mod█", "COMMANDS", "[tab] complete"} {
 		if !strings.Contains(ansi.Strip(view), want) {
 			t.Fatalf("expected %q in the card:\n%s", want, view)
 		}

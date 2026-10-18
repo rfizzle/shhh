@@ -250,7 +250,7 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 		t.Fatal("attaching must close the list")
 	}
 	view = m.View().Content
-	if !strings.Contains(view, "orchestrator ▸ researcher-1") {
+	if !strings.Contains(view, "orchestrator · researcher-1") {
 		t.Fatalf("attached view missing breadcrumb:\n%s", view)
 	}
 	if !strings.Contains(ansi.Strip(view), "[esc] back") {
@@ -282,7 +282,7 @@ func TestEscPopsOneLevelOfTheSpawnTree(t *testing.T) {
 	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
 
 	m.attach("reviewer-1")
-	if got, want := m.breadcrumb(), "orchestrator ▸ researcher-1 ▸ reviewer-1"; got != want {
+	if got, want := m.breadcrumb(), "orchestrator · researcher-1 · reviewer-1"; got != want {
 		t.Fatalf("breadcrumb = %q, want %q", got, want)
 	}
 	if got := railDepth(m, "reviewer-1"); got != 2 {
@@ -297,7 +297,7 @@ func TestEscPopsOneLevelOfTheSpawnTree(t *testing.T) {
 	if m = esc(m); m.attachedTo != "researcher-1" {
 		t.Fatalf("the first esc should reach the agent that spawned it, got %q", m.attachedTo)
 	}
-	if got, want := m.breadcrumb(), "orchestrator ▸ researcher-1"; got != want {
+	if got, want := m.breadcrumb(), "orchestrator · researcher-1"; got != want {
 		t.Fatalf("breadcrumb after one pop = %q, want %q", got, want)
 	}
 	if m = esc(m); m.attachedTo != "" {
@@ -745,7 +745,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 
 	updated, _ = m.Update(key('y'))
 	m = updated.(Model)
-	if !transcriptContains(m, "✓ researcher-1  approved ▸ run echo hi") {
+	if !transcriptContains(m, "✓ researcher-1  approved · run echo hi") {
 		t.Fatal("transcript missing the approval entry")
 	}
 	if len(m.childAsks) != 0 {
@@ -784,7 +784,7 @@ func TestAnswerFromTheListLeavesTheDecisionWaitingOnEsc(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
-	if transcriptContains(m, "⊘ researcher-1  declined ▸ run echo hi") {
+	if transcriptContains(m, "⊘ researcher-1  declined · run echo hi") {
 		t.Fatal("esc is a way back, not a denial")
 	}
 	if m.agentList == nil || m.answerAgent != "" {

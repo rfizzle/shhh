@@ -80,7 +80,7 @@ processes
   ▸ watch  running… · 1m 30s · container
   ✗ tests  exited 1 · 29s · host
 tools
-❯ ⊘ search  cancelled by you · 41s · host               
+❯ ■ search  cancelled by you · 41s · host               
   ▸ execute_command  running… · 8.0s · container
 ────────────────────────────────────────────────────────
 search                                  cancelled by you
@@ -188,7 +188,7 @@ ps
   ␛[38;5;254m▸ watch␛[m  ␛[38;5;254mrunning…␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m 30s␛[m␛[38;5;244m · container␛[m
   ␛[38;5;254m✗ tests␛[m  ␛[38;5;254mexited 1␛[m␛[38;5;244m · ␛[m␛[38;5;244m29s␛[m␛[38;5;244m · host␛[m
 ␛[1;38;5;254mtools␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⊘ search  cancelled by you · 41s · host               ␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m■ search  cancelled by you · 41s · host               ␛[m
   ␛[38;5;254m▸ execute_command␛[m  ␛[38;5;254mrunning…␛[m␛[38;5;244m · ␛[m␛[38;5;244m8.0s␛[m␛[38;5;244m · container␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254msearch␛[m                                  ␛[38;5;244mcancelled by you␛[m

@@ -26,7 +26,7 @@ func TestTrayRow_GivesUpTheFactsBeforeTheHandle(t *testing.T) {
 		{"the source goes first", picture, 60, "  ⟨▣ Image#1⟩  clipboard.png · 1440×900             412 KB  "},
 		{"then the dimensions", long, 60, "  ⟨▣ Image#1⟩  screenshot-reading-mode.png          412 KB  "},
 		{"then the name is clipped", long, 40, "  ⟨▣ Image#1⟩  screenshot-read… 412 KB  "},
-		{"a paste is marked ¶", TrayRow{Kind: ChipText, Handle: "Paste#1", Name: "paste-1.txt",
+		{"a paste is marked ¶", TrayRow{Kind: ChipPaste, Handle: "Paste#1", Name: "paste-1.txt",
 			Facts: []string{"214 lines", "6.0k tokens"}, Size: "23 KB"}, 80, "  ⟨¶ Paste#1⟩  paste-1.txt · 214 lines · 6.0k tokens"},
 	} {
 		got := ansi.Strip(tc.row.View(tc.width))

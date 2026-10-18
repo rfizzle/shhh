@@ -46,7 +46,7 @@ func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 		return model.(Model).todoRunStep(st.SelfReview(it))
 	}
 	_ = st.Save(m.todo.wiring.Root)
-	return m.systemNotice(fmt.Sprintf("▸ todo run %s · review by %s", st.Slug, st.Reviewer))
+	return m.systemNotice(fmt.Sprintf("todo run %s · review by %s", st.Slug, st.Reviewer))
 }
 
 // todoReviewRole is the agent profile the reading child takes: the persona

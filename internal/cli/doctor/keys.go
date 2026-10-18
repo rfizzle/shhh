@@ -243,10 +243,10 @@ func altChords() []string {
 func optionFix(terminal, profile string) []string {
 	crumb := ""
 	if profile != "" {
-		crumb = profile + " › "
+		crumb = profile + " > "
 	}
-	terminalApp := "Terminal.app › Profiles › " + crumb + "Keyboard › \"Use Option as Meta key\""
-	iterm := "iTerm2 › Profiles › " + crumb + "Keys › Left Option key: Esc+"
+	terminalApp := "Terminal.app > Profiles > " + crumb + "Keyboard > \"Use Option as Meta key\""
+	iterm := "iTerm2 > Profiles > " + crumb + "Keys > Left Option key: Esc+"
 	var fix []string
 	switch terminal {
 	case "Apple_Terminal":

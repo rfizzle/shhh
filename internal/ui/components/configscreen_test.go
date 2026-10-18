@@ -109,7 +109,7 @@ func TestConfigScreen_FieldEditsResolveWhatWasTyped(t *testing.T) {
 	c.Update(key("backspace"))
 	c.Update(key("backspace"))
 	typeInto(c, "40")
-	if view := c.View(110); !strings.Contains(view, "▸ 40") {
+	if view := c.View(110); !strings.Contains(view, "› 40") {
 		t.Fatalf("the field echoes what is typed in the query row's grammar:\n%s", view)
 	}
 	_, result := c.Update(key("enter"))
@@ -459,7 +459,7 @@ func TestConfigScreen_SettingsFilter(t *testing.T) {
 	c.Update(key("/"))
 	typeInto(c, "mo")
 	view := stripANSI(c.View(110))
-	if !strings.Contains(view, "▸ mo") || !strings.Contains(view, "of 4 match") {
+	if !strings.Contains(view, "› mo") || !strings.Contains(view, "of 4 match") {
 		t.Fatalf("the query row states what it typed and both counts:\n%s", view)
 	}
 	if strings.Contains(view, "round limit") {
@@ -475,7 +475,7 @@ func TestConfigScreen_SettingsFilter(t *testing.T) {
 	if done {
 		t.Fatal("with the query line open, w types rather than writing")
 	}
-	if !strings.Contains(c.View(110), "▸ mow") {
+	if !strings.Contains(c.View(110), "› mow") {
 		t.Fatalf("w reached the query line:\n%s", c.View(110))
 	}
 }

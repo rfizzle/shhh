@@ -164,7 +164,7 @@ func (m *Model) renderChildHistory(name, streaming string) string {
 // breadcrumb is the attached header path, e.g. "orchestrator ▸ writer-1"
 // (nesting one segment per lineage level).
 func (m Model) breadcrumb() string {
-	return strings.Join(m.breadcrumbParts(), " ▸ ")
+	return strings.Join(m.breadcrumbParts(), " · ")
 }
 
 // breadcrumbParts is that path as its segments: the orchestrator, then one
@@ -194,9 +194,9 @@ const breadcrumbNearest = 2
 func (m Model) nearestBreadcrumb() string {
 	parts := m.breadcrumbParts()
 	if len(parts) <= breadcrumbNearest {
-		return strings.Join(parts, " ▸ ")
+		return strings.Join(parts, " · ")
 	}
-	return strings.Join(append([]string{"…"}, parts[len(parts)-breadcrumbNearest:]...), " ▸ ")
+	return strings.Join(append([]string{"…"}, parts[len(parts)-breadcrumbNearest:]...), " · ")
 }
 
 // saveScroll stores the current surface's scroll position before a focus
@@ -944,9 +944,9 @@ func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Mod
 	}
 	m.forgetChildBlast(ask)
 	ask.Respond(approved)
-	verdict := "⊘ " + ask.Agent + "  declined ▸ " + ask.Title
+	verdict := "⊘ " + ask.Agent + "  declined · " + ask.Title
 	if approved {
-		verdict = "✓ " + ask.Agent + "  approved ▸ " + ask.Title
+		verdict = "✓ " + ask.Agent + "  approved · " + ask.Title
 	}
 	m.appendEntry(entry{kind: entrySystem, text: verdict})
 	m.syncViewport()

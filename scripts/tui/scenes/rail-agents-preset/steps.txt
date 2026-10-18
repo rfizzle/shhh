@@ -36,7 +36,7 @@ snap 03-lanes "7 agents"
 # draft and denies nothing: the card stays standing over the draft, the rail
 # comes back, and writer-1 goes on waiting on you for the rest of the scene.
 # The answer waits out the card's grace window like every other here.
-snap 04-edit-card "writer-1 ▸ Approve edit"
+snap 04-edit-card "writer-1 · Approve edit"
 sleep 1
 keys Escape
 sleep 2

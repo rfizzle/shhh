@@ -13,7 +13,7 @@
 · the timeline · newest first, one row per turn
 ──── REWIND · pick a turn to return to ───────────────────────────────────────────────────────────────────
 ╭────────────────────────────────────────────────────────────────────────────────────────── 4 available ─╮
-│ ▸   type to filter                                                                        4 of 4 match │
+│ ›   type to filter                                                                        4 of 4 match │
 │ ❯ 4. cap rounds instead of erroring · ▎2 files +18 −12                                              3m │
 │   3. find where rounds are counted · reads only, nothing changed                                   12m │
 │   2. regenerate the fixtures · ▎1 file +200 −0                                                     21m │
@@ -24,7 +24,7 @@
 · typed into · the run the query named is bold
 ──── REWIND · pick a turn to return to ───────────────────────────────────────────────────────────────────
 ╭────────────────────────────────────────────────────────────────────────────────────────── 4 available ─╮
-│ ▸ rounds                                                                                  2 of 4 match │
+│ › rounds                                                                                  2 of 4 match │
 │ ❯ 4. cap rounds instead of erroring · ▎2 files +18 −12                                              3m │
 │   3. find where rounds are counted · reads only, nothing changed                                   12m │
 │ [↑↓] move · [enter] select · [esc] back                                                                │
@@ -44,7 +44,7 @@
 · the timeline · newest first, one row per turn
 ␛[38;5;244m────␛[m ␛[1;38;5;254mREWIND · pick a turn to return to␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;244m╭─␛[m␛[38;5;244m───────────────────────────────────────────────────────────────────────────────────────── 4 available ─╮␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m␛[38;5;244m type to filter␛[m                                                                        ␛[38;5;244m4 of 4 match␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m› ␛[m␛[38;5;254m ␛[m␛[38;5;244m type to filter␛[m                                                                        ␛[38;5;244m4 of 4 match␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m4. cap rounds instead of erroring · ▎2 files +18 −12                                              3m␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mfind where rounds are counted␛[m␛[38;5;244m · ␛[m␛[38;5;244mreads only, nothing changed␛[m                                   ␛[38;5;254m12m␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mregenerate the fixtures␛[m␛[38;5;244m · ␛[m␛[38;5;254m▎␛[m␛[38;5;244m1 file ␛[m␛[38;5;254m+200␛[m␛[38;5;244m ␛[m␛[38;5;254m−0␛[m                                                     ␛[38;5;254m21m␛[m ␛[38;5;244m│␛[m
@@ -55,7 +55,7 @@
 · typed into · the run the query named is bold
 ␛[38;5;244m────␛[m ␛[1;38;5;254mREWIND · pick a turn to return to␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;244m╭─␛[m␛[38;5;244m───────────────────────────────────────────────────────────────────────────────────────── 4 available ─╮␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254mrounds ␛[m                                                                                 ␛[38;5;244m2 of 4 match␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m› ␛[m␛[38;5;254mrounds ␛[m                                                                                 ␛[38;5;244m2 of 4 match␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m4. cap rounds instead of erroring · ▎2 files +18 −12                                              3m␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mfind where ␛[m␛[1;38;5;254mrounds␛[m␛[38;5;254m are counted␛[m␛[38;5;244m · ␛[m␛[38;5;244mreads only, nothing changed␛[m                                   ␛[38;5;254m12m␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                ␛[38;5;244m│␛[m

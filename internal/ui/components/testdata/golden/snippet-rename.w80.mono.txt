@@ -22,7 +22,7 @@ ports                                                                     4m ago
   what is listening on this machine
 
   ▎$ run     lsof -nP -iTCP -sTCP:LISTEN
-rename ▸ ports█
+rename › ports█
 
 [enter] rename it · [esc] keep the name
 
@@ -39,6 +39,6 @@ rename ▸ ports█
   ␛[38;5;244mwhat is listening on this machine␛[m
 
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mlsof -nP -iTCP -sTCP:LISTEN␛[m
-␛[38;5;244mrename ␛[m␛[38;5;254m▸ ␛[m␛[38;5;254mports█␛[m
+␛[38;5;244mrename ␛[m␛[38;5;254m› ␛[m␛[38;5;254mports█␛[m
 
 ␛[38;5;254m[enter]␛[m␛[38;5;244m rename it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep the name␛[m

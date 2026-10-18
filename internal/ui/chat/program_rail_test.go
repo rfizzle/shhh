@@ -48,7 +48,7 @@ func TestProgram_TheRailsFootLineOpensTheWholeRail(t *testing.T) {
 	release()
 	waitForText(t, tm, "Start a writer")
 	tm.Send(programAllow)
-	waitForText(t, tm, "writer-1 ▸ Approve command")
+	waitForText(t, tm, "writer-1 · Approve command")
 	// The card hands the keyboard back and stays standing: the writer goes on
 	// waiting on the reader.
 	tm.Send(tea.KeyPressMsg{Code: tea.KeyEscape})

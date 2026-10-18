@@ -602,7 +602,7 @@ func startSuggestions(info StartInfo, scaffold, setup bool, draft string, writte
 	}
 
 	if r := info.Recent; r.Present {
-		add("▸", "pick up "+r.Name, recentDetail(r, info.Now), "/load "+r.Name)
+		add("", "pick up "+r.Name, recentDetail(r, info.Now), "/load "+r.Name)
 	}
 
 	// The read-only slot: one row where a session is to be resumed, two

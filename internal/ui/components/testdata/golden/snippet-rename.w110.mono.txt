@@ -18,7 +18,7 @@ shhh snippets · 3 snippets
   big-files  the ten biggest fil…  yesterday │   what is listening on this machine
   prune      drop every merged branch    tue │ 
                                              │   ▎$ run     lsof -nP -iTCP -sTCP:LISTEN
-rename ▸ ports█
+rename › ports█
 
 [enter] rename it · [esc] keep the name
 
@@ -31,6 +31,6 @@ rename ▸ ports█
   ␛[38;5;254mbig-files␛[m  ␛[38;5;244mthe ten biggest fil…␛[m  ␛[38;5;254myesterday␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mwhat is listening on this machine␛[m
   ␛[38;5;254mprune␛[m      ␛[38;5;244mdrop every merged branch␛[m    ␛[38;5;254mtue␛[m␛[38;5;244m │ ␛[m
                                             ␛[38;5;244m │ ␛[m  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mlsof -nP -iTCP -sTCP:LISTEN␛[m
-␛[38;5;244mrename ␛[m␛[38;5;254m▸ ␛[m␛[38;5;254mports█␛[m
+␛[38;5;244mrename ␛[m␛[38;5;254m› ␛[m␛[38;5;254mports█␛[m
 
 ␛[38;5;254m[enter]␛[m␛[38;5;244m rename it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep the name␛[m

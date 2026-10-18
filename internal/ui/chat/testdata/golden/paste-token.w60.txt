@@ -11,9 +11,9 @@
 
 ── layout ──────────────────────────────────────────────────
 · the fold in the draft · priced on the vitals, opened from the hints
-≡ Paste#1 23 KB 214 lines · ▣ Image#1 40 KB             
+¶ Paste#1 23 KB 214 lines · ▣ Image#1 40 KB             
 ╭─ idle ───────────────────────────────────────────────╮
-│ ▸ this test log says the loop never stops —          │
+│ › this test log says the loop never stops —          │
 │   ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩   │
 │   is the screen it hangs on; fix the exit condition  │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
@@ -61,18 +61,18 @@
 
 
 · recalled · the fold is a paste again, not five words about one
-≡ Paste#1 23 KB 214 lines · ▣ Image#1 40 KB             
+¶ Paste#1 23 KB 214 lines · ▣ Image#1 40 KB             
 ╭─ idle ───────────────────────────────────────────────╮
-│ ▸ this test log says the loop never stops —          │
+│ › this test log says the loop never stops —          │
 │   ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩   │
 │   is the screen it hangs on; fix the exit condition  │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
 ╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
 · recalled after a reopen · the saved log is staged the same way
-≡ Paste#1 23 KB 214 lines · ▣ Image#1 40 KB             
+¶ Paste#1 23 KB 214 lines · ▣ Image#1 40 KB             
 ╭─ idle ───────────────────────────────────────────────╮
-│ ▸ this test log says the loop never stops —          │
+│ › this test log says the loop never stops —          │
 │   ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩   │
 │   is the screen it hangs on; fix the exit condition  │
 ├─ ⏸ manual · ctx 38% ▰▰▰▱▱▱▱▱ · $0.51 ────────────────┤
@@ -80,9 +80,9 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the fold in the draft · priced on the vitals, opened from the hints
-␛[38;5;252m≡ Paste#1␛[38;5;245m 23 KB 214 lines · ␛[38;5;252m▣ Image#1␛[38;5;245m 40 KB␛[m             
+␛[38;5;252m¶ Paste#1␛[38;5;245m 23 KB 214 lines · ␛[38;5;252m▣ Image#1␛[38;5;245m 40 KB␛[m             
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252mthis test log says the loop never stops —         ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252mthis test log says the loop never stops —         ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m  ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252mis the screen it hangs on; fix the exit condition ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────┤␛[m
@@ -130,18 +130,18 @@
 
 
 · recalled · the fold is a paste again, not five words about one
-␛[38;5;252m≡ Paste#1␛[38;5;245m 23 KB 214 lines · ␛[38;5;252m▣ Image#1␛[38;5;245m 40 KB␛[m             
+␛[38;5;252m¶ Paste#1␛[38;5;245m 23 KB 214 lines · ␛[38;5;252m▣ Image#1␛[38;5;245m 40 KB␛[m             
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252mthis test log says the loop never stops —         ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252mthis test log says the loop never stops —         ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m  ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252mis the screen it hangs on; fix the exit condition ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────┤␛[m
 ␛[38;5;245m╰─␛[m ␛[38;5;103m[enter]␛[38;5;245m send · ␛[38;5;103m[shift+tab]␛[38;5;245m mode · ␛[38;5;103m[ctrl+]]␛[38;5;245m keys␛[m ␛[38;5;245m────╯␛[m
 
 · recalled after a reopen · the saved log is staged the same way
-␛[38;5;252m≡ Paste#1␛[38;5;245m 23 KB 214 lines · ␛[38;5;252m▣ Image#1␛[38;5;245m 40 KB␛[m             
+␛[38;5;252m¶ Paste#1␛[38;5;245m 23 KB 214 lines · ␛[38;5;252m▣ Image#1␛[38;5;245m 40 KB␛[m             
 ␛[38;5;245m╭─␛[m ␛[38;5;245midle␛[m ␛[38;5;245m───────────────────────────────────────────────╮␛[m
-␛[38;5;245m│␛[m ␛[38;5;245m▸␛[m ␛[38;5;252mthis test log says the loop never stops —         ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;245m›␛[m ␛[38;5;252mthis test log says the loop never stops —         ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m  ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m│␛[m   ␛[38;5;252mis the screen it hangs on; fix the exit condition ␛[m ␛[38;5;245m│␛[m
 ␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 38%␛[m ␛[92m▰▰▰␛[38;5;245m▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m────────────────┤␛[m

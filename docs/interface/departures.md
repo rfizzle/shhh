@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 39 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 41 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -1835,18 +1835,22 @@ before the session does anything at all.
 
 So the strip adds two and reuses one. `▣` is a raster image: a frame with a
 subject inside it. `▤` is a document the model reads whole — a PDF: the same
-lines as text, inside the boundary that makes it one artifact. `≡` is text
-bound for the prompt itself, and it is the kit's own mark for a reading,
+lines as text, inside the boundary that makes it one artifact. `≡` is a text
+file bound for the prompt itself, and it is the kit's own mark for a reading,
 borrowed rather than invented — the shape already means *lines of it*, and a
 third new mark on a strip that has to survive at 60 columns would be three
 things to learn where two and a familiar one will do. The two meanings never
 meet: `≡` on a row is an act the session took, `≡` on a chip is a file waiting
 above the draft, and no surface draws both at once.
 
-Once sent, they do meet: the tray under a message is read in the transcript,
-beside the summary row that wears `≡`. So a tray row marks text `¶` instead —
-the pilcrow, a mark for *written lines* that no row in the transcript uses —
-as the `Tray` artboard draws it, and keeps `▣` and `▤` as the chips have them.
+Text off the clipboard is not a file, so a staged paste wears `¶` on the strip
+and `≡` stays the staged file's and the session reading's (2026-10-18).
+
+Once sent, the tray under a message wears the same marks as the strip: `¶`
+for a paste, `≡` for a text file, `▣` and `▤` as the chips have them. The
+tray is read in the transcript beside the summary row that wears `≡`, and the
+two stay apart by their place and their handle, `⟨≡ File#1⟩` against a
+reading's `≡ summary` (2026-10-18; the tray used `¶` for a text file before).
 
 Colour reinforces nothing here. The chips are body text and the mark carries
 the whole distinction, which is what makes the strip read the same in mono
@@ -2381,3 +2385,51 @@ the drop row's `[c] continue from here` is `[g]`.
 One decision the retired drawings recorded is kept: the inspector rail never
 holds the keyboard, so there is no `[v] review all 8` on it. `/diff` and a
 click on the marker or the heading open everything.
+
+## The prompt row and a cancelled state have marks of their own
+
+_Filed 2026-10-18 · closes by a decision_
+
+*A disagreement.* The glyph pages give `▸` to a running row and a folded
+group, and the binary had also drawn it at the head of the prompt row, in front
+of the start screen's resume offer and in a handful of notices, which made one
+mark mean five things. The prompt row now leads with `›`, one column, in the
+chrome grey it had: the reader's own prompt rows and the reading cursor keep
+`❯`, and `›` says only *type here*. The start screen's offer rows lose the
+bullet, so the cursor `❯` stands alone in front of `pick up <name>` and the
+offers that start work keep their kind glyph. `›` was the doctor's menu-path
+separator; that line now writes `>`, so the mark has one meaning.
+
+A cancelled thing is `■`, a stopped square, and no longer `⊘`. `⊘` is a
+refusal, by you or by a rule, and the reader's own stop is a different fact: a
+deny must never read as "you cancelled it". The idle child whose turn was
+cancelled wears the same `■`. A state with nothing kept to say is `—`, the dash
+an empty field already is.
+
+Both marks are listed in `internal/ui/glyphs_test.go` with this entry.
+
+## Seven marks stand for a family of states
+
+_Filed 2026-10-18 · closes by a decision_
+
+*A departure.* The state table gives every state its own word and its own
+token. Seven marks are still shared, each by states that are one kind of thing
+seen at different distances, and the word drawn beside the mark tells them
+apart on a terminal with no colour
+([invariant 1](principles.md#colour-never-carries-meaning-alone)):
+
+- `⊘` is *not happening because someone said no*: `denied`, and `off`.
+- `⚠` is *stopped short of done and a person could act*: `stalled`, `paused`,
+  `blocked` and `needs you`.
+- `▸` is *in motion, or the working one*: `running…`, `current` and
+  `starting`.
+- `·` is *not reached yet*: `queued` and `to do`.
+- `✓` is *it came out well*: `done`, and a tool source that is `up`.
+- `✗` is *it broke*: `failed`, and a tool source in `error`.
+- `■` is *you stopped it*: `cancelled`, and the `idle` child it left waiting.
+
+Giving each of the twenty-two states a mark of its own would add many marks to a
+set the pages close at twenty-one, to say what a word already says. The pair
+that may never share is a refusal and the reader's own stop, and they do not.
+`internal/ui/components/state_test.go` pins the seven families and fails on an
+eighth.

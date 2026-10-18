@@ -387,7 +387,7 @@ func TestAgoLabel_CoarsestUnitThatIsStillTrue(t *testing.T) {
 func countOffers(view string) int {
 	n := 0
 	for _, line := range strings.Split(view, "\n") {
-		for _, prefix := range []string{"❯ ▸ ", "❯ ⚙ ", "❯ ✎ ", "  ▸ ", "  ⚙ ", "  ✎ "} {
+		for _, prefix := range []string{"❯ ", "  ⚙ ", "  ✎ ", "  pick up"} {
 			if strings.HasPrefix(line, prefix) {
 				n++
 				break

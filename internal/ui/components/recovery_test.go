@@ -46,7 +46,7 @@ func TestRecoveryRow_GlyphsSayTheState(t *testing.T) {
 	}{
 		{RecoveryBroken, "✗"},
 		{RecoveryStalled, "⚠"},
-		{RecoveryStopped, "⊘"},
+		{RecoveryStopped, "■"},
 	} {
 		row := RecoveryRow{State: tc.state, Verb: VerbModel, Subject: "gpt-4o"}
 		if got := ansi.Strip(row.View(80)); !strings.Contains(got, tc.glyph) {

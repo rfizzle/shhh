@@ -185,7 +185,7 @@ func TestProgram_AChildsRequestIsAnsweredFromItsCard(t *testing.T) {
 	tm := runProgramAt(t, m, 120, 52)
 
 	startChildren(t, tm, release, "Start a writer", "The writer is on it")
-	waitForText(t, tm, "writer-1 ▸ Approve command")
+	waitForText(t, tm, "writer-1 · Approve command")
 	tm.Send(programHandover)
 	tm.Send(programAllow)
 	waitForText(t, tm, "writer-1  done")
@@ -345,13 +345,13 @@ func TestProgram_TheChordMovesOnItsFirstPressAfterTheManager(t *testing.T) {
 	tm := runProgramAt(t, m, 130, 44)
 
 	startChildren(t, tm, release, "Start a writer", "The writer is on it")
-	waitForText(t, tm, "writer-1 ▸ Approve command")
+	waitForText(t, tm, "writer-1 · Approve command")
 	programPress(t, tm, "f12")
 	waitForText(t, tm, "[enter] attach")
 	programPress(t, tm, "esc")
 	waitForGone(t, tm, "[enter] attach")
 	programPress(t, tm, "shift+f8")
-	waitForText(t, tm, "orchestrator ▸ writer-1")
+	waitForText(t, tm, "orchestrator · writer-1")
 
 	frameHas(t, finalFrame(t, tm), "❯ ⚠ writer-1")
 }
@@ -372,7 +372,7 @@ func TestProgram_TheManagerAnswersAChildInPlace(t *testing.T) {
 	tm := runProgramAt(t, m, 110, 44)
 
 	startChildren(t, tm, release, "Start a writer", "The writer is on it")
-	waitForText(t, tm, "writer-1 ▸ Approve command")
+	waitForText(t, tm, "writer-1 · Approve command")
 	programPress(t, tm, "esc")
 	programPress(t, tm, "f12")
 	waitForText(t, tm, "[enter] attach")
@@ -469,12 +469,12 @@ func TestProgram_AChildsSpawnIsTheSessionsDecision(t *testing.T) {
 	tm := runProgramAt(t, m, 130, 44)
 
 	startChildren(t, tm, release, "Start a researcher", "The reader is on it")
-	waitForText(t, tm, "reader-1 ▸")
+	waitForText(t, tm, "reader-1 · Approve")
 	tm.Send(programHandover)
 	tm.Send(programAllow)
 	waitForText(t, tm, "reader-1a  done")
 
-	frameHas(t, finalFrame(t, tm), "reader-1  approved ▸ use spawn_agent", "└◇ reader-1a")
+	frameHas(t, finalFrame(t, tm), "reader-1  approved · use spawn_agent", "└◇ reader-1a")
 }
 
 // withNotebook signs a child's notebook calls with its name when the session

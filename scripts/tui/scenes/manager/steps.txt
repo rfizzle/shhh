@@ -56,7 +56,7 @@ snap 08-call-stopped "tools · nothing running" "1 process running"
 keys d
 snap 09-stop-process-asks "stop the process ticker?"
 keys y
-snap 10-process-stopped "⊘ ticker" "cancelled"
+snap 10-process-stopped "■ ticker" "cancelled"
 keys Escape
 sleep 0.5
 snap 11-both-stopped "process ticker: exited" "cancelled"

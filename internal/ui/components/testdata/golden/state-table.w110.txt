@@ -19,12 +19,12 @@
 ∗ worked
 ✗ failed
 ⊘ denied
-⊘ cancelled
+■ cancelled
 ⚠ stalled
 ⚠ needs you
 ↺ restored
 ⊘ off
-· unknown
+— unknown
 ⚠ paused
 ▸ current
 · to do
@@ -32,10 +32,10 @@
 ⚠ blocked
 ▸ starting
 ✗ error
-⊘ idle
+■ idle
 
 · row · a command the reader cancelled
-  ▎⊘ run     go test ./... -run TestRoundLimit                                                cancelled   3.7s
+  ▎■ run     go test ./... -run TestRoundLimit                                                cancelled   3.7s
 
 · row · a command that returned
   ▎$ run     go test ./... -run TestRoundLimit                                                       ok   3.7s
@@ -44,10 +44,10 @@
   ▎▸ run     go test ./... -run TestRoundLimit                                                 running…    42s
 
 · close · a turn the reader cancelled
-  ⊘ cancelled · 4 tools · 21.6s · $0.05 · no files changed
+  ■ cancelled · 4 tools · 21.6s · $0.05 · no files changed
 
 · status · the line a cancelled turn resolves into
-⊘ cancelled
+■ cancelled
 
 ── ansi ────────────────────────────────────────────────────
 · table · every state's mark and word
@@ -59,12 +59,12 @@
 ␛[38;5;245m∗␛[m ␛[38;5;245mworked␛[m
 ␛[91m✗␛[m ␛[91mfailed␛[m
 ␛[38;5;245m⊘␛[m ␛[38;5;245mdenied␛[m
-␛[38;5;245m⊘␛[m ␛[38;5;245mcancelled␛[m
+␛[38;5;245m■␛[m ␛[38;5;245mcancelled␛[m
 ␛[38;5;214m⚠␛[m ␛[38;5;214mstalled␛[m
 ␛[91m⚠␛[m ␛[91mneeds you␛[m
 ␛[38;5;245m↺␛[m ␛[38;5;245mrestored␛[m
 ␛[38;5;245m⊘␛[m ␛[38;5;245moff␛[m
-␛[38;5;245m·␛[m ␛[38;5;245munknown␛[m
+␛[38;5;245m—␛[m ␛[38;5;245munknown␛[m
 ␛[38;5;214m⚠␛[m ␛[38;5;214mpaused␛[m
 ␛[38;5;205m▸␛[m ␛[38;5;205mcurrent␛[m
 ␛[38;5;245m·␛[m ␛[38;5;245mto do␛[m
@@ -72,10 +72,10 @@
 ␛[38;5;214m⚠␛[m ␛[38;5;214mblocked␛[m
 ␛[38;5;205m▸␛[m ␛[38;5;205mstarting␛[m
 ␛[91m✗␛[m ␛[91merror␛[m
-␛[38;5;245m⊘␛[m ␛[38;5;245midle␛[m
+␛[38;5;245m■␛[m ␛[38;5;245midle␛[m
 
 · row · a command the reader cancelled
-  ␛[38;5;214m▎␛[m␛[38;5;245m⊘␛[m ␛[38;5;245mrun␛[m     ␛[38;5;245mgo test ./... -run TestRoundLimit␛[m                                                ␛[38;5;245mcancelled␛[m   ␛[38;5;245m3.7s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;245m■␛[m ␛[38;5;245mrun␛[m     ␛[38;5;245mgo test ./... -run TestRoundLimit␛[m                                                ␛[38;5;245mcancelled␛[m   ␛[38;5;245m3.7s␛[m
 
 · row · a command that returned
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./... -run TestRoundLimit␛[m                                                       ␛[92mok␛[m   ␛[38;5;245m3.7s␛[m
@@ -84,7 +84,7 @@
   ␛[38;5;214m▎␛[m␛[38;5;205m▸␛[m ␛[97mrun␛[m     ␛[97mgo test ./... -run TestRoundLimit␛[m                                                 ␛[38;5;205mrunning…␛[m    ␛[38;5;245m42s␛[m
 
 · close · a turn the reader cancelled
-  ␛[38;5;245m⊘␛[m ␛[38;5;245mcancelled · 4 tools · 21.6s · $0.05 · no files changed␛[m
+  ␛[38;5;245m■␛[m ␛[38;5;245mcancelled · 4 tools · 21.6s · $0.05 · no files changed␛[m
 
 · status · the line a cancelled turn resolves into
-␛[38;5;245m⊘ cancelled␛[m
+␛[38;5;245m■ cancelled␛[m

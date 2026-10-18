@@ -37,7 +37,7 @@ test-writer — adds tests
 │   [x] write    edit files · it works in its own copy of… │
 │   [x] execute  run commands · in the same copy           │
 │   [ ] web      fetch pages and search                    │
-│   ▸ with write or execute, test-writer is a writer: it … │
+│   with write or execute, test-writer is a writer: it wo… │
 │  tools this session registered, by tier — it gets only … │
 │   [x] glob             read     paths by pattern         │
 │       quality_gate     read     ⊘ "quality_gate" is for… │
@@ -119,7 +119,7 @@ test-writer — adds tests
 │   [x] write    edit files · it works in its own copy of… │
 │   [x] execute  run commands · in the same copy           │
 │   [ ] web      fetch pages and search                    │
-│   ▸ with write or execute, test-writer is a writer: it … │
+│   with write or execute, test-writer is a writer: it wo… │
 │  tools this session registered, by tier — it gets only … │
 │   [x] glob             read     paths by pattern         │
 │       quality_gate     read     ⊘ "quality_gate" is for… │
@@ -164,7 +164,7 @@ test-writer — adds tests
 ␛[38;5;254m│␛[m   ␛[38;5;254m[x]␛[m ␛[38;5;254mwrite  ␛[m  ␛[38;5;244medit files · it works in its own copy of…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m[x]␛[m ␛[38;5;254mexecute␛[m  ␛[38;5;244mrun commands · in the same copy␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m ␛[38;5;254mweb    ␛[m  ␛[38;5;244mfetch pages and search␛[m                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m▸ with write or execute, test-writer is a writer: it …␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244mwith write or execute, test-writer is a writer: it wo…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m  ␛[38;5;244mtools this session registered, by tier — it gets only …␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m[x]␛[m ␛[38;5;254mglob           ␛[m  ␛[38;5;254mread   ␛[m  ␛[38;5;244mpaths by pattern␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m       ␛[38;5;244mquality_gate   ␛[m  ␛[38;5;244mread   ␛[m  ␛[38;5;244m⊘ "quality_gate" is for…␛[m ␛[38;5;254m│␛[m
@@ -246,7 +246,7 @@ test-writer — adds tests
 ␛[38;5;254m│␛[m   ␛[38;5;254m[x]␛[m ␛[38;5;254mwrite  ␛[m  ␛[38;5;244medit files · it works in its own copy of…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m[x]␛[m ␛[38;5;254mexecute␛[m  ␛[38;5;244mrun commands · in the same copy␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m ␛[38;5;254mweb    ␛[m  ␛[38;5;244mfetch pages and search␛[m                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m▸ with write or execute, test-writer is a writer: it …␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244mwith write or execute, test-writer is a writer: it wo…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m  ␛[38;5;244mtools this session registered, by tier — it gets only …␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m[x]␛[m ␛[38;5;254mglob           ␛[m  ␛[38;5;254mread   ␛[m  ␛[38;5;244mpaths by pattern␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m       ␛[38;5;244mquality_gate   ␛[m  ␛[38;5;244mread   ␛[m  ␛[38;5;244m⊘ "quality_gate" is for…␛[m ␛[38;5;254m│␛[m

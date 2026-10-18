@@ -42,7 +42,7 @@ sleep 3
 # writer-1's edit is routed here as a card. esc hands the keyboard back to the
 # draft and denies nothing: the card stays standing over the draft and the
 # writer goes on waiting on the reader.
-snap 03-edit-card "writer-1 ▸ Approve edit"
+snap 03-edit-card "writer-1 · Approve edit"
 sleep 1
 keys Escape
 sleep 2
@@ -68,7 +68,7 @@ keys y
 # The writer writes and then asks to land its patch: the second card is a
 # decision of its own, drawn full width with the rail put away, and [y]
 # answers it from where the keyboard already is.
-snap 09-patch-card "writer-1 ▸ Apply patch"
+snap 09-patch-card "writer-1 · Apply patch"
 keys y
 sleep 2
 wide 130 snap 10-answered "AGENTS" "THIS TURN"

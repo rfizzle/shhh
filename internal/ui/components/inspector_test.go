@@ -190,7 +190,7 @@ func mapRail() InspectorRail {
 func TestInspectorRail_AgentsMapEveryStateInSpawnOrder(t *testing.T) {
 	view := stripANSI(mapRail().View(InspectorMaxWidth, 0))
 	for _, want := range []string{
-		"\u2298 orchestrator", "\u25c7 writer-1", "\u25c7 writer-2", "\u25c7 runner-3", "\u2717 reader-4",
+		"\u25a0 orchestrator", "\u25c7 writer-1", "\u25c7 writer-2", "\u25c7 runner-3", "\u2717 reader-4",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the map is missing %q:\n%s", want, view)

@@ -364,5 +364,5 @@ func (d *todoDriver) say(st *run.State, step run.Step) {
 		fmt.Fprintln(d.out, step.Shown+note)
 		return
 	}
-	fmt.Fprintf(d.out, "▸ todo run %s · %s%s\n", st.Slug, step.Name(), note)
+	fmt.Fprintf(d.out, "todo run %s · %s%s\n", st.Slug, step.Name(), note)
 }

@@ -190,7 +190,7 @@ func TestMarginProse_AWrappedNoticeKeepsTheGapAfterItsHead(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	for _, tc := range []struct{ text, head string }{
-		{"✓ writer-1  approved ▸ apply patch (+40 −40, 2 files)", "✓ writer-1  approved"},
+		{"✓ writer-1  approved · apply patch (+40 −40, 2 files)", "✓ writer-1  approved"},
 		{failed("fetch", "the host refused the connection after three attempts"), "✗ fetch  the"},
 	} {
 		for _, width := range []int{24, 40, 53} {

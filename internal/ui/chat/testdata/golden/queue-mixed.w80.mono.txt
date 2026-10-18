@@ -16,7 +16,7 @@ steering   the header in this one is wrong too · Image#1
 session    A secret named DEMO_TOKEN is now available to every command you …
 follow-up  then run the whole suite                                         
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
-│ ▸                                                                        │
+│ ›                                                                        │
 ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
 ╰─ [ctrl+p] hold · [ctrl+c] stop the run · [ctrl+]] keys ──────────────────╯
 
@@ -55,7 +55,7 @@ follow-up  then run the whole suite
 ␛[38;5;254msession  ␛[m  ␛[38;5;254mA secret named DEMO_TOKEN is now available to every command you …␛[m
 ␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen run the whole suite␛[m                                         
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254;1m›␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
 ␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────────────╯␛[m
 

@@ -435,6 +435,9 @@ func (c StepCard) glyph() string {
 		if c.ByRule {
 			return sty.del.Render(StateDenied.Glyph())
 		}
+		if c.Outcome == OutcomeCancelled {
+			return StateCancelled.Mark()
+		}
 		return StateDenied.Mark()
 	case ActivityFailed, ActivityQueued, ActivityChecking:
 		return c.State.state().Mark()

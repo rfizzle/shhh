@@ -24,7 +24,7 @@ by child                                                     │   requests     
 by turn                                                      │   main         $0.3620 · ↑140.2k ↓7.8k · 96.0k cached · 14 requests
   ▸ turn 3  running…                                 $0.0410 │   classifier   $0.0030 · ↑12.0k ↓120 · 4 requests
   ✓ turn 2  done                                     $0.2870 │   summary      $0.0010 · ↑6.2k ↓410 · 2 requests
-  ⊘ turn 1  cancelled                                $0.0930 │   sub-agent    $0.0550 · ↑24.0k ↓770 · 3 requests
+  ■ turn 1  cancelled                                $0.0930 │   sub-agent    $0.0550 · ↑24.0k ↓770 · 3 requests
 
 [↑↓/jk] move · [enter] open the turn · [?] keys · [esc] back                the session's bill, as the rail's SPEND block reads it
 
@@ -42,7 +42,7 @@ by child                                                     │   requests     
 by turn                                                      │   main         $0.3620 · ↑140.2k ↓7.8k · 96.0k cached · 14 requests
   ▸ turn 3  running…                                 $0.0410 │   classifier   $0.0030 · ↑12.0k ↓120 · 4 requests
   ✓ turn 2  done                                     $0.2870 │   children     $0.0520 ◇
-  ⊘ turn 1  cancelled                                $0.0930 │ 
+  ■ turn 1  cancelled                                $0.0930 │ 
 
 [↑↓/jk] move · [enter] open the turn · [?] keys · [esc] back                the session's bill, as the rail's SPEND block reads it
 
@@ -60,7 +60,7 @@ by child                                                     │   tokens       
 by turn                                                      │ 
   ▸ turn 3  running…                                 $0.0410 │ 
   ✓ turn 2  done                                     $0.2870 │ 
-  ⊘ turn 1  cancelled                                $0.0930 │ 
+  ■ turn 1  cancelled                                $0.0930 │ 
 
 [↑↓/jk] move · [enter] open the turn · [?] keys · [esc] back                the session's bill, as the rail's SPEND block reads it
 
@@ -78,7 +78,7 @@ by child                                                     │
 by turn                                                      │ 
   ▸ turn 3  running…                                 $0.0410 │ 
 ❯ ✓ turn 2  done                                     $0.2870 │ 
-  ⊘ turn 1  cancelled                                $0.0930 │ 
+  ■ turn 1  cancelled                                $0.0930 │ 
 
 [↑↓/jk] move · [enter] open the turn · [?] keys · [esc] back                the session's bill, as the rail's SPEND block reads it
 
@@ -96,7 +96,7 @@ by child                                                     │   rounds       
 by turn                                                      │ 
 ❯ ⚠ turn 3  paused                                   $0.0410 │ 
   ✓ turn 2  done                                     $0.2870 │ 
-  ⊘ turn 1  cancelled                                $0.0930 │ 
+  ■ turn 1  cancelled                                $0.0930 │ 
 
 [↑↓/jk] move · [enter] open the turn · [?] keys · [esc] back                the session's bill, as the rail's SPEND block reads it
 
@@ -123,7 +123,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[1;38;5;254mby turn␛[m                                                     ␛[38;5;244m │ ␛[m  ␛[38;5;244mmain         ␛[m␛[38;5;254m$0.3620 · ↑140.2k ↓7.8k · 96.0k cached · 14 requests␛[m
   ␛[38;5;254m▸ turn 3␛[m  ␛[38;5;254mrunning…␛[m                                 ␛[38;5;244m$0.0410␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mclassifier   ␛[m␛[38;5;254m$0.0030 · ↑12.0k ↓120 · 4 requests␛[m
   ␛[38;5;254m✓ turn 2␛[m  ␛[38;5;254mdone␛[m                                     ␛[38;5;244m$0.2870␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244msummary      ␛[m␛[38;5;254m$0.0010 · ↑6.2k ↓410 · 2 requests␛[m
-  ␛[38;5;254m⊘ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244msub-agent    ␛[m␛[38;5;254m$0.0550 · ↑24.0k ↓770 · 3 requests␛[m
+  ␛[38;5;254m■ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244msub-agent    ␛[m␛[38;5;254m$0.0550 · ↑24.0k ↓770 · 3 requests␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
@@ -141,7 +141,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[1;38;5;254mby turn␛[m                                                     ␛[38;5;244m │ ␛[m  ␛[38;5;244mmain         ␛[m␛[38;5;254m$0.3620 · ↑140.2k ↓7.8k · 96.0k cached · 14 requests␛[m
   ␛[38;5;254m▸ turn 3␛[m  ␛[38;5;254mrunning…␛[m                                 ␛[38;5;244m$0.0410␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mclassifier   ␛[m␛[38;5;254m$0.0030 · ↑12.0k ↓120 · 4 requests␛[m
   ␛[38;5;254m✓ turn 2␛[m  ␛[38;5;254mdone␛[m                                     ␛[38;5;244m$0.2870␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mchildren     ␛[m␛[38;5;254m$0.0520 ◇␛[m
-  ␛[38;5;254m⊘ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m■ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
@@ -159,7 +159,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[1;38;5;254mby turn␛[m                                                     ␛[38;5;244m │ ␛[m
   ␛[38;5;254m▸ turn 3␛[m  ␛[38;5;254mrunning…␛[m                                 ␛[38;5;244m$0.0410␛[m␛[38;5;244m │ ␛[m
   ␛[38;5;254m✓ turn 2␛[m  ␛[38;5;254mdone␛[m                                     ␛[38;5;244m$0.2870␛[m␛[38;5;244m │ ␛[m
-  ␛[38;5;254m⊘ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m■ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
@@ -177,7 +177,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[1;38;5;254mby turn␛[m                                                     ␛[38;5;244m │ ␛[m
   ␛[38;5;254m▸ turn 3␛[m  ␛[38;5;254mrunning…␛[m                                 ␛[38;5;244m$0.0410␛[m␛[38;5;244m │ ␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✓ turn 2  done                                     $0.2870␛[m␛[38;5;244m │ ␛[m
-  ␛[38;5;254m⊘ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m■ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
@@ -195,7 +195,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[1;38;5;254mby turn␛[m                                                     ␛[38;5;244m │ ␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ turn 3  paused                                   $0.0410␛[m␛[38;5;244m │ ␛[m
   ␛[38;5;254m✓ turn 2␛[m  ␛[38;5;254mdone␛[m                                     ␛[38;5;244m$0.2870␛[m␛[38;5;244m │ ␛[m
-  ␛[38;5;254m⊘ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m■ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m␛[38;5;244m │ ␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 

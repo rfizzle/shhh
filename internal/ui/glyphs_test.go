@@ -43,7 +43,7 @@ var kitGlyphs = map[rune]string{
 	// States.
 	'✓': "done",
 	'✗': "failed",
-	'▸': "running, and a folded entry",
+	'▸': "running, and a folded group",
 	'⊘': "denied or skipped",
 	'⚠': "risk",
 	'✦': "the classifier deciding",
@@ -101,7 +101,6 @@ var typography = map[rune]string{
 	'≥': "at least",
 	'⌘': "the command key, where a terminal names it",
 	'␛': "escape, written out where a byte is being shown as text",
-	'›': "a menu path, where a sentence quotes another product's menus",
 }
 
 // additions are the marks the binary draws that the guideline pages do not
@@ -128,6 +127,8 @@ var additions = map[rune]string{
 	'◆': "departures.md#a-profile-in-the-older-shape-is-marked-with-a-diamond",
 	'∗': "departures.md#the-turns-total-and-the-retry-draw-two-marks-the-pages-do-not-list",
 	'↻': "departures.md#the-turns-total-and-the-retry-draw-two-marks-the-pages-do-not-list",
+	'›': "departures.md#the-prompt-row-and-a-cancelled-state-have-marks-of-their-own",
+	'■': "departures.md#the-prompt-row-and-a-cancelled-state-have-marks-of-their-own",
 }
 
 // screenSources is every tree this test reads, relative to internal/ui. The

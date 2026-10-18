@@ -492,10 +492,10 @@ A state is spelled once. Running, done, failed, cancelled, refused and waiting
 each have one glyph, one colour and one word, and every row, close, agent row
 and screen draws them from the same table, so a state learned on a tool row is
 the state on a turn's close. `ok` and `✓` stay two states because they are two
-claims: a command returned, and a check passed. A stopped request is `⊘
-cancelled`, the mark the reader's own no already wore wherever it appeared; it
-shares the mark with a refusal and is told from it by its word, which is drawn
-wherever the mark is or mapped under the glyph legend. A surface's exception —
+claims: a command returned, and a check passed. A stopped request is `■ cancelled`, a mark of its own, because a refusal is
+`⊘` and a deny must never read as "you cancelled it". Seven marks are still
+shared by a family of states and told apart by the word drawn beside them
+([departures](departures.md#seven-marks-stand-for-a-family-of-states)). A surface's exception —
 a read's glyph is chrome, a fan-out lane keeps its kind glyph, a turn's close
 draws `∗` for a finished turn — is a parameter on that surface and not a second
 table.

@@ -363,6 +363,7 @@ test-writer — adds table-driven tests for a package and run…
   Add table-driven tests for one package at a time. Done
   when every exported function has a case in its table and
   the package's tests pass.
+
 ⋮ 7 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
@@ -395,18 +396,17 @@ $  a shell command
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
-·  accepted, not started
+·  accepted or not reached yet
 ▸  running
 ✦  the classifier is deciding
 ✓  a check passed, a turn or a compaction came out well
 ∗  a turn's close
 ✗  failed
-⊘  refused: dim by you, red by a rule
-⊘  stopped by you while it ran
-⚠  stalled, and will resume or can be steered
-⚠  stopped on something only you can answer
+⊘  refused or turned off: dim by you, red by a rule
+■  stopped by you while it ran
+⚠  stalled, paused, blocked, or waiting on you
 ↺  picked up from a checkpoint
-⊘  not in play
+—  nothing was kept to say
 [?] hide the keys
 
 ── ansi ────────────────────────────────────────────────────
@@ -763,6 +763,7 @@ $  a shell command
   ␛[38;5;244mAdd table-driven tests for one package at a time. Done␛[m
   ␛[38;5;244mwhen every exported function has a case in its table and␛[m
   ␛[38;5;244mthe package's tests pass.␛[m
+
 ␛[38;5;244m⋮ 7 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────╮␛[m
@@ -795,16 +796,15 @@ $  a shell command
 ␛[38;5;244m⛁␛[m  ␛[38;5;244ma published report page␛[m
 ␛[38;5;244m≡␛[m  ␛[38;5;244ma reading of the session␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma compaction that brought the window back␛[m
-␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
+␛[38;5;244m·␛[m  ␛[38;5;244maccepted or not reached yet␛[m
 ␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
 ␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
 ␛[38;5;254m✓␛[m  ␛[38;5;244ma check passed, a turn or a compaction came out well␛[m
 ␛[38;5;244m∗␛[m  ␛[38;5;244ma turn's close␛[m
 ␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
-␛[38;5;244m⊘␛[m  ␛[38;5;244mrefused: dim by you, red by a rule␛[m
-␛[38;5;244m⊘␛[m  ␛[38;5;244mstopped by you while it ran␛[m
-␛[38;5;254m⚠␛[m  ␛[38;5;244mstalled, and will resume or can be steered␛[m
-␛[38;5;254m⚠␛[m  ␛[38;5;244mstopped on something only you can answer␛[m
+␛[38;5;244m⊘␛[m  ␛[38;5;244mrefused or turned off: dim by you, red by a rule␛[m
+␛[38;5;244m■␛[m  ␛[38;5;244mstopped by you while it ran␛[m
+␛[38;5;254m⚠␛[m  ␛[38;5;244mstalled, paused, blocked, or waiting on you␛[m
 ␛[38;5;244m↺␛[m  ␛[38;5;244mpicked up from a checkpoint␛[m
-␛[38;5;244m⊘␛[m  ␛[38;5;244mnot in play␛[m
+␛[38;5;244m—␛[m  ␛[38;5;244mnothing was kept to say␛[m
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m

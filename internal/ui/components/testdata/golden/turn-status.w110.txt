@@ -45,7 +45,7 @@
 ✓ done
 
 · resolved · cancelled
-⊘ cancelled
+■ cancelled
 
 · resolved · failed
 ✗ failed
@@ -86,7 +86,7 @@
 ␛[92m✓ done␛[m
 
 · resolved · cancelled
-␛[38;5;245m⊘ cancelled␛[m
+␛[38;5;245m■ cancelled␛[m
 
 · resolved · failed
 ␛[91m✗ failed␛[m

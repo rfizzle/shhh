@@ -119,7 +119,7 @@ func TestChatScreen_DeleteAsksAndNamesTheBranches(t *testing.T) {
 func TestChatScreen_RenameCommitsOnEnterAndKeepsOnEsc(t *testing.T) {
 	c := chatScreen()
 	pressChat(c, 'e')
-	if view := ansi.Strip(c.View(130)); !strings.Contains(view, "rename ▸ morning-fix") {
+	if view := ansi.Strip(c.View(130)); !strings.Contains(view, "rename › morning-fix") {
 		t.Fatalf("the rename row did not open prefilled:\n%s", view)
 	}
 	typeIntoChats(c, "-2")
