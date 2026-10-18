@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/compat"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -109,7 +110,7 @@ func listingEndpoint(t *testing.T, status int, ids ...string) (llm.Provider, *at
 	cfg := openai.DefaultConfig("test-key")
 	cfg.BaseURL = srv.URL + "/v1"
 	cfg.HTTPClient = fixtures.Client()
-	return llm.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), "session-model", cfg.BaseURL, "listing-test"), &asked
+	return compat.NewNamed(openai.NewClientWithConfig(cfg), "session-model", cfg.BaseURL, "listing-test"), &asked
 }
 
 // endpointSession is a session on prov with the endpoint's list wired the

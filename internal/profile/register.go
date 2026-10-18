@@ -25,6 +25,9 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/rfizzle/llm"
+	llmanthropic "github.com/rfizzle/llm/anthropic"
+	"github.com/rfizzle/llm/compat"
+	llmopenai "github.com/rfizzle/llm/openai"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -381,24 +384,24 @@ func newEndpoint(p Profile, e Endpoint, opts llm.ResolveOpts) (llm.Provider, err
 	// able to go quiet than the direct path.
 	switch e.API {
 	case aPIOpenAIResponses:
-		inner := llm.NewOpenAIResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
+		inner := llmopenai.NewResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
-		return withDiscovery(e, &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient, decides: p.DeclaresDecisions}), nil
+		return withDiscovery(e, &responsesProfile{Responses: inner, endpoint: e, client: httpClient, decides: p.DeclaresDecisions}), nil
 	case aPIAnthropicMessage:
-		inner := llm.NewAnthropicNamed(anthropic.NewClient(
+		inner := llmanthropic.NewNamed(anthropic.NewClient(
 			option.WithAPIKey(key),
 			option.WithBaseURL(e.BaseURL),
 			option.WithHTTPClient(httpClient),
 		), opts.Model, p.Name, opts.CacheTTL)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
-		return &anthropicProfile{Anthropic: inner, name: p.Name}, nil
+		return &anthropicProfile{Provider: inner, name: p.Name}, nil
 	default:
 		cfg := openai.DefaultConfig(key)
 		cfg.BaseURL = e.BaseURL
 		cfg.HTTPClient = httpClient
-		inner := llm.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), opts.Model, e.BaseURL, p.Name)
+		inner := compat.NewNamed(openai.NewClientWithConfig(cfg), opts.Model, e.BaseURL, p.Name)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
-		return withDiscovery(e, &openAIProfile{OpenAICompat: inner, endpoint: e, client: httpClient, key: key, decides: p.DeclaresDecisions}), nil
+		return withDiscovery(e, &openAIProfile{Provider: inner, endpoint: e, client: httpClient, key: key, decides: p.DeclaresDecisions}), nil
 	}
 }
 
@@ -431,10 +434,10 @@ func (n noDiscovery) Decide(ctx context.Context, req llm.DecisionRequest) (llm.D
 }
 
 // openAIProfile is a profile-backed openai-chat provider. It inherits
-// streaming and discovery from OpenAICompat, overriding discovery only when
-// the gateway publishes its catalog somewhere else.
+// streaming and discovery from the compat provider, overriding discovery only
+// when the gateway publishes its catalog somewhere else.
 type openAIProfile struct {
-	*llm.OpenAICompat
+	*compat.Provider
 	endpoint Endpoint
 	client   *http.Client
 	// key is the endpoint's resolved key, and decides the profile's
@@ -449,12 +452,12 @@ func (o *openAIProfile) OffersDecisions(model string) bool { return o.decides(mo
 // Decide sends a Decisions API request over the endpoint's own client, so
 // the profile's headers and rewrite rules apply to it as they do to a turn.
 func (o *openAIProfile) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
-	return llm.PostDecisions(ctx, o.client, o.endpoint.BaseURL, o.key, o.Name(), req)
+	return llmopenai.PostDecisions(ctx, o.client, o.endpoint.BaseURL, o.key, o.Name(), req)
 }
 
 func (o *openAIProfile) ListModels(ctx context.Context) ([]string, error) {
 	if o.endpoint.ModelsPath == "" {
-		return o.OpenAICompat.ListModels(ctx)
+		return o.Provider.ListModels(ctx)
 	}
 	return listFrom(ctx, o.client, o.endpoint)
 }
@@ -462,7 +465,7 @@ func (o *openAIProfile) ListModels(ctx context.Context) ([]string, error) {
 // responsesProfile is a profile-backed openai-responses provider, with the
 // same catalog override the chat dialect gets.
 type responsesProfile struct {
-	*llm.OpenAIResponses
+	*llmopenai.Responses
 	endpoint Endpoint
 	client   *http.Client
 	// decides is the profile's declaration, in place of the native
@@ -474,7 +477,7 @@ func (r *responsesProfile) OffersDecisions(model string) bool { return r.decides
 
 func (r *responsesProfile) ListModels(ctx context.Context) ([]string, error) {
 	if r.endpoint.ModelsPath == "" {
-		return r.OpenAIResponses.ListModels(ctx)
+		return r.Responses.ListModels(ctx)
 	}
 	return listFrom(ctx, r.client, r.endpoint)
 }
@@ -482,7 +485,7 @@ func (r *responsesProfile) ListModels(ctx context.Context) ([]string, error) {
 // anthropicProfile is a profile-backed anthropic-messages provider. The
 // Messages API has no catalog endpoint, so its models are the declared ones.
 type anthropicProfile struct {
-	*llm.Anthropic
+	*llmanthropic.Provider
 	name string
 }
 

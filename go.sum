@@ -132,14 +132,8 @@ github.com/pb33f/ordered-map/v2 v2.3.1 h1:5319HDO0aw4DA4gzi+zv4FXU9UlSs3xGZ40wcP
 github.com/pb33f/ordered-map/v2 v2.3.1/go.mod h1:qxFQgd0PkVUtOMCkTapqotNgzRhMPL7VvaHKbd1HnmQ=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
-github.com/rfizzle/llm v0.1.1 h1:9DoDcYH3idiB3oh0xIVIssf4fr8YlJzRFeO0Bozwwl8=
-github.com/rfizzle/llm v0.1.1/go.mod h1:UPqJ0igvtkbTMuPfpMPg5A/2ljVhDxFk0yK5/Bvj610=
-github.com/rfizzle/llm v0.2.0 h1:e+MTVbPVGfnHZ0B2SiE9/VZeO46xhTUtPTlHo0L/ADA=
-github.com/rfizzle/llm v0.2.0/go.mod h1:7f+PYwegHVQHSadu/rG9DJXadxgXDycP42lox3HtNKA=
-github.com/rfizzle/llm v0.3.1 h1:8yUKVXepsWw64KeGliRvMK7LAW1qWbmMEW8zldKO7uY=
-github.com/rfizzle/llm v0.3.1/go.mod h1:h9guMyHpxzG8CiHFK6ALpPRksFj+lanF3vMC8FEMf08=
-github.com/rfizzle/llm v0.4.0 h1:9qNd+yhtlQ2P14mMKNIaY62gKmu/gkipsSYVjQDS0jg=
-github.com/rfizzle/llm v0.4.0/go.mod h1:h9guMyHpxzG8CiHFK6ALpPRksFj+lanF3vMC8FEMf08=
+github.com/rfizzle/llm v0.5.1 h1:am+Xadj/cR5PlmNbAoOIXFA7GzvTEG22iU55V2N9F7k=
+github.com/rfizzle/llm v0.5.1/go.mod h1:h9guMyHpxzG8CiHFK6ALpPRksFj+lanF3vMC8FEMf08=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
 github.com/rivo/uniseg v0.4.7/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=

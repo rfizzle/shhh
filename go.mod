@@ -20,7 +20,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/mattn/go-isatty v0.0.20
 	github.com/modelcontextprotocol/go-sdk v1.7.0
-	github.com/rfizzle/llm v0.4.0
+	github.com/rfizzle/llm v0.5.1
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/spf13/cobra v1.10.2
 	github.com/yuin/goldmark v1.7.17
@@ -33,7 +33,6 @@ require (
 	golang.org/x/mod v0.41.0
 	golang.org/x/net v0.61.0
 	golang.org/x/sys v0.49.0
-	google.golang.org/genai v1.55.0
 	modernc.org/sqlite v1.50.0
 )
 
@@ -53,6 +52,7 @@ require (
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	google.golang.org/api v0.278.0 // indirect
+	google.golang.org/genai v1.55.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
 )
 

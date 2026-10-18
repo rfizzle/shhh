@@ -16,6 +16,7 @@ import (
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/chatgpt"
+	"github.com/rfizzle/llm/openai"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
@@ -89,7 +90,7 @@ var listChatGPTModels = func(ctx context.Context) ([]string, error) {
 
 // chatGPTDefaultModel picks the model a sign-in saved with --save writes to
 // provider.model, out of the ones the plan listed.
-var chatGPTDefaultModel = llm.ChatGPTDefaultModel
+var chatGPTDefaultModel = openai.ChatGPTDefaultModel
 
 // tokenRelay hands the tokens the account learns to the session vaults, in
 // either order: a vault attached after a refresh is told what was learned
