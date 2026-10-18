@@ -60,7 +60,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check host-lists host-lists-check third-party-licenses tui-shot tui-check tui-longpath design golden-summary help
+.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline host-lists host-lists-check third-party-licenses tui-shot tui-check tui-longpath design golden-summary help
 
 all: help
 
@@ -295,20 +295,7 @@ eval-baseline: build ## Rewrite evals/baseline.json from a fresh run (costs real
 	@echo "${MAGENTA}Refreshing the eval baseline...${RESET}"
 	@./$(APP_NAME) eval --refresh-baseline $(EVAL_ARGS)
 
-# The prompt-cache markers are the one thing the offline suite cannot judge: a
-# marker the far end ignores looks exactly like one it honours, because the
-# answer is identical and only the bill differs. So this asks two live
-# endpoints — the Messages API directly, and a gateway forwarding to it, which
-# is the path that can silently drop the field on the way through. Each check
-# skips itself when its own variables are unset, so a run with one pair of
-# credentials still checks that one. -count=1 because a cached PASS would be a
-# run that asked nothing.
-#
-#	SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… \
-#	SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check
-cache-check: ## Verify prompt caching against live endpoints (costs real requests)
-	@echo "${MAGENTA}Checking prompt caching against the live endpoints...${RESET}"
-	@$(GOTEST) -tags=integration -count=1 -v -run CacheIntegration ./internal/provider
+# cache-check, the live prompt-cache check, lives in the llm module: make integration there.
 
 # model-data, the generator of the built-in price snapshot, lives in the llm module.
 

@@ -57,10 +57,6 @@ linters:
       - linters: [gocognit]
         path: ^internal/digest/digest\.go$
         text: 'func `Arg`'
-      # The Responses stream: every event type decoded in one loop.
-      - linters: [gocognit]
-        path: ^internal/provider/openai_responses_stream\.go$
-        text: 'func `streamResponses`'
       # Report block validation: every block kind checked in one switch.
       - linters: [gocognit]
         path: ^internal/reports/block\.go$
