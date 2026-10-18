@@ -16,6 +16,10 @@ package chat
 // (docs/interface/principles.md#esc-is-always-the-safe-answer). It is keyed
 // by the chord that opened it, so no other chord completes a quit.
 //
+// The idle foot does not name the quit. It is named in the key list (ctrl+]),
+// and by the first press, whose window the rails state as `[ctrl+c] again
+// quits` (armedHint) for as long as it is open.
+//
 // ctrl+d quits nowhere: it is end of input in a shell and a tmux chord, and
 // is reserved (docs/interface/reserved-keys.md). Typing /quit over a live
 // turn is a real question, the inline confirm

@@ -93,7 +93,9 @@ query, then leaves, asking first over staged work. On the draft it leaves the
 text exactly as it is, however many times it is pressed. Ctrl+c is the one
 destructive chord: on every surface it stops the run; over a sentence it
 records the sentence in the draft history, so the up arrow brings it back, and
-then clears it; and pressed twice on an empty draft it quits.
+then clears it; and pressed twice on an empty draft it quits. The idle foot
+does not name the quit: the key list (`ctrl+]`) does, and the first press states
+it on the row, `[ctrl+c] again quits`, for as long as the window is open.
 
 This is what makes the product safe to explore. A user who knows one key
 always backs out without consequence will try things; one who has to read

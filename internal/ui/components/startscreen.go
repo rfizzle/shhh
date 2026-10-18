@@ -82,12 +82,6 @@ type StartScreen struct {
 	// nothing, which is every session after the first
 	// (docs/interface/surfaces.md#the-start-screen).
 	FirstRun []string
-	// Nav is the second key row: how to move between the prompt and the
-	// transcript. It outlives the typing dismissal that takes
-	// Hint, because those keys outlive it too — the wheel, pgup and ctrl+o
-	// work with a half-written draft in the box, which is the whole point of
-	// them.
-	Nav []KeyOffer
 	// Height is how many rows the pane this is drawn in has, which decides
 	// how much of a face the screen wears. Zero is a host that has not said —
 	// a bare model, a test — and it gets the screen with no face at all
@@ -171,14 +165,6 @@ func (s StartScreen) layout(width int) ([]string, []int) {
 		rows = append(rows, "")
 		rows = append(rows, hint...)
 		blank(1 + len(hint))
-	}
-	if nav := HintRows(s.Nav, width); len(nav) > 0 {
-		if len(hint) == 0 {
-			rows = append(rows, "")
-			blank(1)
-		}
-		rows = append(rows, nav...)
-		blank(len(nav))
 	}
 	return rows, offers
 }

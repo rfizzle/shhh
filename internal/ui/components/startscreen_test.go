@@ -6,7 +6,6 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // startFixture is the screen every test here starts from: the facts a Go
@@ -133,15 +132,9 @@ func TestStartScreen_NoteDetailMovesUnderItsValue(t *testing.T) {
 // the rest of the product on its own.
 func TestStartScreen_KeyRowsWearTheBracketGrammar(t *testing.T) {
 	s := startFixture()
-	s.Nav = []KeyOffer{
-		keyOfferAs(keys.Draft.PageUp, "scroll"),
-		keyOfferAs(keys.Select.Cancel, backToPrompt),
-	}
 	view := s.View(110)
 	for _, want := range []struct{ what, run string }{
 		{"the list's own key", sty.key.Render("[↑↓]") + sty.dim.Render(" choose")},
-		{"a navigation key", sty.key.Render(keys.Bracket(keys.Draft.PageUp)) + sty.dim.Render(" scroll")},
-		{"the safe answer", sty.add.Render("[esc]") + sty.dim.Render(" "+backToPrompt)},
 		{"the clause that is not a key", sty.dim.Render("or just type what you want")},
 	} {
 		if !strings.Contains(view, want.run) {
