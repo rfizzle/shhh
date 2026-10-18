@@ -83,6 +83,37 @@ type tokenRelay struct {
 	mu     sync.Mutex
 	seen   []string
 	vaults []*secret.Vault
+	// stamp is the version of the record this relay last read, so a scrub
+	// costs a stat and reads the record only when another process has
+	// replaced it.
+	stamp chatgpt.RecordStamp
+}
+
+// refresh hides the tokens of a record another process has written since this
+// relay last looked. The shell is the reason it exists: a command can read
+// the record whatever the containment setting, and its output is scrubbed
+// by a vault that knows only what this session has learned, so each scrub
+// first asks whether the record changed. It is a stat when nothing did, and a
+// read of the record, never logged, when something did. A record that will
+// not read changes nothing, and is tried again at the next scrub.
+// See docs/capabilities/chatgpt-plan.md#what-keeps-the-tokens-from-the-model.
+func (r *tokenRelay) refresh() {
+	dir := chatGPTOptions().Dir
+	now := chatgpt.StatRecord(dir)
+	r.mu.Lock()
+	same := now.Same(r.stamp)
+	r.mu.Unlock()
+	if same {
+		return
+	}
+	cred, err := chatgpt.ReadRecord(dir)
+	if err != nil {
+		return
+	}
+	r.mu.Lock()
+	r.stamp = now
+	r.mu.Unlock()
+	r.learn(cred.AccessToken, cred.RefreshToken, cred.IDToken)
 }
 
 // learn records a set and hides it in every attached vault. It is the
@@ -127,6 +158,7 @@ func (r *tokenRelay) attach(v *secret.Vault) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.vaults = append(r.vaults, v)
+	v.BeforeScrub(r.refresh)
 	for _, s := range r.seen {
 		v.Hide(chatgpt.TokenKind, s)
 	}

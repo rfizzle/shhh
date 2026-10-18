@@ -259,8 +259,9 @@ func (a *Account) CredentialsPath() string { return filepath.Join(a.dir, credent
 // replaced whole, so a read sees one writer's file or the other's.
 func (a *Account) Credential() (Credential, error) { return a.read() }
 
-func (a *Account) read() (Credential, error) {
-	path := a.CredentialsPath()
+func (a *Account) read() (Credential, error) { return readRecord(a.CredentialsPath()) }
+
+func readRecord(path string) (Credential, error) {
 	data, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return Credential{}, nil

@@ -184,6 +184,11 @@ type Vault struct {
 	// $GITHUB_TOKEN unset needs to be told which of the two things
 	// happened.
 	envMask bool
+	// beforeScrub is called at the top of every Scrub, outside the lock, so
+	// a holder of values that can change under the session (a record another
+	// process rewrites) can Hide what it has just learned before the text is
+	// scrubbed. It must be cheap and must not call Scrub.
+	beforeScrub func()
 }
 
 // New returns an empty vault.
@@ -266,6 +271,19 @@ func (v *Vault) Hide(kind, value string) {
 	e.ph = Redacted(kind)
 	v.hidden = append(v.hidden, e)
 	v.reindex()
+}
+
+// BeforeScrub sets a function Scrub calls first, so values learned since the
+// last call are hidden before this text is scrubbed. It is set once, when the
+// session opens its secrets. See
+// docs/capabilities/chatgpt-plan.md#what-keeps-the-tokens-from-the-model.
+func (v *Vault) BeforeScrub(f func()) {
+	if v == nil {
+		return
+	}
+	v.mu.Lock()
+	v.beforeScrub = f
+	v.mu.Unlock()
 }
 
 // SetEnvMask records whether the session masks credential-shaped variables
@@ -371,8 +389,14 @@ func (v *Vault) Scrub(s string) string {
 		return s
 	}
 	v.mu.RLock()
-	ix := v.idx
+	ix, before := v.idx, v.beforeScrub
 	v.mu.RUnlock()
+	if before != nil {
+		before()
+		v.mu.RLock()
+		ix = v.idx
+		v.mu.RUnlock()
+	}
 	if ix == nil {
 		return redact(s)
 	}

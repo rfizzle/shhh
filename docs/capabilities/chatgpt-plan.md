@@ -104,11 +104,17 @@ scrubbing them by value would cut those tokens apart until they no longer
 looked like tokens at all. A rotated-out token stays scrubbed for the rest
 of the session.
 
-The scrub covers what a session has learned, and no more. A refresh token
-another shhh process writes while this session runs is scrubbed here only
-once this session reads it. The record itself is kept from an assistant's
-commands by containment; with containment off, a command can read the file,
-and a token this session has not learned would reach the model.
+A refresh token another shhh process writes while this session runs is
+learned the moment it is written, from two directions. The model's own readers
+refuse the record, whatever the containment setting
+([shhh's own files are not the model's to
+read](coding-agent.md#shhhs-own-files-are-not-the-models-to-read)). A command
+can still read the file, with containment off, so before the session scrubs
+anything it asks whether the record is the version it last read: a stat, and a
+read of the record only when another process has replaced it. The new tokens
+are hidden by the same rule as the first, the refresh token whole and each
+JWT by its signature alone, so the output of that command, the transcript and
+the evidence store never hold them. The record is read and never logged.
 
 The tokens are not in the config file, the provider listing, the diagnostic
 log, a receipt or a session's record. The log keeps what happened — a
