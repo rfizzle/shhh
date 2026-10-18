@@ -14,7 +14,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // openRail puts the rail up in full. A session with nothing on its rail yet
@@ -71,5 +70,5 @@ func (m Model) railLines(width, height int) []string {
 // renderRailHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the readings screen's does.
 func (m Model) renderRailHint() []hintSeg {
-	return paneHint("rail", segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint("rail")
 }

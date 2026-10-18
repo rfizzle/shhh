@@ -21,7 +21,6 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // noteStepsCall applies a steps call to the session's checklist once its
@@ -187,7 +186,7 @@ func (m Model) renderStepsHint() []hintSeg {
 	if s := m.screens.steps(); s != nil && s.Plan {
 		name = "plan"
 	}
-	return paneHint(name, segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint(name)
 }
 
 // stepsScreenData builds the screen from the session's checklist and its own

@@ -17,7 +17,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -125,7 +124,7 @@ func (m Model) sourcesLines() []string {
 // was. The screen holds the keyboard, so the panel states the way out and
 // nothing else, the way the context surface's does.
 func (m Model) renderSourcesHint() []hintSeg {
-	return paneHint("sources", seg(keys.Sources.Back))
+	return paneHint("sources")
 }
 
 // sourceRow is the screen's row with an id, or nil.

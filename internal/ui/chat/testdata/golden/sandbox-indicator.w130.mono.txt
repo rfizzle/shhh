@@ -27,9 +27,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands
-[ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 ── ansi ────────────────────────────────────────────────────
 · the title rail · the chip is a word with a glyph, and the last to go
@@ -49,6 +47,4 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m
     ␛[38;5;244mone approval, then it reports back␛[m
 
-␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m
-␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
+␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m

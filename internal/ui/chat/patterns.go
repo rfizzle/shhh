@@ -423,5 +423,5 @@ func (m *Model) neverProposal(p Proposal) string {
 
 // renderPatternsHint is the one line the list leaves where the draft was.
 func (m Model) renderPatternsHint() []hintSeg {
-	return paneHint("patterns", segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint("patterns")
 }

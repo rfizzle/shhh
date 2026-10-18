@@ -30,7 +30,7 @@ keys "run the checks" Enter
 # The model has not said its first word yet: the rail names the phase, the
 # box is one row, and the pane below is entirely transcript.
 snap 02-waiting "waiting…" "[ctrl+p] hold · [ctrl+c] stop the run"
-wide 130 snap 02a-working-ladder "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys"
+wide 130 snap 02a-working-ladder "[ctrl+p] hold · [ctrl+c] stop the run · [ctrl+]] keys"
 snap 03-card "[y] run it once"
 keys y
 # A command in flight, which is the state the empty box looked worst in: the
@@ -40,7 +40,7 @@ snap 05-tail "0.412s"
 # And the turn resolved, which is where a reader spends the longest with
 # nothing typed.
 snap 06-completed "the frame is four" "[enter] send" "[ctrl+]] keys"
-wide 130 snap 06a-idle-ladder "[enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue · [ctrl+c] ×2 quit"
+wide 130 snap 06a-idle-ladder "[enter] send · [shift+tab] mode · [ctrl+]] keys"
 keys C-c
 snap 07-quit-armed "again quits"
 keys C-c

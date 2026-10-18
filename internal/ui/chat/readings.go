@@ -12,7 +12,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // openReadings puts the screen up. It is built once per opening, like the
@@ -54,7 +53,7 @@ func (m Model) closeReadingsScreen() (tea.Model, tea.Cmd) {
 // renderReadingsHint is the one line the screen leaves where the draft box
 // was: the way out and nothing else, the way the steps screen's does.
 func (m Model) renderReadingsHint() []hintSeg {
-	return paneHint("readings", segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint("readings")
 }
 
 // readingsScreenData builds the screen from the session's history, newest

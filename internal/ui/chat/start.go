@@ -306,11 +306,11 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		Suggestions: suggestions,
 		Focus:       min(max(m.startFocus, 0), max(len(suggestions)-1, 0)),
 		// One row, led by the way in that is not a key: the plain arrows
-		// and enter are what a reader tries first, and the pointer chords
-		// that also reach an offer (pointer.go) are on the key list the row
-		// ends with rather than doubled into it — a key row is one row of at
-		// most six. The draft holds the keyboard here, so the list is the
-		// draft's chord and not a bare key.
+		// and enter are what a reader tries first. The pointer chords that
+		// also reach an offer (pointer.go) are on the key list, and so is
+		// everything the start screen used to repeat from the frame's foot
+		// (scroll, select rows, commands, the mouse), which the foot offers
+		// once, as `[ctrl+]] keys`.
 		//
 		// The row goes over as offers and not as a sentence: the screen
 		// paints the key apart from the words, and a run joined here could
@@ -318,30 +318,9 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		Hint: []components.KeyOffer{
 			{Key: keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext), Label: "choose"},
 			components.OfferAs(keys.Draft.Send, "start"),
-			components.OfferAs(keys.Draft.KeyList, "keys"),
 		},
 		Typing:   "or just type what you want",
 		FirstRun: startFirstRun(*info),
-		// The navigation line survives the typing dismissal above, because
-		// these keys survive it: every one of them works with a half-written
-		// draft in the box. This is the one screen every user
-		// sees, so it is where the two panes are introduced — and the one
-		// place the mouse chord can be learned before it is wanted, which for
-		// that setting is the whole difficulty.
-		//
-		// Scrolling and the handover are named apart, because they are two
-		// things: pgup reads without giving up the keyboard, the reading
-		// chord is what hands it over when the rows' own letters are what
-		// you want. The spellings are the register's, so this line cannot
-		// survive a rebind with the old chord on it — and they are read off
-		// the declaration by the component's own door, which is also what
-		// decides whether an offer is the safe one.
-		Nav: []components.KeyOffer{
-			components.OfferAs(keys.Draft.PageUp, "scroll"),
-			components.OfferAs(keys.Draft.Reading, "select rows"),
-			components.OfferAs(keys.Draft.Palette, "commands"),
-			components.OfferAs(keys.Draft.Mouse, "mouse on/off"),
-		},
 	}, actions
 }
 

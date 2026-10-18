@@ -13,14 +13,14 @@
 # so the frame is gated, with the sentence still in the box.
 #
 # What each snap holds: 02 the working row, `[ctrl+p] hold · [ctrl+c] stop the
-# run · [enter] add to this turn` (the unchanged ladder, the baseline); 03 the
+# run · [ctrl+]] keys` (three chords, the baseline); 03 the
 # waiting row, `[ctrl+space/ctrl+y] answer it · [enter] add to this turn`
 # followed by rule, the stop and the key list having left whole from the right,
 # no `[ctrl+c] sto` against the corner; 04 the gated row, `22 characters,
 # cursor at 22 · [?] keys`; 05 the answer.
 snap 01-start "Some things worth doing first"
 keys "settle the migration" Enter
-snap 02-working "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn"
+snap 02-working "[ctrl+p] hold · [ctrl+c] stop the run · [ctrl+]] keys"
 keys "and keep it reversible"
 snap 03-waiting "Should the migration be reversible?" "╰─ [ctrl+space/ctrl+y] answer it · [enter] add to this turn ─"
 # A card that has just landed holds its keys for a beat.

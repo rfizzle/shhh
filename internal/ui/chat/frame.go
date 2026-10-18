@@ -454,30 +454,19 @@ func (m Model) frameHints(room int) string {
 			armed = true
 			break
 		}
-		// The working ladder, floor first: hold and stop, the two keys a
-		// person reaches for with a turn running — and the cancel chord is
-		// the only key that stops one, which this rail is the one place to
-		// say, because esc doing nothing looks exactly like esc being unread
-		// (docs/interface/principles.md#esc-is-always-the-safe-answer). Then
-		// what is typed now joins the turn, the mode, the commands that run
-		// mid-turn, the key list and the queue, shed from the right as the
-		// width runs out (docs/interface/surfaces.md#the-input-frame).
-		// With children in flight the agent manager is the first thing to
-		// reach for after the steer.
+		// Three chords, floor first: hold and stop, the two keys a person
+		// reaches for with a turn running — and the cancel chord is the
+		// only key that stops one, which this rail is the one place to say,
+		// because esc doing nothing looks exactly like esc being unread
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer) —
+		// then the key list, where the steer, the agent manager, the
+		// commands that run mid-turn and the queue are one chord away
+		// (docs/interface/surfaces.md#the-input-frame).
 		hints = []hintSeg{
 			segAs(keys.Draft.Pause, "hold"),
 			m.ctrlCHint(),
-			segAs(keys.Draft.Send, "add to this turn").At(1),
+			m.keyListHint().At(1),
 		}
-		if active, _ := m.activeAgents(); active > 0 {
-			hints = append(hints, segAs(keys.Draft.Agents, "agents").At(2))
-		}
-		hints = append(hints, m.modeHint(2)...)
-		hints = append(hints,
-			segAs(keys.Draft.Palette, "commands").At(3),
-			m.keyListHint().At(4),
-			segAs(keys.Draft.Queue, "queue").At(5),
-		)
 		ladder = true
 	default:
 		// The quit window's hint takes the idle rail the same way the
@@ -487,32 +476,18 @@ func (m Model) frameHints(room int) string {
 			armed = true
 			break
 		}
-		// The idle ladder, floor first: how a message leaves and the key
-		// list, which every width keeps, then the mode, the commands, the
-		// queue and the two-press quit, shed from the right as the width
-		// runs out. The whole run is written down and the rail sheds what
-		// will not fit, rather than a set chosen once against one width:
-		// bracketing the keys costs two columns each, and a run picked to
-		// spend exactly the columns a 110-column terminal has is a run that
-		// says nothing more on a terminal twice that wide.
-		//
-		// The quit is last because it is the one offer a person who has
-		// found the rest can do without, and it stays named on every rail
-		// wide enough to hold it: a key whose first press is silent has to
-		// be told before it is pressed (cancel.go). The newline, the editor
-		// and the attach chord are not on the row — the draft teaches the
-		// first the moment a sentence runs long, a rarity does not earn the
-		// editor a slot, and the attach chord is offered above the prompt
-		// only while the clipboard holds something to attach
-		// (attachOffer); all three are in the key list.
+		// Three chords: how a message leaves, the mode, and the key list,
+		// which every width keeps. The chords a person cannot guess are the
+		// ones on the row; the commands (`/` typed at the prompt opens
+		// them), the queue, the two-press quit, the newline, the editor and
+		// the attach chord are in the key list, and the attach chord is
+		// offered above the prompt only while the clipboard holds something
+		// to attach (attachOffer). The mode is shed before the key list as
+		// the width runs out, so no width cuts a word against the corner
+		// (docs/interface/surfaces.md#the-input-frame).
 		hints = []hintSeg{segAs(keys.Draft.Send, "send")}
 		hints = append(hints, m.modeHint(1)...)
-		hints = append(hints,
-			segAs(keys.Draft.Palette, "commands").At(2),
-			m.keyListHint(),
-			segAs(keys.Draft.Queue, "queue").At(3),
-			m.ctrlCHint().At(4),
-		)
+		hints = append(hints, m.keyListHint())
 		// An offered next step leads the rail while it is drawn, because the
 		// arrow that takes it is the one key on this row nobody would press
 		// without being told, and it is live only while the words are there

@@ -20,7 +20,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // ToolSources is what the tools screen reads that the chat cannot read
@@ -184,5 +183,5 @@ func toolsShowing(m Model) any {
 // renderToolsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the spend screen's does.
 func (m Model) renderToolsHint() []hintSeg {
-	return paneHint("tools", segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint("tools")
 }

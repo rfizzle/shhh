@@ -23,7 +23,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // openTurns puts the screen up. It is built once per opening, like the
@@ -93,7 +92,7 @@ func (m Model) closeTurnsScreen() (tea.Model, tea.Cmd) {
 // renderTurnsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the readings screen's does.
 func (m Model) renderTurnsHint() []hintSeg {
-	return paneHint("turns", segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint("turns")
 }
 
 // turnsScreenData builds the screen, newest first, over every number the

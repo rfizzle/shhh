@@ -261,7 +261,7 @@ func (m Model) closeReview() (tea.Model, tea.Cmd) {
 // renderContextHint is the context surface's bottom panel: it holds the
 // keyboard, so the panel states the way out and nothing else.
 func (m Model) renderContextHint() []hintSeg {
-	return paneHint("context", contextKeyHint())
+	return paneHint("context")
 }
 
 // renderReviewHint fills the input area while review has the screen. The

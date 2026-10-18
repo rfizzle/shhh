@@ -24,7 +24,6 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // contextItemsShown is how many parts of a group are named before the rest
@@ -499,6 +498,3 @@ func formatWindowSize(n int64) string {
 		return fmt.Sprintf("%d", n)
 	}
 }
-
-// contextKeyHint is what the status bar offers while the surface is up.
-func contextKeyHint() hintSeg { return seg(keys.Context.Back) }

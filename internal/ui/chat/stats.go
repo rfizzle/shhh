@@ -17,7 +17,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // formatCost is the shared dollar format: four decimals below a cent, two
@@ -120,7 +119,7 @@ func statsShowing(m Model) any {
 // renderStatsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the turns screen's does.
 func (m Model) renderStatsHint() []hintSeg {
-	return paneHint("spend", segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint("spend")
 }
 
 // spendScreenData builds the screen from the ledger the SPEND block reads:

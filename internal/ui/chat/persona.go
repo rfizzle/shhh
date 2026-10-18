@@ -29,7 +29,6 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // Personas is what the session hands the flow: the drafter, the roles that
@@ -1434,5 +1433,5 @@ func (m Model) personaPane(width, height int) string {
 // renderPersonaHint is the surface's bottom panel: it holds the keyboard, so
 // the panel states what it is and nothing else.
 func (m Model) renderPersonaHint() []hintSeg {
-	return paneHint("drafting a profile", seg(keys.Profile.Back))
+	return paneHint("drafting a profile")
 }

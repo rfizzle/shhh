@@ -17,7 +17,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // openAlerts puts the screen up. It is built once per opening, like the turns
@@ -79,7 +78,7 @@ func (m Model) closeAlertsScreen() (tea.Model, tea.Cmd) {
 // renderAlertsHint is the one line the screen leaves where the draft box was:
 // the way out and nothing else, the way the turns screen's does.
 func (m Model) renderAlertsHint() []hintSeg {
-	return paneHint("alerts", segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint("alerts")
 }
 
 // alertsScreenData builds the screen from the walk: standing episodes first,

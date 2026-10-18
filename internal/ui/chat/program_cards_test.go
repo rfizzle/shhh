@@ -273,7 +273,7 @@ func TestProgram_AHoldParksTheTurnAndTheChordEndsIt(t *testing.T) {
 	close(finish)
 	waitForText(t, tm, "⏸ held")
 	tm.Send(programCancel)
-	waitForText(t, tm, "[ctrl+c] ×2 quit")
+	waitForText(t, tm, "[enter] send")
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "[enter] send")

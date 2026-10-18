@@ -25,8 +25,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · the pointer on the offer that costs an approval
 ▄▀▀▀ █    █    █
@@ -43,8 +42,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
 ❯ ⚙ run the default quality gate and triage what fails — one approval, then it reports back             
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · clean tree · nothing saved, no gate, no project context
 ▄▀▀▀ █    █    █
@@ -61,8 +59,7 @@ Some things worth doing first:
   ⚙ summarise the last ten commits — reads only, no writes
   ⚙ run go test ./... and triage the failures — one approval, then it reports back
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · outside a repository · the package count is a floor
 ▄▀▀▀ █    █    █
@@ -79,8 +76,7 @@ Some things worth doing first:
   ⚙ walk me through what this project does — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · nothing read · the third offer writes the file that would be
 ▄▀▀▀ █    █    █
@@ -97,8 +93,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ✎ scaffold .shhh/ — one approval
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · somebody else is in this checkout too
 ▄▀▀▀ █    █    █
@@ -115,8 +110,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · a checkout nobody has answered for · what it is holding back
 ▄▀▀▀ █    █    █
@@ -134,8 +128,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run go test ./... and triage the failures — one approval, then it reports back
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · a trusted checkout whose suites changed since the answer · said once
 ▄▀▀▀ █    █    █
@@ -153,8 +146,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · the checkout brought its own settings and its own wordings
 ▄▀▀▀ █    █    █
@@ -173,8 +165,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · typing dismissed the list · the facts stay
 ▄▀▀▀ █    █    █
@@ -185,8 +176,6 @@ go 1.24 · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
-
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · the machine's first session · three keys above the key row
 ▄▀▀▀ █    █    █
@@ -207,8 +196,7 @@ enter sends what you type
 esc backs out of anything and never loses work
 ctrl+c twice stops a run
 
-or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
+or just type what you want · [↑↓] choose · [enter] start
 
 · typing on the first session · the three keys stay
 ▄▀▀▀ █    █    █
@@ -223,8 +211,6 @@ gate     default — vet, test · runs without asking
 enter sends what you type
 esc backs out of anything and never loses work
 ctrl+c twice stops a run
-
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 ── ansi ────────────────────────────────────────────────────
 · first contact · a dirty checkout with a session to pick up
@@ -242,8 +228,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · the pointer on the offer that costs an approval
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -260,8 +245,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;61m⚙ run the default quality gate and triage what fails — one approval, then it reports back             ␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · clean tree · nothing saved, no gate, no project context
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -278,8 +262,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252msummarise the last ten commits␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · outside a repository · the package count is a floor
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -296,8 +279,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mwalk me through what this project does␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · nothing read · the third offer writes the file that would be
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -314,8 +296,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m✎␛[m ␛[38;5;252mscaffold .shhh/␛[m␛[38;5;245m — one approval␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · somebody else is in this checkout too
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -332,8 +313,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · a checkout nobody has answered for · what it is holding back
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -351,8 +331,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · a trusted checkout whose suites changed since the answer · said once
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -370,8 +349,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · the checkout brought its own settings and its own wordings
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -390,8 +368,7 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;245m — one approval, then it reports back␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · typing dismissed the list · the facts stay
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -402,8 +379,6 @@ ctrl+c twice stops a run
 
 ␛[38;5;246mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;245m — in the system prompt␛[m
 ␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
-
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
 
 · the machine's first session · three keys above the key row
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -424,8 +399,7 @@ ctrl+c twice stops a run
 ␛[38;5;245mesc backs out of anything and never loses work␛[m
 ␛[38;5;245mctrl+c twice stops a run␛[m
 
-␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · typing on the first session · the three keys stay
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -440,5 +414,3 @@ ctrl+c twice stops a run
 ␛[38;5;245menter sends what you type␛[m
 ␛[38;5;245mesc backs out of anything and never loses work␛[m
 ␛[38;5;245mctrl+c twice stops a run␛[m
-
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m

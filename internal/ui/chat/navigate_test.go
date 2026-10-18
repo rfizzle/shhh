@@ -521,27 +521,22 @@ func TestUICommand_MouseSendsTheTerminalACommand(t *testing.T) {
 	}
 }
 
-// The start screen is where the two panes are introduced, and its navigation
-// line outlives the typing that dismisses the suggestion list.
-func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
+// The start screen draws one hint line, and not a second one of navigation
+// keys: scrolling, the handover, the commands and the mouse chord are the
+// frame's foot's key list, which the screen's only row does not repeat.
+func TestStartScreen_DrawsNoSecondHintLine(t *testing.T) {
 	m := startModel(t, startFixture())
 	// Stripped, because the keys are painted apart from the words they carry
 	// and a raw render has an escape between the two.
-	if !strings.Contains(ansi.Strip(m.renderStartScreen(100)), "scroll") {
-		t.Fatal("the start screen should name the scrolling keys")
+	view := ansi.Strip(m.renderStartScreen(100))
+	for _, gone := range []string{"scroll", "select rows", "commands", "mouse on/off"} {
+		if strings.Contains(view, gone) {
+			t.Fatalf("the start screen still names %q on a second line:\n%s", gone, view)
+		}
 	}
 	m = typeChars(t, m, "x")
-	view := ansi.Strip(m.renderStartScreen(100))
-	if strings.Contains(view, "[↑↓]") {
+	if view := ansi.Strip(m.renderStartScreen(100)); strings.Contains(view, "[↑↓]") {
 		t.Fatal("typing should still dismiss the suggestion list")
-	}
-	if !strings.Contains(view, "scroll") {
-		t.Fatal("the navigation keys still work with a draft in the box, so they should still be offered")
-	}
-	// Scrolling and the handover are two things now, and the line says so
-	// rather than describing them as one.
-	if !strings.Contains(view, "[ctrl+o] select rows") {
-		t.Fatal("the line should name ctrl+o as the handover, apart from the scroll keys")
 	}
 }
 

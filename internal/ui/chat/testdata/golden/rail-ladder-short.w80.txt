@@ -32,7 +32,7 @@
   ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮  
   │ ▸                                                                        │  
   ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · ◇1 ───────────────────────────────┤  
-  ╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn ───────╯  
+  ╰─ [ctrl+p] hold · [ctrl+c] stop the run · [ctrl+]] keys ──────────────────╯  
 
 · the foot line's door · the rail in full, nothing shed
    shhh chat · gpt-4o                                                           
@@ -56,7 +56,7 @@
   ⚠ researcher-1 · Say where the round coun…     waiting approval: run echo hi  
   ────────────────────────────────────────────────────────────────────────────  
   ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · ◇1                                      
-  rail · [esc] back                                                             
+  rail                                                                          
 
 ── ansi ────────────────────────────────────────────────────
 · twenty-two rows · the static blocks go to the foot line, the asks stay
@@ -81,7 +81,7 @@
 ␛[48;5;233m  ␛[38;5;245m╭─␛[39m ␛[38;5;205m⠋ waiting…␛[39m ␛[38;5;245m─────────────────────────────────────────────────────────────╮␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;245m│␛[39m ␛[38;5;205;1m▸␛[39;22m ␛[38;5;252m                                                                      ␛[39m ␛[38;5;245m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;245m├─␛[39m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[39m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51 · ␛[94m◇1␛[39m ␛[38;5;245m───────────────────────────────┤␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;245m╰─␛[39m ␛[38;5;103m[ctrl+p]␛[38;5;245m hold · ␛[38;5;103m[ctrl+c]␛[38;5;245m stop the run · ␛[38;5;103m[enter]␛[38;5;245m add to this turn␛[39m ␛[38;5;245m───────╯␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m╰─␛[39m ␛[38;5;103m[ctrl+p]␛[38;5;245m hold · ␛[38;5;103m[ctrl+c]␛[38;5;245m stop the run · ␛[38;5;103m[ctrl+]]␛[38;5;245m keys␛[39m ␛[38;5;245m──────────────────╯␛[39m  ␛[m
 
 · the foot line's door · the rail in full, nothing shed
 ␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;245;22m · gpt-4o␛[39m                                                           ␛[m
@@ -105,4 +105,4 @@
 ␛[48;5;233m  ␛[91m⚠␛[39m researcher-1␛[38;5;245m · Say where the round coun…␛[39m     ␛[91mwaiting approval: run echo hi␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
 ␛[48;5;233m  ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[39m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51 · ␛[94m◇1␛[39m                                      ␛[m
-␛[48;5;233m  ␛[38;5;245mrail · ␛[92m[esc]␛[38;5;245m back␛[39m                                                             ␛[m
+␛[48;5;233m  ␛[38;5;245mrail␛[39m                                                                          ␛[m

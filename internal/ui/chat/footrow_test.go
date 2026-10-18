@@ -11,29 +11,26 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// The foot row is a ladder, floor first, and offers drop from the right as
-// the width runs out (docs/interface/surfaces.md#the-input-frame). One case
-// per width and per idle and working, read off the Frame board's windows 19
-// to 26: the row the board draws is the row the frame draws, except that the
-// board's 110 and 130 boxes are the full column count and the frame's are the
-// terminal less its padding, so each rung that depends on the last four
-// columns arrives four columns later (quit idle, commands working).
+// The foot row is three chords, idle and working, at every width the frame
+// is drawn on: the chords a person cannot guess, and the key list that holds
+// the rest (docs/interface/surfaces.md#the-input-frame). One case per width
+// and per idle and working.
 func TestFrame_TheFootRowLadder(t *testing.T) {
-	idle := "[enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue · [ctrl+c] ×2 quit"
-	working := "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue"
+	idle := "[enter] send · [shift+tab] mode · [ctrl+]] keys"
+	working := "[ctrl+p] hold · [ctrl+c] stop the run · [ctrl+]] keys"
 	cases := []struct {
 		width   int
 		working bool
 		want    string
 	}{
-		{60, false, "[enter] send · [shift+tab] mode · [ctrl+]] keys"},
-		{80, false, "[enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys"},
-		{110, false, strings.TrimSuffix(idle, " · [ctrl+c] ×2 quit")},
+		{60, false, idle},
+		{80, false, idle},
+		{110, false, idle},
 		{130, false, idle},
 		{60, true, "[ctrl+p] hold · [ctrl+c] stop the run"},
-		{80, true, "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn"},
-		{110, true, "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn · [shift+tab] mode"},
-		{130, true, strings.TrimSuffix(working, " · [ctrl+n] queue")},
+		{80, true, working},
+		{110, true, working},
+		{130, true, working},
 	}
 	for _, c := range cases {
 		name := fmt.Sprintf("%d idle", c.width)

@@ -17,7 +17,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // managerStoppedMsg is what a stop or kill run off the screen's goroutine
@@ -164,5 +163,5 @@ func managerShowing(m Model) any {
 // renderManagerHint is the one line the screen leaves where the draft box
 // was: the way out and nothing else.
 func (m Model) renderManagerHint() []hintSeg {
-	return paneHint("ps", segAs(keys.Agent.Back, components.EscBack))
+	return paneHint("ps")
 }

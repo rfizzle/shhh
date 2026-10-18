@@ -18,7 +18,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // notesEmpty is what a notebook nobody has written in says. It is a printed
@@ -223,7 +222,7 @@ func (m Model) notesLines() []string {
 // The screen holds the keyboard, so the panel states the way out and nothing
 // else, the way the sources screen's does.
 func (m Model) renderNotesHint() []hintSeg {
-	return paneHint("notes", seg(keys.Notes.Back))
+	return paneHint("notes")
 }
 
 // notesScreenData builds the screen from the notebook. Every field is

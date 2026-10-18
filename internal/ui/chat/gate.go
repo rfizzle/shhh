@@ -21,7 +21,6 @@ import (
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // Gate wires the quality gate into the chat TUI. Manage backs the
@@ -447,5 +446,5 @@ func (m Model) closeFlakesScreen() (tea.Model, tea.Cmd) {
 // renderFlakesHint is the one line the screen leaves where the draft box
 // was: the way out and nothing else, the way the readings screen's does.
 func (m Model) renderFlakesHint() []hintSeg {
-	return paneHint("flakes", segAs(keys.Screen.Quit, components.EscBack))
+	return paneHint("flakes")
 }

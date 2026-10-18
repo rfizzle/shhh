@@ -26,9 +26,7 @@ Some things worth doing first:
     one approval, then it reports back
 
 or just type what you want
-[↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows
-[ctrl+/] commands · [ctrl+x] mouse on/off
+[↑↓] choose · [enter] start
 
 · a dead path and a ready item · the item outranks the assessment
 go 1.24 · clean tree · 41 packages
@@ -46,9 +44,7 @@ Some things worth doing first:
     one approval, then it reports back
 
 or just type what you want
-[↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows
-[ctrl+/] commands · [ctrl+x] mouse on/off
+[↑↓] choose · [enter] start
 
 ── ansi ────────────────────────────────────────────────────
 · a cut file and a dead path
@@ -67,9 +63,7 @@ or just type what you want
     ␛[38;5;244mone approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m
-␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m
 
 · a dead path and a ready item · the item outranks the assessment
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mclean tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -87,6 +81,4 @@ or just type what you want
     ␛[38;5;244mone approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m
-␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m

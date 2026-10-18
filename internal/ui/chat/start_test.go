@@ -478,7 +478,8 @@ func TestStartScreen_TheFirstSessionSaysThreeThings(t *testing.T) {
 }
 
 // The key row is one row, led by the clause that is not a key, and the
-// doubled spellings are left to the key list it ends with.
+// doubled spellings are left to the key list the frame's foot offers. The
+// screen draws no second row under it.
 func TestStartScreen_TheKeyRowIsOneRow(t *testing.T) {
 	view := startText(startModel(t, startFixture()))
 	var row string
@@ -487,7 +488,7 @@ func TestStartScreen_TheKeyRowIsOneRow(t *testing.T) {
 			row = strings.TrimSpace(line)
 		}
 	}
-	want := "or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys"
+	want := "or just type what you want · [↑↓] choose · [enter] start"
 	if row != want {
 		t.Fatalf("key row = %q, want %q:\n%s", row, want, view)
 	}

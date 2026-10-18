@@ -48,7 +48,7 @@ example.com                                           │   asked for https://do
 · the panel it leaves · the way out, on one row
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 ⏸ manual                                                                                                  
-sources · [esc] back
+sources
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the last thing read
@@ -89,4 +89,4 @@ sources · [esc] back
 · the panel it leaves · the way out, on one row
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m⏸ manual␛[m                                                                                                  
-␛[38;5;244msources␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;244msources␛[m

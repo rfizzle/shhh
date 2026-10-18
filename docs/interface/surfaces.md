@@ -1206,29 +1206,38 @@ was the one place a person could not see which key stops a run. An attached
 child's frame keeps the single closing rail below the wide layout, with the
 way back on the top rail.
 
-The foot row is a ladder, floor first, and offers leave from the right as the
-width runs out. Nothing on it is cut in half against the corner
+The foot row is three chords, the ones a person cannot guess, and the key
+list behind `[ctrl+]]` holds the rest
+([the register](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+Nothing on it is cut in half against the corner
 ([fold, never hide](principles.md#fold-never-hide)): a rung that does not fit
-is not drawn, and the rungs above it keep their place. Idle, the ladder reads
+is not drawn, and the rungs above it keep their place. Idle, the row reads
 
-`[enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue · [ctrl+c] ×2 quit`
+`[enter] send · [shift+tab] mode · [ctrl+]] keys`
 
-and it sheds in the order the quit, the queue, the commands and the mode, so
-that the floor every width keeps is `[enter] send · [ctrl+]] keys`: how a
-message leaves and the door to every other key. While a turn works the
-ladder leads with the two keys a person reaches for with a turn running:
+how a message leaves, the mode a person has to be told exists, and the door to
+every other key. A conversation has no mode, so its row is `[enter] send ·
+[ctrl+]] keys`. The commands (`/` typed at the prompt opens them, and
+`[ctrl+/]` does too), the queue (`[ctrl+n]`) and the quit are one chord away
+in the key list, and a person who has found them does not need the row to say
+so again. The quit is stated where it is pressed: the first `[ctrl+c]` at an
+empty draft arms it, and the row says `[ctrl+c] again quits` for the whole of
+the window. While a turn works the row leads with the two keys a person reaches
+for with a turn running:
 
-`[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue`
+`[ctrl+p] hold · [ctrl+c] stop the run · [ctrl+]] keys`
 
-and it sheds the queue, the keys, the commands, the mode and the steer, so
-that the working floor is `[ctrl+p] hold · [ctrl+c] stop the run`. The working
-stop does not say `×2`: the first press stops the run, and the second, if it
-comes, is a new first press that quits, which only the idle offer says
-(quit is one rule, stated below). The quit is the last rung idle
-because it is the offer a person who has found the rest can do without; it is
-named on every row wide enough to hold the whole ladder, since a key whose
-first press is silent has to be told before it is pressed. With text in the
-draft the same slot says `[ctrl+c] clear`.
+so that the floor at sixty columns, where the key list is the rung that
+leaves, is `[ctrl+p] hold · [ctrl+c] stop the run`. The steer (`[enter]` adds
+to this turn), the agent manager and the commands that run mid-turn are in the
+key list. The working stop does not say `×2`: the first press stops the run,
+and the second, if it comes, is a new first press that quits (quit is one
+rule, stated below).
+
+While a take-over screen is open the frame's own row names the screen and
+nothing else (`ps`, `context`, `drafting a profile`): the screen's foot already
+ends `[esc] back`, and a second way out on the row under it was one esc
+drawn twice. The screen's foot is the one place the frame names the way out.
 
 The two rows that belong to a waiting decision are on the same ladder. While
 a card or a child's request waits on the person with the draft still holding
@@ -1636,7 +1645,7 @@ first press stops the run and the foot row says `[ctrl+c] stop the run`;
 what the turn already did is kept. Idle with a draft it records the draft in the
 history the up arrow walks and clears it (`[ctrl+c] clear`); esc never clears
 a draft. Idle with an empty draft the first press arms and a
-second press of the same chord inside the window quits (`[ctrl+c] ×2 quit`);
+second press of the same chord inside the window quits (the row says `[ctrl+c] again quits` while the window is open);
 a window that expires costs nothing and says nothing. Cancel first, then
 quit: a stop or a clear is a first step and opens no window, so the next
 press after one is a new first press. The window is keyed by the chord that
@@ -3315,16 +3324,14 @@ has the first. It reads, then asks: the answer is a card, and nothing is
 written until its yes.
 
 Under the offers is one key row, led by the way in that is not a key — `or
-just type what you want` — and then choosing, starting and the key list. It
-is one row of at most six, like every key hint: the pointer's own chords,
-which reach an offer too, are on the key list rather than doubled into the
-row. The draft holds the keyboard here, so the list is the draft's chord and
-not a bare key. The navigation row under it is a row of its own.
+just type what you want` — and then choosing and starting. It is the screen's
+only hint line: the frame's foot under it already offers `[ctrl+]] keys`, and
+the scroll, the select-rows handover, the commands and the mouse chord that a
+second line here used to repeat are in that list. The pointer's own chords,
+which reach an offer too, are there rather than doubled into the row.
 
 Typing anything dismisses the offers and their key row and keeps the facts,
-because the input owns every ordinary key the moment there is a draft. The
-navigation row stays, since its keys work with a half-written draft in the
-box.
+because the input owns every ordinary key the moment there is a draft.
 
 The machine's first session says three things above the key row, in dim, one
 line each: enter sends what you type; esc backs out of anything and never

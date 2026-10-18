@@ -94,7 +94,7 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // the wide rung is a 110-column terminal
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "context ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "[enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue · [ctrl+c] ×2 quit", "idle"} {
+	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "context ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "[enter] send · [shift+tab] mode · [ctrl+]] keys", "idle"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("wide frame missing %q:\n%s", want, view)
 		}
@@ -141,9 +141,6 @@ func TestFrame_IdleHintsFitEveryRailTheyAreDrawnOn(t *testing.T) {
 			keys.Bracket(keys.Draft.Mode) + " mode",
 			keys.Bracket(keys.Draft.KeyList) + " keys",
 		}
-		if terminal >= 130 {
-			want = append(want, keys.Bracket(keys.Draft.Cancel)+" ×2 quit")
-		}
 		for _, w := range want {
 			if !strings.Contains(rail, w) {
 				t.Fatalf("at %d columns the rail dropped %q:\n%s", terminal, w, rail)
@@ -160,10 +157,7 @@ func TestFrame_TheWidestIdleRailOffersEverythingItHas(t *testing.T) {
 	for _, want := range []string{
 		keys.Bracket(keys.Draft.Send) + " send",
 		keys.Bracket(keys.Draft.Mode) + " mode",
-		keys.Bracket(keys.Draft.Palette) + " commands",
 		keys.Bracket(keys.Draft.KeyList) + " keys",
-		keys.Bracket(keys.Draft.Queue) + " queue",
-		keys.Bracket(keys.Draft.Cancel) + " ×2 quit",
 	} {
 		if !strings.Contains(rail, want) {
 			t.Fatalf("the widest rail should offer %q, got %q", want, rail)
@@ -172,7 +166,7 @@ func TestFrame_TheWidestIdleRailOffersEverythingItHas(t *testing.T) {
 	// What the row does not carry is in the key list, not on the row: the
 	// editor is a rarity, and the attach chord is offered above the prompt
 	// only while the clipboard has something to attach.
-	for _, gone := range []string{"editor", "attach", "newline"} {
+	for _, gone := range []string{"editor", "attach", "newline", "commands", "queue", "quit"} {
 		if strings.Contains(rail, gone) {
 			t.Fatalf("the widest rail should not carry %q, got %q", gone, rail)
 		}
@@ -314,8 +308,8 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "waiting…") {
 		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
 	}
-	if !strings.Contains(view, "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn") {
-		t.Fatalf("working frame missing the hold, interrupt and steering hints:\n%s", view)
+	if !strings.Contains(view, "[ctrl+p] hold · [ctrl+c] stop the run · [ctrl+]] keys") {
+		t.Fatalf("working frame missing the hold, interrupt and key list hints:\n%s", view)
 	}
 	if strings.Contains(view, "[enter] send") {
 		t.Fatalf("working frame should swap out the idle hints:\n%s", view)

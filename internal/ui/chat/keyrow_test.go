@@ -161,9 +161,6 @@ func TestFrameRailsBracketEveryKeyTheyOffer(t *testing.T) {
 // notation, so the two readings of one chord cannot look like two keys.
 func TestFrameRailsStateTheSecondPressBeforeTheFirst(t *testing.T) {
 	m := frameModel(t, 200, 40)
-	if want := keys.Bracket(keys.Draft.Cancel) + " ×2 quit"; !strings.Contains(stripANSI(m.frameHints(200)), want) {
-		t.Errorf("the idle rail should offer %q, got %q", want, stripANSI(m.frameHints(200)))
-	}
 	m.state = stateStreaming
 	if want := keys.Bracket(keys.Draft.Cancel) + " stop the run"; !strings.Contains(stripANSI(m.frameHints(200)), want) {
 		t.Errorf("the working rail should offer %q, got %q", want, stripANSI(m.frameHints(200)))

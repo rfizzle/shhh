@@ -29,9 +29,7 @@ Some things worth doing first:
     one approval, then it reports back
 
 or just type what you want
-[↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows
-[ctrl+/] commands · [ctrl+x] mouse on/off
+[↑↓] choose · [enter] start
 
 · a branch and a ready item · each written over by the offer that names it
 ▄▀▀▀ █    █    █
@@ -52,9 +50,7 @@ Some things worth doing first:
     one approval, then it reports back
 
 or just type what you want
-[↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows
-[ctrl+/] commands · [ctrl+x] mouse on/off
+[↑↓] choose · [enter] start
 
 ── ansi ────────────────────────────────────────────────────
 · a clean checkout · the two tours written over
@@ -76,9 +72,7 @@ or just type what you want
     ␛[38;5;245mone approval, then it reports back␛[m
 
 ␛[38;5;245mor just type what you want␛[m
-␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m
-␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
 
 · a branch and a ready item · each written over by the offer that names it
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -99,6 +93,4 @@ or just type what you want
     ␛[38;5;245mone approval, then it reports back␛[m
 
 ␛[38;5;245mor just type what you want␛[m
-␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m
-␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m
