@@ -269,7 +269,7 @@ func (m Model) renderContextHint() []hintSeg {
 func (m Model) renderReviewHint() []hintSeg {
 	label := segAs(keys.Review.Back, "back")
 	if m.reviewReturn == stateFocus {
-		label = segAs(keys.Review.Back, "back to the transcript")
+		label = segAs(keys.Review.Back, components.EscBack)
 	}
 	return paneHint("review", label)
 }

@@ -524,7 +524,7 @@ func (v *ReviewView) hunkHeader(h diff.Hunk, i, width int) string {
 func (v *ReviewView) footerRows(width int) []string {
 	return packOffers([]TurnKey{
 		keyOffer(keys.Review.MoveHunk),
-		keyOfferAs(keys.Review.Back, "leave, change nothing"),
+		keyOfferAs(keys.Review.Back, EscBack),
 	}, width)
 }
 

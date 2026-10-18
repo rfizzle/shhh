@@ -184,7 +184,7 @@ func (p *profileBrief) briefHint() []KeyOffer {
 	if len(p.starts) > 0 {
 		segments = append(segments, keyOfferAs(keys.Profile.Move, "the field or a starting point"))
 	}
-	return append(segments, keyOfferAs(keys.Profile.Back, "nothing is drafted"))
+	return append(segments, keyOfferAs(keys.Profile.Back, EscBack+escClause+"nothing is drafted"))
 }
 
 // questionRows is one question with the answers already given above it. The
@@ -217,9 +217,9 @@ func (p *profileBrief) questionRows(width int) []string {
 // third are a cancelled drafting and a corrected answer.
 func (p *profileBrief) backWords() string {
 	if len(p.asked) == 0 {
-		return "nothing is drafted"
+		return EscBack + escClause + "nothing is drafted"
 	}
-	return "back to the last answer"
+	return EscBack
 }
 
 // askRows is the step's question, wrapped by the caller and drawn as the one

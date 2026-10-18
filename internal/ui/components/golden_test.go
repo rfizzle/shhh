@@ -25,7 +25,15 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/raster"
 )
 
-func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
+func TestMain(m *testing.M) {
+	verdict := AuditEscGlosses()
+	code := golden.Run(m)
+	if bad := verdict(); len(bad) > 0 && code == 0 {
+		fmt.Fprintf(os.Stderr, "esc glosses off the closed list (docs/interface/principles.md#esc-is-always-the-safe-answer): %q\n", bad)
+		code = 1
+	}
+	os.Exit(code)
+}
 
 // reviewTurnOffer is what a selected changed-files row leads with: enter
 // opens the turn's review, and it is spelled the same from either door.
@@ -2336,7 +2344,7 @@ func TestGolden_PlanCard(t *testing.T) {
 					{Key: "[1–5]", Label: "jump"}, keyOfferAs(keys.Plan.Save, "save"),
 					keyOfferAs(keys.Wait.NewSession, NewSessionCarryPlan()),
 					keyOfferAs(keys.Plan.Implement, "implement in a new session — accept edits mode"),
-					keyOfferAs(keys.Select.Cancel, "keep planning")},
+					keyOfferAs(keys.Select.Cancel, EscWaits)},
 			}
 			mut(&c)
 			return c.View(width)

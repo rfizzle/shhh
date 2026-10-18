@@ -111,8 +111,7 @@ func screenField(text string) RailSegment {
 // The header carries the screen's name and state and nothing else. The keys
 // are the foot's (keyFooter): a screen that offered them in the header and
 // again under its body said the same thing twice, in two places a reader has
-// to look. The one exception is the editor pane, which is a panel and not a
-// take-over screen and has no foot to move them to.
+// to look.
 //
 // The left half is a rail, so the two ways these headers used to differ are
 // one thing now — a drop rank. A field that must survive its neighbours is
@@ -130,26 +129,19 @@ type screenHeader struct {
 	// the eye already goes for the state of a surface, and it is what the row
 	// gives up first.
 	tally string
-	// keys is a run of keys the row ends with, unpainted, for the editor pane
-	// alone (see above). A take-over screen leaves it empty.
-	keys string
 }
 
 // row renders the header at the given width.
 func (h screenHeader) row(width int) string {
-	right := sty.dim.Render(h.keys)
+	right := ""
 	// The tally is measured rather than compared to "": it arrives painted,
 	// and a style renders a pair of escapes around an empty string, so a
 	// screen with nothing to count would otherwise draw the separator anyway.
 	if lipgloss.Width(h.tally) > 0 {
-		tallied := h.tally
-		if h.keys != "" {
-			tallied += sty.dim.Render(" · " + h.keys)
-		}
 		// The tally never costs the title its place: a terminal too narrow
 		// for both loses the tally.
-		if lipgloss.Width(tallied) <= width && (h.keys != "" || width-lipgloss.Width(tallied)-2 >= h.titleWidth()) {
-			right = tallied
+		if lipgloss.Width(h.tally) <= width && width-lipgloss.Width(h.tally)-2 >= h.titleWidth() {
+			right = h.tally
 		}
 	}
 	if lipgloss.Width(right) == 0 {
@@ -158,13 +150,13 @@ func (h screenHeader) row(width int) string {
 	// Two columns of gap, so the two halves never read as one run.
 	room := width - lipgloss.Width(right) - 2
 	if room < 1 {
-		return h.leftOnly(right, width)
+		return h.leftOnly(width)
 	}
 	left := FitRail(h.left, "", room)
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + right
 	}
-	return h.leftOnly(right, width)
+	return h.leftOnly(width)
 }
 
 // titleWidth is the width of the header's first field, the surface's name.
@@ -175,13 +167,10 @@ func (h screenHeader) titleWidth() int {
 	return lipgloss.Width(h.left[0].Text)
 }
 
-// leftOnly is the row when the two halves will not share it: the keys of the
-// editor pane, which a terminal must never lose, or the title of a screen.
-func (h screenHeader) leftOnly(right string, width int) string {
-	if h.keys == "" {
-		return FitRail(h.left, "", width)
-	}
-	return Clip(right, width)
+// leftOnly is the row when the two halves will not share it: the title of a
+// screen, which a terminal must never lose.
+func (h screenHeader) leftOnly(width int) string {
+	return FitRail(h.left, "", width)
 }
 
 // screenChrome is the frame a take-over screen is drawn in: the header and

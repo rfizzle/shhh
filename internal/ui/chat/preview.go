@@ -300,15 +300,15 @@ func (m *Model) closePreview() overlayAction {
 func (m Model) renderPreviewHint() []hintSeg {
 	back := seg(keys.Preview.Back)
 	if m.staged.back {
-		back = segAs(keys.Preview.Back, "back to the strip")
+		back = segAs(keys.Preview.Back, components.EscBack)
 	}
 	// A picture that has been sent is no longer staged, so there is nothing
 	// for the card to drop and no drop to offer; the way out says which of
 	// the two places it opened from it goes back to.
 	if !m.previewDrops() {
-		back = segAs(keys.Preview.Back, "back to the draft")
+		back = segAs(keys.Preview.Back, components.EscBack)
 		if m.staged.row {
-			back = segAs(keys.Preview.Back, "back to reading")
+			back = segAs(keys.Preview.Back, components.EscBack)
 		}
 		return []hintSeg{back}
 	}
@@ -447,9 +447,9 @@ func (m *Model) closePasteReader() {
 // every other pane overlay's hint does. Opened from the strip, the way out
 // says it goes back there, since that is where the reader came from.
 func (m Model) renderPasteReaderHint() []hintSeg {
-	leave := segAs(keys.Paste.Back, "back to the draft, cursor where you left it")
+	leave := segAs(keys.Paste.Back, components.EscBack)
 	if m.staged.back {
-		leave = segAs(keys.Paste.Back, "back to the strip")
+		leave = segAs(keys.Paste.Back, components.EscBack)
 	}
 	// A paste reached by its handle after the send is no longer staged, so
 	// there is nothing for the drop to take.

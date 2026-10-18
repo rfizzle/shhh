@@ -22,7 +22,7 @@ SESSION
 ↓ 10 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write global · [?] keys · [esc] leave
+[shift+tab] write global · [?] keys · [esc] back
 
 · global file · [shift+tab] offers project
 shhh config · global file · ~/.config/shhh/config.toml
@@ -36,7 +36,7 @@ SESSION
 ↓ 10 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write project · [?] keys · [esc] leave
+[shift+tab] write project · [?] keys · [esc] back
 
 · global file older than the table · one word beside the path, outliving it
 shhh config · global file · outdated
@@ -50,7 +50,7 @@ SESSION
 ↓ 10 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write project · [?] keys · [esc] leave
+[shift+tab] write project · [?] keys · [esc] back
 
 · a key the checkout may not decide · refused naming [shift+tab]
 shhh config · project file · .shhh/config.toml
@@ -63,7 +63,7 @@ SESSION
 ↓ 11 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write global · [?] keys · [esc] leave
+[shift+tab] write global · [?] keys · [esc] back
 config key provider.api_key is not read from the project fi…
 
 · a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it
@@ -82,7 +82,7 @@ MODEL
 ↓ 7 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write global · [?] keys · [esc] leave
+[shift+tab] write global · [?] keys · [esc] back
 
 · [?] · the switch is in the register
 shhh config · project file · .shhh/config.toml
@@ -103,9 +103,9 @@ shhh config · project file · .shhh/config.toml
          .shhh/config.toml
 [shift+tab] switch the write between the project file and
             the global one
-[esc] clear the filter, then close it; leave the picker, or
-      leave the screen writing nothing
-[esc] leave the screen writing nothing
+[esc] clear the filter, then close it
+[esc] back — leaves the picker, or the screen, writing
+      nothing
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -143,7 +143,7 @@ $  a shell command
 ␛[38;5;245m↓ 10 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · global file · [shift+tab] offers project
 ␛[1;97mshhh config␛[m␛[38;5;245m · global file␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m
@@ -157,7 +157,7 @@ $  a shell command
 ␛[38;5;245m↓ 10 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write project␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write project␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · global file older than the table · one word beside the path, outliving it
 ␛[1;97mshhh config␛[m␛[38;5;245m · global file␛[m␛[91m · outdated␛[m
@@ -171,7 +171,7 @@ $  a shell command
 ␛[38;5;245m↓ 10 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write project␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write project␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a key the checkout may not decide · refused naming [shift+tab]
 ␛[1;97mshhh config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m
@@ -184,7 +184,7 @@ $  a shell command
 ␛[38;5;245m↓ 11 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 ␛[38;5;245mconfig key provider.api_key is not read from the project fi…␛[m
 
 · a disabled row under the cursor · dimmed, `global only`, the reason in the panel under it
@@ -203,7 +203,7 @@ $  a shell command
 ␛[38;5;245m↓ 7 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · [?] · the switch is in the register
 ␛[1;97mshhh config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m
@@ -224,9 +224,9 @@ $  a shell command
          ␛[38;5;103m␛[m␛[38;5;245m.shhh/config.toml␛[m
 ␛[38;5;103m[shift+tab]␛[m␛[38;5;245m switch the write between the project file and␛[m
             ␛[38;5;103m␛[m␛[38;5;245mthe global one␛[m
-␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it; leave the picker, or␛[m
-      ␛[92m␛[m␛[38;5;245mleave the screen writing nothing␛[m
-␛[92m[esc]␛[m␛[38;5;245m leave the screen writing nothing␛[m
+␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back — leaves the picker, or the screen, writing␛[m
+      ␛[92m␛[m␛[38;5;245mnothing␛[m
 
 ␛[38;5;245mglyphs␛[m
 ␛[38;5;245m⚙␛[m  ␛[38;5;245ma read: a file, a search, a listing␛[m

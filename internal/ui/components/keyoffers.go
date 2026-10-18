@@ -100,17 +100,15 @@ const (
 // enter applies the boxes, so what its esc leaves is none of them.
 const (
 	takeNone  = EscBack
-	applyNone = "apply none"
+	applyNone = EscBack
 )
 
-// The two phrases a take-over screen states its way out in. Which of them a
-// screen uses is a fact about where the reader was when they opened it and
-// nothing else, and there is no third: leaving a screen that changes nothing
-// is one act, and an act worded three ways is three acts to read
-// (docs/interface/surfaces.md#the-supporting-screens). A screen a session
-// opened says it in the word its header already does.
+// The phrase a take-over screen states its way out in. Leaving a screen that
+// changes nothing is one act and has one word, wherever the reader was when
+// they opened it (docs/interface/surfaces.md#the-supporting-screens);
+// backToShell is kept as the name a screen opened from the shell reaches for.
 const (
-	backToShell  = "back to the shell"
+	backToShell  = EscBack
 	backToPrompt = EscBack
 )
 

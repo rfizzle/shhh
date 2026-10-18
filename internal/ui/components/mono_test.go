@@ -274,7 +274,7 @@ func monoFixtures() []monoSurface {
 			Summary: []PlanFact{{Text: "1 file touched"}, {Text: "reversible", Tone: ToneSafe}},
 			Options: []SelectOption{{Label: "Run the whole plan — accept-edits mode"}},
 			HintKeys: []KeyOffer{{Key: "[enter]", Label: "select"}, keyOfferAs(keys.Plan.Save, "save"),
-				keyOfferAs(keys.Select.Cancel, "keep planning")},
+				keyOfferAs(keys.Select.Cancel, EscWaits)},
 		}
 		mut(&c)
 		return c.View(w)

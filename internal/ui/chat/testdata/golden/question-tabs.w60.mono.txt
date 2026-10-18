@@ -46,7 +46,7 @@ Should the migration be reversible?  [y/N]
 ╭─ the answers ────────────────────────────────────────╮
 │ send 2 answers · 1 unanswered, sent as skipped       │
 │ [enter] send · [←→] the next question                │
-│ [esc] answer in your own words                       │
+│ [esc] keeps waiting — nothing is sent                │
 ╰──────────────────────────────────────────────────────╯
 
 · four questions · the most one call may carry, which is where the strip is tightest
@@ -99,7 +99,7 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mthe answers ␛[m␛[38;5;244m────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m send 2 answers · 1 unanswered, sent as skipped       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m send␛[m␛[38;5;244m · ␛[m␛[38;5;254m[←→]␛[m␛[38;5;244m the next question␛[m                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m answer in your own words␛[m                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m keeps waiting — nothing is sent␛[m                ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest

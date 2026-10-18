@@ -19,7 +19,7 @@ shhh snippets · 3 snippets
   prune      drop every merged branch    tue │ 
                                              │   ▎$ run     du -ah . | sort -rh | head -10
 
-[enter] run it · [e] rename · [d] delete · [?] keys · [esc] back to the shell     nothing is run until [enter]
+[enter] run it · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back     nothing is run until [enter]
 
 ── ansi ────────────────────────────────────────────────────
 · the list, the pointer on the second snippet and its command beside it
@@ -31,4 +31,4 @@ shhh snippets · 3 snippets
   ␛[38;5;252mprune␛[m      ␛[38;5;245mdrop every merged branch␛[m    ␛[38;5;252mtue␛[m␛[38;5;245m │ ␛[m
                                             ␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mdu -ah . | sort -rh | head -10␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;245m run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m rename␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m     ␛[38;5;245mnothing is run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m rename␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m     ␛[38;5;245mnothing is run until [enter]␛[m

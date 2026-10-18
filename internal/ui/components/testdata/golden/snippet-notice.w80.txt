@@ -24,7 +24,7 @@ ports                                                                     4m ago
   ▎$ run     lsof -nP -iTCP -sTCP:LISTEN
 
 [↑↓/jk] move · [enter] run it · [c] copy · [e] rename · [d] delete · [/] filter
-[?] keys · [esc] back to the shell
+[?] keys · [esc] back
 Copied ports to the clipboard.
 
 ── ansi ────────────────────────────────────────────────────
@@ -42,5 +42,5 @@ Copied ports to the clipboard.
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mlsof -nP -iTCP -sTCP:LISTEN␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m rename␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m
-␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 ␛[38;5;245mCopied ports to the clipboard.␛[m

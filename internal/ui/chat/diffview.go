@@ -209,7 +209,7 @@ func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
 func (m Model) renderDiffFullHint() []hintSeg {
 	label := seg(keys.Diff.Back)
 	if m.diffReturn == stateConfirmRun {
-		label = segAs(keys.Diff.Back, "back to the approval prompt")
+		label = segAs(keys.Diff.Back, components.EscWaits)
 	}
 	return []hintSeg{label}
 }

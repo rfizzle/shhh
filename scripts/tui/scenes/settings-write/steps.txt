@@ -71,9 +71,9 @@ keys Escape
 sleep 0.3
 keys Escape
 sleep 0.3
-snap 10-live-staged "1 change unwritten" "[esc] keep on this session, after asking"
+snap 10-live-staged "1 change unwritten" "[esc] back — asks whether to write them"
 keys Escape
-snap 11-leave-question "Leave 1 change on this session only?" "[y] this session only" "[ctrl+s] write first" "[esc] stay"
+snap 11-leave-question "Leave 1 change on this session only?" "[y] this session only" "[ctrl+s] write first" "[esc] back"
 keys y
 sleep 0.3
 keys "/config" Enter

@@ -156,7 +156,7 @@ func (m Model) personaPicker(d persona.Draft) (*personaPick, *components.MultiSe
 	ms.Checked, ms.Fixed = checked, fixed
 	ms.Columns, ms.AllowNone = true, true
 	ms.Tone = components.CardDecision
-	ms.TakeVerb, ms.CancelLabel = "select", "cancel"
+	ms.TakeVerb, ms.CancelLabel = "select", components.EscBack
 	for i, opt := range opts {
 		if !opt.Header {
 			ms.Focus = i

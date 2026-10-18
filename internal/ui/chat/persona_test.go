@@ -1109,7 +1109,7 @@ func TestPersona_AnOpenedProfileIsEditedLikeADraft(t *testing.T) {
 		"critic", "/repo/.shhh/agents/critic.toml · project", "◆ older shape", "[m] move it into sections",
 		"Purpose · as the file wrote it", "Scope · not in the file", "argue against it: what it breaks",
 		"reasoning xhigh", "read-only", "30 rounds", "reviews", "read_file, search",
-		"Replace its file", "See what changes", "[esc] close, nothing written",
+		"Replace its file", "See what changes", "[esc] back — nothing is written",
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the opened profile lacks %q:\n%s", want, view)

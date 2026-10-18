@@ -310,7 +310,7 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 	if s.rename != nil {
 		return []KeyOffer{
 			keyOfferAs(keys.Screen.Take, "rename it"),
-			keyOfferAs(keys.Screen.Quit, "keep the name"),
+			keyOfferAs(keys.Screen.Quit, EscBack+escClause+"keeps the name"),
 		}
 	}
 	move := keyOffer(keys.Screen.Move)
@@ -347,7 +347,8 @@ func (s *SnippetScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Delete, "delete it, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what the command is"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the rename row"),
-		keyOfferAs(keys.Screen.Quit, "keep the name; clear the filter, then close it"),
+		keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"),
+		keyOfferAs(keys.Screen.Quit, EscBack+escClause+"keeps the name, in the rename row"),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }

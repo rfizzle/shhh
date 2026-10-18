@@ -65,7 +65,7 @@ func (m Model) readingListOffers() []components.KeyOffer {
 	} else if words, ok := m.focusedCardWords(); ok {
 		segs = append(segs, segAs(keys.Reading.Expand, words))
 		if m.focusedRowOpen() {
-			segs = append(segs, segAs(keys.Reading.Back, cardCloseWords))
+			segs = append(segs, segAs(keys.Reading.Back, collapseWords))
 		}
 	}
 	return append(segs, m.readingRowOffers()...)
@@ -134,11 +134,7 @@ func (m Model) keyListLines(width, height int) []string {
 // way back, in the spelling that means it on every surface, to the surface
 // the list was opened over.
 func (m Model) renderKeyListHint() []hintSeg {
-	back := "back"
-	if m.keyList != nil && m.keyList.screen.Surface != "" {
-		back = "back to " + m.keyList.screen.Surface
-	}
-	return paneHint("keys", segAs(keys.Select.Cancel, back))
+	return paneHint("keys", segAs(keys.Select.Cancel, components.EscBack))
 }
 
 // The register rows a card's `?` lists. Each answers false while a field on

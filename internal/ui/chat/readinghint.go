@@ -611,7 +611,7 @@ func (m Model) readingRowLines(width int, budget int) []string {
 	for _, o := range offers {
 		segs = append(segs, hintSeg{Key: o.Key, Label: o.Label, Safe: o.Safe})
 	}
-	segs = append(segs, segAs(keys.Select.Cancel, "nothing"))
+	segs = append(segs, segAs(keys.Select.Cancel, components.EscBack))
 
 	rail := sty.Hint.MutationRail.Render("▎")
 	lead := rail + sty.Hint.Dim.Render("this row · ")

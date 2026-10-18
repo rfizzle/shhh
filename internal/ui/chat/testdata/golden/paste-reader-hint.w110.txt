@@ -13,10 +13,10 @@
 · the paste reader · the way back to the draft
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~4 tokens                                     
-[↑↓/jk] move · [d] delete · [esc] back to the draft, cursor where you left it
+[↑↓/jk] move · [d] delete · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · the paste reader · the way back to the draft
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m␛[38;5;246m · ␛[m␛[92mcontext 32%␛[m ␛[92m▰▰␛[m␛[38;5;245m▱▱▱▱▱▱␛[m␛[38;5;246m · ␛[m␛[38;5;246m$0.51␛[m␛[38;5;246m · ␛[m␛[38;5;246mPaste#1 will cost ~4 tokens␛[m                                     
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft, cursor where you left it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

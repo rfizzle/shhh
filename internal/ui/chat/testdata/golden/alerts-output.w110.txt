@@ -40,7 +40,7 @@ output · [↑↓/jk] move · [pgup] page up · [pgdn] page down · [esc] back
 · the panel it leaves · the way back to the alerts
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 ⏸ manual · context 20% ▰▱▱▱▱▱▱▱ · $0.51                                                                   
-[esc] back to the alerts
+[esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · the reduced run's output, whole
@@ -73,4 +73,4 @@ output · [↑↓/jk] move · [pgup] page up · [pgdn] page down · [esc] back
 · the panel it leaves · the way back to the alerts
 ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m␛[38;5;246m · ␛[m␛[92mcontext 20%␛[m ␛[92m▰␛[m␛[38;5;245m▱▱▱▱▱▱▱␛[m␛[38;5;246m · ␛[m␛[38;5;246m$0.51␛[m                                                                   
-␛[92m[esc]␛[m␛[38;5;245m back to the alerts␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m

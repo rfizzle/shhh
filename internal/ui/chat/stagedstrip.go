@@ -276,7 +276,7 @@ func (m Model) stripKeyLine(width int) string {
 	}
 	// The way back says where it goes, which is the draft the strip sits
 	// under; the register's own word is what a narrow bar keeps.
-	segs[len(segs)-1] = segAs(keys.Staged.Back, "back to the draft")
+	segs[len(segs)-1] = segAs(keys.Staged.Back, components.EscBack)
 	full := joinSegs(segs)
 	pos := fmt.Sprintf("chip %d of %d", m.pickedChip()+1, len(m.attachments))
 	if gap := width - lipgloss.Width(full) - lipgloss.Width(pos); gap >= 2 {

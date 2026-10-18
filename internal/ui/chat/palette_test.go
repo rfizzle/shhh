@@ -267,8 +267,8 @@ func TestPalette_EnterOnAFileWritesItsPath(t *testing.T) {
 func TestPalette_EscSaysItClosesIt(t *testing.T) {
 	m := openPaletteWith(t, paletteModel(t), "mo")
 	view := ansi.Strip(m.picker.card.View(110))
-	if !strings.Contains(view, "[esc] close it") {
-		t.Fatalf("the palette should offer `[esc] close it`:\n%s", view)
+	if !strings.Contains(view, "[esc] back") {
+		t.Fatalf("the palette should offer `[esc] back`:\n%s", view)
 	}
 	if strings.Count(view, "[esc]") != 1 {
 		t.Fatalf("esc should be offered once:\n%s", view)

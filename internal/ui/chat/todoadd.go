@@ -518,7 +518,7 @@ func (d *todoDraft) hint() []components.KeyOffer {
 	if d.from >= 0 {
 		return append(segs,
 			components.OfferAs(keys.Select.Take, "keep it"),
-			components.OfferAs(keys.Select.Cancel, "leave it"))
+			components.OfferAs(keys.Select.Cancel, components.EscBack+" — the row stays as it was"))
 	}
 	return append(segs,
 		components.OfferAs(keys.Backlog.Edit, "the editor"),

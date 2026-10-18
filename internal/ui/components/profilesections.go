@@ -217,12 +217,12 @@ func (p *profileSections) sectionHint(idle, migratable bool, wayOut string) []Ke
 			}
 			segments = append(segments, keyOfferAs(keys.Profile.RefineAll, again))
 		}
-		return append(segments, keyOfferAs(keys.Profile.Back, "leave it as it is"))
+		return append(segments, keyOfferAs(keys.Profile.Back, EscBack+escClause+"it is left as it is"))
 	}
 	if p.refining {
 		return []KeyOffer{
 			keyOfferAs(keys.Profile.Refine, "refine it"),
-			keyOfferAs(keys.Profile.Back, "leave it as it is"),
+			keyOfferAs(keys.Profile.Back, EscBack+escClause+"it is left as it is"),
 		}
 	}
 	if idle {

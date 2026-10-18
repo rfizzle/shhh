@@ -39,7 +39,7 @@ context; Restrictions, which you edited, is kept
 
 [enter] redraft every section
 [R] again to include the sections you edited
-[esc] leave it as it is
+[esc] back — it is left as it is
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents            │
@@ -161,7 +161,7 @@ test-writer — adds table-driven tests for a package and run…
 
 ␛[38;5;254m[enter]␛[m␛[38;5;244m redraft every section␛[m
 ␛[38;5;254m[R]␛[m␛[38;5;244m again to include the sections you edited␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m leave it as it is␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — it is left as it is␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m            ␛[38;5;244m│␛[m

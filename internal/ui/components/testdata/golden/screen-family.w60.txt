@@ -21,7 +21,7 @@ shhh doctor · 10 checks                                 1.4s
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report · [r] retry · [?] keys
-[esc] back to the shell
+[esc] back
 
 · metrics · the spend rides with the one key the screen has
 shhh metrics                                          $18.42
@@ -33,7 +33,7 @@ claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms
 gemini-3-flash           12    88k     7k  <$0.01  310ms
 house-model               9    42k     3k       —   1.2s
 
-[?] keys · [esc] back to the shell
+[?] keys · [esc] back
 
 · config · the file, and what is standing against it, over the flows section
 /config · ~/.config/shhh/config.toml · 2 changes unwritten
@@ -46,7 +46,7 @@ FLOWS
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
 [ctrl+s] write 2 changes · [?] keys
-[esc] discard, after asking
+[esc] back — asks before it discards them
 nothing is written until [ctrl+s]
 
 · history · the subject, and a foot key row that states the way out
@@ -61,7 +61,7 @@ shhh history · 6 entries · 2 run
 
 [↑↓/jk] move · [enter] re-run it · [c] copy
 [ctrl+s] write it as a snippet · [d] delete · [/] filter
-[?] keys · [esc] back to the shell
+[?] keys · [esc] back
 
 · rate · the same header over one card
 shhh rate · 1 of 5
@@ -102,7 +102,7 @@ What should this agent do?
   ┃ what it is for                                          
 
 [enter] draft from what you typed
-[esc] nothing is drafted
+[esc] back — nothing is drafted
 
 · snippets · the list, the command it would run, and the promise that it will not
 shhh snippets · 3 snippets
@@ -113,7 +113,7 @@ shhh snippets · 3 snippets
   prune      drop every merged branch                    tue
 
 [↑↓/jk] move · [enter] run it · [c] copy · [e] rename
-[d] delete · [/] filter · [?] keys · [esc] back to the shell
+[d] delete · [/] filter · [?] keys · [esc] back
 
 · the saved-chat browser · a row another session holds says so in a word
 shhh chats · 3 conversations
@@ -124,7 +124,7 @@ shhh chats · 3 conversations
   tuesday      naming the report pages · 31 turns · Sep 3 1…
 
 [↑↓/jk] move · [e] rename · [d] delete · [/] filter
-[?] keys · [esc] back to the shell
+[?] keys · [esc] back
 
 · sources · the list is grouped under the hosts it read
 /sources · 2 pages · 1 host · 1 search
@@ -251,7 +251,7 @@ linear                                                 error
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;245m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;245m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 not checked␛[m
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy the report␛[m␛[38;5;245m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;245m retry␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
-␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · metrics · the spend rides with the one key the screen has
 ␛[1;97mshhh metrics␛[m                                          ␛[38;5;252m$18.42␛[m
@@ -263,7 +263,7 @@ linear                                                 error
 ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms␛[m
 ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s␛[m
 
-␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · config · the file, and what is standing against it, over the flows section
 ␛[1;97m/config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m
@@ -276,7 +276,7 @@ linear                                                 error
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
 ␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
-␛[92m[esc]␛[m␛[38;5;245m discard, after asking␛[m
+␛[92m[esc]␛[m␛[38;5;245m back — asks before it discards them␛[m
 ␛[38;5;245mnothing is written until [ctrl+s]␛[m
 
 · history · the subject, and a foot key row that states the way out
@@ -291,7 +291,7 @@ linear                                                 error
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m re-run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m
 ␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write it as a snippet␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m
-␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · rate · the same header over one card
 ␛[1;97mshhh rate␛[m␛[38;5;245m · 1 of 5␛[m
@@ -332,7 +332,7 @@ linear                                                 error
   ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;61mw␛[m␛[m␛[38;5;252m␛[38;5;245mhat it is for␛[m␛[m␛[38;5;252m                                          ␛[m
 
 ␛[38;5;103m[enter]␛[m␛[38;5;245m draft from what you typed␛[m
-␛[92m[esc]␛[m␛[38;5;245m nothing is drafted␛[m
+␛[92m[esc]␛[m␛[38;5;245m back — nothing is drafted␛[m
 
 · snippets · the list, the command it would run, and the promise that it will not
 ␛[1;97mshhh snippets␛[m␛[38;5;245m · 3 snippets␛[m
@@ -343,7 +343,7 @@ linear                                                 error
   ␛[38;5;252mprune␛[m      ␛[38;5;245mdrop every merged branch␛[m                    ␛[38;5;252mtue␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m rename␛[m
-␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
+␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · the saved-chat browser · a row another session holds says so in a word
 ␛[1;97mshhh chats␛[m␛[38;5;245m · 3 conversations␛[m
@@ -354,7 +354,7 @@ linear                                                 error
   ␛[38;5;252mtuesday␛[m      ␛[38;5;245mnaming the report pages · 31 turns · Sep 3 1…␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m rename␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m
-␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · sources · the list is grouped under the hosts it read
 ␛[1;97m/sources␛[m␛[38;5;245m · 2 pages · 1 host · 1 search␛[m

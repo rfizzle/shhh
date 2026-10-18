@@ -1048,7 +1048,7 @@ func TestQuestion_TheFullViewReadsARowAndAnswersNothing(t *testing.T) {
 		t.Fatalf("the full-view key should open the screen, state = %d", m.state)
 	}
 	view := stripANSI(m.View().Content)
-	for _, want := range []string{"in the checkout already", "back to the question"} {
+	for _, want := range []string{"in the checkout already", "[esc] keeps waiting"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the screen does not carry %q:\n%s", want, view)
 		}

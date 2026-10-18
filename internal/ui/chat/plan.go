@@ -92,7 +92,7 @@ func planHint() []components.KeyOffer {
 		components.OfferAs(keys.Plan.Save, "save"),
 		components.OfferAs(keys.Wait.NewSession, components.NewSessionCarryPlan()),
 		components.OfferAs(keys.Plan.Implement, planImplementWords),
-		components.OfferAs(keys.Select.Cancel, "keep planning"),
+		components.OfferAs(keys.Select.Cancel, components.EscWaits),
 	}
 }
 

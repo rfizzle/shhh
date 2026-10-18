@@ -523,7 +523,8 @@ func (h *HistoryScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Delete, "delete the entry, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by what was asked or by what came back"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter"),
-		keyOfferAs(keys.Screen.Quit, "clear the filter, close it, then "+backToShell),
+		keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"),
+		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }
 

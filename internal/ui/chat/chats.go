@@ -224,7 +224,7 @@ func (m Model) chatPickLines() []string {
 	case ops.rename != nil:
 		hint := hintTones().Fit([]hintSeg{
 			segAs(keys.Select.Take, "renames"),
-			segAs(keys.Select.Cancel, "keeps the name"),
+			segAs(keys.Select.Cancel, components.EscBack+" — keeps the name"),
 		}, width)
 		components.StyleTextInput(ops.rename)
 		return []string{ops.rename.View(), hint}

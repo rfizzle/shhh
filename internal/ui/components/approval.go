@@ -1322,7 +1322,7 @@ func (c *ApprovalCard) fieldRows(label, view, refused, take, back string, width,
 // call carried is what comes back.
 func (c *ApprovalCard) amendRows(width, inner int) []string {
 	return c.fieldRows(amendWords, c.AmendField, c.AmendRefused, "run this line",
-		"back to the card with the original", width, inner)
+		EscWaits+escClause+"the original line stays", width, inner)
 }
 
 // amendWords is what the open command field asks for. It is the same phrase
@@ -1362,7 +1362,7 @@ func (c *ApprovalCard) grantRows(width, inner int) []string {
 	return append(rows, hintRows([]KeyOffer{
 		keyOfferAs(keys.Select.MoveJK, "choose"),
 		keyOfferAs(keys.Select.Take, take),
-		keyOfferAs(keys.Select.Cancel, "back to the card — nothing is granted"),
+		keyOfferAs(keys.Select.Cancel, EscWaits+escClause+"nothing is granted"),
 	}, width)...)
 }
 

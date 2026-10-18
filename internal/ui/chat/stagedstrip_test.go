@@ -40,7 +40,7 @@ func TestFocus_ReachesTheStagedRail(t *testing.T) {
 			t.Fatalf("→ picks the next chip, got %d", m.pickedChip())
 		}
 		panel := stripANSI(strings.Join(m.focusHintLines(), "\n"))
-		for _, want := range []string{"❯ Image#2", "[←→] chip", "[enter] open", "[d] delete", "[esc] back to the draft", "chip 2 of 3"} {
+		for _, want := range []string{"❯ Image#2", "[←→] chip", "[enter] open", "[d] delete", "[esc] back", "chip 2 of 3"} {
 			if !strings.Contains(panel, want) {
 				t.Fatalf("the panel should carry %q:\n%s", want, panel)
 			}
@@ -124,7 +124,7 @@ func TestStrip_TheCardGoesBackToTheStrip(t *testing.T) {
 	if m.state != statePreview || m.preview == nil || m.preview.Name != "two.png" {
 		t.Fatalf("enter opens the chip under the cursor: state %v", m.state)
 	}
-	if hint := stripANSI(joinSegs(m.renderPreviewHint())); !strings.Contains(hint, "[d] delete") || !strings.Contains(hint, "back to the strip") {
+	if hint := stripANSI(joinSegs(m.renderPreviewHint())); !strings.Contains(hint, "[d] delete") || !strings.Contains(hint, "[esc] back") {
 		t.Fatalf("the card offers the drop and says where back is: %q", hint)
 	}
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})

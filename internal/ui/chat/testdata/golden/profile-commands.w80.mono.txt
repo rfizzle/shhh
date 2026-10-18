@@ -85,7 +85,7 @@ test-writer — adds table-driven tests for a package and runs them
   ┃ it must never install anything                                            
 ⋮ 1 more section · [shift+↓] scroll the profile
 
-[enter] refine it · [esc] leave it as it is
+[enter] refine it · [esc] back — it is left as it is
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │   1. Save to this project  /repo/.shhh/agents                                │
@@ -296,7 +296,7 @@ test-writer — adds table-driven tests for a package and runs them
   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254mit must never install anything␛[m␛[38;5;254m␛[7;38;5;237m ␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m                                           ␛[m
 ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m refine it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave it as it is␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m refine it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — it is left as it is␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m

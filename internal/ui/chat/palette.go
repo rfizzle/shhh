@@ -108,7 +108,7 @@ func paletteHint() []components.KeyOffer {
 // paletteWayOut is what esc leaves on the palette. Nothing was chosen and the
 // palette holds nothing a reader would lose, so it says only that the card
 // goes away (docs/interface/principles.md#esc-is-always-the-safe-answer).
-const paletteWayOut = "close it"
+const paletteWayOut = components.EscBack
 
 // paletteState is the open palette: what has been typed, every candidate
 // gathered when it opened, and the rows currently showing — one per option in

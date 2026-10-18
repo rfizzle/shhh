@@ -492,7 +492,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	// What esc leaves is the model the target is already on, which is the
 	// one thing the word `cancel` cannot say
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	next.picker.card.CancelLabel = "keep " + pick.keep
+	next.picker.card.CancelLabel = components.EscBack + " — stays on " + pick.keep
 	return next, cmd
 }
 
@@ -512,7 +512,7 @@ func (m *Model) stepModelTarget(msg tea.KeyPressMsg) bool {
 	card := m.picker.card
 	card.Title, card.Total = pick.title, selectableOptions(pick.opts)
 	card.AltKey, card.AltLabel, card.EnterLabel = pick.alt.Key, pick.alt.Label, pick.alt.Enter
-	card.Target, card.CancelLabel = pick.target, "keep "+pick.keep
+	card.Target, card.CancelLabel = pick.target, components.EscBack+" — stays on "+pick.keep
 	m.picker.all, m.picker.apply = pick.opts, pick.apply
 	m.refilterPicker()
 	if card.Query == "" {
@@ -553,7 +553,7 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 	// Esc leaves the session on the mode it is in, and says which one
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	next := updated.(Model)
-	next.picker.card.CancelLabel = "keep " + m.policy.mode.String()
+	next.picker.card.CancelLabel = components.EscBack + " — stays on " + m.policy.mode.String()
 	return next, cmd
 }
 

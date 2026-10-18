@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · open · the cursor's line bright, the outline on its declaration
-/edit loop.go                                                                                       [esc] back
+/edit loop.go
 in runRound · internal/agent/
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
    35 // runRound sends one request and runs the calls it asks for. It returns
@@ -33,10 +33,10 @@ in runRound · internal/agent/
    51     }
    52     return nil
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[ctrl+s] save · [esc] back                                                                                43:5
+[ctrl+s] save · [ctrl+]] keys · [esc] back                                                                43:5
 
 · modified · the person's lines marked, a selection on the cursor's line
-/edit loop.go · modified                                                                            [esc] back
+/edit loop.go · modified
 in runRound · internal/agent/
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
    35 // runRound sends one request and runs the calls it asks for. It returns
@@ -58,10 +58,10 @@ in runRound · internal/agent/
    51         }
    52     }
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[ctrl+s] save · [esc] back                                                                               41:19
+[ctrl+s] save · [ctrl+]] keys · [esc] back                                                               41:19
 
 · esc on a modified buffer · the foot row asks
-/edit loop.go · modified                                                                            [esc] back
+/edit loop.go · modified
 in runRound · internal/agent/
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
    35 // runRound sends one request and runs the calls it asks for. It returns
@@ -83,10 +83,10 @@ in runRound · internal/agent/
    51         }
    52     }
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-leave unsaved? [y] discard · [esc] keep editing                                                          41:16
+leave unsaved? [y] discard · [esc] back — keeps editing                                                  41:16
 
 · saved · the receipt on the foot row, the marks gone
-/edit loop.go                                                                                       [esc] back
+/edit loop.go
 in runRound · internal/agent/
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
    35 // runRound sends one request and runs the calls it asks for. It returns
@@ -116,7 +116,7 @@ wrote 58 lines to internal/agent/loop.go                                        
 
 ── ansi ────────────────────────────────────────────────────
 · open · the cursor's line bright, the outline on its declaration
-␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m                                                                                       ␛[38;5;244m[esc] back␛[m
+␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m
 ␛[38;5;244min runRound · internal/agent/␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
  ␛[38;5;244m  35␛[m ␛[38;5;244m// runRound sends one request and runs the calls it asks for. It returns␛[m
@@ -138,10 +138,10 @@ wrote 58 lines to internal/agent/loop.go                                        
  ␛[38;5;244m  51␛[m ␛[38;5;254m    }␛[m
  ␛[38;5;244m  52␛[m ␛[38;5;254m    return nil␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                                ␛[38;5;244m43:5␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                ␛[38;5;244m43:5␛[m
 
 · modified · the person's lines marked, a selection on the cursor's line
-␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m␛[38;5;244m · ␛[m␛[38;5;254mmodified␛[m                                                                            ␛[38;5;244m[esc] back␛[m
+␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m␛[38;5;244m · ␛[m␛[38;5;254mmodified␛[m
 ␛[38;5;244min runRound · internal/agent/␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
  ␛[38;5;244m  35␛[m ␛[38;5;244m// runRound sends one request and runs the calls it asks for. It returns␛[m
@@ -163,10 +163,10 @@ wrote 58 lines to internal/agent/loop.go                                        
  ␛[38;5;244m  51␛[m ␛[38;5;254m        }␛[m
  ␛[38;5;244m  52␛[m ␛[38;5;254m    }␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                               ␛[38;5;244m41:19␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                               ␛[38;5;244m41:19␛[m
 
 · esc on a modified buffer · the foot row asks
-␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m␛[38;5;244m · ␛[m␛[38;5;254mmodified␛[m                                                                            ␛[38;5;244m[esc] back␛[m
+␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m␛[38;5;244m · ␛[m␛[38;5;254mmodified␛[m
 ␛[38;5;244min runRound · internal/agent/␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
  ␛[38;5;244m  35␛[m ␛[38;5;244m// runRound sends one request and runs the calls it asks for. It returns␛[m
@@ -188,10 +188,10 @@ wrote 58 lines to internal/agent/loop.go                                        
  ␛[38;5;244m  51␛[m ␛[38;5;254m        }␛[m
  ␛[38;5;244m  52␛[m ␛[38;5;254m    }␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254mleave unsaved?␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m discard␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep editing␛[m                                                          ␛[38;5;244m41:16␛[m
+␛[38;5;254mleave unsaved?␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m discard␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — keeps editing␛[m                                                  ␛[38;5;244m41:16␛[m
 
 · saved · the receipt on the foot row, the marks gone
-␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m                                                                                       ␛[38;5;244m[esc] back␛[m
+␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m
 ␛[38;5;244min runRound · internal/agent/␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
  ␛[38;5;244m  35␛[m ␛[38;5;244m// runRound sends one request and runs the calls it asks for. It returns␛[m

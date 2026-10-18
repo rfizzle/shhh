@@ -22,6 +22,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -34,7 +35,15 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
-func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
+func TestMain(m *testing.M) {
+	verdict := components.AuditEscGlosses()
+	code := golden.Run(m)
+	if bad := verdict(); len(bad) > 0 && code == 0 {
+		fmt.Fprintf(os.Stderr, "esc glosses off the closed list (docs/interface/principles.md#esc-is-always-the-safe-answer): %q\n", bad)
+		code = 1
+	}
+	os.Exit(code)
+}
 
 // goldenWidths are the width breakpoints from docs/interface/principles.md#one-grid:
 // minimal, folded, one-pane-with-vitals, and the two-pane split.

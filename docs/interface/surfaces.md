@@ -3412,8 +3412,8 @@ does not offer it (invariant 5).
 
 They say the way out in one voice. The foot ends with the act under the key a
 reader reaches for without thinking:
-**back to the shell** on doctor, metrics, history, snippets and the saved-chat
-browser, and **back** on the context reading, the sources ledger, the
+**back** on doctor, metrics, history, snippets, the saved-chat
+browser, the context reading, the sources ledger, the
 working list, the readings, the turns, the alerts, the flakes, the bill, the process manager, the tools, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
@@ -3760,12 +3760,12 @@ which).
 Leaving does not give a taken value back. Over staged changes the running
 session holds, esc asks `Leave 2 changes on this session only?` with three
 answers on the same row, `[y] this session only`, `[ctrl+s] write first` and
-`[esc] stay`; where some of the staged changes are ones the session wires when
+`[esc] back`; where some of the staged changes are ones the session wires when
 it opens, the question counts them as dropped (`Leave 2 changes on this
 session and drop 1 change?`), and where the row is too narrow for the question
 and its answers the answers take a second line, never clipped. The foot row
-before the question says `[esc] keep on this session, after asking`, or
-`[esc] leave, after asking` when some would be dropped. The screen opened again
+before the question says `[esc] back — asks whether to write them, and keeps them on this session`,
+or `[esc] back — asks where the changes go` when some would be dropped. The screen opened again
 in the same session shows a value the session holds with the source `session`,
 the way a flow model held for the session reads, and the header counts it
 among the changes unwritten; `[ctrl+s]` writes it, and `[ctrl+r]` on that row
@@ -3883,8 +3883,8 @@ draft.
 
 `[esc]` over a buffer that matches the disk goes back to the prompt. Over a
 modified one it asks on the foot row — `leave without saving? [y] discard the
-change · [ctrl+s] save and leave · [esc] keep editing`, `leave unsaved? [y]
-discard · [esc] keep editing` narrow — and the typing stops until it is
+change · [ctrl+s] save and leave · [esc] back — keeps editing`, `leave unsaved? [y]
+discard · [esc] back — keeps editing` narrow — and the typing stops until it is
 answered. `ctrl+c` is not a way back: over a modified buffer it does nothing
 and opens no quit window, so no run of presses leaves with the change
 unsaved: quit needs the buffer saved with `[ctrl+s]` or discarded with `[y]`

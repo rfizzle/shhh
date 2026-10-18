@@ -42,7 +42,7 @@ critic — reads a diff and argues
 [↑↓] section · [enter] refine it with a note
 [e] edit it yourself · [d] clear it
 [m] move it into sections · [R] all · [tab] the card
-[?] keys · [esc] close, nothing written
+[?] keys · [esc] back — nothing is written
 
 ╭─ Keep critic? ───────────────────────────────────────────╮
 │   1. Replace its file  /repo/.shhh/agents/critic.toml    │
@@ -88,14 +88,12 @@ critic — reads a diff and argues · moved into sections, not…
 
   Tools
   read · it reads and reports · read_file, search
-
-  Commands
-  none stated · the session's own command lists apply
-⋮ 1 more section · [shift+↓] scroll the profile
+⋮ 2 more sections · [shift+↓] scroll the profile
 
 [↑↓] section · [enter] refine it with a note
 [e] edit it yourself · [d] clear it · [R] all
-[tab] the card · [?] keys · [esc] close, nothing written
+[tab] the card · [?] keys
+[esc] back — nothing is written
 
 ╭─ Keep critic? ───────────────────────────────────────────╮
 │   1. Replace its file  /repo/.shhh/agents/critic.toml    │
@@ -222,7 +220,7 @@ critic — reads a diff and argues · moved into sections, not…
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m
 ␛[38;5;254m[m]␛[m␛[38;5;244m move it into sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
-␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close, nothing written␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — nothing is written␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep critic? ␛[m␛[38;5;244m───────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mReplace its file␛[m  ␛[38;5;244m/repo/.shhh/agents/critic.toml␛[m    ␛[38;5;244m│␛[m
@@ -268,14 +266,12 @@ critic — reads a diff and argues · moved into sections, not…
 
   ␛[38;5;254mTools␛[m
   ␛[38;5;254mread␛[m␛[38;5;244m · it reads and reports · read_file, search␛[m
-
-  ␛[38;5;254mCommands␛[m
-  ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
-␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
-␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close, nothing written␛[m
+␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — nothing is written␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep critic? ␛[m␛[38;5;244m───────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mReplace its file␛[m  ␛[38;5;244m/repo/.shhh/agents/critic.toml␛[m    ␛[38;5;244m│␛[m

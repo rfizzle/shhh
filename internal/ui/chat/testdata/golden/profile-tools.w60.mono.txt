@@ -49,7 +49,7 @@ test-writer — adds tests
 │   [ ] web_fetch        web      one page, read as text   │
 │       always                    navigation · notebook ·… │
 │ [space] toggle · [a] all/none · [enter] select (9)       │
-│ [esc] cancel                                             │
+│ [esc] back                                               │
 ╰──────────────────────────────────────────────────────────╯
 
 · a chat profile · no tier that writes on offer
@@ -91,7 +91,7 @@ test-writer — adds tests
 │   [x] web_fetch     web   one page, read as text         │
 │       always              navigation · notebook · skill… │
 │ [space] toggle · [a] all/none · [enter] select (7)       │
-│ [esc] cancel                                             │
+│ [esc] back                                               │
 ╰──────────────────────────────────────────────────────────╯
 
 · a refused pick · a tool ticked without its tier, the loader's sentence under the list
@@ -133,7 +133,7 @@ test-writer — adds tests
 │ ⚠ tools: "web_fetch" needs the "web" permission, which   │
 │   this profile does not grant                            │
 │ [space] toggle · [a] all/none · [enter] select (10)      │
-│ [esc] cancel                                             │
+│ [esc] back                                               │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ test-writer — adds tests
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m ␛[38;5;254mweb_fetch      ␛[m  ␛[38;5;254mweb    ␛[m  ␛[38;5;244mone page, read as text␛[m   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m       ␛[38;5;244malways         ␛[m           ␛[38;5;244mnavigation · notebook ·…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select (9)␛[m       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a chat profile · no tier that writes on offer
@@ -218,7 +218,7 @@ test-writer — adds tests
 ␛[38;5;254m│␛[m   ␛[38;5;254m[x]␛[m ␛[38;5;254mweb_fetch   ␛[m  ␛[38;5;254mweb ␛[m  ␛[38;5;244mone page, read as text␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m       ␛[38;5;244malways      ␛[m        ␛[38;5;244mnavigation · notebook · skill…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select (7)␛[m       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a refused pick · a tool ticked without its tier, the loader's sentence under the list
@@ -260,5 +260,5 @@ test-writer — adds tests
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ tools: "web_fetch" needs the "web" permission, which␛[m   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m  this profile does not grant␛[m                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select (10)␛[m      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m

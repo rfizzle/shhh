@@ -426,7 +426,7 @@ func TestApprovalCard_TinyBoundKeepsTheDecisionAndOneBodyRow(t *testing.T) {
 		Title:    "Approve command",
 		Act:      "rm -rf ./dist",
 		Answer:   "run it once",
-		Return:   "[esc] back to your draft — the decision stays waiting, nothing is denied",
+		Return:   "keeps waiting — the draft stays, nothing is denied",
 		MaxLines: 5,
 	}
 	view = ansi.Strip(cmd.View(80))
@@ -636,9 +636,9 @@ func TestApprovalCard_EveryVariantSaysWhatEscDoes(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
 		Act: "rm -rf ./dist", Answer: "run it once",
-		Return: "don't — the safe answer",
+		Return: "keeps waiting — nothing is denied",
 	}
-	if view := ansi.Strip(c.View(90)); !strings.Contains(view, "[esc] don't — the safe answer") {
+	if view := ansi.Strip(c.View(90)); !strings.Contains(view, "[esc] keeps waiting — nothing is denied") {
 		t.Fatalf("a card that named its safe answer should say so:\n%s", view)
 	}
 }
@@ -749,7 +749,7 @@ func TestApprovalCard_TheOpenFieldDrawsTheRunDead(t *testing.T) {
 	}
 	// The card's own way out is the field's while the field has the
 	// keyboard, so the card does not state a second one.
-	if strings.Contains(view, waitingWords) {
+	if strings.Count(view, "[esc]") != 1 {
 		t.Fatalf("a card whose field holds the keyboard states no esc of its own:\n%s", view)
 	}
 	x, y, ok := c.FieldOrigin(80)

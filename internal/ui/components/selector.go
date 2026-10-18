@@ -220,12 +220,11 @@ type Select struct {
 	// where it is never dropped and is up with the query line open too,
 	// because the chord is not text. Empty offers nothing.
 	Target KeyOffer
-	// CancelLabel is what esc leaves, in the surface's own words — `keep
-	// gpt-5.2` on the model picker, `back to the draft — the question waits`
-	// on a question. Empty takes the family's, which says none of the rows
-	// was taken (cancelOffer); neither is the register's bare `cancel`,
-	// because the one thing a reader cannot work out from that word is what
-	// they are going back to
+	// CancelLabel is what esc leaves, as one of the closed list, with
+	// the clause after it that a surface needs — `back — stays on gpt-5.2` on
+	// the model picker, `keeps waiting — nothing is sent` on a question. Empty
+	// takes the family's, which is `back` (cancelOffer); it is never the
+	// register's bare `cancel`
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	CancelLabel string
 	// EnterLabel is what enter buys, for a card where "select" is not the

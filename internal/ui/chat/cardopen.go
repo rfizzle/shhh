@@ -517,7 +517,7 @@ func (m Model) stripKeys() []hintSeg {
 	return []hintSeg{
 		{Key: keys.BracketPair(keys.Reading.StripLeft, keys.Reading.StripRight), Label: "along the strip"},
 		segAs(keys.Reading.Expand, "open that tool"),
-		segAs(keys.Reading.Back, "close the card"),
+		segAs(keys.Reading.Back, collapseWords),
 	}
 }
 
@@ -525,7 +525,7 @@ func (m Model) stripKeys() []hintSeg {
 // pane too narrow for the whole of it.
 func stripKeysShort(segs []hintSeg) []hintSeg {
 	out := append([]hintSeg(nil), segs...)
-	for i, word := range []string{"along", "open", "close"} {
+	for i, word := range []string{"along", "open", collapseWords} {
 		if i < len(out) {
 			out[i].Label = word
 		}

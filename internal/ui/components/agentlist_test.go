@@ -200,7 +200,7 @@ func TestAgentListOffersWhatTheListCanDo(t *testing.T) {
 	rows := append(managerRows(), AgentRow{State: AgentOffer, Name: "draft a new profile"})
 	for focus := range rows {
 		view := ansi.Strip((&AgentList{Rows: rows, Focus: focus}).View(96))
-		for _, want := range []string{"[a] answer without attaching", "[esc] back to the turn"} {
+		for _, want := range []string{"[a] answer without attaching", "[esc] back"} {
 			if !strings.Contains(view, want) {
 				t.Fatalf("focus %d missing %q:\n%s", focus, want, view)
 			}

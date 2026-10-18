@@ -28,7 +28,7 @@ internal/agent/loop.go  1 hunk · +2 −1
 ⛨ nothing is committed
 
 ────────────────────────────────────────────────────────
-[n/N] hunk · [esc] leave, change nothing
+[n/N] hunk · [esc] back
 
 · a turn's review · the second file focused
 REVIEW turn 7                                    3 files
@@ -48,7 +48,7 @@ internal/ui/chat/model.go  1 hunk · +2 −1
 ⛨ nothing is committed
 
 ────────────────────────────────────────────────────────
-[n/N] hunk · [esc] leave, change nothing
+[n/N] hunk · [esc] back
 
 · layout · side-by-side forced
 REVIEW turn 7                                    3 files
@@ -68,7 +68,7 @@ internal/agent/loop.go  1 hunk · +2 −1
 ⛨ nothing is committed
 
 ────────────────────────────────────────────────────────
-[n/N] hunk · [esc] leave, change nothing
+[n/N] hunk · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · a turn's review · the first file focused
@@ -89,7 +89,7 @@ internal/agent/loop.go  1 hunk · +2 −1
 ␛[38;5;246m⛨ nothing is committed␛[m
 
 ␛[38;5;245m────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[n/N]␛[m␛[38;5;245m hunk␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave, change nothing␛[m
+␛[38;5;103m[n/N]␛[m␛[38;5;245m hunk␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a turn's review · the second file focused
 ␛[1;94mREVIEW␛[m␛[38;5;245m turn 7␛[m                                    ␛[38;5;245m3 files␛[m
@@ -109,7 +109,7 @@ internal/agent/loop.go  1 hunk · +2 −1
 ␛[38;5;246m⛨ nothing is committed␛[m
 
 ␛[38;5;245m────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[n/N]␛[m␛[38;5;245m hunk␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave, change nothing␛[m
+␛[38;5;103m[n/N]␛[m␛[38;5;245m hunk␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · layout · side-by-side forced
 ␛[1;94mREVIEW␛[m␛[38;5;245m turn 7␛[m                                    ␛[38;5;245m3 files␛[m
@@ -129,4 +129,4 @@ internal/agent/loop.go  1 hunk · +2 −1
 ␛[38;5;246m⛨ nothing is committed␛[m
 
 ␛[38;5;245m────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[n/N]␛[m␛[38;5;245m hunk␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave, change nothing␛[m
+␛[38;5;103m[n/N]␛[m␛[38;5;245m hunk␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

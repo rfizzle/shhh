@@ -107,7 +107,7 @@ func TestCopyCode_SeveralBlocksOpenTheList(t *testing.T) {
 		}
 	}
 	card := ansi.Strip(strings.Join(m.pickerLines(), "\n"))
-	for _, want := range []string{"3 blocks", "[enter] select", "[esc] keep nothing", "func copyBlock(src string, i int) { ↵ if i < 1 {"} {
+	for _, want := range []string{"3 blocks", "[enter] select", "[esc] back — nothing is copied", "func copyBlock(src string, i int) { ↵ if i < 1 {"} {
 		if !strings.Contains(card, want) {
 			t.Errorf("the card lacks %q:\n%s", want, card)
 		}

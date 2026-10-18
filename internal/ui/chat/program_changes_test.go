@@ -252,7 +252,7 @@ func TestProgram_EnterOnASelectedCloseOpensThatTurnsReview(t *testing.T) {
 	programPress(t, tm, "shift+up")
 	waitForText(t, tm, "[enter] review turn")
 	programPress(t, tm, "enter")
-	waitForAll(t, tm, "leave, change nothing", "turn 2")
+	waitForAll(t, tm, "[esc] back", "turn 2")
 	programPress(t, tm, "esc")
 	waitForText(t, tm, "Raised again")
 
@@ -261,7 +261,7 @@ func TestProgram_EnterOnASelectedCloseOpensThatTurnsReview(t *testing.T) {
 	programPress(t, tm, "ctrl+o")
 	stepUp(t, tm, "the cursor on turn 1's close", cursorOnFirstClose)
 	programPress(t, tm, "enter")
-	waitForAll(t, tm, "leave, change nothing", "turn 1")
+	waitForAll(t, tm, "[esc] back", "turn 1")
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "turn 1")
@@ -287,7 +287,7 @@ func TestProgram_AClickOnACloseOpensThatTurnsReview(t *testing.T) {
 	x = len([]rune(strings.Split(frame, "\n")[y][:x]))
 	tm.Send(tea.MouseClickMsg{Button: tea.MouseLeft, X: x, Y: y})
 	tm.Send(tea.MouseReleaseMsg{Button: tea.MouseNone, X: x, Y: y})
-	waitForAll(t, tm, "leave, change nothing", "turn 1")
+	waitForAll(t, tm, "[esc] back", "turn 1")
 	programPress(t, tm, "esc")
 	waitForText(t, tm, draftSentence)
 
@@ -307,14 +307,14 @@ func TestProgram_ADraftKeepsEnterWhileACloseIsSelected(t *testing.T) {
 	tm.Send(tea.PasteMsg{Content: draftSentence})
 	waitForText(t, tm, draftSentence)
 	programPress(t, tm, "shift+right")
-	waitForAll(t, tm, "leave, change nothing", "turn 2")
+	waitForAll(t, tm, "[esc] back", "turn 2")
 	programPress(t, tm, "esc")
 	waitForText(t, tm, draftSentence)
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "Sent from beside the pointer")
 
 	frame := finalFrame(t, tm)
-	if strings.Contains(frame, "leave, change nothing") {
+	if strings.Contains(frame, "[esc] back") {
 		t.Fatalf("enter with a sentence in the draft opened the review:\n%s", frame)
 	}
 }
@@ -345,7 +345,7 @@ func TestProgram_ASelectedEditRowKeepsItsOwnEnter(t *testing.T) {
 	waitForText(t, tm, "@@ -1,3 +1,3 @@")
 
 	frame := finalFrame(t, tm)
-	for _, never := range []string{"Undo turn", "leave, change nothing"} {
+	for _, never := range []string{"Undo turn", "[esc] back"} {
 		if strings.Contains(frame, never) {
 			t.Fatalf("the edit row answered with another row's act (%q):\n%s", never, frame)
 		}

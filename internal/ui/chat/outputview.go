@@ -165,13 +165,13 @@ func (m Model) renderOutputFullHint() []hintSeg {
 	label := seg(keys.Output.Back)
 	switch m.outputReturn {
 	case stateConfirmRun:
-		label = segAs(keys.Output.Back, "back to the approval prompt")
+		label = segAs(keys.Output.Back, components.EscWaits)
 	case stateQuestion:
-		label = segAs(keys.Output.Back, "back to the question")
+		label = segAs(keys.Output.Back, components.EscWaits)
 	case stateAlerts:
 		// A run's kept output, opened from the alerts screen, goes back to
 		// its runs rather than to the prompt the screen itself goes back to.
-		label = segAs(keys.Output.Back, "back to the alerts")
+		label = segAs(keys.Output.Back, components.EscBack)
 	}
 	return []hintSeg{label}
 }

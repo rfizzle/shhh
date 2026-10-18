@@ -58,11 +58,11 @@ func TestScreenChrome_TheHeaderCarriesNoKeysAndTheFootKeepsTheWayOut(t *testing.
 	}{
 		{"doctor", 44, "[esc] back", "6 checks", func(w int) string { return doctorScreen().View(w) }},
 		{"metrics", 44, "[esc] back", "3 models", func(w int) string { return metricsScreen().View(w) }},
-		{"config", 44, "[esc] leave", "config.toml", func(w int) string { return configFixture().View(w) }},
+		{"config", 44, "[esc] back", "config.toml", func(w int) string { return configFixture().View(w) }},
 		{"history", 44, "[esc] back", "4 entries", func(w int) string { return historyScreen().View(w) }},
 		{"rate", 30, "[esc] stop", "1 of 3", func(w int) string { return rateScreen().View(w) }},
 		{"context", 44, "[esc] back", "this session", func(w int) string { return context.View(w) }},
-		{"profile", 44, "[esc] nothing is drafted", "reviewer tester", func(w int) string { return profile().View(w) }},
+		{"profile", 44, "[esc] back — nothing is drafted", "reviewer tester", func(w int) string { return profile().View(w) }},
 		{"snippets", 44, "[esc] back", "3 snippets", func(w int) string { return snippetScreen().View(w) }},
 		{"chats", 44, "[esc] back", "3 conversations", func(w int) string { return chatScreen().View(w) }},
 		{"safety", 36, "[esc] back", "sandbox-exec", func(w int) string {
@@ -144,7 +144,7 @@ func TestScreenHeader_AnEmptyTallyDrawsNoGap(t *testing.T) {
 func TestScreenChrome_NoFooterMeansNoTrailingBlank(t *testing.T) {
 	body := func(int) []string { return []string{"one", "two"} }
 	rows := strings.Split(screenChrome{header: screenHeader{
-		left: []RailSegment{screenTitle("shhh doctor")}, keys: "[esc] back",
+		left: []RailSegment{screenTitle("shhh doctor")},
 	}}.view(40, body), "\n")
 	if got := rows[len(rows)-1]; got != "two" {
 		t.Fatalf("the body is not the last row: %q", got)
@@ -179,7 +179,7 @@ func TestKeyFooter_OffersWrapRatherThanClip(t *testing.T) {
 		{Key: "[y]", Label: "allow it"},
 		{Key: "[n]", Label: "refuse it"},
 		{Key: "[a]", Label: "allow every one like it"},
-		{Key: "[esc]", Label: "leave, change nothing"},
+		{Key: "[esc]", Label: EscBack},
 	}
 	rows := keyFooter{offers: offers}.rows(40)
 	if len(rows) < 2 {

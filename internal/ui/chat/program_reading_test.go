@@ -139,7 +139,7 @@ func TestProgram_APasteTooBigForTheDraftIsAToken(t *testing.T) {
 	programPress(t, tm, "ctrl+o", "enter")
 	waitForText(t, tm, "PASTE#1")
 	programPress(t, tm, "esc")
-	waitForText(t, tm, "back to the draft")
+	waitForText(t, tm, "[esc] back")
 	programPress(t, tm, "esc", "enter")
 	waitForText(t, tm, "never leaves the round")
 

@@ -16,7 +16,7 @@ func TestProgram_TurnsOpensEveryTurnAndReviewsOne(t *testing.T) {
 	send(tm, "/turns")
 	waitForAll(t, tm, "/turns · 2 turns", "[enter] review turn 2")
 	programPress(t, tm, "enter")
-	waitForAll(t, tm, "leave, change nothing", "turn 2")
+	waitForAll(t, tm, "[esc] back", "turn 2")
 	programPress(t, tm, "esc")
 	waitForText(t, tm, "/turns · 2 turns")
 

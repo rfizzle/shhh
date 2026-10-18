@@ -655,7 +655,7 @@ const followUpWord = "follow up"
 // over a turn that is still going, and `cancel` says nothing about which of
 // the several things on screen is being left
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
-const managerWayOut = "back to the turn"
+const managerWayOut = EscBack
 
 // hints are the keys the manager offers. Two of them are about the list and
 // not about the pointer: answering in place is offered whenever any child is
@@ -673,7 +673,7 @@ func (l *AgentList) hints() []KeyOffer {
 		// surface being typed into keeps.
 		return []KeyOffer{
 			keyOfferAs(keys.Agent.Attach, "send it"),
-			keyOfferAs(keys.Agent.Back, "leave it unsent"),
+			keyOfferAs(keys.Agent.Back, EscBack+escClause+"nothing is sent"),
 		}
 	}
 	focus := l.focused()

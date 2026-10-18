@@ -222,7 +222,7 @@ func (m Model) editPaneLines(width, height int) []string {
 func (m Model) renderEditPaneHint() []hintSeg {
 	hint := segAs(keys.Editor.Back, components.EscBack)
 	if s := m.screens.editPane(); s != nil && s.pane.Asking() {
-		hint = segAs(keys.Editor.Keep, "keep editing")
+		hint = segAs(keys.Editor.Keep, components.EscBack+" — keeps editing")
 	}
 	return paneHint("edit", hint)
 }

@@ -57,7 +57,14 @@ func TestMain(m *testing.M) {
 	// rather than exercise shhh's code.
 	_ = os.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
 	_ = os.Setenv("GIT_CONFIG_SYSTEM", os.DevNull)
-	os.Exit(golden.Run(m))
+
+	verdict := components.AuditEscGlosses()
+	code := golden.Run(m)
+	if bad := verdict(); len(bad) > 0 && code == 0 {
+		fmt.Fprintf(os.Stderr, "esc glosses off the closed list (docs/interface/principles.md#esc-is-always-the-safe-answer): %q\n", bad)
+		code = 1
+	}
+	os.Exit(code)
 }
 
 // goldenWidths are the terminal widths behind the breakpoints of

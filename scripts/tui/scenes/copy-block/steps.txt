@@ -32,7 +32,7 @@ keys C-c
 sleep 0.6
 # From the draft: the card over the last reply's three blocks.
 keys "/copy code" Enter
-snap 04-list "copy which block?" "3 blocks" "[esc] keep nothing" "make build · sh · 3 lines"
+snap 04-list "copy which block?" "3 blocks" "[esc] back — nothing is copied" "make build · sh · 3 lines"
 # A digit takes its row, and the notice names the block: the third, since
 # the click has already drawn the second's notice.
 keys 3

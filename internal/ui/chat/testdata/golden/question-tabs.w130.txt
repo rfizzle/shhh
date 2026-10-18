@@ -40,7 +40,7 @@ Should the migration be reversible?  [y/N]
 ✓ 1 answered  ✓ 2 answered  · 3  ❯ submit  submit · 1 unanswered will be sent as skipped
 ╭─ the answers ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ send 2 answers · 1 unanswered, sent as skipped                                                                             │
-│ [enter] send · [←→] the next question · [esc] answer in your own words                                                     │
+│ [enter] send · [←→] the next question · [esc] keeps waiting — nothing is sent                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · four questions · the most one call may carry, which is where the strip is tightest
@@ -86,7 +86,7 @@ Should the migration be reversible?  [y/N]
 ␛[92m✓ 1 answered␛[m  ␛[92m✓ 2 answered␛[m  ␛[38;5;245m· 3␛[m  ␛[1;97;48;5;61m❯ submit␛[m␛[38;5;245m  submit · 1 unanswered will be sent as skipped␛[m
 ␛[38;5;245m╭─ ␛[m␛[1;97mthe answers ␛[m␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
 ␛[38;5;245m│␛[m send 2 answers · 1 unanswered, sent as skipped                                                                             ␛[38;5;245m│␛[m
-␛[38;5;245m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;245m send␛[m␛[38;5;245m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m answer in your own words␛[m                                                     ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;245m send␛[m␛[38;5;245m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keeps waiting — nothing is sent␛[m                                              ␛[38;5;245m│␛[m
 ␛[38;5;245m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest

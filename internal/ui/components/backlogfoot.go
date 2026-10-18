@@ -117,7 +117,7 @@ func (b backlogFoot) offers(width int) []KeyOffer {
 			keyOffer(keys.Backlog.Page),
 			// esc backs out one level, so here it is the step back to the
 			// list rather than the way off the screen.
-			wayOut("back to the list"),
+			wayOut(EscBack),
 		}
 	}
 	return b.listOffers(width)

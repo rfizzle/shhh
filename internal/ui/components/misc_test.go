@@ -128,7 +128,7 @@ func TestRenderCard_FrameAndClip(t *testing.T) {
 // not see.
 func TestHintRows_WrapRatherThanClip(t *testing.T) {
 	segments := []KeyOffer{{Key: "[space]", Label: "toggle"}, {Key: "[a]", Label: "all/none"},
-		{Key: "[enter]", Label: "apply"}, keyOfferAs(keys.Select.Cancel, "cancel")}
+		{Key: "[enter]", Label: "apply"}, keyOfferAs(keys.Select.Cancel, EscBack)}
 	if rows := hintRows(segments, 80); len(rows) != 1 {
 		t.Fatalf("a row that fits is one row, got %d", len(rows))
 	}

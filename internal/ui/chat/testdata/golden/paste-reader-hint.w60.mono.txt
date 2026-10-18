@@ -13,12 +13,10 @@
 · the paste reader · the way back to the draft
 ────────────────────────────────────────────────────────
 ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51                     
-[↑↓/jk] move · [d] delete
-[esc] back to the draft, cursor where you left it
+[↑↓/jk] move · [d] delete · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · the paste reader · the way back to the draft
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m⏸ manual␛[m␛[38;5;244m · ␛[m␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.51␛[m                     
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft, cursor where you left it␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

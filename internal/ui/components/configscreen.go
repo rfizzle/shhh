@@ -321,7 +321,7 @@ func (c *ConfigScreen) askKeep() {
 	c.confirm.Answers = cardTones().Join([]KeyOffer{
 		keyOfferAs(keys.Confirm.Yes, "this session only"),
 		keyOfferAs(keys.Screen.Write, "write first"),
-		keyOfferAs(keys.Screen.Quit, "stay"),
+		keyOfferAs(keys.Screen.Quit, EscBack),
 	})
 }
 
@@ -680,7 +680,7 @@ func (c *ConfigScreen) footer(width int) keyFooter {
 func (c *ConfigScreen) offers() []KeyOffer {
 	keep := keyOffer(keys.Screen.Quit)
 	if row := c.rowAt(c.editRow); row != nil && row.Value != "" && !row.Secret {
-		keep.Label = "keep " + row.Value
+		keep.Label = EscBack + escClause + "keeps " + row.Value
 	}
 	switch {
 	case c.picker != nil:
@@ -718,16 +718,16 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		// the ask in the same breath: a row that promised only "discard" would
 		// be describing the old key, and one that promised only "leave" would be
 		// hiding what leaving costs.
-		way := "discard, after asking"
+		way := EscBack + escClause + "asks before it discards them"
 		switch {
 		case c.Held == c.Changed:
-			way = "keep on this session, after asking"
+			way = EscBack + escClause + "asks whether to write them, and keeps them on this session"
 		case c.Held > 0:
-			way = "leave, after asking"
+			way = EscBack + escClause + "asks where the changes go"
 		}
 		return append(offers, keyOfferAs(keys.Screen.Write, "write "+plural(c.Changed, "change")), wayOut(way))
 	}
-	return append(offers, wayOut("leave"))
+	return append(offers, wayOut(EscBack))
 }
 
 // keyList is every key the screen has, for `[?]`. It says what the compact
@@ -737,13 +737,11 @@ func (c *ConfigScreen) offers() []KeyOffer {
 // a register that promised a question with nothing staged would be describing
 // a screen the reader is not on.
 func (c *ConfigScreen) keyList() []KeyOffer {
-	out, quit := "leave the picker, or leave the screen writing nothing", "leave the screen writing nothing"
+	quit := EscBack + escClause + "leaves the picker, or the screen, writing nothing"
 	if c.Changed > 0 {
-		out, quit = "leave the picker, or ask before discarding the lot",
-			"ask before discarding the lot and leaving"
+		quit = EscBack + escClause + "leaves the picker, or asks before it discards the lot"
 		if c.Held > 0 {
-			out, quit = "leave the picker, or ask where the changes go",
-				"ask whether to write the changes or leave them on this session, and leave"
+			quit = EscBack + escClause + "leaves the picker, or asks whether to write the changes or keep them on this session"
 		}
 	}
 	list := []KeyOffer{
@@ -757,7 +755,7 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 	if c.Scoped {
 		list = append(list, keyOfferAs(keys.Screen.Scope, "switch the write between the project file and the global one"))
 	}
-	return append(list, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it; "+out), keyOfferAs(keys.Screen.Quit, quit))
+	return append(list, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"), keyOfferAs(keys.Screen.Quit, quit))
 }
 
 // footField annotates the key row. It is the count of settings until

@@ -159,7 +159,7 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 			m.pick = components.Select{Title: "Which provider", Options: providerOptions(m.providers)}
 			if m.survey.Provider != "" {
-				m.pick.CancelLabel = "keep " + m.survey.Provider
+				m.pick.CancelLabel = components.EscBack + " — stays on " + m.survey.Provider
 			}
 			m.step = stepPickProvider
 			return m, nil

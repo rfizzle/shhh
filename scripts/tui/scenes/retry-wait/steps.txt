@@ -39,7 +39,7 @@ snap 05-last-failure "Unknown parameter" "[r] retry the last failure" "[ctrl+spa
 keys "half a thought"
 sleep 0.3
 keys C-y
-snap 05b-row-holds-the-keyboard "[r] try again · [p] switch provider · [esc] nothing"
+snap 05b-row-holds-the-keyboard "[r] try again · [p] switch provider · [esc] back"
 keys r
 snap 06-retried "behavior.max_tool_rounds" "half a thought" "↻ try again · same prompt, same model"
 snap 07-retry-total "· 1 tool ·" "∗ worked" "↻ try again · same prompt, same model" "half a thought"

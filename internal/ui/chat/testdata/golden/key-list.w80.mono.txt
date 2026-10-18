@@ -45,7 +45,7 @@ $  a shell command
 ↓ 6 more · [↑↓/jk] read on
 
 [?] hide the keys
-keys · [esc] back to the approval card and the /run confirm
+keys · [esc] back
 
 · over reading mode · the cursor on a row with offers of its own
 keys · reading mode
@@ -82,7 +82,7 @@ $  a shell command
 ↓ 7 more · [↑↓/jk] read on
 
 [?] hide the keys
-keys · [esc] back to reading mode
+keys · [esc] back
 
 · over reading mode · the cursor on an open card
 keys · reading mode
@@ -101,7 +101,7 @@ keys · reading mode
 [pgdn] page down
 [esc] back
 ▎[enter] close it
-▎[esc] close it
+▎[esc] collapse
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -119,7 +119,7 @@ $  a shell command
 ↓ 8 more · [↑↓/jk] read on
 
 [?] hide the keys
-keys · [esc] back to reading mode
+keys · [esc] back
 
 · over reading mode · the cursor on the card's strip
 keys · reading mode
@@ -139,7 +139,7 @@ keys · reading mode
 [esc] back
 ▎[←→] along the strip
 ▎[enter] open that tool
-▎[esc] close the card
+▎[esc] collapse
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -156,7 +156,7 @@ $  a shell command
 ↓ 9 more · [↑↓/jk] read on
 
 [?] hide the keys
-keys · [esc] back to reading mode
+keys · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · over the approval card · after the handover
@@ -194,7 +194,7 @@ keys · [esc] back to reading mode
 ␛[38;5;244m↓ 6 more · [↑↓/jk] read on␛[m
 
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
-␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the approval card and the /run confirm␛[m
+␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · over reading mode · the cursor on a row with offers of its own
 ␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m
@@ -231,7 +231,7 @@ keys · [esc] back to reading mode
 ␛[38;5;244m↓ 7 more · [↑↓/jk] read on␛[m
 
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
-␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
+␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · over reading mode · the cursor on an open card
 ␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m
@@ -250,7 +250,7 @@ keys · [esc] back to reading mode
 ␛[38;5;254m[pgdn]␛[m␛[38;5;244m page down␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m close it␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close it␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m collapse␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m
@@ -268,7 +268,7 @@ keys · [esc] back to reading mode
 ␛[38;5;244m↓ 8 more · [↑↓/jk] read on␛[m
 
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
-␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
+␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · over reading mode · the cursor on the card's strip
 ␛[1;38;5;254mkeys␛[m␛[38;5;244m · reading mode␛[m
@@ -288,7 +288,7 @@ keys · [esc] back to reading mode
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m[←→]␛[m␛[38;5;244m along the strip␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open that tool␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close the card␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m collapse␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m
@@ -305,4 +305,4 @@ keys · [esc] back to reading mode
 ␛[38;5;244m↓ 9 more · [↑↓/jk] read on␛[m
 
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
-␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to reading mode␛[m
+␛[38;5;244mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

@@ -50,7 +50,7 @@ snap 05-two-closes "Raised again" "∗ worked" "1 tool · "
 keys S-Up
 snap 06-selected "[enter] review turn" "] commit"
 keys Enter
-snap 07-review-turn-2 "leave, change nothing" "REVIEW turn 2" "const limit = 100"
+snap 07-review-turn-2 "[esc] back" "REVIEW turn 2" "const limit = 100"
 keys Escape
 sleep 0.5
 keys Escape
@@ -60,7 +60,7 @@ sleep 0.5
 keys "/turns" Enter
 snap 08-turns "[enter] review turn 2" "✓ turn 2" "✓ turn 1" "1 file changed"
 keys Enter
-snap 09-turns-review "leave, change nothing" "REVIEW turn 2" "const limit = 100"
+snap 09-turns-review "[esc] back" "REVIEW turn 2" "const limit = 100"
 # The review's way out is back to the list the reader was walking.
 keys Escape
 snap 10-turns-back "[enter] review turn 2" "✓ turn 1"
@@ -72,7 +72,7 @@ sleep 0.5
 keys "and then"
 snap 11-draft "and then"
 keys -l $'\e[<0;12;14M' $'\e[<0;12;14m'
-snap 12-review-turn-1 "leave, change nothing" "REVIEW turn 1" "const limit = 25"
+snap 12-review-turn-1 "[esc] back" "REVIEW turn 1" "const limit = 25"
 keys Escape
 snap 13-draft-kept "and then"
 keys C-c

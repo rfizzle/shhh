@@ -16,7 +16,7 @@
 │ ❯ 2. make build · sh · 3 lines                                           │
 │     make build ↵ make tui-shot SCENE=copy-block COLS=110 ROWS=40 ↵ make… │
 │   3. keys "/copy code" Enter · code · 2 lines                            │
-│ [↑↓] move · [enter] select · [esc] keep nothing                          │
+│ [↑↓] move · [enter] select · [esc] back — nothing is copied              │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · reading mode on the reply · [c] copies the block
@@ -63,7 +63,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m2. make build · sh · 3 lines                                          ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m    make build ↵ make tui-shot SCENE=copy-block COLS=110 ROWS=40 ↵ make…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mkeys "/copy code" Enter␛[m␛[38;5;244m · ␛[m␛[38;5;254mcode␛[m␛[38;5;244m · 2 lines␛[m                            ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep nothing␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — nothing is copied␛[m              ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · reading mode on the reply · [c] copies the block

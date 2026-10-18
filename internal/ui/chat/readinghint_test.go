@@ -200,7 +200,7 @@ func TestReadingHint_RowKeysAreASecondLineUnderTheRowsOwnRail(t *testing.T) {
 	if !strings.HasPrefix(line, "▎this row · ") {
 		t.Fatalf("the row's keys carry the row's own rail, got %q", line)
 	}
-	for _, want := range []string{keys.Bracket(keys.Draft.Answer) + " " + commitWords, "[esc] nothing"} {
+	for _, want := range []string{keys.Bracket(keys.Draft.Answer) + " " + commitWords, "[esc] back"} {
 		if !strings.Contains(line, want) {
 			t.Fatalf("the row should offer %q, got %q", want, line)
 		}
@@ -733,7 +733,7 @@ func TestStackSegs_TheBudgetNeverDropsTheEscRow(t *testing.T) {
 	segs := []hintSeg{
 		segAs(keys.Screen.Delete, "remove this row now"),
 		segAs(keys.Screen.Copy, "copy this row whole"),
-		segAs(keys.Select.Cancel, "nothing"),
+		segAs(keys.Select.Cancel, components.EscBack),
 	}
 	for _, width := range goldenWidths {
 		for budget := 1; budget <= 3; budget++ {
@@ -742,7 +742,7 @@ func TestStackSegs_TheBudgetNeverDropsTheEscRow(t *testing.T) {
 				t.Fatalf("width %d budget %d: %d rows", width, budget, len(lines))
 			}
 			last := ansi.Strip(lines[len(lines)-1])
-			if !strings.Contains(last, "[esc] nothing") {
+			if !strings.Contains(last, "[esc] back") {
 				t.Errorf("width %d budget %d: the last row is %q, want it to end on the esc offer", width, budget, last)
 			}
 		}

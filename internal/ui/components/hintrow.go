@@ -142,6 +142,7 @@ func (t HintTones) keyStyle(o KeyOffer) lipgloss.Style {
 
 // Paint renders one segment.
 func (t HintTones) Paint(o KeyOffer) string {
+	heardGloss(o)
 	switch {
 	case o.Key == "":
 		return t.Fact.Render(o.Label)

@@ -23,7 +23,7 @@ shhh chats · 3 conversations
                                                         │ 
                                                         │   12 turns
 
-[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back to the shell
+[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back
 
 · titled only
 shhh chats · 3 conversations
@@ -34,7 +34,7 @@ shhh chats · 3 conversations
   2026-09-27 08:02:41  1 turn · Sep 27 08:02            │ 
                                                         │   4 turns
 
-[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back to the shell
+[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back
 
 · neither
 shhh chats · 3 conversations
@@ -44,7 +44,7 @@ shhh chats · 3 conversations
   2026-09-28 17:40:11  naming the report pages · 4 tur… │ 
 ❯ 2026-09-27 08:02:41  1 turn · Sep 27 08:02            │   1 turn
 
-[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back to the shell
+[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · titled and summarised · the account under the title
@@ -60,7 +60,7 @@ shhh chats · 3 conversations
                                                        ␛[38;5;244m │ ␛[m
                                                        ␛[38;5;244m │ ␛[m  ␛[38;5;254m12 turns␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · titled only
 ␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m
@@ -71,7 +71,7 @@ shhh chats · 3 conversations
   ␛[38;5;254m2026-09-27 08:02:41␛[m  ␛[38;5;244m1 turn · Sep 27 08:02␛[m           ␛[38;5;244m │ ␛[m
                                                        ␛[38;5;244m │ ␛[m  ␛[38;5;254m4 turns␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · neither
 ␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m
@@ -81,4 +81,4 @@ shhh chats · 3 conversations
   ␛[38;5;254m2026-09-28 17:40:11␛[m  ␛[38;5;244mnaming the report pages · 4 tur…␛[m␛[38;5;244m │ ␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m2026-09-27 08:02:41  1 turn · Sep 27 08:02           ␛[m␛[38;5;244m │ ␛[m  ␛[38;5;254m1 turn␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

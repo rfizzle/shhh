@@ -198,8 +198,8 @@ func TestProviderSetup_PasteAKeyForTheProviderThatFailed(t *testing.T) {
 func TestProviderSetup_EscSaysWhichProviderItKeeps(t *testing.T) {
 	m := NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"anthropic", "openai"})
 	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})
-	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "[esc] keep openai") {
-		t.Fatalf("the provider list should offer `[esc] keep openai`:\n%s", got)
+	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "[esc] back — stays on openai") {
+		t.Fatalf("the provider list should offer `[esc] back — stays on openai`:\n%s", got)
 	}
 	m = NewProviderSetup(resolve.Survey{}, []string{"anthropic", "openai"})
 	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})

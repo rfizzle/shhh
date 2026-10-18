@@ -373,7 +373,7 @@ func TestConfigScreen_LeavingOverHeldEditsAsksWhereTheyGo(t *testing.T) {
 		return c
 	}
 	view := stripANSI(ask().View(110))
-	for _, want := range []string{"Leave 2 changes on this session only?", "[y] this session only", "[ctrl+s] write first", "[esc] stay"} {
+	for _, want := range []string{"Leave 2 changes on this session only?", "[y] this session only", "[ctrl+s] write first", "[esc] back"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the question lacks %q:\n%s", want, view)
 		}
@@ -409,11 +409,11 @@ func TestConfigScreen_LeavingOverHeldEditsAsksWhereTheyGo(t *testing.T) {
 func TestConfigScreen_TheFooterNamesWhereHeldEditsGo(t *testing.T) {
 	c := configFixture()
 	c.InSession, c.Changed, c.Held = true, 2, 2
-	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] keep on this session, after asking") {
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] back — asks whether to write them, and keeps them on this session") {
 		t.Fatalf("esc over held edits keeps them, after asking:\n%s", view)
 	}
 	c.Held = 1
-	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] leave, after asking") {
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] back — asks where the changes go") {
 		t.Fatalf("esc over some held edits leaves, after asking:\n%s", view)
 	}
 }
@@ -422,11 +422,11 @@ func TestConfigScreen_TheFooterNamesWhereHeldEditsGo(t *testing.T) {
 // something staged as without it.
 func TestConfigScreen_TheFooterNamesWhatTheWayOutDoes(t *testing.T) {
 	c := configFixture()
-	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] leave") {
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] back") {
 		t.Fatalf("with nothing staged esc leaves:\n%s", view)
 	}
 	c.Changed = 2
-	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] discard, after asking") {
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] back — asks before it discards them") {
 		t.Fatalf("with edits staged esc discards, after asking:\n%s", view)
 	}
 }
@@ -438,16 +438,13 @@ func TestConfigScreen_TheRegisterReadsWhatIsStaged(t *testing.T) {
 	c := configFixture()
 	c.Update(key("?"))
 	if view := stripANSI(c.View(110)); strings.Contains(view, "asking") ||
-		!strings.Contains(view, "[esc] leave the screen writing nothing") {
+		!strings.Contains(view, "[esc] back — leaves the picker, or the screen, writing nothing") {
 		t.Fatalf("with nothing staged the register promises no question:\n%s", view)
 	}
 	c.Changed = 2
 	view := stripANSI(c.View(110))
-	if !strings.Contains(view, "leave the picker, or ask before discarding the lot") {
+	if !strings.Contains(view, "leaves the picker, or asks before it discards the lot") {
 		t.Fatalf("with edits staged the register says esc asks:\n%s", view)
-	}
-	if !strings.Contains(view, "[esc] ask before discarding the lot and leaving") {
-		t.Fatalf("with edits staged the register says the way out asks too:\n%s", view)
 	}
 }
 

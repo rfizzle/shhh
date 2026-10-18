@@ -27,7 +27,7 @@ keys "then do the footer" C-n
 keys "/secret set DEMO_TOKEN=abc123" Enter
 snap 03-queued "follow-up  then do the footer" "session    A secret named DEMO_TOKEN" "steering   fix the header too" "[f2] edit the queue"
 keys F2
-snap 04-card "queued · 3 messages" "[d] delete" "[esc] back to the draft"
+snap 04-card "queued · 3 messages" "[d] delete" "[esc] back"
 keys Up
 snap 05-session "❯ session"
 keys Enter

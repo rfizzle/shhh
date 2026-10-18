@@ -567,7 +567,7 @@ func (p *EditorPane) View(width int) string {
 
 // headerRow is the command and the file, the line count where there is room
 // and `modified` in the accent while the buffer differs from the disk; the
-// keys at its right. Folded, the file is its name alone, because the line
+// keys are the foot's. Folded, the file is its name alone, because the line
 // under the header names its directory.
 func (p *EditorPane) headerRow(width int, narrow bool) string {
 	folded := narrow
@@ -582,12 +582,7 @@ func (p *EditorPane) headerRow(width int, narrow bool) string {
 	if p.modified {
 		left = append(left, RailSegment{Text: sty.dim.Render(" · ") + sty.accent.Render("modified"), Drop: RailVital})
 	}
-	back := words(keys.Editor.Back, "back")
-	right := words(keys.Draft.KeyList, "keys") + " · " + back
-	if folded {
-		right = back
-	}
-	return screenHeader{left: left, keys: right}.row(width)
+	return screenHeader{left: left}.row(width)
 }
 
 // whereLine is the folded header's second line: the declaration the cursor
@@ -907,19 +902,19 @@ func (p *EditorPane) footRow(width int, narrow bool) string {
 			{sty.accent.Render("leave without saving?") + " " + keyOffers([]KeyOffer{
 				OfferAs(keys.Editor.Discard, "discard the change"),
 				OfferAs(keys.Editor.SaveLeave, "save and leave"),
-				OfferAs(keys.Editor.Keep, "keep editing"),
+				OfferAs(keys.Editor.Keep, EscBack+escClause+"keeps editing"),
 			}), long},
 			{sty.accent.Render("leave unsaved?") + " " + keyOffers([]KeyOffer{
 				OfferAs(keys.Editor.Discard, "discard"),
-				OfferAs(keys.Editor.Keep, "keep editing"),
+				OfferAs(keys.Editor.Keep, EscBack+escClause+"keeps editing"),
 			}), short},
 		}
 	case p.Notice != "":
 		forms = []form{{sty.dim.Render(p.Notice), long}, {sty.dim.Render(p.Notice), short}}
 	default:
 		forms = []form{
-			{keyOffers([]KeyOffer{OfferAs(keys.Editor.Save, "save"), OfferAs(keys.Editor.Back, EscBack)}), long},
-			{keyOffers([]KeyOffer{OfferAs(keys.Editor.Save, "save"), OfferAs(keys.Editor.Back, EscBack)}), short},
+			{keyOffers([]KeyOffer{OfferAs(keys.Editor.Save, "save"), OfferAs(keys.Draft.KeyList, "keys"), OfferAs(keys.Editor.Back, EscBack)}), long},
+			{keyOffers([]KeyOffer{OfferAs(keys.Editor.Save, "save"), OfferAs(keys.Draft.KeyList, "keys"), OfferAs(keys.Editor.Back, EscBack)}), short},
 		}
 	}
 	if folded {

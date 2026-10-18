@@ -718,7 +718,7 @@ func (s *questionSheet) submitRows(width int) []string {
 	segs := []components.KeyOffer{
 		components.OfferAs(keys.Select.Take, "send"),
 		components.Offer(keys.Select.Tab),
-		components.OfferAs(keys.Select.Cancel, "answer in your own words"),
+		components.OfferAs(keys.Select.Cancel, components.EscWaits+" — nothing is sent"),
 	}
 	rows := append([]string{components.Clip(line, width)}, components.CardHintRows(segs, width)...)
 	return strings.Split(components.Card{Title: "the answers"}.Render(rows, width), "\n")

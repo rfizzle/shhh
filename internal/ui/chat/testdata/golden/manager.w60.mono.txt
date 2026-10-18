@@ -68,8 +68,7 @@ web                                             running…
     process web (stderr): bytes 0-31 of 31 (running)
     warn: a deprecated option
 
-[↑↓/jk] scroll · [d] stop · [?] keys
-[esc] back to the list
+[↑↓/jk] scroll · [d] stop · [?] keys · [esc] back
 
 · a round's two calls · the search stopped by you, the command running
 /ps · 2 processes running · 1 call running
@@ -109,8 +108,7 @@ execute_command                                 running…
   output so far
     ok      internal/agent    3.2s
 
-[↑↓/jk] scroll · [d] stop · [?] keys
-[esc] back to the list
+[↑↓/jk] scroll · [d] stop · [?] keys · [esc] back
 
 · the panel it leaves · the way out, on one row
 ────────────────────────────────────────────────────────
@@ -176,8 +174,7 @@ ps
     ␛[38;5;254mprocess web (stderr): bytes 0-31 of 31 (running)␛[m
     ␛[38;5;254mwarn: a deprecated option␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the list␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a round's two calls · the search stopped by you, the command running
 ␛[1;38;5;254m/ps␛[m␛[38;5;244m · 2 processes running␛[m␛[38;5;244m · 1 call running␛[m
@@ -217,8 +214,7 @@ ps
   ␛[38;5;244moutput so far␛[m
     ␛[38;5;254mok      internal/agent    3.2s␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the list␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · the panel it leaves · the way out, on one row
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m

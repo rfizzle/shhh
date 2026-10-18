@@ -16,7 +16,7 @@
 │ ❯ 2. make build · sh · 3 lines                                                                                             │
 │     make build ↵ make tui-shot SCENE=copy-block COLS=110 ROWS=40 ↵ make tui-shot SCENE=copy-block COLS=60 ROWS=40          │
 │   3. keys "/copy code" Enter · code · 2 lines                                                                              │
-│ [↑↓] move · [enter] select · [esc] keep nothing                                                                            │
+│ [↑↓] move · [enter] select · [esc] back — nothing is copied                                                                │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · reading mode on the reply · [c] copies the block
@@ -63,7 +63,7 @@
 ␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;61m2. make build · sh · 3 lines                                                                                            ␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;245m    make build ↵ make tui-shot SCENE=copy-block COLS=110 ROWS=40 ↵ make tui-shot SCENE=copy-block COLS=60 ROWS=40␛[m          ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;252mkeys "/copy code" Enter␛[m␛[38;5;245m · ␛[m␛[38;5;252mcode␛[m␛[38;5;245m · 2 lines␛[m                                                                              ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m select␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep nothing␛[m                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m select␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back — nothing is copied␛[m                                                                ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · reading mode on the reply · [c] copies the block

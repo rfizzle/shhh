@@ -69,8 +69,8 @@ func TestModelPick_EscSaysWhichModelItKeeps(t *testing.T) {
 	if m.picker.card == nil {
 		t.Fatal("/model should open the picker")
 	}
-	if got := m.picker.card.CancelLabel; got != "keep m1" {
-		t.Fatalf("esc should offer %q, got %q", "keep m1", got)
+	if got := m.picker.card.CancelLabel; got != "back — stays on m1" {
+		t.Fatalf("esc should offer %q, got %q", "back — stays on m1", got)
 	}
 	// The card opens as a search; esc first closes the row (and says so),
 	// and with the row closed it names the model it keeps.
@@ -82,8 +82,8 @@ func TestModelPick_EscSaysWhichModelItKeeps(t *testing.T) {
 	if m.picker.card == nil {
 		t.Fatal("the first esc should close the search row, not the picker")
 	}
-	if view := ansi.Strip(m.picker.card.View(110)); !strings.Contains(view, "[esc] keep m1") {
-		t.Fatalf("the key row should offer `[esc] keep m1`:\n%s", view)
+	if view := ansi.Strip(m.picker.card.View(110)); !strings.Contains(view, "[esc] back — stays on m1") {
+		t.Fatalf("the key row should offer `[esc] back — stays on m1`:\n%s", view)
 	}
 }
 
@@ -97,8 +97,8 @@ func TestModeAndProviderPick_EscSaysWhatItKeeps(t *testing.T) {
 	if mode.picker.card == nil {
 		t.Fatal("the mode picker should open in a coding session")
 	}
-	if view := ansi.Strip(mode.picker.card.View(110)); !strings.Contains(view, "[esc] keep manual") {
-		t.Fatalf("the mode picker should offer `[esc] keep manual`:\n%s", view)
+	if view := ansi.Strip(mode.picker.card.View(110)); !strings.Contains(view, "[esc] back — stays on manual") {
+		t.Fatalf("the mode picker should offer `[esc] back — stays on manual`:\n%s", view)
 	}
 
 	m = readyModel(t)
@@ -108,8 +108,8 @@ func TestModeAndProviderPick_EscSaysWhatItKeeps(t *testing.T) {
 	if prov.picker.card == nil {
 		t.Fatal("the provider picker should open")
 	}
-	if view := ansi.Strip(prov.picker.card.View(110)); !strings.Contains(view, "[esc] keep anthropic") {
-		t.Fatalf("the provider picker should offer `[esc] keep anthropic`:\n%s", view)
+	if view := ansi.Strip(prov.picker.card.View(110)); !strings.Contains(view, "[esc] back — stays on anthropic") {
+		t.Fatalf("the provider picker should offer `[esc] back — stays on anthropic`:\n%s", view)
 	}
 }
 

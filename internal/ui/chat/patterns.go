@@ -268,7 +268,7 @@ func (m Model) openProposalCard(p Proposal) (tea.Model, tea.Cmd) {
 		// Esc here leaves the proposal for next time, which is the answer
 		// that writes nothing at all; Don't save is the never, as it is on
 		// the model's own proposals.
-		card.ask.Select.CancelLabel = "not now"
+		card.ask.Select.CancelLabel = components.EscWaits + " — kept for next time"
 	} else {
 		if m.patterns.cfg.Preview == nil || m.patterns.cfg.Write == nil {
 			return m.closeWithNotice("this session cannot write " + p.Kind + " proposals")

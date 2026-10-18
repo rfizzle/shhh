@@ -62,7 +62,7 @@ snap 04-three-states "writer-2 · Approve command" "blocked · " "writing · "
 # children are the rows that are not agents: the roles this session can spawn,
 # each saying where it lives, and the offer to draft another under them.
 keys F12
-snap 05-manager "[d] stop every agent" "[a] answer without attaching" "[esc] back to the turn"
+snap 05-manager "[d] stop every agent" "[a] answer without attaching" "[esc] back"
 # The pointer on the blocked child. The offers do not change, because they
 # were never the pointer's.
 keys j

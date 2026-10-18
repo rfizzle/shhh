@@ -40,7 +40,7 @@ func planFixture() *PlanCard {
 			{Label: "Step through it — manual approvals", Desc: "every edit asks you first"},
 		},
 		HintKeys: []KeyOffer{{Key: "[↑↓/jk]", Label: "move"}, {Key: "[enter]", Label: "select"},
-			keyOfferAs(keys.Plan.Save, "save"), keyOfferAs(keys.Select.Cancel, "keep planning")},
+			keyOfferAs(keys.Plan.Save, "save"), keyOfferAs(keys.Select.Cancel, EscWaits)},
 	}
 }
 
@@ -147,7 +147,7 @@ func TestPlanCard_NotYetLiveOffersTheHandoverAlone(t *testing.T) {
 	if !strings.Contains(view, keys.Bracket(keys.Draft.Answer)+" answer it") {
 		t.Errorf("the one live key is not offered:\n%s", view)
 	}
-	for _, gone := range []string{"[ctrl+s] save", "[enter] select", "[esc] keep planning"} {
+	for _, gone := range []string{"[ctrl+s] save", "[enter] select", "[esc] keeps waiting"} {
 		if strings.Contains(view, gone) {
 			t.Errorf("the card offers %q beside a live draft:\n%s", gone, view)
 		}
@@ -169,7 +169,7 @@ func TestPlanCard_BoundedHeightCountsWhatItDrops(t *testing.T) {
 	}
 	// The decision survives the squeeze: options and keys are never what the
 	// bound takes.
-	for _, want := range []string{"Run the whole plan", "[esc] keep planning"} {
+	for _, want := range []string{"Run the whole plan", "[esc] keeps waiting"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the bound must not eat %q:\n%s", want, view)
 		}

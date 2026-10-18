@@ -26,7 +26,7 @@ shhh chats · 3 conversations
 … (+2 more rows)
 
 [↑↓/jk] move · [enter] open it · [e] rename · [d] delete
-[/] filter · [?] keys · [esc] back to the shell
+[/] filter · [?] keys · [esc] back
 
 · titled only
 shhh chats · 3 conversations
@@ -42,7 +42,7 @@ shhh chats · 3 conversations
   4 turns
 
 [↑↓/jk] move · [enter] open it · [e] rename · [d] delete
-[/] filter · [?] keys · [esc] back to the shell
+[/] filter · [?] keys · [esc] back
 
 · neither
 shhh chats · 3 conversations
@@ -57,7 +57,7 @@ shhh chats · 3 conversations
   1 turn
 
 [↑↓/jk] move · [enter] open it · [e] rename · [d] delete
-[/] filter · [?] keys · [esc] back to the shell
+[/] filter · [?] keys · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · titled and summarised · the account under the title
@@ -76,7 +76,7 @@ shhh chats · 3 conversations
 ␛[38;5;244m… (+2 more rows)␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m
-␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · titled only
 ␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m
@@ -92,7 +92,7 @@ shhh chats · 3 conversations
   ␛[38;5;254m4 turns␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m
-␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · neither
 ␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m
@@ -107,4 +107,4 @@ shhh chats · 3 conversations
   ␛[38;5;254m1 turn␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m
-␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

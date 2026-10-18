@@ -20,7 +20,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [d] stop every agent · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [d] stop every agent · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · focus · the blocked child, [a] answers it here
@@ -33,7 +33,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · focus · the failed child, [r] runs it again
@@ -46,7 +46,7 @@
 │     the rails and the frame are one component                                                              │
 │ ❯ ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [r] retry · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [r] retry · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · focus · a killed writer whose patch is kept, enter reviews it, and the handoff it left
@@ -59,8 +59,7 @@
 │     the rails and the frame are one component                                                              │
 │ ❯ ✗ writer-5 · docs/round.md                                 patch kept · [enter] review · 4 tools · $0.03 │
 │     cancelled · handoff handoff-130ebba38aed7                                                              │
-│ [enter] review the kept patch · [a] answer without attaching · [r] retry · [d] stop                        │
-│ [esc] back to the turn                                                                                     │
+│ [enter] review the kept patch · [a] answer without attaching · [r] retry · [d] stop · [esc] back           │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the rows that are not agents · the session's roles, and the offer to draft another
@@ -77,7 +76,7 @@
 │   ◇ reviewer · reads a change for what it breaks                                                   project │
 │   ◇ researcher · read-only tools plus web                                                         built-in │
 │ ❯ ⚙ draft a new profile                                                                        /agents new │
-│ [enter] draft a profile · [a] answer without attaching · [esc] back to the turn                            │
+│ [enter] draft a profile · [a] answer without attaching · [esc] back                                        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · focus · a role in the older shape · enter opens it on the drafter, [e] opens its file
@@ -94,7 +93,7 @@
 │   ◇ reviewer · reads a change for what it breaks                                                   project │
 │   ◇ researcher · read-only tools plus web                                                         built-in │
 │   ⚙ draft a new profile                                                                        /agents new │
-│ [enter] open it · [e] edit · [a] answer without attaching · [esc] back to the turn                         │
+│ [enter] open it · [e] edit · [a] answer without attaching · [esc] back                                     │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · focus · a current role · no mark
@@ -111,7 +110,7 @@
 │ ❯ ◇ reviewer · reads a change for what it breaks                                                   project │
 │   ◇ researcher · read-only tools plus web                                                         built-in │
 │   ⚙ draft a new profile                                                                        /agents new │
-│ [enter] open it · [e] edit · [a] answer without attaching · [esc] back to the turn                         │
+│ [enter] open it · [e] edit · [a] answer without attaching · [esc] back                                     │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a child that delegated · the request is under the row it belongs to
@@ -122,7 +121,7 @@
 │      waiting approval: read internal/agent/loop.go                                                         │
 │   ◇ reader-2 · survey internal/ui                                                 ✓ done · 8 tools · $0.02 │
 │     the rails and the frame are one component                                                              │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the redirect · typed under the row it will reach, and nothing else is live
@@ -137,7 +136,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] send it · [esc] leave it unsent                                                                    │
+│ [enter] send it · [esc] back — nothing is sent                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · focus · a finished child, [s] asks it a follow-up
@@ -150,7 +149,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [s] follow up · [d] stop · [esc] back to the turn          │
+│ [enter] attach · [a] answer without attaching · [s] follow up · [d] stop · [esc] back                      │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the follow-up · typed under the finished row
@@ -165,7 +164,7 @@
 │       ┃ which component owns the rail?                                                                     │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] send it · [esc] leave it unsent                                                                    │
+│ [enter] send it · [esc] back — nothing is sent                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the follow-up sent · the row is running again, on the question
@@ -178,7 +177,7 @@
 │     follow-up · which component owns the rail?                                                             │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a child handed the last turns · what it inherited leads the line of what it cost, and gives way first when the card is narrow
@@ -191,7 +190,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a writer reseeding · parked while another's landed patch is carried into its copy
@@ -204,7 +203,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a writer queued behind a claim · no slot and no copy until the writer it overlaps is done
@@ -217,7 +216,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a writer waiting for a check slot · parked in front of its test run, not failed
@@ -231,7 +230,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a writer on its own plan · its steps and its budget's share, and the step it is on where there is room
@@ -244,7 +243,7 @@
 │     the rails and the frame are one component                                                              │
 │   ✗ patcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                               │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -258,7 +257,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop every agent␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop every agent␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · the blocked child, [a] answers it here
@@ -271,7 +270,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · the failed child, [r] runs it again
@@ -284,7 +283,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mpatcher-4 · apply patch                                                      ✗ failed · 1 tool · $0.01␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · a killed writer whose patch is kept, enter reviews it, and the handoff it left
@@ -297,8 +296,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-5 · docs/round.md                                 patch kept · [enter] review · 4 tools · $0.03␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mcancelled · handoff handoff-130ebba38aed7␛[m                                                              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m review the kept patch␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m review the kept patch␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the rows that are not agents · the session's roles, and the offer to draft another
@@ -315,7 +313,7 @@
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m reviewer␛[38;5;244m · reads a change for what it breaks␛[m                                                   ␛[38;5;244mproject␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m researcher␛[38;5;244m · read-only tools plus web␛[m                                                         ␛[38;5;244mbuilt-in␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m⚙␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mdraft a new profile                                                                        /agents new␛[m␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m draft a profile␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m draft a profile␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · a role in the older shape · enter opens it on the drafter, [e] opens its file
@@ -332,7 +330,7 @@
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m reviewer␛[38;5;244m · reads a change for what it breaks␛[m                                                   ␛[38;5;244mproject␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m researcher␛[38;5;244m · read-only tools plus web␛[m                                                         ␛[38;5;244mbuilt-in␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚙␛[m draft a new profile                                                                        ␛[38;5;244m/agents new␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · a current role · no mark
@@ -349,7 +347,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mreviewer · reads a change for what it breaks                                                   project␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m researcher␛[38;5;244m · read-only tools plus web␛[m                                                         ␛[38;5;244mbuilt-in␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚙␛[m draft a new profile                                                                        ␛[38;5;244m/agents new␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a child that delegated · the request is under the row it belongs to
@@ -360,7 +358,7 @@
 ␛[38;5;254m│␛[m      ␛[38;5;244mwaiting approval: read internal/agent/loop.go␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m reader-2␛[38;5;244m · survey internal/ui␛[m                                                 ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m8 tools · $0.02␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the redirect · typed under the row it will reach, and nothing else is live
@@ -375,7 +373,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m send it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave it unsent␛[m                                                                    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m send it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — nothing is sent␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · a finished child, [s] asks it a follow-up
@@ -388,7 +386,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m follow up␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m follow up␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the follow-up · typed under the finished row
@@ -403,7 +401,7 @@
 ␛[38;5;254m│␛[m       ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254mwhich component owns the rail?␛[m␛[38;5;254m␛[7;38;5;237m ␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m                                                                   ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m send it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave it unsent␛[m                                                                    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m send it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — nothing is sent␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the follow-up sent · the row is running again, on the question
@@ -416,7 +414,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mfollow-up · which component owns the rail?␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a child handed the last turns · what it inherited leads the line of what it cost, and gives way first when the card is narrow
@@ -429,7 +427,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a writer reseeding · parked while another's landed patch is carried into its copy
@@ -442,7 +440,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a writer queued behind a claim · no slot and no copy until the writer it overlaps is done
@@ -455,7 +453,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a writer waiting for a check slot · parked in front of its test run, not failed
@@ -469,7 +467,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a writer on its own plan · its steps and its budget's share, and the step it is on where there is room
@@ -482,5 +480,5 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                      ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m stop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -602,15 +602,15 @@ func (p *ProfileScreen) wayOutWords() string {
 	case p.Step == ProfileWorking:
 		return "stop drafting"
 	case p.Step == ProfileDraft && p.FromFile && !p.sections.refining && p.Picker == nil:
-		return "close, nothing written"
+		return EscBack + escClause + "nothing is written"
 	case p.Step == ProfileDraft && (p.sections.refining || p.Picker != nil):
-		return "leave it as it is"
+		return EscBack + escClause + "it is left as it is"
 	case p.Step == ProfileDraft:
 		return "discard the draft"
 	case p.Step == ProfileQuestions && len(p.brief.asked) > 0:
-		return "back a step"
+		return EscBack
 	}
-	return "leave"
+	return EscBack
 }
 
 // railRow is the flow drawn as a flow: which steps are behind you, which one

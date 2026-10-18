@@ -94,6 +94,6 @@ func (p *backlogPicker) offers() []KeyOffer {
 		keyOffer(keys.Select.MoveJK),
 		keyOffer(keys.Select.Take),
 		{Key: keys.Bracketed(fmt.Sprintf("1–%d", len(p.card.Options))), Label: "jump"},
-		keyOfferAs(keys.Select.Cancel, "back to the list"),
+		keyOfferAs(keys.Select.Cancel, EscBack),
 	}
 }

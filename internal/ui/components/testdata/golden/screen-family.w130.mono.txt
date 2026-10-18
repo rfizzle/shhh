@@ -17,10 +17,12 @@ shhh doctor · 10 checks                                                        
 ❯  ✗ model   anthropic · claude-opus-5 · no key in any of the four places                                            no key       
     no session will start until a key is found — every one exits on "no provider"
     [enter] show the four places shhh looks
-  ↓ 9 more · binary · config · store · sandbox · engine · git · tools · memory · update
+   ✗ sandbox no containment mechanism · sandbox-exec not found                                                  uncontained   0.1s
+    every approval will show ⚠ UNCONTAINED, and an approved command runs as you
+    [enter] show the fix for this host
+  ↓ 8 more · binary · config · store · engine · git · tools · memory · update
 
-  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓/jk] move · [c] copy the report · [r] retry · [?] keys · [esc] back to the shell
+  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked        [↑↓/jk] move · [c] copy the report · [r] retry · [?] keys · [esc] back
 
 · metrics · the spend rides with the one key the screen has
 shhh metrics · last 30 days · 251 requests · 4 models                                                                       $18.42
@@ -32,7 +34,7 @@ claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s  ▂▃▆▄▃�
 gemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s  ▁▁▄▁▁▁█
 house-model               9    42k     3k       —   1.2s     —  ▁▁▁▁█▁▁
 
-[?] keys · [esc] back to the shell
+[?] keys · [esc] back
 
 · config · the file, and what is standing against it, over the flows section
 /config · ~/.config/shhh/config.toml · 2 changes unwritten
@@ -42,10 +44,10 @@ FLOWS
 ❯ classifier         gemini-3-flash — this session only, written to no file                                                session
   explanation        claude-sonnet-4.6 — behavior.explainer_model                                                         flow key
   reading            gpt-5.2-mini — provider.cheap_model                                                                 cheap key
-  backlog            claude-haiku-4.5                                                                         provider small model
-↓ 15 more
+↓ 16 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [ctrl+s] write 2 changes · [?] keys · [esc] discard, after asking
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [ctrl+s] write 2 changes · [?] keys
+[esc] back — asks before it discards them
 nothing is written until [ctrl+s]
 
 · history · the subject, and a foot key row that states the way out
@@ -59,7 +61,7 @@ shhh history · 6 entries · 2 run
   ⊘ wipe the whole build directory  dismissed · mon              │     -delete
   · count the log lines by level    not run · Aug 14             │   ↑ 412 · ↓ 38 tokens
 
-[enter] re-run it · [c] copy · [d] delete · [/] filter · [?] keys · [esc] back to the shell        nothing is re-run until [enter]
+[enter] re-run it · [c] copy · [d] delete · [/] filter · [?] keys · [esc] back                     nothing is re-run until [enter]
 
 · rate · the same header over one card
 shhh rate · 1 of 5
@@ -98,7 +100,7 @@ What should this agent do?
 ┄ in your own words
   ┃ what it is for                                                                                                                
 
-[enter] draft from what you typed · [esc] nothing is drafted
+[enter] draft from what you typed · [esc] back — nothing is drafted
 
 · snippets · the list, the command it would run, and the promise that it will not
 shhh snippets · 3 snippets
@@ -109,7 +111,7 @@ shhh snippets · 3 snippets
   prune      drop every merged branch    tue │ 
                                              │   ▎$ run     lsof -nP -iTCP -sTCP:LISTEN
 
-[enter] run it · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back to the shell            nothing is run until [enter]
+[enter] run it · [c] copy · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back              nothing is run until [enter]
 
 · the saved-chat browser · a row another session holds says so in a word
 shhh chats · 3 conversations
@@ -123,7 +125,7 @@ shhh chats · 3 conversations
                                                                  │   "held" is open in another session — its conversation is still
                                                                  │   being written there.
 
-[↑↓/jk] move · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back to the shell                   open in another session
+[↑↓/jk] move · [e] rename · [d] delete · [/] filter · [?] keys · [esc] back                                open in another session
 
 · sources · the list is grouped under the hosts it read
 /sources · 2 pages · 1 host · 1 search
@@ -244,10 +246,12 @@ definitions not loaded                                   │   costs     its too
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no key in any of the four places                                            no key       ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one exits on "no provider"␛[m
     ␛[38;5;254m[enter]␛[m␛[38;5;244m show the four places shhh looks␛[m
-  ␛[38;5;244m↓ 9 more · binary · config · store · sandbox · engine · git · tools · memory · update␛[m
+   ␛[38;5;254m✗␛[m ␛[38;5;254msandbox␛[m ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · sandbox-exec not found␛[m                                                  ␛[38;5;254muncontained␛[m   ␛[38;5;244m0.1s␛[m
+    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
+    ␛[38;5;244m[enter]␛[m␛[38;5;244m show the fix for this host␛[m
+  ␛[38;5;244m↓ 8 more · binary · config · store · engine · git · tools · memory · update␛[m
 
-  ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+  ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m        ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · metrics · the spend rides with the one key the screen has
 ␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                                                                       ␛[38;5;254m$18.42␛[m
@@ -259,7 +263,7 @@ definitions not loaded                                   │   costs     its too
 ␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;244m▁▁▄▁▁▁█␛[m
 ␛[38;5;254mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;244m▁▁▁▁█▁▁␛[m
 
-␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · config · the file, and what is standing against it, over the flows section
 ␛[1;38;5;254m/config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m␛[38;5;254m · 2 changes unwritten␛[m
@@ -269,10 +273,10 @@ definitions not loaded                                   │   costs     its too
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mclassifier         gemini-3-flash — this session only, written to no file                                                session␛[m
   ␛[38;5;254mexplanation␛[m        ␛[38;5;254mclaude-sonnet-4.6␛[m ␛[38;5;244m— behavior.explainer_model␛[m                                                         ␛[38;5;254mflow key␛[m
   ␛[38;5;254mreading␛[m            ␛[38;5;254mgpt-5.2-mini␛[m ␛[38;5;244m— provider.cheap_model␛[m                                                                 ␛[38;5;254mcheap key␛[m
-  ␛[38;5;254mbacklog␛[m            ␛[38;5;254mclaude-haiku-4.5␛[m                                                                         ␛[38;5;254mprovider small model␛[m
-␛[38;5;244m↓ 15 more␛[m
+␛[38;5;244m↓ 16 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it discards them␛[m
 ␛[38;5;244mnothing is written until [ctrl+s]␛[m
 
 · history · the subject, and a foot key row that states the way out
@@ -286,7 +290,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;254m⊘ wipe the whole build directory␛[m  ␛[38;5;254mdismissed␛[m ␛[38;5;244m· mon␛[m             ␛[38;5;244m │ ␛[m    ␛[38;5;244m-delete␛[m
   ␛[38;5;254m· count the log lines by level␛[m    ␛[38;5;254mnot run␛[m ␛[38;5;244m· Aug 14␛[m            ␛[38;5;244m │ ␛[m  ␛[38;5;244m↑ 412 · ↓ 38 tokens␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m        ␛[38;5;244mnothing is re-run until [enter]␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                     ␛[38;5;244mnothing is re-run until [enter]␛[m
 
 · rate · the same header over one card
 ␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 1 of 5␛[m
@@ -325,7 +329,7 @@ definitions not loaded                                   │   costs     its too
 ␛[38;5;244m┄ in your own words␛[m
   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mw␛[m␛[m␛[38;5;254m␛[38;5;244mhat it is for␛[m␛[m␛[38;5;254m                                                                                                                ␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m draft from what you typed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m nothing is drafted␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m draft from what you typed␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — nothing is drafted␛[m
 
 · snippets · the list, the command it would run, and the promise that it will not
 ␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m
@@ -336,7 +340,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;254mprune␛[m      ␛[38;5;244mdrop every merged branch␛[m    ␛[38;5;254mtue␛[m␛[38;5;244m │ ␛[m
                                             ␛[38;5;244m │ ␛[m  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mlsof -nP -iTCP -sTCP:LISTEN␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m            ␛[38;5;244mnothing is run until [enter]␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m              ␛[38;5;244mnothing is run until [enter]␛[m
 
 · the saved-chat browser · a row another session holds says so in a word
 ␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m
@@ -350,7 +354,7 @@ definitions not loaded                                   │   costs     its too
                                                                 ␛[38;5;244m │ ␛[m  ␛[38;5;244m"held" is open in another session — its conversation is still␛[m
                                                                 ␛[38;5;244m │ ␛[m  ␛[38;5;244mbeing written there.␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m                   ␛[38;5;244mopen in another session␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                ␛[38;5;244mopen in another session␛[m
 
 · sources · the list is grouped under the hosts it read
 ␛[1;38;5;254m/sources␛[m␛[38;5;244m · 2 pages · 1 host · 1 search␛[m

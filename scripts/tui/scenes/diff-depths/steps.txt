@@ -69,7 +69,7 @@ snap 08-back-in-place "@@ -4,7 +4,7 @@"
 keys j j
 snap 08b-on-the-close "[enter] review turn"
 keys Enter
-snap 09-review "leave, change nothing" "❯ @@ -4,7 +4,7 @@"
+snap 09-review "[esc] back" "❯ @@ -4,7 +4,7 @@"
 # Esc leaves review with nothing done, which is what the
 # surface says about itself the whole time it is up; the second drops the
 # reading cursor.

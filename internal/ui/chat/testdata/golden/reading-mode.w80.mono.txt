@@ -33,7 +33,7 @@
 
 ────────────────────────────────────────────────────────────────────────────
 [↑↓/jk] move · [enter] review turn · [/] filter · [?] keys · [esc] back  3/3
-▎this row · [ctrl+space/ctrl+y] commit · [esc] nothing
+▎this row · [ctrl+space/ctrl+y] commit · [esc] back
 
 
 · the input has it · plain rail, no row lit, the frame is accented
@@ -160,7 +160,7 @@
 
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m  ␛[38;5;244m3/3␛[m
-␛[38;5;254m▎␛[m␛[38;5;244mthis row · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m nothing␛[m
+␛[38;5;254m▎␛[m␛[38;5;244mthis row · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 
 · the input has it · plain rail, no row lit, the frame is accented

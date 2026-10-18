@@ -242,7 +242,7 @@ func (c CommitMessage) View(width int) string {
 	tones := cardTones()
 	rows = append(rows, cardRule,
 		tones.Paint(keyOfferAs(keys.Select.Take, "commit with this")),
-		Clip(tones.Paint(safeOffer(keys.Select.Cancel, "back to the card, edits kept", inner)), inner))
+		Clip(tones.Paint(safeOffer(keys.Select.Cancel, EscWaits+escClause+"edits kept", inner)), inner))
 	// The frame is Add rather than the decision tone: what is inside it is
 	// the text that will be written, and the surface is the one place in
 	// this flow where nothing is being decided — the decision was taken on

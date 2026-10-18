@@ -171,7 +171,7 @@
 │ · agent: cap rounds at the limit instead of erroring     │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] commit with this                                 │
-│ [esc] back to the card, edits kept                       │
+│ [esc] keeps waiting — edits kept                         │
 ╰──────────────────────────────────────────────────────────╯
 
 · a subject past the budget · it counts on
@@ -179,7 +179,7 @@
 │ · agent: cap the number of tool rounds at the configure… │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] commit with this                                 │
-│ [esc] back to the card, edits kept                       │
+│ [esc] keeps waiting — edits kept                         │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -344,7 +344,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m· ␛[magent: cap rounds at the limit instead of erroring     ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m commit with this␛[m                                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to the card, edits kept␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting — edits kept␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a subject past the budget · it counts on
@@ -352,5 +352,5 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m· ␛[magent: cap the number of tool rounds at the configure… ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;254m commit with this␛[m                                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to the card, edits kept␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] keeps waiting — edits kept␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m

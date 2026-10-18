@@ -268,7 +268,7 @@ func TestSelect_QueryChipsAndHint(t *testing.T) {
 		Title: "Palette", Options: grouped(), Unnumbered: true,
 		Filtering: true, Query: "mod", Chips: []string{"12 results"},
 		HintKeys: []KeyOffer{{Key: "[enter]", Label: "run"}, {Key: "[tab]", Label: "complete"},
-			{Key: "[↑↓]", Label: "move"}, keyOfferAs(keys.Select.Cancel, "dismiss")},
+			{Key: "[↑↓]", Label: "move"}, keyOfferAs(keys.Select.Cancel, EscBack)},
 	}
 	view := s.View(70)
 	for _, want := range []string{"Palette", "12 results", "› mod█", "COMMANDS", "[tab] complete"} {
@@ -285,7 +285,7 @@ func TestSelect_QueryChipsAndHint(t *testing.T) {
 // palette's row stops fitting on one line.
 func TestSelect_NarrowKeyRowKeepsEverySegmentWhole(t *testing.T) {
 	segments := []KeyOffer{{Key: "[enter]", Label: "run"}, {Key: "[tab]", Label: "complete"},
-		{Key: "[↑↓]", Label: "move"}, keyOfferAs(keys.Select.Cancel, "dismiss")}
+		{Key: "[↑↓]", Label: "move"}, keyOfferAs(keys.Select.Cancel, EscBack)}
 	s := &Select{Title: "Palette", Options: grouped(), Unnumbered: true,
 		Filtering: true, HintKeys: segments}
 	rows := s.hintSegments(40)

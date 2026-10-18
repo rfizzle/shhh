@@ -32,7 +32,7 @@ WORKSPACE
   network            private hosts reachable — intranet and localhost fetches are allowed                                   global
 ↓ 3 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys · [esc] leave                                   14 settings
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys · [esc] back                                    14 settings
 
 · changing one · the picker opens under the row, not over the screen
 shhh config · ~/.config/shhh/config.toml
@@ -56,7 +56,7 @@ MODEL
   api key            ···4f9c                                                                                                global
 ↓ 7 more
 
-[↑↓] move · [/] filter · [enter] set it · [esc] keep gpt-5.2
+[↑↓] move · [/] filter · [enter] set it · [esc] back — keeps gpt-5.2
 
 · the picker filtered · the query row carries both counts
 shhh config · ~/.config/shhh/config.toml
@@ -104,7 +104,7 @@ WORKSPACE
   sandbox            ⛨ workspace-write                                                                    unavailable on this host
 ↓ 4 more
 
-[enter] set it · [esc] keep 25
+[enter] set it · [esc] back — keeps 25
 
 · a secret · the mask, never the key
 shhh config · ~/.config/shhh/config.toml
@@ -148,10 +148,10 @@ MODEL
   sub-agent model    inherit                                                                                               default
 
 WORKSPACE
-  sandbox            ⛨ workspace-write                                                                    unavailable on this host
-↓ 4 more
+↓ 5 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [ctrl+s] write 2 changes · [?] keys · [esc] discard, after asking
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [ctrl+s] write 2 changes · [?] keys
+[esc] back — asks before it discards them
 nothing is written until [ctrl+s]
 
 · staged in a session · a key read at the open says the next session takes it
@@ -175,7 +175,7 @@ MODEL
 ↓ 6 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [shift+tab] write global · [ctrl+s] write 2 changes · [?] keys
-[esc] leave, after asking
+[esc] back — asks where the changes go
 nothing is written until [ctrl+s]
 
 · after a write · the receipt on the foot row, nothing left staged
@@ -199,7 +199,7 @@ WORKSPACE
   sandbox            ⛨ workspace-write                                                                    unavailable on this host
 ↓ 4 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys · [esc] leave                                   14 settings
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys · [esc] back                                    14 settings
 wrote 2 changes to .shhh/config.toml · provider.model, behavior.command_timeout_seconds
 
 · after a failed write · why, and the changes still staged
@@ -219,10 +219,10 @@ MODEL
   base url           (the provider's own)                                                                                  default
   sub-agent model    inherit                                                                                               default
 
-WORKSPACE
 ↓ 5 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [ctrl+s] write 2 changes · [?] keys · [esc] discard, after asking
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [ctrl+s] write 2 changes · [?] keys
+[esc] back — asks before it discards them
 nothing is written until [ctrl+s]
 could not write .shhh/config.toml: permission denied
 
@@ -271,7 +271,7 @@ MODEL
 ↓ 10 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [shift+tab] write global · [ctrl+s] write 1 change · [?] keys
-[esc] keep on this session, after asking
+[esc] back — asks whether to write them, and keeps them on this session
 nothing is written until [ctrl+s]
 
 · the way out in a session · the changes stay on it, and the question is where else they go
@@ -296,7 +296,7 @@ MODEL
   model              gpt-5.2                                                                                    user · 6 available
 ↓ 8 more
 
-Leave 2 changes on this session only?  [y] this session only · [ctrl+s] write first · [esc] stay
+Leave 2 changes on this session only?  [y] this session only · [ctrl+s] write first · [esc] back
 
 · the way out in a session · a change it cannot take is dropped, and the count says so
 /config · project file · .shhh/config.toml · 3 changes unwritten
@@ -320,7 +320,7 @@ MODEL
   model              gpt-5.2                                                                                    user · 6 available
 ↓ 8 more
 
-Leave 2 changes on this session and drop 1 change?  [y] this session only · [ctrl+s] write first · [esc] stay
+Leave 2 changes on this session and drop 1 change?  [y] this session only · [ctrl+s] write first · [esc] back
 
 · the settings filtered · the list is the same window
 shhh config · ~/.config/shhh/config.toml
@@ -353,8 +353,8 @@ shhh config · ~/.config/shhh/config.toml
 [backspace] delete a character from the filter or the field being typed into
 [ctrl+r] reset this setting to its default
 [ctrl+s] write every staged change to ~/.config/shhh/config.toml
-[esc] clear the filter, then close it; leave the picker, or leave the screen writing nothing
-[esc] leave the screen writing nothing
+[esc] clear the filter, then close it
+[esc] back — leaves the picker, or the screen, writing nothing
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -387,7 +387,7 @@ APPEARANCE
 ❯ theme      charm                                                                                                      theme.toml
   verbosity  normal                                                                                                        default
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys · [esc] leave                                    2 settings
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [?] keys · [esc] back                                     2 settings
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
 /config · project file · .shhh/config.toml
@@ -411,7 +411,7 @@ MODEL
   model              gpt-5.2                                                                                    user · 6 available
 ↓ 8 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [shift+tab] write global · [?] keys · [esc] leave        19 settings
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [shift+tab] write global · [?] keys · [esc] back         19 settings
 
 · a flow's picker · the choice has three destinations on the key row
 /config · project file · .shhh/config.toml
@@ -435,7 +435,7 @@ SESSION
   context budget     8000 tokens                                                                                           default
 ↓ 11 more
 
-[↑↓] move · [/] filter · [enter] set it · [esc] keep claude-sonnet-4.6
+[↑↓] move · [/] filter · [enter] set it · [esc] back — keeps claude-sonnet-4.6
 
 ── ansi ────────────────────────────────────────────────────
 · the list · every row states where its value came from
@@ -460,7 +460,7 @@ SESSION
   ␛[38;5;254mnetwork␛[m            ␛[38;5;254mprivate hosts reachable␛[m ␛[38;5;244m— intranet and localhost fetches are allowed␛[m                                   ␛[38;5;254mglobal␛[m
 ␛[38;5;244m↓ 3 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m                                   ␛[38;5;244m14 settings␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                    ␛[38;5;244m14 settings␛[m
 
 · changing one · the picker opens under the row, not over the screen
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m
@@ -484,7 +484,7 @@ SESSION
   ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                                                ␛[38;5;254mglobal␛[m
 ␛[38;5;244m↓ 7 more␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep gpt-5.2␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — keeps gpt-5.2␛[m
 
 · the picker filtered · the query row carries both counts
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m
@@ -532,7 +532,7 @@ SESSION
   ␛[38;5;254msandbox␛[m            ␛[38;5;254m⛨ workspace-write␛[m                                                                    ␛[38;5;254munavailable on this host␛[m
 ␛[38;5;244m↓ 4 more␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep 25␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — keeps 25␛[m
 
 · a secret · the mask, never the key
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m
@@ -576,10 +576,10 @@ SESSION
   ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                               ␛[38;5;254mdefault␛[m
 
 ␛[1;38;5;254mWORKSPACE␛[m
-  ␛[38;5;254msandbox␛[m            ␛[38;5;254m⛨ workspace-write␛[m                                                                    ␛[38;5;254munavailable on this host␛[m
-␛[38;5;244m↓ 4 more␛[m
+␛[38;5;244m↓ 5 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it discards them␛[m
 ␛[38;5;244mnothing is written until [ctrl+s]␛[m
 
 · staged in a session · a key read at the open says the next session takes it
@@ -603,7 +603,7 @@ SESSION
 ␛[38;5;244m↓ 6 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m leave, after asking␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks where the changes go␛[m
 ␛[38;5;244mnothing is written until [ctrl+s]␛[m
 
 · after a write · the receipt on the foot row, nothing left staged
@@ -627,7 +627,7 @@ SESSION
   ␛[38;5;254msandbox␛[m            ␛[38;5;254m⛨ workspace-write␛[m                                                                    ␛[38;5;254munavailable on this host␛[m
 ␛[38;5;244m↓ 4 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m                                   ␛[38;5;244m14 settings␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                    ␛[38;5;244m14 settings␛[m
 ␛[38;5;244mwrote 2 changes to .shhh/config.toml · provider.model, behavior.command_timeout_seconds␛[m
 
 · after a failed write · why, and the changes still staged
@@ -647,10 +647,10 @@ SESSION
   ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                                                  ␛[38;5;254mdefault␛[m
   ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                                               ␛[38;5;254mdefault␛[m
 
-␛[1;38;5;254mWORKSPACE␛[m
 ␛[38;5;244m↓ 5 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks before it discards them␛[m
 ␛[38;5;244mnothing is written until [ctrl+s]␛[m
 ␛[38;5;244mcould not write .shhh/config.toml: permission denied␛[m
 
@@ -699,7 +699,7 @@ SESSION
 ␛[38;5;244m↓ 10 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 1 change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m keep on this session, after asking␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — asks whether to write them, and keeps them on this session␛[m
 ␛[38;5;244mnothing is written until [ctrl+s]␛[m
 
 · the way out in a session · the changes stay on it, and the question is where else they go
@@ -724,7 +724,7 @@ SESSION
   ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                    ␛[38;5;254muser · 6 available␛[m
 ␛[38;5;244m↓ 8 more␛[m
 
-␛[38;5;254m␛[38;5;254mLeave 2 changes on this session only?␛[m␛[m  ␛[38;5;254m[y]␛[m␛[38;5;254m this session only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;254m write first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] stay␛[m
+␛[38;5;254m␛[38;5;254mLeave 2 changes on this session only?␛[m␛[m  ␛[38;5;254m[y]␛[m␛[38;5;254m this session only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;254m write first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] back␛[m
 
 · the way out in a session · a change it cannot take is dropped, and the count says so
 ␛[1;38;5;254m/config␛[m␛[38;5;244m · project file␛[m␛[38;5;244m · .shhh/config.toml␛[m␛[38;5;254m · 3 changes unwritten␛[m
@@ -748,7 +748,7 @@ SESSION
   ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                    ␛[38;5;254muser · 6 available␛[m
 ␛[38;5;244m↓ 8 more␛[m
 
-␛[38;5;254m␛[38;5;254mLeave 2 changes on this session and drop 1 change?␛[m␛[m  ␛[38;5;254m[y]␛[m␛[38;5;254m this session only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;254m write first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] stay␛[m
+␛[38;5;254m␛[38;5;254mLeave 2 changes on this session and drop 1 change?␛[m␛[m  ␛[38;5;254m[y]␛[m␛[38;5;254m this session only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;254m write first␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] back␛[m
 
 · the settings filtered · the list is the same window
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m
@@ -781,8 +781,8 @@ SESSION
 ␛[38;5;254m[backspace]␛[m␛[38;5;244m delete a character from the filter or the field being typed into␛[m
 ␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset this setting to its default␛[m
 ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write every staged change to ~/.config/shhh/config.toml␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it; leave the picker, or leave the screen writing nothing␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m leave the screen writing nothing␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back — leaves the picker, or the screen, writing nothing␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m
@@ -815,7 +815,7 @@ SESSION
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mtheme      charm                                                                                                      theme.toml␛[m
   ␛[38;5;254mverbosity␛[m  ␛[38;5;254mnormal␛[m                                                                                                        ␛[38;5;254mdefault␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m                                    ␛[38;5;244m2 settings␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                     ␛[38;5;244m2 settings␛[m
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
 ␛[1;38;5;254m/config␛[m␛[38;5;244m · project file␛[m␛[38;5;244m · .shhh/config.toml␛[m
@@ -839,7 +839,7 @@ SESSION
   ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                    ␛[38;5;254muser · 6 available␛[m
 ␛[38;5;244m↓ 8 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m        ␛[38;5;244m19 settings␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m         ␛[38;5;244m19 settings␛[m
 
 · a flow's picker · the choice has three destinations on the key row
 ␛[1;38;5;254m/config␛[m␛[38;5;244m · project file␛[m␛[38;5;244m · .shhh/config.toml␛[m
@@ -863,4 +863,4 @@ SESSION
   ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                           ␛[38;5;254mdefault␛[m
 ␛[38;5;244m↓ 11 more␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep claude-sonnet-4.6␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back — keeps claude-sonnet-4.6␛[m

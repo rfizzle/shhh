@@ -469,7 +469,7 @@ func (m Model) completionHint() []hintSeg {
 	pair := keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext)
 	complete := segAs(keys.Draft.Complete, "complete")
 	move := hintSeg{Key: pair, Label: "move"}
-	dismiss := segAs(keys.Draft.Clear, "dismiss")
+	dismiss := segAs(keys.Draft.Clear, components.EscBack)
 	var run []hintSeg
 	switch {
 	case m.complete.files:

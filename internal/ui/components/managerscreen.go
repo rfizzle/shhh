@@ -498,7 +498,7 @@ func (s *ManagerScreen) offers(width int) []KeyOffer {
 		if row := s.opened(); row != nil && row.Live() {
 			acts = append(acts, keyOfferAs(keys.Agent.Stop, "stop"))
 		}
-		acts = append(acts, keyOfferAs(keys.Agent.Back, "back to the list"))
+		acts = append(acts, keyOfferAs(keys.Agent.Back, EscBack))
 		return offersBeside(keyOfferAs(keys.Agent.Move, "scroll"), acts, "", width)
 	}
 	var acts []KeyOffer

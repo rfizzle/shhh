@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // copyBlock copies block n, counted from 1, of an assistant message's
@@ -100,7 +101,7 @@ func (m Model) copyWhole(text, what string) (tea.Model, tea.Cmd) {
 // /run opens, asking a different question of the same rows. Taking a row
 // copies that block; esc keeps nothing, and the clipboard is left as it was.
 func (m Model) openCopyPick(src string, blocks []codeBlock) (tea.Model, tea.Cmd) {
-	return m.openBlockPick("copy which block?", "keep nothing", blocks, func(m *Model, idx int) (string, tea.Cmd) {
+	return m.openBlockPick("copy which block?", components.EscBack+" — nothing is copied", blocks, func(m *Model, idx int) (string, tea.Cmd) {
 		next, cmd := m.copyBlock(src, idx+1)
 		*m = next.(Model)
 		return "", cmd
