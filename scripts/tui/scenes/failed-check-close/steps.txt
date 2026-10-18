@@ -1,0 +1,20 @@
+# program test: TestProgram_ABrokenCommandsRowSaysHowItEnded,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# One turn runs the repository's tests and they fail. The command row says
+# its command, its exit and its time; the close under the answer carries the
+# judgement and says only `✗ failed`, not a second account of the same run
+# (docs/interface/surfaces.md#the-turns-close). Read the cells for the failed
+# row, then the close's checks row beneath the assistant's last word; inspect
+# the picture for the failure tone on both.
+setup printf 'test:\n\t@echo "--- FAIL: TestLoopRounds"; echo "    loop_test.go:214: want 3 rounds, got 4"; exit 1\n' > Makefile
+snap 01-start "Some things worth doing first"
+keys "run the tests" Enter
+snap 02-card "[y] run it once"
+keys y
+snap 03-failed "FAIL: TestLoopRounds" "exit 2 · approved by you"
+snap 04-close "changed no files" "✗ failed" "The suite fails: the loop"
+keys C-c
+snap 05-quit-armed "again quits"
+keys C-c
+snap 06-exit "that is everything the screen was holding"

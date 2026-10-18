@@ -1,0 +1,11 @@
+# One turn that runs the tests and leaves them failing. The session's last
+# word is what it saw, so the turn closes on a failed check.
+[session]
+Running the tests to see where the rounds are counted
++tool:execute_command:{"command":"make test"}
+The suite fails: the loop counts one round too many.
+
+# The session's own readings of its run take a reply of their own rather than
+# one of the turn's rounds.
+[reading]
+The turn ran the tests and they failed.
