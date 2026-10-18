@@ -8,6 +8,7 @@ package cli
 import (
 	"context"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/chatgpt"
@@ -74,7 +75,7 @@ var chatGPTDefaultModel = func(listed []string) string {
 // The refresh token is the reason this exists. The access and ID tokens are
 // JWTs, which the shape table already redacts; the refresh token is opaque,
 // and nothing but its value can find it.
-// See docs/capabilities/chatgpt-plan.md#the-tokens-never-reach-the-model.
+// See docs/capabilities/chatgpt-plan.md#what-keeps-the-tokens-from-the-model.
 type tokenRelay struct {
 	mu     sync.Mutex
 	seen   []string
@@ -88,6 +89,7 @@ func (r *tokenRelay) learn(values ...string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, v := range values {
+		v = hiddenPart(v)
 		if v == "" || slices.Contains(r.seen, v) {
 			continue
 		}
@@ -96,6 +98,20 @@ func (r *tokenRelay) learn(values ...string) {
 			vault.Hide(chatgpt.TokenKind, v)
 		}
 	}
+}
+
+// hiddenPart is what of a token the vault is given. A JWT is hidden by its
+// payload and signature and not its header: every RS256 token anyone issues
+// starts with the same header, and the vault scrubs every eight-byte run of
+// what it hides before the shape pass runs, so a hidden header would cut the
+// front off an unrelated JWT in a command's output — and what was left would
+// no longer look like a JWT, and would reach the model whole. The header is
+// the algorithm's name and a key ID, not the secret.
+func hiddenPart(token string) string {
+	if strings.HasPrefix(token, "eyJ") && strings.Count(token, ".") == 2 {
+		return token[strings.IndexByte(token, '.')+1:]
+	}
+	return token
 }
 
 // attach adds a vault and hides everything learned so far in it.

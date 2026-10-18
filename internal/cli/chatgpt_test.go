@@ -121,6 +121,43 @@ func TestSecrets_HideRelayReplays(t *testing.T) {
 	mustNotCarry(t, "the prompt block", secret.PromptBlock(vault, true))
 }
 
+// The plan's JWTs are hidden by payload and signature, never by the header
+// every RS256 token shares: an unrelated JWT a command prints after a
+// sign-in still scrubs whole by its shape, and the plan's own tokens still
+// leave nothing of their secret part behind.
+func TestSecrets_AHiddenJWTLeavesOtherJWTsWhole(t *testing.T) {
+	resetChatGPT(t)
+	header := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9"
+	seg := func(s string) string { return base64.RawURLEncoding.EncodeToString([]byte(s)) }
+	access := header + "." + seg(`{"iss":"https://auth.openai.com","aud":"https://api.openai.com/v1","scp":"resource.invoke"}`) +
+		"." + seg("access-signature-bytes-0123456789-abcdefghij")
+	id := header + "." + seg(`{"iss":"https://auth.openai.com","email":"person@example.com","nonce":"n"}`) +
+		"." + seg("idtoken-signature-bytes-9876543210-zyxwvutsrq")
+	v := secret.New()
+	chatGPTTokens.attach(v)
+	chatGPTTokens.learn(access, testChatGPT.RefreshToken, id)
+
+	unrelated := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0." +
+		"NHVaYe26MbtOYhSKkoKYdFVomg4i8ZJd8_-RU8VNbftc4TSMb4bXP3l3YlNWACwyXPGffz5aXHc6lxZu7UjdZRaaT0NlZbS1xLf0kmMdW1c1KJ8T7b4Q"
+	if got := v.Scrub("token: " + unrelated); got != "token: "+secret.Redacted("jwt") {
+		t.Errorf("an unrelated JWT scrubbed to %q", got)
+	}
+	for _, tok := range []string{access, id} {
+		tail := tok[strings.IndexByte(tok, '.')+1:]
+		got := v.Scrub("out: " + tok + " and " + tail[10:30])
+		if strings.Contains(got, tail) {
+			t.Errorf("the plan's token survived whole: %q", got)
+		}
+		for i := 0; i+8 <= len(tail); i++ {
+			if strings.Contains(got, tail[i:i+8]) {
+				t.Errorf("an eight-byte run of the plan's token survived: %q in %q", tail[i:i+8], got)
+				break
+			}
+		}
+	}
+	mustNotCarry(t, "the refresh token", v.Scrub(testChatGPT.RefreshToken))
+}
+
 // A host that never signed in gets no directory from a session opening its
 // vault or from the provider report.
 func TestSecrets_NoSignInLeavesNoDirectory(t *testing.T) {

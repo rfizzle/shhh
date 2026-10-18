@@ -16,10 +16,7 @@ type callback struct {
 
 // Reasons a callback is refused. None of them carries the query: it holds
 // the authorization code.
-var (
-	errBadState = errors.New("the browser came back with a sign-in shhh did not start; nothing was saved")
-	errNoCode   = errors.New("the browser came back without a sign-in code; nothing was saved")
-)
+var errNoCode = errors.New("the browser came back without a sign-in code; nothing was saved")
 
 // callbackHandler answers the one request the browser makes when the
 // sign-in is done. It is a plain handler so a test can drive it without a
@@ -54,6 +51,15 @@ func (h *callbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// A request with the wrong state is refused and the attempt keeps
+	// waiting: anything on this host can reach the port, and letting a
+	// stray or hostile request end the sign-in would let it cancel every
+	// one. Only a request carrying this attempt's state settles it.
+	if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("state")), []byte(h.state)) != 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("This is not the sign-in shhh is waiting for.\n"))
+		return
+	}
 	settled := false
 	h.once.Do(func() {
 		settled = true
@@ -75,14 +81,11 @@ func (h *callbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// read checks the callback in the order the contract asks: state first,
-// because a forged request has to be refused before anything it says is
-// believed, then a refusal from the server, then the code.
+// read reads a callback whose state has already been checked — state
+// first, because a forged request has to be refused before anything it
+// says is believed — for a refusal from the server, then the code.
 func (h *callbackHandler) read(r *http.Request) callback {
 	q := r.URL.Query()
-	if subtle.ConstantTimeCompare([]byte(q.Get("state")), []byte(h.state)) != 1 {
-		return callback{err: errBadState}
-	}
 	if e := q.Get("error"); e != "" {
 		if e == "access_denied" {
 			return callback{err: ErrDeclined}

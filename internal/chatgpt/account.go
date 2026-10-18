@@ -151,6 +151,14 @@ type Account struct {
 	// across Accounts and processes. It is taken first, always.
 	mu       sync.Mutex
 	reported string
+	// pending is a refreshed record the disk would not take. The refresh
+	// token in it is the only live one — the server spent the one on disk
+	// when it issued it — so it is kept here and written by the next caller
+	// that holds the lock, rather than dropped and the person signed out.
+	// pendingFrom is the refresh token it replaced: a record on disk that no
+	// longer holds that one was changed by someone else since, and wins.
+	pending     *Credential
+	pendingFrom string
 
 	// lockWait bounds how long a caller waits for another process's
 	// refresh, and lockPoll is how often it looks. A refresh is one HTTP
@@ -188,9 +196,16 @@ func Open(o Options) (*Account, error) {
 		dir: dir, client: o.Client, now: o.Now, onTokens: o.OnTokens,
 		lockWait: 30 * time.Second, lockPoll: 50 * time.Millisecond, sleep: sleepCtx,
 	}
-	if a.client == nil {
-		a.client = &http.Client{Timeout: requestTimeout}
+	// Redirects are never followed. A 307 or 308 from the token endpoint
+	// would re-post the form — the refresh token in it — to wherever the
+	// Location names; a redirect is an answer that is not 200, and is
+	// refused as one. The caller's client is copied, not changed.
+	client := http.Client{Timeout: requestTimeout}
+	if a.client != nil {
+		client = *a.client
 	}
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	a.client = &client
 	if a.now == nil {
 		a.now = time.Now
 	}
@@ -251,6 +266,26 @@ func (a *Account) read() (Credential, error) {
 	return c, nil
 }
 
+// current is the record as it stands, for a caller holding both locks: a
+// pending refresh is written first, and when the disk still refuses it the
+// pending record is the answer, because it holds the live refresh token.
+func (a *Account) current() (Credential, error) {
+	disk, err := a.read()
+	if a.pending == nil {
+		return disk, err
+	}
+	if err == nil && disk.RefreshToken != a.pendingFrom {
+		a.pending, a.pendingFrom = nil, ""
+		return disk, nil
+	}
+	if werr := a.write(*a.pending); werr != nil {
+		return *a.pending, nil
+	}
+	c := *a.pending
+	a.pending, a.pendingFrom = nil, ""
+	return c, nil
+}
+
 // write replaces the record whole and owner-only. ReplaceFile keeps the
 // mode of a file already there, so a record copied in with a looser mode is
 // narrowed first rather than rewritten as readable as it arrived.
@@ -301,7 +336,7 @@ func (a *Account) withLock(ctx context.Context, fn func() error) error {
 			break
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("another shhh has held the ChatGPT sign-in for %s; try again", a.lockWait)
+			return fmt.Errorf("another shhh has held the ChatGPT sign-in for %s; try again: %w", a.lockWait, context.DeadlineExceeded)
 		}
 		if err := sleepCtx(ctx, a.lockPoll); err != nil {
 			return err
@@ -384,7 +419,7 @@ func (a *Account) Clear() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.withLock(context.Background(), func() error {
-		c, err := a.read()
+		c, err := a.current()
 		if err != nil {
 			return err
 		}
@@ -397,7 +432,7 @@ func (a *Account) MarkWelcomed() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.withLock(context.Background(), func() error {
-		c, err := a.read()
+		c, err := a.current()
 		if err != nil {
 			return err
 		}
@@ -432,7 +467,7 @@ func (a *Account) Import(path string) error {
 		if err != nil {
 			return err
 		}
-		cur, err := a.read()
+		cur, err := a.current()
 		if err != nil {
 			return err
 		}

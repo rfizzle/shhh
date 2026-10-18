@@ -36,7 +36,7 @@ func (a *Account) Logout(ctx context.Context) (revoked bool, err error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	err = a.withLock(ctx, func() error {
-		cred, err := a.read()
+		cred, err := a.current()
 		if err != nil {
 			return err
 		}

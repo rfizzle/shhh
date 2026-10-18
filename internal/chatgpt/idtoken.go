@@ -189,7 +189,7 @@ func verifyIDToken(raw string, keys []jwk, clientID, nonce string, now time.Time
 	switch {
 	case c.Iss != Issuer:
 		return idClaims{}, fmt.Errorf("%w: issued by someone else", errBadIDToken)
-	case !slices.Contains(c.Aud, clientID) || (len(c.Aud) > 1 && c.Azp != clientID):
+	case !slices.Contains(c.Aud, clientID) || (len(c.Aud) > 1 && c.Azp == "") || (c.Azp != "" && c.Azp != clientID):
 		return idClaims{}, fmt.Errorf("%w: issued to another client", errBadIDToken)
 	case c.Exp == 0 || now.After(time.Unix(int64(c.Exp), 0).Add(clockSkew)):
 		return idClaims{}, fmt.Errorf("%w: expired", errBadIDToken)

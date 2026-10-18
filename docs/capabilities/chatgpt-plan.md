@@ -37,7 +37,9 @@ cancelled, or not finished within five minutes (`--wait` changes that).
 instead, to be opened on a machine whose browser can reach this host's
 `127.0.0.1` and the printed port. The address is printed on the terminal and
 nowhere else: a returning sign-in's address carries the previous sign-in as a
-hint.
+hint. On a host other people also log in to, `--no-browser` is the way to
+sign in: the opener is handed the address as an argument, and a program's
+arguments are in the process list every local user can read.
 
 The first sign-in on a host registers shhh there, and OpenAI hands back an
 identifier for that registration which every later sign-in reuses. Each host
@@ -83,18 +85,27 @@ repository, and this file holds a credential that can spend the plan. **Never
 commit it, and never copy it anywhere it would be shared.** The data
 directory is also kept out of the commands an assistant runs.
 
-### The tokens never reach the model
+### What keeps the tokens from the model
 
 The sign-in holds three tokens: one sent with each request, one that proves
-who signed in, and one that fetches a new pair when the first runs out. None
-of them is ever shown to the model, named to it, or handed to a command it
-runs. Every one the session learns — read from the record, from the sign-in,
-or from a refresh — is scrubbed from everything the model reads, whole,
-encoded, or in pieces, and stands as a placeholder that names the kind and no
-variable (see [Secrets](secrets.md#the-value-is-scrubbed-at-every-door)). The
-last of the three has no shape anything could recognise it by, which is why
-it is scrubbed by value. A rotated-out token stays scrubbed for the rest of
-the session.
+who signed in, and one that fetches a new pair when the first runs out. shhh
+never names them to the model and never hands them to a command it runs.
+Every one a session has learned — read from the record when the session
+opened, from a sign-in, or from a refresh — is scrubbed from everything the
+model reads, whole, encoded, or in pieces, and stands as a placeholder that
+names the kind and no variable (see
+[Secrets](secrets.md#the-value-is-scrubbed-at-every-door)). The last of the
+three has no shape anything could recognise it by, which is why it is
+scrubbed by value; the other two are scrubbed by everything after their
+common header, so another service's token printed in the same session is
+still recognised by its shape. A rotated-out token stays scrubbed for the
+rest of the session.
+
+The scrub covers what a session has learned, and no more. A refresh token
+another shhh process writes while this session runs is scrubbed here only
+once this session reads it. The record itself is kept from an assistant's
+commands by containment; with containment off, a command can read the file,
+and a token this session has not learned would reach the model.
 
 The tokens are not in the config file, the provider listing, the diagnostic
 log, a receipt or a session's record. The log keeps what happened — a

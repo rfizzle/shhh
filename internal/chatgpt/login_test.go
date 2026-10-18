@@ -165,7 +165,6 @@ func TestLogin_RefusalsSaveNothing(t *testing.T) {
 		reply     func(url.Values) url.Values
 		want      error
 	}{
-		{name: "bad state", reply: func(q url.Values) url.Values { q.Set("state", "forged"); return q }, want: errBadState},
 		{name: "registration incomplete", reply: func(q url.Values) url.Values { q.Del("client_id"); return q }, want: errRegistrationIncomplete},
 		{name: "mismatched client ID", returning: true,
 			reply: func(q url.Values) url.Values { q.Set("client_id", "oaiapp_someoneelse"); return q }, want: errClientMismatch},
@@ -192,9 +191,6 @@ func TestLogin_RefusalsSaveNothing(t *testing.T) {
 			after, _ := a.Credential()
 			if after.RefreshToken != before.RefreshToken || after.ClientID != before.ClientID || after.Subject != before.Subject {
 				t.Errorf("a refused sign-in changed the record: %+v", after)
-			}
-			if errors.Is(tc.want, errBadState) && len(fake.tokenRequests) != 0 {
-				t.Error("a forged callback was exchanged")
 			}
 		})
 	}
@@ -311,6 +307,15 @@ func TestCallback_AnswersOnceOnItsOwnHost(t *testing.T) {
 	if got := get("127.0.0.1:5000", "/favicon.ico"); got != http.StatusNotFound {
 		t.Errorf("another path = %d", got)
 	}
+	// A wrong state is refused and does not settle the attempt.
+	if got := get("127.0.0.1:5000", "/auth/callback?state=forged&code=c"); got != http.StatusBadRequest {
+		t.Errorf("a wrong state = %d", got)
+	}
+	select {
+	case cb := <-h.done:
+		t.Fatalf("a wrong state settled the attempt: %+v", cb)
+	default:
+	}
 	if got := get("127.0.0.1:5000", "/auth/callback?state=s&code=c&client_id=x"); got != http.StatusOK {
 		t.Errorf("the callback = %d", got)
 	}
@@ -353,6 +358,7 @@ func TestLogin_NothingInTheLogIsAURLOrAToken(t *testing.T) {
 	o := forger.loginOpts()
 	o.Browser = func(string) error { return errors.New("no display") }
 	o.Say = &urlWatcher{found: func(page string) { _ = forger.open(page) }}
+	o.Wait = 300 * time.Millisecond
 	if _, err := a.Login(context.Background(), o); err == nil {
 		t.Fatal("the forged sign-in succeeded")
 	}

@@ -319,7 +319,7 @@ func (a *Account) save(ctx context.Context, cred Credential) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.withLock(ctx, func() error {
-		cur, err := a.read()
+		cur, err := a.current()
 		if err != nil {
 			return err
 		}
@@ -340,8 +340,6 @@ func reasonOf(err error) string {
 	switch {
 	case errors.Is(err, ErrDeclined):
 		return "declined"
-	case errors.Is(err, errBadState):
-		return "bad-state"
 	case errors.Is(err, errRegistrationIncomplete):
 		return "registration-incomplete"
 	case errors.Is(err, errClientMismatch):

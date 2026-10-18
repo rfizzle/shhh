@@ -158,8 +158,10 @@ func TestToken_TerminalCodesClear(t *testing.T) {
 			if c.SignedIn() || c.AccessToken != "" || c.IDToken != "" {
 				t.Errorf("tokens kept after %s", code)
 			}
-			if c.ClientID != issuedClient || c.Subject != testSubject || c.Email != testEmail {
-				t.Errorf("the account was lost after %s: %+v", code, c)
+			// invalid_client also forgets the registration; see
+			// TestToken_InvalidClientClearsTheRegistration.
+			if (code != "invalid_client" && c.ClientID != issuedClient) || c.Subject != testSubject || c.Email != testEmail {
+				t.Errorf("the account was lost after %s: client=%q subject=%q email=%q", code, c.ClientID, c.Subject, c.Email)
 			}
 			if _, err := a.Token(context.Background(), ""); !errors.Is(err, ErrNotSignedIn) {
 				t.Errorf("Token after the clear = %v, want ErrNotSignedIn", err)

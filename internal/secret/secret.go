@@ -250,7 +250,7 @@ func (v *Vault) reindex() {
 // command never inherits it; and Remove cannot forget it, so a token since
 // rotated out stays hidden for the life of the process. An empty value
 // hides nothing.
-// See docs/capabilities/chatgpt-plan.md#the-tokens-never-reach-the-model.
+// See docs/capabilities/chatgpt-plan.md#what-keeps-the-tokens-from-the-model.
 func (v *Vault) Hide(kind, value string) {
 	if v == nil || value == "" {
 		return
