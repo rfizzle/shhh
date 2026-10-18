@@ -1911,8 +1911,8 @@ gives one example: `⚠ off target`. It gives no mark for a run that is still on
 its instruction but has found what it needs and has not started acting on it,
 which is the fourth thing the reader's summariser can say.
 
-That verdict draws `▸ has enough`. A run that has what it needs is a run going
-where it was sent, so it takes the running mark and is told apart from `▸ on
+That verdict draws `✓ has enough`. A run that has what it needs is a run going
+where it was sent, so it takes the done mark and is told apart from `✓ on
 target` by the word — which is the half a monochrome terminal reads anyway,
 and the half that says what the difference actually is. What it is not is a
 departure or a state that could not tell, and those are the only other marks
@@ -1921,7 +1921,7 @@ a session, on a rail whose whole job is to be read at a glance
 ([closed vocabularies](principles.md#closed-vocabularies)).
 
 Only the departure is drawn in the accent. A run that has found what it needs
-is not a warning, it is news, so it takes the reading weight, and the two `▸`
+is not a warning, it is news, so it takes the reading weight, and the two `✓`
 verdicts differ in the weight of their words as well as in the words. Their
 mark is chrome in both: a verdict is settled, and the spinner's colour means a
 thing in motion and nothing else.

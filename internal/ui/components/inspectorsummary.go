@@ -151,13 +151,14 @@ func SummaryLabel(s SummaryTone) string {
 	return glyph + " " + style.Render(label)
 }
 
-// summaryTone is the state row's glyph, its words and its weight: ▸ for a run
+// summaryTone is the state row's glyph, its words and its weight: ✓ for a run
 // still on its instruction, ⚠ for one that has left it, · for a reading that
 // could not tell.
 //
 // The verdict is three marks and four words. A run still on its instruction
 // and a run that has found what it needs are both a run going where it was
-// sent, so they share ▸ and are told apart by the word beside it — which is
+// sent, so they share ✓ (the state table's done, never the running mark) and
+// are told apart by the word beside it — which is
 // the half a monochrome terminal reads anyway, and the half that says what
 // the difference actually is. A fourth mark for the fourth verdict would be a
 // mark a reader meets once a session and has to look up, on a rail whose
@@ -189,10 +190,8 @@ func summaryTone(s SummaryTone) (string, string, lipgloss.Style) {
 // carries the distinction on a terminal with no colour at all.
 func SummaryGlyph(s SummaryTone) string {
 	switch s {
-	case SummaryOnTarget:
-		return "▸"
-	case SummarySufficient:
-		return "▸"
+	case SummaryOnTarget, SummarySufficient:
+		return StateDone.Glyph()
 	case SummaryOffTarget:
 		return "⚠"
 	}

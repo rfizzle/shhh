@@ -568,11 +568,11 @@ func (h *HistoryScreen) sync() {
 func historyGlyph(state ActivityState) string {
 	switch state {
 	case ActivityFailed:
-		return "✗"
+		return StateFailed.Glyph()
 	case ActivityDenied:
-		return "⊘"
+		return StateDenied.Glyph()
 	case ActivityQueued:
-		return "·"
+		return StateQueued.Glyph()
 	}
 	return "$"
 }

@@ -394,9 +394,9 @@ func (r SourcesRow) unvouched() bool {
 func sourcesGlyph(row SourcesRow) string {
 	switch {
 	case row.State == ActivityFailed:
-		return "✗"
+		return StateFailed.Glyph()
 	case row.State == ActivityDenied:
-		return "⊘"
+		return StateDenied.Glyph()
 	case row.unvouched():
 		return "⇄"
 	}

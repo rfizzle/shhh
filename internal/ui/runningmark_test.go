@@ -13,8 +13,7 @@ import (
 
 // foldOrRunningFiles are the only non-test files that may write `▸`: each
 // draws it for a folded group or a running row (or the state table's running,
-// current and starting family), and nothing else. inspectorsummary.go is the
-// one named exception: a summary reading's "on target" verdict still wears it.
+// current and starting family), and nothing else.
 // A prompt is `›`, a cursor or a current tab `❯`, a separator ` · `.
 var foldOrRunningFiles = map[string]bool{
 	"chat/steps.go": true, "chat/rewind.go": true, "chat/todorunrow.go": true,
@@ -24,7 +23,7 @@ var foldOrRunningFiles = map[string]bool{
 	"components/turnsscreen.go": true, "components/plannedcard.go": true,
 	"components/fanoutcard.go": true, "components/contextscreen.go": true,
 	"components/doctorscreen.go": true, "components/state.go": true,
-	"components/inspectorsummary.go": true, "../cli/report/report.go": true,
+	"../cli/report/report.go": true,
 }
 
 // TestTheRunningMarkIsNotAPromptOrABullet fails when a file outside the list

@@ -69,7 +69,7 @@ func TestReadingsScreen_ThePreviewIsTheReadingWhole(t *testing.T) {
 	for _, want := range []string{
 		"/readings", "5 readings", "$0.0142 spent", "[esc] back",
 		"⚠ r 11 · off target", "withdrawn", "⚠ r 6 · off target", "steered",
-		"▸ r 3 · on target", "turn 1",
+		"✓ r 3 · on target", "turn 1",
 		"docs were not asked for", "read against: fix the CSV exporter's quoting",
 		"it steered the turn, and the steer was taken back",
 	} {

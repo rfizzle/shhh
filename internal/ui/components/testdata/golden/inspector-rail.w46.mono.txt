@@ -15,7 +15,7 @@
   Wiring the round-limit pause into the chat  
   model; the sentinel is in and the tests have
   not been run yet.                           
-  ▸ on target                                 
+  ✓ on target                                 
 
   THIS TURN                                   
   ▰▰▰▰▰▰▰▰▰▰▰▸▸▸▸▸▱▱▱▱▱▱ step 3 of 4          
@@ -79,7 +79,7 @@
   session total · $0.4120                     
 
 · every block, height 16 (truncating)
-  SUMMARY               ▸ on target · round 24
+  SUMMARY               ✓ on target · round 24
   … 3 more                                    
 
   THIS TURN       step 3 of 4 · 3 files +30 −4
@@ -410,7 +410,7 @@
   ␛[38;5;254mWiring the round-limit pause into the chat␛[m  
   ␛[38;5;254mmodel; the sentinel is in and the tests have␛[m
   ␛[38;5;254mnot been run yet.␛[m                           
-  ␛[38;5;244m▸␛[m ␛[38;5;244mon target␛[m                                 
+  ␛[38;5;244m✓␛[m ␛[38;5;244mon target␛[m                                 
 
   ␛[1;38;5;254mTHIS TURN␛[m                                   
   ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;254m▸▸▸▸▸␛[m␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254mstep 3 of 4␛[m          
@@ -474,7 +474,7 @@
   ␛[38;5;244msession total · $0.4120␛[m                     
 
 · every block, height 16 (truncating)
-  ␛[1;38;5;254mSUMMARY␛[m               ␛[38;5;244m▸␛[m ␛[38;5;244mon target␛[m␛[38;5;244m · round 24␛[m
+  ␛[1;38;5;254mSUMMARY␛[m               ␛[38;5;244m✓␛[m ␛[38;5;244mon target␛[m␛[38;5;244m · round 24␛[m
   ␛[38;5;244m… 3 more␛[m                                    
 
   ␛[1;38;5;254mTHIS TURN␛[m       ␛[38;5;244mstep 3 of 4 · 3 files␛[m ␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m

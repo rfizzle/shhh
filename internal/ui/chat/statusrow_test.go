@@ -34,7 +34,7 @@ func TestStatusRow_LiveTurnCountsTheTurn(t *testing.T) {
 	m := statusRowModel(t, 80)
 	m.state = stateStreaming
 	row := stripANSI(m.statusRow())
-	for _, want := range []string{"▸ on target", "as of round 7", "1 file this turn"} {
+	for _, want := range []string{"✓ on target", "as of round 7", "1 file this turn"} {
 		if !strings.Contains(row, want) {
 			t.Fatalf("status row = %q, want %q in it", row, want)
 		}
@@ -46,7 +46,7 @@ func TestStatusRow_LiveTurnCountsTheTurn(t *testing.T) {
 
 func TestStatusRow_IdleCountsTheSession(t *testing.T) {
 	row := stripANSI(statusRowModel(t, 80).statusRow())
-	for _, want := range []string{"▸ on target", "as of round 7", "session · +2 −1"} {
+	for _, want := range []string{"✓ on target", "as of round 7", "session · +2 −1"} {
 		if !strings.Contains(row, want) {
 			t.Fatalf("status row = %q, want %q in it", row, want)
 		}

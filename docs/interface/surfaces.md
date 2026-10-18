@@ -1984,7 +1984,7 @@ so whatever the height, the rail ends on a line saying what it is not showing,
 never on half a block.
 
 A collapsed block is its heading, with the one figure its rows would have
-stated: the reading's verdict and the round it was taken at (`▸ on target ·
+stated: the reading's verdict and the round it was taken at (`✓ on target ·
 round 7`), the turn's step and files (`step 3 of 4 · 2 files +27 −4`), the
 plan's count and the step in flight (`3 of 5 done · ▸ wire the handler`), the
 working list's count (`2 of 4`), the backlog's open items and the one the
@@ -3518,7 +3518,7 @@ with no plan running says so in a line.
 `/readings` is the rail's SUMMARY block read as a history: every reading the
 session has taken of its own run ([the session
 summary](#the-session-summary)), newest first, one row each — the round it was
-taken at and its verdict in the rail's own marks (`▸ r 9 · on target`, `⚠ r 14
+taken at and its verdict in the rail's own marks (`✓ r 9 · on target`, `⚠ r 14
 · off target`), the turn it belongs to, and what became of it where it
 interrupted the turn: `steered`, or `withdrawn` once the reader took that steer
 back. Beside the reading under the pointer is the reading whole — the text,

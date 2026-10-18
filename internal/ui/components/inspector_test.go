@@ -761,7 +761,7 @@ func TestInspectorSummary_LeadsTheRail(t *testing.T) {
 		State: SummaryOnTarget, Round: 24,
 	}
 	view := stripANSI(r.View(InspectorWidth, 0))
-	for _, want := range []string{"SUMMARY", "as of round 24", "Wiring the round-limit", "▸ on target"} {
+	for _, want := range []string{"SUMMARY", "as of round 24", "Wiring the round-limit", "✓ on target"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("summary block missing %q:\n%s", want, view)
 		}
@@ -817,7 +817,7 @@ func TestInspectorSummary_EveryStateStatesItself(t *testing.T) {
 		state SummaryTone
 		want  string
 	}{
-		{SummaryOnTarget, "▸ on target"},
+		{SummaryOnTarget, "✓ on target"},
 		{SummaryOffTarget, "⚠ off target"},
 		{SummaryUnclear, "· unclear"},
 	}
@@ -1027,7 +1027,7 @@ func TestInspectorTools_SaysWhatRecallLeftOut(t *testing.T) {
 func TestSummaryTone_EveryStateHasItsOwnGlyphAndWords(t *testing.T) {
 	labels := map[string]SummaryTone{}
 	words := map[string]SummaryTone{}
-	vocabulary := map[string]bool{"▸": true, "⚠": true, "·": true}
+	vocabulary := map[string]bool{"✓": true, "⚠": true, "·": true}
 	for _, s := range []SummaryTone{SummaryUnclear, SummaryOnTarget, SummaryOffTarget, SummarySufficient} {
 		glyph, label, _ := summaryTone(s)
 		if glyph == "" || label == "" {

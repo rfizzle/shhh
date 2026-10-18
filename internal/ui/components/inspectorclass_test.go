@@ -220,7 +220,7 @@ func TestInspectorRail_CollapsedHeadingStatesTheFigure(t *testing.T) {
 		block string
 		want  string
 	}{
-		{r, RailSummary, "▸ on target · round 7"},
+		{r, RailSummary, "✓ on target · round 7"},
 		{idleTurn, RailTurn, "step 3 of 4 · 2 files +27 −4"},
 		{r, RailAlerts, "2 standing"},
 		{r, RailPlan, "2 of 5 done · ▸ Wire the handler"},

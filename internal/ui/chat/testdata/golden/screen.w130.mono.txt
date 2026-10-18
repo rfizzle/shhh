@@ -145,7 +145,7 @@
   ─────────────────────────────────────────────────────────────────────────────  │  Wiring the round-limit pause into the chat    
                                                                                  │  model; the sentinel is in and nothing has     
                                                                                  │  run the tests yet.                            
-    ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s    │  ▸ on target                                   
+    ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s    │  ✓ on target                                   
       Locate the round accounting                                                │                                                
                                                                                  │  THIS TURN                             step 2  
                                                                                  │  0 files this turn · 6 tools                   
@@ -177,7 +177,7 @@
   ─────────────────────────────────────────────────────────────────────────────  │  Wiring the round-limit pause into the chat    
                                                                                  │  model; the sentinel is in and nothing has     
                                                                                  │  run the tests yet.                            
-    ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s    │  ▸ on target                                   
+    ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s    │  ✓ on target                                   
       Locate the round accounting                                                │                                                
                                                                                  │  THIS TURN                             step 2  
                                                                                  │  0 files this turn · 6 tools                   
@@ -370,7 +370,7 @@
   ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m  ␛[38;5;244m│␛[m  ␛[38;5;254mWiring the round-limit pause into the chat␛[m    
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254mmodel; the sentinel is in and nothing has␛[m     
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254mrun the tests yet.␛[m                            
-    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m 3 files in internal/agent/ · searched ErrRoundLimit␛[m           ␛[38;5;244m1.2s␛[m    ␛[38;5;244m│␛[m  ␛[38;5;244m▸␛[m ␛[38;5;244mon target␛[m                                   
+    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m 3 files in internal/agent/ · searched ErrRoundLimit␛[m           ␛[38;5;244m1.2s␛[m    ␛[38;5;244m│␛[m  ␛[38;5;244m✓␛[m ␛[38;5;244mon target␛[m                                   
       ␛[38;5;254mLocate the round accounting␛[m                                                ␛[38;5;244m│␛[m                                                
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                             ␛[38;5;244mstep 2␛[m  
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                   
@@ -402,7 +402,7 @@
   ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m  ␛[38;5;244m│␛[m  ␛[38;5;254mWiring the round-limit pause into the chat␛[m    
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254mmodel; the sentinel is in and nothing has␛[m     
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254mrun the tests yet.␛[m                            
-    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m 3 files in internal/agent/ · searched ErrRoundLimit␛[m           ␛[38;5;244m1.2s␛[m    ␛[38;5;244m│␛[m  ␛[38;5;244m▸␛[m ␛[38;5;244mon target␛[m                                   
+    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m 3 files in internal/agent/ · searched ErrRoundLimit␛[m           ␛[38;5;244m1.2s␛[m    ␛[38;5;244m│␛[m  ␛[38;5;244m✓␛[m ␛[38;5;244mon target␛[m                                   
       ␛[38;5;254mLocate the round accounting␛[m                                                ␛[38;5;244m│␛[m                                                
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                             ␛[38;5;244mstep 2␛[m  
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                   
