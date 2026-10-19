@@ -249,7 +249,7 @@ func TestBoundaryPromptSaysTheVaultAsItStands(t *testing.T) {
 			}
 
 			got := session.boundaryPrompt(launched, scopeSaid, sc)
-			want := prompt.CombineExtra("# Instructions", secret.PromptBlock(session.vault, true), scopeSaid, "# Toolbox")
+			want := prompt.CombineExtra("# Instructions", secretPromptBlock(session.vault, true), scopeSaid, "# Toolbox")
 			if got != want {
 				t.Fatalf("the boundary prompt should carry the vault as it stands\ngot:\n%s\nwant:\n%s", got, want)
 			}

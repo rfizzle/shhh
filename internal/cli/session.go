@@ -226,7 +226,7 @@ func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, pro
 		procSup.SetScrub(v.Scrub)
 	}
 	scrubWebCache(s.web, v.Scrub)
-	s.secretsSaid = secret.PromptBlock(v, asks)
+	s.secretsSaid = secretPromptBlock(v, asks)
 	s.promptExtra = prompt.CombineExtra(s.promptExtra, s.secretsSaid)
 	return nil
 }

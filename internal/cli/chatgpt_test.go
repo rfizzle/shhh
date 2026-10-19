@@ -123,7 +123,7 @@ func TestSecrets_HideRelayReplays(t *testing.T) {
 		t.Errorf("the tokens were declared as secrets: %v", vault.Names())
 	}
 	mustNotCarry(t, "the command environment", strings.Join(vault.Environ(), "\n"))
-	mustNotCarry(t, "the prompt block", secret.PromptBlock(vault, true))
+	mustNotCarry(t, "the prompt block", secretPromptBlock(vault, true))
 }
 
 // The plan's JWTs are hidden by their signature alone. Headers and claims

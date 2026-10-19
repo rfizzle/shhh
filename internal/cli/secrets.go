@@ -133,7 +133,7 @@ func resecretPrompt(text, said string, v *secret.Vault, next string) string {
 	if v == nil {
 		return text
 	}
-	return resayBlock(text, said, secret.PromptBlock(v, true), next)
+	return resayBlock(text, said, secretPromptBlock(v, true), next)
 }
 
 // secretsListing is the /secret list text: names only, never lengths or

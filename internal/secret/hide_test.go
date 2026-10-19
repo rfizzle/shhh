@@ -67,21 +67,10 @@ func TestHide_IsNotNamedOrExported(t *testing.T) {
 			t.Errorf("Environ carries the hidden value: %q", kv)
 		}
 	}
-	block := PromptBlock(v, true)
-	if strings.Contains(block, "chatgpt-token") || strings.Contains(block, hiddenToken[:minFragment]) {
-		t.Errorf("the prompt block mentions the hidden value:\n%s", block)
-	}
 	if v.Remove("chatgpt-token") || v.Remove("") {
 		t.Error("Remove reached a hidden value")
 	}
 	if got := v.Scrub(hiddenToken); got != Redacted("chatgpt-token") {
 		t.Errorf("Scrub after Remove = %q", got)
-	}
-	// With nothing declared, a hidden value still adds nothing to the
-	// prompt: the block stays empty until there is something to tell.
-	only := New()
-	only.Hide("chatgpt-token", hiddenToken)
-	if block := PromptBlock(only, true); block != "" {
-		t.Errorf("a vault with only a hidden value has a prompt block:\n%s", block)
 	}
 }
