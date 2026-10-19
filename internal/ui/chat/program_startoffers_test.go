@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // TestProgram_TheStartScreenOffersTheBranchAndTheReadyItem is the route of the
@@ -76,7 +76,7 @@ func TestProgram_AReadingWritesTheStartScreensReadOnlyRows(t *testing.T) {
 	m, _ := scriptedSession(programTurn{text: "The lifetime still lacks an eviction pass."})
 	m.start = new(info)
 	m.suggest.writer, m.suggest.on = nil, true
-	m.startOffers.writer, m.startOffers.gather = agent.NewStartOfferer(written, agent.StartOffersConfig{Model: "fast"}), nil
+	m.startOffers.writer, m.startOffers.gather = sidejobs.NewStartOfferer(written, sidejobs.StartOffersConfig{Model: "fast"}), nil
 	tm := runProgramAt(t, m, 110, 40)
 
 	waitForAll(t, tm, "say what cache-work still lacks for its lifetime",

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/mcp"

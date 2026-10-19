@@ -23,9 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/project"
@@ -297,10 +296,10 @@ func startGate(workspace string) chat.StartGate {
 // screen has drawn, never before
 // (docs/capabilities/chat.md#the-start-screen-is-read-for-this-checkout).
 // Names and subjects only: no file's contents reach the reading from here.
-func startOffersEvidence(survey project.Info) func(context.Context) agent.StartOffersRequest {
+func startOffersEvidence(survey project.Info) func(context.Context) sidejobs.StartOffersRequest {
 	dir := survey.Dir
-	return func(ctx context.Context) agent.StartOffersRequest {
-		var req agent.StartOffersRequest
+	return func(ctx context.Context) sidejobs.StartOffersRequest {
+		var req sidejobs.StartOffersRequest
 		if survey.Repo {
 			// The changed files are the ones the screen counted, from the
 			// checkout the survey read, so the reading never names a set the

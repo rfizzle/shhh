@@ -7,9 +7,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // twoWritten is a reading that writes two offers, neither about anything a
@@ -23,8 +23,8 @@ const (
 
 // startReadingGather is what the CLI's background read would hand the reading:
 // names and subjects only.
-func startReadingGather(context.Context) agent.StartOffersRequest {
-	return agent.StartOffersRequest{
+func startReadingGather(context.Context) sidejobs.StartOffersRequest {
+	return sidejobs.StartOffersRequest{
 		Dirty:   []string{"cache.go", "cache_test.go"},
 		Commits: []string{"name the lifetime", "start the cache package"},
 		Ready:   []string{"cache-ttl: Give the cache a lifetime"},
@@ -47,7 +47,7 @@ func startReadingModel(t *testing.T, info StartInfo, p llm.Provider, on bool) (M
 	m = updated.(Model)
 	m.start = new(info)
 	m.suggest.writer, m.suggest.on = nil, on
-	m.startOffers.writer, m.startOffers.gather = agent.NewStartOfferer(p, agent.StartOffersConfig{Model: "fast"}), startReadingGather
+	m.startOffers.writer, m.startOffers.gather = sidejobs.NewStartOfferer(p, sidejobs.StartOffersConfig{Model: "fast"}), startReadingGather
 	return m, &signals
 }
 
@@ -183,9 +183,9 @@ func TestStart_AReadingTakesOnlyTheReadOnlyRows(t *testing.T) {
 
 	// A name is a whole word: a branch called dev is not named by
 	// "development", and is by "the dev branch".
-	if writtenNames(agent.StartOffer{Title: "read the development notes", Prompt: "Read them."}, "dev") ||
-		!writtenNames(agent.StartOffer{Title: "review the dev branch", Prompt: "Read it."}, "dev") ||
-		!writtenNames(agent.StartOffer{Title: "assess it", Prompt: "Read AGENTS.md."}, "AGENTS.md") {
+	if writtenNames(sidejobs.StartOffer{Title: "read the development notes", Prompt: "Read them."}, "dev") ||
+		!writtenNames(sidejobs.StartOffer{Title: "review the dev branch", Prompt: "Read it."}, "dev") ||
+		!writtenNames(sidejobs.StartOffer{Title: "assess it", Prompt: "Read AGENTS.md."}, "AGENTS.md") {
 		t.Fatal("a written offer should name a row's thing by the whole word only")
 	}
 

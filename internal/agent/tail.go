@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // The round tail: the boundary after a tool round's results are recorded and

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // A run's own plan reaches the reading beside its changes, in the one

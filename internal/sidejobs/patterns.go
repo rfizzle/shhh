@@ -1,4 +1,4 @@
-package agent
+package sidejobs
 
 // The wording of a proposal made from what repeats across a checkout's
 // sessions (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
@@ -21,7 +21,6 @@ import (
 
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
 )
@@ -118,7 +117,7 @@ func (w *PatternWriter) Model() string {
 	if w == nil {
 		return ""
 	}
-	return sidejobs.ModelAt(w.cfg.ModelAt, w.cfg.Model)
+	return ModelAt(w.cfg.ModelAt, w.cfg.Model)
 }
 
 const patternsPrompt = `You word one proposal made from what a person's coding sessions in one checkout kept doing. The code has already decided what is proposed; you choose only the words. The evidence is the pattern's facts and the transcript lines that made it. Answer with JSON and nothing else.

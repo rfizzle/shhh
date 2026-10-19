@@ -10,11 +10,11 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/skill"
 )
 

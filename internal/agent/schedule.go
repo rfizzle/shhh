@@ -23,7 +23,7 @@ package agent
 import (
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // SummarySchedule is when the next reading of one turn is due. The zero value

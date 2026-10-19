@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // The built-in set is what a zero Steering runs, so a surface that

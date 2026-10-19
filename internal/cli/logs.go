@@ -18,9 +18,9 @@ import (
 	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
 )

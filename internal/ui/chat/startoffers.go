@@ -28,29 +28,29 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // startOffersState is the reading and its writer. written is the one thing a
 // frame reads.
 type startOffersState struct {
-	writer *agent.StartOfferer
+	writer *sidejobs.StartOfferer
 	// gather reads what the screen does not already hold — git and the
 	// backlog — on the reading's goroutine, so the screen never waits for it.
-	gather func(context.Context) agent.StartOffersRequest
+	gather func(context.Context) sidejobs.StartOffersRequest
 	// asked latches: a session is read once, at its open.
 	asked bool
 	// keysAt is when the keyboard had last been touched as the reading was
 	// asked for; a reading that lands after another key is dropped.
 	keysAt  time.Time
 	cancel  context.CancelFunc
-	written []agent.StartOffer
+	written []sidejobs.StartOffer
 }
 
 // startOffersDoneMsg carries the reading back.
 type startOffersDoneMsg struct {
-	verdict agent.StartOffersVerdict
+	verdict sidejobs.StartOffersVerdict
 }
 
 // startOffersCmd asks for the reading once, the first time the session has a
@@ -67,7 +67,7 @@ func (m *Model) startOffersCmd() tea.Cmd {
 		return nil
 	}
 	info := *m.start
-	req := agent.StartOffersRequest{
+	req := sidejobs.StartOffersRequest{
 		Instructions: info.Project.Instruction.Block,
 		Facts:        startFactsLine(info),
 		Gate:         startGateLine(info),
@@ -111,7 +111,7 @@ func (m *Model) finishStartOffers(msg startOffersDoneMsg) {
 }
 
 // writtenStartOffers is the landed reading's offers while the switch is on.
-func (m Model) writtenStartOffers() []agent.StartOffer {
+func (m Model) writtenStartOffers() []sidejobs.StartOffer {
 	if !m.suggest.on {
 		return nil
 	}

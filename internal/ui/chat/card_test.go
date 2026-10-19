@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"

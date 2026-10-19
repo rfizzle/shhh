@@ -9,10 +9,10 @@ import (
 
 	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/llm/flow"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/persona"
@@ -71,10 +71,10 @@ var flowBuilders = []struct {
 		sidejobs.NewSuggester(p, sidejobs.SuggestConfig{Model: "m"}).Suggest(ctx, sidejobs.SuggestRequest{Instruction: "fix it"})
 	}},
 	{flow.StartOffers, "agent.StartOfferer", func(ctx context.Context, p llm.Provider) {
-		agent.NewStartOfferer(p, agent.StartOffersConfig{Model: "m"}).Offer(ctx, agent.StartOffersRequest{Facts: "a checkout"})
+		sidejobs.NewStartOfferer(p, sidejobs.StartOffersConfig{Model: "m"}).Offer(ctx, sidejobs.StartOffersRequest{Facts: "a checkout"})
 	}},
 	{flow.Patterns, "agent.PatternWriter", func(ctx context.Context, p llm.Provider) {
-		agent.NewPatternWriter(p, agent.PatternsConfig{Model: "m"}).Word(ctx, agent.PatternRequest{Want: agent.WordMemory, Lines: []string{"go test"}})
+		sidejobs.NewPatternWriter(p, sidejobs.PatternsConfig{Model: "m"}).Word(ctx, sidejobs.PatternRequest{Want: sidejobs.WordMemory, Lines: []string{"go test"}})
 	}},
 	{flow.Compaction, "summaryModelStream", func(ctx context.Context, p llm.Provider) {
 		events, cancel, err := summaryModelStream(ctx, &sessionEnv{prov: p}, meter.New(nil), nil, "m")([]llm.Message{{Role: llm.RoleUser, Content: "hi"}}, llm.ToolChoiceNone)

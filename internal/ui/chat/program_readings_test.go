@@ -6,7 +6,7 @@ package chat
 import (
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
 )

@@ -12,10 +12,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/BurntSushi/toml"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -111,7 +111,7 @@ func patternProposals(in patternInputs) []chat.Proposal {
 		if !in.Trusted {
 			continue
 		}
-		name := agent.SkillName(strings.Join(s.Keys, " "))
+		name := sidejobs.SkillName(strings.Join(s.Keys, " "))
 		if name == "" || (in.SkillExists != nil && in.SkillExists(name)) {
 			continue
 		}
@@ -189,7 +189,7 @@ type patternsHost struct {
 	project string
 	trusted bool
 	mem     *memory.Store
-	writer  *agent.PatternWriter
+	writer  *sidejobs.PatternWriter
 }
 
 // inputs gathers the mapping's inputs. full reads the conversations too,
@@ -275,15 +275,15 @@ func (h patternsHost) chat() chat.Patterns {
 			if !h.writer.Enabled() {
 				return p, false
 			}
-			want := agent.WordMemory
+			want := sidejobs.WordMemory
 			if p.Kind == storage.ProposalSkill {
-				want = agent.WordSkill
+				want = sidejobs.WordSkill
 			}
-			v := h.writer.Word(ctx, agent.PatternRequest{Want: want, Facts: p.Facts, Lines: p.Lines})
+			v := h.writer.Word(ctx, sidejobs.PatternRequest{Want: want, Facts: p.Facts, Lines: p.Lines})
 			if v.Failed {
 				return p, false
 			}
-			if want == agent.WordMemory {
+			if want == sidejobs.WordMemory {
 				// The path or the suite is the code's: a sentence that does
 				// not name it is not the proposal the code made, and a
 				// memory saved without it would not be recognised as
@@ -356,7 +356,7 @@ func withPatternsCount(info chat.StartInfo, h patternsHost, ok bool) chat.StartI
 
 // newPatternsHost is the session's host for /patterns, or false where there
 // is no checkout to read the record of.
-func newPatternsHost(db *storage.DB, cwd string, mem *memory.Store, writer *agent.PatternWriter) (patternsHost, bool) {
+func newPatternsHost(db *storage.DB, cwd string, mem *memory.Store, writer *sidejobs.PatternWriter) (patternsHost, bool) {
 	if db == nil {
 		return patternsHost{}, false
 	}

@@ -23,8 +23,8 @@ import (
 	"unicode"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -593,7 +593,7 @@ func assessOffer(info StartInfo) (readOnlyOffer, bool) {
 //
 // written is the start screen's reading where one landed, which only the
 // read-only slot takes (readOnlyOffers).
-func startSuggestions(info StartInfo, scaffold, setup bool, draft string, written []agent.StartOffer) ([]components.StartSuggestion, []string) {
+func startSuggestions(info StartInfo, scaffold, setup bool, draft string, written []sidejobs.StartOffer) ([]components.StartSuggestion, []string) {
 	var out []components.StartSuggestion
 	var actions []string
 	add := func(glyph, title, detail, action string) {
@@ -657,7 +657,7 @@ type readOnlyOffer struct {
 //
 // written is the start screen's reading, where one landed, and it is placed
 // last (withWritten): over the rows this ranking chose, never adding one.
-func readOnlyOffers(info StartInfo, draft string, room int, written []agent.StartOffer) []readOnlyOffer {
+func readOnlyOffers(info StartInfo, draft string, room int, written []sidejobs.StartOffer) []readOnlyOffer {
 	const reads = "reads only, no writes"
 	dirty := info.Project.Repo && info.Project.Dirty > 0
 	var changed, queued []readOnlyOffer
@@ -740,7 +740,7 @@ func readOnlyOffers(info StartInfo, draft string, room int, written []agent.Star
 // that names nothing a written offer names stays, and the price is the
 // slot's, whatever the writer wrote: the line a written row sends says it
 // changes nothing, so what the row costs is what the line asks for.
-func withWritten(rows []readOnlyOffer, written []agent.StartOffer) []readOnlyOffer {
+func withWritten(rows []readOnlyOffer, written []sidejobs.StartOffer) []readOnlyOffer {
 	if len(written) == 0 {
 		return rows
 	}
@@ -770,7 +770,7 @@ func withWritten(rows []readOnlyOffer, written []agent.StartOffer) []readOnlyOff
 // writtenNames reports whether a written offer is about the thing a
 // deterministic row names: the name as a whole word of its title or prompt,
 // so a branch called main is not named by "maintain".
-func writtenNames(w agent.StartOffer, names string) bool {
+func writtenNames(w sidejobs.StartOffer, names string) bool {
 	if names == "" {
 		return false
 	}

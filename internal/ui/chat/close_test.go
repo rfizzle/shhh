@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"

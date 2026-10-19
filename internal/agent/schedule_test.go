@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // The three bounds the two surfaces used to keep a copy of each are exercised

@@ -21,7 +21,7 @@ import (
 	"github.com/rfizzle/llm/decision"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"

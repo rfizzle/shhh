@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm/catalog"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/spend"
 
 	tea "charm.land/bubbletea/v2"

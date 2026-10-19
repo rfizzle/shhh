@@ -26,14 +26,14 @@ import (
 	"github.com/rfizzle/llm/attachment"
 	llmeffort "github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/spend"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
@@ -5803,7 +5803,7 @@ func TestGolden_StartOffers(t *testing.T) {
 // (docs/capabilities/chat.md#the-start-screen-is-read-for-this-checkout).
 func TestGolden_StartReading(t *testing.T) {
 	captureGolden(t, "start-reading", "the start screen with two offers the reading wrote", goldenWidths, func(width int) []golden.Panel {
-		build := func(info StartInfo, written []agent.StartOffer) string {
+		build := func(info StartInfo, written []sidejobs.StartOffer) string {
 			info.Recent = StartRecent{}
 			info.Project.Dirty = 0
 			m := frameModel(t, width, 40)
@@ -5812,7 +5812,7 @@ func TestGolden_StartReading(t *testing.T) {
 			m.startOffers.written = written
 			return m.renderHistory()
 		}
-		tours := []agent.StartOffer{
+		tours := []sidejobs.StartOffer{
 			{Title: "trace how a request reaches the cache", Prompt: "Trace how a request reaches the cache."},
 			{Title: "list what the gate does not check", Prompt: "Read the gate and say what it leaves unchecked."},
 		}
@@ -5820,7 +5820,7 @@ func TestGolden_StartReading(t *testing.T) {
 		named.Project.Branch = "cache-work"
 		named.Branch = StartBranch{Ahead: 2}
 		named.Ready = StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
-		facts := []agent.StartOffer{
+		facts := []sidejobs.StartOffer{
 			{Title: "say what cache-work still lacks for its lifetime", Prompt: "Read the commits on cache-work and say what the lifetime still lacks."},
 			{Title: "check the cache-ttl test against the cache package", Prompt: "Read cache-ttl and the cache package and say whether TestTTL exists."},
 		}

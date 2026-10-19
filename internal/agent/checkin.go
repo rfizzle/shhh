@@ -37,7 +37,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // DefaultCheckInInterval is how many tool rounds pass before a session is

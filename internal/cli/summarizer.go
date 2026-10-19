@@ -21,11 +21,11 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm/flow"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/spend"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/permission"
@@ -411,8 +411,8 @@ func newSuggester(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sid
 // screen. It is asked on its own flow and billed under its own source;
 // whether it is asked at all is the next step's switch, which the screen
 // reads.
-func newStartOfferer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.StartOfferer {
-	return agent.NewStartOfferer(ledger.For(env.prov, flowStartOffers.source), agent.StartOffersConfig{
+func newStartOfferer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sidejobs.StartOfferer {
+	return sidejobs.NewStartOfferer(ledger.For(env.prov, flowStartOffers.source), sidejobs.StartOffersConfig{
 		ModelAt: env.flowModelAt(cfg, flowStartOffers),
 		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 	})
@@ -422,8 +422,8 @@ func newStartOfferer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *
 // person opens a memory or a skill in /patterns
 // (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
 // It is asked on its own flow and billed under its own source.
-func newPatternWriter(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.PatternWriter {
-	return agent.NewPatternWriter(ledger.For(env.prov, flowPatterns.source), agent.PatternsConfig{
+func newPatternWriter(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sidejobs.PatternWriter {
+	return sidejobs.NewPatternWriter(ledger.For(env.prov, flowPatterns.source), sidejobs.PatternsConfig{
 		ModelAt: env.flowModelAt(cfg, flowPatterns),
 		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 	})

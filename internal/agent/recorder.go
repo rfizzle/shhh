@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // DefaultDigestRows is how many recent rows a digest carries. It matches what the

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // working is what a front-end answers about its own turn; these tests are

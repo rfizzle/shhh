@@ -17,9 +17,9 @@ import (
 	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/sandbox"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 	"github.com/rfizzle/shhh/internal/web"
 )

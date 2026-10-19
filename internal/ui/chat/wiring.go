@@ -23,7 +23,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
@@ -268,8 +268,8 @@ type Wiring struct {
 	Suggestions bool
 	// StartOfferer writes the start screen's offers, from what
 	// StartOffersGather reads off the UI goroutine. Nil asks nothing.
-	StartOfferer      *agent.StartOfferer
-	StartOffersGather func(context.Context) agent.StartOffersRequest
+	StartOfferer      *sidejobs.StartOfferer
+	StartOffersGather func(context.Context) sidejobs.StartOffersRequest
 	// Patterns enables /patterns.
 	Patterns Patterns
 	// Observer records the session; the zero Observer records nothing.

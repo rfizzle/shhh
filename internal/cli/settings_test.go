@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
