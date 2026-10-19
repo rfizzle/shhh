@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/secret"
 )
 
 // fakeProvider answers one request with a scripted stream.

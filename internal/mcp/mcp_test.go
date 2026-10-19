@@ -15,8 +15,8 @@ import (
 	"unicode/utf8"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/shhh/internal/logs"
-	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/web"
 )
 

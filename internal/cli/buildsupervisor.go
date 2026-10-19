@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -17,7 +18,6 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/subagent"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"

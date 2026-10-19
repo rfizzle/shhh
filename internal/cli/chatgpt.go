@@ -14,11 +14,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/llm/openai/responses"
-	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
 

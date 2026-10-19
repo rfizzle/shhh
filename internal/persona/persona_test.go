@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/secret"
 )
 
 func TestNormaliseChatDropsWriting(t *testing.T) {

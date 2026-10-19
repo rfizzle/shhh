@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/shhh/internal/evidence"
-	"github.com/rfizzle/shhh/internal/secret"
 )
 
 // A spooled process writes into the evidence store, whose files sit at 0600

@@ -8,9 +8,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/secret"
 )
 
 // draftAnswers is a model that answers each drafting request with the next

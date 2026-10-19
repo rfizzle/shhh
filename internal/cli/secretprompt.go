@@ -3,7 +3,7 @@ package cli
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/agentcore/secret"
 )
 
 // secretPromptBlock describes what this session hides from the model and how it

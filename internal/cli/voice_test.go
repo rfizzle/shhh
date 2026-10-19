@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/memory"
-	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/todo"
 )

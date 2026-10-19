@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/persona"
-	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 

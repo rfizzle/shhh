@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/agentcore/secret"
 )
 
 func TestSecretPromptBlock(t *testing.T) {

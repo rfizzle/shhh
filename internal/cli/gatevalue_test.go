@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/toolvalue"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/secret"
 )
 
 const gateSecret = "hunter2-not-a-real-credential"

@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/secret"
 )
 
 // The executor chain a session builds: the reducer inside, this package's

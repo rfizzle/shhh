@@ -21,9 +21,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
-	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
