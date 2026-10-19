@@ -109,7 +109,7 @@ func TestLedger_ADeclaredOffOutranksAFigure(t *testing.T) {
 // accounting over and not what was learned about the endpoint.
 func TestGate_ReadsTheCacheOfTheEndpointThatAnswered(t *testing.T) {
 	l := New(nil)
-	drain(t, l.For(&stubProvider{usage: llm.Usage{PromptTokens: 20_000, CachedTokens: 5_000}}, SourceClassifier), "gpt-5")
+	drain(t, l.For(&stubProvider{usage: llm.Usage{PromptTokens: 20_000, CachedTokens: 5_000}}, sourceClassifier), "gpt-5")
 	l.Reset()
 	got := l.CacheReadings()
 	if len(got) != 1 || got[0].Provider != "stub" || got[0].Model != "gpt-5" || got[0].State() != CacheWorks {

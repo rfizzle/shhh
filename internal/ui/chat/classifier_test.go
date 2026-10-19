@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -55,7 +56,7 @@ func classifierModel(t *testing.T, ran *[]string, p llm.Provider) Model {
 	ledger := meter.New(nil)
 	m := execModel(t, ran)
 	m.wiring.Ledger = ledger
-	m.classifier.judge = agent.NewClassifier(ledger.For(p, meter.SourceClassifier),
+	m.classifier.judge = agent.NewClassifier(ledger.For(p, spend.SourceClassifier),
 		agent.ClassifierConfig{Model: "judge"})
 	m.policy.mode = agent.ModeAuto
 	return m
@@ -349,7 +350,7 @@ func classifierDownRound(t *testing.T, width int) Model {
 		return "", 0
 	})
 	m.wiring.Ledger = ledger
-	m.classifier.judge = agent.NewClassifier(ledger.For(&verdictProvider{err: errors.New("api down")}, meter.SourceClassifier),
+	m.classifier.judge = agent.NewClassifier(ledger.For(&verdictProvider{err: errors.New("api down")}, spend.SourceClassifier),
 		agent.ClassifierConfig{Model: "judge"})
 	m.policy.mode = agent.ModeAuto
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 48})

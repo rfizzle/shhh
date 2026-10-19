@@ -28,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui"
@@ -356,7 +357,7 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 	prices := <-priced
 	ledger := meter.New(prices)
 	ledger.SetBudget(spendBudget(cfg))
-	p = meter.WithFallbackModel(ledger.For(p, meter.SourceOneShot), resolved.Model)
+	p = meter.WithFallbackModel(ledger.For(p, spend.SourceOneShot), resolved.Model)
 	// And timed, so the turn's row says where the time went: every request
 	// the interaction makes marks the clock as it streams (cmdtime.go).
 	timer := &oneShotTimer{answered: !pipeMode}
@@ -424,7 +425,7 @@ func (r *oneShotRun) finish() {
 	}
 	t := r.ledger.Total()
 	recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
-	recorder.classifierSpend(r.ledger.SourceTotal(meter.SourceClassifier).Cost)
+	recorder.classifierSpend(r.ledger.SourceTotal(spend.SourceClassifier).Cost)
 	took, split := r.timer.span()
 	recorder.turnTimed(1, 0, took, r.outcome, split)
 	recorder.end()

@@ -8,6 +8,7 @@ import (
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -38,7 +39,7 @@ func TestSpend_BackgroundSpendSurvivesTheNextRound(t *testing.T) {
 	m.vitals.startTurn()
 
 	ledger.Record(meter.Origin{Source: meter.SourceSummary}, "cheap", llm.Usage{PromptTokens: 800, CompletionTokens: 30})
-	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 500, CompletionTokens: 20})
+	ledger.Record(meter.Origin{Source: spend.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 500, CompletionTokens: 20})
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 1000, CompletionTokens: 100})
 	m.accumulateUsage(&llm.Usage{PromptTokens: 1000, CompletionTokens: 100})
 
@@ -103,7 +104,7 @@ func TestSpend_InspectorSeparatesTheAgentFromTheSession(t *testing.T) {
 func TestInspectorRail_SpendSharesSumToTheSessionTotal(t *testing.T) {
 	m, ledger := spendModel(t)
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 12_000, CompletionTokens: 900, CachedTokens: 8_000})
-	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 3_000, CompletionTokens: 40})
+	ledger.Record(meter.Origin{Source: spend.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 3_000, CompletionTokens: 40})
 	ledger.Record(meter.Origin{Source: meter.SourceSummary}, "cheap", llm.Usage{PromptTokens: 2_000, CompletionTokens: 120})
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 14_000, CompletionTokens: 600})
 
@@ -138,7 +139,7 @@ func TestInspectorRail_SpendSharesSumToTheSessionTotal(t *testing.T) {
 func TestSpendShares_AFanOutOnAnotherModelIsAShareOfItsOwn(t *testing.T) {
 	m, ledger := spendModel(t)
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 1_000, CompletionTokens: 100})
-	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "gpt-4o", llm.Usage{})
+	ledger.Record(meter.Origin{Source: spend.SourceClassifier}, "gpt-4o", llm.Usage{})
 	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "cheap", llm.Usage{PromptTokens: 5_000, CompletionTokens: 500})
 
 	shares := m.spendShares()
@@ -266,7 +267,7 @@ func spendWords(sh spendShare) string {
 func TestInspectorSpend_SharesAreTheScreens(t *testing.T) {
 	m, ledger := spendModel(t)
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 12_000, CompletionTokens: 900})
-	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 3_000, CompletionTokens: 40})
+	ledger.Record(meter.Origin{Source: spend.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 3_000, CompletionTokens: 40})
 
 	rail := stripANSI(strings.Join(m.inspectorData().Lines(components.InspectorWidth, 0), "\n"))
 	if !strings.Contains(rail, "session total · "+formatCost(ledger.Total().Cost)) {

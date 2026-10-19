@@ -8,6 +8,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/spend"
 )
 
 // A turn the person starts while a run fans out answers under the person's
@@ -80,7 +81,7 @@ func TestPersonsTurn_TheClassifierNeverJudgesTheSkillTurn(t *testing.T) {
 	m.policy.mode = agent.ModeManual
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 })
 	p := &verdictProvider{decision: "allow", reason: "fine"}
-	m.classifier.judge = agent.NewClassifier(meter.New(nil).For(p, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
+	m.classifier.judge = agent.NewClassifier(meter.New(nil).For(p, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
 	m = settleFlow(m)
 
 	next, _ := m.sendUserMessageAs("skill body", "/skill documentation")

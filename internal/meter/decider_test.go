@@ -9,6 +9,10 @@ import (
 	"github.com/rfizzle/llm/decision"
 )
 
+// sourceClassifier stands in for spend.SourceClassifier, which these tests
+// cannot import: internal/spend imports meter.
+const sourceClassifier Source = "classifier"
+
 // stubDecider answers every question at one probability and reports the
 // usage it was given, output included, so the test can see what is billed.
 type stubDecider struct {
@@ -34,12 +38,12 @@ func (s *stubListerDecider) ListModels(context.Context) ([]string, error) { retu
 // source at its input tokens alone.
 func TestLedger_KeepsTheDecider(t *testing.T) {
 	l := New(testPrices())
-	if _, ok := l.For(&stubProvider{}, SourceClassifier).(decision.Decider); ok {
+	if _, ok := l.For(&stubProvider{}, sourceClassifier).(decision.Decider); ok {
 		t.Fatal("a provider that cannot decide must not appear to")
 	}
 
 	inner := &stubDecider{stubProvider: &stubProvider{}, usage: llm.Usage{PromptTokens: 1000, CompletionTokens: 50}}
-	p := l.For(inner, SourceClassifier)
+	p := l.For(inner, sourceClassifier)
 	d, ok := p.(decision.Decider)
 	if !ok {
 		t.Fatal("a provider that can decide must still say so through the gate")
@@ -55,14 +59,14 @@ func TestLedger_KeepsTheDecider(t *testing.T) {
 		t.Fatalf("decide should pass through: %+v %v", res, err)
 	}
 	got := l.Entries()
-	if len(got) != 1 || got[0].Origin.Source != SourceClassifier || got[0].Model != "small" {
+	if len(got) != 1 || got[0].Origin.Source != sourceClassifier || got[0].Model != "small" {
 		t.Fatalf("billed to %+v, want the classifier on its model", got)
 	}
 	if got[0].In != 1000 || got[0].Out != 0 || got[0].Requests != 1 {
 		t.Fatalf("billed %+v, want 1000 input tokens and nothing else", got[0])
 	}
 
-	both := l.For(&stubListerDecider{stubDecider: inner}, SourceClassifier)
+	both := l.For(&stubListerDecider{stubDecider: inner}, sourceClassifier)
 	if _, ok := both.(decision.Decider); !ok {
 		t.Fatal("a lister that decides keeps the capability")
 	}

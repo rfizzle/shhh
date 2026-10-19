@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/spend"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -751,7 +752,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			l.usage = u
 			l.mu.Unlock()
 			l.recorder.usagePriced(l.turnNow(), t.In, t.Out, t.Cost, t.Priced)
-			l.recorder.classifierSpend(l.ledger.SourceTotal(meter.SourceClassifier).Cost)
+			l.recorder.classifierSpend(l.ledger.SourceTotal(spend.SourceClassifier).Cost)
 			l.obs.usage(u)
 		},
 	}

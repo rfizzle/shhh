@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/spend"
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/llm"
@@ -927,7 +928,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 				CachedTokens:     int(t.Cached),
 			}
 			recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
-			recorder.classifierSpend(ledger.SourceTotal(meter.SourceClassifier).Cost)
+			recorder.classifierSpend(ledger.SourceTotal(spend.SourceClassifier).Cost)
 			obs.usage(usage)
 		},
 	}

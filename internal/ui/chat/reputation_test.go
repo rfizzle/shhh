@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -57,7 +58,7 @@ func TestReputation_AutoModeLetsAKnownHostThrough(t *testing.T) {
 	executor := func(context.Context, string, json.RawMessage) (string, error) { fetched++; return "page text", nil }
 	var decisions [][2]string
 	m := recordingDecisions(gatedModelWith(t, executor, fetchPreviews(), Wiring{
-		Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+		Classifier: agent.NewClassifier(ledger.For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
 	}),
 		&decisions)
 	m.policy.mode = agent.ModeAuto
@@ -118,7 +119,7 @@ func TestReputation_AWarnedHostIsCardedWhereTheClassifierAllowed(t *testing.T) {
 			ledger := meter.New(nil)
 			var decisions [][2]string
 			m := recordingDecisions(gatedModelWith(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
-				Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+				Classifier: agent.NewClassifier(ledger.For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
 			}),
 				&decisions)
 			m.policy.mode = agent.ModeAuto
@@ -196,7 +197,7 @@ func TestReputation_AnUnknownHostLeavesTheClassifiersAnswer(t *testing.T) {
 	judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 	ledger := meter.New(nil)
 	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
-	m.classifier.judge = agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
+	m.classifier.judge = agent.NewClassifier(ledger.For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
 	m.policy.mode = agent.ModeAuto
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://nowhere.test/x")}})
 	m = updated.(Model)
@@ -215,7 +216,7 @@ func TestObserve_AHostStandingAskCarriesTheClassifiersTime(t *testing.T) {
 	judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 	ledger := meter.New(nil)
 	m := gatedModelWith(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
-		Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+		Classifier: agent.NewClassifier(ledger.For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
 	})
 	var untimed, timed [][2]string
 	m.wiring.Observer = observe.Observer{

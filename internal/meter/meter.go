@@ -31,40 +31,10 @@ import (
 type Source string
 
 const (
-	SourceAgent      Source = "agent"
-	SourceClassifier Source = "classifier"
-	// SourceExplanation is a command explained at the approval card. It is
-	// its own source and not the classifier's because the two answer
-	// different questions with the same model: one judges a call the reader
-	// never saw, and the other is a key the reader pressed. A session where
-	// "classifier" costs more than expected is a session to change the mode
-	// of; one where "explanation" does is a reader learning a tool, and
-	// folding the second into the first would report the wrong advice.
-	SourceExplanation Source = "explanation"
-	SourceSummary     Source = "summary"
-	// SourceBacklog is the reading that turns a session into backlog items.
-	SourceBacklog Source = "backlog"
-	// SourcePersona is the drafting of an agent profile from a brief.
-	SourcePersona Source = "persona"
-	// SourceToolchain is the drafting or review of a checkout's toolchain
-	// declaration, which a person asked for on the start screen or with
-	// /toolchain.
-	SourceToolchain Source = "toolchain"
-	// SourceSuggestion is the next step offered in an empty draft at a
-	// turn's close. It is its own source rather than a summary's because it
-	// is the one background reading a person can turn off for its cost
-	// alone, and they can only judge that cost if the bill names it.
-	SourceSuggestion Source = "suggestion"
-	// SourceStartOffers is the start screen's reading at session open: the
-	// one request a session makes before anyone has asked it anything, so
-	// the bill names it apart from the next step offered after a turn.
-	SourceStartOffers Source = "start-offers"
-	// SourcePatterns is the wording of a proposal made from what repeats
-	// across sessions: asked only when the person opens one, and named apart
-	// so a reader of the bill can see what reading their own record cost.
-	SourcePatterns Source = "patterns"
+	SourceAgent   Source = "agent"
+	SourceSummary Source = "summary"
+	// SourceSubagent is a sub-agent's turns, named per child by Origin.Label.
 	SourceSubagent Source = "sub-agent"
-	SourceOneShot  Source = "one-shot"
 	// SourceUnattributed is where a gated request with no source lands. It
 	// exists so that a feature wired through the gate without declaring
 	// itself is visible in the total and named in the breakdown, rather than

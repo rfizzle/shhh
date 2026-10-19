@@ -27,6 +27,7 @@ import (
 	llmeffort "github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/spend"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -3651,7 +3652,7 @@ func TestGolden_ClassifierStanding(t *testing.T) {
 	captureGolden(t, "classifier-standing", "a classifier's yes the host lists put to the person", goldenWidths, func(width int) []golden.Panel {
 		judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 		m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, previews)
-		m.classifier.judge = agent.NewClassifier(meter.New(nil).For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
+		m.classifier.judge = agent.NewClassifier(meter.New(nil).For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
 		m.policy.mode = agent.ModeAuto
 		m.width, m.height = width, 40
 		m.syncInputWidth()

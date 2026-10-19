@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -19,7 +20,7 @@ func statsModel(t *testing.T) (Model, *meter.Ledger) {
 	t.Helper()
 	m, ledger := spendModel(t)
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", llm.Usage{PromptTokens: 12_000, CompletionTokens: 900, CachedTokens: 8_000})
-	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 3_000, CompletionTokens: 40})
+	ledger.Record(meter.Origin{Source: spend.SourceClassifier}, "cheap", llm.Usage{PromptTokens: 3_000, CompletionTokens: 40})
 	ledger.Record(meter.Origin{Source: meter.SourceSummary}, "cheap", llm.Usage{PromptTokens: 2_000, CompletionTokens: 120})
 	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "researcher-1"}, "cheap", llm.Usage{PromptTokens: 400, CompletionTokens: 40})
 	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "gpt-4o", llm.Usage{PromptTokens: 600, CompletionTokens: 60})
@@ -94,7 +95,7 @@ func TestSpendScreen_EachModelNamesItsKindsAndWhatEachCost(t *testing.T) {
 	if cheap.Name != "cheap" || len(cheap.Parts) != 2 || cheap.Parts[0].Word != "classifier" || cheap.Parts[1].Word != "summary" {
 		t.Fatalf("the small model names the classifier and the summary: %+v", cheap)
 	}
-	if want := formatCost(ledger.SourceTotal(meter.SourceClassifier).Cost); cheap.Parts[0].Cost != want {
+	if want := formatCost(ledger.SourceTotal(spend.SourceClassifier).Cost); cheap.Parts[0].Cost != want {
 		t.Fatalf("the classifier's line is what it cost, %q, got %q", want, cheap.Parts[0].Cost)
 	}
 	main := models[0]

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/spend"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
@@ -316,7 +317,7 @@ func (b *screenBuild) policy() error {
 	// …and the offer to draft or review the declaration itself, which
 	// is this surface's alone: its answer is a card, and only a session
 	// has somebody to put one to (toolchaindraft.go).
-	wireToolchainDraft(&b.containment.Toolchain, ledger.For(env.prov, meter.SourceToolchain), env.flowModelAt(cfg, flowToolchain), session.vault.Scrub)
+	wireToolchainDraft(&b.containment.Toolchain, ledger.For(env.prov, spend.SourceToolchain), env.flowModelAt(cfg, flowToolchain), session.vault.Scrub)
 	return nil
 }
 
@@ -740,11 +741,11 @@ func (b *screenBuild) todos() chat.Todos {
 		Profile: profile,
 		// The reading is metered against the backlog, so /stats names
 		// it under whichever model the chain answered with.
-		Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), reading, profile),
+		Extractor: todo.NewExtractor(ledger.For(env.prov, spend.SourceBacklog), reading, profile),
 		// Drafting an item from a sentence is the same judgement in one
 		// paragraph rather than over a whole session, so it goes to the
 		// same model and is metered against the same source.
-		Drafter:       todo.NewDrafter(ledger.For(env.prov, meter.SourceBacklog), reading, profile),
+		Drafter:       todo.NewDrafter(ledger.For(env.prov, spend.SourceBacklog), reading, profile),
 		NoCommit:      !cfg.TodoCommitEnabled(),
 		ItemTimeout:   cfg.TodoItemTimeout(),
 		SprintCostCap: cfg.TodoSprintCostCap(),

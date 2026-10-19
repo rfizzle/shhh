@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -144,7 +145,7 @@ func TestQuestion_EveryModeAndEveryGrantStillDrawsTheCard(t *testing.T) {
 				m.wiring.Ledger = ledger
 				m.classifier.judge = agent.NewClassifier(
 					ledger.For(&verdictProvider{decision: "allow", reason: "the work that was asked for"},
-						meter.SourceClassifier),
+						spend.SourceClassifier),
 					agent.ClassifierConfig{Model: "judge"})
 			}
 			updated, _ := m.Update(askCall(chooseArgs))

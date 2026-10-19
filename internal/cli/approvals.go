@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/spend"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -96,7 +97,7 @@ func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools
 // failing.
 // See docs/capabilities/configuration.md#the-classifier-is-configured-once.
 func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Classifier {
-	return agent.NewClassifier(ledger.For(env.prov, meter.SourceClassifier), agent.ClassifierConfig{
+	return agent.NewClassifier(ledger.For(env.prov, spend.SourceClassifier), agent.ClassifierConfig{
 		ModelAt:   gateModel(cfg, env),
 		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
 		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
@@ -146,7 +147,7 @@ func gateModel(cfg config.Config, env *sessionEnv) func() string {
 // places with one of them out of date. The long form is what a screen with
 // nothing else on it is for.
 func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *sidejobs.Explainer {
-	return sidejobs.NewExplainer(ledger.For(env.prov, meter.SourceExplanation), sidejobs.ExplainConfig{
+	return sidejobs.NewExplainer(ledger.For(env.prov, spend.SourceExplanation), sidejobs.ExplainConfig{
 		ModelAt: env.flowModelAt(cfg, flowExplanation),
 		Prompt:  prompt.BuildExplain(true),
 	})
