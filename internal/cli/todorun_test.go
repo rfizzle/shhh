@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"

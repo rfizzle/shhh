@@ -12,9 +12,9 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/permission"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"

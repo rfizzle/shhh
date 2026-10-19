@@ -10,9 +10,9 @@ import (
 	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"

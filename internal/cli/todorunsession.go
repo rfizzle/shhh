@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/subagent"

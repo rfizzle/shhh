@@ -34,10 +34,10 @@ import (
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/llm"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/persona"

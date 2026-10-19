@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/subagent"

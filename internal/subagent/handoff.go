@@ -14,10 +14,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/lsp"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 

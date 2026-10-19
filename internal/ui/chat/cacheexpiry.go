@@ -8,7 +8,7 @@ package chat
 import (
 	"fmt"
 
-	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/agentcore/meter"
 )
 
 // noteCacheExpiries puts a notice on the transcript for each cache expiry the

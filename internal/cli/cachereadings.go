@@ -15,10 +15,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm/cache"
 	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/shhh/internal/cli/report"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/storage"
 )

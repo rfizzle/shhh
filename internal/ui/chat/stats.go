@@ -15,7 +15,7 @@ import (
 	"slices"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 

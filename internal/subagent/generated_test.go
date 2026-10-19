@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/shhh/internal/hostgit"
-	"github.com/rfizzle/shhh/internal/meter"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 

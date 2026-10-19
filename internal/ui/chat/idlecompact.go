@@ -15,7 +15,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/agentcore/meter"
 )
 
 // IdleCompact is the three settings that govern it, as the session was wired

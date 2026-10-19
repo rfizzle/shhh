@@ -1,7 +1,7 @@
 // Package spend names the sources of spend that belong to shhh alone.
 //
 // The generic sources (the agent, a summary, a sub-agent, and the
-// unattributed catch-all) live in internal/meter, because any program that
+// unattributed catch-all) live in agentcore/meter, because any program that
 // meters a provider has them. The ones here are shhh's own features: the
 // permission classifier, the approval card's explanation, the backlog reader,
 // and so on. They live apart so the meter holds nothing a second program would
@@ -9,7 +9,7 @@
 // gate attributes to it exactly as it does to a generic source.
 package spend
 
-import "github.com/rfizzle/shhh/internal/meter"
+import "github.com/rfizzle/agentcore/meter"
 
 const (
 	SourceClassifier meter.Source = "classifier"

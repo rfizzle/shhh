@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/spend"
 
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/effort"
@@ -28,7 +29,6 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/hook"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/permission"

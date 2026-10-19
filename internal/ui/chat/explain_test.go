@@ -15,8 +15,8 @@ import (
 	"github.com/rfizzle/shhh/internal/spend"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 

@@ -34,8 +34,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
