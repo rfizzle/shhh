@@ -20,6 +20,22 @@ func TestSessionSteer_NamesTheSenderAndEndsOnTheLine(t *testing.T) {
 	}
 }
 
+func TestSetSessionSteerWording_AnAppNamesItselfAndNilRestoresTheDefault(t *testing.T) {
+	t.Cleanup(func() { SetSessionSteerWording(nil) })
+	def := SessionSteerWording()
+	if strings.Contains(def, "shhh") {
+		t.Errorf("the module default names no app:\n%s", def)
+	}
+	SetSessionSteerWording(func() string { return "From " + PlaceholderSource + " of my app." })
+	if got := (Steering{}).SessionSteer("lane-b", "rebase"); got != "From lane-b of my app.\n\nrebase" {
+		t.Errorf("the installed wording is the one in force, got %q", got)
+	}
+	SetSessionSteerWording(nil)
+	if got := SessionSteerWording(); got != def {
+		t.Errorf("nil restores the default, got %q", got)
+	}
+}
+
 func TestSessionSteer_AConfiguredWordingGetsTheSourceAndKeepsTheLine(t *testing.T) {
 	s := Steering{SessionSteerText: "From {{source}}, for what it is worth:\n"}
 	got := s.SessionSteer("session lane-b", "rebase")

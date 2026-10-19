@@ -205,6 +205,7 @@ func NewRootCmd() *cobra.Command {
 			// logs nothing leaves no file behind.
 			openLog()
 			llm.SetApp(shhhApp)
+			handSessionSteerWording()
 			pricing.SetCacheDir(datadir.CacheDir)
 			configStarted := time.Now()
 
