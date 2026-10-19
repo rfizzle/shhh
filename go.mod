@@ -20,7 +20,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/mattn/go-isatty v0.0.20
 	github.com/modelcontextprotocol/go-sdk v1.7.0
-	github.com/rfizzle/agentcore v0.0.7
+	github.com/rfizzle/agentcore v0.1.0
 	github.com/rfizzle/llm v0.7.0
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/spf13/cobra v1.10.2
