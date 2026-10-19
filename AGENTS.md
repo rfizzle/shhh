@@ -140,7 +140,6 @@ internal/
   project/         checkout survey, instruction files, trust
   structural/      external tools, and the read-only and write git verbs
   hostgit/         how shhh runs git on the host
-  secret/          the vault and the scrub
   observe/         the session record's contract and closed vocabularies
   evidence/        store for reduced and elided output
   receipt/         what one call did, in the words the chat screen draws
@@ -158,9 +157,14 @@ sits at a different depth. Never commit it. An item that changes `llm` commits
 and tags it there; the person pushes `llm` and its tag before pushing shhh.
 The generic agent packages are moving the same way to
 `github.com/rfizzle/agentcore`, a sibling module at `../agentcore`, under
-the same `go.work`, tag and push rules. The front-end-agnostic agent loop
-is already there as `agentcore/agent` (Headless drives it unattended), with
-the repeat detector as `agentcore/repeat`.
+the same `go.work`, tag and push rules. The move is done: the loop is
+`agentcore/agent` (Headless drives it unattended), the repeat detector
+`agentcore/repeat`, the summarizer `agentcore/reading`, the backoff
+`agentcore/retry`, the spend ledger `agentcore/meter`, the vault and the
+scrub `agentcore/secret`, and the skill catalog `agentcore/skill`. What
+shhh fills in are the seams each package exposes (`SetLogger`,
+`SetResultParts`, `SetElidedWording`, `Boundary`, `Digest`, `Shapes`, the
+built-ins' `fs.FS`), wired where each surface is assembled.
 
 ## Invariants
 
