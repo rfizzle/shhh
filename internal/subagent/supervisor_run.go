@@ -11,6 +11,7 @@ import (
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
@@ -481,7 +482,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 		// A child is as unwatched as a headless run, and its task is the
 		// instruction every reading is judged against. Nil where
 		// summary.subagents turned the reading off.
-		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task).
+		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0, agent.Digest{Arg: digest.Arg, Outcome: digest.Outcome, FirstLine: digest.FirstLine}), c.task).
 			WithChanges(c.changed).
 			WithSteps(c.ownProgress).
 			WithSweeps(c.env.Sweeps),

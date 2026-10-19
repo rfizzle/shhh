@@ -33,6 +33,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -1072,7 +1073,7 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	// flight when the next turn replaces the gate would otherwise be reading
 	// the field as it is written.
 	gate := l.gate
-	l.headless.Summary = agent.NewSummaryRun(l.summarizer, agent.NewRecorder(0), prompt).
+	l.headless.Summary = agent.NewSummaryRun(l.summarizer, agent.NewRecorder(0, agent.Digest{Arg: digest.Arg, Outcome: digest.Outcome, FirstLine: digest.FirstLine}), prompt).
 		WithChanges(l.own.changed).
 		WithAlerts(gate.alerts).
 		WithSweeps(l.repeats.Sweeps)

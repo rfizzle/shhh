@@ -1146,7 +1146,7 @@ func TestHeadlessRun_AVerdictTooOldToActOnIsWithheldAndRecorded(t *testing.T) {
 	// is the first age that earns nothing.
 	run := NewSummaryRun(
 		sidejobs.NewSummarizer(&slowProvider{}, sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 2, MinGap: -1}),
-		NewRecorder(0), "ship the parser")
+		NewRecorder(0, testDigest), "ship the parser")
 	if run == nil {
 		t.Fatal("expected a runner")
 	}

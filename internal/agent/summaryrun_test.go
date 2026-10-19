@@ -84,7 +84,7 @@ func (p *slowProvider) requests() []string {
 
 func testSummaryRun(t *testing.T, p llm.Provider, target string) (*SummaryRun, *Recorder) {
 	t.Helper()
-	rec := NewRecorder(0)
+	rec := NewRecorder(0, testDigest)
 	// MinGap negative removes the wall-clock floor: these tests are about the
 	// round interval, and twenty real seconds is not a thing a test waits for.
 	r := NewSummaryRun(sidejobs.NewSummarizer(p, sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1}), rec, target)
@@ -374,7 +374,7 @@ func TestSummaryRun_BoundsAreTheIntervalAndHowManyOfThem(t *testing.T) {
 // unconditionally and pays nothing.
 func TestSummaryRun_NilWhenNotConfigured(t *testing.T) {
 	disabled := sidejobs.NewSummarizer(&slowProvider{}, sidejobs.SummaryConfig{Model: "fast", Disabled: true})
-	if r := NewSummaryRun(disabled, NewRecorder(0), "x"); r != nil {
+	if r := NewSummaryRun(disabled, NewRecorder(0, testDigest), "x"); r != nil {
 		t.Error("a disabled summarizer takes no readings")
 	}
 	if r := NewSummaryRun(sidejobs.NewSummarizer(&slowProvider{}, sidejobs.SummaryConfig{Model: "fast"}), nil, "x"); r != nil {

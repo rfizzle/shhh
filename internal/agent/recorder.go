@@ -15,8 +15,6 @@ import (
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
-
-	"github.com/rfizzle/shhh/internal/digest"
 )
 
 // DefaultDigestRows is how many recent rows a digest carries. It matches what the
@@ -27,7 +25,8 @@ const DefaultDigestRows = 24
 // Recorder accumulates activity rows for a run that has nowhere else to keep
 // them. The zero value is not usable; call NewRecorder.
 type Recorder struct {
-	max int
+	max    int
+	digest Digest
 
 	mu   sync.Mutex
 	rows []string
@@ -39,11 +38,45 @@ type Recorder struct {
 	calls int
 }
 
-func NewRecorder(max int) *Recorder {
+// Digest is the words a recorder uses to turn a call into a row. The app owns
+// the vocabulary, so the recorder takes it rather than importing it. A nil
+// word renders as the empty string: the row is still recorded, with that part
+// blank, so a missing word is visible in the row and never drops it.
+type Digest struct {
+	// Arg renders a tool's arguments.
+	Arg func(tool, rawArgs string) string
+	// Outcome renders a tool's result.
+	Outcome func(result string) string
+	// FirstLine renders a shell command.
+	FirstLine func(string) string
+}
+
+func (d Digest) arg(tool, raw string) string {
+	if d.Arg == nil {
+		return ""
+	}
+	return d.Arg(tool, raw)
+}
+
+func (d Digest) outcome(result string) string {
+	if d.Outcome == nil {
+		return ""
+	}
+	return d.Outcome(result)
+}
+
+func (d Digest) firstLine(s string) string {
+	if d.FirstLine == nil {
+		return ""
+	}
+	return d.FirstLine(s)
+}
+
+func NewRecorder(max int, d Digest) *Recorder {
 	if max <= 0 {
 		max = DefaultDigestRows
 	}
-	return &Recorder{max: max, rows: make([]string, 0, max)}
+	return &Recorder{max: max, digest: d, rows: make([]string, 0, max)}
 }
 
 // Tool records one completed call. Safe on a nil Recorder, which records
@@ -53,7 +86,7 @@ func (r *Recorder) Tool(name, args, result string) {
 	if r == nil {
 		return
 	}
-	row := sidejobs.SummaryActivity(name, digest.Arg(name, args), digest.Outcome(result))
+	row := sidejobs.SummaryActivity(name, r.digest.arg(name, args), r.digest.outcome(result))
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.calls++
@@ -69,7 +102,7 @@ func (r *Recorder) Command(command string, exitCode int) {
 	if r == nil {
 		return
 	}
-	row := sidejobs.SummaryActivity("command", digest.FirstLine(command), ExitOutcome(exitCode))
+	row := sidejobs.SummaryActivity("command", r.digest.firstLine(command), ExitOutcome(exitCode))
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.calls++

@@ -30,7 +30,6 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/digest"
 )
 
 // InterveneKind is what a turn is being interrupted for.
@@ -157,7 +156,7 @@ func TargetLine(target string) string {
 	parts := strings.Split(strings.TrimSpace(target), sidejobs.TargetJoin)
 	lines := make([]string, 0, len(parts))
 	for _, p := range parts {
-		if line := digest.FirstLine(p); line != "" {
+		if line := firstLine(p); line != "" {
 			lines = append(lines, line)
 		}
 	}
@@ -487,4 +486,13 @@ func enoughNotice(reason string) string {
 // no reason — and returning empty routes it to the notice written for that.
 func openSentence(reason string) string {
 	return strings.TrimSpace(strings.TrimRight(strings.TrimSpace(reason), ".!?…"))
+}
+
+// firstLine is the first line of s, marked when more followed.
+func firstLine(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return s[:i] + " …"
+	}
+	return s
 }
