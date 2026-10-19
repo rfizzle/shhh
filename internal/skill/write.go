@@ -13,7 +13,7 @@ import (
 // a checkout's sessions can now be offered as one — the same commands in the
 // same order, session after session — so a draft is rendered here and written
 // only once the person has read the file on a card and said yes
-// (docs/capabilities/skills.md#a-skill-can-be-proposed-from-what-you-kept-doing).
+// (a skill proposed from what the person kept doing).
 
 // Draft is a skill not yet written: its name, the one line that says when to
 // use it, and its steps in order.
@@ -23,10 +23,11 @@ type Draft struct {
 	Steps       []string
 }
 
-// DraftPath is where a draft named name is written under a checkout's root:
-// shhh's own project skills directory, the first one the reader searches.
-func DraftPath(root, name string) string {
-	return filepath.Join(root, ".shhh", "skills", name, "SKILL.md")
+// DraftPath is where a draft named name is written under dir, a skills
+// directory the caller names: the host program's own project skills
+// directory, the first one the reader searches.
+func DraftPath(dir, name string) string {
+	return filepath.Join(dir, name, "SKILL.md")
 }
 
 // Check reports what would make the draft a file the reader refuses or warns
@@ -84,15 +85,15 @@ func (d Draft) Render() string {
 	return b.String()
 }
 
-// Write puts the draft under root and returns the file's path. A skill of
+// Write puts the draft under the skills directory dir and returns the file's path. A skill of
 // that name already in the directory is refused rather than replaced: the
 // card showed a new file, and a write over one the person wrote would be a
 // change they never saw.
-func Write(root string, d Draft) (string, error) {
+func Write(dir string, d Draft) (string, error) {
 	if err := d.Check(); err != nil {
 		return "", err
 	}
-	path := DraftPath(root, d.Name)
+	path := DraftPath(dir, d.Name)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", err
 	}

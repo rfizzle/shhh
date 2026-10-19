@@ -8,8 +8,7 @@
 // A catalog is disclosed in three tiers, and the tiers are the point: the
 // name and description of every skill go into the system prompt at startup,
 // the body of one skill enters the conversation when it is activated, and
-// the files beside it are read on demand by the ordinary file tools. See
-// docs/capabilities/skills.md#a-skill-is-read-in-three-tiers.
+// the files beside it are read on demand by the ordinary file tools.
 package skill
 
 import (
@@ -30,7 +29,6 @@ const (
 	ScopeUser    Scope = "user"
 	// ScopeBuiltin is a skill the binary carries: listed after every file
 	// skill, and shadowed by any file skill of the same name.
-	// See docs/capabilities/skills.md#shhh-carries-skills-of-its-own.
 	ScopeBuiltin Scope = "built-in"
 )
 
@@ -65,9 +63,8 @@ type Skill struct {
 	Compatibility string
 	Metadata      map[string]string
 	// AllowedTools is the frontmatter's space-separated pre-approval list,
-	// carried for display only. shhh grants nothing from it: a file in a
-	// checkout is not a place a permission can come from. See
-	// docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything.
+	// carried for display only. The host program grants nothing from it: a file
+	// in a checkout is not a place a permission can come from.
 	AllowedTools string
 
 	// Warnings are the lenient-validation findings that did not stop the
@@ -142,7 +139,6 @@ func (c *Catalog) Names() []string {
 // roots listed first override user roots of the same name — the precedence
 // every other harness applies, and the one a user expects when they copy a
 // shared skill into a checkout to change it.
-// See docs/capabilities/skills.md#where-skills-live.
 //
 // A root that does not exist is nothing. A SKILL.md that cannot be used is a
 // diagnostic naming the file and the reason, never an error: one broken

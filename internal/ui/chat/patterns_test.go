@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -116,7 +117,7 @@ func (r *proposalRecorder) patterns(t *testing.T) Patterns {
 		},
 		Preview: func(p Proposal) (string, string, string, error) {
 			if p.Kind == storage.ProposalSkill {
-				return skill.DraftPath(".", p.Skill.Name), "", p.Skill.Render(), nil
+				return skill.DraftPath(filepath.Join(".shhh", "skills"), p.Skill.Name), "", p.Skill.Render(), nil
 			}
 			return ".shhh/config.toml", "[behavior]\ndefault_mode = \"manual\"\n",
 				"[behavior]\ndefault_mode = \"manual\"\ncommand_allowlist = [\"go test\"]\n", nil

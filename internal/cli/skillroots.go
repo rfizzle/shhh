@@ -24,6 +24,13 @@ var dirNames = []string{
 	filepath.Join(".claude", "skills"),
 }
 
+// draftSkillsDir is where a proposed skill is written under a checkout's
+// root: shhh's own project skills directory, the first one the reader
+// searches.
+func draftSkillsDir(root string) string {
+	return filepath.Join(root, dirNames[0])
+}
+
 // projectSkillRoots are the project-scope directories for a session opened in
 // cwd: every ancestor up to and including the repository root, nearest
 // first. Without a repository only cwd itself is scanned — walking to the

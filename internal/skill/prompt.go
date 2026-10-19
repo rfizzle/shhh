@@ -38,7 +38,6 @@ const contentOpen = "<skill_content name=\""
 // is what context trimming checks before eliding a tool result: a skill's
 // instructions are guidance for the rest of the session, and losing them
 // to trimming would degrade every later turn without any visible error.
-// See docs/capabilities/skills.md#a-skill-is-read-in-three-tiers.
 func IsContent(body string) bool {
 	return strings.HasPrefix(body, contentOpen)
 }

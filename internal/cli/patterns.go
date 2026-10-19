@@ -209,7 +209,7 @@ func (h patternsHost) inputs(full bool) (patternInputs, error) {
 	in := patternInputs{Patterns: p, Trusted: h.trusted, Memory: h.mem != nil,
 		Allowlisted: h.allowlisted(),
 		SkillExists: func(name string) bool {
-			_, err := os.Stat(skill.DraftPath(h.root, name))
+			_, err := os.Stat(skill.DraftPath(draftSkillsDir(h.root), name))
 			return err == nil
 		},
 		Declined: func(kind, key string) bool { return h.db.ProposalDeclined(h.declineRoot, kind, key) },
@@ -316,7 +316,7 @@ func (h patternsHost) chat() chat.Patterns {
 				if err := p.Skill.Check(); err != nil {
 					return "", "", "", err
 				}
-				path := skill.DraftPath(h.root, p.Skill.Name)
+				path := skill.DraftPath(draftSkillsDir(h.root), p.Skill.Name)
 				if _, err := os.Stat(path); err == nil {
 					return "", "", "", fmt.Errorf("a skill named %s is already there", p.Skill.Name)
 				}
@@ -336,7 +336,7 @@ func (h patternsHost) chat() chat.Patterns {
 				}
 				return shown(settings), nil
 			case storage.ProposalSkill:
-				path, err := skill.Write(h.root, p.Skill)
+				path, err := skill.Write(draftSkillsDir(h.root), p.Skill)
 				return shown(path), err
 			}
 			return "", errors.New("a memory is answered on the memory card")

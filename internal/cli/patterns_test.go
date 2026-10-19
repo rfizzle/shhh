@@ -201,13 +201,13 @@ func TestPatternsHost_PreviewsWritesAndDeclinesTheProposalItIsGiven(t *testing.T
 	if _, _, after, err := h.Preview(sk); err != nil || !strings.Contains(after, "name: check-it") {
 		t.Fatalf("skill preview: %q (%v)", after, err)
 	}
-	if _, err := os.Stat(skill.DraftPath(root, "check-it")); err == nil {
+	if _, err := os.Stat(skill.DraftPath(draftSkillsDir(root), "check-it")); err == nil {
 		t.Fatal("a preview wrote the skill")
 	}
 	if _, err := h.Write(sk); err != nil {
 		t.Fatalf("skill write: %v", err)
 	}
-	if s, err := skill.LoadFile(skill.DraftPath(root, "check-it")); err != nil || len(s.Warnings) != 0 {
+	if s, err := skill.LoadFile(skill.DraftPath(draftSkillsDir(root), "check-it")); err != nil || len(s.Warnings) != 0 {
 		t.Fatalf("written skill: %+v (%v)", s, err)
 	}
 
