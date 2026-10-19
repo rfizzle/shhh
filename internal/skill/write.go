@@ -26,7 +26,7 @@ type Draft struct {
 // DraftPath is where a draft named name is written under a checkout's root:
 // shhh's own project skills directory, the first one the reader searches.
 func DraftPath(root, name string) string {
-	return filepath.Join(root, dirNames[0], name, "SKILL.md")
+	return filepath.Join(root, ".shhh", "skills", name, "SKILL.md")
 }
 
 // Check reports what would make the draft a file the reader refuses or warns

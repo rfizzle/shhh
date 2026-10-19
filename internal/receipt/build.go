@@ -45,7 +45,7 @@ func sources() []map[string]describe.Describer {
 		process.Describers(),
 		memory.Describers(),
 		ask.Describers(),
-		skill.Describers(),
+		skillDescribers(),
 		reports.Describers(),
 		evidence.Describers(),
 		notebook.Describers(),
@@ -343,3 +343,9 @@ func IsFetch(tool string) bool { return tool == web.FetchToolName }
 
 // IsProcess reports whether tool starts and manages a supervised process.
 func IsProcess(tool string) bool { return tool == process.ToolName }
+
+// skillDescribers is how a call to the skill tool reads: a read of the
+// skill's text.
+func skillDescribers() map[string]describe.Describer {
+	return map[string]describe.Describer{skill.ToolName: {Kind: describe.KindRead, Verb: "read"}}
+}

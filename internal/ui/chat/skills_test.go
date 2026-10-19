@@ -132,7 +132,7 @@ func builtinListing(t *testing.T) (*skill.Catalog, func(*skill.Catalog) string) 
 	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("---\nname: changelog\ndescription: Use when writing the release notes for a tagged version.\n---\nbody\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	c := skill.Load([]skill.Root{{Path: root, Scope: skill.ScopeUser}})
+	c := skill.Load([]skill.Root{{Path: root, Scope: skill.ScopeUser}}, nil)
 	return c, func(*skill.Catalog) string { return strings.TrimRight(string(listing), "\n") }
 }
 

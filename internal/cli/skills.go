@@ -6,6 +6,7 @@ package cli
 // included — the place to learn why a skill did not load.
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"strings"
@@ -31,7 +32,7 @@ func loadSkills() *skill.Catalog {
 	if err != nil {
 		cwd = "."
 	}
-	return skill.Load(skill.Roots(cwd, config.SkillDirs(), projectTrust().Allows()))
+	return skill.Load(skillRoots(cwd, config.SkillDirs(), projectTrust().Allows()), builtinSkillFS)
 }
 
 // skillsListing is the /skills answer and the `shhh skills` output: every
@@ -175,3 +176,9 @@ func newSkillsCmd() *cobra.Command {
 	})
 	return cmd
 }
+
+// builtinSkillFS holds the skills the binary carries, which the skill
+// package loads from here rather than embedding them itself.
+//
+//go:embed builtin/*/SKILL.md
+var builtinSkillFS embed.FS

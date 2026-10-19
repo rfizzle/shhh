@@ -20,7 +20,7 @@ import (
 // description name, which fails the test if no built-in has that name.
 func gateSkillBody(t *testing.T) string {
 	t.Helper()
-	for _, s := range skill.Builtins() {
+	for _, s := range skill.Builtins(os.DirFS("../cli")) {
 		if s.Name == gateSkill {
 			body, err := s.Body()
 			if err != nil {

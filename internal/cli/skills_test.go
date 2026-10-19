@@ -58,7 +58,7 @@ func goldenSkills(t *testing.T) *skill.Catalog {
 	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("---\nname: changelog\ndescription: Use when writing the release notes for a tagged version.\n---\nbody\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	return skill.Load([]skill.Root{{Path: root, Scope: skill.ScopeUser}})
+	return skill.Load([]skill.Root{{Path: root, Scope: skill.ScopeUser}}, builtinSkillFS)
 }
 
 // The built-ins are listed after the file skills with the scope word the
@@ -85,7 +85,7 @@ func TestBuiltinSkillsNameOnlyCommandsThatExist(t *testing.T) {
 	root := NewRootCmd()
 	root.InitDefaultVersionFlag() // cobra adds --version at execution
 	named := regexp.MustCompile("`shhh ([^`]+)`")
-	for _, s := range skill.Builtins() {
+	for _, s := range skill.Builtins(builtinSkillFS) {
 		body, err := s.Body()
 		if err != nil {
 			t.Fatal(err)
@@ -143,7 +143,7 @@ func TestBuiltinSkillsNameOnlySettingsThatExist(t *testing.T) {
 	}
 	span := regexp.MustCompile("`([^`]+)`")
 	key := regexp.MustCompile(`^[a-z_]+\.[a-z_]+$`)
-	for _, s := range skill.Builtins() {
+	for _, s := range skill.Builtins(builtinSkillFS) {
 		body, err := s.Body()
 		if err != nil {
 			t.Fatal(err)
@@ -171,7 +171,7 @@ func TestBuiltinSkillsNameOnlySettingsThatExist(t *testing.T) {
 func TestGlobalConfigSkillNamesTheFilesConfigReads(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	var body string
-	for _, s := range skill.Builtins() {
+	for _, s := range skill.Builtins(builtinSkillFS) {
 		if s.Name == "shhh-global-config" {
 			body, _ = s.Body()
 		}
@@ -196,7 +196,7 @@ func TestGlobalConfigSkillNamesTheFilesConfigReads(t *testing.T) {
 // With no file skill loaded the listing says where one is read from, since
 // the built-ins keep it from ever being empty.
 func TestSkillsListing_NoFileSkillSaysWhereOneIsRead(t *testing.T) {
-	got := skillsReport(skill.Load(nil)).Render(200)
+	got := skillsReport(skill.Load(nil, builtinSkillFS)).Render(200)
 	if !strings.Contains(got, "no file skill loaded; in the project, once you trust the checkout: .shhh/skills, .agents/skills, .claude/skills; for you:") ||
 		!strings.Contains(got, "4 skills") {
 		t.Errorf("listing = %q", got)

@@ -14,6 +14,7 @@ package skill
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -57,6 +58,8 @@ type Skill struct {
 	// embedded is a built-in's path in the binary's own files; empty for a
 	// skill read from disk.
 	embedded string
+	// fsys is the filesystem a built-in was loaded from, which Body reads.
+	fsys fs.FS
 
 	License       string
 	Compatibility string
@@ -79,7 +82,7 @@ func (s Skill) Body() (string, error) {
 	var data []byte
 	var err error
 	if s.embedded != "" {
-		data, err = builtinFS.ReadFile(s.embedded)
+		data, err = fs.ReadFile(s.fsys, s.embedded)
 	} else {
 		data, err = os.ReadFile(s.Location)
 	}

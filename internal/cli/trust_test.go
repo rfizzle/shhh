@@ -58,7 +58,7 @@ func TestSkillRootsFollowTheCheckoutsStanding(t *testing.T) {
 	}
 	mine := filepath.Join(t.TempDir(), "skills")
 
-	withheld := skill.Roots(repo, []string{mine}, false)
+	withheld := skillRoots(repo, []string{mine}, false)
 	for _, r := range withheld {
 		if r.Scope == skill.ScopeProject {
 			t.Fatalf("an untrusted checkout offered %s", r.Path)
@@ -67,7 +67,7 @@ func TestSkillRootsFollowTheCheckoutsStanding(t *testing.T) {
 	if len(withheld) == 0 || withheld[0].Path != mine {
 		t.Fatalf("the user's own skills went missing: %+v", withheld)
 	}
-	trusted := skill.Roots(repo, []string{mine}, true)
+	trusted := skillRoots(repo, []string{mine}, true)
 	if len(trusted) <= len(withheld) {
 		t.Fatalf("trusting added no project root: %+v", trusted)
 	}

@@ -1,21 +1,25 @@
-package skill
+package cli
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/skill"
 )
 
 // The built-ins parse under the file rules with nothing to warn about, say
 // where they live in one word, and stay small: the body is what a session
 // pays when the skill is loaded.
 func TestBuiltinsParseCleanly(t *testing.T) {
-	got := map[string]Skill{}
-	for _, s := range Builtins() {
+	got := map[string]skill.Skill{}
+	for _, s := range skill.Builtins(builtinSkillFS) {
 		got[s.Name] = s
 		if len(s.Warnings) != 0 {
 			t.Errorf("%s warns: %v", s.Name, s.Warnings)
 		}
-		if s.Location != BuiltinLocation || s.Scope != ScopeBuiltin || s.Dir != "" {
+		if s.Location != skill.BuiltinLocation || s.Scope != skill.ScopeBuiltin || s.Dir != "" {
 			t.Errorf("%s: location %q, scope %q, dir %q", s.Name, s.Location, s.Scope, s.Dir)
 		}
 		if !strings.HasPrefix(s.Description, "Use when ") || strings.Count(s.Description, ". ") > 0 {
@@ -39,7 +43,7 @@ func TestBuiltinsParseCleanly(t *testing.T) {
 // The body is served from the binary, and the content names no directory: a
 // built-in has none, and naming one would send the model looking for it.
 func TestBuiltinBodyComesFromTheBinary(t *testing.T) {
-	c := Load(nil)
+	c := skill.Load(nil, builtinSkillFS)
 	s, ok := c.Find("shhh-quality-gate")
 	if !ok {
 		t.Fatalf("Load with no roots lacks the built-ins: %v", c.Names())
@@ -48,14 +52,14 @@ func TestBuiltinBodyComesFromTheBinary(t *testing.T) {
 	if err != nil || !strings.HasPrefix(body, "# The shhh quality gate") {
 		t.Fatalf("body = %.40q, %v", body, err)
 	}
-	content, err := Content(s)
+	content, err := skill.Content(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !IsContent(content) || strings.Contains(content, "Skill directory") || strings.Contains(content, "<skill_resources>") {
+	if !skill.IsContent(content) || strings.Contains(content, "Skill directory") || strings.Contains(content, "<skill_resources>") {
 		t.Errorf("built-in content:\n%s", content)
 	}
-	if !strings.Contains(PromptBlock(c), "<location>"+BuiltinLocation+"</location>") {
+	if !strings.Contains(skill.PromptBlock(c), "<location>"+skill.BuiltinLocation+"</location>") {
 		t.Error("the list line says where a built-in lives")
 	}
 }
@@ -64,11 +68,11 @@ func TestBuiltinBodyComesFromTheBinary(t *testing.T) {
 // built-in's name, at any scope, takes its place, and the diagnostic names
 // both.
 func TestFileSkillShadowsABuiltin(t *testing.T) {
-	for _, scope := range []Scope{ScopeProject, ScopeUser} {
+	for _, scope := range []skill.Scope{skill.ScopeProject, skill.ScopeUser} {
 		root := t.TempDir()
 		writeSkill(t, root, "shhh-quality-gate", "name: shhh-quality-gate\ndescription: Ours.", "our gate")
 		writeSkill(t, root, "alpha", "name: alpha\ndescription: Alpha.", "alpha")
-		c := Load([]Root{{Path: root, Scope: scope}})
+		c := skill.Load([]skill.Root{{Path: root, Scope: scope}}, builtinSkillFS)
 		names := c.Names()
 		if names[0] != "alpha" || names[1] != "shhh-quality-gate" || names[len(names)-1] != "shhh-global-config" {
 			t.Errorf("%s: order = %v", scope, names)
@@ -82,4 +86,17 @@ func TestFileSkillShadowsABuiltin(t *testing.T) {
 			t.Errorf("%s: diagnostics = %v", scope, c.Diagnostics)
 		}
 	}
+}
+
+func writeSkill(t *testing.T, root, name, frontmatter, body string) string {
+	t.Helper()
+	dir := filepath.Join(root, name)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\n" + frontmatter + "\n---\n" + body
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dir
 }

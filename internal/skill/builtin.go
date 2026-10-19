@@ -1,7 +1,6 @@
 package skill
 
 import (
-	"embed"
 	"fmt"
 	"io/fs"
 	"path"
@@ -20,25 +19,26 @@ import (
 // wording file replaces its built-in.
 // See docs/capabilities/skills.md#shhh-carries-skills-of-its-own.
 
-//go:embed builtin/*/SKILL.md
-var builtinFS embed.FS
-
 // BuiltinLocation is where a built-in skill says it lives: in the binary,
 // which has no path to read or directory to resolve against.
 const BuiltinLocation = "built-in"
 
-// Builtins are the skills the binary carries, in name order. A body that
-// does not parse is a fault in the binary rather than in anybody's
-// checkout, so it panics; a test loads every one.
-func Builtins() []Skill {
-	dirs, err := fs.Glob(builtinFS, "builtin/*/SKILL.md")
+// Builtins are the skills the binary carries, in name order, read from
+// builtin/*/SKILL.md in fsys, which the app passes (it embeds them). A nil
+// fsys carries none. A body that does not parse is a fault in the binary
+// rather than in anybody's checkout, so it panics; a test loads every one.
+func Builtins(fsys fs.FS) []Skill {
+	if fsys == nil {
+		return nil
+	}
+	dirs, err := fs.Glob(fsys, "builtin/*/SKILL.md")
 	if err != nil {
 		panic(err)
 	}
 	sort.Strings(dirs)
 	out := make([]Skill, 0, len(dirs))
 	for _, p := range dirs {
-		data, err := builtinFS.ReadFile(p)
+		data, err := fs.ReadFile(fsys, p)
 		if err != nil {
 			panic(err)
 		}
@@ -49,18 +49,20 @@ func Builtins() []Skill {
 		s.Dir = ""
 		s.Scope = ScopeBuiltin
 		s.embedded = p
+		s.fsys = fsys
 		out = append(out, s)
 	}
 	return out
 }
 
-// Load is Discover over roots with the built-ins after every file skill.
+// Load is Discover over roots with the built-ins from fsys after every file
+// skill.
 // The built-ins are the binary's own, so they load whether or not the
 // checkout is trusted; a file skill of the same name, at any scope,
 // shadows one, and the diagnostic names both.
-func Load(roots []Root) *Catalog {
+func Load(roots []Root, fsys fs.FS) *Catalog {
 	c := Discover(roots)
-	for _, b := range Builtins() {
+	for _, b := range Builtins(fsys) {
 		if prior, ok := c.Find(b.Name); ok {
 			c.Diagnostics = append(c.Diagnostics, fmt.Sprintf("built-in skill %s: shadowed by %s", b.Name, prior.Location))
 			continue
