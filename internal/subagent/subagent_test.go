@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -643,7 +644,7 @@ func TestPlanCeilingDeniesWithoutAsking(t *testing.T) {
 		gated: map[string]bool{tools.ExecCommandName: true},
 	}
 	sup := newTestSupervisor(t, env)
-	sup.SetParentMode(agent.ModePlan)
+	sup.SetParentMode(permission.ModePlan)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"try to build"}`)
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -679,7 +680,7 @@ func TestAutoModeCeilingAllowsWithoutAsking(t *testing.T) {
 		CommandAllowlist: []string{"echo"},
 	})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run something"}`)
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -1270,22 +1271,22 @@ func TestSetAgentModeClampedToCeiling(t *testing.T) {
 	sup := newTestSupervisor(t, env) // parent ceiling defaults to manual
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"x"}`)
 
-	eff, err := sup.SetAgentMode("researcher-1", agent.ModeAuto)
+	eff, err := sup.SetAgentMode("researcher-1", permission.ModeAuto)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if eff != agent.ModeManual {
+	if eff != permission.ModeManual {
 		t.Fatalf("mode not clamped to the manual ceiling, got %s", eff)
 	}
-	sup.SetParentMode(agent.ModeAuto)
-	eff, err = sup.SetAgentMode("researcher-1", agent.ModeAcceptEdits)
+	sup.SetParentMode(permission.ModeAuto)
+	eff, err = sup.SetAgentMode("researcher-1", permission.ModeAcceptEdits)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if eff != agent.ModeAcceptEdits {
+	if eff != permission.ModeAcceptEdits {
 		t.Fatalf("mode under the ceiling must stick, got %s", eff)
 	}
-	if got, ok := sup.AgentMode("researcher-1"); !ok || got != agent.ModeAcceptEdits {
+	if got, ok := sup.AgentMode("researcher-1"); !ok || got != permission.ModeAcceptEdits {
 		t.Fatalf("AgentMode = %s, %v", got, ok)
 	}
 }
@@ -1448,7 +1449,7 @@ func (p *verdictProvider) StreamCompletion(ctx context.Context, msgs []llm.Messa
 	ch <- llm.StreamEvent{
 		ToolCalls: []llm.ToolCall{{
 			ID:        "d1",
-			Name:      agent.DecisionToolName,
+			Name:      permission.DecisionToolName,
 			Arguments: `{"decision":"` + p.decision + `","reason":"` + p.reason + `"}`,
 		}},
 		Done: true,
@@ -1468,7 +1469,7 @@ func TestChildReadOnlyCommandNeverAsks(t *testing.T) {
 		execOut: "clean",
 	}
 	sup := newTestSupervisor(t, env)
-	sup.SetParentMode(agent.ModeManual)
+	sup.SetParentMode(permission.ModeManual)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"check the tree"}`)
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -1492,10 +1493,10 @@ func TestChildAutoModeUsesClassifier(t *testing.T) {
 	sup := New(context.Background(), Options{
 		Root:       t.TempDir(),
 		NewEnv:     env.factory(),
-		Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+		Classifier: permission.NewClassifier(judge, permission.ClassifierConfig{Model: "judge"}),
 	})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -1532,7 +1533,7 @@ func TestChildAutoApprovalStatesTheActOnce(t *testing.T) {
 		gated: map[string]bool{tools.EditFileName: true},
 	}
 	sup := newTestSupervisor(t, env)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"change the loop"}`)
 
 	if report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`); !strings.Contains(report, "task complete") {
@@ -1659,10 +1660,10 @@ func TestChildClassifierDenyRefusesWithoutAsking(t *testing.T) {
 	sup := New(context.Background(), Options{
 		Root:       t.TempDir(),
 		NewEnv:     env.factory(),
-		Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+		Classifier: permission.NewClassifier(judge, permission.ClassifierConfig{Model: "judge"}),
 	})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"install something"}`)
 
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -1696,11 +1697,11 @@ func TestChildClassifierNoIsRoutedWhereThereIsAPerson(t *testing.T) {
 			sup := New(t.Context(), Options{
 				Root:       t.TempDir(),
 				NewEnv:     env.factory(),
-				Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+				Classifier: permission.NewClassifier(judge, permission.ClassifierConfig{Model: "judge"}),
 				Record:     func(Spec, string) Recorder { return rec.recorder() },
 			})
 			t.Cleanup(sup.Close)
-			sup.SetParentMode(agent.ModeAuto)
+			sup.SetParentMode(permission.ModeAuto)
 			sup.SetAttended()
 			execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"install something"}`)
 
@@ -1732,8 +1733,8 @@ func TestParentGrantsReachChildren(t *testing.T) {
 		execOut: "PASS",
 	}
 	sup := newTestSupervisor(t, env)
-	sup.SetParentMode(agent.ModeManual)
-	sup.SetParentGrants(agent.Grants{AllCommands: true})
+	sup.SetParentMode(permission.ModeManual)
+	sup.SetParentGrants(permission.Grants{AllCommands: true})
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
 
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -2289,41 +2290,41 @@ func TestChildHostGrantsComeFromTheParentAndOnlyFromIt(t *testing.T) {
 		DenyHosts:  []string{"paste.example.test"},
 	})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeManual)
-	sup.SetParentGrants(agent.Grants{Hosts: []string{"docs.python.org"}})
+	sup.SetParentMode(permission.ModeManual)
+	sup.SetParentGrants(permission.Grants{Hosts: []string{"docs.python.org"}})
 
-	c := &child{mode: agent.ModeManual}
-	decide := func(rawURL string) agent.Decision {
+	c := &child{mode: permission.ModeManual}
+	decide := func(rawURL string) permission.Decision {
 		t.Helper()
 		action, err := actionFor(web.FetchToolName, json.RawMessage(fmt.Sprintf(`{"url":%q}`, rawURL)))
 		if err != nil {
 			t.Fatalf("actionFor: %v", err)
 		}
-		if action.Kind != agent.ActionFetch {
+		if action.Kind != permission.ActionFetch {
 			t.Fatalf("a child's fetch is classified as %v", action.Kind)
 		}
 		decision, _ := sup.childPolicy(c).Decide(action)
 		return decision
 	}
 
-	if got := decide("https://docs.python.org/3/library/json.html"); got != agent.Allow {
+	if got := decide("https://docs.python.org/3/library/json.html"); got != permission.Allow {
 		t.Errorf("the parent's grant did not reach the child: %v", got)
 	}
-	if got := decide("https://crates.io/crates/serde"); got != agent.Allow {
+	if got := decide("https://crates.io/crates/serde"); got != permission.Allow {
 		t.Errorf("the config's standing grant did not reach the child: %v", got)
 	}
-	if got := decide("https://pkg.go.dev/context"); got != agent.Ask {
+	if got := decide("https://pkg.go.dev/context"); got != permission.Ask {
 		t.Errorf("an ungranted host = %v; want the child to ask its parent", got)
 	}
-	if got := decide("https://paste.example.test/x"); got != agent.Deny {
+	if got := decide("https://paste.example.test/x"); got != permission.Deny {
 		t.Errorf("a denied host = %v; want Deny in a child too", got)
 	}
 
 	// The set is read from the parent at every decision, so taking a grant
 	// back there takes it back here. There is no path the other way: a child
 	// hands nothing to SetParentGrants.
-	sup.SetParentGrants(agent.Grants{})
-	if got := decide("https://docs.python.org/3/library/json.html"); got != agent.Ask {
+	sup.SetParentGrants(permission.Grants{})
+	if got := decide("https://docs.python.org/3/library/json.html"); got != permission.Ask {
 		t.Errorf("a revoked grant still ran in a child: %v", got)
 	}
 }
@@ -2959,7 +2960,7 @@ func TestCloseRacesSteerWithoutPanic(t *testing.T) {
 	if err := sup.Retry("researcher-1"); !errors.Is(err, ErrClosed) {
 		t.Fatalf("Retry after Close = %v, want ErrClosed", err)
 	}
-	if _, err := sup.SetAgentMode("researcher-1", agent.ModeManual); !errors.Is(err, ErrClosed) {
+	if _, err := sup.SetAgentMode("researcher-1", permission.ModeManual); !errors.Is(err, ErrClosed) {
 		t.Fatalf("SetAgentMode after Close = %v, want ErrClosed", err)
 	}
 	// Neither returns anything to refuse with; what they owe is not to panic.

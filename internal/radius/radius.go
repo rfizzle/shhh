@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/safety"
 )
 
@@ -443,7 +443,7 @@ func (c *Command) resolveSegment(seg segment) {
 	}
 	// The inspection allowlist is the one set of commands already
 	// known to change nothing; anything outside it is unaccounted for.
-	if harmlessVerbs[verb] || agent.ReadOnlyAllowed(seg.text, nil) {
+	if harmlessVerbs[verb] || permission.ReadOnlyAllowed(seg.text, nil) {
 		return
 	}
 	c.unresolved("shhh cannot tell what " + verb + " writes")

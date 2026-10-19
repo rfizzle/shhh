@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 // processModel is gatedModel with the process supervisor wired.
@@ -130,7 +130,7 @@ func TestProcessTool_SafetyFlaggedStartAlwaysAsks(t *testing.T) {
 
 func TestProcessTool_PlanModeRefusesStart(t *testing.T) {
 	m := processModel(t, nil)
-	m.policy.mode = agent.ModePlan
+	m.policy.mode = permission.ModePlan
 
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{startCall("call_p", "web", "npm run dev")}})
 	m = updated.(Model)

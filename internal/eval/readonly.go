@@ -23,7 +23,7 @@ import (
 	"runtime"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/shell"
@@ -85,7 +85,7 @@ func askReadOnly(ctx context.Context, p llm.Provider, model string, row Row, run
 		names = append(names, d.Name)
 	}
 	sys := prompt.BuildAgent(shell.Info{OS: runtime.GOOS, Cwd: dir}, prompt.Toolbox(defs, false)) +
-		"\n\n" + agent.ModeInstructions(agent.ModeReadOnly, nil, names)
+		"\n\n" + permission.ModeInstructions(permission.ModeReadOnly, nil, names)
 	exec := subagent.RootedExecutor(dir, tools.Execute)
 
 	msgs := []llm.Message{
@@ -115,14 +115,14 @@ func askReadOnly(ctx context.Context, p llm.Provider, model string, row Row, run
 				command := commandOf(c.Arguments)
 				// The policy's own reading: the list, its flag guards and the
 				// safety table, which a flagged command never gets past.
-				if agent.ReadOnlyAllowed(command, nil) && len(safety.Check(command)) == 0 {
+				if permission.ReadOnlyAllowed(command, nil) && len(safety.Check(command)) == 0 {
 					out = tools.FormatExecResult(run(ctx, dir, command))
 				} else {
 					offList = append(offList, command)
-					out = agent.ReadOnlyModeResult(command, nil)
+					out = permission.ReadOnlyModeResult(command, nil)
 				}
 			case tools.IsMutating(c.Name):
-				out = agent.ReadOnlyModeResult("", nil)
+				out = permission.ReadOnlyModeResult("", nil)
 			default:
 				res, err := exec(ctx, c.Name, json.RawMessage(c.Arguments))
 				if err != nil {

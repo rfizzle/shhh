@@ -9,8 +9,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -143,7 +143,7 @@ func TestSprintPlan_TurnAnswersWithTheSetAndTheRecordSaysSo(t *testing.T) {
 	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 		signals = append(signals, code+":"+reason)
 	}}
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	for _, slug := range []string{"a-high", "b-second", "c-third", "d-fourth"} {
 		if err := todo.SaveReading(root, todo.Reading{Slug: slug}); err != nil {
 			t.Fatal(err)
@@ -152,7 +152,7 @@ func TestSprintPlan_TurnAnswersWithTheSetAndTheRecordSaysSo(t *testing.T) {
 	m.input.SetValue("/todo sprint plan")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if !m.working() || m.gateMode() != agent.ModePlan || m.policy.mode != agent.ModeManual || !m.todo.planner.going {
+	if !m.working() || m.gateMode() != permission.ModePlan || m.policy.mode != permission.ModeManual || !m.todo.planner.going {
 		t.Fatalf("the planning turn should be in flight in plan mode: mode=%s working=%t", m.policy.mode, m.working())
 	}
 	m = answer(t, m, planAnswerForFixture)
@@ -167,7 +167,7 @@ func TestSprintPlan_TurnAnswersWithTheSetAndTheRecordSaysSo(t *testing.T) {
 	if m.turnState() == statePlanApprove {
 		t.Fatal("the planning turn was put up for plan approval")
 	}
-	if m.policy.mode != agent.ModeManual {
+	if m.policy.mode != permission.ModeManual {
 		t.Errorf("the mode was not restored: %s", m.policy.mode)
 	}
 	// The record holds what was recommended and how big it was, so it can

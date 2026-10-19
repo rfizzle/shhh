@@ -22,6 +22,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/rpc"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -102,7 +103,7 @@ func (m Model) inboundPolicy() string {
 	case InboundAccept, InboundHold, InboundRefuse:
 		return p
 	}
-	if !m.wiring.Conversation && (m.policy.mode == agent.ModeAuto || m.gateMode() == agent.ModeAuto) {
+	if !m.wiring.Conversation && (m.policy.mode == permission.ModeAuto || m.gateMode() == permission.ModeAuto) {
 		return InboundHold
 	}
 	return InboundAccept

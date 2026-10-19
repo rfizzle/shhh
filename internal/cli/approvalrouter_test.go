@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -85,21 +85,21 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 		conversation bool
 	}{
 		{name: "a command on the deny list", call: execCall("npm publish --tag latest"),
-			rule: agent.DenyReasonDenylist, code: observe.ReasonDenylist, sameWords: true},
+			rule: permission.DenyReasonDenylist, code: observe.ReasonDenylist, sameWords: true},
 		{name: "a process start on the deny list", call: processStartCall("ship", "npm publish"),
-			rule: agent.DenyReasonDenylist, code: observe.ReasonDenylist, sameWords: true},
+			rule: permission.DenyReasonDenylist, code: observe.ReasonDenylist, sameWords: true},
 		{name: "a git write the deny list names", call: gitCommit,
-			rule: agent.DenyReasonDenylist, code: observe.ReasonDenylist, sameWords: true},
+			rule: permission.DenyReasonDenylist, code: observe.ReasonDenylist, sameWords: true},
 		{name: "a command destroying the home directory", call: execCall(`rm -rf "$HOME"`),
-			rule: agent.DenyReasonIrreplaceable, code: observe.ReasonSafety, sameWords: true},
+			rule: permission.DenyReasonIrreplaceable, code: observe.ReasonSafety, sameWords: true},
 		{name: "a command destroying the workspace root", call: execCall("rm -rf ."),
-			rule: agent.DenyReasonIrreplaceable, code: observe.ReasonSafety, sameWords: true},
+			rule: permission.DenyReasonIrreplaceable, code: observe.ReasonSafety, sameWords: true},
 		{name: "a process start destroying the filesystem root", call: processStartCall("wipe", "rm -rf /"),
-			rule: agent.DenyReasonIrreplaceable, code: observe.ReasonSafety, sameWords: true},
+			rule: permission.DenyReasonIrreplaceable, code: observe.ReasonSafety, sameWords: true},
 		{name: "a fetch to a refused host", call: fetch("https://evil.test/page"), conversation: true,
-			rule: agent.DenyReasonHost, code: observe.ReasonDenylist, sameWords: true},
+			rule: permission.DenyReasonHost, code: observe.ReasonDenylist, sameWords: true},
 		{name: "a fetch to a refused host under --yes", call: fetch("https://evil.test/page"),
-			rule: agent.DenyReasonHost, code: observe.ReasonDenylist, sameWords: true},
+			rule: permission.DenyReasonHost, code: observe.ReasonDenylist, sameWords: true},
 		{name: "a command where nothing contains it", call: execCall("go version"), contained: true,
 			rule: "containment", sameWords: true},
 		{name: "a process start where nothing contains it", call: processStartCall("srv", "go version"), contained: true,
@@ -107,7 +107,7 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 		{name: "an edit behind the deny mask", call: write(filepath.Join(home, ".ssh", "config")),
 			rule: "scope", code: observe.ReasonOutOfScope},
 		{name: "a write to a git hook", call: write(filepath.Join(ws, ".git", "hooks", "pre-commit")),
-			rule: agent.DenyReasonGitPath, code: observe.ReasonSafety, sameWords: true},
+			rule: permission.DenyReasonGitPath, code: observe.ReasonSafety, sameWords: true},
 		{name: "a command no rule names", call: execCall("go version"), rule: none},
 		{name: "an edit inside the scope", call: write(filepath.Join(ws, "notes.txt")), rule: none},
 		{name: "a git write the deny list does not name", call: gitBranch, rule: none},
@@ -168,7 +168,7 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 			hResult := resolve(c.call)
 
 			if c.rule == none {
-				if sDecision == agent.Deny {
+				if sDecision == permission.Deny {
 					t.Fatalf("the screen refused a call no rule names: %q (%s)", sResult, sCode)
 				}
 				if hDecision == observe.DecisionDeny {
@@ -176,7 +176,7 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 				}
 				return
 			}
-			if sDecision != agent.Deny {
+			if sDecision != permission.Deny {
 				t.Fatalf("the screen did not refuse it: %v", sDecision)
 			}
 			if len(ran) != 0 {
@@ -217,18 +217,18 @@ func TestApprovalRouter_AYesFetchReadsTheHostList(t *testing.T) {
 		code          string
 	}{
 		{name: "--yes, the fetcher holding the list too", yes: true, fetcherDenies: true,
-			want: agent.DeniedHostResult, code: observe.ReasonDenylist},
+			want: permission.DeniedHostResult, code: observe.ReasonDenylist},
 		{name: "--yes, the fetcher holding none", yes: true,
-			want: agent.DeniedHostResult, code: observe.ReasonDenylist},
+			want: permission.DeniedHostResult, code: observe.ReasonDenylist},
 		{name: "--mode auto", judge: &autoJudge{denyHosts: denyHosts},
-			want: agent.UnattendedRefusedResult("web fetch", agent.DenyReasonHost), code: observe.ReasonDenylist},
+			want: permission.UnattendedRefusedResult("web fetch", permission.DenyReasonHost), code: observe.ReasonDenylist},
 		{name: "no flag", want: "error: web fetch not approved: headless mode denies external actions by default (run with --yes)",
 			code: observe.ReasonHeadlessDefault},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			policy := web.Policy{}
 			if c.fetcherDenies {
-				policy.DenyHost = func(host string) bool { return agent.HostMatches(denyHosts, host) }
+				policy.DenyHost = func(host string) bool { return permission.HostMatches(denyHosts, host) }
 			}
 			fetcher := web.NewFetcher(policy)
 			resolved := 0

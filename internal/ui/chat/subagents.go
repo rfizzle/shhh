@@ -12,9 +12,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -54,7 +54,7 @@ func (m *Model) syncGrants() {
 // there is no mode to put back when it ends. The children's ceiling follows
 // in the Update tail (syncParentMode).
 // See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
-func (m *Model) applyMode(mode agent.Mode) {
+func (m *Model) applyMode(mode permission.Mode) {
 	if mode != m.policy.mode {
 		m.signal(observe.SignalMode, mode.String())
 	}
@@ -436,7 +436,7 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		// Flagged commands keep the exception they have everywhere: the key
 		// is absent and the footnote says why (radius.go).
 		if len(card.Warnings) == 0 {
-			if grant := agent.GrantPrefix(ask.Command); grant != "" {
+			if grant := permission.GrantPrefix(ask.Command); grant != "" {
 				card.AllowAlways = true
 				card.AlwaysHint = "allow " + strconv.Quote(grant) + " for every agent until this turn ends"
 			}

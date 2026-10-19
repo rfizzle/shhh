@@ -13,8 +13,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -193,7 +193,7 @@ func TestGrantList_ATurnGrantReachesAChildAndIsTakenBack(t *testing.T) {
 	if len(pushed) != 1 || pushed[0] != "docs.python.org" {
 		t.Fatalf("the fetcher was told %v; want the turn's granted host", pushed)
 	}
-	if !agent.HostMatches(m.liveGrants().Hosts, "docs.python.org") {
+	if !permission.HostMatches(m.liveGrants().Hosts, "docs.python.org") {
 		t.Fatal("a child should be under the grant while the turn stands")
 	}
 

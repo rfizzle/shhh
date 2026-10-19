@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -87,8 +87,8 @@ func gateSurfaces(t *testing.T) map[string]func(name string) bool {
 			if name == ask.ToolName {
 				return gate(call(name))
 			}
-			c, _ := agent.ClassifyCall(name, json.RawMessage(call(name).Arguments),
-				agent.Answers{Has: approver.answers, Command: process.CommandOf})
+			c, _ := permission.ClassifyCall(name, json.RawMessage(call(name).Arguments),
+				permission.Answers{Has: approver.answers, Command: process.CommandOf})
 			return gate(call(name)) && c.Gated
 		},
 		"child": func(name string) bool { return gated[name] },
@@ -131,7 +131,7 @@ func TestGate_EverySurfaceGatesEveryToolTheSameWay(t *testing.T) {
 			if !ok || absent[name] {
 				continue
 			}
-			if want := tier != agent.TierRead; surfaces[surface](name) != want {
+			if want := tier != permission.TierRead; surfaces[surface](name) != want {
 				t.Errorf("%s: %s is at the %s tier in the table, and the surface gates it: %v", surface, name, tier, !want)
 			}
 		}

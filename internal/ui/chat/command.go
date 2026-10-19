@@ -22,6 +22,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -1135,7 +1136,7 @@ func slashPermissions(m *Model, parts []string) string {
 		}
 		return "last auto-mode denial:\n  " + m.lastDenial
 	}
-	mode, err := agent.ParseMode(parts[1])
+	mode, err := permission.ParseMode(parts[1])
 	if err != nil {
 		return failed("permissions", err.Error())
 	}

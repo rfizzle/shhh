@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -678,7 +679,7 @@ func (m Model) finishReply(msg doneMsg) (tea.Model, tea.Cmd) {
 	// grooming reading is the same: it is a plan-mode turn whose answer
 	// is verdicts, and what is put to the reader is its card. So is a
 	// sprint planning turn, whose answer is a set.
-	if m.policy.mode == agent.ModePlan && hadText && m.todo.runner.state == nil && !m.todo.groomer.going() && !m.todo.planner.going {
+	if m.policy.mode == permission.ModePlan && hadText && m.todo.runner.state == nil && !m.todo.groomer.going() && !m.todo.planner.going {
 		m.setTurnState(statePlanApprove)
 		m.armPlan()
 		m.syncViewport()

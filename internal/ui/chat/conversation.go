@@ -1,6 +1,6 @@
 package chat
 
-import "github.com/rfizzle/shhh/internal/agent"
+import "github.com/rfizzle/shhh/internal/permission"
 
 // A conversation is `shhh chat`: the same model as the coding agent with
 // the coding surfaces not drawn. The gates here are the whole difference
@@ -12,7 +12,7 @@ import "github.com/rfizzle/shhh/internal/agent"
 // conversationModeWord is what the frame says a conversation runs in. It is
 // the read-only mode's own spelling, because that is the promise — nothing is
 // changed — and a second word for it would be a second name for one bound.
-var conversationModeWord = agent.ModeReadOnly.Word()
+var conversationModeWord = permission.ModeReadOnly.Word()
 
 // conversationModeNote is the answer to every way a coding session changes
 // its mode — the chord, the picker, a mode named to /permissions — so none of

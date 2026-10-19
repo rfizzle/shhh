@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -67,11 +67,11 @@ func TestObserve_EveryClassifierRowIsTimed(t *testing.T) {
 			sup := New(t.Context(), Options{
 				Root:       t.TempDir(),
 				NewEnv:     env.factory(),
-				Classifier: agent.NewClassifier(c.judge, agent.ClassifierConfig{Model: "judge"}),
+				Classifier: permission.NewClassifier(c.judge, permission.ClassifierConfig{Model: "judge"}),
 				Record:     func(Spec, string) Recorder { return rec.recorder() },
 			})
 			t.Cleanup(sup.Close)
-			sup.SetParentMode(agent.ModeAuto)
+			sup.SetParentMode(permission.ModeAuto)
 			execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"do something"}`)
 			nextAsk(t, sup).Respond(false)
 			execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)

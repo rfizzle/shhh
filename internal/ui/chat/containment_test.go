@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -191,7 +191,7 @@ func TestWavedThroughCommandRunsContained(t *testing.T) {
 	var bare, contained []string
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
 	m.policy.allowlist = []string{"echo"}
-	m.policy.mode = agent.ModeAuto
+	m.policy.mode = permission.ModeAuto
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
@@ -512,13 +512,13 @@ func TestContainmentStatusNamesTheWriterRule(t *testing.T) {
 func TestContainment_ReadOnlyModesRequireIt(t *testing.T) {
 	const refusal = "error: this session requires containment and no mechanism is in force: bubblewrap (bwrap) not found on PATH"
 	for _, tc := range []struct {
-		mode    agent.Mode
+		mode    permission.Mode
 		refused bool
 	}{
-		{agent.ModeReadOnly, true},
-		{agent.ModePlan, true},
-		{agent.ModeManual, false},
-		{agent.ModeAcceptEdits, false},
+		{permission.ModeReadOnly, true},
+		{permission.ModePlan, true},
+		{permission.ModeManual, false},
+		{permission.ModeAcceptEdits, false},
 	} {
 		t.Run(tc.mode.String(), func(t *testing.T) {
 			m := New([]llm.Message{

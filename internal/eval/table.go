@@ -27,7 +27,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 // Kind is what a case measures. The empty string in a case file means
@@ -420,7 +420,7 @@ func askClassifier(ctx context.Context, p llm.Provider, model string, row Row, b
 	if cwd == "" {
 		cwd = defaultRowCWD
 	}
-	v := agent.NewClassifier(p, agent.ClassifierConfig{Model: model, Backend: backend, Threshold: threshold}).Judge(ctx, agent.ClassifierRequest{
+	v := permission.NewClassifier(p, permission.ClassifierConfig{Model: model, Backend: backend, Threshold: threshold}).Judge(ctx, permission.ClassifierRequest{
 		Tool:      row.Tool,
 		Arguments: row.Arguments,
 		CWD:       cwd,
@@ -434,9 +434,9 @@ func askClassifier(ctx context.Context, p llm.Provider, model string, row Row, b
 	a.Reason = v.Reason
 	a.Probability, a.Probed = v.Probability, v.Probed
 	switch v.Decision {
-	case agent.Allow:
+	case permission.Allow:
 		a.Label = LabelAllow
-	case agent.Deny:
+	case permission.Deny:
 		a.Label = LabelDeny
 	}
 	return a

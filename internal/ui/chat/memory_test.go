@@ -12,8 +12,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -24,7 +24,7 @@ type savedMemory struct {
 
 // memoryModel builds a model with durable memory wired and a remember call
 // mid-stream, recording saves into the returned slice.
-func memoryModel(t *testing.T, mode agent.Mode) (Model, *[]savedMemory) {
+func memoryModel(t *testing.T, mode permission.Mode) (Model, *[]savedMemory) {
 	t.Helper()
 	var saves []savedMemory
 	msgs := []llm.Message{
@@ -61,7 +61,7 @@ func rememberCall() toolCallsMsg {
 }
 
 func TestRemember_AlwaysPromptsEvenInPermissiveModes(t *testing.T) {
-	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto} {
+	for _, mode := range []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto} {
 		m, saves := memoryModel(t, mode)
 		updated, _ := m.Update(rememberCall())
 		m = updated.(Model)
@@ -93,7 +93,7 @@ func TestRemember_AlwaysPromptsEvenInPermissiveModes(t *testing.T) {
 }
 
 func TestRemember_SaveProjectScope(t *testing.T) {
-	m, saves := memoryModel(t, agent.ModeManual)
+	m, saves := memoryModel(t, permission.ModeManual)
 	updated, _ := m.Update(rememberCall())
 	m = handover(t, updated.(Model))
 
@@ -121,7 +121,7 @@ func TestRemember_SaveProjectScope(t *testing.T) {
 }
 
 func TestRemember_SaveGlobalWithNote(t *testing.T) {
-	m, saves := memoryModel(t, agent.ModeManual)
+	m, saves := memoryModel(t, permission.ModeManual)
 	updated, _ := m.Update(rememberCall())
 	m = handover(t, updated.(Model))
 
@@ -184,7 +184,7 @@ func TestRemember_Declined(t *testing.T) {
 		{Code: '3', Text: "3"},
 	} {
 		db := declineStore(t)
-		m, saves := memoryModel(t, agent.ModeManual)
+		m, saves := memoryModel(t, permission.ModeManual)
 		m = withDeclines(m, db)
 		updated, _ := m.Update(rememberCall())
 		m = handover(t, updated.(Model))
@@ -218,12 +218,12 @@ func TestRemember_Declined(t *testing.T) {
 // full stop is the same proposal; a different sentence is still asked about.
 func TestRemember_ADeclinedTextIsNotAskedAgain(t *testing.T) {
 	db := declineStore(t)
-	first, _ := memoryModel(t, agent.ModeManual)
+	first, _ := memoryModel(t, permission.ModeManual)
 	first = withDeclines(first, db)
 	updated, _ := first.Update(rememberCall())
 	press(t, handover(t, updated.(Model)), "n")
 
-	next, saves := memoryModel(t, agent.ModeAuto)
+	next, saves := memoryModel(t, permission.ModeAuto)
 	next = withDeclines(next, db)
 	updated, _ = next.Update(toolCallsMsg{calls: []llm.ToolCall{{
 		ID:        "call_again",
@@ -248,7 +248,7 @@ func TestRemember_ADeclinedTextIsNotAskedAgain(t *testing.T) {
 		t.Fatalf("the stream should resume after the refusal, got state %d", next.state)
 	}
 
-	other, _ := memoryModel(t, agent.ModeManual)
+	other, _ := memoryModel(t, permission.ModeManual)
 	other = withDeclines(other, db)
 	updated, _ = other.Update(toolCallsMsg{calls: []llm.ToolCall{{
 		ID: "call_other", Name: memory.RememberToolName,
@@ -260,7 +260,7 @@ func TestRemember_ADeclinedTextIsNotAskedAgain(t *testing.T) {
 }
 
 func TestRemember_PlanModeRefuses(t *testing.T) {
-	m, saves := memoryModel(t, agent.ModePlan)
+	m, saves := memoryModel(t, permission.ModePlan)
 	updated, _ := m.Update(rememberCall())
 	m = updated.(Model)
 
@@ -282,7 +282,7 @@ func TestRemember_PlanModeRefuses(t *testing.T) {
 }
 
 func TestRemember_InvalidArgumentsSkipped(t *testing.T) {
-	m, saves := memoryModel(t, agent.ModeManual)
+	m, saves := memoryModel(t, permission.ModeManual)
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{{
 		ID: "call_bad", Name: memory.RememberToolName, Arguments: `{"text":"x","kind":"vibe"}`,
 	}}})
@@ -303,7 +303,7 @@ func TestRemember_InvalidArgumentsSkipped(t *testing.T) {
 }
 
 func TestMemorySlashCommand(t *testing.T) {
-	m, _ := memoryModel(t, agent.ModeManual)
+	m, _ := memoryModel(t, permission.ModeManual)
 	handled, out := m.handleSlashCommand("/memory forget m3")
 	if !handled || out != "managed:forget,m3" {
 		t.Fatalf("expected /memory to route to Manage, got handled=%v out=%q", handled, out)
@@ -448,7 +448,7 @@ func TestInspectorTools_CountsOmittedMemories(t *testing.T) {
 // and still declines nothing.
 func TestRemember_EscLeavesTheProposalWaiting(t *testing.T) {
 	db := declineStore(t)
-	m, saves := memoryModel(t, agent.ModeManual)
+	m, saves := memoryModel(t, permission.ModeManual)
 	m = withDeclines(m, db)
 	updated, _ := m.Update(rememberCall())
 	m = handover(t, updated.(Model))

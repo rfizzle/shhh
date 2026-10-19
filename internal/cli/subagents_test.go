@@ -29,6 +29,7 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -1585,14 +1586,14 @@ func TestAChildInAReadOnlyModeIsToldTheMode(t *testing.T) {
 	}
 	defs := tools.DefinitionsFull()
 	for _, tc := range []struct {
-		mode agent.Mode
+		mode permission.Mode
 		want string
 	}{
-		{agent.ModeReadOnly, agent.ModeInstructions(agent.ModeReadOnly, nil, toolNames(defs))},
-		{agent.ModePlan, agent.ModeInstructions(agent.ModePlan, nil, toolNames(defs))},
-		{agent.ModeManual, ""},
-		{agent.ModeAcceptEdits, ""},
-		{agent.ModeAuto, ""},
+		{permission.ModeReadOnly, permission.ModeInstructions(permission.ModeReadOnly, nil, toolNames(defs))},
+		{permission.ModePlan, permission.ModeInstructions(permission.ModePlan, nil, toolNames(defs))},
+		{permission.ModeManual, ""},
+		{permission.ModeAcceptEdits, ""},
+		{permission.ModeAuto, ""},
 	} {
 		got := withModeInstructions(conversation, tc.mode, nil, defs)
 		want := "sys"
@@ -1616,8 +1617,8 @@ func TestAChildReadsTheSameReadOnlyParagraph(t *testing.T) {
 	conversation := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	extra := []string{"tokei"}
 	for _, defs := range [][]llm.Tool{tools.DefinitionsFull(), tools.DefinitionsWithExec()} {
-		got := withModeInstructions(conversation, agent.ModeReadOnly, extra, defs)[0].Content
-		want := "sys\n\n" + agent.ModeInstructions(agent.ModeReadOnly, extra, toolNames(defs))
+		got := withModeInstructions(conversation, permission.ModeReadOnly, extra, defs)[0].Content
+		want := "sys\n\n" + permission.ModeInstructions(permission.ModeReadOnly, extra, toolNames(defs))
 		if got != want {
 			t.Fatalf("the child reads\n%s\nwhere the session reads\n%s", got, want)
 		}

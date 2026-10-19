@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/nudge"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -419,7 +420,7 @@ type modelListMsg struct {
 // pending approval.
 type classifierDoneMsg struct {
 	runID   int
-	verdict agent.ClassifierVerdict
+	verdict permission.ClassifierVerdict
 }
 
 // preToolHookMsg carries what the hooks in front of a gated call came to.

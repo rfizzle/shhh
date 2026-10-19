@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -41,24 +42,24 @@ const planApprovedMessage = "The plan is approved. Leave planning and execute it
 // the rail beside it do.
 var planApproveOptions = []components.SelectOption{
 	{
-		Label: "Run the whole plan — " + agent.ModeAcceptEdits.Word() + " mode",
+		Label: "Run the whole plan — " + permission.ModeAcceptEdits.Word() + " mode",
 		Desc:  "edits apply as they come; commands and other actions still ask",
 	},
 	{
-		Label: "Run it unattended — " + agent.ModeAuto.Word() + " mode",
+		Label: "Run it unattended — " + permission.ModeAuto.Word() + " mode",
 		Desc:  "edits and allowlisted commands run; the classifier judges the rest",
 	},
 	{
-		Label: "Step through it — " + agent.ModeManual.Word() + " approvals",
+		Label: "Step through it — " + permission.ModeManual.Word() + " approvals",
 		Desc:  "every edit and every command asks you first",
 	},
 	{
 		Label: "Keep planning — tell me what to change",
-		Desc:  "stays in " + agent.ModePlan.Word() + " mode; the plan keeps its place in the conversation",
+		Desc:  "stays in " + permission.ModePlan.Word() + " mode; the plan keeps its place in the conversation",
 	},
 	{
 		Label: "Reject the plan",
-		Desc:  "nothing runs and the session stays in " + agent.ModePlan.Word() + " mode",
+		Desc:  "nothing runs and the session stays in " + permission.ModePlan.Word() + " mode",
 	},
 }
 
@@ -99,7 +100,7 @@ func planHint() []components.KeyOffer {
 // planImplementWords is [i]'s offer. It names the mode it enters, like every
 // row that starts work, because the new session begins executing the moment
 // the key is pressed; [n] beside it names none, because it starts nothing.
-var planImplementWords = "implement in a new session — " + agent.ModeAcceptEdits.Word() + " mode"
+var planImplementWords = "implement in a new session — " + permission.ModeAcceptEdits.Word() + " mode"
 
 // armPlan parses and prices the planning response the prompt is about to ask
 // about. It runs once, when the prompt opens.
@@ -145,11 +146,11 @@ func (m Model) updatePlanApprove(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) selectPlanOption(idx int) (tea.Model, tea.Cmd) {
 	switch idx {
 	case 0:
-		return m.approvePlan(agent.ModeAcceptEdits)
+		return m.approvePlan(permission.ModeAcceptEdits)
 	case 1:
-		return m.approvePlan(agent.ModeAuto)
+		return m.approvePlan(permission.ModeAuto)
 	case 2:
-		return m.approvePlan(agent.ModeManual)
+		return m.approvePlan(permission.ModeManual)
 	case 3:
 		return m.keepPlanning()
 	case 4:
@@ -161,7 +162,7 @@ func (m Model) selectPlanOption(idx int) (tea.Model, tea.Cmd) {
 // approvePlan continues the same session straight into execution: the mode
 // switches to the chosen one and the approval message becomes the next user
 // turn, with the plan already in context.
-func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
+func (m Model) approvePlan(execMode permission.Mode) (tea.Model, tea.Cmd) {
 	m.signal(observe.SignalPlan, "approved")
 	m.applyMode(execMode)
 	doc := m.planDoc
@@ -339,7 +340,7 @@ func (m Model) implementPlanInNewSession() (tea.Model, tea.Cmd) {
 	m.appendEntries(notes)
 	m.appendEntries(m.seedFromPlan(rec))
 
-	const execMode = agent.ModeAcceptEdits
+	const execMode = permission.ModeAcceptEdits
 	m.applyMode(execMode)
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("plan approved — executing in %s mode", execMode)})
 	// A turn of the new session's own, numbered from one, so the record's
@@ -849,7 +850,7 @@ func planProgress(steps []components.InspectorPlanStep) int {
 // instead (command.go), which is the same list the rail's PLAN block draws, so
 // a terminal too narrow for the rail loses nothing.
 func (m Model) planStatus() string {
-	if m.policy.mode == agent.ModePlan {
+	if m.policy.mode == permission.ModePlan {
 		return "no plan approved yet — the card offers the checklist once one is.\n" + planUsage
 	}
 	return "no approved plan is running.\n" + planUsage

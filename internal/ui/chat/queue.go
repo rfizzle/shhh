@@ -34,10 +34,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -309,7 +309,7 @@ func (m Model) rowPath(p string) string {
 // one the card is showing. kind and batchable are the head's category,
 // resolved once by the caller because reading it costs a scope reading per
 // call and the head does not change as the queue is walked.
-func (m Model) batchesWith(cur *approvalRequest, kind agent.ActionKind, batchable bool, req *approvalRequest) bool {
+func (m Model) batchesWith(cur *approvalRequest, kind permission.ActionKind, batchable bool, req *approvalRequest) bool {
 	if !batchable {
 		return false
 	}
@@ -440,7 +440,7 @@ func nameSharedSiblings(rows []components.SpawnRow, calls []llm.ToolCall) {
 // batchCategory is the class a session grant ([a]) would cover, which is
 // exactly the question the queue list asks of the queue — so both read it from here. A
 // flagged action, and anything the grants do not cover, belongs to no batch.
-func (m Model) batchCategory(req *approvalRequest) (agent.ActionKind, bool) {
+func (m Model) batchCategory(req *approvalRequest) (permission.ActionKind, bool) {
 	act := m.approvalAction(req)
 	// A decision that leaves the working scope is never swept into a
 	// batch: the queue list answers the calls the session would classify the same way,
@@ -451,7 +451,7 @@ func (m Model) batchCategory(req *approvalRequest) (agent.ActionKind, bool) {
 	// A claim is out because the list row states the call's summary and
 	// not the claim's rows, which are what the person is answering.
 	// See docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too.
-	if act.SafetyFlagged || act.Kind == agent.ActionOther || act.Kind == agent.ActionFetch ||
+	if act.SafetyFlagged || act.Kind == permission.ActionOther || act.Kind == permission.ActionFetch ||
 		len(act.OutOfScope) > 0 || len(act.Claims) > 0 {
 		return act.Kind, false
 	}

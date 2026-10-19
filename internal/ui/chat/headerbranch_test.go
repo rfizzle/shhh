@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tree"
@@ -38,7 +38,7 @@ func TestHeader_TheBranchFollowsAGitSwitch(t *testing.T) {
 				return GatedPreview{Title: "switch to feature/x"}, nil
 			},
 		})
-	m.policy.mode = agent.ModeAcceptEdits
+	m.policy.mode = permission.ModeAcceptEdits
 	m = headedBy(t, m, ws)
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{

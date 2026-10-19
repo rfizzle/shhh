@@ -8,8 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -37,7 +37,7 @@ func TestConversation_AFetchRunsWithoutACard(t *testing.T) {
 	if m.state == stateConfirmRun {
 		t.Fatal("a conversation put a fetch to the person")
 	}
-	if m.approval.request == nil || m.approval.request.autoRule != agent.ConversationReadReason {
+	if m.approval.request == nil || m.approval.request.autoRule != permission.ConversationReadReason {
 		t.Fatalf("the fetch was not allowed by the conversation's rule: %+v", m.approval.request)
 	}
 	m = drainApproved(t, m, cmd)
@@ -78,17 +78,17 @@ func TestConversation_TheHostDenyListStillRefuses(t *testing.T) {
 func TestConversation_HasOneMode(t *testing.T) {
 	m := gatedModelWith(t, nil, nil, Wiring{
 		Conversation: true,
-		Mode:         agent.ModeAuto,
-		Cycle:        []agent.Mode{agent.ModeAuto, agent.ModePlan},
+		Mode:         permission.ModeAuto,
+		Cycle:        []permission.Mode{permission.ModeAuto, permission.ModePlan},
 	})
 	m.state = stateInput
-	if m.policy.mode != agent.ModeManual {
+	if m.policy.mode != permission.ModeManual {
 		t.Fatalf("a configured mode reached a conversation: %v", m.policy.mode)
 	}
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if m.policy.mode != agent.ModeManual {
+	if m.policy.mode != permission.ModeManual {
 		t.Fatalf("the chord moved a conversation's mode to %v", m.policy.mode)
 	}
 	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySystem || last.text != conversationModeNote {
@@ -98,11 +98,11 @@ func TestConversation_HasOneMode(t *testing.T) {
 	if got := slashPermissions(&m, []string{"/permissions", "plan"}); got != conversationModeNote {
 		t.Errorf("/permissions plan answered %q", got)
 	}
-	if m.policy.mode != agent.ModeManual {
+	if m.policy.mode != permission.ModeManual {
 		t.Fatalf("/permissions moved a conversation's mode to %v", m.policy.mode)
 	}
 	for _, o := range modeArgs(&m) {
-		if _, err := agent.ParseMode(o.value); err == nil {
+		if _, err := permission.ParseMode(o.value); err == nil {
 			t.Errorf("the completion offers the mode %q in a conversation", o.value)
 		}
 	}

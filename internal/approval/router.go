@@ -16,8 +16,8 @@ package approval
 import (
 	"os"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -89,12 +89,12 @@ type Call struct {
 // A command typed for the command tool runs in the session's own directory;
 // a process start names one of its own; a call at the write tier carries its
 // line for the deny list alone.
-func CallOf(name string, c agent.Classified) Call {
-	runs := c.Tier == agent.TierCommand && c.Action.Kind == agent.ActionCommand
+func CallOf(name string, c permission.Classified) Call {
+	runs := c.Tier == permission.TierCommand && c.Action.Kind == permission.ActionCommand
 	return Call{
 		Command: c.Action.Command,
 		Host:    c.Action.Host,
-		Write:   c.Tier == agent.TierWrite,
+		Write:   c.Tier == permission.TierWrite,
 		Path:    c.Action.Path,
 		Paths:   c.Action.Paths,
 		InDir:   runs && name == tools.ExecCommandName,
@@ -133,8 +133,8 @@ func (r Router) Contained(c Call) string {
 // See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
 func (r Router) Rule(c Call) (Refusal, bool) {
 	if c.Host != "" {
-		if agent.HostMatches(r.DenyHosts, c.Host) {
-			return Refusal{Result: agent.DeniedHostResult, Reason: agent.DenyReasonHost, Code: observe.ReasonDenylist}, true
+		if permission.HostMatches(r.DenyHosts, c.Host) {
+			return Refusal{Result: permission.DeniedHostResult, Reason: permission.DenyReasonHost, Code: observe.ReasonDenylist}, true
 		}
 		return Refusal{}, false
 	}
@@ -142,23 +142,23 @@ func (r Router) Rule(c Call) (Refusal, bool) {
 	// for the paths it points git at is that directory's repository's.
 	for _, p := range append([]string{c.Path}, c.Paths...) {
 		if p != "" && tools.GitProgramPath(r.where(true).Dir, p) {
-			return Refusal{Result: tools.GitProgramPathResult, Reason: agent.DenyReasonGitPath, Code: observe.ReasonSafety}, true
+			return Refusal{Result: tools.GitProgramPathResult, Reason: permission.DenyReasonGitPath, Code: observe.ReasonSafety}, true
 		}
 	}
 	if c.Command == "" {
 		return Refusal{}, false
 	}
-	reason, ok := agent.RuleRefusal(r.Denylist, agent.Action{Command: c.Command, Irreplaceable: r.Irreplaceable(c)})
+	reason, ok := permission.RuleRefusal(r.Denylist, permission.Action{Command: c.Command, Irreplaceable: r.Irreplaceable(c)})
 	if !ok {
 		return Refusal{}, false
 	}
 	code := observe.ReasonDenylist
-	if agent.IsIrreplaceable(reason) {
+	if permission.IsIrreplaceable(reason) {
 		// Filed with the safety table's refusals: it is that table's
 		// destroying rows, read against where they point.
 		code = observe.ReasonSafety
 	}
-	return Refusal{Result: agent.RuleRefusedResult(reason), Reason: reason, Code: code}, true
+	return Refusal{Result: permission.RuleRefusedResult(reason), Reason: reason, Code: code}, true
 }
 
 // Irreplaceable is what a call's command destroys that this session may not,
@@ -235,7 +235,7 @@ func (r Router) Outside(paths ...string) []Reached {
 // Policy is a mode policy with these rules in it: the two deny lists the
 // policy reads before its mode, filled from here rather than by each caller,
 // so a policy built for a door cannot be missing a list the door holds.
-func (r Router) Policy(p agent.ModePolicy) agent.ModePolicy {
+func (r Router) Policy(p permission.ModePolicy) permission.ModePolicy {
 	p.CommandDenylist = r.Denylist
 	p.DenyHosts = r.DenyHosts
 	return p

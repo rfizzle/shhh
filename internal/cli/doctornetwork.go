@@ -12,10 +12,10 @@ import (
 	"github.com/rfizzle/llm/decision"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -190,9 +190,9 @@ func declarationNote(flow flow.Flow, model string) string {
 // See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
 func classifierBackendNote(cfg config.Config, provName, model string, replaced bool) string {
 	if !decisionsClassifier(cfg) {
-		return " · " + agent.BackendCompletion + " backend"
+		return " · " + permission.BackendCompletion + " backend"
 	}
-	note := " · " + agent.BackendDecisions + " backend, "
+	note := " · " + permission.BackendDecisions + " backend, "
 	if decision.Declared(provName, model) {
 		note += "offered by this model"
 	} else {

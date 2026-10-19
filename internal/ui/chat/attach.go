@@ -17,8 +17,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -1044,13 +1044,13 @@ func (m *Model) attachedModeCommand(parts []string) {
 		m.noteChild(name, m.childModeStatus(name))
 		return
 	}
-	mode, err := agent.ParseMode(parts[1])
+	mode, err := permission.ParseMode(parts[1])
 	if err != nil {
 		m.noteChild(name, failed("mode", err.Error()))
 		return
 	}
 	ceiling := m.wiring.Subagents.ParentMode()
-	if agent.ClampMode(mode, ceiling) != mode {
+	if permission.ClampMode(mode, ceiling) != mode {
 		m.noteChild(name, fmt.Sprintf("mode %s is disabled: it exceeds the orchestrator's ceiling (%s)", mode, ceiling))
 		return
 	}
@@ -1074,7 +1074,7 @@ func (m Model) cycleAttachedMode() (tea.Model, tea.Cmd) {
 	ceiling := m.wiring.Subagents.ParentMode()
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
-		cycle = agent.DefaultCycle()
+		cycle = permission.DefaultCycle()
 	}
 	idx := 0
 	for i, mode := range cycle {
@@ -1087,7 +1087,7 @@ func (m Model) cycleAttachedMode() (tea.Model, tea.Cmd) {
 	var disabled []string
 	for step := 1; step <= len(cycle); step++ {
 		cand := cycle[(idx+step)%len(cycle)]
-		if agent.ClampMode(cand, ceiling) == cand {
+		if permission.ClampMode(cand, ceiling) == cand {
 			next = cand
 			break
 		}
@@ -1171,12 +1171,12 @@ func (m Model) childModeStatus(name string) string {
 	ceiling := m.wiring.Subagents.ParentMode()
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
-		cycle = agent.DefaultCycle()
+		cycle = permission.DefaultCycle()
 	}
 	labels := make([]string, len(cycle))
 	for i, c := range cycle {
 		labels[i] = c.String()
-		if agent.ClampMode(c, ceiling) != c {
+		if permission.ClampMode(c, ceiling) != c {
 			labels[i] += " (disabled)"
 		}
 	}
@@ -1243,10 +1243,10 @@ func (m Model) renderChildStatusBar(width int) string {
 // childModeSegment mirrors the orchestrator's mode segment — the same words
 // and the same marks, because a child's permission mode is read for the same
 // reason the parent's is.
-func childModeSegment(mode agent.Mode) string {
+func childModeSegment(mode permission.Mode) string {
 	name := modeWord(mode)
 	switch mode {
-	case agent.ModeAcceptEdits, agent.ModeAuto:
+	case permission.ModeAcceptEdits, permission.ModeAuto:
 		return sty.ModePermissive.Render("⏵⏵ " + name)
 	default:
 		return sty.ModeGated.Render("⏸ " + name)

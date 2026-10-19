@@ -13,7 +13,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -308,7 +308,7 @@ func TestPolicy_AWriteTierToolIsAnsweredLikeAnEdit(t *testing.T) {
 	}
 
 	// Accept-edits and auto proceed, exactly as they proceed with an edit.
-	for _, mode := range []agent.Mode{agent.ModeAcceptEdits, agent.ModeAuto} {
+	for _, mode := range []permission.Mode{permission.ModeAcceptEdits, permission.ModeAuto} {
 		m := gatedModel(t, executor, preview)
 		m.policy.mode = mode
 		if m := offer(m); m.state == stateConfirmRun {
@@ -318,14 +318,14 @@ func TestPolicy_AWriteTierToolIsAnsweredLikeAnEdit(t *testing.T) {
 
 	// Plan mode refuses it, because plan mode refuses every write.
 	m = gatedModel(t, executor, preview)
-	m.policy.mode = agent.ModePlan
+	m.policy.mode = permission.ModePlan
 	if m := offer(m); m.state == stateConfirmRun {
 		t.Fatal("plan mode should refuse rather than ask")
 	}
 
 	// And the deny list answers before any of that.
 	m = gatedModel(t, executor, preview)
-	m.policy.mode = agent.ModeAuto
+	m.policy.mode = permission.ModeAuto
 	m.policy.denylist = []string{"git commit"}
 	m = offer(m)
 	if m.state == stateConfirmRun {
@@ -343,7 +343,7 @@ func TestPolicy_AWriteTierToolIsAnsweredLikeAnEdit(t *testing.T) {
 func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.policy.mode = agent.ModeAcceptEdits
+	m.policy.mode = permission.ModeAcceptEdits
 	path := filepath.Join(t.TempDir(), "a.txt")
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
@@ -386,7 +386,7 @@ func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 	m.policy.allowlist = []string{"echo"}
-	m.policy.mode = agent.ModeAuto
+	m.policy.mode = permission.ModeAuto
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
@@ -416,7 +416,7 @@ func TestMode_AutoFlaggedCommandStillPrompts(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 	m.policy.allowlist = []string{"git"}
-	m.policy.mode = agent.ModeAuto
+	m.policy.mode = permission.ModeAuto
 	m.policy.allCommands = true
 
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
@@ -432,7 +432,7 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 	m.policy.allowlist = []string{"echo"}
-	m.policy.mode = agent.ModePlan
+	m.policy.mode = permission.ModePlan
 	m.policy.allEdits = true
 	m.policy.allCommands = true
 	path := filepath.Join(t.TempDir(), "a.txt")
@@ -486,7 +486,7 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 func TestMode_ReadOnlyRefusesAnEditInItsOwnWords(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.policy.mode = agent.ModeReadOnly
+	m.policy.mode = permission.ModeReadOnly
 	m.policy.allEdits = true
 	path := filepath.Join(t.TempDir(), "a.txt")
 
@@ -500,7 +500,7 @@ func TestMode_ReadOnlyRefusesAnEditInItsOwnWords(t *testing.T) {
 	}
 	msgs := m.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != llm.RoleTool || last.Content != agent.ReadOnlyModeResult("", nil) {
+	if last.Role != llm.RoleTool || last.Content != permission.ReadOnlyModeResult("", nil) {
 		t.Fatalf("the refusal should be read-only mode's own, got %+v", last)
 	}
 	if strings.Contains(last.Content, "plan") {
@@ -531,7 +531,7 @@ func TestMode_ReadOnlyRefusesAnEditInItsOwnWords(t *testing.T) {
 func TestMode_ReadOnlyRunsInspectionCommands(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.policy.mode = agent.ModeReadOnly
+	m.policy.mode = permission.ModeReadOnly
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_c", Name: "execute_command", Arguments: `{"command":"git status"}`},
@@ -548,7 +548,7 @@ func TestMode_ReadOnlyRunsInspectionCommands(t *testing.T) {
 
 func TestMode_ReadOnlyToolsBypassApprovalInPlanMode(t *testing.T) {
 	m := gatedModel(t, nil, nil)
-	m.policy.mode = agent.ModePlan
+	m.policy.mode = permission.ModePlan
 	for _, name := range []string{"read_file", "list_directory", "search", "glob"} {
 		if m.requiresApproval(llm.ToolCall{Name: name}) {
 			t.Errorf("read-only tool %s must never be approval-gated", name)
@@ -564,7 +564,7 @@ func TestMode_GitToolIsReadOnlyInEveryMode(t *testing.T) {
 		Name:      structural.GitToolName,
 		Arguments: `{"verb":"blame","paths":["internal/structural/git.go"]}`,
 	}
-	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
+	for _, mode := range []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto, permission.ModePlan} {
 		m := gatedModel(t, nil, nil)
 		m.policy.mode = mode
 		if m.requiresApproval(call) {
@@ -585,7 +585,7 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if m.policy.mode != agent.ModeAcceptEdits {
+	if m.policy.mode != permission.ModeAcceptEdits {
 		t.Fatalf("shift+tab should cycle manual → accept-edits, got %v", m.policy.mode)
 	}
 	if !strings.Contains(m.renderStatusBar(80), "⏵⏵ accept edits") {
@@ -593,16 +593,16 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	}
 
 	// A configured cycle is honored, wrapping around.
-	m.policy.mode = agent.ModeManual
-	m.policy.cycle = []agent.Mode{agent.ModeManual, agent.ModePlan}
+	m.policy.mode = permission.ModeManual
+	m.policy.cycle = []permission.Mode{permission.ModeManual, permission.ModePlan}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if m.policy.mode != agent.ModePlan {
+	if m.policy.mode != permission.ModePlan {
 		t.Fatalf("configured cycle should go manual → plan, got %v", m.policy.mode)
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if m.policy.mode != agent.ModeManual {
+	if m.policy.mode != permission.ModeManual {
 		t.Fatalf("configured cycle should wrap plan → manual, got %v", m.policy.mode)
 	}
 }
@@ -615,17 +615,17 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 // child's mode is read for the same reason and must not answer differently.
 func TestMode_TheSegmentNamesTheMode(t *testing.T) {
 	for _, tc := range []struct {
-		mode agent.Mode
+		mode permission.Mode
 		want string
 		// gone is a word no rail in this mode may carry: another mode's name,
 		// or the class word the mark already means.
 		gone string
 	}{
-		{agent.ModeManual, "⏸ manual", "auto"},
-		{agent.ModeAcceptEdits, "⏵⏵ accept edits", "auto"},
-		{agent.ModeAuto, "⏵⏵ auto", "gated"},
-		{agent.ModeReadOnly, "⏸ read-only", "plan"},
-		{agent.ModePlan, "⏸ plan", "read-only"},
+		{permission.ModeManual, "⏸ manual", "auto"},
+		{permission.ModeAcceptEdits, "⏵⏵ accept edits", "auto"},
+		{permission.ModeAuto, "⏵⏵ auto", "gated"},
+		{permission.ModeReadOnly, "⏸ read-only", "plan"},
+		{permission.ModePlan, "⏸ plan", "read-only"},
 	} {
 		t.Run(tc.mode.String(), func(t *testing.T) {
 			m := gatedModel(t, nil, nil)
@@ -656,7 +656,7 @@ func TestMode_SlashModeShowsAndSets(t *testing.T) {
 	if !handled || !strings.Contains(result, "mode set to auto") {
 		t.Fatalf("/mode auto should set the mode, got %q", result)
 	}
-	if m.policy.mode != agent.ModeAuto {
+	if m.policy.mode != permission.ModeAuto {
 		t.Fatalf("mode should be auto after /mode auto, got %v", m.policy.mode)
 	}
 
@@ -664,7 +664,7 @@ func TestMode_SlashModeShowsAndSets(t *testing.T) {
 	if !strings.Contains(bad, "unknown mode") {
 		t.Fatalf("/mode with an unknown name should error, got %q", bad)
 	}
-	if m.policy.mode != agent.ModeAuto {
+	if m.policy.mode != permission.ModeAuto {
 		t.Fatal("an invalid /mode must not change the mode")
 	}
 
@@ -699,7 +699,7 @@ func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
 func TestReadOnlyCommandRunsWithoutPrompt(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	m.state = stateStreaming
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
@@ -723,7 +723,7 @@ func TestReadOnlyAutoDisabledPrompts(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
 	m.policy.readOnlyExtra, m.policy.readOnlyDisabled = nil, true
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	m.state = stateStreaming
 
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{
@@ -890,7 +890,7 @@ func TestGrant_ConfigsAllowlistIsNotTheSessionsToRevoke(t *testing.T) {
 // session — its mode, its blanket grants, its allowlist — reaches the
 // decision. What the reader sees is the rule-denial row, in every mode.
 func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
-	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
+	for _, mode := range []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto, permission.ModePlan} {
 		var ran []string
 		m := execModel(t, &ran)
 		m.policy.allowlist = []string{"git push"}
@@ -911,7 +911,7 @@ func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
 		}
 		refused := false
 		for _, msg := range m.Messages() {
-			if msg.Role == llm.RoleTool && msg.Content == agent.DenylistResult {
+			if msg.Role == llm.RoleTool && msg.Content == permission.DenylistResult {
 				refused = true
 			}
 		}
@@ -920,7 +920,7 @@ func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
 		}
 		row := false
 		for _, e := range m.transcript {
-			if e.kind == entryTool && e.deniedBy == decidedByAuto && e.denyRule == agent.DenyReasonDenylist {
+			if e.kind == entryTool && e.deniedBy == decidedByAuto && e.denyRule == permission.DenyReasonDenylist {
 				row = true
 			}
 		}
@@ -1078,7 +1078,7 @@ func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
 
 	denied := gatedModel(t, executor, fetchPreviews())
 	denied.policy.allowHosts, denied.policy.denyHosts = []string{"paste.example.test"}, []string{"paste.example.test"}
-	denied.policy.mode = agent.ModeAuto
+	denied.policy.mode = permission.ModeAuto
 	denied.policy.hosts = []string{"paste.example.test"}
 	updated, _ = denied.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_d", "https://paste.example.test/x"),

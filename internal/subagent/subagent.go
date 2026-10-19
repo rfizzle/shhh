@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -439,7 +440,7 @@ type Spec struct {
 	// per-turn round cap (0 when it has none). Neither builds the runtime —
 	// the supervisor holds both — but the record of what the child ran
 	// under has to be stamped from somewhere, and the CLI is what stamps it.
-	Mode      agent.Mode
+	Mode      permission.Mode
 	MaxRounds int
 	// MaxTokens and AdmissionFloor are the effective budget and the minimum
 	// admitted for this declared task. They are carried to the record with the
@@ -548,7 +549,7 @@ type Options struct {
 	// — the same classifier path the parent uses. Nil routes those calls to the
 	// user instead, which is what made auto-mode children prompt for every
 	// command they ran.
-	Classifier *agent.Classifier
+	Classifier *permission.Classifier
 	// ModelFor resolves a child's model from its role, the depth it will run
 	// at and the model the spawn call asked for (empty when it asked for
 	// none). Nil means every child runs on the session model.

@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -60,8 +61,8 @@ type screenBuild struct {
 	proj    config.Project
 
 	// The policy.
-	mode        agent.Mode
-	cycle       []agent.Mode
+	mode        permission.Mode
+	cycle       []permission.Mode
 	containment chat.Containment
 	// closeSandbox destroys a sandbox session's container; nil for every
 	// other session.
@@ -71,7 +72,7 @@ type screenBuild struct {
 
 	// The readers built before the containment, in the order they always
 	// were.
-	classifier *agent.Classifier
+	classifier *permission.Classifier
 	explainer  *sidejobs.Explainer
 	summarizer *sidejobs.Summarizer
 	titler     *sidejobs.Titler
@@ -220,15 +221,15 @@ func (b *screenBuild) policy() error {
 	cfg, env, ledger, session := b.cfg, b.env, b.asm.ledger, b.session
 	// Permission mode: starting mode and Shift+Tab cycle come from
 	// config; the default is manual (everything prompts).
-	b.mode = agent.ModeManual
+	b.mode = permission.ModeManual
 	if s := cfg.Behavior.DefaultMode; s != "" {
-		mode, err := agent.ParseMode(s)
+		mode, err := permission.ParseMode(s)
 		if err != nil {
 			return fmt.Errorf("config behavior.default_mode: %w", err)
 		}
 		b.mode = mode
 	}
-	cycle, err := agent.ParseCycle(cfg.Behavior.ModeCycle)
+	cycle, err := permission.ParseCycle(cfg.Behavior.ModeCycle)
 	if err != nil {
 		return fmt.Errorf("config behavior.mode_cycle: %w", err)
 	}
@@ -237,7 +238,7 @@ func (b *screenBuild) policy() error {
 	// stamps the mode it really runs under
 	// (docs/capabilities/chat.md#a-conversation-has-one-mode).
 	if session.conversation {
-		b.mode = agent.ModeManual
+		b.mode = permission.ModeManual
 	}
 
 	// Auto mode's permission classifier, built the way every surface that
@@ -836,7 +837,7 @@ func (b *screenBuild) wireFetch(w *chat.Wiring, reach *hostReach, gatedPreviews 
 		reachable := append([]string(nil), hosts...)
 		reach.hosts = reachable
 		webTools.Fetcher.SetGrantedHosts(func(host string) bool {
-			return agent.HostMatches(reachable, host)
+			return permission.HostMatches(reachable, host)
 		})
 	}
 	gatedPreviews[web.FetchToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {

@@ -8,6 +8,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -30,7 +31,7 @@ func TestServe_ClassifierVerdictsCarryTheirTime(t *testing.T) {
 	l.obs = headlessObserver{rec: rec, rounds: a.Rounds, turn: l.turnNow, stream: l.events}
 	l.verdict.Store(&lastVerdict{})
 	judge := &autoJudge{ctx: t.Context(),
-		classifier: agent.NewClassifier(verdictJudge{decision: "deny", calls: &calls}, agent.ClassifierConfig{Model: "m"})}
+		classifier: permission.NewClassifier(verdictJudge{decision: "deny", calls: &calls}, permission.ClassifierConfig{Model: "m"})}
 	resolve := headlessApprover(context.Background(), headlessApproval{
 		record:     l.verdict.Load().wrap(l.obs.decision),
 		recordTook: l.recordTook,

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -58,10 +58,10 @@ func TestReputation_AutoModeLetsAKnownHostThrough(t *testing.T) {
 	executor := func(context.Context, string, json.RawMessage) (string, error) { fetched++; return "page text", nil }
 	var decisions [][2]string
 	m := recordingDecisions(gatedModelWith(t, executor, fetchPreviews(), Wiring{
-		Classifier: agent.NewClassifier(ledger.For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+		Classifier: permission.NewClassifier(ledger.For(judge, spend.SourceClassifier), permission.ClassifierConfig{Model: "judge"}),
 	}),
 		&decisions)
-	m.policy.mode = agent.ModeAuto
+	m.policy.mode = permission.ModeAuto
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		fetchCall("call_1", "https://pkg.go.dev/context"),
@@ -119,10 +119,10 @@ func TestReputation_AWarnedHostIsCardedWhereTheClassifierAllowed(t *testing.T) {
 			ledger := meter.New(nil)
 			var decisions [][2]string
 			m := recordingDecisions(gatedModelWith(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
-				Classifier: agent.NewClassifier(ledger.For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+				Classifier: permission.NewClassifier(ledger.For(judge, spend.SourceClassifier), permission.ClassifierConfig{Model: "judge"}),
 			}),
 				&decisions)
-			m.policy.mode = agent.ModeAuto
+			m.policy.mode = permission.ModeAuto
 
 			updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://"+c.host+"/x")}})
 			m = updated.(Model)
@@ -197,8 +197,8 @@ func TestReputation_AnUnknownHostLeavesTheClassifiersAnswer(t *testing.T) {
 	judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 	ledger := meter.New(nil)
 	m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
-	m.classifier.judge = agent.NewClassifier(ledger.For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
-	m.policy.mode = agent.ModeAuto
+	m.classifier.judge = permission.NewClassifier(ledger.For(judge, spend.SourceClassifier), permission.ClassifierConfig{Model: "judge"})
+	m.policy.mode = permission.ModeAuto
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://nowhere.test/x")}})
 	m = updated.(Model)
 	updated, _ = m.Update(driveClassifierDone(t, cmd))
@@ -216,14 +216,14 @@ func TestObserve_AHostStandingAskCarriesTheClassifiersTime(t *testing.T) {
 	judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 	ledger := meter.New(nil)
 	m := gatedModelWith(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
-		Classifier: agent.NewClassifier(ledger.For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+		Classifier: permission.NewClassifier(ledger.For(judge, spend.SourceClassifier), permission.ClassifierConfig{Model: "judge"}),
 	})
 	var untimed, timed [][2]string
 	m.wiring.Observer = observe.Observer{
 		Decision:      func(_ observe.Pos, d, r string) { untimed = append(untimed, [2]string{d, r}) },
 		DecisionTimed: func(_ observe.Pos, d, r string, _ time.Duration) { timed = append(timed, [2]string{d, r}) },
 	}
-	m.policy.mode = agent.ModeAuto
+	m.policy.mode = permission.ModeAuto
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://bad.test/x")}})
 	m = updated.(Model)
 	m.Update(driveClassifierDone(t, cmd))

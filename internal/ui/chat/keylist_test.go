@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -102,13 +102,13 @@ func TestKeyList_EveryCardThatAnswersQuestionMarkOffersIt(t *testing.T) {
 	}{
 		{"the plan card", func(t *testing.T) Model { return plannedModel(t, structuredPlan) }},
 		{"the question card", func(t *testing.T) Model {
-			return openedQuestion(t, agent.ModeManual, `{"question":"Which one?","shape":"choose","options":[{"label":"a"},{"label":"b"}]}`)
+			return openedQuestion(t, permission.ModeManual, `{"question":"Which one?","shape":"choose","options":[{"label":"a"},{"label":"b"}]}`)
 		}},
 		{"the checkbox question", func(t *testing.T) Model {
-			return openedQuestion(t, agent.ModeManual, `{"question":"Which?","shape":"choose_many","options":[{"label":"a"},{"label":"b"}]}`)
+			return openedQuestion(t, permission.ModeManual, `{"question":"Which?","shape":"choose_many","options":[{"label":"a"},{"label":"b"}]}`)
 		}},
 		{"a yes-or-no question", func(t *testing.T) Model {
-			return openedQuestion(t, agent.ModeManual, `{"question":"Should the migration be reversible?","shape":"confirm"}`)
+			return openedQuestion(t, permission.ModeManual, `{"question":"Should the migration be reversible?","shape":"confirm"}`)
 		}},
 		{"the scaffold card", func(t *testing.T) Model {
 			m := frameModel(t, 120, 40)

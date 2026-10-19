@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -37,8 +37,8 @@ func TestChildFetchIsReadAgainstTheLists(t *testing.T) {
 
 	sup := New(context.Background(), Options{Root: t.TempDir()})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeAuto)
-	action := func(rawURL string) agent.Action {
+	sup.SetParentMode(permission.ModeAuto)
+	action := func(rawURL string) permission.Action {
 		t.Helper()
 		a, err := actionFor(web.FetchToolName, json.RawMessage(`{"url":"`+rawURL+`"}`))
 		if err != nil {
@@ -47,24 +47,24 @@ func TestChildFetchIsReadAgainstTheLists(t *testing.T) {
 		return a
 	}
 
-	auto := &child{mode: agent.ModeAuto}
-	if got, reason := sup.childPolicy(auto).Decide(action("https://pkg.go.dev/context")); got != agent.Allow ||
+	auto := &child{mode: permission.ModeAuto}
+	if got, reason := sup.childPolicy(auto).Decide(action("https://pkg.go.dev/context")); got != permission.Allow ||
 		reason != "known host (built-in list)" {
 		t.Fatalf("an auto child's known host = %v (%q); want Allow by the reading", got, reason)
 	}
-	if got, _ := sup.childPolicy(auto).Decide(action("https://nowhere.test/")); got != agent.Ask {
+	if got, _ := sup.childPolicy(auto).Decide(action("https://nowhere.test/")); got != permission.Ask {
 		t.Fatalf("an auto child's unknown host = %v; want Ask", got)
 	}
 	listed := action("https://bad.test/x")
 	if listed.Reading.Standing != web.StandingListed {
 		t.Fatalf("the child's action did not carry the reading: %+v", listed.Reading)
 	}
-	if got, _ := agent.ResolveAuto(listed, agent.ClassifierVerdict{Decision: agent.Allow}); got != agent.Ask {
+	if got, _ := permission.ResolveAuto(listed, permission.ClassifierVerdict{Decision: permission.Allow}); got != permission.Ask {
 		t.Fatalf("a listed host the classifier allowed = %v; want Ask", got)
 	}
-	manual := &child{mode: agent.ModeManual}
-	sup.SetParentMode(agent.ModeManual)
-	if got, _ := sup.childPolicy(manual).Decide(action("https://pkg.go.dev/context")); got != agent.Ask {
+	manual := &child{mode: permission.ModeManual}
+	sup.SetParentMode(permission.ModeManual)
+	if got, _ := sup.childPolicy(manual).Decide(action("https://pkg.go.dev/context")); got != permission.Ask {
 		t.Fatalf("a manual child's known host = %v; want Ask", got)
 	}
 }

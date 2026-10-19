@@ -15,12 +15,12 @@ import (
 	"github.com/rfizzle/llm"
 	llmeffort "github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/raw"
@@ -532,7 +532,7 @@ func (r *oneShotRun) refused(result ui.GenerateResult) bool {
 	// so the deny list answers for it here as it does at a card:
 	// the point of the list is that this command never becomes a
 	// decision, and a key pressed on it is not the answer to one.
-	if runAction(result.Action) && agent.DenylistMatches(r.cfg.Behavior.CommandDenylist, result.Command) {
+	if runAction(result.Action) && permission.DenylistMatches(r.cfg.Behavior.CommandDenylist, result.Command) {
 		fmt.Fprintln(os.Stderr, "\n⊘ Refused — this command is on the deny list in your configuration; it was not run.")
 		// The request was answered and the answer was refused,
 		// which is the bucket a cancel lands in: an outcome mix

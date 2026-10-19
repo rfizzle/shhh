@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/testhttp"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -66,7 +66,7 @@ flows = { classifier = { structured_outputs = false } }
 	}
 	ctx := context.Background()
 
-	agent.NewClassifier(p, agent.ClassifierConfig{Model: "claude-sonnet-5-5"}).Judge(ctx, agent.ClassifierRequest{Tool: "execute_command", Arguments: `{"command":"ls"}`})
+	permission.NewClassifier(p, permission.ClassifierConfig{Model: "claude-sonnet-5-5"}).Judge(ctx, permission.ClassifierRequest{Tool: "execute_command", Arguments: `{"command":"ls"}`})
 	if len(bodies) == 0 {
 		t.Fatal("the classifier sent nothing")
 	}

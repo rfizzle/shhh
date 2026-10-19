@@ -12,8 +12,8 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/mcp"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -455,7 +455,7 @@ func TestApplyMCPPrompt_ReportsAFailureAndSendsNothing(t *testing.T) {
 // other server tool carries.
 func TestResourceToolAutoRunsAndDrawsAsARead(t *testing.T) {
 	m := promptModel(t)
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	call := llm.ToolCall{Name: "mcp_resource", Arguments: `{"uri":"docs://guide"}`}
 	if m.requiresApproval(call) {
 		t.Fatal("a resource read asked for approval")

@@ -28,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 // auxiliaryModel is the model a bounded call answers with when its own key is
@@ -198,8 +199,8 @@ func resolveFlow(cfg config.Config, f boundedFlow, provName, sessionModel string
 // decisionsClassifier reports whether the classifier is asked on the
 // decisions backend.
 func decisionsClassifier(cfg config.Config) bool {
-	backend, err := agent.ParseClassifierBackend(cfg.Behavior.ClassifierBackend)
-	return err == nil && backend == agent.BackendDecisions
+	backend, err := permission.ParseClassifierBackend(cfg.Behavior.ClassifierBackend)
+	return err == nil && backend == permission.BackendDecisions
 }
 
 // resolveFlows answers for every flow, for a surface that lists them.

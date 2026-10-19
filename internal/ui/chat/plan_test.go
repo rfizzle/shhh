@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/plan"
 )
 
@@ -29,7 +30,7 @@ func planModel(t *testing.T, stream StreamFunc) Model {
 	// terminal squeezes counts the steps it folded rather than stating them.
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
 	m = updated.(Model)
-	m.policy.mode = agent.ModePlan
+	m.policy.mode = permission.ModePlan
 	m.state = stateStreaming
 	m.streaming = "1. edit a.go\n2. run tests"
 	return m
@@ -89,7 +90,7 @@ func TestPlan_EmptyResponseSkipsPrompt(t *testing.T) {
 
 func TestPlan_NonPlanModeSkipsPrompt(t *testing.T) {
 	m := planModel(t, mockStream)
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	updated, _ := m.Update(doneMsg{})
 	m = updated.(Model)
 	if m.state != stateInput {
@@ -105,7 +106,7 @@ func TestPlan_SteeringTakesPrecedenceOverPrompt(t *testing.T) {
 	if m.state != stateStreaming {
 		t.Fatalf("queued steering should continue planning, got state %d", m.state)
 	}
-	if m.policy.mode != agent.ModePlan {
+	if m.policy.mode != permission.ModePlan {
 		t.Fatal("steering must not leave plan mode")
 	}
 }
@@ -119,7 +120,7 @@ func TestPlan_ApproveExecutesInChosenMode(t *testing.T) {
 	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: '1', Text: "1"})
 	m = updated.(Model)
-	if m.policy.mode != agent.ModeAcceptEdits {
+	if m.policy.mode != permission.ModeAcceptEdits {
 		t.Fatalf("option 1 should switch to accept-edits, got %v", m.policy.mode)
 	}
 	if m.state != stateStreaming {
@@ -161,10 +162,10 @@ func TestPlan_ApproveExecutesInChosenMode(t *testing.T) {
 func TestPlan_ApproveOtherModes(t *testing.T) {
 	cases := []struct {
 		key  rune
-		want agent.Mode
+		want permission.Mode
 	}{
-		{'2', agent.ModeAuto},
-		{'3', agent.ModeManual},
+		{'2', permission.ModeAuto},
+		{'3', permission.ModeManual},
 	}
 	for _, c := range cases {
 		m := planModel(t, mockStream)
@@ -190,7 +191,7 @@ func TestPlan_KeepPlanningReturnsToInput(t *testing.T) {
 	if m.state != stateInput {
 		t.Fatalf("esc should dismiss to keep planning, got state %d", m.state)
 	}
-	if m.policy.mode != agent.ModePlan {
+	if m.policy.mode != permission.ModePlan {
 		t.Fatal("keep planning must stay in plan mode")
 	}
 	found := false
@@ -212,7 +213,7 @@ func TestPlan_RejectStaysInPlanMode(t *testing.T) {
 	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
 	m = updated.(Model)
-	if m.state != stateInput || m.policy.mode != agent.ModePlan {
+	if m.state != stateInput || m.policy.mode != permission.ModePlan {
 		t.Fatalf("reject should return to input in plan mode, got state %d mode %v", m.state, m.policy.mode)
 	}
 	found := false
@@ -254,7 +255,7 @@ func TestPlan_NavigationAndEnterSelect(t *testing.T) {
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if m.policy.mode != agent.ModeManual || m.state != stateStreaming {
+	if m.policy.mode != permission.ModeManual || m.state != stateStreaming {
 		t.Fatalf("enter should select the focused option (manual execution), got mode %v state %d", m.policy.mode, m.state)
 	}
 }
@@ -265,7 +266,7 @@ func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
 	m := New(msgs, recordingStream(&captured), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
-	m.policy.mode = agent.ModePlan
+	m.policy.mode = permission.ModePlan
 
 	updated, cmd := m.sendUserMessage("plan the change")
 	m = updated.(Model)
@@ -292,7 +293,7 @@ func TestMode_ReadOnlyRequestCarriesItsOwnInstructions(t *testing.T) {
 	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
-	m.policy.mode = agent.ModeReadOnly
+	m.policy.mode = permission.ModeReadOnly
 
 	updated, cmd := m.sendUserMessage("where is the counter read")
 	m = updated.(Model)
@@ -303,7 +304,7 @@ func TestMode_ReadOnlyRequestCarriesItsOwnInstructions(t *testing.T) {
 	}
 	// The paragraph is the one a child in the mode reads: the person's list
 	// and the session's toolset, through the one function.
-	want := "sys\n\n" + agent.ModeInstructions(agent.ModeReadOnly, []string{"tokei"}, []string{"read_file", "search", "execute_command"})
+	want := "sys\n\n" + permission.ModeInstructions(permission.ModeReadOnly, []string{"tokei"}, []string{"read_file", "search", "execute_command"})
 	if captured[0].Content != want {
 		t.Fatalf("the session reads\n%s\nwant\n%s", captured[0].Content, want)
 	}
@@ -318,7 +319,7 @@ func TestMode_ReadOnlyRequestCarriesItsOwnInstructions(t *testing.T) {
 func TestPlan_InspectionCommandRunsWithoutPrompt(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.policy.mode = agent.ModePlan
+	m.policy.mode = permission.ModePlan
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_i", Name: "execute_command", Arguments: `{"command":"git status"}`},
@@ -759,7 +760,7 @@ func TestPlan_CarryToNewSessionSeedsAFreshContext(t *testing.T) {
 	}
 	// The mode does not move: this answer names none, and approving a plan is
 	// never an unstated mode change.
-	if m.policy.mode != agent.ModePlan {
+	if m.policy.mode != permission.ModePlan {
 		t.Errorf("carrying a plan should not change the mode, got %v", m.policy.mode)
 	}
 	if m.state != stateInput {
@@ -829,7 +830,7 @@ func TestPlan_ImplementInNewSessionStartsTheExecutionTurn(t *testing.T) {
 	if m.sessionName == outgoing {
 		t.Fatal("the execution should run in a slot of its own")
 	}
-	if m.policy.mode != agent.ModeAcceptEdits {
+	if m.policy.mode != permission.ModeAcceptEdits {
 		t.Fatalf("the offer names accept-edits mode, got %v", m.policy.mode)
 	}
 	if m.state != stateStreaming {

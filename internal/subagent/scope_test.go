@@ -8,14 +8,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // commandAction is the action a child's execute_command call becomes before
 // the scope is read into it.
-func commandAction(t *testing.T, command string) agent.Action {
+func commandAction(t *testing.T, command string) permission.Action {
 	t.Helper()
 	args, err := json.Marshal(map[string]string{"command": command})
 	if err != nil {
@@ -159,19 +159,19 @@ func TestWriterCommandIntoAGrantedCheckoutIsInScope(t *testing.T) {
 func TestWriterCommandIntoTheParentCheckoutAsksInEveryMode(t *testing.T) {
 	root, worktree, sup := scopeFixture(t)
 	command := "echo x > " + filepath.Join(root, "f")
-	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto} {
+	for _, mode := range []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto} {
 		sup.SetParentMode(mode)
 		writer := &child{role: RoleWriter, root: worktree, worktree: worktree, mode: mode}
 		action := sup.scopedAction(writer, commandAction(t, command))
 		policy := sup.childPolicy(writer)
 		policy.AllowCommands = true
-		if got, _ := policy.Decide(action); got != agent.Ask {
+		if got, _ := policy.Decide(action); got != permission.Ask {
 			t.Errorf("%s mode: Decide = %v; want Ask", mode, got)
 		}
-		if mode != agent.ModeAuto {
+		if mode != permission.ModeAuto {
 			continue
 		}
-		if got, _ := agent.ResolveAuto(action, agent.ClassifierVerdict{Decision: agent.Allow}); got != agent.Ask {
+		if got, _ := permission.ResolveAuto(action, permission.ClassifierVerdict{Decision: permission.Allow}); got != permission.Ask {
 			t.Errorf("auto mode: a classifier yes resolved to %v; want Ask", got)
 		}
 	}
@@ -218,10 +218,10 @@ func TestChildOutOfScopeCommandSkipsTheClassifierInAutoMode(t *testing.T) {
 			Root:       root,
 			ScopeDirs:  sc.Dirs,
 			NewEnv:     env.factory(),
-			Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+			Classifier: permission.NewClassifier(judge, permission.ClassifierConfig{Model: "judge"}),
 		})
 		t.Cleanup(sup.Close)
-		sup.SetParentMode(agent.ModeAuto)
+		sup.SetParentMode(permission.ModeAuto)
 		execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"write the file"}`)
 		return sup, env, judge
 	}

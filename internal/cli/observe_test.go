@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
@@ -303,7 +304,7 @@ func TestObserveSessionTimeline(t *testing.T) {
 	// Stamped in the mode it started in and never left: no mode signal is
 	// recorded below, and the page must still say what mode it ran in.
 	rec.stamp("the prompt", 2, "/repo", sessionSettings(config.Config{}, runSettings{
-		mode: agent.ModeAuto.String(), effort: effort.High, rounds: 60,
+		mode: permission.ModeAuto.String(), effort: effort.High, rounds: 60,
 		sandbox: "workspace", model: "test-model", summary: true, classifier: true,
 	}))
 	rec.link("2026-01-01 10:00:00")
@@ -420,7 +421,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 	emptyOutcome, emptyClass := observe.ToolOutcome("No matches found.")
 	sess.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 4*time.Millisecond, emptyOutcome, emptyClass, "")
 	sess.decisionAt(observe.Pos{Turn: 1, Round: 2}, observe.DecisionAsk,
-		observe.AskReason(agent.Action{Kind: agent.ActionEdit, OutOfScope: []string{"/etc/passwd"}}), 0)
+		observe.AskReason(permission.Action{Kind: permission.ActionEdit, OutOfScope: []string{"/etc/passwd"}}), 0)
 	sess.signal(observe.Pos{Turn: 1, Round: 3}, observe.SignalSummary, observe.SummaryCode(sidejobs.SummaryOnTarget))
 	// Both gate runs go through the real boundary rather than straight at
 	// the recorder: the second is a suite name that resolved against

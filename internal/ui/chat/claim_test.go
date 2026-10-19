@@ -10,8 +10,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/structural"
 )
 
@@ -32,7 +32,7 @@ func claimModel(t *testing.T, ran *bool) (Model, string) {
 				Claims: []structural.Claim{claim}}, nil
 		},
 	}, Wiring{Workspace: root})
-	m.policy.mode = agent.ModeAcceptEdits
+	m.policy.mode = permission.ModeAcceptEdits
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{{ID: "call_claim", Name: structural.GitWriteToolName,
 		Arguments: `{"verb":"add","claim":[{"path":"gen.pb.go","why":"written by make gen this turn"}]}`}}})
 	return updated.(Model), gen

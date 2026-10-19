@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -19,9 +19,9 @@ func TestConversationChildFetchesWithoutAsking(t *testing.T) {
 		DenyHosts: []string{"paste.example.test"},
 	})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeManual)
-	c := &child{mode: agent.ModeManual}
-	decide := func(rawURL string) (agent.Decision, string) {
+	sup.SetParentMode(permission.ModeManual)
+	c := &child{mode: permission.ModeManual}
+	decide := func(rawURL string) (permission.Decision, string) {
 		t.Helper()
 		action, err := actionFor(web.FetchToolName, json.RawMessage(`{"url":"`+rawURL+`"}`))
 		if err != nil {
@@ -30,14 +30,14 @@ func TestConversationChildFetchesWithoutAsking(t *testing.T) {
 		return sup.childPolicy(c).Decide(action)
 	}
 
-	if got, _ := decide("https://pkg.go.dev/context"); got != agent.Ask {
+	if got, _ := decide("https://pkg.go.dev/context"); got != permission.Ask {
 		t.Fatalf("a coding session's child = %v; want Ask", got)
 	}
 	sup.SetConversationPolicy()
-	if got, reason := decide("https://pkg.go.dev/context"); got != agent.Allow || reason != agent.ConversationReadReason {
+	if got, reason := decide("https://pkg.go.dev/context"); got != permission.Allow || reason != permission.ConversationReadReason {
 		t.Errorf("a conversation's child = %v (%q); want Allow as a conversation read", got, reason)
 	}
-	if got, _ := decide("https://paste.example.test/x"); got != agent.Deny {
+	if got, _ := decide("https://paste.example.test/x"); got != permission.Deny {
 		t.Errorf("a denied host = %v; want Deny in a conversation's child too", got)
 	}
 }

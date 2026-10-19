@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/scope"
 )
 
@@ -57,7 +57,7 @@ func TestHeadlessApprover_AnIrreplaceableTargetHoldsUnderYes(t *testing.T) {
 	}
 	// The deny list is the person's own answer and still names itself first.
 	denied := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, rules: approval.Router{Denylist: []string{"rm"}, Scope: sc}, run: fakeRun(&ran)})
-	if got := denied(execCall("rm -rf ~")); got != agent.DenylistResult {
+	if got := denied(execCall("rm -rf ~")); got != permission.DenylistResult {
 		t.Fatalf("the deny list answered second: %q", got)
 	}
 }

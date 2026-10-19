@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -29,7 +29,7 @@ func TestAChildsShellReadNamesTheToolThatAnswersItOnce(t *testing.T) {
 		CommandAllowlist: []string{"cat", "head", "go vet"},
 	})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read the importer"}`)
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 

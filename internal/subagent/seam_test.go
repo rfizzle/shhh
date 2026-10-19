@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/tree"
 )
@@ -81,7 +82,7 @@ func TestASurfacesSeamsReachBothOfAChildsDispatchers(t *testing.T) {
 		},
 	})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read then run"}`)
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 

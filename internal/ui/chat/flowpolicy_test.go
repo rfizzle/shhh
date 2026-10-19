@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -33,8 +33,8 @@ func submitFlow(t *testing.T, m Model, line string) Model {
 
 // editVerdict is the gate's answer to one in-scope edit, which is the call
 // whose answer differs across every pair of modes the flows move between.
-func editVerdict(m Model) (agent.Decision, string) {
-	return m.modePolicy().Decide(agent.Action{Kind: agent.ActionEdit, Path: filepath.Join(m.todo.wiring.Root, "a.go")})
+func editVerdict(m Model) (permission.Decision, string) {
+	return m.modePolicy().Decide(permission.Action{Kind: permission.ActionEdit, Path: filepath.Join(m.todo.wiring.Root, "a.go")})
 }
 
 // withSupervisor gives a model a supervisor with no way to spawn, so the
@@ -93,7 +93,7 @@ var (
 // flow holds and under the session's mode the moment it does not, and the
 // children's ceiling follows the gate.
 func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
-	runStart := func(t *testing.T, session agent.Mode) Model {
+	runStart := func(t *testing.T, session permission.Mode) Model {
 		m, _ := runModel(t)
 		m.policy.mode = session
 		m = withSupervisor(t, m)
@@ -101,12 +101,12 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 	}
 	rows := []struct {
 		name   string
-		policy agent.Mode
-		start  func(t *testing.T, session agent.Mode) Model
+		policy permission.Mode
+		start  func(t *testing.T, session permission.Mode) Model
 		ends   []flowEnd
 	}{{
-		name: "groom", policy: agent.ModePlan,
-		start: func(t *testing.T, session agent.Mode) Model {
+		name: "groom", policy: permission.ModePlan,
+		start: func(t *testing.T, session permission.Mode) Model {
 			m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
 			m.policy.mode = session
 			return submitFlow(t, m, "/todo groom cache-ttl")
@@ -118,8 +118,8 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 			endBoundary, endDisplaced,
 		},
 	}, {
-		name: "sprint plan", policy: agent.ModePlan,
-		start: func(t *testing.T, session agent.Mode) Model {
+		name: "sprint plan", policy: permission.ModePlan,
+		start: func(t *testing.T, session permission.Mode) Model {
 			m, root := sprintModel(t, "")
 			for _, slug := range []string{"a-high", "b-second", "c-third", "d-fourth"} {
 				must(t, todo.SaveReading(root, todo.Reading{Slug: slug}))
@@ -132,11 +132,11 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 			endBoundary, endDisplaced,
 		},
 	}, {
-		name: "run research", policy: agent.ModePlan, start: runStart,
+		name: "run research", policy: permission.ModePlan, start: runStart,
 		ends: []flowEnd{endStop, endCancel, endBoundary, endBlocked, endDisplaced},
 	}, {
-		name: "run implement", policy: agent.ModeAuto,
-		start: func(t *testing.T, session agent.Mode) Model {
+		name: "run implement", policy: permission.ModeAuto,
+		start: func(t *testing.T, session permission.Mode) Model {
 			return answer(t, runStart(t, session), runPlan)
 		},
 		ends: []flowEnd{endStop, endCancel, endBoundary, {"the commit", func(t *testing.T, m Model) Model {
@@ -148,12 +148,12 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 			return updated.(Model)
 		}}},
 	}, {
-		name: "fan-out", policy: agent.ModeAuto,
-		start: func(t *testing.T, session agent.Mode) Model {
+		name: "fan-out", policy: permission.ModeAuto,
+		start: func(t *testing.T, session permission.Mode) Model {
 			m, sup := largeRunModel(t, writingEnv("package a\n\nvar changed = true\n"))
 			// The fixture starts the run in a manual session; the writers
 			// are spawned under the run's ceiling whatever the session is.
-			if mode, _ := sup.AgentMode("tw1-alpha"); mode != agent.ModeAuto {
+			if mode, _ := sup.AgentMode("tw1-alpha"); mode != permission.ModeAuto {
 				t.Fatalf("a writer was spawned under %s", mode)
 			}
 			m.policy.mode = session
@@ -161,8 +161,8 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 		},
 		ends: []flowEnd{endStop},
 	}, {
-		name: "--all", policy: agent.ModePlan,
-		start: func(t *testing.T, session agent.Mode) Model {
+		name: "--all", policy: permission.ModePlan,
+		start: func(t *testing.T, session permission.Mode) Model {
 			m, _ := sprintRunModel(t)
 			m.policy.mode = session
 			m = withSupervisor(t, m)
@@ -171,7 +171,7 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 		ends: []flowEnd{endStop, endBlocked, endBoundary},
 	}}
 	for _, row := range rows {
-		for _, session := range []agent.Mode{agent.ModeManual, agent.ModeAuto} {
+		for _, session := range []permission.Mode{permission.ModeManual, permission.ModeAuto} {
 			for _, end := range row.ends {
 				t.Run(row.name+"/"+session.String()+"/"+end.name, func(t *testing.T) {
 					m := row.start(t, session)
@@ -184,7 +184,7 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 					if m.gateMode() != row.policy {
 						t.Fatalf("during: the gate answers under %s, want %s", m.gateMode(), row.policy)
 					}
-					want := map[agent.Mode]agent.Decision{agent.ModePlan: agent.Deny, agent.ModeAuto: agent.Allow}[row.policy]
+					want := map[permission.Mode]permission.Decision{permission.ModePlan: permission.Deny, permission.ModeAuto: permission.Allow}[row.policy]
 					if d, why := editVerdict(m); d != want || why != row.policy.String()+" mode" {
 						t.Fatalf("during: an edit is %v (%q) under %s", d, why, row.policy)
 					}
@@ -201,7 +201,7 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 						t.Fatalf("after %s: mode %s, gate %s, want %s", end.name, m.policy.mode, m.gateMode(), session)
 					}
 					d, _ := editVerdict(m)
-					if after := map[agent.Mode]agent.Decision{agent.ModeManual: agent.Ask, agent.ModeAuto: agent.Allow}[session]; d != after {
+					if after := map[permission.Mode]permission.Decision{permission.ModeManual: permission.Ask, permission.ModeAuto: permission.Allow}[session]; d != after {
 						t.Fatalf("after %s: an edit is %v, want %v", end.name, d, after)
 					}
 					if sup := m.wiring.Subagents; sup != nil && sup.ParentMode() != session {
@@ -217,7 +217,7 @@ func TestFlowPolicy_TheSessionModeIsNotRewritten(t *testing.T) {
 // steps write, alone or as a set, and nothing is written for the refusal;
 // a reading, which writes nothing, still starts there.
 func TestFlowPolicy_AReadOnlySessionRefusesAWritingRun(t *testing.T) {
-	for _, session := range []agent.Mode{agent.ModeReadOnly, agent.ModePlan} {
+	for _, session := range []permission.Mode{permission.ModeReadOnly, permission.ModePlan} {
 		for _, line := range []string{"/todo run do-it", "/todo run --all"} {
 			t.Run(session.String()+"/"+line, func(t *testing.T) {
 				m, root := sprintRunModel(t)
@@ -242,9 +242,9 @@ func TestFlowPolicy_AReadOnlySessionRefusesAWritingRun(t *testing.T) {
 		}
 	}
 	m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
-	m.policy.mode = agent.ModeReadOnly
+	m.policy.mode = permission.ModeReadOnly
 	m = submitFlow(t, m, "/todo groom cache-ttl")
-	if !m.todo.groomer.going() || m.gateMode() != agent.ModePlan {
+	if !m.todo.groomer.going() || m.gateMode() != permission.ModePlan {
 		t.Fatalf("a reading should start in read-only, under plan: going=%t gate=%s", m.todo.groomer.going(), m.gateMode())
 	}
 }
@@ -255,14 +255,14 @@ func TestFlowPolicy_AReadOnlySessionRefusesAWritingRun(t *testing.T) {
 func TestFlowPolicy_ARunNeverWidensASessionPutIntoReadOnly(t *testing.T) {
 	m, _ := runModel(t)
 	m = answer(t, submitFlow(t, m, "/todo run do-it"), runPlan)
-	if m.gateMode() != agent.ModeAuto {
+	if m.gateMode() != permission.ModeAuto {
 		t.Fatalf("implement should hold auto, gate %s", m.gateMode())
 	}
-	m.applyMode(agent.ModePlan)
-	if m.gateMode() != agent.ModePlan {
+	m.applyMode(permission.ModePlan)
+	if m.gateMode() != permission.ModePlan {
 		t.Fatalf("the run widened a plan session to %s", m.gateMode())
 	}
-	if d, why := editVerdict(m); d != agent.Deny || why != "plan mode" {
+	if d, why := editVerdict(m); d != permission.Deny || why != "plan mode" {
 		t.Fatalf("an edit is %v (%q)", d, why)
 	}
 	if c := m.cockpitData(false); c.Flow != "" {
@@ -282,7 +282,7 @@ func TestFlowPolicy_TheFrameNamesBothModesWhileTheyDiffer(t *testing.T) {
 	if c := m.cockpitData(false); c.Mode != "manual" || c.Flow != "auto" {
 		t.Fatalf("implement under manual: %q → %q", c.Mode, c.Flow)
 	}
-	m.policy.mode = agent.ModeAuto
+	m.policy.mode = permission.ModeAuto
 	if c := m.cockpitData(false); c.Mode != "auto" || c.Flow != "" {
 		t.Fatalf("implement under auto draws a chip: %q → %q", c.Mode, c.Flow)
 	}

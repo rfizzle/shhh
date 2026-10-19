@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 // A child's write that adds a credential shape is put to the person in every
@@ -16,7 +16,7 @@ import (
 // (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
 func TestRoutedApproval_AChildsWriteWithASecretAsks(t *testing.T) {
 	const key = "sk-ant-api03-" + "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-AbCdEfGh-AA"
-	write := func(mode agent.Mode, content string) *Ask {
+	write := func(mode permission.Mode, content string) *Ask {
 		repo := initTestRepo(t)
 		env := &scriptedEnv{
 			steps: []streamStep{
@@ -44,7 +44,7 @@ func TestRoutedApproval_AChildsWriteWithASecretAsks(t *testing.T) {
 		return nil
 	}
 	secretly := "# dev\n# a\nKEY=" + key + "\n"
-	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto} {
+	for _, mode := range []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto} {
 		ask := write(mode, secretly)
 		if ask == nil {
 			t.Fatalf("%s: a child's write with a secret was not put to the parent", mode)
@@ -56,7 +56,7 @@ func TestRoutedApproval_AChildsWriteWithASecretAsks(t *testing.T) {
 			t.Fatalf("%s: the finding carries the value", mode)
 		}
 	}
-	if ask := write(agent.ModeAcceptEdits, "KEY=none\n"); ask != nil {
+	if ask := write(permission.ModeAcceptEdits, "KEY=none\n"); ask != nil {
 		t.Fatalf("a clean write should run unasked in accept-edits mode, got %+v", ask)
 	}
 }

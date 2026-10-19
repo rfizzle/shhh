@@ -14,9 +14,9 @@ import (
 	"github.com/rfizzle/llm/cache"
 	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -285,9 +285,9 @@ func checkConfigValue(key, value string) error {
 // medium, `accept_edits`) is taken here too, which a membership test against
 // the table's list would refuse.
 var configJudges = map[string]func(string) error{
-	"behavior.default_mode": func(v string) error { _, err := agent.ParseMode(v); return err },
+	"behavior.default_mode": func(v string) error { _, err := permission.ParseMode(v); return err },
 	"behavior.classifier_backend": func(v string) error {
-		_, err := agent.ParseClassifierBackend(v)
+		_, err := permission.ParseClassifierBackend(v)
 		return err
 	},
 	// A percentage, so 1 to 100. Zero or less would quietly mean the
@@ -304,7 +304,7 @@ var configJudges = map[string]func(string) error{
 			if name = strings.TrimSpace(name); name == "" {
 				continue
 			}
-			if _, err := agent.ParseMode(name); err != nil {
+			if _, err := permission.ParseMode(name); err != nil {
 				return err
 			}
 		}
@@ -1143,15 +1143,15 @@ func boolOptions(on, off string) []components.SelectOption {
 // The word is the mode's own name and not the frame's old class word, because
 // this row is a setting: what it states is the value in the file, which is
 // the value the row's own picker writes back. It is spelled through
-// agent.Mode.Word, the frame's own speller, so the row and the rail cannot
+// permission.Mode.Word, the frame's own speller, so the row and the rail cannot
 // come to write one mode two ways.
 func modeShow(raw string) (string, components.FieldTone, string) {
-	mode, err := agent.ParseMode(raw)
+	mode, err := permission.ParseMode(raw)
 	if err != nil {
 		return raw, components.ToneRisk, "not a mode — manual stands until this is fixed"
 	}
 	name := mode.Word()
-	if mode == agent.ModeAuto || mode == agent.ModeAcceptEdits {
+	if mode == permission.ModeAuto || mode == permission.ModeAcceptEdits {
 		return "⏵⏵ " + name, components.ToneSafe, mode.Describe()
 	}
 	return "⏸ " + name, components.ToneOpen, mode.Describe()
@@ -1467,7 +1467,7 @@ var configOptions = map[string]func(config.Config) []components.SelectOption{
 	},
 	"behavior.default_mode": func(config.Config) []components.SelectOption {
 		opts := make([]components.SelectOption, 0, 4)
-		for _, mode := range agent.DefaultCycle() {
+		for _, mode := range permission.DefaultCycle() {
 			opts = append(opts, components.SelectOption{Label: mode.String(), Desc: mode.Describe()})
 		}
 		return opts

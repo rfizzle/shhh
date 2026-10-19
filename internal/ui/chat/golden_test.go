@@ -39,6 +39,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
@@ -637,7 +638,7 @@ func TestGolden_InputFrameLadders(t *testing.T) {
 		// A one-answer question rides above the frame while it holds the
 		// keyboard, so the frame is drawn and not live: the only gated state
 		// whose foot row is on screen with a sentence still in the box.
-		gm := questionModel(t, agent.ModeManual)
+		gm := questionModel(t, permission.ModeManual)
 		resized, _ := gm.Update(tea.WindowSizeMsg{Width: width, Height: 40})
 		gm = resized.(Model)
 		gm.input.SetValue("the one that needs no new service")
@@ -665,7 +666,7 @@ func TestGolden_InputFrameLadders(t *testing.T) {
 func TestGolden_ModeWord(t *testing.T) {
 	captureGolden(t, "mode-word", "the mode segment in every mode", goldenWidths, func(width int) []golden.Panel {
 		var panels []golden.Panel
-		for _, mode := range agent.DefaultCycle() {
+		for _, mode := range permission.DefaultCycle() {
 			m := goldenModel(t, width)
 			m.policy.mode = mode
 			m.invalidateRenderCache()
@@ -685,13 +686,13 @@ func TestGolden_ModeWord(t *testing.T) {
 func TestGolden_FlowPolicyChip(t *testing.T) {
 	captureGolden(t, "flow-policy-chip", "the mode segment while a flow holds a policy", goldenWidths, func(width int) []golden.Panel {
 		building := goldenModel(t, width)
-		building.policy.mode = agent.ModeManual
+		building.policy.mode = permission.ModeManual
 		st := run.Start(todo.Item{Slug: "cache-ttl", Profile: todo.BuiltinCode()}, "amber-lake", 1, run.Options{})
 		st.Stage = run.StageImplement
 		building.todo.runner.state = st
 		building.invalidateRenderCache()
 		reading := goldenModel(t, width)
-		reading.policy.mode = agent.ModeAuto
+		reading.policy.mode = permission.ModeAuto
 		reading.todo.groomer.slug = "cache-ttl"
 		reading.invalidateRenderCache()
 		return []golden.Panel{
@@ -708,15 +709,15 @@ func TestGolden_FlowPolicyChip(t *testing.T) {
 // words.
 func TestGolden_ModePicker(t *testing.T) {
 	captureGolden(t, "mode-picker", "the permission-mode picker", goldenWidths, func(width int) []golden.Panel {
-		open := func(mode agent.Mode) string {
+		open := func(mode permission.Mode) string {
 			m := frameModel(t, width, 40)
 			m.policy.mode = mode
 			opened, _ := m.openModePick()
 			return strings.Join(opened.(Model).pickerLines(), "\n")
 		}
 		return []golden.Panel{
-			{Label: "the five, focused on the mode the session is in", View: open(agent.ModeManual)},
-			{Label: "focused on read-only, the mode that is only a bound", View: open(agent.ModeReadOnly)},
+			{Label: "the five, focused on the mode the session is in", View: open(permission.ModeManual)},
+			{Label: "focused on read-only, the mode that is only a bound", View: open(permission.ModeReadOnly)},
 		}
 	})
 }
@@ -3652,8 +3653,8 @@ func TestGolden_ClassifierStanding(t *testing.T) {
 	captureGolden(t, "classifier-standing", "a classifier's yes the host lists put to the person", goldenWidths, func(width int) []golden.Panel {
 		judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 		m := gatedModel(t, func(context.Context, string, json.RawMessage) (string, error) { return "", nil }, previews)
-		m.classifier.judge = agent.NewClassifier(meter.New(nil).For(judge, spend.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
-		m.policy.mode = agent.ModeAuto
+		m.classifier.judge = permission.NewClassifier(meter.New(nil).For(judge, spend.SourceClassifier), permission.ClassifierConfig{Model: "judge"})
+		m.policy.mode = permission.ModeAuto
 		m.width, m.height = width, 40
 		m.syncInputWidth()
 		updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{fetchCall("call_1", "https://bad.test/release-notes")}})

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -158,13 +158,13 @@ func slotWaitDetail(running int) string {
 // Any command in the line counts, by the leading-words reading the deny list
 // makes of it, so `cd api && go test ./...` is the test run it is.
 func (s *Supervisor) isCheck(command string) bool {
-	if agent.DenylistMatches(HeavyCommands, command) {
+	if permission.DenylistMatches(HeavyCommands, command) {
 		return true
 	}
 	if s.opts.CheckCommands == nil {
 		return false
 	}
-	return agent.DenylistMatches(s.opts.CheckCommands(), command)
+	return permission.DenylistMatches(s.opts.CheckCommands(), command)
 }
 
 // takeCheckSlot is the one place a child takes a check slot: its lane reads

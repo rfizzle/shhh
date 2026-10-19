@@ -9,9 +9,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -34,7 +34,7 @@ func (p *verdictProvider) StreamCompletion(ctx context.Context, msgs []llm.Messa
 	ch <- llm.StreamEvent{
 		ToolCalls: []llm.ToolCall{{
 			ID:        "d1",
-			Name:      agent.DecisionToolName,
+			Name:      permission.DecisionToolName,
 			Arguments: `{"decision":"` + p.decision + `","reason":"` + p.reason + `"}`,
 		}},
 		Usage: &llm.Usage{PromptTokens: 100, CompletionTokens: 10},
@@ -56,9 +56,9 @@ func classifierModel(t *testing.T, ran *[]string, p llm.Provider) Model {
 	ledger := meter.New(nil)
 	m := execModel(t, ran)
 	m.wiring.Ledger = ledger
-	m.classifier.judge = agent.NewClassifier(ledger.For(p, spend.SourceClassifier),
-		agent.ClassifierConfig{Model: "judge"})
-	m.policy.mode = agent.ModeAuto
+	m.classifier.judge = permission.NewClassifier(ledger.For(p, spend.SourceClassifier),
+		permission.ClassifierConfig{Model: "judge"})
+	m.policy.mode = permission.ModeAuto
 	return m
 }
 
@@ -322,7 +322,7 @@ func TestClassifierFlow_ADenyListRefusalIsNotAJudgement(t *testing.T) {
 		t.Fatal("the deny list answers before the classifier is paid to think")
 	}
 	row := m.transcript[len(m.transcript)-1]
-	if row.denyRule != agent.DenyReasonDenylist {
+	if row.denyRule != permission.DenyReasonDenylist {
 		t.Fatalf("a deny-list refusal names its own rule, got %q", row.denyRule)
 	}
 	if row.denyWhy != "" {
@@ -350,9 +350,9 @@ func classifierDownRound(t *testing.T, width int) Model {
 		return "", 0
 	})
 	m.wiring.Ledger = ledger
-	m.classifier.judge = agent.NewClassifier(ledger.For(&verdictProvider{err: errors.New("api down")}, spend.SourceClassifier),
-		agent.ClassifierConfig{Model: "judge"})
-	m.policy.mode = agent.ModeAuto
+	m.classifier.judge = permission.NewClassifier(ledger.For(&verdictProvider{err: errors.New("api down")}, spend.SourceClassifier),
+		permission.ClassifierConfig{Model: "judge"})
+	m.policy.mode = permission.ModeAuto
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 48})
 	m = updated.(Model)
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{

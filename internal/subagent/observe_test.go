@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -438,7 +439,7 @@ func supervisorRecordingRows(t *testing.T, env *scriptedEnv, rows *rowRecorder, 
 		Record: func(Spec, string) Recorder { return rows.open() },
 	}
 	if judge != nil {
-		opts.Classifier = agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"})
+		opts.Classifier = permission.NewClassifier(judge, permission.ClassifierConfig{Model: "judge"})
 	}
 	sup := New(t.Context(), opts)
 	t.Cleanup(sup.Close)
@@ -519,7 +520,7 @@ func TestARetriedChildsClassifierSpendIsCountedOnce(t *testing.T) {
 	}
 	rows := &rowRecorder{}
 	sup := supervisorRecordingRows(t, env, rows, &judgeSpending{prompt: 600, completion: 40})
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
 	waitState(t, sup, "researcher-1", StateFailed)
@@ -553,7 +554,7 @@ type judgeSpending struct{ prompt, completion int }
 func (p *judgeSpending) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	ch := make(chan llm.StreamEvent, 1)
 	ch <- llm.StreamEvent{
-		ToolCalls: []llm.ToolCall{{ID: "d1", Name: agent.DecisionToolName, Arguments: `{"decision":"allow","reason":"runs the requested tests"}`}},
+		ToolCalls: []llm.ToolCall{{ID: "d1", Name: permission.DecisionToolName, Arguments: `{"decision":"allow","reason":"runs the requested tests"}`}},
 		Usage:     &llm.Usage{PromptTokens: p.prompt, CompletionTokens: p.completion},
 		Done:      true,
 	}

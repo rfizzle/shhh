@@ -11,7 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -186,7 +186,7 @@ func TestModePick_BareModeOpensPickerAndApplies(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	if m.policy.mode != agent.ModeAcceptEdits {
+	if m.policy.mode != permission.ModeAcceptEdits {
 		t.Fatalf("expected accept-edits, got %v", m.policy.mode)
 	}
 	last := m.transcript[len(m.transcript)-1]
@@ -1339,7 +1339,7 @@ func TestModePick_OpensAsAListOfAnswers(t *testing.T) {
 	if m.picker.card != nil {
 		t.Fatal("a digit should have taken an answer outright")
 	}
-	if want := agent.DefaultCycle()[1]; m.policy.mode != want {
+	if want := permission.DefaultCycle()[1]; m.policy.mode != want {
 		t.Fatalf("the digit should have taken %s, mode is %s", want, m.policy.mode)
 	}
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo"
 )
@@ -433,7 +434,7 @@ func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
 		// is a word from the agent package's closed set or nothing: a word
 		// that set does not know is the file's text, and the file's text is
 		// what the allowlist keeps out.
-		if backend, err := agent.ParseClassifierBackend(cfg.Behavior.ClassifierBackend); err == nil {
+		if backend, err := permission.ParseClassifierBackend(cfg.Behavior.ClassifierBackend); err == nil {
 			out.ClassifierBackend = backend
 		}
 	}

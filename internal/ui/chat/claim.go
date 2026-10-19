@@ -21,7 +21,7 @@ import (
 // with no before side read as the file stands now. It runs where an approved
 // call is carried out, which every yes reaches — the card, the list's head,
 // a grant taken at the card, the classifier — and which nothing reaches for
-// a claim without one of those (agent.Action.Claims).
+// a claim without one of those (permission.Action.Claims).
 func (m *Model) recordClaims(req *approvalRequest) {
 	if req == nil || len(req.claims) == 0 || m.changes == nil {
 		return

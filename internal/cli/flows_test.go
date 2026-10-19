@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/todo"
 )
@@ -45,8 +46,8 @@ var flowBuilders = []struct {
 	where string
 	drive func(ctx context.Context, p llm.Provider)
 }{
-	{flow.Classifier, "agent.Classifier", func(ctx context.Context, p llm.Provider) {
-		agent.NewClassifier(p, agent.ClassifierConfig{Model: "m"}).Judge(ctx, agent.ClassifierRequest{Tool: "execute_command", Arguments: `{"command":"ls"}`})
+	{flow.Classifier, "permission.Classifier", func(ctx context.Context, p llm.Provider) {
+		permission.NewClassifier(p, permission.ClassifierConfig{Model: "m"}).Judge(ctx, permission.ClassifierRequest{Tool: "execute_command", Arguments: `{"command":"ls"}`})
 	}},
 	{flow.Explanation, "sidejobs.Explainer", func(ctx context.Context, p llm.Provider) {
 		sidejobs.NewExplainer(p, sidejobs.ExplainConfig{Model: "m", Prompt: "explain"}).Explain(ctx, sidejobs.ExplainRequest{Command: "ls"})

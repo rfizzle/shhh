@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/tree"
@@ -85,7 +86,7 @@ type child struct {
 	steered chan struct{}
 
 	mu      sync.Mutex
-	mode    agent.Mode
+	mode    permission.Mode
 	state   State
 	detail  string
 	started time.Time

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -19,48 +19,48 @@ import (
 // nothing else. A name missing from it fails the test below, so a new tool
 // states its tier in the change that registers it rather than taking
 // whatever the classifier happens to say.
-var registeredTiers = map[string]agent.Tier{
-	tools.ExecCommandName:       agent.TierCommand,
-	process.ToolName:            agent.TierCommand, // a start; see the args below
-	web.FetchToolName:           agent.TierCommand,
-	subagent.SpawnToolName:      agent.TierCommand,
-	memory.RememberToolName:     agent.TierCommand,
-	ask.ToolName:                agent.TierCommand,
-	tools.WriteFileName:         agent.TierWrite,
-	tools.EditFileName:          agent.TierWrite,
-	structural.GitWriteToolName: agent.TierWrite,
-	tools.ReadFileName:          agent.TierRead,
-	tools.ListDirectoryName:     agent.TierRead,
-	tools.SearchName:            agent.TierRead,
-	tools.GlobName:              agent.TierRead,
-	tools.QueryName:             agent.TierRead,
-	tools.SqliteName:            agent.TierRead,
-	tools.DocumentSymbolName:    agent.TierRead,
-	"definition":                agent.TierRead,
-	"references":                agent.TierRead,
-	"workspace_symbol":          agent.TierRead,
-	"hover":                     agent.TierRead,
-	"diagnostics":               agent.TierRead,
-	structural.FdToolName:       agent.TierRead,
-	structural.AstGrepToolName:  agent.TierRead,
-	structural.SdToolName:       agent.TierRead,
-	structural.TokeiToolName:    agent.TierRead,
-	structural.GitToolName:      agent.TierRead,
-	web.SearchToolName:          agent.TierRead,
-	"mcp_resource":              agent.TierRead,
-	"quality_gate":              agent.TierRead,
-	"report":                    agent.TierRead,
-	"write_note":                agent.TierRead,
-	"read_note":                 agent.TierRead,
-	"steps":                     agent.TierRead,
-	subagent.ReportToolName:     agent.TierRead,
-	subagent.SteerToolName:      agent.TierRead,
-	subagent.RetryToolName:      agent.TierRead,
-	"evidence":                  agent.TierRead,
-	"skill":                     agent.TierRead,
-	"backlog_proposals":         agent.TierRead,
-	"draft_profile":             agent.TierRead,
-	"draft_toolchain":           agent.TierRead,
+var registeredTiers = map[string]permission.Tier{
+	tools.ExecCommandName:       permission.TierCommand,
+	process.ToolName:            permission.TierCommand, // a start; see the args below
+	web.FetchToolName:           permission.TierCommand,
+	subagent.SpawnToolName:      permission.TierCommand,
+	memory.RememberToolName:     permission.TierCommand,
+	ask.ToolName:                permission.TierCommand,
+	tools.WriteFileName:         permission.TierWrite,
+	tools.EditFileName:          permission.TierWrite,
+	structural.GitWriteToolName: permission.TierWrite,
+	tools.ReadFileName:          permission.TierRead,
+	tools.ListDirectoryName:     permission.TierRead,
+	tools.SearchName:            permission.TierRead,
+	tools.GlobName:              permission.TierRead,
+	tools.QueryName:             permission.TierRead,
+	tools.SqliteName:            permission.TierRead,
+	tools.DocumentSymbolName:    permission.TierRead,
+	"definition":                permission.TierRead,
+	"references":                permission.TierRead,
+	"workspace_symbol":          permission.TierRead,
+	"hover":                     permission.TierRead,
+	"diagnostics":               permission.TierRead,
+	structural.FdToolName:       permission.TierRead,
+	structural.AstGrepToolName:  permission.TierRead,
+	structural.SdToolName:       permission.TierRead,
+	structural.TokeiToolName:    permission.TierRead,
+	structural.GitToolName:      permission.TierRead,
+	web.SearchToolName:          permission.TierRead,
+	"mcp_resource":              permission.TierRead,
+	"quality_gate":              permission.TierRead,
+	"report":                    permission.TierRead,
+	"write_note":                permission.TierRead,
+	"read_note":                 permission.TierRead,
+	"steps":                     permission.TierRead,
+	subagent.ReportToolName:     permission.TierRead,
+	subagent.SteerToolName:      permission.TierRead,
+	subagent.RetryToolName:      permission.TierRead,
+	"evidence":                  permission.TierRead,
+	"skill":                     permission.TierRead,
+	"backlog_proposals":         permission.TierRead,
+	"draft_profile":             permission.TierRead,
+	"draft_toolchain":           permission.TierRead,
 }
 
 // classifierKnown are the registered names whose tier the classifier reads
@@ -100,13 +100,13 @@ func TestClassifyCall_EveryRegisteredNameHasItsTier(t *testing.T) {
 	}
 	surfaces := []struct {
 		name    string
-		answers agent.Answers
+		answers permission.Answers
 	}{
-		{"answers for what it gates", agent.Answers{Has: func(n string) bool { return registeredTiers[n] != agent.TierRead }, Command: process.CommandOf}},
-		{"answers for everything", agent.Answers{Has: func(string) bool { return true }, Command: process.CommandOf}},
-		{"answers for nothing", agent.Answers{Command: process.CommandOf}},
+		{"answers for what it gates", permission.Answers{Has: func(n string) bool { return registeredTiers[n] != permission.TierRead }, Command: process.CommandOf}},
+		{"answers for everything", permission.Answers{Has: func(string) bool { return true }, Command: process.CommandOf}},
+		{"answers for nothing", permission.Answers{Command: process.CommandOf}},
 	}
-	modes := []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModeReadOnly, agent.ModePlan}
+	modes := []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto, permission.ModeReadOnly, permission.ModePlan}
 	for _, name := range names {
 		want, ok := registeredTiers[name]
 		if !ok {
@@ -118,7 +118,7 @@ func TestClassifyCall_EveryRegisteredNameHasItsTier(t *testing.T) {
 			args = `{}`
 		}
 		for _, s := range surfaces {
-			call, err := agent.ClassifyCall(name, json.RawMessage(args), s.answers)
+			call, err := permission.ClassifyCall(name, json.RawMessage(args), s.answers)
 			if err != nil {
 				t.Errorf("%s (%s): %v", name, s.name, err)
 				continue
@@ -128,23 +128,23 @@ func TestClassifyCall_EveryRegisteredNameHasItsTier(t *testing.T) {
 			switch {
 			case classifierKnown[name]:
 			case answered:
-				tier = agent.TierCommand
+				tier = permission.TierCommand
 			default:
-				tier = agent.TierRead
+				tier = permission.TierRead
 			}
 			if call.Tier != tier {
 				t.Errorf("%s (%s): tier %s, want %s", name, s.name, call.Tier, tier)
 			}
-			if call.Gated != (answered && tier != agent.TierRead) {
+			if call.Gated != (answered && tier != permission.TierRead) {
 				t.Errorf("%s (%s): gated %v", name, s.name, call.Gated)
 			}
 			switch call.Tier {
-			case agent.TierWrite:
-				if call.Action.Kind != agent.ActionEdit {
+			case permission.TierWrite:
+				if call.Action.Kind != permission.ActionEdit {
 					t.Errorf("%s (%s): a write answered as %s", name, s.name, call.Action.Kind)
 				}
-			case agent.TierCommand:
-				if call.Action.Kind == agent.ActionEdit {
+			case permission.TierCommand:
+				if call.Action.Kind == permission.ActionEdit {
 					t.Errorf("%s (%s): a command answered as an edit", name, s.name)
 				}
 			}
@@ -152,13 +152,13 @@ func TestClassifyCall_EveryRegisteredNameHasItsTier(t *testing.T) {
 				continue
 			}
 			for _, mode := range modes {
-				decision, reason := agent.ModePolicy{Mode: mode}.Decide(call.Action)
+				decision, reason := permission.ModePolicy{Mode: mode}.Decide(call.Action)
 				switch {
-				case mode.ReadOnly() && decision != agent.Deny:
+				case mode.ReadOnly() && decision != permission.Deny:
 					t.Errorf("%s in %s: %v (%s), want refused", name, mode, decision, reason)
-				case call.Tier == agent.TierWrite && mode == agent.ModeManual && decision != agent.Ask:
+				case call.Tier == permission.TierWrite && mode == permission.ModeManual && decision != permission.Ask:
 					t.Errorf("%s in manual: %v (%s), want asked", name, decision, reason)
-				case call.Tier == agent.TierCommand && mode == agent.ModeAcceptEdits && decision == agent.Allow:
+				case call.Tier == permission.TierCommand && mode == permission.ModeAcceptEdits && decision == permission.Allow:
 					t.Errorf("%s in accept-edits: allowed (%s), want asked", name, reason)
 				}
 			}

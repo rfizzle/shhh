@@ -19,7 +19,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -534,7 +534,7 @@ func (m Model) modeChord() (tea.Model, tea.Cmd, bool) {
 	if m.attachedTo != "" {
 		return answered(m.cycleAttachedMode())
 	}
-	m.applyMode(agent.NextMode(m.policy.cycle, m.policy.mode))
+	m.applyMode(permission.NextMode(m.policy.cycle, m.policy.mode))
 	return m, nil, true
 }
 

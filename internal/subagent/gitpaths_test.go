@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -16,7 +16,7 @@ import (
 // session's one sentence, in every mode and without a card: nothing is put to
 // the parent and nothing is written.
 func TestChildWriteToAGitProgramPathIsRefusedByRule(t *testing.T) {
-	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto} {
+	for _, mode := range []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto} {
 		repo := initTestRepo(t)
 		env := &scriptedEnv{
 			steps: []streamStep{

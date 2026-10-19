@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/rpc"
 )
 
 // inboundProgram is a session under the real program with its listener's
 // channel in the test's hand: a line put on it arrives the way the host's
 // socket delivers one, on a goroutine of its own.
-func inboundProgram(t *testing.T, mode agent.Mode, p *programProvider) (*program, chan<- InboundLine) {
+func inboundProgram(t *testing.T, mode permission.Mode, p *programProvider) (*program, chan<- InboundLine) {
 	t.Helper()
 	lines := make(chan InboundLine, 1)
 	m := New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{Mode: mode}).WithInbound(Inbound{Lines: lines})
@@ -32,7 +32,7 @@ func sendOver(t *testing.T, lines chan<- InboundLine, from, text string) <-chan 
 // the session's own voice, and its answer reaches the frame.
 func TestProgram_ALineFromAnotherSessionStartsATurn(t *testing.T) {
 	p := &programProvider{turns: []programTurn{{text: "rebased onto master"}}}
-	tm, lines := inboundProgram(t, agent.ModeManual, p)
+	tm, lines := inboundProgram(t, permission.ModeManual, p)
 
 	taken := sendOver(t, lines, "2026-09-23 10:41:07", "master moved: rebase onto it")
 	waitForText(t, tm, "from session 2026-09-23 10:41:07")
@@ -63,7 +63,7 @@ func TestProgram_ALineFromAnotherSessionStartsATurn(t *testing.T) {
 // is what passes it to the turn.
 func TestProgram_AHeldLineIsPassedOnFromItsCard(t *testing.T) {
 	p := &programProvider{turns: []programTurn{{text: "rebased onto master"}}}
-	tm, lines := inboundProgram(t, agent.ModeAuto, p)
+	tm, lines := inboundProgram(t, permission.ModeAuto, p)
 
 	sendOver(t, lines, "2026-09-23 10:41:07", "master moved: rebase onto it")
 	waitForText(t, tm, "a line from session 2026-09-23 10:41:07")

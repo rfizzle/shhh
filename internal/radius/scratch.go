@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hostgit"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/safety"
 )
 
@@ -63,7 +63,7 @@ func ScratchDelete(command string, where Where) bool {
 	for _, line := range strings.Split(command, "\n") {
 		for _, cmd := range safety.Commands(line) {
 			if ws := safety.Check(cmd); len(ws) == 0 || !ws[0].Deletes {
-				if !agent.ReadOnlyAllowed(cmd, nil) {
+				if !permission.ReadOnlyAllowed(cmd, nil) {
 					return false
 				}
 				continue

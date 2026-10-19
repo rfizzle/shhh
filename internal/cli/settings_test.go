@@ -13,6 +13,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -26,7 +27,7 @@ func TestSessionSettings_FieldByField(t *testing.T) {
 	cfg.Sandbox.Profile = "workspace-netless"
 
 	got := sessionSettings(cfg, runSettings{
-		mode: agent.ModeAcceptEdits.String(), effort: effort.Low, rounds: 40,
+		mode: permission.ModeAcceptEdits.String(), effort: effort.Low, rounds: 40,
 		checkIn: 20,
 		sandbox: "workspace-netless", model: "session-model", summary: true, classifier: true,
 	})

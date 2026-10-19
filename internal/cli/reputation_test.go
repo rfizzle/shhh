@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -28,7 +28,7 @@ func (v verdictJudge) Name() string { return "judge" }
 func (v verdictJudge) StreamCompletion(context.Context, []llm.Message, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 	*v.calls++
 	ch := make(chan llm.StreamEvent, 1)
-	ch <- llm.StreamEvent{Done: true, ToolCalls: []llm.ToolCall{{ID: "d", Name: agent.DecisionToolName,
+	ch <- llm.StreamEvent{Done: true, ToolCalls: []llm.ToolCall{{ID: "d", Name: permission.DecisionToolName,
 		Arguments: `{"decision":"` + v.decision + `","reason":"reads a page"}`}}}
 	close(ch)
 	return ch, nil
@@ -39,35 +39,35 @@ func (v verdictJudge) StreamCompletion(context.Context, []llm.Message, llm.Compl
 // whose yes a warned host turns into the refusal a run with nobody to ask
 // gives.
 func TestAutoJudgeReadsTheHostBeforeTheClassifier(t *testing.T) {
-	fetch := func(host string, r web.Reading) agent.Action {
-		return agent.Action{Kind: agent.ActionFetch, Host: host, Reading: r}
+	fetch := func(host string, r web.Reading) permission.Action {
+		return permission.Action{Kind: permission.ActionFetch, Host: host, Reading: r}
 	}
 	known := web.Reading{Standing: web.StandingKnown, Source: web.BuiltinHosts}
 	listed := web.Reading{Standing: web.StandingListed, Source: "urlhaus"}
 	for _, c := range []struct {
 		name     string
-		action   agent.Action
-		want     agent.Decision
+		action   permission.Action
+		want     permission.Decision
 		code     string
 		asked    bool
 		allow    []string
 		deny     []string
 		decision string
 	}{
-		{name: "known", action: fetch("go.dev", known), want: agent.Allow, code: observe.ReasonHostKnown},
-		{name: "listed, the classifier said yes", action: fetch("bad.test", listed), want: agent.Deny,
+		{name: "known", action: fetch("go.dev", known), want: permission.Allow, code: observe.ReasonHostKnown},
+		{name: "listed, the classifier said yes", action: fetch("bad.test", listed), want: permission.Deny,
 			code: observe.ReasonHostListed, asked: true, decision: "allow"},
 		{name: "unknown, the classifier said yes", action: fetch("nowhere.test", web.Reading{Standing: web.StandingUnknown}),
-			want: agent.Allow, code: observe.ReasonClassifier, asked: true, decision: "allow"},
+			want: permission.Allow, code: observe.ReasonClassifier, asked: true, decision: "allow"},
 		{name: "the allow list over listed", action: fetch("bad.test", listed), allow: []string{"bad.test"},
-			want: agent.Allow, code: observe.ReasonSessionScope},
+			want: permission.Allow, code: observe.ReasonSessionScope},
 		{name: "the deny list over known", action: fetch("go.dev", known), deny: []string{"go.dev"},
-			want: agent.Deny, code: observe.ReasonDenylist},
+			want: permission.Deny, code: observe.ReasonDenylist},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			calls := 0
 			j := &autoJudge{ctx: t.Context(), allowHosts: c.allow, denyHosts: c.deny,
-				classifier: agent.NewClassifier(verdictJudge{decision: c.decision, calls: &calls}, agent.ClassifierConfig{Model: "m"})}
+				classifier: permission.NewClassifier(verdictJudge{decision: c.decision, calls: &calls}, permission.ClassifierConfig{Model: "m"})}
 			got, _, code := j.decide(llm.ToolCall{Name: web.FetchToolName, Arguments: `{"url":"https://h/"}`}, c.action)
 			if got != c.want || code != c.code {
 				t.Fatalf("decide = %v %q, want %v %q", got, code, c.want, c.code)

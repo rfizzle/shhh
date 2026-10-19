@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/receipt"
@@ -882,7 +883,7 @@ func TestSteerToolNeedsNoApproval(t *testing.T) {
 			return GatedPreview{}, nil
 		},
 	})
-	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
+	for _, mode := range []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto, permission.ModePlan} {
 		m.policy.mode = mode
 		steer := llm.ToolCall{Name: subagent.SteerToolName,
 			Arguments: `{"name":"writer-1","message":"read the exporter instead"}`}

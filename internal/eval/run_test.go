@@ -11,7 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 // fakeShhh is a script standing in for the binary under measurement: it
@@ -444,7 +444,7 @@ func decision(verdict string) llm.StreamEvent {
 	return llm.StreamEvent{
 		ToolCalls: []llm.ToolCall{{
 			ID:        "d1",
-			Name:      agent.DecisionToolName,
+			Name:      permission.DecisionToolName,
 			Arguments: `{"decision":"` + verdict + `","reason":"because"}`,
 		}},
 		Usage: &llm.Usage{PromptTokens: 400, CompletionTokens: 30},

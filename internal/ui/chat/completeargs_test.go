@@ -7,8 +7,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -118,7 +118,7 @@ func TestArgCompletion_UnavailableCommandOffersNothing(t *testing.T) {
 
 func TestArgCompletion_ModeCycle(t *testing.T) {
 	m := readyModel(t)
-	m.policy.cycle = []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto}
+	m.policy.cycle = []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto}
 	m = typeChars(t, m, "/permissions a")
 
 	// The a-prefixed modes, and the a-prefixed subcommand beside them: the

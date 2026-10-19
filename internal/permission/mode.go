@@ -1,4 +1,4 @@
-package agent
+package permission
 
 // Permission modes: a session-level state machine that decides how
 // approval-gated tool calls are handled. Read-only tools never reach this

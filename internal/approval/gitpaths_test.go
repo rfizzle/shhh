@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -156,7 +156,7 @@ func TestApprovalRouter_GitProgramPathsAreRefused(t *testing.T) {
 					t.Errorf("%s: refused = %v, want %v", c.path, refused, c.refuse)
 					continue
 				}
-				if refused && (got.Result != tools.GitProgramPathResult || got.Reason != agent.DenyReasonGitPath) {
+				if refused && (got.Result != tools.GitProgramPathResult || got.Reason != permission.DenyReasonGitPath) {
 					t.Errorf("%s: refusal = %+v", c.path, got)
 				}
 			}
@@ -220,6 +220,6 @@ func realDir(t *testing.T) string {
 
 func writeCall(path string) Call {
 	args, _ := json.Marshal(map[string]string{"path": path, "content": "x"})
-	c, _ := agent.ClassifyCall(tools.WriteFileName, args, agent.Answers{Has: func(string) bool { return true }})
+	c, _ := permission.ClassifyCall(tools.WriteFileName, args, permission.Answers{Has: func(string) bool { return true }})
 	return CallOf(tools.WriteFileName, c)
 }

@@ -16,6 +16,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -391,7 +392,7 @@ func TestAttachedModeClampedToCeiling(t *testing.T) {
 	// skipped modes are named as disabled.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModeReadOnly {
+	if mode, _ := sup.AgentMode("researcher-1"); mode != permission.ModeReadOnly {
 		t.Fatalf("child mode = %s, want read-only", mode)
 	}
 	if !childTranscriptContains(sup, "researcher-1", "disabled") {
@@ -402,7 +403,7 @@ func TestAttachedModeClampedToCeiling(t *testing.T) {
 	m.input.SetValue("/mode auto")
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModeReadOnly {
+	if mode, _ := sup.AgentMode("researcher-1"); mode != permission.ModeReadOnly {
 		t.Fatalf("over-ceiling /mode must not change the mode, got %s", mode)
 	}
 	if !childTranscriptContains(sup, "researcher-1", "exceeds the orchestrator's ceiling") {

@@ -12,6 +12,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -38,7 +39,7 @@ func askAndAnswer(t *testing.T, m Model, args string, key tea.KeyPressMsg) Model
 // reader — because a card drawn only to be answered by a rule would be the
 // interruption charged for twice.
 func TestQuestionBudget_OnePastTheCapDrawsNoCard(t *testing.T) {
-	m := questionModel(t, agent.ModeManual)
+	m := questionModel(t, permission.ModeManual)
 	for i := 1; i <= ask.PerTurnBudget; i++ {
 		m = askAndAnswer(t, m, questionOf(i), tea.KeyPressMsg{Code: tea.KeyEnter})
 	}
@@ -65,7 +66,7 @@ func TestQuestionBudget_OnePastTheCapDrawsNoCard(t *testing.T) {
 // answering has already cost them the interruption. A refund would make
 // leaving a question cost more than answering it.
 func TestQuestionBudget_TheAskingSpendsItAndNotTheAnswering(t *testing.T) {
-	m := questionModel(t, agent.ModeManual)
+	m := questionModel(t, permission.ModeManual)
 	updated, _ := m.Update(askCall(questionOf(1)))
 	m = updated.(Model)
 	if m.questionsAsked != 1 {
@@ -84,7 +85,7 @@ func TestQuestionBudget_TheAskingSpendsItAndNotTheAnswering(t *testing.T) {
 // decision the reader never made, and they are owed the reason their session
 // stopped bringing them questions.
 func TestQuestionBudget_TheRowNamesTheRuleAndNotADecision(t *testing.T) {
-	m := questionModel(t, agent.ModeManual)
+	m := questionModel(t, permission.ModeManual)
 	m.questionsAsked = ask.PerTurnBudget
 	updated, _ := m.Update(askCall(questionOf(1)))
 	m = updated.(Model)
@@ -109,7 +110,7 @@ func TestQuestionBudget_TheRowNamesTheRuleAndNotADecision(t *testing.T) {
 // is not that moment: a question outstanding when the next instruction
 // arrives was asked by the turn that asked it.
 func TestQuestionBudget_TheNextTurnOpeningStartsItOver(t *testing.T) {
-	m := questionModel(t, agent.ModeManual)
+	m := questionModel(t, permission.ModeManual)
 	m = askAndAnswer(t, m, questionOf(1), tea.KeyPressMsg{Code: tea.KeyEnter})
 	if m.questionsAsked != 1 {
 		t.Fatalf("questionsAsked = %d after one question", m.questionsAsked)
@@ -129,7 +130,7 @@ func TestQuestionBudget_TheNextTurnOpeningStartsItOver(t *testing.T) {
 // and the sentence rides in the answer rather than in front of it, because
 // the answer is what this result is read for.
 func TestQuestionBudget_TheSameQuestionTwiceIsToldSo(t *testing.T) {
-	m := questionModel(t, agent.ModeManual)
+	m := questionModel(t, permission.ModeManual)
 	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
 	same := `{"question":"Should the migration be reversible?","shape":"confirm"}`
 

@@ -6,12 +6,12 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 func customProfiles() Profiles {
 	p := BuiltinProfiles()
-	p["critic"] = Profile{Name: "critic", Description: "reads a diff and judges it", Mode: agent.ModePlan, HasMode: true, MaxTokens: 300000, MaxRounds: 7}
+	p["critic"] = Profile{Name: "critic", Description: "reads a diff and judges it", Mode: permission.ModePlan, HasMode: true, MaxTokens: 300000, MaxRounds: 7}
 	p["fixer"] = Profile{Name: "fixer", Writes: true}
 	return p
 }
@@ -30,7 +30,7 @@ func TestProfilesParseAndNames(t *testing.T) {
 	if _, err := BuiltinProfiles().Parse("critic"); err == nil {
 		t.Fatal("a custom role is unknown to the built-in set")
 	}
-	if prof, err := BuiltinProfiles().Parse("reviewer"); err != nil || !prof.HasMode || prof.Mode != agent.ModeReadOnly || prof.Writes || prof.MaxTokens < DefaultMaxTokens || prof.MaxRounds <= 0 {
+	if prof, err := BuiltinProfiles().Parse("reviewer"); err != nil || !prof.HasMode || prof.Mode != permission.ModeReadOnly || prof.Writes || prof.MaxTokens < DefaultMaxTokens || prof.MaxRounds <= 0 {
 		t.Fatalf("the reviewer is built in, bounded, in read-only mode: %+v %v", prof, err)
 	}
 }
@@ -97,20 +97,20 @@ func TestProfileModeIsClampedToParent(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{{text: "done"}}}
 	sup := New(t.Context(), Options{Root: t.TempDir(), NewEnv: env.factory(), Profiles: customProfiles()})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 
 	execTool(t, sup, SpawnToolName, `{"role":"critic","task":"judge it","name":"r"}`)
-	if mode, ok := sup.AgentMode("r"); !ok || mode != agent.ModePlan {
+	if mode, ok := sup.AgentMode("r"); !ok || mode != permission.ModePlan {
 		t.Fatalf("a profile's mode is the child's starting mode: %v %v", mode, ok)
 	}
 
 	p := customProfiles()
-	p["loose"] = Profile{Name: "loose", Mode: agent.ModeAuto, HasMode: true}
+	p["loose"] = Profile{Name: "loose", Mode: permission.ModeAuto, HasMode: true}
 	sup2 := New(t.Context(), Options{Root: t.TempDir(), NewEnv: env.factory(), Profiles: p})
 	t.Cleanup(sup2.Close)
-	sup2.SetParentMode(agent.ModeManual)
+	sup2.SetParentMode(permission.ModeManual)
 	execTool(t, sup2, SpawnToolName, `{"role":"loose","task":"try","name":"l"}`)
-	if mode, _ := sup2.AgentMode("l"); mode != agent.ModeManual {
+	if mode, _ := sup2.AgentMode("l"); mode != permission.ModeManual {
 		t.Fatalf("a profile can never start looser than its parent: %v", mode)
 	}
 }
@@ -127,7 +127,7 @@ func TestBuiltinReviewerRefusesAnEditInReadOnlyWords(t *testing.T) {
 		gated: map[string]bool{"edit_file": true},
 	}
 	sup := newTestSupervisor(t, env)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 	execTool(t, sup, SpawnToolName, `{"role":"reviewer","task":"judge it","name":"r"}`)
 	if report := execTool(t, sup, ReportToolName, `{"name":"r"}`); !strings.Contains(report, "task complete") {
 		t.Fatalf("unexpected report: %s", report)
@@ -144,7 +144,7 @@ func TestBuiltinReviewerRefusesAnEditInReadOnlyWords(t *testing.T) {
 			result = m.Content
 		}
 	}
-	if result != agent.ReadOnlyModeResult("", nil) {
+	if result != permission.ReadOnlyModeResult("", nil) {
 		t.Fatalf("the reviewer's edit came back as %q, want read-only mode's refusal", result)
 	}
 }

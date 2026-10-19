@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -18,18 +18,18 @@ func TestShellEdit_TheFirstAskingIsAnsweredAndTheSameLineRuns(t *testing.T) {
 		Runner:    func(context.Context, string) tools.ExecResult { return tools.ExecResult{} },
 	})
 	d, result, _ := m.StandingAnswer(execCall("c1", "sed -i 's/a/b/' main.go"))
-	if d != agent.Deny || !strings.Contains(result, "edit_file") || !strings.Contains(result, "send the same line again") {
+	if d != permission.Deny || !strings.Contains(result, "edit_file") || !strings.Contains(result, "send the same line again") {
 		t.Fatalf("first asking: %v %q, want the redirect", d, result)
 	}
 	// Another call of the same message: the model has read nothing yet.
-	if d, _, _ := m.StandingAnswer(execCall("c1b", "sed -i 's/a/b/' main.go")); d != agent.Deny {
+	if d, _, _ := m.StandingAnswer(execCall("c1b", "sed -i 's/a/b/' main.go")); d != permission.Deny {
 		t.Fatalf("the same line in the same message: %v, want it answered too", d)
 	}
 	m.agent.BeginToolRound("", nil, nil)
-	if d, result, _ := m.StandingAnswer(execCall("c2", "  sed -i 's/a/b/' main.go ")); d == agent.Deny || result != "" {
+	if d, result, _ := m.StandingAnswer(execCall("c2", "  sed -i 's/a/b/' main.go ")); d == permission.Deny || result != "" {
 		t.Fatalf("the same line again: %v %q, want it to run", d, result)
 	}
-	if d, _, _ := m.StandingAnswer(execCall("c3", "sed -i 's/a/c/' main.go")); d != agent.Deny {
+	if d, _, _ := m.StandingAnswer(execCall("c3", "sed -i 's/a/c/' main.go")); d != permission.Deny {
 		t.Fatalf("a different edit: %v, want it answered", d)
 	}
 	if r := m.approval.redirects; r == nil {

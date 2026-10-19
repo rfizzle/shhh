@@ -8,8 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -270,7 +270,7 @@ func TestEdit_RefusesWhatItCannotOpen(t *testing.T) {
 	}
 
 	conversation := m
-	conversation.wiring.Conversation, conversation.start, conversation.policy.mode = true, nil, agent.ModeManual
+	conversation.wiring.Conversation, conversation.start, conversation.policy.mode = true, nil, permission.ModeManual
 	chat := sendText(t, conversation, "/edit loop.go")
 	if chat.state == stateEditor || !strings.Contains(lastNote(chat), "/edit is not part of this session") {
 		t.Errorf("in a conversation: state %d, note %q", chat.state, lastNote(chat))

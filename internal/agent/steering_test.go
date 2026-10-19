@@ -189,17 +189,6 @@ func TestValidatePlaceholders(t *testing.T) {
 	}
 }
 
-// The classifier's instruction is the built-in literal
-// until a file replaces them.
-func TestAuxiliaryPromptOverrides(t *testing.T) {
-	if got := (ClassifierConfig{}).prompt(); got != classifierPrompt {
-		t.Error("an unset classifier instruction must be the built-in one")
-	}
-	if got := (ClassifierConfig{Prompt: "decide"}).prompt(); got != "decide" {
-		t.Errorf("classifier instruction override: %q", got)
-	}
-}
-
 // The cooldown is counted in reading intervals, and the count is a setting.
 func TestSummaryConfig_CooldownIntervals(t *testing.T) {
 	if got := (sidejobs.SummaryConfig{}).CooldownIntervals(); got != sidejobs.DefaultCooldownIntervals {

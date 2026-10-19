@@ -10,14 +10,14 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 )
 
 // scopedModel is a gated session whose working scope is root, with the
 // permission mode already set: the modes are what the scope has to outrank.
-func scopedModel(t *testing.T, root string, mode agent.Mode) Model {
+func scopedModel(t *testing.T, root string, mode permission.Mode) Model {
 	t.Helper()
 	sc, problems := scope.New(root)
 	if sc == nil {
@@ -46,7 +46,7 @@ func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
 	if err := os.MkdirAll(outside, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	m := scopedModel(t, root, agent.ModeAcceptEdits)
+	m := scopedModel(t, root, permission.ModeAcceptEdits)
 
 	// Inside the scope, accept-edits answers for the edit itself.
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("in", filepath.Join(root, "main.go"), "new\n")}})
@@ -54,7 +54,7 @@ func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
 		t.Fatal("accept-edits should not ask about an edit inside the working scope")
 	}
 
-	m = scopedModel(t, root, agent.ModeAcceptEdits)
+	m = scopedModel(t, root, permission.ModeAcceptEdits)
 	updated, _ = m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
@@ -73,7 +73,7 @@ func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
 
 func TestApprovingAnOutOfScopeEditAddsTheDirectory(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = updated.(Model)
 	if !m.approval.scope.any() {
@@ -98,7 +98,7 @@ func TestApprovingAnOutOfScopeEditAddsTheDirectory(t *testing.T) {
 
 func TestDecliningAnOutOfScopeEditGrantsNothing(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
@@ -117,7 +117,7 @@ func TestMaskedPathIsRefusedRatherThanAsked(t *testing.T) {
 	if _, err := os.Stat(ssh); err != nil {
 		t.Skip("no ~/.ssh on this host")
 	}
-	m := scopedModel(t, t.TempDir(), agent.ModeManual)
+	m := scopedModel(t, t.TempDir(), permission.ModeManual)
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("ssh", filepath.Join(ssh, "config"), "new\n")}})
 	m = updated.(Model)
 	if m.state == stateConfirmRun {
@@ -131,7 +131,7 @@ func TestMaskedPathIsRefusedRatherThanAsked(t *testing.T) {
 
 func TestScopeCommandAddsListsAndDrops(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 
 	if out := m.scopeCommand([]string{"/add-dir"}); !strings.Contains(out, root) || !strings.Contains(out, "(none)") {
 		t.Fatalf("bare /add-dir should list the scope, got:\n%s", out)
@@ -161,7 +161,7 @@ func TestScopeCommandAddsListsAndDrops(t *testing.T) {
 // See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 func TestScopeCommandGrantsTheCheckoutToWriters(t *testing.T) {
 	root := t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	out := m.scopeCommand([]string{"/add-dir", root})
 	if !strings.Contains(out, "Granted") || !strings.Contains(out, "to writers") || strings.Contains(out, "Added") {
 		t.Fatalf("/add-dir <root> should say it grants the checkout to writers, got:\n%s", out)
@@ -179,7 +179,7 @@ func TestScopeCommandNamesASensitiveGrant(t *testing.T) {
 	if err != nil {
 		t.Skip("no home directory on this host")
 	}
-	m := scopedModel(t, t.TempDir(), agent.ModeManual)
+	m := scopedModel(t, t.TempDir(), permission.ModeManual)
 	out := m.scopeCommand([]string{"/add-dir", home})
 	if !strings.Contains(out, "sensitive") {
 		t.Fatalf("granting a sensitive directory should say so, got:\n%s", out)
@@ -191,7 +191,7 @@ func TestScopeCommandAddsShhhDirectories(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
-	m := scopedModel(t, t.TempDir(), agent.ModeManual)
+	m := scopedModel(t, t.TempDir(), permission.ModeManual)
 
 	seen := make(map[string]bool)
 	for _, dir := range sandbox.ShhhPaths() {
@@ -214,7 +214,7 @@ func TestScopeCommandAddsShhhDirectories(t *testing.T) {
 
 func TestGrantsAndHelpNameTheScope(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	m.scopeCommand([]string{"/add-dir", outside})
 
 	if out := m.grantStatus(); !strings.Contains(out, "scope") {
@@ -227,7 +227,7 @@ func TestGrantsAndHelpNameTheScope(t *testing.T) {
 
 func TestOutOfScopeDecisionsAreNeverBatched(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	req := &approvalRequest{kind: approvalDiff, path: filepath.Join(outside, "a.toml")}
 	m.approval.scope = m.scopeReachFor(req)
 	if _, ok := m.batchCategory(req); ok {
@@ -254,7 +254,7 @@ func transcriptText(m Model) string {
 // See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 func TestPermissionsNameACheckoutGrantForWriters(t *testing.T) {
 	root := t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	m.scopeCommand([]string{"/add-dir", root})
 
 	grants := m.grantStatus()
@@ -295,7 +295,7 @@ func machineMessagesNaming(m Model, dir string) []llm.Message {
 // See docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach.
 func TestAddDirMidSessionIsAnnouncedToTheModelOnce(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	m.wiring.NewSession = func() SessionStart { return SessionStart{Prompt: "sys"} }
 	m.state = stateInput
 
@@ -321,7 +321,7 @@ func TestAddDirMidSessionIsAnnouncedToTheModelOnce(t *testing.T) {
 // machine steering, the way a /secret change does.
 func TestAddDirWhileWorkingIsQueuedAsMachineSteering(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	m.state = stateStreaming
 
 	m.scopeCommand([]string{"/add-dir", outside})
@@ -335,7 +335,7 @@ func TestAddDirWhileWorkingIsQueuedAsMachineSteering(t *testing.T) {
 // writers.
 func TestScopeGrantsTheModelAlreadyKnowsAreNotAnnounced(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual)
+	m := scopedModel(t, root, permission.ModeManual)
 	m.scopeCommand([]string{"/add-dir", root})
 	updated, _ := m.Update(toolCallsMsg{calls: []llm.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = handover(t, updated.(Model))

@@ -31,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -198,11 +199,11 @@ func parseUnattendedMode(name string) (bool, error) {
 	if trimmed == "" {
 		return false, nil
 	}
-	mode, err := agent.ParseMode(trimmed)
+	mode, err := permission.ParseMode(trimmed)
 	if err != nil {
 		return false, fmt.Errorf("--mode: %w", err)
 	}
-	if mode != agent.ModeAuto {
+	if mode != permission.ModeAuto {
 		return false, fmt.Errorf("--mode %s needs somebody to prompt and there is nobody here: auto is the only mode a run with no terminal takes", mode)
 	}
 	return true, nil
@@ -633,7 +634,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// a reading in the record that nothing here reads.
 	recordedMode := ""
 	if opts.autoMode {
-		recordedMode = agent.ModeAuto.String()
+		recordedMode = permission.ModeAuto.String()
 	}
 	// The item and the stage a driver started this run for, where one did.
 	// They are the run's own facts and not the config's, which is why they
@@ -706,8 +707,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		// tree for them instead would carry a person's scratch files into
 		// every worktree (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
 		sup = buildSupervisor(cmd.Context(), asm, session, recorder, classifier, hooks, nil)
-		sup.SetParentMode(agent.ModeAuto)
-		sup.SetParentGrants(agent.Grants{AllEdits: opts.yes, AllCommands: opts.yes, Commands: opts.allow})
+		sup.SetParentMode(permission.ModeAuto)
+		sup.SetParentGrants(permission.Grants{AllEdits: opts.yes, AllCommands: opts.yes, Commands: opts.allow})
 		sup.SetConversation(a.Messages)
 		defer sup.Close()
 		exec = sup.WrapExecutor("", exec)
@@ -819,7 +820,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		mcpTools:     session.mcpTools,
 		structTools:  session.structural,
 		un:           unattended{sup: sup, judge: judge, at: obs.pos, conversation: conversationReads(session.conversation, rules.DenyHosts)},
-		redirects:    agent.NewRedirects(workingDir(), a.RoundSeq),
+		redirects:    permission.NewRedirects(workingDir(), a.RoundSeq),
 	})
 	// The gated tier is where an unattended run circles: the test command
 	// that fails the same way every round, the edit a policy refuses every

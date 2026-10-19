@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -88,11 +88,11 @@ func TestARefusedCommandIsAnsweredBeforeTheCard(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		refusal string
-		mode    agent.Mode
+		mode    permission.Mode
 	}{
-		{"manual", refusal, agent.ModeManual},
-		{"auto", refusal, agent.ModeAuto},
-		{"no refusal", "", agent.ModeManual},
+		{"manual", refusal, permission.ModeManual},
+		{"auto", refusal, permission.ModeAuto},
+		{"no refusal", "", permission.ModeManual},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			env := &scriptedEnv{
@@ -107,7 +107,7 @@ func TestARefusedCommandIsAnsweredBeforeTheCard(t *testing.T) {
 			sup := New(context.Background(), Options{
 				Root:       t.TempDir(),
 				NewEnv:     env.factory(),
-				Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+				Classifier: permission.NewClassifier(judge, permission.ClassifierConfig{Model: "judge"}),
 				Record: func(Spec, string) Recorder {
 					return Recorder{Observer: observe.Observer{
 						Decision: func(_ observe.Pos, decision, code string) {

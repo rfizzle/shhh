@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -90,7 +90,7 @@ func TestScratchDelete_TheClassifiersYesStandsAndTheRowSaysWhy(t *testing.T) {
 	if len(ran) != 1 || ran[0] != command {
 		t.Fatalf("expected the delete to run, got %v", ran)
 	}
-	want := components.OutcomeBy(components.OutcomeAutoAllowed, agent.ScratchReason)
+	want := components.OutcomeBy(components.OutcomeAutoAllowed, permission.ScratchReason)
 	if got := allowedOnRow(t, m, command); got != want {
 		t.Fatalf("the row should say why no card was drawn: got %q, want %q", got, want)
 	}

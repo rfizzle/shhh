@@ -15,7 +15,7 @@ import (
 	"unicode/utf8"
 
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/markdown"
 )
@@ -633,7 +633,7 @@ func (m Model) renderStatusBar(width int) string {
 }
 
 // modeWord is what a mode segment says, on this session's frame and on an
-// attached child's: the mode's own name (agent.Mode.Word), which is also the
+// attached child's: the mode's own name (permission.Mode.Word), which is also the
 // settings row's. The class is what the mark in front of it carries — `⏵⏵`
 // where work goes through, `⏸` where it does not — so a word for the class
 // would be the mark said twice, and it cost the modes that share a class
@@ -643,14 +643,14 @@ func (m Model) renderStatusBar(width int) string {
 // (docs/interface/surfaces.md#the-input-frame,
 // docs/interface/principles.md#closed-vocabularies,
 // docs/interface/departures.md#the-mode-segment-names-the-mode-not-its-class).
-func modeWord(mode agent.Mode) string { return mode.Word() }
+func modeWord(mode permission.Mode) string { return mode.Word() }
 
 // modeMarked is a mode as the cockpit takes it: its word, and the class its
 // mark and tone come from — the modes that let work through, and the ones
 // that ask first or write nothing.
-func modeMarked(mode agent.Mode) components.Cockpit {
+func modeMarked(mode permission.Mode) components.Cockpit {
 	c := components.Cockpit{Mode: modeWord(mode), ModeKind: components.CockpitGated}
-	if mode == agent.ModeAcceptEdits || mode == agent.ModeAuto {
+	if mode == permission.ModeAcceptEdits || mode == permission.ModeAuto {
 		c.ModeKind = components.CockpitPermissive
 	}
 	return c

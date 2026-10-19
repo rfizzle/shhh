@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -42,7 +43,7 @@ import (
 // git's writing half are held always.
 // See docs/capabilities/approvals-and-safety.md#one-classifier-names-a-calls-tier.
 func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools *mcp.Toolset, sup *subagent.Supervisor) agent.ApprovalGate {
-	holds := agent.Answers{Has: func(name string) bool {
+	holds := permission.Answers{Has: func(name string) bool {
 		switch {
 		case webTools != nil && name == web.FetchToolName:
 			return true
@@ -80,7 +81,7 @@ func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools
 		holds.Command = process.CommandOf
 	}
 	return func(tc llm.ToolCall) bool {
-		call, _ := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), holds)
+		call, _ := permission.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), holds)
 		return call.Gated
 	}
 }
@@ -96,8 +97,8 @@ func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools
 // configuration would drift a timeout or a retry apart without anything
 // failing.
 // See docs/capabilities/configuration.md#the-classifier-is-configured-once.
-func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Classifier {
-	return agent.NewClassifier(ledger.For(env.prov, spend.SourceClassifier), agent.ClassifierConfig{
+func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *permission.Classifier {
+	return permission.NewClassifier(ledger.For(env.prov, spend.SourceClassifier), permission.ClassifierConfig{
 		ModelAt:   gateModel(cfg, env),
 		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
 		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
@@ -164,7 +165,7 @@ func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *s
 // would judge the twentieth call on the first round's context.
 type autoJudge struct {
 	ctx        context.Context
-	classifier *agent.Classifier
+	classifier *permission.Classifier
 	recent     func() []llm.Message
 	cwd        string
 	// allowHosts and denyHosts are the person's own host lists
@@ -180,7 +181,7 @@ type autoJudge struct {
 // newAutoJudge is auto mode's judge for an unattended run: the classifier,
 // the run's own conversation as it stands at each call, the directory it
 // runs in, and the person's two host lists from the configuration.
-func newAutoJudge(ctx context.Context, cfg config.Config, classifier *agent.Classifier, recent func() []llm.Message, cwd string) *autoJudge {
+func newAutoJudge(ctx context.Context, cfg config.Config, classifier *permission.Classifier, recent func() []llm.Message, cwd string) *autoJudge {
 	return &autoJudge{ctx: ctx, classifier: classifier, recent: recent, cwd: cwd,
 		allowHosts: cfg.Web.AllowHosts, denyHosts: cfg.Web.DenyHosts}
 }
@@ -191,20 +192,20 @@ func newAutoJudge(ctx context.Context, cfg config.Config, classifier *agent.Clas
 //
 // A nil judge is a run that was not put in auto mode, and its answer is the
 // flat refusal such a run has always given.
-func (j *autoJudge) decide(tc llm.ToolCall, action agent.Action) (agent.Decision, string, string) {
+func (j *autoJudge) decide(tc llm.ToolCall, action permission.Action) (permission.Decision, string, string) {
 	decision, why, code, _ := j.judge(tc, action)
 	return decision, why, code
 }
 
 // judge is decide with how long the classifier took, zero where it was not
 // asked, for the row the verdict is recorded under.
-func (j *autoJudge) judge(tc llm.ToolCall, action agent.Action) (agent.Decision, string, string, time.Duration) {
+func (j *autoJudge) judge(tc llm.ToolCall, action permission.Action) (permission.Decision, string, string, time.Duration) {
 	if j == nil {
-		return agent.Deny, "", observe.ReasonHeadlessDefault, 0
+		return permission.Deny, "", observe.ReasonHeadlessDefault, 0
 	}
-	if action.Kind == agent.ActionFetch {
-		policy := agent.ModePolicy{Mode: agent.ModeAuto, AllowHosts: j.allowHosts, DenyHosts: j.denyHosts}
-		if decision, why := policy.Decide(action); decision != agent.Ask {
+	if action.Kind == permission.ActionFetch {
+		policy := permission.ModePolicy{Mode: permission.ModeAuto, AllowHosts: j.allowHosts, DenyHosts: j.denyHosts}
+		if decision, why := policy.Decide(action); decision != permission.Ask {
 			return decision, why, observe.ReasonCode(why), 0
 		}
 	}
@@ -212,7 +213,7 @@ func (j *autoJudge) judge(tc llm.ToolCall, action agent.Action) (agent.Decision,
 	if j.recent != nil {
 		recent = j.recent()
 	}
-	v := j.classifier.Judge(j.ctx, agent.ClassifierRequest{
+	v := j.classifier.Judge(j.ctx, permission.ClassifierRequest{
 		Tool: tc.Name, Arguments: tc.Arguments, CWD: j.cwd, Recent: recent, Reading: action.Reading,
 		Claims: action.Claims,
 	})
@@ -220,7 +221,7 @@ func (j *autoJudge) judge(tc llm.ToolCall, action agent.Action) (agent.Decision,
 	if v.Failed {
 		code = observe.ReasonClassifierFailed
 	}
-	decision, reason := agent.ResolveUnattended(action, v)
+	decision, reason := permission.ResolveUnattended(action, v)
 	if host := observe.HostReason(web.StandingOf(reason)); host != "" && !v.Failed {
 		code = host
 	}
@@ -245,7 +246,7 @@ type unattended struct {
 	// has no reason to refuse the same read with nobody watching, and --yes
 	// is a yes to acts a conversation cannot make.
 	// See docs/capabilities/chat.md#a-conversation-has-one-mode.
-	conversation *agent.ModePolicy
+	conversation *permission.ModePolicy
 	// at is where the run has got to, for the line a refusal leaves in the
 	// diagnostic log. It is a function and not a position because the
 	// approver is built once and asked on every round, and it is here rather
@@ -267,9 +268,9 @@ func (u unattended) pos() observe.Pos {
 // conversationReads is the policy an unattended conversation answers a fetch
 // with, and nil for a run that is not one — a coding run's fetch is answered
 // by its flags and its judge as it always was.
-func conversationReads(conversation bool, denyHosts []string) *agent.ModePolicy {
+func conversationReads(conversation bool, denyHosts []string) *permission.ModePolicy {
 	if !conversation {
 		return nil
 	}
-	return &agent.ModePolicy{Conversation: true, DenyHosts: denyHosts}
+	return &permission.ModePolicy{Conversation: true, DenyHosts: denyHosts}
 }

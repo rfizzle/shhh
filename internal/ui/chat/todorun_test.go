@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -65,7 +66,7 @@ func runModelAt(t *testing.T, root string) (Model, string) {
 	}
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
 	m.loadTodos()
 	return m, root
@@ -87,7 +88,7 @@ func TestTodoRun_StagesInOrder(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageResearch || m.gateMode() != agent.ModePlan || m.policy.mode != agent.ModeManual || !m.working() {
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageResearch || m.gateMode() != permission.ModePlan || m.policy.mode != permission.ModeManual || !m.working() {
 		t.Fatalf("research should be in flight in plan mode: run=%+v mode=%s", m.todo.runner.state, m.policy.mode)
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusInProgress {
@@ -101,7 +102,7 @@ func TestTodoRun_StagesInOrder(t *testing.T) {
 	}
 
 	m = answer(t, m, runPlan)
-	if m.todo.runner.state.Stage != run.StageImplement || m.gateMode() != agent.ModeAuto || m.policy.mode != agent.ModeManual || !m.working() || m.state == statePlanApprove {
+	if m.todo.runner.state.Stage != run.StageImplement || m.gateMode() != permission.ModeAuto || m.policy.mode != permission.ModeManual || !m.working() || m.state == statePlanApprove {
 		t.Fatalf("implement should follow research in auto mode, no plan card: stage=%s mode=%s state=%d", m.todo.runner.state.Stage, m.policy.mode, m.state)
 	}
 	if m.todo.runner.state.Grade != "S" {
@@ -127,7 +128,7 @@ func TestTodoRun_StagesInOrder(t *testing.T) {
 	}
 	updated, _ = m.Update(todoCommitMsg{slug: "do-it", files: []string{"a.go"}})
 	m = updated.(Model)
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatalf("done should end the run and restore the mode: run=%v mode=%s", m.todo.runner.state, m.policy.mode)
 	}
 	s := todo.Load(todo.BuiltinCode(), root)
@@ -149,7 +150,7 @@ func TestTodoRun_BlocksWithEvidenceAndKeepsTheTree(t *testing.T) {
 	updated, _ := m.submitInput()
 	m = updated.(Model)
 	m = answer(t, m, "## Plan: x\n\n1. a\n\nsize: S\nquestions:\n- keep the flag?\n")
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatalf("an open question should block and restore the mode: %v %s", m.todo.runner.state, m.policy.mode)
 	}
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it")
@@ -177,7 +178,7 @@ func TestTodoRun_StopReopensTheItem(t *testing.T) {
 	updated, _ = m.submitInput()
 	m = updated.(Model)
 
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatal("run should end and mode restore")
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusOpen {
@@ -202,7 +203,7 @@ func TestTodoRun_ANewSessionKeepsTheRunsCheckpoint(t *testing.T) {
 
 	notes, _ := m.startNewSession()
 
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatal("the run should be let go of and the mode restored")
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusInProgress {
@@ -547,7 +548,7 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 	m = press(t, m, "down")
 	m.todo.runner.pause.Note.SetValue("keep it")
 	m = press(t, m, "enter")
-	if m.state == stateTodoPause || m.todo.runner.state.Stage != run.StageResearch || !m.working() || m.policy.mode != agent.ModeManual && m.policy.mode != agent.ModePlan {
+	if m.state == stateTodoPause || m.todo.runner.state.Stage != run.StageResearch || !m.working() || m.policy.mode != permission.ModeManual && m.policy.mode != permission.ModePlan {
 		t.Fatalf("replan should send research again: stage=%s state=%d", m.todo.runner.state.Stage, m.state)
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); !strings.Contains(it.Body, "## Answers\nkeep it") {
@@ -562,7 +563,7 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 	}
 	m = press(t, m, "enter")
 	// A large item is divided before it is built; the split reads only.
-	if m.todo.runner.state.Stage != run.StageSplit || !m.working() || m.gateMode() != agent.ModePlan || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state.Stage != run.StageSplit || !m.working() || m.gateMode() != permission.ModePlan || m.policy.mode != permission.ModeManual {
 		t.Fatalf("go ahead on L should split in plan mode: stage=%s mode=%s", m.todo.runner.state.Stage, m.policy.mode)
 	}
 
@@ -865,13 +866,13 @@ func TestTodoRun_ContinuesFromCheckpointAndDisplacementPauses(t *testing.T) {
 	// A fresh session continues from the checkpoint.
 	m2 := frameModel(t, 130, 40)
 	m2.changes = changeset.New(1 << 20)
-	m2.policy.mode = agent.ModeManual
+	m2.policy.mode = permission.ModeManual
 	m2.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
 	m2.loadTodos()
 	m2.input.SetValue("/todo run do-it")
 	updated, _ = m2.submitInput()
 	m2 = updated.(Model)
-	if m2.todo.runner.state == nil || m2.todo.runner.state.Stage != run.StageImplement || !m2.working() || m2.gateMode() != agent.ModeAuto || m2.policy.mode != agent.ModeManual {
+	if m2.todo.runner.state == nil || m2.todo.runner.state.Stage != run.StageImplement || !m2.working() || m2.gateMode() != permission.ModeAuto || m2.policy.mode != permission.ModeManual {
 		t.Fatalf("should continue at implement in auto: %+v", m2.todo.runner.state)
 	}
 	if len(m2.todo.runner.state.Steps) != 1 {
@@ -1078,7 +1079,7 @@ func TestTodoRun_LargeItemLanesLandAndIntegrate(t *testing.T) {
 	if st, ok := sup.Get("tw1-alpha"); !ok || st.Role != subagent.RoleWriter || st.Paths[0] != "a.go" || st.Batch == 0 {
 		t.Fatalf("alpha = %+v %v", st, ok)
 	}
-	if mode, _ := sup.AgentMode("tw1-alpha"); mode != agent.ModeAuto {
+	if mode, _ := sup.AgentMode("tw1-alpha"); mode != permission.ModeAuto {
 		t.Fatalf("a writer must be spawned in the working mode, got %v", mode)
 	}
 	if _, ok := sup.Get("tw1-beta"); !ok {
@@ -1100,7 +1101,7 @@ func TestTodoRun_LargeItemLanesLandAndIntegrate(t *testing.T) {
 	if len(paths) != 2 {
 		t.Fatalf("paths = %v", paths)
 	}
-	if m.gateMode() != agent.ModeAuto || m.policy.mode != agent.ModeManual {
+	if m.gateMode() != permission.ModeAuto || m.policy.mode != permission.ModeManual {
 		t.Fatalf("integration runs in auto mode, got %v", m.policy.mode)
 	}
 	// The reports reached the integration prompt.
@@ -1291,7 +1292,7 @@ func TestTodoRun_NoCommitArchivesAndSaysSo(t *testing.T) {
 		t.Fatalf("review should follow a passing verify: %s", m.todo.runner.state.Stage)
 	}
 	m = answer(t, m, "verdict: clean")
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatalf("a clean review should end the run and restore the mode: %+v", m.todo.runner.state)
 	}
 
@@ -1454,7 +1455,7 @@ func TestTodoSprint_WorksTheReadyListOneItemPerSession(t *testing.T) {
 	if _, live := run.Live(root); live {
 		t.Fatal("a sprint that ran out of ready items leaves no checkpoint")
 	}
-	if m.policy.mode != agent.ModeManual {
+	if m.policy.mode != permission.ModeManual {
 		t.Fatalf("the starting mode should be back: %s", m.policy.mode)
 	}
 	store := todo.Load(todo.BuiltinCode(), root)
@@ -1477,7 +1478,7 @@ func TestTodoSprint_StopsOnTheFirstBlock(t *testing.T) {
 	m = updated.(Model)
 	m = answer(t, m, "## Plan: x\n\n1. a\n\nsize: S\nquestions:\n- keep the flag?\n")
 
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatalf("the block should have ended the run and restored the mode: %+v", m.todo.runner.state)
 	}
 	if _, live := run.Live(root); live {
@@ -1564,7 +1565,7 @@ func TestTodoSprint_StopKeepsTheItemsCheckpoint(t *testing.T) {
 	updated, _ = m.submitInput()
 	m = updated.(Model)
 
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatalf("the sprint should be over and the mode back: %+v", m.todo.runner.state)
 	}
 	if _, live := run.Live(root); live {
@@ -1734,7 +1735,7 @@ func TestTodoRun_ASecondCeilingInAStageBlocksIt(t *testing.T) {
 	m = cutAnswer(t, m, "## Plan: do it\n\n1. Change a.go\n   files: a.g")
 	m = cutAnswer(t, m, "o\n   action: edit\n\nsi")
 
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatalf("the run should have ended and the mode restored: %v %s", m.todo.runner.state, m.policy.mode)
 	}
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it")
@@ -1757,7 +1758,7 @@ func TestTodoRun_ADroppedStageTurnPausesAtTheCheckpoint(t *testing.T) {
 	updated, _ = m.Update(streamErrMsg{err: networkFailure()})
 	m = updated.(Model)
 
-	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != permission.ModeManual {
 		t.Fatalf("the run should be let go of and the mode restored: %v %s", m.todo.runner.state, m.policy.mode)
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusInProgress {
@@ -1796,7 +1797,7 @@ func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
 	}
 	m2 := frameModel(t, 130, 40)
 	m2.changes = changeset.New(1 << 20)
-	m2.policy.mode = agent.ModeManual
+	m2.policy.mode = permission.ModeManual
 	m2.todo.wiring = Todos{
 		Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 		Detail:   func(*todo.Store, todo.Item) string { return "" },
@@ -1852,7 +1853,7 @@ func conversationModel(t *testing.T, pipeline run.Pipeline) (Model, string) {
 		Conversation: true,
 		Notebook:     notebook.New(nil),
 	})
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Pipeline: pipeline,
 		Manage: func([]string) string { return "" },
 		Detail: func(*todo.Store, todo.Item) string { return "" }}

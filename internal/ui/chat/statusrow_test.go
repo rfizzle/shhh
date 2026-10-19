@@ -9,8 +9,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -88,7 +88,7 @@ func TestStatusRow_NothingToSay(t *testing.T) {
 // than a zero it would have to invent.
 func TestStatusRow_ConversationHasNoChanges(t *testing.T) {
 	m := statusRowModel(t, 80)
-	m.wiring.Conversation, m.start, m.policy.mode = true, nil, agent.ModeManual
+	m.wiring.Conversation, m.start, m.policy.mode = true, nil, permission.ModeManual
 	row := stripANSI(m.statusRow())
 	if !strings.Contains(row, "on target") {
 		t.Fatalf("the reading still stands in a conversation: %q", row)

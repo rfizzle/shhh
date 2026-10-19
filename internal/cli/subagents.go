@@ -19,8 +19,8 @@ import (
 	"sync"
 
 	"github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -149,7 +149,7 @@ func profileFromDefinition(def config.AgentDefinition) (subagent.Profile, error)
 		Intent:      def.Intent,
 	}
 	if strings.TrimSpace(def.Mode) != "" {
-		mode, err := agent.ParseMode(def.Mode)
+		mode, err := permission.ParseMode(def.Mode)
 		if err != nil {
 			return p, fmt.Errorf("agent profile %s: mode: %w", def.Path, err)
 		}

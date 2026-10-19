@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -35,7 +35,7 @@ func TestApprovalCall_IsBuiltOnce(t *testing.T) {
 		_ = json.Unmarshal(args, &a)
 		return a.Command, a.Command != "", true, nil
 	}
-	holds := agent.Answers{Has: func(string) bool { return true }, Command: startOf}
+	holds := permission.Answers{Has: func(string) bool { return true }, Command: startOf}
 	for _, c := range []struct {
 		name string
 		tool string
@@ -58,7 +58,7 @@ func TestApprovalCall_IsBuiltOnce(t *testing.T) {
 		{name: "a server's tool", tool: "github__create_issue", args: `{}`, want: Call{}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			classified, err := agent.ClassifyCall(c.tool, json.RawMessage(c.args), holds)
+			classified, err := permission.ClassifyCall(c.tool, json.RawMessage(c.args), holds)
 			if err != nil {
 				t.Fatal(err)
 			}

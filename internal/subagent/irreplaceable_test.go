@@ -3,8 +3,8 @@ package subagent
 import (
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -23,12 +23,12 @@ func TestChildIrreplaceableTargetIsRefusedByRule(t *testing.T) {
 	sup := New(t.Context(), Options{
 		Root:       t.TempDir(),
 		NewEnv:     env.factory(),
-		Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+		Classifier: permission.NewClassifier(judge, permission.ClassifierConfig{Model: "judge"}),
 		Record:     func(Spec, string) Recorder { return rec.recorder() },
 	})
 	t.Cleanup(sup.Close)
-	sup.SetParentMode(agent.ModeAuto)
-	sup.SetParentGrants(agent.Grants{AllCommands: true})
+	sup.SetParentMode(permission.ModeAuto)
+	sup.SetParentGrants(permission.Grants{AllCommands: true})
 	sup.SetAttended()
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"tidy up"}`)
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)

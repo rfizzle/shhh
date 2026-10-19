@@ -9,6 +9,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -243,8 +244,8 @@ func TestObserver_SignalsFromResultsAndSummary(t *testing.T) {
 		{Call: llm.ToolCall{ID: "1", Name: "search"}, Result: "[repeat: this exact search call has now run 2 times]\nx"},
 	}})
 	model = updated.(Model)
-	model.applyMode(agent.ModeAuto)
-	model.applyMode(agent.ModeAuto)
+	model.applyMode(permission.ModeAuto)
+	model.applyMode(permission.ModeAuto)
 
 	want := []string{"1/repeat-notice:search", "1/mode:auto"}
 	if len(signals) != len(want) {

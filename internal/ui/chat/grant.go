@@ -18,8 +18,8 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -116,7 +116,7 @@ func (m Model) grantOffers(req *approvalRequest) ([]grantOffer, []components.Sel
 	var covers, narrow, narrowLabel string
 	switch {
 	case req.kind == approvalExec:
-		prefix := agent.GrantPrefix(req.command)
+		prefix := permission.GrantPrefix(req.command)
 		if prefix == "" {
 			return nil, nil
 		}

@@ -22,8 +22,8 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -93,7 +93,7 @@ func (r approvalRig) start(t *testing.T) *approvalDriver {
 		return r.output(), 0
 	})
 	if r.judge != nil {
-		m.classifier.judge = agent.NewClassifier(r.judge, agent.ClassifierConfig{Model: "judge"})
+		m.classifier.judge = permission.NewClassifier(r.judge, permission.ClassifierConfig{Model: "judge"})
 	}
 	if r.explain != nil {
 		m.wiring.Explainer = sidejobs.NewExplainer(r.explain, sidejobs.ExplainConfig{Model: "small", Prompt: explainWording})

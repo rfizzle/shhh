@@ -13,6 +13,7 @@ import (
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -35,7 +36,7 @@ func (p *judgeProvider) StreamCompletion(context.Context, []llm.Message, llm.Com
 	p.mu.Unlock()
 	ch := make(chan llm.StreamEvent, 1)
 	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{
-		ID: "d1", Name: agent.DecisionToolName,
+		ID: "d1", Name: permission.DecisionToolName,
 		Arguments: `{"decision":"` + v[0] + `","reason":"` + v[1] + `"}`,
 	}}, Done: true}
 	close(ch)
@@ -56,9 +57,9 @@ func TestProgram_AJudgedNoIsACardTheReaderAnswers(t *testing.T) {
 		ran = append(ran, cmd)
 		return "", 0
 	})
-	m.classifier.judge = agent.NewClassifier(&judgeProvider{verdicts: [][2]string{
+	m.classifier.judge = permission.NewClassifier(&judgeProvider{verdicts: [][2]string{
 		{"deny", "the task asked for a release check and this publishes one"},
-	}}, agent.ClassifierConfig{Model: "judge"})
+	}}, permission.ClassifierConfig{Model: "judge"})
 	tm := runProgram(t, m)
 
 	programPress(t, tm, "shift+tab", "shift+tab")

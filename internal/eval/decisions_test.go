@@ -9,7 +9,7 @@ import (
 
 	"github.com/rfizzle/llm"
 	llmdecision "github.com/rfizzle/llm/decision"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 // fakeDecisions answers the Decisions API from the evidence, the way fakeAux
@@ -52,7 +52,7 @@ func TestAClassifierTableRunsOnTheDecisionsBackend(t *testing.T) {
 		classifierRow("right", LabelAllow, "answers-allow-too"),
 	)
 	sum, err := Run(context.Background(), []Case{c}, Options{
-		Provider: p, Model: "gpt-6-luna", ClassifierBackend: agent.BackendDecisions,
+		Provider: p, Model: "gpt-6-luna", ClassifierBackend: permission.BackendDecisions,
 		Price: func(_ string, in, out int) (float64, bool) { return float64(in+out) / 1e6, true },
 	})
 	if err != nil {
@@ -67,7 +67,7 @@ func TestAClassifierTableRunsOnTheDecisionsBackend(t *testing.T) {
 	}
 
 	b := sum.Baseline()
-	if b.ClassifierBackend != agent.BackendDecisions {
+	if b.ClassifierBackend != permission.BackendDecisions {
 		t.Fatalf("baseline backend = %q", b.ClassifierBackend)
 	}
 	table := b.Cases[0].Table
@@ -82,10 +82,10 @@ func TestAClassifierTableRunsOnTheDecisionsBackend(t *testing.T) {
 		t.Fatal(err)
 	}
 	back, err := ReadBaseline(path)
-	if err != nil || back.ClassifierBackend != agent.BackendDecisions || back.Cases[0].Table.CostPerVerdict != table.CostPerVerdict {
+	if err != nil || back.ClassifierBackend != permission.BackendDecisions || back.Cases[0].Table.CostPerVerdict != table.CostPerVerdict {
 		t.Fatalf("round trip = %+v, %v", back, err)
 	}
-	if Narrow(back, []string{"decisions"}).ClassifierBackend != agent.BackendDecisions {
+	if Narrow(back, []string{"decisions"}).ClassifierBackend != permission.BackendDecisions {
 		t.Fatal("narrowing a baseline lost its backend")
 	}
 }
@@ -115,7 +115,7 @@ func TestARunIsReadAtTheBarItIsGiven(t *testing.T) {
 	}{{0, 1}, {90, 1}, {99, 0}} {
 		c := decisionCase(classifierRow("right", LabelAllow, "answers-allow"))
 		sum, err := Run(context.Background(), []Case{c}, Options{
-			Provider: &fakeDecisions{t: t}, Model: "m", ClassifierBackend: agent.BackendDecisions, ClassifierThreshold: tc.bar,
+			Provider: &fakeDecisions{t: t}, Model: "m", ClassifierBackend: permission.BackendDecisions, ClassifierThreshold: tc.bar,
 		})
 		if err != nil {
 			t.Fatal(err)

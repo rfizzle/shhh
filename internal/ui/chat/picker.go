@@ -22,7 +22,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -533,7 +533,7 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 	}
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
-		cycle = agent.DefaultCycle()
+		cycle = permission.DefaultCycle()
 	}
 	opts := make([]components.SelectOption, len(cycle))
 	focus := 0

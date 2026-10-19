@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -375,7 +375,7 @@ func TestPlanRun_ClearedWithTheTranscript(t *testing.T) {
 
 func TestPlanApprove_StartsTheRun(t *testing.T) {
 	m := plannedModel(t, planFixture)
-	updated, _ := m.approvePlan(agent.ModeAuto)
+	updated, _ := m.approvePlan(permission.ModeAuto)
 	got := updated.(Model)
 	if got.planRun == nil {
 		t.Fatal("approving a structured plan should start its run")
@@ -391,7 +391,7 @@ func TestPlanApprove_StartsTheRun(t *testing.T) {
 
 func TestPlanApprove_ProsePlanStartsNoRun(t *testing.T) {
 	m := plannedModel(t, "I would rewrite the loop, then test it.")
-	updated, _ := m.approvePlan(agent.ModeAuto)
+	updated, _ := m.approvePlan(permission.ModeAuto)
 	if updated.(Model).planRun != nil {
 		t.Fatal("a plan with no step list has no checklist to run")
 	}

@@ -5,8 +5,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe/record"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -50,15 +50,15 @@ func TestReasonCode_Mapping(t *testing.T) {
 func TestAskReason(t *testing.T) {
 	for _, c := range []struct {
 		name string
-		act  agent.Action
+		act  permission.Action
 		want string
 	}{
-		{"safety wins", agent.Action{Kind: agent.ActionCommand, SafetyFlagged: true}, "safety"},
-		{"scope-sensitive", agent.Action{Kind: agent.ActionEdit, ScopeSensitive: true}, "scope-sensitive"},
+		{"safety wins", permission.Action{Kind: permission.ActionCommand, SafetyFlagged: true}, "safety"},
+		{"scope-sensitive", permission.Action{Kind: permission.ActionEdit, ScopeSensitive: true}, "scope-sensitive"},
 		// The paths are what put the call out of scope and none of them
 		// reaches the code.
-		{"out of scope", agent.Action{Kind: agent.ActionEdit, OutOfScope: []string{"/etc"}}, "out-of-scope"},
-		{"nothing flagged", agent.Action{Kind: agent.ActionEdit}, "policy"},
+		{"out of scope", permission.Action{Kind: permission.ActionEdit, OutOfScope: []string{"/etc"}}, "out-of-scope"},
+		{"nothing flagged", permission.Action{Kind: permission.ActionEdit}, "policy"},
 	} {
 		if got := AskReason(c.act); got != c.want {
 			t.Errorf("%s: AskReason = %q, want %q", c.name, got, c.want)

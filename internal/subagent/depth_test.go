@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -235,18 +236,18 @@ func TestDepth_AReadOnlyAgentsDescendantIsReadOnly(t *testing.T) {
 func TestDepth_ADescendantStartsNoLooserThanItsSpawner(t *testing.T) {
 	env := &scriptedEnv{steps: readRounds(20)}
 	sup := newTestSupervisor(t, env)
-	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentMode(permission.ModeAuto)
 
 	execTool(t, sup, SpawnToolName, `{"role":"reviewer","task":"judge it","name":"planner","paths":["a.go"]}`)
 	planned, ok := sup.AgentMode("planner")
-	if !ok || planned != agent.ModeReadOnly {
+	if !ok || planned != permission.ModeReadOnly {
 		t.Fatalf("the reviewer profile starts in %v, want read-only", planned)
 	}
 	if _, err := spawnFromAgent(sup, "planner", `{"role":"researcher","task":"look","name":"under"}`); err != nil {
 		t.Fatal(err)
 	}
 	under, ok := sup.AgentMode("under")
-	if !ok || under != agent.ModeReadOnly {
+	if !ok || under != permission.ModeReadOnly {
 		t.Fatalf("a descendant of a read-only agent starts in %v, want read-only", under)
 	}
 }

@@ -1,7 +1,7 @@
 package chat
 
 import (
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -23,9 +23,9 @@ import (
 // heads — and is set and reset where that changes (queue.go).
 type approvalState struct {
 	// redirects is the session's memory of the commands it answered with the
-	// editor, so the same line sent again runs (agent.Redirects). Session-long,
+	// editor, so the same line sent again runs (permission.Redirects). Session-long,
 	// so clear leaves it.
-	redirects *agent.Redirects
+	redirects *permission.Redirects
 	// classifierAllowed are the calls the classifier let run without a card,
 	// by call ID: a cancel that finds one still running records the person
 	// stopping it (observe.ReasonUserStop). Session-long, so clear leaves it.

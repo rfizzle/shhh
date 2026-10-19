@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -34,8 +34,8 @@ var liveTakers = map[string]liveTaker{
 	"behavior.default_mode": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
 		// The file's value was judged as it was staged; an empty one is the
 		// key reset, which is manual, as a session opens on.
-		w.Mode = agent.ModeManual
-		if mode, err := agent.ParseMode(c.Behavior.DefaultMode); err == nil && c.Behavior.DefaultMode != "" {
+		w.Mode = permission.ModeManual
+		if mode, err := permission.ParseMode(c.Behavior.DefaultMode); err == nil && c.Behavior.DefaultMode != "" {
 			w.Mode = mode
 		}
 	},

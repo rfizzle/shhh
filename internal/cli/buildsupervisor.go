@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -36,7 +37,7 @@ import (
 // copy as it stands at the call, which is the one a child inherits from.
 // See docs/architecture.md#a-session-is-assembled-in-one-place.
 func buildSupervisor(ctx context.Context, a *assembly, session chatSession, recorder *observeRecorder,
-	classifier *agent.Classifier, hooks *hook.Runner, untracked func() []string) *subagent.Supervisor {
+	classifier *permission.Classifier, hooks *hook.Runner, untracked func() []string) *subagent.Supervisor {
 	cfg, env, red, db, prices, sc, ledger := a.env.cfg, a.env, a.ts.evidence, a.db, a.prices, a.sc, a.ledger
 	agents := a.agents
 	root, err := os.Getwd()

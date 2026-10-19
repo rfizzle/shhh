@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -40,18 +40,18 @@ import (
 // nothing behind to clear: a stored policy whose release was missed would
 // be auto left standing, which is failing open.
 // See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
-func (m Model) flowPolicy() (mode agent.Mode, flow string, ok bool) {
+func (m Model) flowPolicy() (mode permission.Mode, flow string, ok bool) {
 	if st := m.todo.runner.state; st != nil && !st.Over() {
 		if st.Mode() == run.ModeAuto {
-			return agent.ModeAuto, "the backlog run", true
+			return permission.ModeAuto, "the backlog run", true
 		}
-		return agent.ModePlan, "the backlog run", true
+		return permission.ModePlan, "the backlog run", true
 	}
 	if m.todo.groomer.going() {
-		return agent.ModePlan, "the reading", true
+		return permission.ModePlan, "the reading", true
 	}
 	if m.todo.planner.going {
-		return agent.ModePlan, "the sprint plan", true
+		return permission.ModePlan, "the sprint plan", true
 	}
 	return 0, "", false
 }
@@ -67,7 +67,7 @@ func (m Model) flowPolicy() (mode agent.Mode, flow string, ok bool) {
 // read-only: such a session is not let start a writing flow, and one put
 // there while a flow is going reads its own bound.
 // See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
-func (m Model) gateMode() agent.Mode {
+func (m Model) gateMode() permission.Mode {
 	flow, _, ok := m.flowPolicy()
 	if !ok || (m.policy.mode.ReadOnly() && !flow.ReadOnly()) {
 		return m.policy.mode
@@ -98,7 +98,7 @@ func (m Model) personsTurn() bool {
 // them: it reads gateMode, the run's policy, so that a writer a lane spawned
 // is not clamped to manual mid-build by a skill turn.
 // See docs/capabilities/approvals-and-safety.md#a-flow-runs-under-its-own-policy.
-func (m Model) turnMode() agent.Mode {
+func (m Model) turnMode() permission.Mode {
 	if m.personsTurn() {
 		return m.policy.mode
 	}
@@ -123,8 +123,8 @@ func (m Model) flowPolicyLine() string {
 // — and the only difference is that one of them can be revoked. The deny
 // lists are the standing rules' and come from them, so the policy the mode
 // reads and the rules the queue asks first are the same lists.
-func (m Model) modePolicy() agent.ModePolicy {
-	return m.rules().Policy(agent.ModePolicy{
+func (m Model) modePolicy() permission.ModePolicy {
+	return m.rules().Policy(permission.ModePolicy{
 		Mode:             m.turnMode(),
 		AllowEdits:       m.policy.allEdits,
 		AllowCommands:    m.policy.allCommands,
@@ -210,11 +210,11 @@ func (m Model) ruleRefusal(req *approvalRequest) (r approval.Refusal, why string
 		return r, "", false
 	}
 	switch {
-	case r.Reason == agent.DenyReasonHost:
+	case r.Reason == permission.DenyReasonHost:
 		why = denyHostWhy
-	case agent.IsIrreplaceable(r.Reason):
+	case permission.IsIrreplaceable(r.Reason):
 		why = irreplaceableWhy
-	case r.Reason == agent.DenyReasonGitPath:
+	case r.Reason == permission.DenyReasonGitPath:
 		why = gitPathWhy
 	default:
 		why = denylistWhy
@@ -310,14 +310,14 @@ func shortenDir(dir string) string {
 // outside it is as much a part of the decision as what kind of action it is,
 // and resolving it here means every surface that asks the policy a question
 // asks it with the same facts.
-func (m Model) approvalAction(req *approvalRequest) agent.Action {
+func (m Model) approvalAction(req *approvalRequest) permission.Action {
 	a := baseAction(req)
 	reach := m.scopeReachFor(req)
 	a.OutOfScope = reach.dirs
 	a.ScopeSensitive = reach.class == scope.Sensitive
 	a.ScopeRefused = reach.class == scope.Refused
 	a.ScopeReason = reach.reason
-	if a.Kind == agent.ActionCommand {
+	if a.Kind == permission.ActionCommand {
 		a.Irreplaceable = m.rules().Irreplaceable(ruleCall(req))
 		a.Scratch = req.scratch
 	}
@@ -327,16 +327,16 @@ func (m Model) approvalAction(req *approvalRequest) agent.Action {
 
 // baseAction is the action without the scope reading — what the request is,
 // on its own terms.
-func baseAction(req *approvalRequest) agent.Action {
+func baseAction(req *approvalRequest) permission.Action {
 	switch req.kind {
 	case approvalExec:
-		return agent.Action{
-			Kind:          agent.ActionCommand,
+		return permission.Action{
+			Kind:          permission.ActionCommand,
 			Command:       req.command,
 			SafetyFlagged: len(safety.Check(req.command)) > 0,
 		}
 	case approvalDiff:
-		a := agent.Action{Kind: agent.ActionEdit, Path: req.path}
+		a := permission.Action{Kind: permission.ActionEdit, Path: req.path}
 		if paths := req.editPaths(); len(req.files) > 0 && len(paths) > 0 {
 			a.Path, a.Paths = paths[0], paths
 		}
@@ -347,7 +347,7 @@ func baseAction(req *approvalRequest) agent.Action {
 	// spelling still answers first. It is read before the command fallback
 	// below: the line is what the deny list matches, not what the tier is.
 	if req.write {
-		return agent.Action{Kind: agent.ActionEdit, Path: req.path, Command: req.command}
+		return permission.Action{Kind: permission.ActionEdit, Path: req.path, Command: req.command}
 	}
 	// A generic approval that named a host is a fetch: the host is what the
 	// two host lists and a session grant are matched against, and it is read
@@ -358,24 +358,24 @@ func baseAction(req *approvalRequest) agent.Action {
 	// function every surface asks, so the policy and the classifier judge
 	// the fetch on what the lists say as well as on where it goes.
 	if req.host != "" {
-		return agent.Action{Kind: agent.ActionFetch, Host: req.host, Command: req.command,
+		return permission.Action{Kind: permission.ActionFetch, Host: req.host, Command: req.command,
 			Reading: web.ReadFetch(json.RawMessage(req.call.Arguments))}
 	}
 	// A generic approval carrying a command — a process start — is
 	// judged as a command: allowlist entries apply and safety flags stick.
 	if req.command != "" {
-		return agent.Action{
-			Kind:          agent.ActionCommand,
+		return permission.Action{
+			Kind:          permission.ActionCommand,
 			Command:       req.command,
 			SafetyFlagged: len(safety.Check(req.command)) > 0,
 		}
 	}
-	return agent.Action{Kind: agent.ActionOther}
+	return permission.Action{Kind: permission.ActionOther}
 }
 
 // policyDecision returns the mode verdict for an approval request and, when
 // allowed, the reason shown in the transcript.
-func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
+func (m Model) policyDecision(req *approvalRequest) (permission.Decision, string) {
 	return m.modePolicy().Decide(m.approvalAction(req))
 }
 
@@ -393,26 +393,26 @@ func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 // answer without driving a terminal. It reads no hook, no batch answer and
 // no person, which come after it on the screen and have no counterpart
 // anywhere else.
-func (m Model) StandingAnswer(tc llm.ToolCall) (decision agent.Decision, result, code string) {
+func (m Model) StandingAnswer(tc llm.ToolCall) (decision permission.Decision, result, code string) {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
 		m.approval.redirects.Spent(err)
-		return agent.Deny, "error: " + err.Error(), ""
+		return permission.Deny, "error: " + err.Error(), ""
 	}
 	if refusal := m.containmentRefusal(req); refusal != "" {
-		return agent.Deny, refusal, ""
+		return permission.Deny, refusal, ""
 	}
 	if refusal, _, refused := m.ruleRefusal(req); refused {
-		return agent.Deny, refusal.Result, refusal.Code
+		return permission.Deny, refusal.Result, refusal.Code
 	}
 	d, reason := m.policyDecision(req)
 	switch d {
-	case agent.Deny:
+	case permission.Deny:
 		return d, denialResult(reason, req.command, m.policy.readOnlyExtra), observe.ReasonCode(reason)
-	case agent.Allow:
+	case permission.Allow:
 		return d, "", observe.ReasonCode(reason)
 	}
-	return agent.Ask, "", ""
+	return permission.Ask, "", ""
 }
 
 // modeStatus describes the active mode and cycle for /permissions with no
@@ -423,7 +423,7 @@ func (m Model) modeStatus() string {
 	}
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
-		cycle = agent.DefaultCycle()
+		cycle = permission.DefaultCycle()
 	}
 	names := make([]string, len(cycle))
 	for i, mode := range cycle {
@@ -534,7 +534,7 @@ func (m Model) policySection() helpSection {
 	if m.policy.readOnlyDisabled {
 		row("read-only", "prompts (behavior.read_only_auto = false)")
 	} else {
-		row("read-only", plural(len(agent.ReadOnlyCommands())+len(m.policy.readOnlyExtra), "inspection command")+
+		row("read-only", plural(len(permission.ReadOnlyCommands())+len(m.policy.readOnlyExtra), "inspection command")+
 			" run without asking (ls, cat, grep, git status, …)")
 	}
 	if n := len(m.scopeDirs()); n > 0 {
@@ -594,7 +594,7 @@ func plural2(n int, one, many string) string {
 // matching lives in internal/agent so headless print mode applies the same
 // policy.
 func allowlistMatches(allowlist []string, command string) bool {
-	return agent.AllowlistMatches(allowlist, command)
+	return permission.AllowlistMatches(allowlist, command)
 }
 
 // policyState is what the session has stopped asking about, and the mode that
@@ -606,8 +606,8 @@ func allowlistMatches(allowlist []string, command string) bool {
 // made under — a directory edits are allowed in says nothing on its own — and
 // because /permissions revoke has to be able to clear the whole of it.
 type policyState struct {
-	mode      agent.Mode
-	cycle     []agent.Mode
+	mode      permission.Mode
+	cycle     []permission.Mode
 	allowlist []string
 	// denylist is the config's refusals. It is not a grant and nothing in
 	// this struct can revoke it: it sits here because it is read against the
@@ -651,7 +651,7 @@ type policyState struct {
 	// resets was forgotten is the failure the whole thing exists to prevent
 	// (grant.go, close.go).
 	// See docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends.
-	turn agent.Grants
+	turn permission.Grants
 	// hosts are the hosts [a] has granted on a fetch card, exact and never a
 	// suffix. There is no blanket counterpart: "every host" is the whole of
 	// the outbound channel.

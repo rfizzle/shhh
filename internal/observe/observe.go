@@ -35,6 +35,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -211,13 +212,13 @@ func TrimReason(elided, beforePct, afterPct int) string {
 }
 
 // ReasonCode maps a mode-policy reason string (a closed set produced by
-// agent.ModePolicy.Decide) to its enum-like storage code, so free text can
+// permission.ModePolicy.Decide) to its enum-like storage code, so free text can
 // never leak into the metrics.
 func ReasonCode(raw string) string {
 	switch raw {
-	case agent.ModeAcceptEdits.String() + " mode":
+	case permission.ModeAcceptEdits.String() + " mode":
 		return ReasonModeAcceptEdits
-	case agent.ModeAuto.String() + " mode":
+	case permission.ModeAuto.String() + " mode":
 		return ReasonModeAuto
 	case "session policy":
 		// The blanket grants: every edit, every command (/permissions allow).
@@ -228,19 +229,19 @@ func ReasonCode(raw string) string {
 		return ReasonSessionScope
 	case "allowlist":
 		return ReasonAllowlist
-	case agent.ConversationReadReason:
+	case permission.ConversationReadReason:
 		return ReasonConversationRead
-	case agent.DenyReasonDenylist, agent.DenyReasonHost:
+	case permission.DenyReasonDenylist, permission.DenyReasonHost:
 		// Both lists are the same fact for the metrics: a rule the person
 		// wrote answered before anything could allow.
 		return ReasonDenylist
-	case agent.ModePlan.String() + " mode":
+	case permission.ModePlan.String() + " mode":
 		return ReasonPlanMode
-	case agent.ModePlan.String() + " mode inspection":
+	case permission.ModePlan.String() + " mode inspection":
 		return ReasonPlanInspection
-	case agent.ModeReadOnly.String() + " mode":
+	case permission.ModeReadOnly.String() + " mode":
 		return ReasonReadOnlyMode
-	case agent.ModeReadOnly.String() + " mode inspection":
+	case permission.ModeReadOnly.String() + " mode inspection":
 		return ReasonReadOnlyInspection
 	}
 	if code := HostReason(web.StandingOf(raw)); code != "" {
@@ -273,7 +274,7 @@ func HostReason(s web.Standing) string {
 
 // AskReason is the reason code recorded when policy falls through to
 // prompting the user.
-func AskReason(a agent.Action) string {
+func AskReason(a permission.Action) string {
 	switch {
 	case a.SafetyFlagged:
 		return ReasonSafety

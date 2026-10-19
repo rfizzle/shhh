@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -19,10 +19,10 @@ func TestLongRunning_TheModelIsRedirectedAndThePersonIsNot(t *testing.T) {
 	})
 	d, result, _ := m.StandingAnswer(execCall("c1", "npm run dev"))
 	want := "error: " + tools.LongRunningError{}.Error()
-	if d != agent.Deny || result != want {
+	if d != permission.Deny || result != want {
 		t.Fatalf("the model's dev server: %v %q, want a refusal reading %q", d, result, want)
 	}
-	if d, result, _ := m.StandingAnswer(execCall("c1", "go test ./...")); result != "" || d == agent.Deny {
+	if d, result, _ := m.StandingAnswer(execCall("c1", "go test ./...")); result != "" || d == permission.Deny {
 		t.Fatalf("an ordinary command was refused: %v %q", d, result)
 	}
 

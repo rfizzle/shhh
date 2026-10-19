@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -73,11 +73,11 @@ func TestConfigScreen_ALiveKeyIsTakenAsItIsStaged(t *testing.T) {
 	if !session.Take(&w) {
 		t.Fatal("staging live keys handed the session nothing")
 	}
-	if w.MaxToolRounds != 40 || w.Mode != agent.ModeAuto || w.ModelName != "model-b" ||
+	if w.MaxToolRounds != 40 || w.Mode != permission.ModeAuto || w.ModelName != "model-b" ||
 		w.Effort != effort.High || w.ProgressElapsed != 30*time.Second || w.Verbosity != "high" {
 		t.Errorf("the session was handed %+v", struct {
 			Rounds  int
-			Mode    agent.Mode
+			Mode    permission.Mode
 			Model   string
 			Effort  effort.Level
 			Elapsed time.Duration

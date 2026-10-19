@@ -3,7 +3,7 @@ package chat
 import (
 	"context"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 // classifierState is auto mode's permission classifier on the session: the
@@ -21,7 +21,7 @@ import (
 // the check (keyroute.go), a session boundary (newsession.go) or the quit
 // (stopSideJobs).
 type classifierState struct {
-	judge  *agent.Classifier
+	judge  *permission.Classifier
 	cancel context.CancelFunc
 }
 

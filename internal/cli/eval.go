@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/eval"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -78,11 +78,11 @@ func newEvalCmd() *cobra.Command {
 			// The completion backend is recorded as nothing, which is what
 			// every baseline written before there were two backends holds,
 			// so a run on it still reads as the same setup as those.
-			backend, err := agent.ParseClassifierBackend(classifierBackend)
+			backend, err := permission.ParseClassifierBackend(classifierBackend)
 			if err != nil {
 				return fmt.Errorf("--classifier-backend: %w", err)
 			}
-			if backend == agent.BackendCompletion {
+			if backend == permission.BackendCompletion {
 				backend = ""
 			}
 			if cmd.Flags().Changed("classifier-threshold") {
@@ -1135,7 +1135,7 @@ func behaviourShifts(before, after eval.BehaviourBaseline) []string {
 // the completion backend.
 func backendOrDefault(b string) string {
 	if b == "" {
-		return agent.BackendCompletion
+		return permission.BackendCompletion
 	}
 	return b
 }

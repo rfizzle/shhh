@@ -16,8 +16,8 @@ import (
 	"unicode"
 
 	llmattachment "github.com/rfizzle/llm/attachment"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -348,7 +348,7 @@ func railArgs(m *Model) []argOption {
 func modeArgs(m *Model) []argOption {
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
-		cycle = agent.DefaultCycle()
+		cycle = permission.DefaultCycle()
 	}
 	if m.wiring.Conversation {
 		cycle = nil

@@ -41,6 +41,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/rpc"
@@ -421,7 +422,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// neither of those two settings is what decided them.
 	recordedMode := ""
 	if opts.autoMode {
-		recordedMode = agent.ModeAuto.String()
+		recordedMode = permission.ModeAuto.String()
 	}
 	tail, err := finishUnattended(cmd, asm, &session, tailOpts{
 		kind:        "serve",
@@ -483,8 +484,8 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	exec := ts.executor(session)
 	if session.agents {
 		sup = buildSupervisor(cmd.Context(), asm, session, l.recorder, classifier, hooks, nil)
-		sup.SetParentMode(agent.ModeAuto)
-		sup.SetParentGrants(agent.Grants{AllEdits: true, AllCommands: true})
+		sup.SetParentMode(permission.ModeAuto)
+		sup.SetParentGrants(permission.Grants{AllEdits: true, AllCommands: true})
 		sup.SetConversation(a.Messages)
 		l.closers = append(l.closers, sup.Close)
 		l.agents = sup

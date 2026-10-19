@@ -1,4 +1,4 @@
-package agent
+package permission
 
 // Shared approval-policy helpers used by both front-ends: the chat TUI's
 // session policy and headless print mode's --allow flags.

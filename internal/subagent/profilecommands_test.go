@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -36,14 +36,14 @@ func TestAProfilesDenyIsRefusedLikeThePersonsOwn(t *testing.T) {
 				CommandDenylist: []string{"rm"},
 			})
 			t.Cleanup(sup.Close)
-			sup.SetParentMode(agent.ModeAuto)
+			sup.SetParentMode(permission.ModeAuto)
 			execTool(t, sup, SpawnToolName, `{"role":"tester","task":"push it"}`)
 			execTool(t, sup, ReportToolName, `{"name":"tester-1"}`)
 			if env.ranCommand.Load() {
 				t.Fatal("a command the profile denies ran")
 			}
 			result := env.lastToolResult()
-			if result != agent.DenylistResult {
+			if result != permission.DenylistResult {
 				t.Fatalf("the child read %q, want the deny list's own result", result)
 			}
 			for _, leak := range []string{"tester", "profile", "deny ="} {
@@ -95,7 +95,7 @@ func (p *evidenceProvider) StreamCompletion(_ context.Context, msgs []llm.Messag
 	p.evidence = append(p.evidence, msgs[len(msgs)-1].Content)
 	p.mu.Unlock()
 	ch := make(chan llm.StreamEvent, 1)
-	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "d1", Name: agent.DecisionToolName,
+	ch <- llm.StreamEvent{ToolCalls: []llm.ToolCall{{ID: "d1", Name: permission.DecisionToolName,
 		Arguments: `{"decision":"allow","reason":"ok"}`}}, Done: true}
 	close(ch)
 	return ch, nil
@@ -124,10 +124,10 @@ func TestAProfilesIntentReachesTheClassifierOnlyFromThePersonsOwn(t *testing.T) 
 			judge := &evidenceProvider{}
 			sup := New(context.Background(), Options{
 				Root: t.TempDir(), NewEnv: env.factory(), Profiles: commandProfiles(c.checkout),
-				Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+				Classifier: permission.NewClassifier(judge, permission.ClassifierConfig{Model: "judge"}),
 			})
 			t.Cleanup(sup.Close)
-			sup.SetParentMode(agent.ModeAuto)
+			sup.SetParentMode(permission.ModeAuto)
 			execTool(t, sup, SpawnToolName, `{"role":"tester","task":"run the tests"}`)
 			execTool(t, sup, ReportToolName, `{"name":"tester-1"}`)
 			judge.mu.Lock()

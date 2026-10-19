@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -20,8 +20,8 @@ import (
 // all of them: /permissions revoke and the status listing. The turn's own are
 // deliberately not in it — what they answer is the same, but how long they
 // answer it for is not, and every reader of this value has to say so.
-func (m Model) grants() agent.Grants {
-	return agent.Grants{
+func (m Model) grants() permission.Grants {
+	return permission.Grants{
 		AllEdits:      m.policy.allEdits,
 		AllCommands:   m.policy.allCommands,
 		EditDirs:      m.policy.editDirs,
@@ -38,7 +38,7 @@ func (m Model) grants() agent.Grants {
 // answers a redirect. They lose a turn grant when the parent pushes its
 // grants again at the turn's close, which is the same seam that expires it
 // here (subagents.go, close.go).
-func (m Model) liveGrants() agent.Grants {
+func (m Model) liveGrants() permission.Grants {
 	g, t := m.grants(), m.policy.turn
 	if !t.Any() {
 		return g
@@ -78,7 +78,7 @@ func (m *Model) grantHost(host string, o grantOffer) string {
 		return ""
 	}
 	if o.length == forThisTurn {
-		if !agent.HostMatches(m.hostAllowlist(), host) && !m.policy.turn.CoversHost(host) {
+		if !permission.HostMatches(m.hostAllowlist(), host) && !m.policy.turn.CoversHost(host) {
 			m.policy.turn.Hosts = append(m.policy.turn.Hosts, host)
 		}
 		return host
@@ -87,7 +87,7 @@ func (m *Model) grantHost(host string, o grantOffer) string {
 	// this grant is longer than that one, and skipping it would take the
 	// length the reader chose away because a shorter grant happened to
 	// cover the same host today.
-	if !agent.HostMatches(m.hostAllowlist(), host) {
+	if !permission.HostMatches(m.hostAllowlist(), host) {
 		m.policy.hosts = append(m.policy.hosts, host)
 	}
 	return host
@@ -144,7 +144,7 @@ func (m *Model) grantCommand(command string, o grantOffer) string {
 		}
 		return strconv.Quote(line)
 	}
-	prefix := agent.GrantPrefix(command)
+	prefix := permission.GrantPrefix(command)
 	if prefix == "" {
 		return ""
 	}
@@ -172,8 +172,8 @@ func (m *Model) grantCommand(command string, o grantOffer) string {
 // reader chose. So the turn's recorders ask both sets and the session's ask
 // only this one.
 func (m Model) commandGranted(command string) bool {
-	return agent.AllowlistMatches(m.allowlist(), command) ||
-		agent.ExactMatches(m.policy.exactCommands, command)
+	return permission.AllowlistMatches(m.allowlist(), command) ||
+		permission.ExactMatches(m.policy.exactCommands, command)
 }
 
 // grantEdit records an edit grant of the length and width the reader chose:
@@ -209,7 +209,7 @@ func (m *Model) grantEdit(path string, o grantOffer) string {
 		}
 		return displayDir(dir)
 	}
-	if !agent.PathUnder(m.policy.editDirs, inside) {
+	if !permission.PathUnder(m.policy.editDirs, inside) {
 		m.policy.editDirs = append(m.policy.editDirs, dir)
 	}
 	return displayDir(dir)
@@ -219,7 +219,7 @@ func (m *Model) grantEdit(path string, o grantOffer) string {
 // directory grant or by a grant of the file itself. It reads the session's
 // grants alone, for the reason commandGranted does.
 func (m Model) editGranted(path string) bool {
-	return agent.PathUnder(m.policy.editDirs, path) || agent.PathIs(m.policy.editPaths, path)
+	return permission.PathUnder(m.policy.editDirs, path) || permission.PathIs(m.policy.editPaths, path)
 }
 
 // revokeGrants drops every grant this session has made — the standing ones
@@ -288,7 +288,7 @@ func (m *Model) revokeTurnGrants() []string {
 	for _, h := range t.Hosts {
 		gone = append(gone, "fetches from "+h+" this turn")
 	}
-	m.policy.turn = agent.Grants{}
+	m.policy.turn = permission.Grants{}
 	return gone
 }
 
@@ -303,7 +303,7 @@ func (m *Model) expireTurnGrants() {
 	if !m.policy.turn.Any() {
 		return
 	}
-	m.policy.turn = agent.Grants{}
+	m.policy.turn = permission.Grants{}
 	// The children hold their own copy, so the expiry has to reach them the
 	// way the grant did (subagents.go).
 	m.syncGrants()
@@ -394,7 +394,7 @@ func (m Model) grantStatus() string {
 //
 // The blanket grants are not here: they have no pattern to print and a
 // sentence of their own naming the command that set them.
-func writeGrants(sb *strings.Builder, g agent.Grants, ends string) {
+func writeGrants(sb *strings.Builder, g permission.Grants, ends string) {
 	end := " — " + ends + "\n"
 	for _, d := range g.EditDirs {
 		sb.WriteString("  edits      " + displayDir(d) + end)

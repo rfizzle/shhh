@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -61,7 +61,7 @@ func groomModel(t *testing.T, items map[string]string) (Model, string) {
 	}
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 		Detail: func(*todo.Store, todo.Item) string { return "" }}
 	m.loadTodos()
@@ -75,7 +75,7 @@ func groom(t *testing.T, m Model, command, answerText string) Model {
 	m.input.SetValue(command)
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if !m.working() || m.gateMode() != agent.ModePlan || m.policy.mode != agent.ModeManual {
+	if !m.working() || m.gateMode() != permission.ModePlan || m.policy.mode != permission.ModeManual {
 		t.Fatalf("the reading should be in flight in plan mode: mode=%s working=%t", m.policy.mode, m.working())
 	}
 	return answer(t, m, answerText)
@@ -152,7 +152,7 @@ func TestTodoGroom_AcceptingWritesTheNamedLinesAndTheStamp(t *testing.T) {
 	if !slices.Contains(signals, want) {
 		t.Errorf("signals = %v, want one of them %q", signals, want)
 	}
-	if m.policy.mode != agent.ModeManual {
+	if m.policy.mode != permission.ModeManual {
 		t.Errorf("the mode was not restored: %s", m.policy.mode)
 	}
 }
@@ -303,7 +303,7 @@ func TestTodoGroom_TheSessionBoundaryDropsThePass(t *testing.T) {
 	if m.todo.groomer.going() || m.todo.groom != nil || m.state == stateTodoGroom {
 		t.Errorf("the pass survived the boundary: %+v", m.todo.groomer)
 	}
-	if m.policy.mode != agent.ModeManual {
+	if m.policy.mode != permission.ModeManual {
 		t.Errorf("the mode was not restored: %s", m.policy.mode)
 	}
 }

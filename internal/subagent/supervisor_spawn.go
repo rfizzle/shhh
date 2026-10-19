@@ -11,6 +11,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/permission"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -304,7 +305,7 @@ type spawnPlan struct {
 	// Written by reserveSpawn.
 	name  string
 	seq   int
-	mode  agent.Mode
+	mode  permission.Mode
 	batch int
 	// Written by claimSpawn.
 	waitsOn, waitsFor string

@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 )
 
 // Profile is what the supervisor needs to know about a role. Everything
@@ -30,7 +30,7 @@ type Profile struct {
 	// Mode is the permission mode the child starts in when HasMode is set;
 	// otherwise it inherits the parent's. Either way it is clamped to the
 	// parent's mode.
-	Mode    agent.Mode
+	Mode    permission.Mode
 	HasMode bool
 	// Reviews marks a child whose declared paths are evidence rather than a
 	// write claim: it is handed those paths and their diff before its task,
@@ -96,7 +96,7 @@ func BuiltinProfiles() Profiles {
 			// Read-only rather than plan: the child is never handed plan mode's
 			// instructions, so plan would name a job it was not given, and a
 			// refused call would send it to present a plan nobody approves.
-			Mode:      agent.ModeReadOnly,
+			Mode:      permission.ModeReadOnly,
 			HasMode:   true,
 			Reviews:   true,
 			MaxTokens: DefaultMaxTokens,

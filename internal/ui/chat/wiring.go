@@ -35,6 +35,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
@@ -105,8 +106,8 @@ type Wiring struct {
 	// Mode and Cycle are the starting permission mode and the Shift+Tab
 	// cycle order; an empty cycle keeps the default order. A conversation
 	// keeps the one mode it has whatever Mode says (conversation.go).
-	Mode  agent.Mode
-	Cycle []agent.Mode
+	Mode  permission.Mode
+	Cycle []permission.Mode
 	// Conversation marks the session as a conversation: no start screen and
 	// one policy (conversation.go).
 	Conversation bool
@@ -246,7 +247,7 @@ type Wiring struct {
 	// Classifier is auto mode's permission classifier: gated calls the
 	// static policy would ask about are judged by it, and its failures fall
 	// back to asking.
-	Classifier *agent.Classifier
+	Classifier *permission.Classifier
 	// Explainer is the command card's explanation key. Without one the card
 	// offers nothing and the key does nothing.
 	Explainer *sidejobs.Explainer

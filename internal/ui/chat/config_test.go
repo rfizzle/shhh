@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -278,14 +278,14 @@ func TestConfigScreen_ATakenModeReadsLikeTheModeKey(t *testing.T) {
 		if len(h.staged) == 0 {
 			return false
 		}
-		w.Mode, w.ModelName = agent.ModeAuto, "model-b"
+		w.Mode, w.ModelName = permission.ModeAuto, "model-b"
 		return true
 	}
 	m := configModelWith(t, h)
 	m.wiring.SwitchModel = switchModel
 	m = sendText(t, m, "/config")
 	m = stageOne(t, m, "auto")
-	if m.policy.mode != agent.ModeAuto || m.modelName != "model-b" {
+	if m.policy.mode != permission.ModeAuto || m.modelName != "model-b" {
 		t.Fatalf("the session runs in %s on %q after the staging", m.policy.mode, m.modelName)
 	}
 	if len(switched) != 1 || switched[0] != "model-b" {
@@ -309,7 +309,7 @@ func TestConfigScreen_ATakenModeReadsLikeTheModeKey(t *testing.T) {
 	}
 	shiftTab := tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}
 	m, ref = pressKeys(t, m, shiftTab), pressKeys(t, ref, shiftTab)
-	if m.policy.mode != ref.policy.mode || m.policy.mode == agent.ModeAuto {
+	if m.policy.mode != ref.policy.mode || m.policy.mode == permission.ModeAuto {
 		t.Errorf("the cycle walked from the taken mode to %s, from the command's to %s", m.policy.mode, ref.policy.mode)
 	}
 }
@@ -319,13 +319,13 @@ func TestConfigScreen_ATakenModeReadsLikeTheModeKey(t *testing.T) {
 func TestConfigScreen_ATakeWaitsForTheTurnBoundary(t *testing.T) {
 	m := readyModel(t)
 	m.turnOpen = true
-	m.takeStaged(func(w *Wiring) bool { w.Mode, w.MaxToolRounds = agent.ModeAuto, 7; return true })
-	if m.policy.mode == agent.ModeAuto || m.agent.MaxRounds() == 7 {
+	m.takeStaged(func(w *Wiring) bool { w.Mode, w.MaxToolRounds = permission.ModeAuto, 7; return true })
+	if m.policy.mode == permission.ModeAuto || m.agent.MaxRounds() == 7 {
 		t.Fatal("the take moved the session under a running turn")
 	}
 	m.turnOpen = false
 	m.openTurn("next")
-	if m.policy.mode != agent.ModeAuto || m.agent.MaxRounds() != 7 {
+	if m.policy.mode != permission.ModeAuto || m.agent.MaxRounds() != 7 {
 		t.Errorf("the next turn opened in %s on %d rounds, want the staged auto and 7", m.policy.mode, m.agent.MaxRounds())
 	}
 
@@ -333,10 +333,10 @@ func TestConfigScreen_ATakeWaitsForTheTurnBoundary(t *testing.T) {
 	// take waited is the mode the next turn opens in.
 	m.turnOpen = true
 	m.takeStaged(func(w *Wiring) bool { w.MaxToolRounds = 9; return true })
-	m.applyMode(agent.ModePlan)
+	m.applyMode(permission.ModePlan)
 	m.turnOpen = false
 	m.openTurn("after")
-	if m.policy.mode != agent.ModePlan || m.agent.MaxRounds() != 9 {
+	if m.policy.mode != permission.ModePlan || m.agent.MaxRounds() != 9 {
 		t.Errorf("the turn opened in %s on %d rounds, want the cycled plan and the staged 9", m.policy.mode, m.agent.MaxRounds())
 	}
 }

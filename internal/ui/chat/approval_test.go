@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -986,7 +987,7 @@ func TestAutoApproval_LeavesOneRowCarryingItsOwnAccount(t *testing.T) {
 	path := filepath.Join(dir, "one.txt")
 	var ran []string
 	m := execModel(t, &ran)
-	m.policy.mode = agent.ModeAcceptEdits
+	m.policy.mode = permission.ModeAcceptEdits
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
@@ -1040,7 +1041,7 @@ func TestAutoApproval_NeverPrintsWhatTheRowBounds(t *testing.T) {
 				return GatedPreview{Title: "stage 20 files", Summary: strings.Join(paths, ", ")}, nil
 			},
 		})
-	m.policy.mode = agent.ModeAcceptEdits
+	m.policy.mode = permission.ModeAcceptEdits
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_gw", Name: structural.GitWriteToolName, Arguments: string(args)},
@@ -1080,7 +1081,7 @@ func TestAutoApproval_ASummaryCannotLandInsideAnApprovedAct(t *testing.T) {
 	path := filepath.Join(dir, "one.txt")
 	var ran []string
 	m := execModel(t, &ran)
-	m.policy.mode = agent.ModeAcceptEdits
+	m.policy.mode = permission.ModeAcceptEdits
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
@@ -1465,7 +1466,7 @@ func TestGitWrite_RequiredContainmentPutsItToTheCard(t *testing.T) {
 func TestApproval_AWriteWithASecretAsks(t *testing.T) {
 	const key = "sk-ant-api03-" + "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-AbCdEfGh-AA"
 	secretly := "# dev\n# a\nKEY=" + key + "\n"
-	write := func(mode agent.Mode, grant bool, content string) Model {
+	write := func(mode permission.Mode, grant bool, content string) Model {
 		var ran []string
 		m := execModel(t, &ran)
 		m.policy.mode, m.policy.allEdits = mode, grant
@@ -1475,7 +1476,7 @@ func TestApproval_AWriteWithASecretAsks(t *testing.T) {
 		}})
 		return updated.(Model)
 	}
-	for _, mode := range []agent.Mode{agent.ModeAcceptEdits, agent.ModeAuto} {
+	for _, mode := range []permission.Mode{permission.ModeAcceptEdits, permission.ModeAuto} {
 		m := write(mode, false, secretly)
 		if m.state != stateConfirmRun {
 			t.Fatalf("a write with a secret must wait for the reader in %s mode", mode)
@@ -1488,10 +1489,10 @@ func TestApproval_AWriteWithASecretAsks(t *testing.T) {
 			t.Fatalf("%s: the card must not carry the value, got:\n%s", mode, card)
 		}
 	}
-	if write(agent.ModeManual, true, secretly).state != stateConfirmRun {
+	if write(permission.ModeManual, true, secretly).state != stateConfirmRun {
 		t.Fatal("a session grant must not answer a write with a secret")
 	}
-	if write(agent.ModeAcceptEdits, false, "KEY=none\n").state == stateConfirmRun {
+	if write(permission.ModeAcceptEdits, false, "KEY=none\n").state == stateConfirmRun {
 		t.Fatal("a clean write should still run unasked in accept-edits mode")
 	}
 }

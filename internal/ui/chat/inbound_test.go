@@ -10,8 +10,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/rpc"
 )
 
@@ -243,20 +243,20 @@ func TestInbound_RefuseTakesNothing(t *testing.T) {
 
 func TestInbound_TheDefaultHoldsUnderAutoAndAcceptsOtherwise(t *testing.T) {
 	for _, c := range []struct {
-		mode agent.Mode
+		mode permission.Mode
 		want string
 	}{
-		{agent.ModeAuto, InboundHold},
-		{agent.ModeManual, InboundAccept},
-		{agent.ModeAcceptEdits, InboundAccept},
-		{agent.ModePlan, InboundAccept},
+		{permission.ModeAuto, InboundHold},
+		{permission.ModeManual, InboundAccept},
+		{permission.ModeAcceptEdits, InboundAccept},
+		{permission.ModePlan, InboundAccept},
 	} {
 		m := New(nil, mockStream, Wiring{Mode: c.mode})
 		if got := m.inboundPolicy(); got != c.want {
 			t.Errorf("%s: default %q, want %q", c.mode, got, c.want)
 		}
 	}
-	m := New(nil, mockStream, Wiring{Mode: agent.ModeAuto}).WithInbound(Inbound{Policy: "accept"})
+	m := New(nil, mockStream, Wiring{Mode: permission.ModeAuto}).WithInbound(Inbound{Policy: "accept"})
 	if got := m.inboundPolicy(); got != InboundAccept {
 		t.Errorf("a stated policy wins over the mode, got %q", got)
 	}

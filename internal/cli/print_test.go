@@ -28,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -453,7 +454,7 @@ func TestHeadlessApprover_GitWriteIsAnsweredAtTheWriteTier(t *testing.T) {
 		t.Fatalf("the default must deny a git write with guidance, got %q", result)
 	}
 	denied := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, rules: approval.Router{Denylist: []string{"git commit"}}, run: fakeRun(&[]string{}), structTools: st})
-	if result := denied(tc); result != agent.DenylistResult {
+	if result := denied(tc); result != permission.DenylistResult {
 		t.Fatalf("a deny-list entry for the act must refuse it under --yes too, got %q", result)
 	}
 	// A run that requires containment on a host with none still answers a
@@ -637,7 +638,7 @@ func TestHeadlessConversation_FetchesWithoutYes(t *testing.T) {
 		reason       string
 	}{
 		{name: "conversation", conversation: true, ran: true, reason: observe.ReasonConversationRead},
-		{name: "denied host", conversation: true, deny: []string{host}, reason: observe.ReasonCode(agent.DenyReasonHost)},
+		{name: "denied host", conversation: true, deny: []string{host}, reason: observe.ReasonCode(permission.DenyReasonHost)},
 		{name: "coding run", reason: observe.ReasonHeadlessDefault},
 	}
 	for _, c := range cases {
@@ -813,10 +814,10 @@ func TestHeadlessApprover_DenylistHoldsUnderYesAndTheAllowlist(t *testing.T) {
 			var ran []string
 			resolve := headlessApprover(context.Background(), headlessApproval{opts: c.opts, allowlist: c.allowlist, rules: approval.Router{Denylist: []string{"git push"}}, run: fakeRun(&ran)})
 
-			if result := resolve(execCall("git push origin main")); result != agent.DenylistResult {
+			if result := resolve(execCall("git push origin main")); result != permission.DenylistResult {
 				t.Fatalf("a denied command answered %q, want the deny-list refusal", result)
 			}
-			if result := resolve(execCall("go build && git push")); result != agent.DenylistResult {
+			if result := resolve(execCall("go build && git push")); result != permission.DenylistResult {
 				t.Fatalf("a denied command in a chain answered %q, want the deny-list refusal", result)
 			}
 			if len(ran) != 0 {
@@ -829,7 +830,7 @@ func TestHeadlessApprover_DenylistHoldsUnderYesAndTheAllowlist(t *testing.T) {
 func TestHeadlessApprover_DenylistHoldsForAProcessStart(t *testing.T) {
 	sup := newTestProcessSupervisor(t)
 	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, rules: approval.Router{Denylist: []string{"npm run"}}, run: fakeRun(&[]string{}), procSup: sup})
-	if result := resolve(processStartCall("web", "npm run dev")); result != agent.DenylistResult {
+	if result := resolve(processStartCall("web", "npm run dev")); result != permission.DenylistResult {
 		t.Fatalf("a denied process start answered %q, want the deny-list refusal", result)
 	}
 }
@@ -2231,7 +2232,7 @@ func TestHeadlessApprover_ARefusalIsWrittenDownWithItsRule(t *testing.T) {
 
 	at := func() observe.Pos { return observe.Pos{Turn: 1, Round: 4} }
 	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, rules: approval.Router{Denylist: []string{"rm -rf"}}, run: fakeRun(&[]string{}), un: unattended{at: at}})
-	if result := resolve(execCall("rm -rf /tmp/x")); result != agent.DenylistResult {
+	if result := resolve(execCall("rm -rf /tmp/x")); result != permission.DenylistResult {
 		t.Fatalf("the deny list must refuse the command, got %q", result)
 	}
 

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 	"github.com/rfizzle/shhh/internal/web"
@@ -29,12 +29,12 @@ func openWebTools(cfg config.Config) *web.Toolset {
 	deny := cfg.Web.DenyHosts
 	fetcher := web.NewFetcher(web.Policy{
 		AllowPrivate: cfg.Web.AllowPrivate,
-		DenyHost:     func(host string) bool { return agent.HostMatches(deny, host) },
+		DenyHost:     func(host string) bool { return permission.HostMatches(deny, host) },
 	})
 	// The standing grants are in force before any session says anything;
 	// an interactive session replaces this as [a] adds to it.
 	allow := cfg.Web.AllowHosts
-	fetcher.SetGrantedHosts(func(host string) bool { return agent.HostMatches(allow, host) })
+	fetcher.SetGrantedHosts(func(host string) bool { return permission.HostMatches(allow, host) })
 	if cfg.Web.FetchMaxBytes > 0 {
 		fetcher.MaxBodyBytes = cfg.Web.FetchMaxBytes
 	}

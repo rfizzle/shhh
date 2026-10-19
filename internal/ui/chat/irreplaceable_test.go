@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -58,7 +58,7 @@ func TestIrreplaceableTarget_RefusedBeforeTheClassifierAndTheCard(t *testing.T) 
 		t.Fatal("a rule's refusal drew a card")
 	}
 	row := m.transcript[len(m.transcript)-1]
-	if !agent.IsIrreplaceable(row.denyRule) || !strings.Contains(row.denyRule, "your home directory") {
+	if !permission.IsIrreplaceable(row.denyRule) || !strings.Contains(row.denyRule, "your home directory") {
 		t.Fatalf("the row names the rule and the target, got %q", row.denyRule)
 	}
 	if !strings.Contains(m.lastDenial, "!") {

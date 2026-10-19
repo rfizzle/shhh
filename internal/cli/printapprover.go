@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/radius"
@@ -178,7 +179,7 @@ type headlessApproval struct {
 	un           unattended
 	// redirects is the run's memory of the commands it answered with the
 	// editor; nil answers none.
-	redirects *agent.Redirects
+	redirects *permission.Redirects
 	// claimed is where an answered claim's paths join what this run wrote,
 	// which is the list the git stager admits from (headlessclaim.go). Nil
 	// refuses every claim: a run with nowhere to record one cannot stage it.
@@ -215,7 +216,7 @@ type headlessApproval struct {
 // to, and the judge a call the flags did not answer is put to (approvals.go).
 // A zero value is the surface exactly as it was — flags, or a refusal.
 func headlessApprover(ctx context.Context, r headlessApproval) func(llm.ToolCall) string {
-	holds := agent.Answers{Has: r.answers, Redirects: r.redirects}
+	holds := permission.Answers{Has: r.answers, Redirects: r.redirects}
 	if r.procSup != nil {
 		holds.Command = process.CommandOf
 	}
@@ -253,27 +254,27 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(llm.ToolCall
 		},
 	}
 	return func(tc llm.ToolCall) string {
-		call, callErr := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), holds)
+		call, callErr := permission.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), holds)
 		switch {
 		case !r.answers(tc.Name):
 			// A call this run holds nothing for is refused below, whatever
 			// its tier.
-		case call.Action.Kind == agent.ActionOther && tc.Name == subagent.SpawnToolName:
+		case call.Action.Kind == permission.ActionOther && tc.Name == subagent.SpawnToolName:
 			return r.approveSpawn(ctx, tc, call)
-		case call.Action.Kind == agent.ActionOther:
+		case call.Action.Kind == permission.ActionOther:
 			return r.approveServerCall(ctx, tc, call)
-		case call.Action.Kind == agent.ActionFetch:
+		case call.Action.Kind == permission.ActionFetch:
 			return r.approveFetch(ctx, tc, call)
 		// A process start is approved like a command: safety-flagged
 		// commands are always denied headless; --yes or an allowlist match
 		// opts in.
-		case call.Action.Kind == agent.ActionCommand && receipt.IsProcess(tc.Name):
+		case call.Action.Kind == permission.ActionCommand && receipt.IsProcess(tc.Name):
 			return r.admitCommand(tc, call, callErr, start)
-		case call.Action.Kind == agent.ActionCommand:
+		case call.Action.Kind == permission.ActionCommand:
 			return r.admitCommand(tc, call, callErr, foreground)
-		case call.Tier == agent.TierWrite && receipt.IsGitWrite(tc.Name):
+		case call.Tier == permission.TierWrite && receipt.IsGitWrite(tc.Name):
 			return r.approveGitWrite(ctx, tc, call)
-		case call.Tier == agent.TierWrite:
+		case call.Tier == permission.TierWrite:
 			return r.approveWrite(ctx, tc, call)
 		}
 		return "error: tool " + tc.Name + " cannot be approved in this session"
@@ -312,7 +313,7 @@ func (r headlessApproval) refuse(tc llm.ToolCall, command, rule string) {
 func (r headlessApproval) refuseTook(tc llm.ToolCall, command, rule string, took time.Duration) {
 	r.noteTook(observe.DecisionDeny, rule, took)
 	at := r.un.pos()
-	agent.LogRefusal(tc.Name, command, rule, at.Turn, at.Round)
+	permission.LogRefusal(tc.Name, command, rule, at.Turn, at.Round)
 }
 
 // answer is what a gated call gets once every standing refusal — the
@@ -339,19 +340,19 @@ func (r headlessApproval) refuseTook(tc llm.ToolCall, command, rule string, took
 //
 // took is how long the classifier took where it was asked, and zero where a
 // flag answered, for the row the caller notes the allow under.
-func (r headlessApproval) answer(tc llm.ToolCall, action agent.Action, byFlag bool, flagReason, what, without string) (string, time.Duration, bool) {
+func (r headlessApproval) answer(tc llm.ToolCall, action permission.Action, byFlag bool, flagReason, what, without string) (string, time.Duration, bool) {
 	if byFlag {
 		return flagReason, 0, true
 	}
 	decision, why, code, took := r.un.judge.judge(tc, action)
-	if decision == agent.Allow {
+	if decision == permission.Allow {
 		return code, took, true
 	}
 	r.refuseTook(tc, action.Command, code, took)
 	if r.un.judge == nil {
 		return "error: " + what + " not approved: headless mode denies " + without, 0, false
 	}
-	return agent.UnattendedRefusedResult(what, why), 0, false
+	return permission.UnattendedRefusedResult(what, why), 0, false
 }
 
 // answers is which calls this run has an answer for: the tools it was
@@ -385,7 +386,7 @@ func (r headlessApproval) answers(name string) bool {
 // for the calls it goes on to make, so this is the decision — and the only
 // one.
 // See docs/capabilities/subagents.md#spawning-is-a-decision.
-func (r headlessApproval) approveSpawn(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveSpawn(ctx context.Context, tc llm.ToolCall, call permission.Classified) string {
 	// A model the session cannot run is refused ahead of the verdict, as
 	// the session refuses it ahead of its card: no classifier round is spent
 	// on a spawn that cannot start.
@@ -406,7 +407,7 @@ func (r headlessApproval) approveSpawn(ctx context.Context, tc llm.ToolCall, cal
 
 // approveServerCall answers a server call, an external action like a fetch:
 // --yes opts in, the default denies.
-func (r headlessApproval) approveServerCall(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveServerCall(ctx context.Context, tc llm.ToolCall, call permission.Classified) string {
 	reason, took, ok := r.answer(tc, call.Action,
 		r.opts.yes, observe.ReasonHeadlessYes, tc.Name, "external actions by default (run with --yes)")
 	if !ok {
@@ -419,7 +420,7 @@ func (r headlessApproval) approveServerCall(ctx context.Context, tc llm.ToolCall
 // approveFetch answers web_fetch, an external action: --yes opts in to any
 // host the deny list does not name, the default denies like every other
 // gated call.
-func (r headlessApproval) approveFetch(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveFetch(ctx context.Context, tc llm.ToolCall, call permission.Classified) string {
 	// The host is on the action because it is the unit a fetch is judged
 	// on: the classifier is being asked whether this page is an outbound
 	// channel worth stopping for, and where the request goes is most of that
@@ -438,9 +439,9 @@ func (r headlessApproval) approveFetch(ctx context.Context, tc llm.ToolCall, cal
 		// classifier is asked. It writes its own refusal line, which is why
 		// this does not go through refuse.
 		decision, why := r.un.conversation.Decide(fetchAction)
-		if decision != agent.Allow {
+		if decision != permission.Allow {
 			r.note(observe.DecisionDeny, observe.ReasonCode(why))
-			return agent.DeniedHostResult
+			return permission.DeniedHostResult
 		}
 		reason = observe.ReasonCode(why)
 	} else {
@@ -493,7 +494,7 @@ type commandAdmission struct {
 // requirement, the arguments, the deny list, the safety table, the flags and
 // the classifier, then the working scope. The order is the policy, so it is
 // written once.
-func (r headlessApproval) admitCommand(tc llm.ToolCall, call agent.Classified, callErr error, how commandAdmission) string {
+func (r headlessApproval) admitCommand(tc llm.ToolCall, call permission.Classified, callErr error, how commandAdmission) string {
 	// Refused before the approval it would otherwise be given: a run that
 	// requires containment has nothing to approve where none is in force,
 	// and the refusal is the result the model reads.
@@ -547,7 +548,7 @@ func (r headlessApproval) admitCommand(tc llm.ToolCall, call agent.Classified, c
 // answered where a file modification is answered — after the deny list,
 // which reads the command line the call stands for, because a person who
 // refused `git commit` refused the act and not the spelling.
-func (r headlessApproval) approveGitWrite(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveGitWrite(ctx context.Context, tc llm.ToolCall, call permission.Classified) string {
 	line := call.Action.Command
 	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
 		r.refuse(tc, line, refusal.Code)
@@ -588,7 +589,7 @@ func (r headlessApproval) approveGitWrite(ctx context.Context, tc llm.ToolCall, 
 }
 
 // approveWrite answers a file modification.
-func (r headlessApproval) approveWrite(ctx context.Context, tc llm.ToolCall, call agent.Classified) string {
+func (r headlessApproval) approveWrite(ctx context.Context, tc llm.ToolCall, call permission.Classified) string {
 	// Before --yes and before the judge, as the screen reads it before its
 	// card: a path git runs is no grant's to write.
 	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
@@ -642,7 +643,7 @@ func headlessCommandFlags(opts printOpts, allowlist []string, command string) (b
 	switch {
 	case opts.yes:
 		return true, observe.ReasonHeadlessYes
-	case agent.AllowlistMatches(allowlist, command):
+	case permission.AllowlistMatches(allowlist, command):
 		return true, observe.ReasonAllowlist
 	}
 	return false, ""

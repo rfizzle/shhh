@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -193,7 +194,7 @@ func TestApproval_TheDraftIsTheNote(t *testing.T) {
 	// A memory proposal answers on its own surface and carries no note, so
 	// its refusal is the one this rule leaves alone.
 	t.Run("a memory proposal keeps its sentence", func(t *testing.T) {
-		m, _ := memoryModel(t, agent.ModeManual)
+		m, _ := memoryModel(t, permission.ModeManual)
 		updated, _ := m.Update(rememberCall())
 		m = press(t, handover(t, updated.(Model)), "n")
 		const want = "error: the user declined to save this memory; do not re-propose it this session"

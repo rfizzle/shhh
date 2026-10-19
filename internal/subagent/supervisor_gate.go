@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -181,7 +182,7 @@ func refuseGitProgramPath(c *child, name string, rooted json.RawMessage, title s
 	if c.rec.Decision != nil {
 		c.rec.Decision(c.pos(), observe.DecisionDeny, observe.ReasonSafety)
 	}
-	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + agent.DenyReasonGitPath,
+	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + permission.DenyReasonGitPath,
 		Result: tools.GitProgramPathResult})
 	return tools.GitProgramPathResult, true
 }
@@ -240,29 +241,29 @@ func (s *Supervisor) resolveGated(c *child, tc llm.ToolCall) string {
 	// mode, which refuses the call with the result that tells the model why
 	// nothing ran, in the words of the mode that refused it; and for a path
 	// no grant can reach, which says which path and why.
-	if decision == agent.Deny {
-		if agent.IsIrreplaceable(reason) {
+	if decision == permission.Deny {
+		if permission.IsIrreplaceable(reason) {
 			// Filed with the safety table's refusals, as the session files
 			// it: it is that table's destroying rows, read against where
 			// they point.
 			record(observe.DecisionDeny, observe.ReasonSafety)
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
-			return agent.IrreplaceableResult(reason)
+			return permission.IrreplaceableResult(reason)
 		}
 		record(observe.DecisionDeny, observe.ReasonCode(reason))
-		if reason == agent.DenyReasonDenylist {
+		if reason == permission.DenyReasonDenylist {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
-			return agent.DenylistResult
+			return permission.DenylistResult
 		}
 		if strings.HasPrefix(reason, "outside the working scope") {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
-			return agent.ScopeRefusedResult(reason)
+			return permission.ScopeRefusedResult(reason)
 		}
 		refused := ""
-		if action.Kind == agent.ActionCommand {
+		if action.Kind == permission.ActionCommand {
 			refused = action.Command
 		}
-		return agent.ModeRefusedResult(reason, refused, policy.ReadOnlyExtra)
+		return permission.ModeRefusedResult(reason, refused, policy.ReadOnlyExtra)
 	}
 	// A write that adds a credential shape is asked in every mode that would
 	// have run it, as the session's own is: the denials above stand, but
@@ -283,17 +284,17 @@ func (s *Supervisor) resolveGated(c *child, tc llm.ToolCall) string {
 	var judged string
 	// failed is the classifier unavailable, which the ask is filed under.
 	var failed bool
-	if decision == agent.Ask && !addsSecret {
+	if decision == permission.Ask && !addsSecret {
 		var denial string
 		var byClassifier bool
 		decision, cost, denial, byClassifier, failed = s.classify(c, policy.Mode, tc, action)
-		if decision == agent.Ask && byClassifier {
+		if decision == permission.Ask && byClassifier {
 			judged = denial
-		} else if decision == agent.Ask {
+		} else if decision == permission.Ask {
 			standing = denial
 		}
 		classified = true
-		if decision == agent.Deny {
+		if decision == permission.Deny {
 			recordTook(observe.DecisionDeny, observe.ReasonClassifier, cost)
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
 				Text: "Refused (" + classifierAccount(cost) + "): " + title + " — " + denial})
@@ -301,7 +302,7 @@ func (s *Supervisor) resolveGated(c *child, tc llm.ToolCall) string {
 		}
 	}
 	switch decision {
-	case agent.Allow:
+	case permission.Allow:
 		code, rule := observe.ReasonCode(reason), reason
 		if classified {
 			code, rule = observe.ReasonClassifier, classifierRule
@@ -311,7 +312,7 @@ func (s *Supervisor) resolveGated(c *child, tc llm.ToolCall) string {
 		// for it. A refusal keeps its row because there is no act under it
 		// to carry the reason; an approval has one.
 		c.noteAllowed(tc.ID, rule, cost)
-	case agent.Ask:
+	case permission.Ask:
 		// Two events, as a session records: what put the call in front of a
 		// person, and what they said. The first is what a prompt-rate is
 		// made of and the second is what an approval-rate is, and one event
@@ -359,7 +360,7 @@ func (s *Supervisor) resolveGated(c *child, tc llm.ToolCall) string {
 		}
 		if !approved {
 			record(observe.DecisionDeny, observe.ReasonUser)
-			if action.Kind == agent.ActionCommand {
+			if action.Kind == permission.ActionCommand {
 				return "error: the user declined to run this command"
 			}
 			return "error: the user declined this tool call"
@@ -401,9 +402,9 @@ func (s *Supervisor) resolveGated(c *child, tc llm.ToolCall) string {
 // refused here, as it always was: the only answerer on the other end of the
 // route is a rule, and it would decline the call in somebody's name.
 // See docs/capabilities/subagents.md#a-child-answers-to-the-session.
-func (s *Supervisor) classify(c *child, mode agent.Mode, tc llm.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string, judged, failed bool) {
-	if mode != agent.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
-		return agent.Ask, 0, "", false, false
+func (s *Supervisor) classify(c *child, mode permission.Mode, tc llm.ToolCall, action permission.Action) (decision permission.Decision, cost time.Duration, denial string, judged, failed bool) {
+	if mode != permission.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
+		return permission.Ask, 0, "", false, false
 	}
 	// A reach outside the child's scope is the person's, whatever the
 	// directory: nothing the classifier says widens what the child may write,
@@ -411,9 +412,9 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc llm.ToolCall, action
 	// anyway, and the child would read that failure as an approved call.
 	// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 	if len(action.OutOfScope) > 0 {
-		return agent.Ask, 0, "", false, false
+		return permission.Ask, 0, "", false, false
 	}
-	req := agent.ClassifierRequest{
+	req := permission.ClassifierRequest{
 		Tool:      tc.Name,
 		Arguments: tc.Arguments,
 		CWD:       c.root,
@@ -425,7 +426,7 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc llm.ToolCall, action
 	// fetch it would narrow calls it never described. A checkout's profile
 	// states none here (ClassifierScope).
 	// See docs/capabilities/approvals-and-safety.md#a-profile-can-narrow-the-classifier-never-widen-it.
-	if action.Kind == agent.ActionCommand {
+	if action.Kind == permission.ActionCommand {
 		req.ProfileScope = c.profile.ClassifierScope()
 	}
 	v := s.opts.Classifier.Judge(c.ctx, req)
@@ -442,34 +443,34 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc llm.ToolCall, action
 		t := c.attemptSpend()
 		c.rec.Usage(c.pos().Turn, t.In, t.Out, t.Cost, t.Priced)
 	}
-	verdict, reason := agent.ResolveAuto(action, v)
+	verdict, reason := permission.ResolveAuto(action, v)
 	switch {
-	case verdict == agent.Allow:
-		return agent.Allow, v.Elapsed, "", false, false
-	case verdict == agent.Deny:
-		return agent.Deny, v.Elapsed, reason, false, false
-	case agent.JudgedDenialAsks(action, v):
+	case verdict == permission.Allow:
+		return permission.Allow, v.Elapsed, "", false, false
+	case verdict == permission.Deny:
+		return permission.Deny, v.Elapsed, reason, false, false
+	case permission.JudgedDenialAsks(action, v):
 		s.mu.Lock()
 		attended := s.attended
 		s.mu.Unlock()
 		if !attended {
-			return agent.Deny, v.Elapsed, reason, false, false
+			return permission.Deny, v.Elapsed, reason, false, false
 		}
 		// The classifier said no and a person is there to answer instead;
 		// the child's transcript says whose no it was.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Asking the user: the classifier would refuse — " + reason + "."})
-		return agent.Ask, v.Elapsed, reason, true, false
+		return permission.Ask, v.Elapsed, reason, true, false
 	case !v.Failed && web.StandingOf(reason) != "":
 		// The classifier said yes and the host's standing put the call to
 		// the person instead; the child's transcript says which list did.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Asking the user: " + reason + "."})
-		return agent.Ask, v.Elapsed, reason, false, false
+		return permission.Ask, v.Elapsed, reason, false, false
 	case v.Failed:
 		// Fails closed: the user decides, and sees why they were asked.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Classifier unavailable (" + v.Reason + "); asking the user instead."})
-		return agent.Ask, v.Elapsed, "", false, true
+		return permission.Ask, v.Elapsed, "", false, true
 	}
-	return agent.Ask, 0, "", false, false
+	return permission.Ask, 0, "", false, false
 }
 
 // classifierRule is what a child's transcript names as the rule when the
@@ -487,8 +488,8 @@ func classifierAccount(cost time.Duration) string {
 
 // askTitle is the one-line description of a gated call for the child's own
 // transcript.
-func askTitle(name string, action agent.Action) string {
-	if action.Kind == agent.ActionCommand {
+func askTitle(name string, action permission.Action) string {
+	if action.Kind == permission.ActionCommand {
 		return "run " + firstLine(action.Command)
 	}
 	return "use " + name
@@ -500,18 +501,18 @@ func askTitle(name string, action agent.Action) string {
 // child answers for every name it is asked about, and a name the classifier
 // does not know is answered as the strictest kind there is.
 // See docs/capabilities/approvals-and-safety.md#one-classifier-names-a-calls-tier.
-func actionFor(name string, args json.RawMessage) (agent.Action, error) {
-	call, err := agent.ClassifyCall(name, args, agent.Answers{Has: func(string) bool { return true }})
+func actionFor(name string, args json.RawMessage) (permission.Action, error) {
+	call, err := permission.ClassifyCall(name, args, permission.Answers{Has: func(string) bool { return true }})
 	if err != nil {
-		return agent.Action{}, err
+		return permission.Action{}, err
 	}
 	a := call.Action
 	switch a.Kind {
-	case agent.ActionCommand:
+	case permission.ActionCommand:
 		// The child runs the line trimmed, and the trimmed line is what its
 		// policy, its title and its runner all read.
 		a.Command = strings.TrimSpace(a.Command)
-	case agent.ActionFetch:
+	case permission.ActionFetch:
 		// A child's fetch is decided on the same host the parent's card
 		// would have named, so a granted host is as quiet in a child as it
 		// is in the session that granted it.
@@ -529,8 +530,8 @@ func actionFor(name string, args json.RawMessage) (agent.Action, error) {
 // path outside the worktree — so it applies to commands, which can name any
 // path they like.
 // See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
-func (s *Supervisor) scopedAction(c *child, a agent.Action) agent.Action {
-	if s.opts.ScopeDirs == nil || a.Kind != agent.ActionCommand || c.root == "" {
+func (s *Supervisor) scopedAction(c *child, a permission.Action) permission.Action {
+	if s.opts.ScopeDirs == nil || a.Kind != permission.ActionCommand || c.root == "" {
 		return a
 	}
 	sc, _ := scope.New(c.root, s.opts.ScopeDirs()...)
@@ -572,8 +573,8 @@ func (s *Supervisor) scopedAction(c *child, a agent.Action) agent.Action {
 // child is refused through the policy the session is, so the same command is
 // refused the same way whichever agent proposed it.
 // See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
-func ruledAction(c *child, a agent.Action, added func() []string) agent.Action {
-	if a.Kind != agent.ActionCommand || a.Command == "" {
+func ruledAction(c *child, a permission.Action, added func() []string) permission.Action {
+	if a.Kind != permission.ActionCommand || a.Command == "" {
 		return a
 	}
 	where := radius.Where{Dir: c.root, Root: c.root}
@@ -645,7 +646,7 @@ func isHomePath(p string) bool {
 // it with where the child's paths live. The stamp is applied in one place
 // rather than per kind so a request added later cannot reach the parent's
 // card with nothing behind its blast-radius block.
-func (s *Supervisor) buildAsk(c *child, name string, rooted json.RawMessage, action agent.Action) (*Ask, error) {
+func (s *Supervisor) buildAsk(c *child, name string, rooted json.RawMessage, action permission.Action) (*Ask, error) {
 	ask, err := askFor(c, name, rooted, action)
 	if err != nil {
 		return nil, err
@@ -662,16 +663,16 @@ type AskFile struct {
 }
 
 // askFor is the request itself: the variant, and what only that variant knows.
-func askFor(c *child, name string, rooted json.RawMessage, action agent.Action) (*Ask, error) {
+func askFor(c *child, name string, rooted json.RawMessage, action permission.Action) (*Ask, error) {
 	switch action.Kind {
-	case agent.ActionCommand:
+	case permission.ActionCommand:
 		ask := NewAsk(c.name, AskCommand, "run "+firstLine(action.Command))
 		ask.Command = action.Command
 		for _, w := range safety.Check(action.Command) {
 			ask.Warnings = append(ask.Warnings, w.Risk)
 		}
 		return ask, nil
-	case agent.ActionEdit:
+	case permission.ActionEdit:
 		mut, err := tools.PreviewMutation(name, rooted)
 		if err != nil {
 			return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -698,12 +699,12 @@ func askFor(c *child, name string, rooted json.RawMessage, action agent.Action) 
 
 // secretAsks reports whether the call is a write that adds a credential
 // shape, and the decision with a yes turned into an ask where it is.
-func secretAsks(name string, rooted json.RawMessage, action agent.Action, decision agent.Decision) (bool, agent.Decision) {
-	if action.Kind != agent.ActionEdit || editSecret(name, rooted) == "" {
+func secretAsks(name string, rooted json.RawMessage, action permission.Action, decision permission.Decision) (bool, permission.Decision) {
+	if action.Kind != permission.ActionEdit || editSecret(name, rooted) == "" {
 		return false, decision
 	}
-	if decision == agent.Allow {
-		decision = agent.Ask
+	if decision == permission.Allow {
+		decision = permission.Ask
 	}
 	return true, decision
 }

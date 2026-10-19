@@ -1,4 +1,4 @@
-package agent
+package permission
 
 // LLM permission classifier for auto mode: where the permission mode
 // policy would Ask, auto mode instead asks a classifier model whether the
@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/secret"
@@ -54,7 +55,7 @@ const (
 	// names. It is the digest's own window, so what the classifier is shown
 	// of a run's activity and what a reading is taken over are the same
 	// amount of it.
-	contextToolRows = DefaultDigestRows
+	contextToolRows = agent.DefaultDigestRows
 	// maxEvidenceArgChars bounds the proposed arguments in the evidence.
 	maxEvidenceArgChars = 4_000
 )

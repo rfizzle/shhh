@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/nudge"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/tree"
@@ -66,7 +67,7 @@ func New(initialMessages []llm.Message, stream StreamFunc, w Wiring) Model {
 	m := Model{
 		agent:     ag,
 		wiring:    w,
-		approval:  approvalState{redirects: agent.NewRedirects(sessionWorkspace(w.Workspace), ag.RoundSeq)},
+		approval:  approvalState{redirects: permission.NewRedirects(sessionWorkspace(w.Workspace), ag.RoundSeq)},
 		input:     ta,
 		spinner:   s,
 		state:     stateInput,
@@ -180,7 +181,7 @@ func (m *Model) seedPolicy() {
 		p.cycle = w.Cycle
 	}
 	if w.Conversation {
-		p.mode = agent.ModeManual
+		p.mode = permission.ModeManual
 		return
 	}
 	p.mode = w.Mode

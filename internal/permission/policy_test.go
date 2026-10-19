@@ -1,4 +1,4 @@
-package agent
+package permission
 
 // The grant ladder's two primitives: what [a] records for a command,
 // and what it records for an edit.

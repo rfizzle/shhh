@@ -36,6 +36,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -167,7 +168,7 @@ func wordingKeys() []wording {
 			sidejobs.SummaryWording, agent.ValidateVerbatim},
 		{"classifier", func(c config.PromptsConfig) string { return c.Classifier },
 			setClassifier, func(p sessionPrompts) string { return p.classifier },
-			agent.ClassifierWording, agent.ValidateVerbatim},
+			permission.ClassifierWording, agent.ValidateVerbatim},
 		{"account", func(c config.PromptsConfig) string { return c.Account },
 			setAccount, func(p sessionPrompts) string { return p.account },
 			sidejobs.AccountWording, agent.ValidateVerbatim},

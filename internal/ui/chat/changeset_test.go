@@ -14,8 +14,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -123,7 +123,7 @@ func TestChangeset_RecordCarriesTheModeTheFileHad(t *testing.T) {
 func TestChangeset_AutoApprovedEditRecordsHowItWasApplied(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.policy.mode = agent.ModeAcceptEdits
+	m.policy.mode = permission.ModeAcceptEdits
 	m.turnCount = 2
 	path := filepath.Join(t.TempDir(), "a.txt")
 	m = applyWrite(t, m, path, "one\n", "")

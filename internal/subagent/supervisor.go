@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -42,8 +43,8 @@ type Supervisor struct {
 	// parentMode is the ceiling children are clamped to; parentGrants are the
 	// parent's session grants ([a] on a prompt, /mode allow), which children
 	// inherit for the same reason they inherit the mode.
-	parentMode   agent.Mode
-	parentGrants agent.Grants
+	parentMode   permission.Mode
+	parentGrants permission.Grants
 	// conversationPolicy is set when the parent is a conversation: its
 	// fetches are reads, and so are its children's (SetConversationPolicy).
 	conversationPolicy bool
@@ -130,7 +131,7 @@ func New(ctx context.Context, opts Options) *Supervisor {
 		sems:         map[int]chan struct{}{},
 		byName:       map[string]*child{},
 		counters:     map[Role]int{},
-		parentMode:   agent.ModeManual,
+		parentMode:   permission.ModeManual,
 		appliedFiles: map[string]string{},
 		claimsFreed:  make(chan struct{}),
 		checks:       NewSharedCheckSlots(opts.CheckSlots, sharedSlots(opts)),
@@ -210,7 +211,7 @@ func (s *Supervisor) BatchSize(batch int) int {
 // SetParentMode records the parent session's permission mode; children are
 // clamped to it at every decision, so a child can never be more permissive
 // than its parent.
-func (s *Supervisor) SetParentMode(m agent.Mode) {
+func (s *Supervisor) SetParentMode(m permission.Mode) {
 	s.mu.Lock()
 	s.parentMode = m
 	s.mu.Unlock()
@@ -251,7 +252,7 @@ func (s *Supervisor) SetAttended() {
 // close, so a child spawned under a turn grant loses it when the turn that
 // made it ends, exactly as the session does.
 // See docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends.
-func (s *Supervisor) SetParentGrants(g agent.Grants) {
+func (s *Supervisor) SetParentGrants(g permission.Grants) {
 	s.mu.Lock()
 	s.parentGrants = g
 	s.mu.Unlock()
@@ -260,7 +261,7 @@ func (s *Supervisor) SetParentGrants(g agent.Grants) {
 // childPolicy assembles the approval policy one child decides with: its
 // clamped mode, the parent's session grants and command allowlist, and the
 // read-only inspection settings.
-func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
+func (s *Supervisor) childPolicy(c *child) permission.ModePolicy {
 	s.mu.Lock()
 	g := s.parentGrants
 	conversation := s.conversationPolicy
@@ -285,7 +286,7 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 	if len(c.profile.Deny) > 0 {
 		denylist = append(append([]string(nil), denylist...), c.profile.Deny...)
 	}
-	return agent.ModePolicy{
+	return permission.ModePolicy{
 		Mode:             s.childMode(c),
 		AllowEdits:       g.AllEdits,
 		AllowCommands:    g.AllCommands,
@@ -302,18 +303,18 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 	}
 }
 
-func (s *Supervisor) childMode(c *child) agent.Mode {
+func (s *Supervisor) childMode(c *child) permission.Mode {
 	s.mu.Lock()
 	ceiling := s.parentMode
 	s.mu.Unlock()
 	c.mu.Lock()
 	mode := c.mode
 	c.mu.Unlock()
-	return agent.ClampMode(mode, ceiling)
+	return permission.ClampMode(mode, ceiling)
 }
 
 // ParentMode is the current mode ceiling children are clamped to.
-func (s *Supervisor) ParentMode() agent.Mode {
+func (s *Supervisor) ParentMode() permission.Mode {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.parentMode
@@ -406,28 +407,28 @@ func (s *Supervisor) StreamingText(name string) string {
 }
 
 // AgentMode is the child's effective (ceiling-clamped) permission mode.
-func (s *Supervisor) AgentMode(name string) (agent.Mode, bool) {
+func (s *Supervisor) AgentMode(name string) (permission.Mode, bool) {
 	c, err := s.lookup(name)
 	if err != nil {
-		return agent.ModeManual, false
+		return permission.ModeManual, false
 	}
 	return s.childMode(c), true
 }
 
 // SetAgentMode sets a child's permission mode, clamped to the parent
 // ceiling; the effective mode is returned.
-func (s *Supervisor) SetAgentMode(name string, mode agent.Mode) (agent.Mode, error) {
+func (s *Supervisor) SetAgentMode(name string, mode permission.Mode) (permission.Mode, error) {
 	c, err := s.lookup(name)
 	if err != nil {
-		return agent.ModeManual, err
+		return permission.ModeManual, err
 	}
 	if s.isClosed() {
-		return agent.ModeManual, ErrClosed
+		return permission.ModeManual, ErrClosed
 	}
 	s.mu.Lock()
 	ceiling := s.parentMode
 	s.mu.Unlock()
-	eff := agent.ClampMode(mode, ceiling)
+	eff := permission.ClampMode(mode, ceiling)
 	c.mu.Lock()
 	c.mode = eff
 	c.mu.Unlock()

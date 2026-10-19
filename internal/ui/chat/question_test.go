@@ -14,9 +14,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/spend"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -29,7 +29,7 @@ const chooseArgs = `{"question":"Which store should the cache use?","shape":"cho
 // questionModel is a session mid-turn with an ask call arriving, and an
 // executor that fails the test if anything routes a question to it: a
 // question is a decision and never runs.
-func questionModel(t *testing.T, mode agent.Mode) Model {
+func questionModel(t *testing.T, mode permission.Mode) Model {
 	t.Helper()
 	msgs := []llm.Message{
 		{Role: llm.RoleSystem, Content: "sys"},
@@ -55,7 +55,7 @@ func askCall(args string) toolCallsMsg {
 
 // openedQuestion is the card up and holding the keyboard, which is what a
 // reader who walked up to it has.
-func openedQuestion(t *testing.T, mode agent.Mode, args string) Model {
+func openedQuestion(t *testing.T, mode permission.Mode, args string) Model {
 	t.Helper()
 	updated, _ := questionModel(t, mode).Update(askCall(args))
 	m := updated.(Model)
@@ -78,7 +78,7 @@ func sendKey(t *testing.T, m Model, msg tea.KeyPressMsg) Model {
 // keyboard with the next message the answer.
 func escapedQuestion(t *testing.T, args string) Model {
 	t.Helper()
-	updated, _ := questionModel(t, agent.ModeManual).Update(askCall(args))
+	updated, _ := questionModel(t, permission.ModeManual).Update(askCall(args))
 	m := updated.(Model)
 	if m.question == nil || !m.decisionGated() {
 		t.Fatal("the card should arrive holding the keyboard on an idle draft")
@@ -130,7 +130,7 @@ func answeredResult(t *testing.T, m Model) map[string]any {
 // decide which acts stop to ask is above it in the queue: none of them may
 // answer one.
 func TestQuestion_EveryModeAndEveryGrantStillDrawsTheCard(t *testing.T) {
-	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
+	for _, mode := range []permission.Mode{permission.ModeManual, permission.ModeAcceptEdits, permission.ModeAuto, permission.ModePlan} {
 		for _, grant := range []string{"none", "every edit and every command", "a classifier"} {
 			m := questionModel(t, mode)
 			switch grant {
@@ -143,10 +143,10 @@ func TestQuestion_EveryModeAndEveryGrantStillDrawsTheCard(t *testing.T) {
 				// the executor above is what would catch it deciding.
 				ledger := meter.New(nil)
 				m.wiring.Ledger = ledger
-				m.classifier.judge = agent.NewClassifier(
+				m.classifier.judge = permission.NewClassifier(
 					ledger.For(&verdictProvider{decision: "allow", reason: "the work that was asked for"},
 						spend.SourceClassifier),
-					agent.ClassifierConfig{Model: "judge"})
+					permission.ClassifierConfig{Model: "judge"})
 			}
 			updated, _ := m.Update(askCall(chooseArgs))
 			next := updated.(Model)
@@ -163,7 +163,7 @@ func TestQuestion_EveryModeAndEveryGrantStillDrawsTheCard(t *testing.T) {
 // The answer names the option's label, never its index — the list the reader
 // saw is not the list the model wrote, because the recommendation leads it.
 func TestQuestion_AnAnswerNamesTheLabelAndNotTheIndex(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	if got := m.question.rows[0].Label; got != "SQLite" {
 		t.Fatalf("the recommendation should lead the list, got %q", got)
 	}
@@ -185,7 +185,7 @@ func TestQuestion_AnAnswerNamesTheLabelAndNotTheIndex(t *testing.T) {
 // The digit rows the selector already draws take one outright, and they
 // address the list the reader is looking at.
 func TestQuestion_ADigitTakesTheRowItNumbers(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: '2', Text: "2"})
 	picked, _ := answeredResult(t, m)["picked"].([]any)
 	if len(picked) != 1 || picked[0] != "Postgres" {
@@ -196,7 +196,7 @@ func TestQuestion_ADigitTakesTheRowItNumbers(t *testing.T) {
 // A row the model said cannot be taken says why again rather than answering,
 // and the reason is the one already on the row.
 func TestQuestion_AnUnavailableRowCannotBeTaken(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: '3', Text: "3"})
 	if m.question == nil {
 		t.Fatal("taking a row that cannot be taken must not answer the question")
@@ -212,7 +212,7 @@ func TestQuestion_AnUnavailableRowCannotBeTaken(t *testing.T) {
 
 // The last row is the model's own list saying it may have got the list wrong.
 func TestQuestion_SomethingElseTakesTypedWords(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	last := len(m.question.rows)
 	if m.question.rows[last-1].Label != somethingElse {
 		t.Fatalf("every list ends in the row the model did not write, got %q", m.question.rows[last-1].Label)
@@ -243,7 +243,7 @@ func TestQuestion_SomethingElseTakesTypedWords(t *testing.T) {
 
 // One key opens the note on a pick, and it comes back beside it.
 func TestQuestion_TheNoteRidesBesideThePick(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
 	if !m.question.sel.FocusNote {
 		t.Fatal("the note key should open the field")
@@ -259,7 +259,7 @@ func TestQuestion_TheNoteRidesBesideThePick(t *testing.T) {
 
 // A required note opens the field with the card and refuses an empty answer.
 func TestQuestion_ARequiredNoteOpensWithTheCard(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual,
+	m := openedQuestion(t, permission.ModeManual,
 		`{"question":"Name the flag","shape":"text","note":"required"}`)
 	if !m.question.sel.FocusNote {
 		t.Fatal("a free-text question opens with the keyboard in the field")
@@ -291,7 +291,7 @@ func TestQuestion_ConfirmAnswersInTwoLetters(t *testing.T) {
 		{tea.KeyPressMsg{Code: 'n', Text: "n"}, "no"},
 		{tea.KeyPressMsg{Code: tea.KeyEnter}, "no"},
 	} {
-		m := sendKey(t, openedQuestion(t, agent.ModeManual, args), tc.key)
+		m := sendKey(t, openedQuestion(t, permission.ModeManual, args), tc.key)
 		got := answeredResult(t, m)
 		picked, _ := got["picked"].([]any)
 		if len(picked) != 1 || picked[0] != tc.want {
@@ -302,7 +302,7 @@ func TestQuestion_ConfirmAnswersInTwoLetters(t *testing.T) {
 
 // Several answers at once, with the note under the boxes.
 func TestQuestion_ChooseManyCarriesEveryTickedLabel(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, `{"question":"Which packages?","shape":"choose_many","options":[
+	m := openedQuestion(t, permission.ModeManual, `{"question":"Which packages?","shape":"choose_many","options":[
 		{"label":"internal/agent"},{"label":"internal/cli"},{"label":"internal/ui"}]}`)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeySpace, Text: " "})
 	m = sendKey(t, m, tea.KeyPressMsg{Code: 'j', Text: "j"})
@@ -326,7 +326,7 @@ func TestQuestion_ChooseManyRefusesAnEmptySelectionAsTheDefinitionSays(t *testin
 	if d := string(ask.ToolDefinition().Parameters); !strings.Contains(d, "choose_many: one or more") {
 		t.Fatalf("the definition no longer tells the model a pick is needed: %s", d)
 	}
-	m := openedQuestion(t, agent.ModeManual, `{"question":"Which packages?","shape":"choose_many","options":[
+	m := openedQuestion(t, permission.ModeManual, `{"question":"Which packages?","shape":"choose_many","options":[
 		{"label":"internal/agent"},{"label":"internal/cli"}]}`)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	if _, answered := countRows(m); answered != 0 {
@@ -530,7 +530,7 @@ func TestQuestion_ACancelMakesTheNextMessageAnOrdinaryMessageAgain(t *testing.T)
 // The session is waiting on the reader whether or not the card is drawn: the
 // summons and the frame both read this one fact.
 func TestQuestion_WaitingHoldsWithTheCardClosed(t *testing.T) {
-	on := openedQuestion(t, agent.ModeManual, chooseArgs)
+	on := openedQuestion(t, permission.ModeManual, chooseArgs)
 	if !on.waiting() {
 		t.Error("a question on the card is the session waiting on the reader")
 	}
@@ -566,7 +566,7 @@ func TestQuestion_TheGutterSaysTheDraftIsAnswering(t *testing.T) {
 // included: a strip describing a decision that is not there would be the one
 // thing the reader could not act on.
 func TestQuestion_EscLeavesNothingOfTheCardOnTheScreen(t *testing.T) {
-	updated, _ := questionModel(t, agent.ModeManual).Update(toolCallsMsg{calls: []llm.ToolCall{
+	updated, _ := questionModel(t, permission.ModeManual).Update(toolCallsMsg{calls: []llm.ToolCall{
 		{ID: "call_q", Name: ask.ToolName, Arguments: chooseArgs},
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"cache.go","content":"package cache"}`},
 	}})
@@ -606,7 +606,7 @@ func TestQuestion_TheRailOffersTheCardAgainAndTheQueue(t *testing.T) {
 // The row the answer leaves: the verb, the outcome from the closed list, and
 // no mutation rail, because nothing on the machine changed.
 func TestQuestion_TheAnswersRowCarriesNoRail(t *testing.T) {
-	m := sendKey(t, openedQuestion(t, agent.ModeManual, chooseArgs), tea.KeyPressMsg{Code: tea.KeyEnter})
+	m := sendKey(t, openedQuestion(t, permission.ModeManual, chooseArgs), tea.KeyPressMsg{Code: tea.KeyEnter})
 	var e entry
 	for _, ent := range m.transcript {
 		if ent.kind == entryTool && ent.toolName == ask.ToolName {
@@ -632,7 +632,7 @@ func TestQuestion_TheAnswersRowCarriesNoRail(t *testing.T) {
 // A question that arrives on top of a half-typed sentence is inert: every
 // letter stays the sentence's until the handover chord.
 func TestQuestion_ArrivesInertOverASentenceAndHeldOverAnEmptyDraft(t *testing.T) {
-	m := questionModel(t, agent.ModeManual)
+	m := questionModel(t, permission.ModeManual)
 	m.input.SetValue("I was in the middle of")
 	updated, _ := m.Update(askCall(chooseArgs))
 	m = updated.(Model)
@@ -658,7 +658,7 @@ func TestQuestion_ArrivesInertOverASentenceAndHeldOverAnEmptyDraft(t *testing.T)
 		t.Fatalf("the draft should still be under it:\n%s", view)
 	}
 
-	empty := questionModel(t, agent.ModeManual)
+	empty := questionModel(t, permission.ModeManual)
 	updated, _ = empty.Update(askCall(chooseArgs))
 	if !updated.(Model).decisionGated() {
 		t.Fatal("a card landing on an empty draft takes the keyboard")
@@ -675,7 +675,7 @@ func TestQuestion_AnUngatedRequiredNoteDrawsNoCursor(t *testing.T) {
 		"yes or no":    `{"question":"Reversible?","shape":"confirm","note":"required"}`,
 	} {
 		t.Run(name, func(t *testing.T) {
-			m := questionModel(t, agent.ModeManual)
+			m := questionModel(t, permission.ModeManual)
 			m.input.SetValue("I was in the middle of")
 			updated, _ := m.Update(askCall(args))
 			m = updated.(Model)
@@ -718,7 +718,7 @@ func TestQuestion_UngatedDrawsTheHandoverAndNoneOfItsOwnKeys(t *testing.T) {
 		{"the sheet of tabs", tabbedArgs, []string{"[tab]", "[enter]", "[v]", "[←→]", "[esc]"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			m := questionModel(t, agent.ModeManual)
+			m := questionModel(t, permission.ModeManual)
 			m.input.SetValue("I was in the middle of")
 			updated, _ := m.Update(askCall(tc.args))
 			m = updated.(Model)
@@ -756,7 +756,7 @@ func TestQuestion_UngatedDrawsTheHandoverAndNoneOfItsOwnKeys(t *testing.T) {
 // a burst may not answer, so one left behind would protect the next decision
 // with the wrong card's keys.
 func TestQuestion_ACancelledTurnTakesTheQuestionWithIt(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	next, _ := m.cancelTurnNow()
 	m = next.(Model)
 	if m.question != nil || m.approval.request != nil {
@@ -770,7 +770,7 @@ func TestQuestion_ACancelledTurnTakesTheQuestionWithIt(t *testing.T) {
 // A queued question is recognisable in the strip. Two of them both labelled
 // with the tool's name would be two rows nobody can tell apart.
 func TestQuestion_TheQueueStripNamesTheQuestion(t *testing.T) {
-	req, err := questionModel(t, agent.ModeManual).buildQuestionApproval(llm.ToolCall{
+	req, err := questionModel(t, permission.ModeManual).buildQuestionApproval(llm.ToolCall{
 		ID: "call_q", Name: ask.ToolName, Arguments: chooseArgs,
 	})
 	if err != nil {
@@ -785,7 +785,7 @@ func TestQuestion_TheQueueStripNamesTheQuestion(t *testing.T) {
 // A question is a decision waiting on the reader, so the summons it raises
 // when they are elsewhere says the question rather than nothing.
 func TestQuestion_TheSummonsSaysTheQuestion(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	title, body := m.notifyWords()
 	if title != "Which store should the cache use?" {
 		t.Errorf("title = %q", title)
@@ -798,7 +798,7 @@ func TestQuestion_TheSummonsSaysTheQuestion(t *testing.T) {
 // An unreadable question is a skipped call with the parse error as its
 // result, the way every other malformed call is answered.
 func TestQuestion_AnUnreadableCallIsSkippedWithTheReason(t *testing.T) {
-	updated, _ := questionModel(t, agent.ModeManual).Update(askCall(`{"question":"?","shape":"rank"}`))
+	updated, _ := questionModel(t, permission.ModeManual).Update(askCall(`{"question":"?","shape":"rank"}`))
 	m := updated.(Model)
 	if m.state == stateQuestion {
 		t.Fatal("a question that cannot be drawn must not draw a card")
@@ -817,7 +817,7 @@ func TestQuestion_AnUnreadableCallIsSkippedWithTheReason(t *testing.T) {
 // Esc out of the note drops the note and keeps the pick; esc again leaves the
 // card. A way out that lost the pick would not be the safe one.
 func TestQuestion_EscOutOfTheNoteKeepsThePick(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: 'j', Text: "j"})
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
 	m = typeInto(t, m, "second thoughts")
@@ -846,7 +846,7 @@ func TestQuestion_EscOutOfTheNoteKeepsThePick(t *testing.T) {
 // The free-answer card is the other branch: the note is the answer, so there
 // is no pick for esc to keep and it leaves outright.
 func TestQuestion_EscLeavesAFreeAnswerOutright(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, `{"question":"Name the flag","shape":"text"}`)
+	m := openedQuestion(t, permission.ModeManual, `{"question":"Name the flag","shape":"text"}`)
 	m = typeInto(t, m, "--keep-going")
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
 	if m.question != nil {
@@ -898,7 +898,7 @@ func answeredList(t *testing.T, m Model) []map[string]any {
 // submit at the end, and the strip says which are answered in a glyph and in
 // words — both of which have to survive a terminal with one colour.
 func TestQuestion_SeveralInOneCallAreTabs(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m := openedQuestion(t, permission.ModeManual, tabbedArgs)
 	if m.question.sheet == nil {
 		t.Fatal("a call carrying three questions should draw a sheet of tabs")
 	}
@@ -928,7 +928,7 @@ func TestQuestion_SeveralInOneCallAreTabs(t *testing.T) {
 // Answering steps to the next question still open, and the arrows walk the
 // strip both ways and wrap onto the submit.
 func TestQuestion_TheArrowsWalkTheStripAndAnsweringStepsIt(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m := openedQuestion(t, permission.ModeManual, tabbedArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	if at := m.question.sheet.at; at != 1 {
 		t.Fatalf("answering the first tab should step to the second, at = %d", at)
@@ -956,7 +956,7 @@ func TestQuestion_TheArrowsWalkTheStripAndAnsweringStepsIt(t *testing.T) {
 // own question, and a tab nobody answered goes back skipped rather than
 // holding the reader at the card.
 func TestQuestion_SubmitSendsEveryAnswerInSendOrder(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m := openedQuestion(t, permission.ModeManual, tabbedArgs)
 	// The first question's recommendation, then the yes-or-no, then the free
 	// answer left alone.
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -1006,7 +1006,7 @@ func TestQuestion_SubmitSendsEveryAnswerInSendOrder(t *testing.T) {
 // Esc is one press on a tabbed card: it closes the whole card, not a tab, and
 // the sentence the reader sends next answers every question still open.
 func TestQuestion_EscFromASecondTabClosesTheWholeCard(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m := openedQuestion(t, permission.ModeManual, tabbedArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	if m.question == nil || m.question.sheet.at != 1 {
 		t.Fatal("the second tab should have the keyboard")
@@ -1043,7 +1043,7 @@ func TestQuestion_EscFromASecondTabClosesTheWholeCard(t *testing.T) {
 // already uses and gives the screen back with the question still waiting. It
 // answers nothing.
 func TestQuestion_TheFullViewReadsARowAndAnswersNothing(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m := openedQuestion(t, permission.ModeManual, chooseArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: 'v', Text: "v"})
 	if m.state != stateOutputFull || m.fullOutput == nil {
 		t.Fatalf("the full-view key should open the screen, state = %d", m.state)
@@ -1075,7 +1075,7 @@ func TestQuestion_TheFullViewReadsARowAndAnswersNothing(t *testing.T) {
 // While the note holds the keyboard the card's own keys are text: an arrow
 // moves the cursor and `v` is a `v`.
 func TestQuestion_TheStripAndTheFullViewAreInertWhileTheNoteIsOpen(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m := openedQuestion(t, permission.ModeManual, tabbedArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
 	if !m.question.noteHolds() {
 		t.Fatal("tab should put the keyboard in the note")
@@ -1105,7 +1105,7 @@ func TestQuestion_AFifthQuestionIsRefusedBeforeTheCard(t *testing.T) {
 		fmt.Fprintf(&call, `{"question":"question %d","shape":"confirm"}`, i)
 	}
 	call.WriteString(`]}`)
-	updated, _ := questionModel(t, agent.ModeManual).Update(askCall(call.String()))
+	updated, _ := questionModel(t, permission.ModeManual).Update(askCall(call.String()))
 	m := updated.(Model)
 	if m.question != nil || m.state == stateQuestion {
 		t.Fatal("a call past the limit draws no card")
@@ -1125,7 +1125,7 @@ func TestQuestion_AFifthQuestionIsRefusedBeforeTheCard(t *testing.T) {
 // given are still on it and the tab the reader left is the tab they return to.
 // Reopening answers nothing.
 func TestQuestion_ReopeningATabbedCardKeepsWhatWasAnswered(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m := openedQuestion(t, permission.ModeManual, tabbedArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
 	if !m.questionAside() {
@@ -1156,7 +1156,7 @@ func TestQuestion_ReopeningATabbedCardKeepsWhatWasAnswered(t *testing.T) {
 // goes beside the picks as the words the note field is for, and nothing is
 // swallowed.
 func TestQuestion_ASentenceOverAnAnsweredCardIsTheWordsBesideThePicks(t *testing.T) {
-	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m := openedQuestion(t, permission.ModeManual, tabbedArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = sendKey(t, m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 	// The free answer, opened with its own key and confirmed.

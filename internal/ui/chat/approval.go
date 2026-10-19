@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/secret"
@@ -114,7 +115,7 @@ type approvalRequest struct {
 	// class is the call's classification, with the host a fetch leaves for
 	// filled in from its preview: what the standing rules read it as
 	// (ruleCall).
-	class   agent.Classified
+	class   permission.Classified
 	kind    approvalKind
 	command string      // approvalExec: the command handed to the runner; also set for a process start so mode policy treats it as a command
 	title   string      // the act, e.g. "edit main.go"
@@ -214,7 +215,7 @@ type approvalRequest struct {
 	explained  *explainDoneMsg
 	// claims are the paths a git add asks for that the record does not hold
 	// (GatedPreview.Claims). Non-empty, nothing standing answers the call:
-	// the mode and the grants ask instead of allowing (agent.Action.Claims),
+	// the mode and the grants ask instead of allowing (permission.Action.Claims),
 	// a batch answer is not carried out for it, and a yes records them.
 	claims []structural.Claim
 }
@@ -299,8 +300,8 @@ func (m Model) answers(name string) bool {
 // process tool gates on its arguments — start launches a command and needs
 // approval; status, read, input and stop auto-run — so its reading goes with
 // it where the session manages processes.
-func (m Model) holds() agent.Answers {
-	h := agent.Answers{Has: m.answers, Redirects: m.approval.redirects}
+func (m Model) holds() permission.Answers {
+	h := permission.Answers{Has: m.answers, Redirects: m.approval.redirects}
 	if m.wiring.Processes.Manage != nil {
 		h.Command = process.CommandOf
 	}
@@ -311,7 +312,7 @@ func (m Model) holds() agent.Answers {
 // queue instead of the auto-run executor path: the classifier puts it above
 // the read tier, and this session has an answer for it.
 func (m Model) requiresApproval(tc llm.ToolCall) bool {
-	call, _ := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
+	call, _ := permission.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
 	return call.Gated
 }
 
@@ -319,7 +320,7 @@ func (m Model) requiresApproval(tc llm.ToolCall) bool {
 // the call is — its tier, the command it runs — is the classifier's; which
 // card shows it is this session's.
 func (m Model) buildApprovalRequest(tc llm.ToolCall) (*approvalRequest, error) {
-	call, callErr := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
+	call, callErr := permission.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
 	if tc.Name == tools.ExecCommandName {
 		if callErr != nil {
 			// The classifier's own words: "invalid command arguments", or the
@@ -460,7 +461,7 @@ func (m Model) buildApprovalRequest(tc llm.ToolCall) (*approvalRequest, error) {
 		command:   p.DenyLine,
 		summary:   summary,
 		fields:    p.Fields,
-		write:     call.Tier == agent.TierWrite,
+		write:     call.Tier == permission.TierWrite,
 		host:      p.Host,
 		hostWarns: p.Host != "" && web.ReadFetch(json.RawMessage(tc.Arguments)).Warns(),
 		spawn:     p.Spawn,
@@ -657,20 +658,20 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// refusals stand, but nothing that would have run unasked does. An Ask
 	// stays an ask too, so the classifier is never consulted about one
 	// (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
-	if req.secret != "" && decision != agent.Deny {
+	if req.secret != "" && decision != permission.Deny {
 		m.recordDecision(observe.DecisionAsk, observe.ReasonSafety)
 		m.armConfirm(req)
 		return m, nil
 	}
 	switch decision {
-	case agent.Allow:
+	case permission.Allow:
 		m.recordDecision(observe.DecisionAllow, observe.ReasonCode(reason))
 		req.autoRule = reason
 		if req.kind == approvalExec {
 			return m.executeRun()
 		}
 		return m.executeApprovedTool()
-	case agent.Deny:
+	case permission.Deny:
 		m.recordDecision(observe.DecisionDeny, observe.ReasonCode(reason))
 		m.approval.request = nil
 		m.pendingRun = ""
@@ -698,13 +699,13 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// human, short of the one the rules prove is a clean-up of untracked
 	// scratch inside the workspace
 	// (docs/capabilities/approvals-and-safety.md#severity-moves-the-default).
-	if m.turnMode() == agent.ModeAuto && m.classifier.judge != nil {
+	if m.turnMode() == permission.ModeAuto && m.classifier.judge != nil {
 		if act := m.approvalAction(req); act.SafetyFlagged && !act.ScopeSensitive {
 			req.scratch = m.rules().Scratch(ruleCall(req))
 		}
 	}
-	if act := m.approvalAction(req); m.turnMode() == agent.ModeAuto && m.classifier.judge != nil &&
-		(!act.SafetyFlagged || agent.ClassifierClearsScratch(act)) && !act.ScopeSensitive {
+	if act := m.approvalAction(req); m.turnMode() == permission.ModeAuto && m.classifier.judge != nil &&
+		(!act.SafetyFlagged || permission.ClassifierClearsScratch(act)) && !act.ScopeSensitive {
 		return m.startClassifierCheck(req)
 	}
 	m.recordDecision(observe.DecisionAsk, observe.AskReason(m.approvalAction(req)))
@@ -794,7 +795,7 @@ func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 	runID := m.agent.RunID()
 	cwd, _ := os.Getwd()
 	act := m.approvalAction(req)
-	creq := agent.ClassifierRequest{
+	creq := permission.ClassifierRequest{
 		Tool:      req.call.Name,
 		Arguments: req.call.Arguments,
 		CWD:       cwd,
@@ -811,7 +812,7 @@ func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 // approval: allow executes it, a no is put to the person with its reason,
 // and a failed check falls back to asking the user (fail closed). A refusal
 // here is a backstop's, never the classifier's.
-func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.Cmd) {
+func (m Model) finishClassifierCheck(v permission.ClassifierVerdict) (tea.Model, tea.Cmd) {
 	// The verdict was billed at the provider gate as it streamed, so there is
 	// nothing to add here — only the observer to nudge, because a judgement
 	// the session paid for is a change to what the session has spent.
@@ -819,17 +820,17 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 
 	req := m.approval.request
 	act := m.approvalAction(req)
-	switch decision, reason := agent.ResolveAuto(act, v); decision {
-	case agent.Allow:
+	switch decision, reason := permission.ResolveAuto(act, v); decision {
+	case permission.Allow:
 		m.recordVerdict(observe.DecisionAllow, observe.ReasonClassifier, v.Elapsed)
-		if reason != agent.ScratchReason {
+		if reason != permission.ScratchReason {
 			if m.approval.classifierAllowed == nil {
 				m.approval.classifierAllowed = map[string]struct{}{}
 			}
 			m.approval.classifierAllowed[req.call.ID] = struct{}{}
 		}
 		req.autoRule, req.autoCost = classifierRule, v.Elapsed
-		if reason == agent.ScratchReason {
+		if reason == permission.ScratchReason {
 			// A flagged command ran without a card, so the row says what
 			// let it: the proof, which is what stood in for the card, and
 			// not the judgement, which any unflagged command also gets.
@@ -839,7 +840,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 			return m.executeRun()
 		}
 		return m.executeApprovedTool()
-	case agent.Deny:
+	case permission.Deny:
 		m.recordVerdict(observe.DecisionDeny, observe.ReasonClassifier, v.Elapsed)
 		why := req.summary + " — " + reason
 		m.lastDenial = why
@@ -862,8 +863,8 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	// Ask: the classifier said no, failed closed, the safety backstop fired,
 	// or the host's standing overruled a yes — the user decides, never a
 	// silent allow.
-	resolved, why := agent.ResolveAuto(act, v)
-	if agent.JudgedDenialAsks(act, v) {
+	resolved, why := permission.ResolveAuto(act, v)
+	if permission.JudgedDenialAsks(act, v) {
 		// The classifier's verdict is recorded as the verdict it was, and
 		// the person's answer as a row of its own when the card is answered,
 		// so the record can say how often the two disagreed. The card carries
@@ -874,7 +875,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.armConfirm(req)
 		return m, nil
 	}
-	if code := observe.HostReason(web.StandingOf(why)); resolved == agent.Ask && code != "" && !v.Failed {
+	if code := observe.HostReason(web.StandingOf(why)); resolved == permission.Ask && code != "" && !v.Failed {
 		// The card says so, because this is the one card a person would not
 		// otherwise expect: the classifier said yes, and the lists said the
 		// host is theirs to answer for
@@ -927,14 +928,14 @@ func (m *Model) refusedResult(tc llm.ToolCall, content string) string {
 // no grant can reach, and the classifier's reason otherwise.
 func denialResult(reason, command string, extra []string) string {
 	switch {
-	case reason == agent.DenyReasonDenylist, agent.IsIrreplaceable(reason):
-		return agent.RuleRefusedResult(reason)
-	case reason == agent.DenyReasonHost:
-		return agent.DeniedHostResult
-	case reason == agent.ModePlan.String()+" mode", reason == agent.ModeReadOnly.String()+" mode":
-		return agent.ModeRefusedResult(reason, command, extra)
+	case reason == permission.DenyReasonDenylist, permission.IsIrreplaceable(reason):
+		return permission.RuleRefusedResult(reason)
+	case reason == permission.DenyReasonHost:
+		return permission.DeniedHostResult
+	case reason == permission.ModePlan.String()+" mode", reason == permission.ModeReadOnly.String()+" mode":
+		return permission.ModeRefusedResult(reason, command, extra)
 	case strings.HasPrefix(reason, "outside the working scope"):
-		return agent.ScopeRefusedResult(reason)
+		return permission.ScopeRefusedResult(reason)
 	}
 	return "error: auto mode denied this tool call: " + reason
 }
@@ -1408,7 +1409,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		// long the grant lasts is the list's own to say, one press later, on
 		// the row that makes it (grant.go).
 		if req != nil && len(card.Warnings) == 0 {
-			if prefix := agent.GrantPrefix(req.command); prefix != "" {
+			if prefix := permission.GrantPrefix(req.command); prefix != "" {
 				card.AllowAlways = true
 				card.AlwaysHint = "allow " + strconv.Quote(prefix) + " without asking"
 				// A command that writes outside the working scope is granting
@@ -1922,7 +1923,7 @@ func executableField(executable bool) []GatedField {
 // is how many files, how much in each, and the replacement as it was written,
 // so the reader judges the rule and can check its every application.
 // See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
-func filesApproval(tc llm.ToolCall, call agent.Classified, mut tools.Mutation) *approvalRequest {
+func filesApproval(tc llm.ToolCall, call permission.Classified, mut tools.Mutation) *approvalRequest {
 	files := make([]editFileChange, len(mut.Files))
 	var notes []string
 	for i, f := range mut.Files {

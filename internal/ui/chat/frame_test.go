@@ -12,7 +12,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -880,7 +880,7 @@ func TestFrame_ModeGlyphNeverDependsOnColorAlone(t *testing.T) {
 	if !strings.Contains(stripANSI(m.View().Content), "⏸") {
 		t.Fatal("gated mode must keep its textual glyph in the vitals rail")
 	}
-	m.policy.mode = agent.ModeAuto
+	m.policy.mode = permission.ModeAuto
 	if !strings.Contains(stripANSI(m.View().Content), "⏵⏵") {
 		t.Fatal("permissive mode must keep its textual glyph in the vitals rail")
 	}

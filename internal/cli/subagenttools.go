@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/skill"
@@ -457,8 +458,8 @@ func (a *agentProfiles) runsCommands(role subagent.Role) bool {
 // paragraph built from the child's own toolset and the same inspection list,
 // so the list a child reads is the one its policy runs.
 // See docs/capabilities/subagents.md#a-child-answers-to-the-session.
-func withModeInstructions(msgs []llm.Message, mode agent.Mode, extra []string, defs []llm.Tool) []llm.Message {
-	return withSystemParagraph(msgs, agent.ModeInstructions(mode, extra, toolNames(defs)))
+func withModeInstructions(msgs []llm.Message, mode permission.Mode, extra []string, defs []llm.Tool) []llm.Message {
+	return withSystemParagraph(msgs, permission.ModeInstructions(mode, extra, toolNames(defs)))
 }
 
 // withRefusedCommands is a writer's request with the paragraph saying its

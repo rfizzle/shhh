@@ -649,7 +649,7 @@ type BehaviorConfig struct {
 	// nothing is refused in advance.
 	CommandDenylist []string `toml:"command_denylist"`
 	// ReadOnlyCommands extends the built-in inspection allowlist that runs
-	// without prompting in every mode (agent.ReadOnlyCommands). Entries are
+	// without prompting in every mode (permission.ReadOnlyCommands). Entries are
 	// the user's own call: they skip the built-in flag guards.
 	ReadOnlyCommands []string `toml:"read_only_commands"`
 	// ReadOnlyAuto controls whether the built-in inspection allowlist

@@ -9,7 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -46,7 +46,7 @@ func safetyModel(t *testing.T) Model {
 	}
 	return New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, nil, Wiring{
 		Scope:            sc,
-		Mode:             agent.ModeManual,
+		Mode:             permission.ModeManual,
 		CommandAllowlist: []string{"go test"},
 		CommandDenylist:  []string{"rm -rf"},
 		AllowHosts:       []string{"docs.rs"},
@@ -220,7 +220,7 @@ func TestProgram_TheSafetyReadingReadsTheLiveSession(t *testing.T) {
 	}
 	extra := filepath.Join(t.TempDir(), "shared-assets")
 	m.wiring.Scope = sc
-	m.policy.mode = agent.ModeManual
+	m.policy.mode = permission.ModeManual
 	m.containment = Containment{Status: "unconfined — none here", Detail: "none here"}
 	tm := runProgramAt(t, m, 130, 140)
 
