@@ -156,6 +156,9 @@ or worktree root (`go 1.26.9`, `use .`, `use` the absolute path of `llm`)
 joins them; an absolute path, because a worktree under `.claude/worktrees/`
 sits at a different depth. Never commit it. An item that changes `llm` commits
 and tags it there; the person pushes `llm` and its tag before pushing shhh.
+The generic agent packages are moving the same way to
+`github.com/rfizzle/agentcore`, a sibling module at `../agentcore`, under
+the same `go.work`, tag and push rules.
 
 ## Invariants
 
