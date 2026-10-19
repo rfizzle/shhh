@@ -20,6 +20,8 @@ import (
 	"unicode"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 )
 
 // TitleToolName is the tool the titler is asked to call with its answer.
@@ -148,12 +150,12 @@ func (t *Titler) Title(ctx context.Context, req TitleRequest) TitleVerdict {
 		{Role: llm.RoleUser, Content: "UNTRUSTED EXCHANGE:\n" + string(evidence)},
 	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      llm.FlowTitle,
+		Flow:      flow.Title,
 		MaxTokens: t.cfg.maxTokens(),
 		// A shallow thought is the right amount for naming an exchange, and
 		// asking for it is the only way to bound one on a model that thinks
 		// whether or not it was asked.
-		Effort: llm.EffortLow,
+		Effort: effort.Low,
 		Tools: []llm.Tool{{
 			Name:        TitleToolName,
 			Description: "Name the conversation.",

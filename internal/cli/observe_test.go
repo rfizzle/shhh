@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -302,7 +303,7 @@ func TestObserveSessionTimeline(t *testing.T) {
 	// Stamped in the mode it started in and never left: no mode signal is
 	// recorded below, and the page must still say what mode it ran in.
 	rec.stamp("the prompt", 2, "/repo", sessionSettings(config.Config{}, runSettings{
-		mode: agent.ModeAuto.String(), effort: llm.EffortHigh, rounds: 60,
+		mode: agent.ModeAuto.String(), effort: effort.High, rounds: 60,
 		sandbox: "workspace", model: "test-model", summary: true, classifier: true,
 	}))
 	rec.link("2026-01-01 10:00:00")

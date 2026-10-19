@@ -17,6 +17,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/receipt"
@@ -162,7 +163,7 @@ func (m Model) receiptOf(e entry) receipt.Receipt {
 
 // callReceipt is the receipt of one tool call, told what this session knows
 // about the server the tool belongs to, if any.
-func (m Model) callReceipt(name, args, result string, value json.RawMessage, atts ...llm.Attachment) receipt.Receipt {
+func (m Model) callReceipt(name, args, result string, value json.RawMessage, atts ...llmattachment.Attachment) receipt.Receipt {
 	served := m.mcp.Has != nil && m.mcp.Has(name)
 	return receipt.Build(receipt.Call{Name: name, Args: args, Result: result, Value: value,
 		Served: served, ReadOnly: served && m.mcp.ReadOnly(name), Attachments: atts})

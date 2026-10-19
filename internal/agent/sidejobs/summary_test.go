@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/logs"
 )
 
@@ -357,7 +358,7 @@ func TestSummarizer_RequestCarriesTheSummaryTool(t *testing.T) {
 	}
 	// A shallow thought, asked for outright: off is the model's own depth,
 	// and the ceiling has to hold the thought and the reading together.
-	if seen.Effort != llm.EffortLow {
+	if seen.Effort != effort.Low {
 		t.Fatalf("effort = %v", seen.Effort)
 	}
 	if DefaultSummaryMaxTokens <= lowBudget() {

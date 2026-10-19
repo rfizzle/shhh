@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/toolvalue"
 )
 
 // A result's value is filed on the message beside its text, on both ways a
@@ -16,7 +17,7 @@ func TestToolResultValue_RidesTheRecordedMessage(t *testing.T) {
 
 	a.RecordAutoResults([]ToolResult{{Call: auto[0], Result: "gate text one", Value: json.RawMessage(`{"b":2}`)}})
 	head := a.PendingApprovals()[0]
-	llm.NoteValue(head.Name, json.RawMessage(head.Arguments), json.RawMessage(`{"a":1}`))
+	toolvalue.Note(head.Name, json.RawMessage(head.Arguments), json.RawMessage(`{"a":1}`))
 	if v := a.ResolveApproval("gate text two"); string(v) != `{"a":1}` {
 		t.Fatalf("ResolveApproval returned %q", v)
 	}

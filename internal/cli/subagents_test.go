@@ -18,6 +18,7 @@ import (
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
@@ -1775,7 +1776,7 @@ func TestAProfileSaveDuringASpawnCardIsNotARace(t *testing.T) {
 		<-start
 		for i := range 200 {
 			role := subagent.Role("saved-" + strconv.Itoa(i))
-			agents.effortFor(role, llm.EffortHigh)
+			agents.effortFor(role, effort.High)
 			childReachesWeb(chatSession{web: &web.Toolset{}}, agents, role)
 			agents.checkoutIntent(role)
 			agents.runsCommands(role)

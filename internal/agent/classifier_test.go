@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/logs"
 )
 
@@ -406,7 +407,7 @@ func (t *thinkingProvider) StreamCompletion(_ context.Context, _ []llm.Message, 
 
 // lowBudget is what a shallow thought costs on the dialects whose knob is a
 // number rather than a name — the floor the ceilings here have to clear.
-func lowBudget() int { return llm.EffortLow.ThinkingBudget(0) }
+func lowBudget() int { return effort.Low.ThinkingBudget(0) }
 
 // A ceiling sized for the verdict alone never reaches one on a model that
 // thinks first: the classifier reads the empty response as an invalid answer
@@ -463,7 +464,7 @@ func TestClassifier_RequestShape(t *testing.T) {
 	if !strings.Contains(p.msgs[1].Content, "run the tests") {
 		t.Errorf("the evidence should be the user turn, got %q", p.msgs[1].Content)
 	}
-	if seen.Effort != llm.EffortLow {
+	if seen.Effort != effort.Low {
 		t.Errorf("effort = %v", seen.Effort)
 	}
 	if seen.MaxTokens != DefaultClassifierMaxTokens {

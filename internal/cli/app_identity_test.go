@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 )
 
 // wireRecorder stands in for the network under http.DefaultTransport and keeps
@@ -184,7 +185,7 @@ func TestShhhIdentityIsByteIdentical(t *testing.T) {
 			t.Fatal(err)
 		}
 		ch, err := p.StreamCompletion(context.Background(), []llm.Message{{Role: llm.RoleUser, Content: "go"}}, llm.CompletionOpts{})
-		var f *llm.Failure
+		var f *failure.Failure
 		if err == nil {
 			for ev := range ch {
 				if ev.Err != nil {

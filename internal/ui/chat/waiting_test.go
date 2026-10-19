@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
 )
 
@@ -150,7 +151,7 @@ func TestWaitingState_AKeepaliveIsHeardAndDrawsNothing(t *testing.T) {
 	m, step, update := waitingModel(t)
 	retries := 2
 	m.backoff.SetLimit(&retries)
-	m.backoff.Next(&llm.Failure{Class: llm.ClassNetwork})
+	m.backoff.Next(&failure.Failure{Class: failure.ClassNetwork})
 	before := m.backoff.Attempt()
 
 	step(5 * time.Second)

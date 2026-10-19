@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/toolvalue"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -42,7 +43,7 @@ func TestProgram_TheGatesPassSettlesTheFailureBeforeIt(t *testing.T) {
 			t.Errorf("an unexpected auto-run call: %s", name)
 		}
 		text := pass.Format(pass.Fingerprint)
-		llm.NoteValue(name, args, pass.Summary(pass.Fingerprint).Value())
+		toolvalue.Note(name, args, pass.Summary(pass.Fingerprint).Value())
 		return text, nil
 	})
 	tm := runProgramAt(t, m, 130, 40)

@@ -21,6 +21,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/cache"
 )
 
 // keepAliveWord is the whole of the refresh's own turn.
@@ -49,7 +50,7 @@ func (m Model) keepAliveDue(now time.Time) bool {
 		return false
 	}
 	r, ok := m.idleReading()
-	if !ok || r.Lease != string(llm.CacheTTL1h) {
+	if !ok || r.Lease != string(cache.TTL1h) {
 		return false
 	}
 	// Anthropic's own endpoint, or a gateway whose cache has been seen to

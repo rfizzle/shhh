@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/llm"
+	llmeffort "github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
@@ -284,7 +285,7 @@ type oneShotRun struct {
 	promptExtra string
 	sysPrompt   string
 	userPrompt  string
-	effort      llm.Effort
+	effort      llmeffort.Level
 	ledger      *meter.Ledger
 	pending     *pendingRecord
 	timer       *oneShotTimer
@@ -323,7 +324,7 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 	// field at all, whatever the flag said, so it is stamped off —
 	// the record keeps what was in force, not what was asked for.
 	var sysPrompt string
-	var effort llm.Effort
+	var effort llmeffort.Level
 	if pipeMode {
 		sysPrompt = raw.SystemPrompt(info, promptExtra)
 	} else {
@@ -339,7 +340,7 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 		// down. The row this used to leave said a one-shot completed
 		// when what happened was that a word on the command line was
 		// not one of six.
-		if effort, err = llm.ParseEffort(resolved.Reasoning); err != nil {
+		if effort, err = llmeffort.Parse(resolved.Reasoning); err != nil {
 			return nil, err
 		}
 	}

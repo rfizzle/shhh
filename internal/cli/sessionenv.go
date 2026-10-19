@@ -9,6 +9,8 @@ import (
 	"sync"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/capability"
+	llmeffort "github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -69,13 +71,13 @@ type sessionEnv struct {
 	// switchReasoning is what ctrl+t and /reasoning change it with.
 	// Like the model it is read by the stream closure from another
 	// goroutine, so it lives under the same mutex.
-	effort          llm.Effort
-	switchReasoning func(llm.Effort)
+	effort          llmeffort.Level
+	switchReasoning func(llmeffort.Level)
 	// reasoning reads the level that is live now, for the streams built once
 	// at session start and used for the rest of it — a sub-agent's. Without
 	// it a level set with ctrl+t would be true of the session and false of
 	// every child it spawns.
-	reasoning func() llm.Effort
+	reasoning func() llmeffort.Level
 	// replaceTools edits the toolset the next request carries: a profile
 	// drafted mid-session changes what spawn_agent may name.
 	replaceTools func(func([]llm.Tool) []llm.Tool)
@@ -281,7 +283,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		{Role: llm.RoleSystem, Content: sysPrompt},
 	}
 
-	effort, err := llm.ParseEffort(resolved.Reasoning)
+	effort, err := llmeffort.Parse(resolved.Reasoning)
 	if err != nil {
 		return nil, err
 	}
@@ -435,12 +437,12 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		endpointModels: newEndpointModels(modelListerFor(p)),
 		resolveWith:    resolveWith,
 		effort:         effort,
-		switchReasoning: func(e llm.Effort) {
+		switchReasoning: func(e llmeffort.Level) {
 			sessionMu.Lock()
 			currentEffort = e
 			sessionMu.Unlock()
 		},
-		reasoning: func() llm.Effort {
+		reasoning: func() llmeffort.Level {
 			sessionMu.Lock()
 			defer sessionMu.Unlock()
 			return currentEffort
@@ -540,7 +542,7 @@ func refreshCache(ctx context.Context, active llm.Provider, opts llm.CompletionO
 	// from the request, and a request that thinks differently reads none
 	// of the conversation's cache: the refresh would write it again at
 	// the dear rate. Adaptive thinking is sent as it was.
-	if caps := llm.CapabilitiesFor(opts.Model); opts.Effort.Fit(caps).On() && !caps.Adaptive && caps.Known {
+	if caps := capability.For(opts.Model); opts.Effort.Fit(caps).On() && !caps.Adaptive && caps.Known {
 		return llm.Usage{}, errors.New("this model's thinking budget cannot be kept at one token")
 	}
 	opts.ToolChoice = llm.ToolChoiceNone

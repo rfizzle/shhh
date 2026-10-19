@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/llm/pricing"
 )
 
@@ -240,7 +242,7 @@ func TestRegister_MakesTheProfileResolvable(t *testing.T) {
 	if prov.Name() != "gateway" {
 		t.Fatalf("expected the profile's name, got %q", prov.Name())
 	}
-	if models := llm.KnownModels("gateway"); len(models) != 2 || models[0] != "gemini-3.1-pro" {
+	if models := catalog.Models("gateway"); len(models) != 2 || models[0] != "gemini-3.1-pro" {
 		t.Fatalf("the declared models should seed the picker, got %v", models)
 	}
 	if d := llm.Defaults("gateway"); d.Model != "gemini-3.1-pro" || d.BaseURL != p.BaseURL {
@@ -287,7 +289,7 @@ func TestListModels_UsesTheProfilesCatalogPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lister, ok := prov.(llm.ModelLister)
+	lister, ok := prov.(catalog.Lister)
 	if !ok {
 		t.Fatal("a profile-backed provider should support discovery")
 	}
@@ -317,7 +319,7 @@ func TestListModels_FallsBackToTheStandardEndpoint(t *testing.T) {
 
 	p := Profile{Name: "gw", API: aPIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
 	prov, _ := New(p, llm.ResolveOpts{Model: "llama3", HTTPClient: profileTestHTTP.Client()})
-	names, err := prov.(llm.ModelLister).ListModels(context.Background())
+	names, err := prov.(catalog.Lister).ListModels(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -575,26 +577,26 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 		path    string
 		status  int
 		body    string
-		want    llm.Class
+		want    failure.Class
 		wantErr error
 	}{
 		{
 			name: "openai chat", api: aPIOpenAIChat, path: "/v1/chat/completions",
 			status: http.StatusTooManyRequests,
 			body:   `{"error":{"message":"Rate limit reached for this gateway","type":"rate_limit_error"}}`,
-			want:   llm.ClassRateLimit, wantErr: llm.ErrRateLimited,
+			want:   failure.ClassRateLimit, wantErr: failure.ErrRateLimited,
 		},
 		{
 			name: "openai responses", api: aPIOpenAIResponses, path: "/v1/responses",
 			status: http.StatusUnauthorized,
 			body:   `{"error":{"message":"Incorrect API key provided","type":"invalid_request_error"}}`,
-			want:   llm.ClassAuth, wantErr: llm.ErrAuth,
+			want:   failure.ClassAuth, wantErr: failure.ErrAuth,
 		},
 		{
 			name: "anthropic messages", api: aPIAnthropicMessage, path: "/v1/messages",
 			status: 529,
 			body:   `{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}`,
-			want:   llm.ClassOverloaded, wantErr: llm.ErrOverloaded,
+			want:   failure.ClassOverloaded, wantErr: failure.ErrOverloaded,
 		},
 	}
 
@@ -638,7 +640,7 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 				t.Fatal("expected the gateway's failure to reach the caller")
 			}
 
-			f, ok := llm.AsFailure(err)
+			f, ok := failure.As(err)
 			if !ok {
 				t.Fatalf("a gateway failure reached the caller unclassified: %v", err)
 			}

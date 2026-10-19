@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
@@ -230,7 +231,7 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 		{Role: llm.RoleUser, Content: user},
 	}, llm.CompletionOpts{
 		Model:      model,
-		Flow:       llm.FlowProfileDrafter,
+		Flow:       flow.ProfileDrafter,
 		MaxTokens:  d.cfg.maxTokens(),
 		Tools:      []llm.Tool{DraftTool()},
 		ToolChoice: "auto",

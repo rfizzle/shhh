@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
 )
 
 // maxPendingResults bounds what is held while waiting to be collected.
@@ -37,7 +37,7 @@ const maxPendingResults = 16
 
 var (
 	pendingMu sync.Mutex
-	pending   = map[string][]llm.Attachment{}
+	pending   = map[string][]llmattachment.Attachment{}
 	// pendingOrder is insertion order, oldest first, so eviction can drop
 	// the entry that has been waiting longest.
 	pendingOrder []string
@@ -45,7 +45,7 @@ var (
 
 // NoteResult records the parts a tool result carries beyond its text. The
 // text itself is what they will be collected by.
-func NoteResult(result string, atts ...llm.Attachment) {
+func NoteResult(result string, atts ...llmattachment.Attachment) {
 	if result == "" || len(atts) == 0 {
 		return
 	}
@@ -70,7 +70,7 @@ func NoteResult(result string, atts ...llm.Attachment) {
 // puts its notice above a call the session has already made. Equality looked
 // right and lost the image on the second read of the same picture, which is
 // the read a person asks for when they did not believe the first one.
-func TakeResult(result string) []llm.Attachment {
+func TakeResult(result string) []llmattachment.Attachment {
 	if result == "" {
 		return nil
 	}

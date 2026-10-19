@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 )
 
 // descriptionChars bounds what a snippet is filed under. The description is a
@@ -64,9 +66,9 @@ func generateDescription(ctx context.Context, p llm.Provider, model, configured,
 	// See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
 	events, err := p.StreamCompletion(ctx, msgs, llm.CompletionOpts{
 		Model:     modelOr(configured, smallModel(p.Name(), model)),
-		Flow:      llm.FlowDescription,
+		Flow:      flow.Description,
 		MaxTokens: descriptionMaxTokens,
-		Effort:    llm.EffortLow,
+		Effort:    effort.Low,
 	})
 	if err != nil {
 		return ""

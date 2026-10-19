@@ -22,6 +22,8 @@ import (
 	"unicode"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 )
 
 const (
@@ -166,11 +168,11 @@ func (s *Suggester) Suggest(ctx context.Context, req SuggestRequest) SuggestVerd
 		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      llm.FlowSuggestion,
+		Flow:      flow.Suggestion,
 		MaxTokens: s.cfg.maxTokens(),
 		// A shallow thought is the right amount for one sentence, for the
 		// reason the titler asks for one.
-		Effort: llm.EffortLow,
+		Effort: effort.Low,
 		// The answer is the prose: there is no tool to call, and the request
 		// says so rather than leaving it to the dialect's default.
 		ToolChoice: llm.ToolChoiceNone,

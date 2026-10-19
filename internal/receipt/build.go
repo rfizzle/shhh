@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -166,7 +166,7 @@ func Build(c Call) Receipt {
 	}
 	r.Count, r.Noun, r.Short = count(d, read)
 	for i := range c.Attachments {
-		if c.Attachments[i].Kind == llm.AttachmentImage {
+		if c.Attachments[i].Kind == attachment.Image {
 			r.Picture = &c.Attachments[i]
 			break
 		}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -221,7 +222,7 @@ func childEndReason(c *child, err error) string {
 	case c.ctx.Err() != nil:
 		return observe.ChildCancelled
 	}
-	if _, ok := llm.AsFailure(err); ok {
+	if _, ok := failure.As(err); ok {
 		return observe.ChildProvider
 	}
 	return observe.ChildFailed

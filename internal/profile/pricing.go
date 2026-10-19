@@ -9,7 +9,7 @@ package profile
 import (
 	"strings"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
 )
 
@@ -73,8 +73,8 @@ func (r Reasoning) fill(entry *pricing.ModelPricing) {
 	entry.AdaptiveThinking = kind == "adaptive"
 	entry.LegacyThinking = kind == "budget"
 	entry.ThinkingAlwaysOn = r.AlwaysOn
-	entry.XHighEffort = r.hasLevel(llm.EffortXHigh)
-	entry.MaxEffort = r.hasLevel(llm.EffortMax)
+	entry.XHighEffort = r.hasLevel(effort.XHigh)
+	entry.MaxEffort = r.hasLevel(effort.Max)
 }
 
 // declaredModels is every model a profile declares, at the top level and

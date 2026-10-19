@@ -17,6 +17,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -405,7 +406,7 @@ func TestProgress_ContinuingADroppedNoteKeepsItsMark(t *testing.T) {
 	// written, which is what the drop row offers to continue from.
 	m.streaming = checkpointNote
 	updated, _ := m.Update(streamErrMsg{
-		err:   &llm.Failure{Class: llm.ClassNetwork},
+		err:   &failure.Failure{Class: failure.ClassNetwork},
 		calls: []llm.ToolCall{{ID: "call-1", Name: "read_file", Arguments: `{"path":"round.go"}`}},
 	})
 	m = updated.(Model)

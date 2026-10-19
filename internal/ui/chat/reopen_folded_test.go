@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -24,7 +25,7 @@ func TestReopen_ACompactedSessionKeepsItsFoldedTurns(t *testing.T) {
 	pic.Handle = "Image#1"
 	a := agent.New([]llm.Message{
 		{Role: llm.RoleSystem, Content: "sys"},
-		{Role: llm.RoleUser, Content: "this one", Attachments: []llm.Attachment{pic}},
+		{Role: llm.RoleUser, Content: "this one", Attachments: []attachment.Attachment{pic}},
 		{Role: llm.RoleAssistant, Content: "Looked at it."},
 		{Role: llm.RoleUser, Content: "and now this"},
 		{Role: llm.RoleAssistant, Content: "Done."},

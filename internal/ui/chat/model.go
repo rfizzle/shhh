@@ -10,6 +10,9 @@ import (
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -594,7 +597,7 @@ type entry struct {
 	//. It is stored as the classification rather than as rendered
 	// text, so the row re-renders at any width and the offered keys stay
 	// derived from the class rather than parsed back out of a string.
-	fail *llm.Failure
+	fail *failure.Failure
 	// failAfter and failModel are what a failure card's header names, read
 	// when the failure landed: what the turn had done before it broke, and
 	// the model it was on. They are kept rather than read at render time
@@ -723,7 +726,7 @@ type entry struct {
 	groupFolded bool
 	// picture is the image an entryPicture stands for: what a call's result
 	// carried beside its text (card.go).
-	picture *llm.Attachment
+	picture *llmattachment.Attachment
 	// tree marks the notice of the tree having moved, with what it counted,
 	// so a card it landed in can say so in its footer (card.go).
 	tree *treeMove
@@ -818,7 +821,7 @@ type steeringItem struct {
 	// atts are what was staged when the message was queued. They belong to
 	// it from then on, so pulling it back puts them back on the strip and
 	// cancelling it takes them with it.
-	atts []llm.Attachment
+	atts []llmattachment.Attachment
 	// sent marks a line another session handed this one (inbound.go), and
 	// from is the slot that sent it, empty for the command line. It joins
 	// the turn as a steer does but in the session's own voice, framed by the
@@ -1298,7 +1301,7 @@ type Model struct {
 	// (attachments.go). They ride on whichever user message goes out
 	// next — a fresh turn, or a line queued while a turn runs, which takes
 	// them with it into the queue — and are never rendered, only named.
-	attachments []llm.Attachment
+	attachments []llmattachment.Attachment
 	// handles is the conversation's count of attachment handles, per kind
 	// (attachments.go): zeroed at the session boundary, read back off the
 	// saved messages when a conversation is resumed or loaded.
@@ -1381,7 +1384,7 @@ type Model struct {
 	// Reasoning effort (reasoning.go): the level this session is on and the
 	// persisted default. The hook that carries a change to the next request,
 	// and whatever outranks the default, are the wiring's.
-	effort        llm.Effort
+	effort        effort.Level
 	effortDefault string
 	// First contact: what the session already knew about the
 	// checkout when it opened, which suggestion the pointer is on, and
@@ -2117,7 +2120,7 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 // sendUserMessageWith is sendUserMessageAs with the attachments named rather
 // than taken off the strip: a queued follow-up carries the ones it was
 // queued with, and what is staged now belongs to the sentence being typed.
-func (m Model) sendUserMessageWith(text, shown string, atts []llm.Attachment) (tea.Model, tea.Cmd) {
+func (m Model) sendUserMessageWith(text, shown string, atts []llmattachment.Attachment) (tea.Model, tea.Cmd) {
 	m.openTurn(shown)
 	m.recordCheckpoint(shown)
 	m.agent.StartTurnWith(text, atts)

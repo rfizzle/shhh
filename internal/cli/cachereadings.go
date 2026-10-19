@@ -15,7 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/cache"
+	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/profile"
@@ -96,7 +97,7 @@ func cacheEndpoint(providerName, model string) string {
 func storedCacheState(r storage.CacheReading) meter.CacheState {
 	return meter.CacheReading{
 		Requests: r.Requests, WithReads: r.WithReads, WithWrites: r.WithWrites,
-		OffBy: llm.PromptCacheOff(r.Provider, r.Model),
+		OffBy: capability.PromptCacheOff(r.Provider, r.Model),
 	}.State()
 }
 
@@ -114,7 +115,7 @@ func cacheRow(r storage.CacheReading) report.Row {
 		row.State = report.Warn
 		facts = append(facts, fmt.Sprintf("in %d requests", r.Requests))
 	case string(meter.CacheOff):
-		row.Subject = "off (profile " + strings.Join(llm.PromptCacheOff(r.Provider, r.Model), ", ") + ")"
+		row.Subject = "off (profile " + strings.Join(capability.PromptCacheOff(r.Provider, r.Model), ", ") + ")"
 	}
 	if !r.LastAt.IsZero() {
 		facts = append(facts, "last "+r.LastAt.Local().Format("2006-01-02 15:04"))
@@ -124,7 +125,7 @@ func cacheRow(r storage.CacheReading) report.Row {
 	}
 	// In the order the wire names them, read before written, rather than
 	// the order the store keeps the set in.
-	reports := llm.CacheFieldsNamed(r.Reports).Names()
+	reports := cache.FieldsNamed(r.Reports).Names()
 	if len(reports) == 0 {
 		reports = r.Reports
 	}
@@ -199,7 +200,7 @@ func cacheNote(readings []storage.CacheReading, providerName, model string) stri
 	if model == "" {
 		return ""
 	}
-	if by := llm.PromptCacheOff(providerName, model); len(by) > 0 {
+	if by := capability.PromptCacheOff(providerName, model); len(by) > 0 {
 		return "cache off (profile " + strings.Join(by, ", ") + ")"
 	}
 	for _, r := range readings {

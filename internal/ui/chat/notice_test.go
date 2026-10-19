@@ -8,6 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -111,8 +112,8 @@ func pictureModel(t *testing.T) Model {
 	args := `{"path":"shot.png"}`
 	result := "shot.png is an image (image/png), attached to this result for models that can see one; it has no text to return."
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: args, toolResult: result})
-	m.appendPicture("", m.callReceipt("read_file", args, result, nil, llm.Attachment{
-		Kind: llm.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: shot}))
+	m.appendPicture("", m.callReceipt("read_file", args, result, nil, attachment.Attachment{
+		Kind: attachment.Image, Name: "shot.png", MediaType: "image/png", Data: shot}))
 	m.invalidateRenderCache()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -34,8 +34,8 @@ func keyPress(r rune) tea.KeyPressMsg {
 
 func TestStreamError_RendersAsAClassifiedRow(t *testing.T) {
 	m := failureModel(t)
-	failure := &llm.Failure{
-		Class: llm.ClassAuth, Status: 401, Provider: "openai",
+	failure := &failure.Failure{
+		Class: failure.ClassAuth, Status: 401, Provider: "openai",
 		Message: "Incorrect API key provided", KeyTail: "4f9c",
 	}
 	updated, _ := m.Update(streamErrMsg{err: failure})
@@ -74,7 +74,7 @@ func TestStreamError_UnclassifiedStillRendersAsARow(t *testing.T) {
 	if e.kind != entryFailure || e.fail == nil {
 		t.Fatalf("an unclassified error should still be a row, got %d entries", len(next.transcript))
 	}
-	if e.fail.Class != llm.ClassUnclassified {
+	if e.fail.Class != failure.ClassUnclassified {
 		t.Errorf("class = %q, want unclassified", e.fail.Class)
 	}
 	view := stripANSI(next.failureRow(e).View(110))
@@ -86,25 +86,25 @@ func TestStreamError_UnclassifiedStillRendersAsARow(t *testing.T) {
 func TestFailureRow_StateAndKeysByClass(t *testing.T) {
 	m := failureModel(t)
 	cases := []struct {
-		class llm.Class
+		class failure.Class
 		state components.RecoveryState
 		keys  []string
 	}{
-		{llm.ClassAuth, components.RecoveryBroken, []string{"[e]", "[p]"}},
-		{llm.ClassRateLimit, components.RecoveryStalled, []string{"[r]", "[p]"}},
-		{llm.ClassQuota, components.RecoveryBroken, []string{"[p]"}},
-		{llm.ClassOverloaded, components.RecoveryStalled, []string{"[r]", "[p]"}},
-		{llm.ClassContextLength, components.RecoveryBroken, []string{"[c]", "[r]"}},
+		{failure.ClassAuth, components.RecoveryBroken, []string{"[e]", "[p]"}},
+		{failure.ClassRateLimit, components.RecoveryStalled, []string{"[r]", "[p]"}},
+		{failure.ClassQuota, components.RecoveryBroken, []string{"[p]"}},
+		{failure.ClassOverloaded, components.RecoveryStalled, []string{"[r]", "[p]"}},
+		{failure.ClassContextLength, components.RecoveryBroken, []string{"[c]", "[r]"}},
 		// No [r]: the next request would carry the same id.
-		{llm.ClassModelNotFound, components.RecoveryBroken, []string{"[p]"}},
-		{llm.ClassNetwork, components.RecoveryStalled, []string{"[r]", "[p]"}},
-		{llm.ClassMalformed, components.RecoveryBroken, []string{"[r]", "[p]"}},
-		{llm.ClassCancelled, components.RecoveryStopped, nil},
-		{llm.ClassUnclassified, components.RecoveryBroken, []string{"[r]", "[p]"}},
+		{failure.ClassModelNotFound, components.RecoveryBroken, []string{"[p]"}},
+		{failure.ClassNetwork, components.RecoveryStalled, []string{"[r]", "[p]"}},
+		{failure.ClassMalformed, components.RecoveryBroken, []string{"[r]", "[p]"}},
+		{failure.ClassCancelled, components.RecoveryStopped, nil},
+		{failure.ClassUnclassified, components.RecoveryBroken, []string{"[r]", "[p]"}},
 	}
 	for _, tc := range cases {
 		t.Run(string(tc.class), func(t *testing.T) {
-			row := m.failureRow(entry{kind: entryFailure, fail: &llm.Failure{Class: tc.class}})
+			row := m.failureRow(entry{kind: entryFailure, fail: &failure.Failure{Class: tc.class}})
 			if row.State != tc.state {
 				t.Errorf("state = %v, want %v", row.State, tc.state)
 			}
@@ -127,7 +127,7 @@ func TestFailureKeys_OmitWhatTheSessionCannotDo(t *testing.T) {
 	m.providerName = "openai"
 	// No hooks wired: a session that cannot replace its key or switch its
 	// provider must not offer to.
-	row := m.failureRow(entry{kind: entryFailure, fail: &llm.Failure{Class: llm.ClassAuth}})
+	row := m.failureRow(entry{kind: entryFailure, fail: &failure.Failure{Class: failure.ClassAuth}})
 	if len(row.Keys) != 0 {
 		t.Errorf("a session with no hooks should offer no keys, got %v", row.Keys)
 	}
@@ -138,7 +138,7 @@ func TestFailureKeys_OmitWhatTheSessionCannotDo(t *testing.T) {
 
 func TestFailureKey_ClaimedOnlyForTheFocusedRow(t *testing.T) {
 	m := failureModel(t)
-	m.transcript = []entry{{kind: entryFailure, fail: &llm.Failure{Class: llm.ClassAuth}}}
+	m.transcript = []entry{{kind: entryFailure, fail: &failure.Failure{Class: failure.ClassAuth}}}
 	m.focusIdx = 0
 
 	if _, _, claimed := m.failureKey("e"); !claimed {
@@ -160,7 +160,7 @@ func TestEnterFocusMode_OpensOnTheFailureThatEndedTheTurn(t *testing.T) {
 	m := failureModel(t)
 	m.transcript = []entry{
 		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"a.go"}`, toolResult: "x"},
-		{kind: entryFailure, fail: &llm.Failure{Class: llm.ClassRateLimit}},
+		{kind: entryFailure, fail: &failure.Failure{Class: failure.ClassRateLimit}},
 		{kind: entryTurnClose, close: &components.TurnClose{State: components.TurnFailed}},
 	}
 	m.invalidateRenderCache()
@@ -179,7 +179,7 @@ func TestEnterFocusMode_OpensOnTheFailureThatEndedTheTurn(t *testing.T) {
 
 func TestFailureKey_RetryReopensTheTurn(t *testing.T) {
 	m := failureModel(t)
-	m.transcript = []entry{{kind: entryFailure, fail: &llm.Failure{Class: llm.ClassOverloaded}}}
+	m.transcript = []entry{{kind: entryFailure, fail: &failure.Failure{Class: failure.ClassOverloaded}}}
 	m.focusIdx = 0
 	updated, cmd, claimed := m.failureKey("r")
 	if !claimed {
@@ -199,7 +199,7 @@ func TestFailureKey_RetryReopensTheTurn(t *testing.T) {
 
 func TestFailureKey_ProviderPickOpensTheSelector(t *testing.T) {
 	m := failureModel(t)
-	m.transcript = []entry{{kind: entryFailure, fail: &llm.Failure{Class: llm.ClassQuota}}}
+	m.transcript = []entry{{kind: entryFailure, fail: &failure.Failure{Class: failure.ClassQuota}}}
 	m.focusIdx = 0
 	updated, _, claimed := m.failureKey("p")
 	if !claimed {
@@ -217,7 +217,7 @@ func TestKeyEntry_AppliesTheKeyAndNeverShowsIt(t *testing.T) {
 		applied = key
 		return nil
 	}
-	opened, _ := m.openKeyEntry(&llm.Failure{Class: llm.ClassAuth, KeyTail: "4f9c"})
+	opened, _ := m.openKeyEntry(&failure.Failure{Class: failure.ClassAuth, KeyTail: "4f9c"})
 	next := opened.(Model)
 	if next.state != stateKeyEntry || next.keyAsk == nil {
 		t.Fatalf("[e] should open the key prompt, state = %v", next.state)
@@ -254,7 +254,7 @@ func TestKeyEntry_EscKeepsTheOldKey(t *testing.T) {
 		applied = true
 		return nil
 	}
-	opened, _ := m.openKeyEntry(&llm.Failure{Class: llm.ClassAuth})
+	opened, _ := m.openKeyEntry(&failure.Failure{Class: failure.ClassAuth})
 	next := opened.(Model)
 	updated, _ := next.routeOverlay(overlayFor(stateKeyEntry), keyPress('x'))
 	updated, _ = updated.(Model).routeOverlay(overlayFor(stateKeyEntry), tea.KeyPressMsg{Code: tea.KeyEscape})
@@ -270,7 +270,7 @@ func TestKeyEntry_EscKeepsTheOldKey(t *testing.T) {
 func TestFailureRow_DurationIsWhatTheTurnCost(t *testing.T) {
 	m := failureModel(t)
 	m.turnStarted = time.Now().Add(-3 * time.Second)
-	m.appendFailure(&llm.Failure{Class: llm.ClassNetwork})
+	m.appendFailure(&failure.Failure{Class: failure.ClassNetwork})
 	e := m.transcript[len(m.transcript)-1]
 	if e.duration < 2*time.Second {
 		t.Errorf("duration = %v, want the turn's elapsed time", e.duration)
@@ -284,8 +284,8 @@ func TestFocusMode_PutsTheCursorOnTheFailureRow(t *testing.T) {
 	m := failureModel(t)
 	m.transcript = []entry{
 		{kind: entryUser, text: "rename the sentinel"},
-		{kind: entryFailure, fail: &llm.Failure{
-			Class: llm.ClassAuth, Status: 401, KeyTail: "4f9c",
+		{kind: entryFailure, fail: &failure.Failure{
+			Class: failure.ClassAuth, Status: 401, KeyTail: "4f9c",
 		}},
 	}
 	m.invalidateRenderCache()
@@ -311,8 +311,8 @@ func failedTurn(t *testing.T) Model {
 	m.modelName = "gpt-4o"
 	m = sendText(t, m, "rename the sentinel")
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`, toolResult: "package agent"})
-	updated, _ := m.Update(streamErrMsg{err: &llm.Failure{
-		Class: llm.ClassUnclassified, Status: 400, Provider: "openai",
+	updated, _ := m.Update(streamErrMsg{err: &failure.Failure{
+		Class: failure.ClassUnclassified, Status: 400, Provider: "openai",
 		Message: "Unknown parameter: 'reasoning.effort'",
 	}})
 	return updated.(Model)

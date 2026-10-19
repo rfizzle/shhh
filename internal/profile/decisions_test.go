@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/decision"
 )
 
 // A model offers the Decisions API where the profile declares it, on the
@@ -44,7 +45,7 @@ func TestRouter_DecisionsFollowTheModelsEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	d, ok := prov.(llm.Decider)
+	d, ok := prov.(decision.Decider)
 	if !ok {
 		t.Fatal("a profile's provider should keep the capability through its wrappers")
 	}
@@ -61,8 +62,8 @@ func TestRouter_DecisionsFollowTheModelsEndpoint(t *testing.T) {
 	}
 
 	ask := func(model string) error {
-		_, err := d.Decide(context.Background(), llm.DecisionRequest{Model: model, Input: "x",
-			Questions: []llm.DecisionQuestion{{Type: llm.QuestionPredicate, Name: "q", Instructions: "p"}}})
+		_, err := d.Decide(context.Background(), decision.Request{Model: model, Input: "x",
+			Questions: []decision.Question{{Type: decision.QuestionPredicate, Name: "q", Instructions: "p"}}})
 		return err
 	}
 	if err := ask("luna-gw"); err != nil {
@@ -101,11 +102,11 @@ id = "gpt-5.6-luna"
 		t.Fatalf("unexpected error: %v", err)
 	}
 	Register(loaded)
-	t.Cleanup(func() { llm.RegisterDecisions("luna-gateway", nil) })
-	if !llm.DecisionsDeclared("luna-gateway", "gpt-6-luna") {
+	t.Cleanup(func() { decision.Register("luna-gateway", nil) })
+	if !decision.Declared("luna-gateway", "gpt-6-luna") {
 		t.Error("a declared model should be registered as offering it")
 	}
-	if llm.DecisionsDeclared("luna-gateway", "gpt-5.6-luna") {
+	if decision.Declared("luna-gateway", "gpt-5.6-luna") {
 		t.Error("an undeclared model should not")
 	}
 }

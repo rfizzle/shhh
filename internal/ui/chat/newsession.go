@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -382,7 +383,7 @@ func (m *Model) appendMessageEntries(msgs []llm.Message) {
 			}
 			for _, tc := range msg.ToolCalls {
 				var result string
-				var atts []llm.Attachment
+				var atts []attachment.Attachment
 				var value json.RawMessage
 				if i+1 < len(msgs) {
 					for _, next := range msgs[i+1:] {

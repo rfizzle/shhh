@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/attachment"
 )
 
@@ -701,8 +702,8 @@ func TestExecuteCalls_BoundedByMaxParallel(t *testing.T) {
 
 func TestExecuteCalls_ResultCarriesWhatTheToolAttached(t *testing.T) {
 	a := newTestAgent()
-	img := llm.Attachment{
-		Kind:      llm.AttachmentImage,
+	img := llmattachment.Attachment{
+		Kind:      llmattachment.Image,
 		Name:      "logo.png",
 		MediaType: "image/png",
 		Data:      []byte{0x89, 'P', 'N', 'G'},
@@ -739,8 +740,8 @@ func TestExecuteCalls_ResultWithNothingAttachedCarriesNothing(t *testing.T) {
 func TestTrimOldToolResults_ElidingDropsWhatRodeOnTheResult(t *testing.T) {
 	a := New([]llm.Message{
 		{Role: llm.RoleUser, Content: "q1"},
-		{Role: llm.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1", Attachments: []llm.Attachment{
-			{Kind: llm.AttachmentImage, Name: "logo.png", MediaType: "image/png", Data: []byte{1, 2, 3}},
+		{Role: llm.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1", Attachments: []llmattachment.Attachment{
+			{Kind: llmattachment.Image, Name: "logo.png", MediaType: "image/png", Data: []byte{1, 2, 3}},
 		}},
 		{Role: llm.RoleUser, Content: "q2"},
 	}, noStream)
@@ -760,8 +761,8 @@ func TestExecuteCalls_ImagesSurviveAWholeRoundOfReaders(t *testing.T) {
 	// a person asks for when they did not believe the first answer.
 	a.SetExecutor(NewRepeatDetector().WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		notice := string(args) + " is an image"
-		attachment.NoteResult(notice, llm.Attachment{
-			Kind: llm.AttachmentImage, Name: "x.png", MediaType: "image/png", Data: []byte{1},
+		attachment.NoteResult(notice, llmattachment.Attachment{
+			Kind: llmattachment.Image, Name: "x.png", MediaType: "image/png", Data: []byte{1},
 		})
 		return notice, nil
 	}))

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 )
 
 // `retry in <n>s` is promised only where a retry is coming: with the bound
@@ -29,7 +29,7 @@ func TestWaitingState_RetryClauseKnowsTheBound(t *testing.T) {
 	if got := statusLine(t, *m); !strings.Contains(got, "retry in 12s") {
 		t.Errorf("with one retry left the line reads %q, want a retry", got)
 	}
-	m.backoff.Next(&llm.Failure{Class: llm.ClassNetwork})
+	m.backoff.Next(&failure.Failure{Class: failure.ClassNetwork})
 	if got := statusLine(t, *m); !strings.Contains(got, "fails in 12s") {
 		t.Errorf("with the bound used up the line reads %q, want it to fail", got)
 	}

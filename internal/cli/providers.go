@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
@@ -697,12 +698,12 @@ func modelPrice(v float64) string {
 // rungs above high it has, from the profile when it said, otherwise from the
 // table and the family floor — the same answer the providers act on.
 func reasoningCell(m profile.Model, prices *pricing.Table) string {
-	var caps llm.Capabilities
+	var caps capability.Capabilities
 	if e, ok := prices.Entry(m.ID); ok && (e.ReasoningKnown || e.SupportsReasoning) {
-		caps = llm.Capabilities{Known: true, Reasoning: e.SupportsReasoning, Adaptive: e.AdaptiveThinking,
+		caps = capability.Capabilities{Known: true, Reasoning: e.SupportsReasoning, Adaptive: e.AdaptiveThinking,
 			Legacy: e.LegacyThinking, AlwaysOn: e.ThinkingAlwaysOn, XHigh: e.XHighEffort, Max: e.MaxEffort}
 	} else {
-		caps = llm.CapabilitiesFor(m.ID)
+		caps = capability.For(m.ID)
 	}
 	switch {
 	case !caps.Known:
@@ -715,7 +716,7 @@ func reasoningCell(m profile.Model, prices *pricing.Table) string {
 		// The public table marks some models reasoning-capable without
 		// saying how; the family floor knows the shape, and it is what
 		// the provider sends.
-		if floor := llm.CapabilitiesFor(m.ID); floor.Adaptive || floor.Legacy {
+		if floor := capability.For(m.ID); floor.Adaptive || floor.Legacy {
 			caps.Adaptive, caps.Legacy = floor.Adaptive, floor.Legacy
 		}
 	}

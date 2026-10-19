@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -32,7 +33,7 @@ type streamStep struct {
 	usage *llm.Usage
 	// fail, when set, is returned instead of a stream, so a test can put a
 	// child in front of a provider that never answered.
-	fail *llm.Failure
+	fail *failure.Failure
 	// stop is why the step's reply ended, for a test that needs an ending
 	// other than the ordinary one. The zero value is a reply the model
 	// finished, which is what every step that says nothing means.
@@ -1945,7 +1946,7 @@ func TestKillWakesAChildWaitingOutAProvider(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
 		// Longer than the cap, so the wait is the full minute and nothing but
 		// the kill can end it inside this test.
-		{fail: &llm.Failure{Class: llm.ClassOverloaded, RetryAfter: 2 * time.Minute}},
+		{fail: &failure.Failure{Class: failure.ClassOverloaded, RetryAfter: 2 * time.Minute}},
 	}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code"}`)
@@ -2370,7 +2371,7 @@ func TestSteerToolRedirectsAChildAndItsNextReadingIsJudgedAgainstIt(t *testing.T
 // refusal names it rather than failing quietly: the orchestrator is choosing
 // between agents by name.
 func TestSteerToolRefusesAFailedChildByName(t *testing.T) {
-	env := &scriptedEnv{steps: []streamStep{{fail: &llm.Failure{Message: "the provider refused"}}}}
+	env := &scriptedEnv{steps: []streamStep{{fail: &failure.Failure{Message: "the provider refused"}}}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
 	waitFor(t, func() bool { return statusOf(t, sup, "researcher-1").State == StateFailed })

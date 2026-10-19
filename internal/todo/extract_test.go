@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/secret"
 )
 
@@ -84,7 +85,7 @@ func TestExtract_InstructionsAreSeparateFromTheDigest(t *testing.T) {
 	if strings.Contains(fp.system, "UNTRUSTED DIGEST") || strings.Contains(fp.prompt, "You turn a coding session") {
 		t.Errorf("the halves are mixed: system=%q user=%q", fp.system, fp.prompt)
 	}
-	if fp.got.Effort != llm.EffortLow {
+	if fp.got.Effort != effort.Low {
 		t.Errorf("effort = %v", fp.got.Effort)
 	}
 	if fp.got.MaxTokens != DefaultExtractMaxTokens {

@@ -7,5 +7,6 @@ import (
 	_ "github.com/rfizzle/llm/compat"
 	_ "github.com/rfizzle/llm/gemini"
 	_ "github.com/rfizzle/llm/openai"
+	_ "github.com/rfizzle/llm/openai/responses"
 	_ "github.com/rfizzle/llm/openrouter"
 )

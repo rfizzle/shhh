@@ -6,7 +6,7 @@ package cli
 // no price column, no spend, and no context meter.
 
 import (
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/profile"
 )
@@ -29,12 +29,12 @@ func loadPricing() *pricing.Table {
 // installCapabilities makes the table the providers' answer for what a model
 // can be asked to think.
 func installCapabilities(table *pricing.Table) {
-	llm.SetCapabilityLookup(func(model string) (llm.Capabilities, bool) {
+	capability.SetLookup(func(model string) (capability.Capabilities, bool) {
 		e, ok := table.Entry(model)
 		if !ok {
-			return llm.Capabilities{}, false
+			return capability.Capabilities{}, false
 		}
-		return llm.Capabilities{
+		return capability.Capabilities{
 			Known:           true,
 			Reasoning:       e.SupportsReasoning,
 			Adaptive:        e.AdaptiveThinking,

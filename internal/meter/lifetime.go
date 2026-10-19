@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/cache"
 )
 
 const (
@@ -145,9 +146,9 @@ type leaseCounter struct {
 
 func leaseMultiplier(lease string) float64 {
 	switch lease {
-	case string(llm.CacheTTL1h):
+	case string(cache.TTL1h):
 		return write1h
-	case string(llm.CacheTTL5m):
+	case string(cache.TTL5m):
 		return write5m
 	}
 	return 1
@@ -156,9 +157,9 @@ func leaseMultiplier(lease string) float64 {
 // leaseDuration is how long a lease says it lives, or zero.
 func leaseDuration(lease string) time.Duration {
 	switch lease {
-	case string(llm.CacheTTL1h):
+	case string(cache.TTL1h):
 		return time.Hour
-	case string(llm.CacheTTL5m):
+	case string(cache.TTL5m):
 		return 5 * time.Minute
 	}
 	return 0
@@ -175,10 +176,10 @@ func (l *Ledger) clock() time.Time {
 // the lock.
 func (l *Ledger) cacheKey(providerName, model string, u llm.Usage) CacheKey {
 	key := CacheKey{Provider: providerName, Model: model}
-	if llm.TakesCacheLease(model) || u.Reports&llm.FieldCacheLease != 0 {
+	if cache.TakesLease(model) || u.Reports&cache.FieldLease != 0 {
 		// A lease that will not parse went out as the default; the
 		// provider package says so where it is sent.
-		lease, _ := llm.ParseCacheTTL(l.lease)
+		lease, _ := cache.ParseTTL(l.lease)
 		key.Lease = string(lease)
 	}
 	return key
@@ -234,7 +235,7 @@ func (l *Ledger) ObserveGap(o Origin, providerName, model string, req GapRequest
 		// The hour carried the prefix across a pause that five minutes
 		// would have rewritten: the read is worth the difference between
 		// the five-minute write and a read.
-		if key.Lease == string(llm.CacheTTL1h) && gap > 5*time.Minute && inPrice > 0 {
+		if key.Lease == string(cache.TTL1h) && gap > 5*time.Minute && inPrice > 0 {
 			c := l.leaseCounter(key.Lease)
 			c.delta += min(cached, float64(prev.total)) * (write5m - readMul) * inPrice
 			c.pauses++
@@ -261,7 +262,7 @@ func (l *Ledger) ObserveGap(o Origin, providerName, model string, req GapRequest
 		// per-write difference above already charged the hour's premium on
 		// those tokens, so what is taken back is the hour's write less a
 		// read.
-		if key.Lease == string(llm.CacheTTL5m) && gap < time.Hour && inPrice > 0 {
+		if key.Lease == string(cache.TTL5m) && gap < time.Hour && inPrice > 0 {
 			c := l.leaseCounter(key.Lease)
 			c.delta -= float64(rewritten) * (write1h - readMul) * inPrice
 			c.pauses++
@@ -271,10 +272,10 @@ func (l *Ledger) ObserveGap(o Origin, providerName, model string, req GapRequest
 
 // otherLease is the lease a counterfactual prices against.
 func otherLease(lease string) string {
-	if lease == string(llm.CacheTTL1h) {
-		return string(llm.CacheTTL5m)
+	if lease == string(cache.TTL1h) {
+		return string(cache.TTL5m)
 	}
-	return string(llm.CacheTTL1h)
+	return string(cache.TTL1h)
 }
 
 // leaseCounter returns the running figures for a lease. The caller holds the
@@ -310,7 +311,7 @@ func (l *Ledger) LeaseCosts() []LeaseCost {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	var out []LeaseCost
-	for _, lease := range []string{string(llm.CacheTTL5m), string(llm.CacheTTL1h)} {
+	for _, lease := range []string{string(cache.TTL5m), string(cache.TTL1h)} {
 		c := l.leases[lease]
 		if c == nil || c.writes <= 0 {
 			continue

@@ -17,7 +17,7 @@ package ui
 import (
 	"strings"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -30,7 +30,7 @@ const failureReportWidth = 88
 // not a provider failure, which the caller should keep handling as it always
 // has.
 func FailureReport(err error, model string) (string, bool) {
-	f, ok := llm.AsFailure(err)
+	f, ok := failure.As(err)
 	if !ok {
 		return "", false
 	}
@@ -48,7 +48,7 @@ func FailureReport(err error, model string) (string, bool) {
 	if f.Recoverable() {
 		row.State = components.RecoveryStalled
 	}
-	if f.Class == llm.ClassCancelled {
+	if f.Class == failure.ClassCancelled {
 		row.State = components.RecoveryStopped
 	}
 	return row.View(failureReportWidth), true
@@ -58,7 +58,7 @@ func FailureReport(err error, model string) (string, bool) {
 // no chrome, still classified. A pipe gets the name of what went wrong and
 // the provider's own words, and nothing that needs a cursor to read.
 func FailureLine(err error) (string, bool) {
-	f, ok := llm.AsFailure(err)
+	f, ok := failure.As(err)
 	if !ok {
 		return "", false
 	}
@@ -71,7 +71,7 @@ func FailureLine(err error) (string, bool) {
 
 // failureSubject is the model that failed, or the provider when the caller
 // never named a model.
-func failureSubject(f *llm.Failure, model string) string {
+func failureSubject(f *failure.Failure, model string) string {
 	if model != "" {
 		return model
 	}
@@ -80,31 +80,31 @@ func failureSubject(f *llm.Failure, model string) string {
 
 // failureOutcome is the right-aligned field: the one fact about this class
 // that decides what to do next, never a repeat of the class itself.
-func failureOutcome(f *llm.Failure) string {
+func failureOutcome(f *failure.Failure) string {
 	switch f.Class {
-	case llm.ClassAuth:
+	case failure.ClassAuth:
 		if f.KeyTail == "" {
 			return "no key was sent"
 		}
 		return "key ···" + f.KeyTail + " rejected"
-	case llm.ClassRateLimit:
+	case failure.ClassRateLimit:
 		if f.RetryAfter > 0 {
 			return "retry in " + components.FormatElapsed(f.RetryAfter)
 		}
 		return "retry shortly"
-	case llm.ClassQuota:
+	case failure.ClassQuota:
 		return "the account, not the rate"
-	case llm.ClassOverloaded:
+	case failure.ClassOverloaded:
 		return "the provider's side"
-	case llm.ClassContextLength:
+	case failure.ClassContextLength:
 		return "over the window"
-	case llm.ClassModelNotFound:
+	case failure.ClassModelNotFound:
 		return "the id, not the key"
-	case llm.ClassNetwork:
+	case failure.ClassNetwork:
 		return "never reached it"
-	case llm.ClassMalformed:
+	case failure.ClassMalformed:
 		return "unreadable reply"
-	case llm.ClassCancelled:
+	case failure.ClassCancelled:
 		return components.OutcomeCancelled
 	}
 	return "message below"
@@ -113,23 +113,23 @@ func failureOutcome(f *llm.Failure) string {
 // failureRemedy is the way out, as a command. Every one of these is something
 // the reader can paste; none of them is a key, because there is no longer a
 // program listening for one.
-func failureRemedy(f *llm.Failure) string {
+func failureRemedy(f *failure.Failure) string {
 	switch f.Class {
-	case llm.ClassAuth:
+	case failure.ClassAuth:
 		hint := f.KeyEnv
 		if hint == "" {
 			hint = "SHHH_API_KEY"
 		}
 		return "export " + hint + ", or shhh config set --global provider.api_key <key>"
-	case llm.ClassQuota:
+	case failure.ClassQuota:
 		return "waiting will not clear this — shhh providers lists the alternatives"
-	case llm.ClassRateLimit, llm.ClassOverloaded, llm.ClassNetwork:
+	case failure.ClassRateLimit, failure.ClassOverloaded, failure.ClassNetwork:
 		return "run it again, or --provider <name> to ask somewhere else"
-	case llm.ClassContextLength:
+	case failure.ClassContextLength:
 		return "shorten the prompt, or pipe less into it"
-	case llm.ClassModelNotFound:
+	case failure.ClassModelNotFound:
 		return "--model <name>, or shhh providers lists what each one serves"
-	case llm.ClassCancelled:
+	case failure.ClassCancelled:
 		return "nothing was sent"
 	}
 	return "shhh providers shows what this machine can reach"

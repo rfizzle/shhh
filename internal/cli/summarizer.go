@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -100,7 +101,7 @@ type boundedFlow struct {
 	// flow is the word the call's own request carries, from the provider's
 	// closed set: what a profile scopes a declaration to. The name is how a
 	// listing reads it.
-	flow   llm.Flow
+	flow   flow.Flow
 	keys   []string
 	source meter.Source
 	// sessionless marks a flow no interactive session asks: the one-shot's
@@ -119,31 +120,31 @@ type boundedFlow struct {
 // The flows, one variable each, so a caller names its flow rather than
 // restating its keys.
 var (
-	flowClassifier  = boundedFlow{name: "classifier", flow: llm.FlowClassifier, keys: []string{"behavior.classifier_model"}, source: meter.SourceClassifier}
-	flowExplanation = boundedFlow{name: "explanation", flow: llm.FlowExplanation, keys: []string{"behavior.explainer_model", "behavior.classifier_model"}, source: meter.SourceExplanation}
-	flowDescription = boundedFlow{name: "description", flow: llm.FlowDescription, keys: []string{"behavior.description_model"}, source: meter.SourceOneShot, sessionless: true}
-	flowReading     = boundedFlow{name: "reading", flow: llm.FlowReading, keys: []string{"summary.model"}, source: meter.SourceSummary}
-	flowTitle       = boundedFlow{name: "title", flow: llm.FlowTitle, keys: []string{"summary.model"}, source: meter.SourceSummary}
-	flowAccount     = boundedFlow{name: "account", flow: llm.FlowAccount, keys: []string{"summary.model"}, source: meter.SourceSummary}
-	flowCompaction  = boundedFlow{name: "compaction", flow: llm.FlowCompaction, keys: []string{"summary.model"}, source: meter.SourceSummary, window: true, sessionless: true}
-	flowBacklog     = boundedFlow{name: "backlog", flow: llm.FlowBacklog, keys: []string{"todo.model"}, source: meter.SourceBacklog}
-	flowDrafter     = boundedFlow{name: "profile drafter", flow: llm.FlowProfileDrafter, keys: []string{"agents.drafter_model"}, source: meter.SourcePersona}
+	flowClassifier  = boundedFlow{name: "classifier", flow: flow.Classifier, keys: []string{"behavior.classifier_model"}, source: meter.SourceClassifier}
+	flowExplanation = boundedFlow{name: "explanation", flow: flow.Explanation, keys: []string{"behavior.explainer_model", "behavior.classifier_model"}, source: meter.SourceExplanation}
+	flowDescription = boundedFlow{name: "description", flow: flow.Description, keys: []string{"behavior.description_model"}, source: meter.SourceOneShot, sessionless: true}
+	flowReading     = boundedFlow{name: "reading", flow: flow.Reading, keys: []string{"summary.model"}, source: meter.SourceSummary}
+	flowTitle       = boundedFlow{name: "title", flow: flow.Title, keys: []string{"summary.model"}, source: meter.SourceSummary}
+	flowAccount     = boundedFlow{name: "account", flow: flow.Account, keys: []string{"summary.model"}, source: meter.SourceSummary}
+	flowCompaction  = boundedFlow{name: "compaction", flow: flow.Compaction, keys: []string{"summary.model"}, source: meter.SourceSummary, window: true, sessionless: true}
+	flowBacklog     = boundedFlow{name: "backlog", flow: flow.Backlog, keys: []string{"todo.model"}, source: meter.SourceBacklog}
+	flowDrafter     = boundedFlow{name: "profile drafter", flow: flow.ProfileDrafter, keys: []string{"agents.drafter_model"}, source: meter.SourcePersona}
 	// The toolchain draft reads the drafter's key: both turn a request
 	// into one file on a card, and a person who moved one drafter onto a
 	// stronger model meant the drafting, not the profile.
-	flowToolchain = boundedFlow{name: "toolchain drafter", flow: llm.FlowToolchainDrafter, keys: []string{"agents.drafter_model"}, source: meter.SourceToolchain}
+	flowToolchain = boundedFlow{name: "toolchain drafter", flow: flow.ToolchainDrafter, keys: []string{"agents.drafter_model"}, source: meter.SourceToolchain}
 	// The next step offered in an empty draft has a key of its own: it is
 	// asked at every turn's close, so it is the flow a person is likeliest
 	// to want on the smallest model there is.
-	flowSuggestion = boundedFlow{name: "suggestion", flow: llm.FlowSuggestion, keys: []string{"behavior.suggestion_model"}, source: meter.SourceSuggestion}
+	flowSuggestion = boundedFlow{name: "suggestion", flow: flow.Suggestion, keys: []string{"behavior.suggestion_model"}, source: meter.SourceSuggestion}
 	// The start screen's reading has a key of its own beside it: it is asked
 	// once per session open rather than per turn, and reads the instruction
 	// block, so it is the one a person may want on a stronger model.
-	flowStartOffers = boundedFlow{name: "start offers", flow: llm.FlowStartOffers, keys: []string{"behavior.start_offers_model"}, source: meter.SourceStartOffers}
+	flowStartOffers = boundedFlow{name: "start offers", flow: flow.StartOffers, keys: []string{"behavior.start_offers_model"}, source: meter.SourceStartOffers}
 	// The wording of a proposal made from what repeats has a key of its own
 	// too: its words are what a memory keeps for every later session, so it
 	// is another a person may want on a stronger model than the cheap one.
-	flowPatterns = boundedFlow{name: "patterns", flow: llm.FlowPatterns, keys: []string{"behavior.patterns_model"}, source: meter.SourcePatterns}
+	flowPatterns = boundedFlow{name: "patterns", flow: flow.Patterns, keys: []string{"behavior.patterns_model"}, source: meter.SourcePatterns}
 )
 
 // boundedFlows is every flow on the chain, in the order a listing reads them.

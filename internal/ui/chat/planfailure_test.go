@@ -3,7 +3,7 @@ package chat
 import (
 	"testing"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 )
 
 // A ChatGPT plan session that runs out of allowance, or is refused by the
@@ -12,7 +12,7 @@ import (
 // and it is a key the person presses.
 // See docs/capabilities/chatgpt-plan.md#what-a-plan-session-cannot-do.
 func TestStreamError_APlanRefusalNeverSwitchesTheProvider(t *testing.T) {
-	for _, class := range []llm.Class{llm.ClassUsageLimit, llm.ClassNotEligible} {
+	for _, class := range []failure.Class{failure.ClassUsageLimit, failure.ClassNotEligible} {
 		t.Run(string(class), func(t *testing.T) {
 			m := failureModel(t)
 			m.providerName = "chatgpt"
@@ -20,7 +20,7 @@ func TestStreamError_APlanRefusalNeverSwitchesTheProvider(t *testing.T) {
 			m.wiring.SwitchProvider = func(string) error { switched++; return nil }
 			m.wiring.ReplaceKey = func(string) error { replaced++; return nil }
 
-			updated, cmd := m.Update(streamErrMsg{err: &llm.Failure{
+			updated, cmd := m.Update(streamErrMsg{err: &failure.Failure{
 				Class: class, Status: 429, Provider: "chatgpt",
 				Code: "subscription_sharing_usage_limit_exceeded",
 			}})

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
@@ -574,7 +575,7 @@ func (b *screenBuild) wiring() chat.Wiring {
 		SignOutChatGPT:   signOutChatGPT,
 		PlanWelcomed:     planWelcomed,
 		MarkPlanWelcomed: markPlanWelcomed,
-		ModelOptions:     llm.KnownModels(env.prov.Name()),
+		ModelOptions:     catalog.Models(env.prov.Name()),
 		ModelLister:      env.endpointModels.picker(),
 		EndpointWindows:  endpointWindowsFor(env.prov),
 		Notebook:         session.notebook,

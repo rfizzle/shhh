@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -125,10 +126,10 @@ func TestIdleCompact_DeclinesWhenTheCacheIsNotSeen(t *testing.T) {
 	}
 
 	m := idleSession(t, &requests)
-	llm.RegisterDeclarations("gateway", map[string]llm.Declared{
-		"claude-sonnet-5-5": {Model: map[string]any{llm.KeyPromptCache: false}},
+	capability.RegisterDeclarations("gateway", map[string]capability.Declared{
+		"claude-sonnet-5-5": {Model: map[string]any{capability.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { llm.RegisterDeclarations("gateway", nil) })
+	t.Cleanup(func() { capability.RegisterDeclarations("gateway", nil) })
 	if m.idleCompactDue(clock()) {
 		t.Error("a profile that declares the cache off: the rule fired")
 	}

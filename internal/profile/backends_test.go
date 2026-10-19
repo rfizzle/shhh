@@ -6,4 +6,5 @@ package profile
 import (
 	_ "github.com/rfizzle/llm/anthropic"
 	_ "github.com/rfizzle/llm/openai"
+	_ "github.com/rfizzle/llm/openai/responses"
 )

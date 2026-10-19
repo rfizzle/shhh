@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 )
 
 // HandoffToolName is the tool the writer is asked to call with its answer.
@@ -249,9 +251,9 @@ func (w *HandoffWriter) Write(ctx context.Context, req HandoffRequest) HandoffVe
 		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      llm.FlowReading,
+		Flow:      flow.Reading,
 		MaxTokens: maxTokens,
-		Effort:    llm.EffortLow,
+		Effort:    effort.Low,
 		Tools: []llm.Tool{{
 			Name:        HandoffToolName,
 			Description: "State where the work stands for the next sitting.",

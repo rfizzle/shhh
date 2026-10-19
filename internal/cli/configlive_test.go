@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -74,12 +74,12 @@ func TestConfigScreen_ALiveKeyIsTakenAsItIsStaged(t *testing.T) {
 		t.Fatal("staging live keys handed the session nothing")
 	}
 	if w.MaxToolRounds != 40 || w.Mode != agent.ModeAuto || w.ModelName != "model-b" ||
-		w.Effort != llm.EffortHigh || w.ProgressElapsed != 30*time.Second || w.Verbosity != "high" {
+		w.Effort != effort.High || w.ProgressElapsed != 30*time.Second || w.Verbosity != "high" {
 		t.Errorf("the session was handed %+v", struct {
 			Rounds  int
 			Mode    agent.Mode
 			Model   string
-			Effort  llm.Effort
+			Effort  effort.Level
 			Elapsed time.Duration
 			Density string
 		}{w.MaxToolRounds, w.Mode, w.ModelName, w.Effort, w.ProgressElapsed, w.Verbosity})

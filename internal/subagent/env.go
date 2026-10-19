@@ -3,6 +3,7 @@ package subagent
 import (
 	"context"
 
+	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -241,7 +242,7 @@ func (e Env) execResult(result tools.ExecResult) string {
 func childCompactor(model string, env Env) *agent.Compactor {
 	window := env.Window
 	if window <= 0 {
-		window, _ = llm.ContextWindowFor(model)
+		window, _ = catalog.ContextWindowFor(model)
 	}
 	if window <= 0 {
 		return nil

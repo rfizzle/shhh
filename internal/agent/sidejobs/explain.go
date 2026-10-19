@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 )
 
 const (
@@ -150,12 +152,12 @@ func (e *Explainer) Explain(ctx context.Context, req ExplainRequest) ExplainVerd
 		{Role: llm.RoleUser, Content: "UNTRUSTED COMMAND:\n" + command},
 	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      llm.FlowExplanation,
+		Flow:      flow.Explanation,
 		MaxTokens: e.cfg.maxTokens(),
 		// A shallow thought is the right amount for reading a command line,
 		// and asking for it is the only way to bound one on a model that
 		// thinks whether or not it was asked.
-		Effort: llm.EffortLow,
+		Effort: effort.Low,
 	})
 	if err != nil {
 		v.Err = "the explanation could not be read: " + err.Error()

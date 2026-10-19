@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -21,7 +22,7 @@ import (
 type stallingProvider struct {
 	mu      sync.Mutex
 	refuse  int
-	fail    *llm.Failure
+	fail    *failure.Failure
 	answer  string
 	started int
 }
@@ -53,8 +54,8 @@ func TestProgram_AStalledRequestIsWaitedOutAndAnswered(t *testing.T) {
 		// believes down to its one-second floor: it keeps the wait this test
 		// sits out at about a second rather than the two the doubling starts
 		// from, without a seam of the test's own in the session.
-		fail: &llm.Failure{
-			Class: llm.ClassOverloaded, Status: 503, Provider: "openai",
+		fail: &failure.Failure{
+			Class: failure.ClassOverloaded, Status: 503, Provider: "openai",
 			Message:    "The upstream model is overloaded, try again shortly",
 			RetryAfter: time.Millisecond,
 		},
@@ -93,8 +94,8 @@ func TestProgram_TheLastFailureIsRetriedFromAHalfTypedLine(t *testing.T) {
 		refuse: 1,
 		// Unclassified is never waited out on its own, so the row is what
 		// the turn ends on and the retry is the reader's.
-		fail: &llm.Failure{
-			Class: llm.ClassUnclassified, Status: 400, Provider: "openai",
+		fail: &failure.Failure{
+			Class: failure.ClassUnclassified, Status: 400, Provider: "openai",
 			Message: "Unknown parameter: 'reasoning.effort'",
 		},
 		answer: "The loop stops at the round cap, and nowhere else.",

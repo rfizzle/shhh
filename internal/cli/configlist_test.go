@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm/cache"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -186,8 +188,8 @@ func TestCheckConfigValue_EveryWordKeyIsJudged(t *testing.T) {
 func TestSettings_StatedDefaultsAreTheConstants(t *testing.T) {
 	for key, want := range map[string]string{
 		"provider.default":                     resolve.DefaultProvider,
-		"provider.reasoning":                   llm.DefaultEffort.String(),
-		"provider.cache_ttl":                   string(llm.DefaultCacheTTL),
+		"provider.reasoning":                   effort.Default.String(),
+		"provider.cache_ttl":                   string(cache.DefaultTTL),
 		"provider.stream_idle_seconds":         strconv.Itoa(int(llm.DefaultStreamIdle/time.Second)) + " seconds",
 		"behavior.max_tool_rounds":             strconv.Itoa(agent.DefaultMaxToolRounds),
 		"behavior.context_max_tokens":          strconv.Itoa(config.DefaultContextMaxTokens) + " tokens",

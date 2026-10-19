@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -447,12 +449,12 @@ func readProposals(ctx context.Context, p llm.Provider, cfg ExtractConfig, profi
 		{Role: llm.RoleUser, Content: digest},
 	}, llm.CompletionOpts{
 		Model:     cfg.Model,
-		Flow:      llm.FlowBacklog,
+		Flow:      flow.Backlog,
 		MaxTokens: cfg.maxTokens(),
 		// A shallow thought over evidence the session already assembled;
 		// off would leave the depth to the model, and the ceiling is shared
 		// with the answer.
-		Effort: llm.EffortLow,
+		Effort: effort.Low,
 		// The proposals are asked for twice and sent once: a model that can
 		// be told to answer in a shape is sent the schema and no tools, and
 		// what comes back is read by the same parser that reads a model's

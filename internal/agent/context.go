@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 )
 
 // How full the window may get, as shares of it. They live here rather than
@@ -198,11 +199,11 @@ const estimatedImageTokens = 1500
 
 // EstimateAttachmentTokens roughly estimates what a message's attachments
 // occupy: text goes in verbatim, images cost about a screenshot each.
-func EstimateAttachmentTokens(atts []llm.Attachment) int64 {
+func EstimateAttachmentTokens(atts []attachment.Attachment) int64 {
 	var n int64
 	for _, a := range atts {
 		switch a.Kind {
-		case llm.AttachmentText:
+		case attachment.Text:
 			n += EstimateBytesTokens(a.Data)
 		default:
 			n += estimatedImageTokens

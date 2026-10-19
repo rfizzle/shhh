@@ -21,6 +21,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui"
@@ -296,7 +297,7 @@ func reportFailure(err error, model string) error {
 	if err == nil {
 		return nil
 	}
-	if _, ok := llm.AsFailure(err); !ok {
+	if _, ok := failure.As(err); !ok {
 		return err
 	}
 	if isTerminal(os.Stderr) {

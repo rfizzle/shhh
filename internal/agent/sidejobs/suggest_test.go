@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 )
 
 // One request, on the configured model, at a shallow thought, forbidding any
@@ -13,7 +14,7 @@ import (
 // prose that comes back is the suggestion.
 func TestSuggester_AsksOnceAndReadsTheProse(t *testing.T) {
 	p := &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
-		if opts.Model != "small" || opts.Effort != llm.EffortLow || opts.ToolChoice != llm.ToolChoiceNone || len(opts.Tools) != 0 {
+		if opts.Model != "small" || opts.Effort != effort.Low || opts.ToolChoice != llm.ToolChoiceNone || len(opts.Tools) != 0 {
 			t.Errorf("opts = %+v", opts)
 		}
 		return eventsOf(llm.StreamEvent{Token: "  \"Fix the failing timer test.\"\n", Usage: &llm.Usage{PromptTokens: 300, CompletionTokens: 9}, Done: true}), nil

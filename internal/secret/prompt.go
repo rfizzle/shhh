@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 )
 
 // PromptBlock describes what this session hides from the model and how it
@@ -115,9 +116,9 @@ func (v *Vault) ScrubMessage(m llm.Message) llm.Message {
 		m.ToolCalls = calls
 	}
 	if len(m.Attachments) > 0 {
-		atts := make([]llm.Attachment, len(m.Attachments))
+		atts := make([]attachment.Attachment, len(m.Attachments))
 		for i, a := range m.Attachments {
-			if a.Kind == llm.AttachmentText {
+			if a.Kind == attachment.Text {
 				a.Data = []byte(v.Scrub(string(a.Data)))
 			}
 			atts[i] = a

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/logs"
 )
 
@@ -522,7 +523,7 @@ func refusedOnce(t *testing.T, into *[]recordedRequest, refusals int, rounds ...
 		*into = append(*into, recordedRequest{msgs: msgs, choice: choice})
 		if choice != llm.ToolChoiceNone && refusals > 0 {
 			refusals--
-			return nil, nil, &llm.Failure{Class: llm.ClassContextLength, Status: 400}
+			return nil, nil, &failure.Failure{Class: failure.ClassContextLength, Status: 400}
 		}
 		if i >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", len(*into))
@@ -596,7 +597,7 @@ func TestHeadlessEndsOnASecondRefusalInARow(t *testing.T) {
 	))
 
 	h := &Headless{Agent: a, Compact: &Compactor{Model: "test-model", Window: 1_000_000}}
-	if _, err := h.Run("carry on"); !errors.Is(err, llm.ErrContextLength) {
+	if _, err := h.Run("carry on"); !errors.Is(err, failure.ErrContextLength) {
 		t.Fatalf("err = %v, want the provider's refusal", err)
 	}
 	if len(reqs) != 3 {

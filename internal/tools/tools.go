@@ -17,6 +17,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
@@ -751,17 +752,17 @@ func binaryNotice(path, mediaType string, head []byte, rest io.Reader, size int6
 // shhh can put in front of a model. A format no provider takes, or a file
 // past the attachment ceiling, is not an image as far as this is concerned:
 // it is bytes, and the notice says so.
-func imageAttachment(name, mediaType string, head []byte, rest io.Reader, size int64) (llm.Attachment, bool) {
+func imageAttachment(name, mediaType string, head []byte, rest io.Reader, size int64) (llmattachment.Attachment, bool) {
 	if !strings.HasPrefix(mediaType, "image/") || size > attachment.MaxBytes {
-		return llm.Attachment{}, false
+		return llmattachment.Attachment{}, false
 	}
 	tail, err := io.ReadAll(rest)
 	if err != nil {
-		return llm.Attachment{}, false
+		return llmattachment.Attachment{}, false
 	}
 	att, err := attachment.FromBytes(name, append(head, tail...))
-	if err != nil || att.Kind != llm.AttachmentImage {
-		return llm.Attachment{}, false
+	if err != nil || att.Kind != llmattachment.Image {
+		return llmattachment.Attachment{}, false
 	}
 	return att, true
 }
@@ -913,5 +914,5 @@ func entrySize(e fs.DirEntry) string {
 	if err != nil {
 		return ""
 	}
-	return "\t" + llm.HumanSize(int(info.Size()))
+	return "\t" + llmattachment.HumanSize(int(info.Size()))
 }

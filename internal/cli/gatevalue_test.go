@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/toolvalue"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -69,7 +70,7 @@ func TestToolResultValue_IdenticalTextsKeepTheirOwn(t *testing.T) {
 	if _, err := gate.ExecuteTool(json.RawMessage(`{"action":"run","suite":"fast"}`)); err != nil {
 		t.Fatal(err)
 	}
-	llm.TakeValue(quality.ToolName, `{"action":"run","suite":"fast"}`)
+	toolvalue.Take(quality.ToolName, `{"action":"run","suite":"fast"}`)
 	a := agent.New(nil, nil)
 	a.SetExecutor(exec)
 	args := `{"action":"result"}`

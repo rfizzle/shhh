@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -659,7 +660,7 @@ func (h *Headless) recoverContext() {
 // do is shrink the conversation, which is a step it already has.
 // See docs/capabilities/headless.md#a-request-that-did-not-fit-is-not-the-end-of-the-run.
 func (h *Headless) recoverOverflow(err error) bool {
-	if !errors.Is(err, llm.ErrContextLength) || h.Compact == nil || h.wasInterrupted() {
+	if !errors.Is(err, failure.ErrContextLength) || h.Compact == nil || h.wasInterrupted() {
 		return false
 	}
 	// Once per refusal. A second one in a row is a window this run cannot

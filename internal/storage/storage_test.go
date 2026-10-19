@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/notebook"
 )
@@ -199,8 +200,8 @@ func TestSaveChat_RoundTripsAttachments(t *testing.T) {
 		{
 			Role:    llm.RoleUser,
 			Content: "what is wrong here?",
-			Attachments: []llm.Attachment{{
-				Kind:      llm.AttachmentImage,
+			Attachments: []attachment.Attachment{{
+				Kind:      attachment.Image,
 				Name:      "shot.png",
 				MediaType: "image/png",
 				Data:      []byte{0x89, 'P', 'N', 'G', 0x00, 0xff},
@@ -220,7 +221,7 @@ func TestSaveChat_RoundTripsAttachments(t *testing.T) {
 		t.Fatalf("expected 1 attachment, got %d", len(loaded[0].Attachments))
 	}
 	got := loaded[0].Attachments[0]
-	if got.Name != "shot.png" || got.MediaType != "image/png" || got.Kind != llm.AttachmentImage {
+	if got.Name != "shot.png" || got.MediaType != "image/png" || got.Kind != attachment.Image {
 		t.Fatalf("attachment metadata lost: %#v", got)
 	}
 	if string(got.Data) != string(msgs[0].Attachments[0].Data) {

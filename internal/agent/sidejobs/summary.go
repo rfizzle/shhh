@@ -30,6 +30,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/shhh/internal/logs"
 )
 
@@ -475,11 +477,11 @@ func (s *Summarizer) readOnce(ctx context.Context, model, instructions, digest s
 		{Role: llm.RoleUser, Content: digest},
 	}, llm.CompletionOpts{
 		Model:     model,
-		Flow:      llm.FlowReading,
+		Flow:      flow.Reading,
 		MaxTokens: s.cfg.maxTokens(),
 		// A shallow thought over a digest that is already assembled. Off
 		// would be the model's own depth, which is what emptied the block.
-		Effort: llm.EffortLow,
+		Effort: effort.Low,
 		Tools: []llm.Tool{{
 			Name:        SummaryToolName,
 			Description: "Report the session's current state and whether it is still on target.",

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/llm"
+	llmcatalog "github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
@@ -111,7 +112,7 @@ func (m spawnModels) endpoint() *endpointModels {
 func (m spawnModels) ids() []string {
 	var catalog []string
 	if m.env.prov != nil {
-		catalog = llm.KnownModels(m.env.prov.Name())
+		catalog = llmcatalog.Models(m.env.prov.Name())
 	}
 	return spawnableModels(m.env.cfg, m.agents, catalog, m.env.childModel(), m.strict())
 }

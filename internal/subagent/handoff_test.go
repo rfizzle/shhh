@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/lsp"
@@ -574,7 +575,7 @@ func requiredMinimum(t *testing.T, err error) int64 {
 // has room for; the roster says it in full because it is where resume_handoff
 // is read back from, and the report says it once.
 func TestAFailedChildsDetailIsTheReasonAlone(t *testing.T) {
-	env := &scriptedEnv{steps: []streamStep{{fail: &llm.Failure{Class: llm.ClassAuth}}}}
+	env := &scriptedEnv{steps: []streamStep{{fail: &failure.Failure{Class: failure.ClassAuth}}}}
 	sup := New(context.Background(), Options{
 		Root: t.TempDir(), NewEnv: env.factory(),
 		Record: func(Spec, string) Recorder {

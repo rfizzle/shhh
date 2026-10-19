@@ -13,7 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -54,7 +54,7 @@ func layoutStates(t *testing.T, width, height int) map[string]Model {
 	waiting := base()
 	waiting.state = stateRetryWait
 	waiting.retry = &retryWait{
-		fail:     &llm.Failure{Class: llm.ClassRateLimit, Message: "slow down"},
+		fail:     &failure.Failure{Class: failure.ClassRateLimit, Message: "slow down"},
 		attempt:  2,
 		max:      5,
 		wait:     30 * time.Second,

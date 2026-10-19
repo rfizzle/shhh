@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -241,8 +242,8 @@ func TestScrubMessages_CopiesAndScrubsEveryText(t *testing.T) {
 	v := New()
 	_ = v.Add("TOKEN", "hunter2hunter2")
 	msgs := []llm.Message{
-		{Role: llm.RoleUser, Content: "key hunter2hunter2", Attachments: []llm.Attachment{
-			{Kind: llm.AttachmentText, Data: []byte("hunter2hunter2")},
+		{Role: llm.RoleUser, Content: "key hunter2hunter2", Attachments: []attachment.Attachment{
+			{Kind: attachment.Text, Data: []byte("hunter2hunter2")},
 		}},
 		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{{Arguments: `{"c":"echo hunter2hunter2"}`}}},
 	}

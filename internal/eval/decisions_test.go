@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	llmdecision "github.com/rfizzle/llm/decision"
 	"github.com/rfizzle/shhh/internal/agent"
 )
 
@@ -27,14 +28,14 @@ func (f *fakeDecisions) StreamCompletion(context.Context, []llm.Message, llm.Com
 
 func (f *fakeDecisions) OffersDecisions(string) bool { return true }
 
-func (f *fakeDecisions) Decide(_ context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+func (f *fakeDecisions) Decide(_ context.Context, req llmdecision.Request) (llmdecision.Result, error) {
 	f.decided++
 	p := 0.95
 	if strings.Contains(req.Input, "answers-deny") {
 		p = 0.1
 	}
-	return llm.DecisionResult{
-		Answers: []llm.DecisionAnswer{{Type: llm.AnswerPredicate, Name: req.Questions[0].Name, Probability: p}},
+	return llmdecision.Result{
+		Answers: []llmdecision.Answer{{Type: llmdecision.AnswerPredicate, Name: req.Questions[0].Name, Probability: p}},
 		Usage:   llm.Usage{PromptTokens: 1000},
 	}, nil
 }

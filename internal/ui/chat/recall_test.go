@@ -6,6 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -288,8 +289,8 @@ func TestRecall_RestagesAPasteFromAReopenedSession(t *testing.T) {
 	m := resumedModel(t, []llm.Message{
 		{Role: llm.RoleSystem, Content: "sys"},
 		{Role: llm.RoleUser, Content: sentence,
-			Attachments: []llm.Attachment{{
-				Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}}},
+			Attachments: []llmattachment.Attachment{{
+				Kind: llmattachment.Text, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}}},
 	})
 	folds := 0
 	for _, e := range m.transcript {
@@ -342,10 +343,10 @@ func TestRecall_StripsAFoldWithNoPasteBehindIt(t *testing.T) {
 func TestRecall_RenumbersAFoldWhoseNameIsTaken(t *testing.T) {
 	log := strings.Repeat("a line of the log\n", 11)
 	m := frameModel(t, 100, 40)
-	m.attachments = []llm.Attachment{{
-		Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("some other paste\n")}}
-	sent := llm.Attachment{Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}
-	m.transcript = m.sentEntries("sent "+components.PasteToken("Paste#1", "11 lines"), []llm.Attachment{sent})
+	m.attachments = []llmattachment.Attachment{{
+		Kind: llmattachment.Text, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("some other paste\n")}}
+	sent := llmattachment.Attachment{Kind: llmattachment.Text, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}
+	m.transcript = m.sentEntries("sent "+components.PasteToken("Paste#1", "11 lines"), []llmattachment.Attachment{sent})
 
 	got := m.restageRecalled(components.PasteToken("Paste#1", "11 lines"))
 	if want := components.PasteToken("Paste#2", "11 lines"); got != want {
@@ -440,8 +441,8 @@ func TestHistorySearch_EscStagesNothing(t *testing.T) {
 func TestClearKey_DropsThePastesTheDraftFolded(t *testing.T) {
 	log := strings.Repeat("a line of the log\n", 11)
 	m := frameModel(t, 100, 40)
-	m.attachments = []llm.Attachment{{
-		Kind: llm.AttachmentText, Name: "notes.md", Data: []byte("by hand\n")}}
+	m.attachments = []llmattachment.Attachment{{
+		Kind: llmattachment.Text, Name: "notes.md", Data: []byte("by hand\n")}}
 	updated, _ := m.Update(tea.PasteMsg{Content: log})
 	m = updated.(Model)
 	m.input.InsertString(" fix it")

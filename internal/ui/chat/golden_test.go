@@ -23,6 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm/attachment"
+	llmeffort "github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
@@ -982,8 +985,8 @@ func TestGolden_DraftGrammar(t *testing.T) {
 		// than itself.
 		folded := func() string {
 			m := goldenModel(t, width)
-			m.attachments = []llm.Attachment{{
-				Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt",
+			m.attachments = []attachment.Attachment{{
+				Kind: attachment.Text, Handle: "Paste#1", Name: "paste-1.txt",
 				Data: bytes.Repeat([]byte("round 26 reached, loop still running\n"), 214),
 			}}
 			m.input.SetValue("why does " + components.PasteToken("Paste#1", "214 lines") + " never stop")
@@ -1086,8 +1089,8 @@ func TestGolden_StagedRail(t *testing.T) {
 	captureGolden(t, "staged-rail", "the frame's staged rail", goldenWidths, func(width int) []golden.Panel {
 		frame := func(mut func(*Model)) string {
 			m := goldenModel(t, width)
-			m.attachments = []llm.Attachment{
-				{Kind: llm.AttachmentImage, Handle: "Image#1", Name: "shot.png", Data: png},
+			m.attachments = []attachment.Attachment{
+				{Kind: attachment.Image, Handle: "Image#1", Name: "shot.png", Data: png},
 			}
 			mut(&m)
 			return promptSurface(m)
@@ -1095,19 +1098,19 @@ func TestGolden_StagedRail(t *testing.T) {
 		return []golden.Panel{
 			{Label: "one screenshot waiting", View: frame(func(m *Model) {})},
 			{Label: "two screenshots with one name · the handle tells them apart", View: frame(func(m *Model) {
-				m.attachments = []llm.Attachment{
-					{Kind: llm.AttachmentImage, Handle: "Image#1", Name: "clipboard.png", Data: png},
-					{Kind: llm.AttachmentImage, Handle: "Image#2", Name: "clipboard.png", Data: png[:380<<10]},
+				m.attachments = []attachment.Attachment{
+					{Kind: attachment.Image, Handle: "Image#1", Name: "clipboard.png", Data: png},
+					{Kind: attachment.Image, Handle: "Image#2", Name: "clipboard.png", Data: png[:380<<10]},
 				}
 			})},
 			{Label: "one of each kind · only the text has lines to count", View: frame(func(m *Model) {
 				m.attachments = append(m.attachments,
-					llm.Attachment{Kind: llm.AttachmentText, Handle: "File#1", Name: "notes.md", Data: md},
-					llm.Attachment{Kind: llm.AttachmentDocument, Handle: "File#2", Name: "spec.pdf", Data: pdf})
+					attachment.Attachment{Kind: attachment.Text, Handle: "File#1", Name: "notes.md", Data: md},
+					attachment.Attachment{Kind: attachment.Document, Handle: "File#2", Name: "spec.pdf", Data: pdf})
 			})},
 			{Label: "a staged paste · the height is what names it", View: frame(func(m *Model) {
-				m.attachments = []llm.Attachment{
-					{Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: paste},
+				m.attachments = []attachment.Attachment{
+					{Kind: attachment.Text, Handle: "Paste#1", Name: "paste-1.txt", Data: paste},
 				}
 			})},
 			{Label: "a notice above it · transient first, then what rides", View: frame(func(m *Model) {
@@ -1115,10 +1118,10 @@ func TestGolden_StagedRail(t *testing.T) {
 			})},
 			{Label: "reading mode on the strip · the cursor on the second of three chips, the strip's keys under it", View: func() string {
 				m := goldenModel(t, width)
-				m.attachments = []llm.Attachment{
-					{Kind: llm.AttachmentImage, Handle: "Image#1", Name: "clipboard.png", Data: png},
-					{Kind: llm.AttachmentImage, Handle: "Image#2", Name: "clipboard.png", Data: png[:380<<10]},
-					{Kind: llm.AttachmentText, Handle: "File#1", Name: "notes.md", Data: md},
+				m.attachments = []attachment.Attachment{
+					{Kind: attachment.Image, Handle: "Image#1", Name: "clipboard.png", Data: png},
+					{Kind: attachment.Image, Handle: "Image#2", Name: "clipboard.png", Data: png[:380<<10]},
+					{Kind: attachment.Text, Handle: "File#1", Name: "notes.md", Data: md},
 				}
 				next, _ := m.enterFocusMode()
 				rm := next.(Model)
@@ -1165,7 +1168,7 @@ func TestGolden_PasteToken(t *testing.T) {
 		strings.Repeat("    loop_test.go:44: round 26 reached after 2.1s, loop still running "+
 			"with 3 goroutines parked on the same channel\n", 209) +
 		"--- FAIL: TestRoundLimit (2.11s)\nFAIL\nFAIL\tshhh/internal/agent\t2.184s\nexit status 1\n")
-	pasted := llm.Attachment{Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: log}
+	pasted := attachment.Attachment{Kind: attachment.Text, Handle: "Paste#1", Name: "paste-1.txt", Data: log}
 	fold, ok := pasteOf(pasted)
 	if !ok {
 		t.Fatal("the fixture's paste does not read as one")
@@ -1173,7 +1176,7 @@ func TestGolden_PasteToken(t *testing.T) {
 	// A screenshot pasted beside it, which leaves a fold of its own: the
 	// sentence points at both, and the row keeps both after the send.
 	shot := fixedPNG(t, image.NewNRGBA(image.Rect(0, 0, 1440, 900)), 40<<10)
-	picture := llm.Attachment{Kind: llm.AttachmentImage, Handle: "Image#1",
+	picture := attachment.Attachment{Kind: attachment.Image, Handle: "Image#1",
 		Name: "clipboard.png", MediaType: "image/png", Data: shot}
 	pictured, ok := pasteOf(picture)
 	if !ok || pictured.token != "⟨Image#1 · 1440×900⟩" {
@@ -1181,7 +1184,7 @@ func TestGolden_PasteToken(t *testing.T) {
 	}
 	sentence := "this test log says the loop never stops — " + fold.token + " — and " +
 		pictured.token + " is the screen it hangs on; fix the exit condition"
-	carried := []llm.Attachment{pasted, picture}
+	carried := []attachment.Attachment{pasted, picture}
 	staged := func(t *testing.T, width int) Model {
 		m := goldenModel(t, width)
 		m.attachments = carried
@@ -1422,10 +1425,10 @@ func TestGolden_PromptFrameWidthsCoverEveryLayout(t *testing.T) {
 // (docs/interface/surfaces.md#the-input-frame).
 func TestGolden_HeaderRow(t *testing.T) {
 	captureGolden(t, "header-row", "the header's constants", goldenWidths, func(width int) []golden.Panel {
-		header := func(info *StartInfo, effort llm.Effort) string {
+		header := func(info *StartInfo, effort llmeffort.Level) string {
 			m := frameModel(t, width, 40)
 			m.wiring.Prices, m.modelName = nil, "claude-sonnet-4-5"
-			m.effort, m.wiring.SwitchEffort = effort, func(llm.Effort) {}
+			m.effort, m.wiring.SwitchEffort = effort, func(llmeffort.Level) {}
 			if info != nil {
 				m.start = new(*info)
 			}
@@ -1435,13 +1438,13 @@ func TestGolden_HeaderRow(t *testing.T) {
 		outside := startFixture()
 		outside.Project.Repo, outside.Project.Branch = false, ""
 		return []golden.Panel{
-			{Label: "a coding session · directory, branch, model, level", View: header(&coding, llm.EffortMedium)},
-			{Label: "outside a repository, asking for no reasoning", View: header(&outside, llm.EffortOff)},
-			{Label: "a host with no survey of the checkout", View: header(nil, llm.EffortHigh)},
+			{Label: "a coding session · directory, branch, model, level", View: header(&coding, llmeffort.Medium)},
+			{Label: "outside a repository, asking for no reasoning", View: header(&outside, llmeffort.Off)},
+			{Label: "a host with no survey of the checkout", View: header(nil, llmeffort.High)},
 			{Label: "a conversation · directory, branch, model, level", View: frameModelWith(t, width, 40, Wiring{
 				ModelName:    "claude-sonnet-4-5",
-				Effort:       llm.EffortHigh,
-				SwitchEffort: func(llm.Effort) {},
+				Effort:       llmeffort.High,
+				SwitchEffort: func(llmeffort.Level) {},
 				Conversation: true,
 				Checkout:     new(coding.Project),
 			}).
@@ -1655,7 +1658,7 @@ func TestGolden_ProviderFailures(t *testing.T) {
 		// a failure row is when it lands: the handover reaches it with
 		// nothing selected, and its retry and provider switch are labelled as
 		// the last failure's (docs/interface/surfaces.md#the-recovery-row).
-		buildAs := func(f *llm.Failure, outcome components.TurnState) string {
+		buildAs := func(f *failure.Failure, outcome components.TurnState) string {
 			m := frameModel(t, width, 40)
 			m.modelName = "gpt-4o"
 			m.providerName = "openai"
@@ -1669,26 +1672,26 @@ func TestGolden_ProviderFailures(t *testing.T) {
 			m.invalidateRenderCache()
 			return m.renderHistory()
 		}
-		build := func(f *llm.Failure) string { return buildAs(f, components.TurnFailed) }
+		build := func(f *failure.Failure) string { return buildAs(f, components.TurnFailed) }
 		return []golden.Panel{
-			{Label: "auth · the key it sent is named, and a new one can be entered", View: build(&llm.Failure{
-				Class: llm.ClassAuth, Status: 401, Provider: "openai",
+			{Label: "auth · the key it sent is named, and a new one can be entered", View: build(&failure.Failure{
+				Class: failure.ClassAuth, Status: 401, Provider: "openai",
 				Message: "Incorrect API key provided", KeyEnv: "SHHH_API_KEY or OPENAI_API_KEY", KeyTail: "4f9c",
 			})},
-			{Label: "rate limit · a stall, with the wait the provider named", View: build(&llm.Failure{
-				Class: llm.ClassRateLimit, Status: 429, Provider: "openai",
+			{Label: "rate limit · a stall, with the wait the provider named", View: build(&failure.Failure{
+				Class: failure.ClassRateLimit, Status: 429, Provider: "openai",
 				Message: "Rate limit reached for gpt-4o. Please try again in 38s.", RetryAfter: 38 * time.Second,
 			})},
-			{Label: "context length · the only class with a remedy of its own", View: build(&llm.Failure{
-				Class: llm.ClassContextLength, Status: 400, Provider: "openai",
+			{Label: "context length · the only class with a remedy of its own", View: build(&failure.Failure{
+				Class: failure.ClassContextLength, Status: 400, Provider: "openai",
 				Message: "This model's maximum context length is 128000 tokens",
 			})},
-			{Label: "unclassified · the message is the whole point of the row", View: build(&llm.Failure{
-				Class: llm.ClassUnclassified, Status: 400, Provider: "openai",
+			{Label: "unclassified · the message is the whole point of the row", View: build(&failure.Failure{
+				Class: failure.ClassUnclassified, Status: 400, Provider: "openai",
 				Message: "Unknown parameter: 'reasoning.effort'",
 			})},
-			{Label: "a failure the session has moved past · every key grey until selected", View: buildAs(&llm.Failure{
-				Class: llm.ClassUnclassified, Status: 400, Provider: "openai",
+			{Label: "a failure the session has moved past · every key grey until selected", View: buildAs(&failure.Failure{
+				Class: failure.ClassUnclassified, Status: 400, Provider: "openai",
 				Message: "Unknown parameter: 'reasoning.effort'",
 			}, components.TurnDone)},
 		}
@@ -2703,8 +2706,8 @@ func TestGolden_KeyEntry(t *testing.T) {
 		m := frameModel(t, width, 40)
 		m.providerName = "openai"
 		m.wiring.ReplaceKey = func(string) error { return nil }
-		next, _ := m.openKeyEntry(&llm.Failure{
-			Class: llm.ClassAuth, KeyEnv: "SHHH_API_KEY or OPENAI_API_KEY", KeyTail: "4f9c",
+		next, _ := m.openKeyEntry(&failure.Failure{
+			Class: failure.ClassAuth, KeyEnv: "SHHH_API_KEY or OPENAI_API_KEY", KeyTail: "4f9c",
 		})
 		opened := next.(Model)
 		return []golden.Panel{
@@ -2969,7 +2972,7 @@ func TestGolden_Screen(t *testing.T) {
 			// (docs/interface/surfaces.md#the-input-frame).
 			m := frameModel(t, width, screenHeight)
 			m.start = new(startFixture())
-			m.effort, m.wiring.SwitchEffort = llm.EffortMedium, func(llm.Effort) {}
+			m.effort, m.wiring.SwitchEffort = llmeffort.Medium, func(llmeffort.Level) {}
 			m.transcript = goldenTranscript()
 			// The transcript is the session's first turn, and a real turn
 			// stamps every row it leaves with its number: without it the
@@ -3334,8 +3337,8 @@ func TestGolden_SummaryRow(t *testing.T) {
 // narrows and the handle never: at 60 the source phrase goes first, then the
 // dimensions.
 func TestGolden_SentTray(t *testing.T) {
-	picture := func(handle, name string, size int) llm.Attachment {
-		return llm.Attachment{Kind: llm.AttachmentImage, Handle: handle, Name: name,
+	picture := func(handle, name string, size int) attachment.Attachment {
+		return attachment.Attachment{Kind: attachment.Image, Handle: handle, Name: name,
 			MediaType: "image/png", Data: fixedPNG(t, image.NewNRGBA(image.Rect(0, 0, 1440, 900)), size)}
 	}
 	first := picture("Image#1", "clipboard.png", 412<<10)
@@ -3344,16 +3347,16 @@ func TestGolden_SentTray(t *testing.T) {
 	log := []byte("=== RUN   TestRoundLimit\n" +
 		strings.Repeat("    loop_test.go:41: round 25 reached, loop still running\n", 211) +
 		"--- FAIL: TestRoundLimit (2.14s)\nFAIL\n")
-	paste := llm.Attachment{Kind: llm.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt",
+	paste := attachment.Attachment{Kind: attachment.Text, Handle: "Paste#1", Name: "paste-1.txt",
 		MediaType: "text/plain", Data: log}
-	pdf := llm.Attachment{Kind: llm.AttachmentDocument, Handle: "File#1", Name: "spec.pdf",
+	pdf := attachment.Attachment{Kind: attachment.Document, Handle: "File#1", Name: "spec.pdf",
 		MediaType: "application/pdf", Data: append([]byte("%PDF-1.4\n"+
 			strings.Repeat("1 0 obj <</Type /Page>> endobj\n", 12)), make([]byte, 1258291)...)}
-	fold := func(a llm.Attachment) string {
+	fold := func(a attachment.Attachment) string {
 		p, _ := pasteOf(a)
 		return p.token
 	}
-	sent := func(width int, text string, atts ...llm.Attachment) Model {
+	sent := func(width int, text string, atts ...attachment.Attachment) Model {
 		m := frameModel(t, width, 40)
 		m.staged.from = map[string]string{"Image#1": "from the clipboard", "Image#2": "from the clipboard"}
 		if len(atts) == 1 && atts[0].Name == "shot.png" {
@@ -4262,8 +4265,8 @@ func TestGolden_FailureCard(t *testing.T) {
 			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":".plan/BACKLOG.md"}`, toolResult: "# Backlog"})
 			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"docs/interface/surfaces.md"}`, toolResult: "# Surfaces"})
 			at := m.appendEntry(entry{kind: entryFailure, duration: 98 * time.Second,
-				failAfter: "read 2 files", failModel: "claude-opus-5-5", fail: &llm.Failure{
-					Class: llm.ClassUnclassified, Provider: "anthropic",
+				failAfter: "read 2 files", failModel: "claude-opus-5-5", fail: &failure.Failure{
+					Class: failure.ClassUnclassified, Provider: "anthropic",
 					Message: "stream ID 17; INTERNAL_ERROR; received from peer",
 				}})
 			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
@@ -4338,8 +4341,8 @@ func TestGolden_RecoverySelection(t *testing.T) {
 			return m.renderHistory()
 		}
 		failure := func() entry {
-			return entry{kind: entryFailure, duration: 340 * time.Millisecond, fail: &llm.Failure{
-				Class: llm.ClassContextLength, Status: 400, Provider: "openai",
+			return entry{kind: entryFailure, duration: 340 * time.Millisecond, fail: &failure.Failure{
+				Class: failure.ClassContextLength, Status: 400, Provider: "openai",
 				Message: "This model's maximum context length is 128000 tokens",
 			}}
 		}

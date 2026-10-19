@@ -15,6 +15,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -150,7 +151,7 @@ func (o scanned) writeHeadings(b *strings.Builder) {
 		fmt.Fprintf(b, "\n… and %d more (truncated at %d)", o.dropped, MaxOutlineHeadings)
 	}
 	if o.partial {
-		fmt.Fprintf(b, "\n… (stopped reading at %s; headings below that are not listed)", llm.HumanSize(MaxScanBytes))
+		fmt.Fprintf(b, "\n… (stopped reading at %s; headings below that are not listed)", attachment.HumanSize(MaxScanBytes))
 	}
 }
 
@@ -346,7 +347,7 @@ func overCeiling(path string, f io.Reader, size int64) (string, error) {
 func overCeilingAnswer(path string, o scanned, size int64) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s is %s (%s bytes, %s) and read_file returns no file over %s, whatever line range is asked for. Search it for what you need",
-		path, llm.HumanSize(int(size)), commas64(size), o.lineWord(), llm.HumanSize(int(readCeiling)))
+		path, attachment.HumanSize(int(size)), commas64(size), o.lineWord(), attachment.HumanSize(int(readCeiling)))
 	if o.partial {
 		b.WriteString(".")
 	} else {

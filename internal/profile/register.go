@@ -26,8 +26,13 @@ import (
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/rfizzle/llm"
 	llmanthropic "github.com/rfizzle/llm/anthropic"
+	"github.com/rfizzle/llm/cache"
+	"github.com/rfizzle/llm/capability"
+	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/compat"
+	"github.com/rfizzle/llm/decision"
 	llmopenai "github.com/rfizzle/llm/openai"
+	"github.com/rfizzle/llm/openai/responses"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -49,7 +54,7 @@ func Loaded() []Profile {
 // declared models seeding the picker's catalog.
 func Register(profiles []Profile) {
 	for _, p := range registered {
-		llm.RegisterDeclarations(p.Name, nil)
+		capability.RegisterDeclarations(p.Name, nil)
 	}
 	registered = append([]Profile(nil), profiles...)
 	for _, p := range profiles {
@@ -65,19 +70,19 @@ func Register(profiles []Profile) {
 			Model:   defaultModel(p),
 			BaseURL: p.BaseURL,
 		})
-		llm.RegisterModels(p.Name, p.ModelIDs())
-		llm.RegisterDecisions(p.Name, p.DeclaresDecisions)
+		catalog.Register(p.Name, p.ModelIDs())
+		decision.Register(p.Name, p.DeclaresDecisions)
 		// What a model's line narrows is registered as the decisions are,
 		// rather than carried on the price table: a line that declares only
 		// a narrowing is not a price, and the doctor reads the answer
 		// without loading prices at all.
-		llm.RegisterDeclarations(p.Name, p.declarations())
+		capability.RegisterDeclarations(p.Name, p.declarations())
 	}
 }
 
 // declarations is what each declared model's line narrows, by model id.
-func (p Profile) declarations() map[string]llm.Declared {
-	out := map[string]llm.Declared{}
+func (p Profile) declarations() map[string]capability.Declared {
+	out := map[string]capability.Declared{}
 	for _, m := range p.declaredModels() {
 		if d, ok := m.declared(); ok {
 			out[m.ID] = d
@@ -176,9 +181,9 @@ func (p declaredCatalog) OffersDecisions(model string) bool {
 	return p.profile.permits(model) == nil && offersDecisions(p.Provider, model)
 }
 
-func (p declaredCatalog) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+func (p declaredCatalog) Decide(ctx context.Context, req decision.Request) (decision.Result, error) {
 	if err := p.profile.permits(req.Model); err != nil {
-		return llm.DecisionResult{}, err
+		return decision.Result{}, err
 	}
 	return decide(ctx, p.Provider, req)
 }
@@ -188,14 +193,14 @@ func (p declaredCatalog) Decide(ctx context.Context, req llm.DecisionRequest) (l
 // its two methods, so without them a wrapper would hide the capability the
 // way noDiscovery hides the catalog — on purpose there, by accident here.
 func offersDecisions(p llm.Provider, model string) bool {
-	d, ok := p.(llm.Decider)
+	d, ok := p.(decision.Decider)
 	return ok && d.OffersDecisions(model)
 }
 
-func decide(ctx context.Context, p llm.Provider, req llm.DecisionRequest) (llm.DecisionResult, error) {
-	d, ok := p.(llm.Decider)
+func decide(ctx context.Context, p llm.Provider, req decision.Request) (decision.Result, error) {
+	d, ok := p.(decision.Decider)
 	if !ok {
-		return llm.DecisionResult{}, fmt.Errorf("provider %q: model %q is not served the Decisions API here", p.Name(), req.Model)
+		return decision.Result{}, fmt.Errorf("provider %q: model %q is not served the Decisions API here", p.Name(), req.Model)
 	}
 	return d.Decide(ctx, req)
 }
@@ -247,10 +252,10 @@ func (r *router) OffersDecisions(model string) bool {
 
 // Decide sends the request to the endpoint that claims its model, as a turn
 // is sent.
-func (r *router) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+func (r *router) Decide(ctx context.Context, req decision.Request) (decision.Result, error) {
 	p, err := r.providerFor(req.Model)
 	if err != nil {
-		return llm.DecisionResult{}, err
+		return decision.Result{}, err
 	}
 	return decide(ctx, p, req)
 }
@@ -316,7 +321,7 @@ func (r *router) ListModels(ctx context.Context) ([]string, error) {
 			lastErr = err
 			continue
 		}
-		lister, ok := p.(llm.ModelLister)
+		lister, ok := p.(catalog.Lister)
 		if !ok {
 			continue
 		}
@@ -374,7 +379,7 @@ func newEndpoint(p Profile, e Endpoint, opts llm.ResolveOpts) (llm.Provider, err
 		base = opts.HTTPClient.Transport
 	}
 	if e.API == "" || e.API == aPIOpenAIChat {
-		base = llm.NewCacheMarkTransport(base, opts.CacheTTL)
+		base = cache.NewMarkTransport(base, opts.CacheTTL)
 	}
 	httpClient := &http.Client{Transport: NewTransport(e, base)}
 
@@ -384,9 +389,9 @@ func newEndpoint(p Profile, e Endpoint, opts llm.ResolveOpts) (llm.Provider, err
 	// able to go quiet than the direct path.
 	switch e.API {
 	case aPIOpenAIResponses:
-		inner := llmopenai.NewResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
+		inner := responses.NewWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
-		return withDiscovery(e, &responsesProfile{Responses: inner, endpoint: e, client: httpClient, decides: p.DeclaresDecisions}), nil
+		return withDiscovery(e, &responsesProfile{Provider: inner, endpoint: e, client: httpClient, decides: p.DeclaresDecisions}), nil
 	case aPIAnthropicMessage:
 		inner := llmanthropic.NewNamed(anthropic.NewClient(
 			option.WithAPIKey(key),
@@ -429,7 +434,7 @@ type noDiscovery struct{ llm.Provider }
 // this type is for.
 func (n noDiscovery) OffersDecisions(model string) bool { return offersDecisions(n.Provider, model) }
 
-func (n noDiscovery) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+func (n noDiscovery) Decide(ctx context.Context, req decision.Request) (decision.Result, error) {
 	return decide(ctx, n.Provider, req)
 }
 
@@ -451,7 +456,7 @@ func (o *openAIProfile) OffersDecisions(model string) bool { return o.decides(mo
 
 // Decide sends a Decisions API request over the endpoint's own client, so
 // the profile's headers and rewrite rules apply to it as they do to a turn.
-func (o *openAIProfile) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+func (o *openAIProfile) Decide(ctx context.Context, req decision.Request) (decision.Result, error) {
 	return llmopenai.PostDecisions(ctx, o.client, o.endpoint.BaseURL, o.key, o.Name(), req)
 }
 
@@ -465,7 +470,7 @@ func (o *openAIProfile) ListModels(ctx context.Context) ([]string, error) {
 // responsesProfile is a profile-backed openai-responses provider, with the
 // same catalog override the chat dialect gets.
 type responsesProfile struct {
-	*llmopenai.Responses
+	*responses.Provider
 	endpoint Endpoint
 	client   *http.Client
 	// decides is the profile's declaration, in place of the native
@@ -477,7 +482,7 @@ func (r *responsesProfile) OffersDecisions(model string) bool { return r.decides
 
 func (r *responsesProfile) ListModels(ctx context.Context) ([]string, error) {
 	if r.endpoint.ModelsPath == "" {
-		return r.Responses.ListModels(ctx)
+		return r.Provider.ListModels(ctx)
 	}
 	return listFrom(ctx, r.client, r.endpoint)
 }

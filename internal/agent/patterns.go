@@ -19,6 +19,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -157,9 +159,9 @@ func (w *PatternWriter) Word(ctx context.Context, req PatternRequest) PatternVer
 		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, llm.CompletionOpts{
 		Model:      v.Model,
-		Flow:       llm.FlowPatterns,
+		Flow:       flow.Patterns,
 		MaxTokens:  w.cfg.maxTokens(),
-		Effort:     llm.EffortLow,
+		Effort:     effort.Low,
 		ToolChoice: llm.ToolChoiceNone,
 	})
 	if err != nil {

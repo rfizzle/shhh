@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 )
@@ -451,7 +452,7 @@ func TestContextEstimate_CountsAnImageTheWayCompactionDoes(t *testing.T) {
 	before := m.contextEstimate().total()
 
 	shot := llm.Message{Role: llm.RoleUser, Content: "what is this?",
-		Attachments: []llm.Attachment{{Kind: llm.AttachmentImage, Data: []byte("\x89PNG")}}}
+		Attachments: []attachment.Attachment{{Kind: attachment.Image, Data: []byte("\x89PNG")}}}
 	m.agent.Append(shot)
 
 	b := m.contextEstimate()
@@ -483,7 +484,7 @@ func TestCompactRecovers_AnImageInTheKeptTailChangesNothing(t *testing.T) {
 	}
 
 	m.agent.Append(llm.Message{Role: llm.RoleUser, Content: "look at this",
-		Attachments: []llm.Attachment{{Kind: llm.AttachmentImage, Data: []byte("\x89PNG")}}})
+		Attachments: []attachment.Attachment{{Kind: attachment.Image, Data: []byte("\x89PNG")}}})
 	kept := m.compactKeep()
 	if len(kept) == 0 || kept[len(kept)-1].Content != "look at this" {
 		t.Fatal("the screenshot should be in the tail compaction keeps")

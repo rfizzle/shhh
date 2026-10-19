@@ -11,6 +11,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -61,9 +62,9 @@ func dropEntry(t *testing.T, m Model) entry {
 	return entry{}
 }
 
-func networkFailure() *llm.Failure {
-	return &llm.Failure{
-		Class: llm.ClassNetwork, Provider: "openai",
+func networkFailure() *failure.Failure {
+	return &failure.Failure{
+		Class: failure.ClassNetwork, Provider: "openai",
 		Message: "unexpected EOF",
 	}
 }
@@ -211,9 +212,9 @@ func TestStreamDrop_FocusOpensOnTheOffer(t *testing.T) {
 	}
 }
 
-func rateLimit(after time.Duration) *llm.Failure {
-	return &llm.Failure{
-		Class: llm.ClassRateLimit, Status: 429, Provider: "openai",
+func rateLimit(after time.Duration) *failure.Failure {
+	return &failure.Failure{
+		Class: failure.ClassRateLimit, Status: 429, Provider: "openai",
 		Message: "Rate limit reached for gpt-4o. Please try again in 20s.", RetryAfter: after,
 	}
 }
@@ -458,7 +459,7 @@ func TestCountdownText_WholeSeconds(t *testing.T) {
 
 func TestCancelledStream_IsNeitherADropNorAWait(t *testing.T) {
 	m := streamed(resumeModel(t), "half a sentence")
-	updated, _ := m.Update(streamErrMsg{err: &llm.Failure{Class: llm.ClassCancelled}})
+	updated, _ := m.Update(streamErrMsg{err: &failure.Failure{Class: failure.ClassCancelled}})
 	next := updated.(Model)
 	for _, e := range next.transcript {
 		if e.kind == entryStreamDrop {

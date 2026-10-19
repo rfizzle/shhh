@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/project"
 )
@@ -143,7 +144,7 @@ func TestMention_ImageIsStaged(t *testing.T) {
 	updated, _ = next.Update(attached)
 	next = updated.(Model)
 
-	if len(next.attachments) != 1 || next.attachments[0].Kind != llm.AttachmentImage {
+	if len(next.attachments) != 1 || next.attachments[0].Kind != attachment.Image {
 		t.Fatalf("expected one staged image chip, got %v", next.attachments)
 	}
 	if !strings.Contains(next.input.Value(), "shot.png") {

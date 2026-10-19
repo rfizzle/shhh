@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -224,11 +226,11 @@ func (d toolchainDrafter) ask(ctx context.Context, msgs []llm.Message) (string, 
 	defer cancel()
 	events, err := d.prov.StreamCompletion(ctx, msgs, llm.CompletionOpts{
 		Model:      d.model(),
-		Flow:       llm.FlowToolchainDrafter,
+		Flow:       flow.ToolchainDrafter,
 		MaxTokens:  toolchainDraftMaxTokens,
 		Tools:      []llm.Tool{toolchainDraftTool()},
 		ToolChoice: llm.ToolChoiceAuto,
-		Effort:     llm.EffortLow,
+		Effort:     effort.Low,
 	})
 	if err != nil {
 		return "", err

@@ -43,6 +43,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -211,7 +212,7 @@ func (m *Model) restagePaste(p pasteFold) (string, bool) {
 	// The row kept the attachment the request carried, handle and all: the
 	// same bytes are the same paste, or the same picture, and a handle
 	// already on the strip is replaced by assignHandle with a fresh one.
-	staged, _ := m.stageQuietly([]llm.Attachment{p.att})
+	staged, _ := m.stageQuietly([]attachment.Attachment{p.att})
 	if len(staged.attachments) == len(m.attachments) {
 		return "", false
 	}

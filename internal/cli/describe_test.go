@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 )
 
 // The sentence under the command is the same sentence a summarising request
@@ -152,8 +153,8 @@ func TestSnippetDescriptionIsAskedAsABoundedCall(t *testing.T) {
 	if opts.MaxTokens != descriptionMaxTokens {
 		t.Errorf("max tokens = %d, want %d", opts.MaxTokens, descriptionMaxTokens)
 	}
-	if opts.Effort != llm.EffortLow {
-		t.Errorf("effort = %v, want %v", opts.Effort, llm.EffortLow)
+	if opts.Effort != effort.Low {
+		t.Errorf("effort = %v, want %v", opts.Effort, effort.Low)
 	}
 }
 

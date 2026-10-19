@@ -23,6 +23,8 @@ import (
 	"unicode"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 )
 
 // AccountToolName is the tool the accountant is asked to call with its answer.
@@ -204,11 +206,11 @@ func (a *Accountant) Account(ctx context.Context, req AccountRequest) AccountVer
 		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, llm.CompletionOpts{
 		Model:     v.Model,
-		Flow:      llm.FlowAccount,
+		Flow:      flow.Account,
 		MaxTokens: a.cfg.maxTokens(),
 		// A shallow thought is the right amount for two sentences, for the
 		// reason the titler asks for one.
-		Effort: llm.EffortLow,
+		Effort: effort.Low,
 		Tools: []llm.Tool{{
 			Name:        AccountToolName,
 			Description: "State what the session was doing and where it left off.",

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
 )
 
 const routedTOML = `
@@ -433,7 +434,7 @@ func TestDiscoveryDisabled_HidesTheCatalogQuery(t *testing.T) {
 	}
 	// The picker reads the capability, not the answer: a provider that is
 	// not a ModelLister sends it straight to the declared catalog.
-	if _, ok := prov.(llm.ModelLister); ok {
+	if _, ok := prov.(catalog.Lister); ok {
 		t.Fatal("a provider with discovery off should not offer to enumerate")
 	}
 	if asked {
@@ -441,7 +442,7 @@ func TestDiscoveryDisabled_HidesTheCatalogQuery(t *testing.T) {
 	}
 	// And the declared models still seed the picker.
 	Register([]Profile{p})
-	if got := llm.KnownModels("gateway"); len(got) != 1 || got[0] != "gpt-5.2" {
+	if got := catalog.Models("gateway"); len(got) != 1 || got[0] != "gpt-5.2" {
 		t.Fatalf("the declared models should be the catalog, got %v", got)
 	}
 }
@@ -491,7 +492,7 @@ func TestDiscoveryDisabled_RouterAsksOnlyTheEndpointsThatAllowIt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	lister, ok := prov.(llm.ModelLister)
+	lister, ok := prov.(catalog.Lister)
 	if !ok {
 		t.Fatal("one endpoint still allows discovery, so the router should offer it")
 	}
@@ -518,7 +519,7 @@ func TestDiscoveryDisabled_SilentRouterOffersNoQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, ok := prov.(llm.ModelLister); ok {
+	if _, ok := prov.(catalog.Lister); ok {
 		t.Fatal("no route can enumerate, so the router should not offer to")
 	}
 	// It is still the router underneath: routing has not been given up.

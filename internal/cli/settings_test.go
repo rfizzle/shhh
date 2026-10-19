@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
-	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -26,7 +26,7 @@ func TestSessionSettings_FieldByField(t *testing.T) {
 	cfg.Sandbox.Profile = "workspace-netless"
 
 	got := sessionSettings(cfg, runSettings{
-		mode: agent.ModeAcceptEdits.String(), effort: llm.EffortLow, rounds: 40,
+		mode: agent.ModeAcceptEdits.String(), effort: effort.Low, rounds: 40,
 		checkIn: 20,
 		sandbox: "workspace-netless", model: "session-model", summary: true, classifier: true,
 	})
@@ -51,7 +51,7 @@ func TestSessionSettings_FieldByField(t *testing.T) {
 
 	// The interval defaults the way the summariser defaults it, and a
 	// surface with no readings and no classifier records neither model.
-	bare := sessionSettings(config.Config{}, runSettings{effort: llm.EffortMedium})
+	bare := sessionSettings(config.Config{}, runSettings{effort: effort.Medium})
 	if bare.SummaryInterval != 0 || bare.SummaryModel != "" || bare.SummaryEnabled || bare.ClassifierModel != "" || bare.Mode != "" {
 		t.Fatalf("a surface without the mechanisms must not record them: %+v", bare)
 	}
@@ -144,7 +144,7 @@ func TestSessionSettings_KeepsNothingOffTheAllowlist(t *testing.T) {
 	// than out of the config here, so the run resolves it the way a session
 	// does — which is what puts the config's own value under this check.
 	run := runSettings{
-		mode: "auto", effort: llm.EffortHigh, rounds: 60,
+		mode: "auto", effort: effort.High, rounds: 60,
 		checkIn: checkInFor(cfg.Behavior.CheckInIntervalRounds),
 		sandbox: "workspace", model: "session-model", summary: true, classifier: true,
 	}

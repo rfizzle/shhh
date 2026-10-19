@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -37,7 +37,7 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 		Kind:      kind,
 		Enabled:   drafter.Enabled(),
 		Draft:     drafter.Draft,
-		Models:    llm.KnownModels(env.prov.Name()),
+		Models:    catalog.Models(env.prov.Name()),
 		GlobalDir: persona.Dir(persona.ScopeGlobal, cwd),
 	}
 	if kind == persona.KindCode {

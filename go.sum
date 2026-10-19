@@ -134,6 +134,8 @@ github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/rfizzle/llm v0.5.1 h1:am+Xadj/cR5PlmNbAoOIXFA7GzvTEG22iU55V2N9F7k=
 github.com/rfizzle/llm v0.5.1/go.mod h1:h9guMyHpxzG8CiHFK6ALpPRksFj+lanF3vMC8FEMf08=
+github.com/rfizzle/llm v0.6.0 h1:WCK1nJXhl3ZFq9jsATT2E0JMJPLwIkWtpyPui4CnqiM=
+github.com/rfizzle/llm v0.6.0/go.mod h1:h9guMyHpxzG8CiHFK6ALpPRksFj+lanF3vMC8FEMf08=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
 github.com/rivo/uniseg v0.4.7/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=

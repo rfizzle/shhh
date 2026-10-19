@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/cache"
+	"github.com/rfizzle/llm/capability"
 )
 
 // long is a request long enough to have been cached anywhere, reporting no
@@ -38,8 +40,8 @@ func TestLedger_CacheReadingWorksOnOneFigure(t *testing.T) {
 	at := time.Date(2026, 10, 10, 14, 2, 0, 0, time.UTC)
 	for _, u := range []llm.Usage{
 		{PromptTokens: 20_000, CacheCreationTokens: 19_000, CacheCreation1h: 19_000,
-			Reports: llm.FieldCacheRead | llm.FieldCacheCreation | llm.FieldCacheLease},
-		{PromptTokens: 2_000, CachedTokens: 1_900, Reports: llm.FieldCachedTokens},
+			Reports: cache.FieldRead | cache.FieldCreation | cache.FieldLease},
+		{PromptTokens: 2_000, CachedTokens: 1_900, Reports: cache.FieldCachedTokens},
 	} {
 		l := New(nil)
 		l.now = func() time.Time { return at }
@@ -76,10 +78,10 @@ func TestLedger_CacheReadingWorksOnOneFigure(t *testing.T) {
 // A profile's prompt_cache = false outranks every figure: the reading says
 // what the person declared, and the figures are still billed.
 func TestLedger_ADeclaredOffOutranksAFigure(t *testing.T) {
-	llm.RegisterDeclarations("stub", map[string]llm.Declared{
-		"claude-sonnet-5-5": {Model: map[string]any{llm.KeyPromptCache: false}},
+	capability.RegisterDeclarations("stub", map[string]capability.Declared{
+		"claude-sonnet-5-5": {Model: map[string]any{capability.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { llm.RegisterDeclarations("stub", nil) })
+	t.Cleanup(func() { capability.RegisterDeclarations("stub", nil) })
 
 	l := New(testPrices())
 	if r := l.CacheReadingFor("stub", "claude-sonnet-5-5"); r.State() != CacheOff {

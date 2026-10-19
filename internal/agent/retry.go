@@ -20,7 +20,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/logs"
 )
 
@@ -60,7 +60,7 @@ const (
 // surface says about it — the same sentence on stderr, on a child's lane and
 // in a transcript, so a reader who has seen one recognises the others.
 type RetryNotice struct {
-	Failure *llm.Failure
+	Failure *failure.Failure
 	Wait    time.Duration
 	Attempt int
 	Max     int
@@ -85,11 +85,11 @@ func (n RetryNotice) Signal() string {
 		return "other"
 	}
 	switch n.Failure.Class {
-	case llm.ClassRateLimit:
+	case failure.ClassRateLimit:
 		return "rate-limit"
-	case llm.ClassOverloaded:
+	case failure.ClassOverloaded:
 		return "overloaded"
-	case llm.ClassNetwork:
+	case failure.ClassNetwork:
 		return "network"
 	}
 	return "other"
@@ -156,7 +156,7 @@ func (b *Backoff) spread() float64 {
 // that did not fit the window — and false once the bound is used up, which is
 // where the driver stops and reports the failure it has.
 func (b *Backoff) Next(err error) (RetryNotice, bool) {
-	f, ok := llm.AsFailure(err)
+	f, ok := failure.As(err)
 	if !ok || !f.Recoverable() {
 		return RetryNotice{}, false
 	}
@@ -208,7 +208,7 @@ func (b *Backoff) Reset() { b.attempt = 0 }
 // doubling off a one-second base, so the first wait is two seconds and the
 // third is eight. The spread is added last and to both, because the schedule
 // two children that failed together follow is the same schedule.
-func retryDelay(f *llm.Failure, attempt int, spread float64) time.Duration {
+func retryDelay(f *failure.Failure, attempt int, spread float64) time.Duration {
 	// The doubling stops doubling at the cap rather than shifting past it.
 	// The bound is a setting, so the attempt number is one a person picked:
 	// left to run, the shift walks off the top of the integer and comes back

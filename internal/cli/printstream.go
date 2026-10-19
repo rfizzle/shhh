@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -348,7 +349,7 @@ func (h headlessObserver) retry(n agent.RetryNotice) {
 // finished — which is how a consumer tells the two apart without parsing the
 // sentence.
 func failureClass(err error) string {
-	if f, ok := llm.AsFailure(err); ok {
+	if f, ok := failure.As(err); ok {
 		return string(f.Class)
 	}
 	var miss *schemaMiss

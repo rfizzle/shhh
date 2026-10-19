@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 )
 
 func titleCall(args string) llm.StreamEvent {
@@ -64,7 +65,7 @@ func TestTitler_CeilingLeavesRoomForTheThought(t *testing.T) {
 	if v.Failed || v.Title != "Flaky retry test" {
 		t.Fatalf("the default ceiling should produce a title, got %+v", v)
 	}
-	if roomy.seen.Effort != llm.EffortLow {
+	if roomy.seen.Effort != effort.Low {
 		t.Errorf("effort = %v", roomy.seen.Effort)
 	}
 	if DefaultTitleMaxTokens <= lowBudget() {

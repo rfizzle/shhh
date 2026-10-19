@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -68,7 +68,7 @@ func planSession(t *testing.T) (Model, *fakeSignIn) {
 
 func TestPlan_TheAuthFailureOffersTheSignInBesideTheKey(t *testing.T) {
 	m, _ := planSession(t)
-	offers := m.failureKeys(&llm.Failure{Class: llm.ClassAuth, Provider: "openai"})
+	offers := m.failureKeys(&failure.Failure{Class: failure.ClassAuth, Provider: "openai"})
 	var words []string
 	for _, o := range offers {
 		words = append(words, o.Label)
@@ -82,13 +82,13 @@ func TestPlan_TheAuthFailureOffersTheSignInBesideTheKey(t *testing.T) {
 func TestPlan_OnThePlanTheSignInReplacesThePastePrompt(t *testing.T) {
 	m, _ := planSession(t)
 	m.providerName = "chatgpt"
-	for _, o := range m.failureKeys(&llm.Failure{Class: llm.ClassAuth, Provider: "chatgpt"}) {
+	for _, o := range m.failureKeys(&failure.Failure{Class: failure.ClassAuth, Provider: "chatgpt"}) {
 		if o.Label == "enter a new key" {
 			t.Fatal("a plan session has no key to paste")
 		}
 	}
 	m.wiring.SignInChatGPT = nil
-	for _, o := range m.failureKeys(&llm.Failure{Class: llm.ClassAuth, Provider: "openai"}) {
+	for _, o := range m.failureKeys(&failure.Failure{Class: failure.ClassAuth, Provider: "openai"}) {
 		if o.Label == "continue with ChatGPT" {
 			t.Fatal("a session that cannot sign in must not offer it")
 		}
@@ -227,7 +227,7 @@ func TestPlan_TheSwitchToChatGPTRunsAsACommand(t *testing.T) {
 func TestPlan_AUsageLimitLeadsWithManageUsage(t *testing.T) {
 	m := failureModel(t)
 	m.providerName = "chatgpt"
-	f := &llm.Failure{Class: llm.ClassUsageLimit, Provider: "chatgpt"}
+	f := &failure.Failure{Class: failure.ClassUsageLimit, Provider: "chatgpt"}
 	offers := m.failureKeys(f)
 	if len(offers) != 2 || offers[0].Label != "manage usage" || offers[1].Label != "switch provider" {
 		t.Fatalf("offers = %+v", offers)
@@ -248,18 +248,18 @@ func TestPlan_AUsageLimitLeadsWithManageUsage(t *testing.T) {
 
 func TestPlan_NotEligibleOffersTheSwitchAndNoRetry(t *testing.T) {
 	m := failureModel(t)
-	for _, o := range m.failureKeys(&llm.Failure{Class: llm.ClassNotEligible}) {
+	for _, o := range m.failureKeys(&failure.Failure{Class: failure.ClassNotEligible}) {
 		if o.Label != "switch provider" {
 			t.Fatalf("unexpected offer %q", o.Label)
 		}
 	}
-	if len(m.failureKeys(&llm.Failure{Class: llm.ClassNotEligible})) != 1 {
+	if len(m.failureKeys(&failure.Failure{Class: failure.ClassNotEligible})) != 1 {
 		t.Fatal("want the switch alone")
 	}
 }
 
 func TestPlan_UnsupportedNamesTheParam(t *testing.T) {
-	f := &llm.Failure{Class: llm.ClassUnsupported, Param: "input_audio"}
+	f := &failure.Failure{Class: failure.ClassUnsupported, Param: "input_audio"}
 	if !strings.Contains(failureSentence(f), "input_audio") || !strings.Contains(failureOutcome(f), "input_audio") {
 		t.Fatal("the card should name error.param")
 	}

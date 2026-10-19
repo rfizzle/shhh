@@ -26,7 +26,7 @@ package chat
 // the failure the last turn ended on — and reading mode's key on any other.
 
 import (
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -200,7 +200,7 @@ const (
 // on it — the same row draws its labels and its handover differently
 // depending on whether it is still the target.
 type recoveryTarget struct {
-	fail   *llm.Failure
+	fail   *failure.Failure
 	resume *streamResume
 }
 

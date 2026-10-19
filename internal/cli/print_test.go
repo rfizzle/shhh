@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"net/http"
@@ -913,7 +914,7 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 	obs.toolResult(toolResultOf("search", time.Millisecond, "[repeat: this exact search call has now run 3 times]"))
 	obs.summary(sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: 3})
 	obs.intervene(agent.Intervention{Kind: agent.InterveneSteer})
-	obs.retry(agent.RetryNotice{Failure: &llm.Failure{Class: llm.ClassOverloaded}, Attempt: 1, Max: agent.MaxRetryAttempts})
+	obs.retry(agent.RetryNotice{Failure: &failure.Failure{Class: failure.ClassOverloaded}, Attempt: 1, Max: agent.MaxRetryAttempts})
 	rec.turn(1, 3, time.Second, observe.TurnDone)
 	rec.end()
 
@@ -971,17 +972,17 @@ func TestHeadlessTurnOutcome(t *testing.T) {
 		{"stream failure", errors.New("connection reset"), observe.TurnFailed},
 		// A stall and a refusal are both a turn that broke, and only the
 		// second one stays broken however long the caller waits.
-		{"a stall the waits could not sit out", &llm.Failure{Class: llm.ClassOverloaded}, observe.TurnFailed},
-		{"a key the provider would not take", &llm.Failure{Class: llm.ClassAuth}, observe.TurnRejected},
-		{"an account with nothing left", &llm.Failure{Class: llm.ClassQuota}, observe.TurnRejected},
-		{"a request past the window", &llm.Failure{Class: llm.ClassContextLength}, observe.TurnRejected},
-		{"an id the endpoint does not serve", &llm.Failure{Class: llm.ClassModelNotFound}, observe.TurnRejected},
-		{"a plan allowance that is spent", &llm.Failure{Class: llm.ClassUsageLimit}, observe.TurnRejected},
-		{"an account the plan will not serve", &llm.Failure{Class: llm.ClassNotEligible}, observe.TurnRejected},
-		{"a request the plan does not serve", &llm.Failure{Class: llm.ClassUnsupported}, observe.TurnRejected},
+		{"a stall the waits could not sit out", &failure.Failure{Class: failure.ClassOverloaded}, observe.TurnFailed},
+		{"a key the provider would not take", &failure.Failure{Class: failure.ClassAuth}, observe.TurnRejected},
+		{"an account with nothing left", &failure.Failure{Class: failure.ClassQuota}, observe.TurnRejected},
+		{"a request past the window", &failure.Failure{Class: failure.ClassContextLength}, observe.TurnRejected},
+		{"an id the endpoint does not serve", &failure.Failure{Class: failure.ClassModelNotFound}, observe.TurnRejected},
+		{"a plan allowance that is spent", &failure.Failure{Class: failure.ClassUsageLimit}, observe.TurnRejected},
+		{"an account the plan will not serve", &failure.Failure{Class: failure.ClassNotEligible}, observe.TurnRejected},
+		{"a request the plan does not serve", &failure.Failure{Class: failure.ClassUnsupported}, observe.TurnRejected},
 		// A failure nothing could name is no evidence that the request was
 		// wrong, so it keeps the ending it had before the split existed.
-		{"a failure nothing could name", &llm.Failure{Class: llm.ClassUnclassified}, observe.TurnFailed},
+		{"a failure nothing could name", &failure.Failure{Class: failure.ClassUnclassified}, observe.TurnFailed},
 	} {
 		if got := headlessTurnOutcome(c.err); got != c.want {
 			t.Errorf("%s: headlessTurnOutcome = %q, want %q", c.name, got, c.want)
@@ -1751,7 +1752,7 @@ func TestHeadlessExitCode(t *testing.T) {
 		{"the round cap", fmt.Errorf("%w after 40 rounds", agent.ErrRoundCap), false, false, exitRoundCap},
 		{"an interrupt", agent.ErrInterrupted, false, false, exitInterrupted},
 		{"a provider that stopped answering", fmt.Errorf("overloaded"), false, false, exitProvider},
-		{"a request the provider would refuse again", &llm.Failure{Class: llm.ClassAuth}, false, false, exitRejected},
+		{"a request the provider would refuse again", &failure.Failure{Class: failure.ClassAuth}, false, false, exitRejected},
 		{"a failing suite", nil, true, false, exitGate},
 		{"a refusal that ended the turn", nil, false, true, exitRefused},
 		// The two readings only apply to a turn that finished. A run that was

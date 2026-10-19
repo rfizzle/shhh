@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/pricing"
 )
 
@@ -171,11 +172,11 @@ func TestLedger_BudgetDoesNotInventADollarLimitForUnpricedUsage(t *testing.T) {
 func TestGate_ForwardsModelListingOnlyWhereItExists(t *testing.T) {
 	l := New(nil)
 	plain := l.For(&stubProvider{}, SourceAgent)
-	if _, ok := plain.(llm.ModelLister); ok {
+	if _, ok := plain.(catalog.Lister); ok {
 		t.Fatal("a provider that cannot enumerate must not appear to")
 	}
 	rich := l.For(&stubLister{stubProvider: &stubProvider{}}, SourceAgent)
-	lister, ok := rich.(llm.ModelLister)
+	lister, ok := rich.(catalog.Lister)
 	if !ok {
 		t.Fatal("a provider that can enumerate must still say so through the gate")
 	}

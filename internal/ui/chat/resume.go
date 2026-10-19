@@ -29,6 +29,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -95,7 +96,7 @@ type retryWait struct {
 	// fail is the failure being waited out. It is compared by pointer against
 	// the transcript entry, so the row that stalled is the row whose keys are
 	// suspended while the wait runs.
-	fail    *llm.Failure
+	fail    *failure.Failure
 	attempt int
 	max     int
 	// wait is the whole span, deadline the moment it ends; the meter is the
@@ -141,7 +142,7 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	// thought is a record of what happened.
 	m.recordReasoning(msg.reasoning)
 	switch {
-	case m.compacting || f.Class == llm.ClassCancelled:
+	case m.compacting || f.Class == failure.ClassCancelled:
 		// A compaction that broke discards its partial summary rather than
 		// offering to continue one (the conversation it was summarising is
 		// untouched either way), and a stop you asked for is not a stall.
@@ -158,7 +159,7 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 // the row states what was kept and offers the two ways on, because which of
 // them is right depends on whether the sentence the model was in the middle
 // of is worth having.
-func (m Model) dropStream(f *llm.Failure, partial string, calls []llm.ToolCall) (tea.Model, tea.Cmd) {
+func (m Model) dropStream(f *failure.Failure, partial string, calls []llm.ToolCall) (tea.Model, tea.Cmd) {
 	res := &streamResume{
 		text:   partial,
 		calls:  calls,
@@ -488,7 +489,7 @@ const continuePrompt = "Your previous reply was cut off by a connection failure.
 // across the whole stall, so three rate limits in a row are three attempts
 // and not three fresh chances; a request that is actually answered clears the
 // count (clearRetryChain).
-func (m Model) startRetryWait(f *llm.Failure) (tea.Model, tea.Cmd) {
+func (m Model) startRetryWait(f *failure.Failure) (tea.Model, tea.Cmd) {
 	// The count lives on the model rather than on the wait: the wait is over
 	// the moment the retry is sent, and a counter that died with it would
 	// grant every attempt a fresh bound and retry forever.

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -374,7 +375,7 @@ func TestDepth_ARetriedAgentKeepsItsPlaceInTheTree(t *testing.T) {
 	base := perAgentEnv(map[string][]streamStep{
 		"two": {{text: "the parent has answered"}},
 		"three": {
-			{fail: &llm.Failure{Message: "the provider refused"}},
+			{fail: &failure.Failure{Message: "the provider refused"}},
 			{text: "the second attempt answered"},
 		},
 	}, func(name string, next agent.ToolExecutor) agent.ToolExecutor {

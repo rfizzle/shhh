@@ -18,6 +18,9 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/rfizzle/llm/decision"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -476,15 +479,15 @@ const (
 // the same question.
 // See docs/capabilities/approvals-and-safety.md#the-classifier-can-answer-as-a-probability.
 func (c *Classifier) decide(ctx context.Context, model, input string, v ClassifierVerdict) ClassifierVerdict {
-	d, ok := c.provider.(llm.Decider)
+	d, ok := c.provider.(decision.Decider)
 	if !ok || !d.OffersDecisions(model) {
 		v.Reason = "the classifier's model " + model + " does not offer the Decisions API"
 		logs.Logger().Warn("permission classifier failed closed",
 			"model", model, "failure", classifierNotOffered, "attempts", 0)
 		return v
 	}
-	req := llm.DecisionRequest{Model: model, Input: input, Questions: []llm.DecisionQuestion{{
-		Type: llm.QuestionPredicate, Name: decisionsQuestionName, Instructions: decisionsPredicate,
+	req := decision.Request{Model: model, Input: input, Questions: []decision.Question{{
+		Type: decision.QuestionPredicate, Name: decisionsQuestionName, Instructions: decisionsPredicate,
 	}}}
 	failure := classifierInvalid
 	for attempt := 1; attempt <= c.cfg.attempts(); attempt++ {
@@ -506,13 +509,13 @@ func (c *Classifier) decide(ctx context.Context, model, input string, v Classifi
 			failure = classifierInvalid
 			v.Reason = "the classifier returned no answer"
 			continue
-		case answer.Type == llm.AnswerRefusal:
+		case answer.Type == decision.AnswerRefusal:
 			v.Reason = "the classifier declined to judge this action"
 			v.Refused = true
 			logs.Logger().Warn("permission classifier failed closed",
 				"model", model, "failure", classifierRefused, "attempts", attempt)
 			return v
-		case answer.Type != llm.AnswerPredicate:
+		case answer.Type != decision.AnswerPredicate:
 			failure = classifierInvalid
 			v.Reason = "the classifier returned an invalid decision"
 			continue
@@ -565,12 +568,12 @@ func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evid
 		{Role: llm.RoleUser, Content: evidence},
 	}, llm.CompletionOpts{
 		Model:     model,
-		Flow:      llm.FlowClassifier,
+		Flow:      flow.Classifier,
 		MaxTokens: c.cfg.maxTokens(),
 		// A judgement over assembled evidence wants a shallow thought, and
 		// on a model that thinks by default this is the only way to ask for
 		// one: off sends no field, which is the model's own depth.
-		Effort: llm.EffortLow,
+		Effort: effort.Low,
 		// The verdict is asked for twice and sent once. A model that can be
 		// told to answer in a shape is sent the schema and no tools, and
 		// its reply is read by the same parser that reads a model's prose;

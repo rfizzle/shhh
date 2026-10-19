@@ -6,6 +6,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/cache"
+	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -36,7 +38,7 @@ func cacheContextModel(t *testing.T, width int, u llm.Usage) (Model, *meter.Ledg
 // prefix and wrote the rest, and was told it was written for the hour.
 var cacheHit = llm.Usage{PromptTokens: 20_000, CompletionTokens: 200, CachedTokens: 19_000,
 	CacheCreationTokens: 600, CacheCreation1h: 600,
-	Reports: llm.FieldCacheRead | llm.FieldCacheCreation | llm.FieldCacheLease}
+	Reports: cache.FieldRead | cache.FieldCreation | cache.FieldLease}
 
 func contextModelWith(t *testing.T, width int, wire func(*Wiring)) Model {
 	t.Helper()
@@ -319,10 +321,10 @@ func TestContext_SaysWhetherTheCacheWorked(t *testing.T) {
 		t.Errorf("not seen: %q", got)
 	}
 
-	llm.RegisterDeclarations("gateway", map[string]llm.Declared{
-		"claude-sonnet-5-5": {Model: map[string]any{llm.KeyPromptCache: false}},
+	capability.RegisterDeclarations("gateway", map[string]capability.Declared{
+		"claude-sonnet-5-5": {Model: map[string]any{capability.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { llm.RegisterDeclarations("gateway", nil) })
+	t.Cleanup(func() { capability.RegisterDeclarations("gateway", nil) })
 	if got := m.contextScreenData().Cache; got != (components.ContextCache{Verdict: "off (profile gateway)"}) {
 		t.Errorf("off: %+v", got)
 	}

@@ -20,6 +20,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/charmbracelet/x/ansi"
@@ -186,9 +188,9 @@ func (s *StartOfferer) Offer(ctx context.Context, req StartOffersRequest) StartO
 		{Role: llm.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, llm.CompletionOpts{
 		Model:      v.Model,
-		Flow:       llm.FlowStartOffers,
+		Flow:       flow.StartOffers,
 		MaxTokens:  s.cfg.maxTokens(),
-		Effort:     llm.EffortLow,
+		Effort:     effort.Low,
 		ToolChoice: llm.ToolChoiceNone,
 	})
 	if err != nil {

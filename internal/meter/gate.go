@@ -10,6 +10,8 @@ import (
 	"context"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
+	"github.com/rfizzle/llm/decision"
 )
 
 // gated wraps a provider, attributing every request to one origin. The model
@@ -51,8 +53,8 @@ func (l *Ledger) ForOrigin(p llm.Provider, o Origin) llm.Provider {
 // hence a type per combination rather than one that always implements both
 // and returns nothing.
 func (g *gated) wrap() llm.Provider {
-	_, lists := g.inner.(llm.ModelLister)
-	_, decides := g.inner.(llm.Decider)
+	_, lists := g.inner.(catalog.Lister)
+	_, decides := g.inner.(decision.Decider)
 	switch {
 	case lists && decides:
 		return &gatedListerDecider{gated: g}
@@ -145,22 +147,22 @@ func (g *gated) record(model string, req GapRequest, u llm.Usage) {
 }
 
 func (g *gated) listModels(ctx context.Context) ([]string, error) {
-	return g.inner.(llm.ModelLister).ListModels(ctx)
+	return g.inner.(catalog.Lister).ListModels(ctx)
 }
 
 func (g *gated) offersDecisions(model string) bool {
-	return g.inner.(llm.Decider).OffersDecisions(model)
+	return g.inner.(decision.Decider).OffersDecisions(model)
 }
 
 // decide is a Decisions API request through the gate: the same cap a
 // completion meets, and the request billed to this gate's origin. The API
 // charges for input alone, so only the input is recorded — whatever else a
 // response's usage carries is not something anybody was billed for.
-func (g *gated) decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+func (g *gated) decide(ctx context.Context, req decision.Request) (decision.Result, error) {
 	if err := g.ledger.AllowRequest(); err != nil {
-		return llm.DecisionResult{}, err
+		return decision.Result{}, err
 	}
-	res, err := g.inner.(llm.Decider).Decide(ctx, req)
+	res, err := g.inner.(decision.Decider).Decide(ctx, req)
 	if err != nil {
 		return res, err
 	}
@@ -184,7 +186,7 @@ type (
 func (g *gatedLister) ListModels(ctx context.Context) ([]string, error) { return g.listModels(ctx) }
 
 func (g *gatedDecider) OffersDecisions(model string) bool { return g.offersDecisions(model) }
-func (g *gatedDecider) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+func (g *gatedDecider) Decide(ctx context.Context, req decision.Request) (decision.Result, error) {
 	return g.decide(ctx, req)
 }
 
@@ -192,6 +194,6 @@ func (g *gatedListerDecider) ListModels(ctx context.Context) ([]string, error) {
 	return g.listModels(ctx)
 }
 func (g *gatedListerDecider) OffersDecisions(model string) bool { return g.offersDecisions(model) }
-func (g *gatedListerDecider) Decide(ctx context.Context, req llm.DecisionRequest) (llm.DecisionResult, error) {
+func (g *gatedListerDecider) Decide(ctx context.Context, req decision.Request) (decision.Result, error) {
 	return g.decide(ctx, req)
 }

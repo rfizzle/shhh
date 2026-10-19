@@ -15,11 +15,11 @@ import (
 	"strings"
 	"testing"
 
+	llmfailure "github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -218,9 +218,9 @@ func register(t *testing.T) []keyedSurface {
 }
 
 // authFailure is the classified 401 the failure row is built from.
-func authFailure() *llm.Failure {
-	return &llm.Failure{
-		Class: llm.ClassAuth, Status: 401, Provider: "openai",
+func authFailure() *llmfailure.Failure {
+	return &llmfailure.Failure{
+		Class: llmfailure.ClassAuth, Status: 401, Provider: "openai",
 		Message: "Incorrect API key provided", KeyTail: "4f9c",
 	}
 }
@@ -617,10 +617,10 @@ func snapshot(m Model) string {
 // is not reached, and once the session has moved past the failure — a turn
 // that ended any other way — the handover reaches nothing.
 func TestRowHandover_WithNothingSelectedOnlyTheLastFailureAnswers(t *testing.T) {
-	failure := func() *llm.Failure {
-		return &llm.Failure{Class: llm.ClassUnclassified, Status: 400, Message: "no"}
+	failure := func() *llmfailure.Failure {
+		return &llmfailure.Failure{Class: llmfailure.ClassUnclassified, Status: 400, Message: "no"}
 	}
-	build := func(outcome components.TurnState) (Model, *llm.Failure, *llm.Failure) {
+	build := func(outcome components.TurnState) (Model, *llmfailure.Failure, *llmfailure.Failure) {
 		m := frameModel(t, 110, 40)
 		m.turnOutcome = outcome
 		older, newer := failure(), failure()

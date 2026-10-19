@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 )
 
 func accountCall(args string) llm.StreamEvent {
@@ -21,7 +22,7 @@ func accountCall(args string) llm.StreamEvent {
 // evidence are two messages.
 func TestAccountant_RevisesThePreviousAccount(t *testing.T) {
 	p := &fakeClassifierProvider{fn: func(_ int, opts llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
-		if opts.Model != "small" || opts.Effort != llm.EffortLow {
+		if opts.Model != "small" || opts.Effort != effort.Low {
 			t.Errorf("opts = %+v", opts)
 		}
 		return eventsOf(accountCall(`{"account":"Fixing the retry backoff. Left off with the timer test green."}`)), nil

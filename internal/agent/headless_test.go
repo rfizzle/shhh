@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
@@ -513,8 +514,8 @@ func TestHeadlessRun_WaitsOutAnUnansweredRequest(t *testing.T) {
 		if requests <= 2 {
 			// The floor is a second, so the two waits are the whole of this
 			// test's wall clock.
-			return nil, nil, &llm.Failure{
-				Class: llm.ClassOverloaded, Status: 529, RetryAfter: time.Millisecond,
+			return nil, nil, &failure.Failure{
+				Class: failure.ClassOverloaded, Status: 529, RetryAfter: time.Millisecond,
 			}
 		}
 		ch := make(chan llm.StreamEvent, 2)
@@ -552,14 +553,14 @@ func TestHeadlessRun_WaitsOutAnUnansweredRequest(t *testing.T) {
 // A failure waiting cannot fix is returned rather than slept on, so a run
 // with a rejected key fails at once instead of a minute later.
 func TestHeadlessRun_DoesNotWaitOutAFailureItCannotFix(t *testing.T) {
-	fail := &llm.Failure{Class: llm.ClassAuth, Status: 401}
+	fail := &failure.Failure{Class: failure.ClassAuth, Status: 401}
 	requests := 0
 	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++
 		return nil, nil, fail
 	})
 	h := &Headless{Agent: a, OnRetry: func(RetryNotice) { t.Error("a rejected key is not waited out") }}
-	if _, err := h.Run("go"); !errors.Is(err, llm.ErrAuth) {
+	if _, err := h.Run("go"); !errors.Is(err, failure.ErrAuth) {
 		t.Fatalf("err = %v, want the auth failure", err)
 	}
 	if requests != 1 {
@@ -574,7 +575,7 @@ func TestHeadlessRun_ABoundOfNoneWaitsOutNothing(t *testing.T) {
 	requests := 0
 	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++
-		return nil, nil, &llm.Failure{Class: llm.ClassOverloaded, Status: 529}
+		return nil, nil, &failure.Failure{Class: failure.ClassOverloaded, Status: 529}
 	})
 	h := &Headless{Agent: a, OnRetry: func(RetryNotice) { t.Error("a bound of none makes no attempt") }}
 	none := 0
@@ -592,7 +593,7 @@ func TestHeadlessRun_ABoundOfNoneWaitsOutNothing(t *testing.T) {
 func TestHeadlessRun_InterruptEndsAWait(t *testing.T) {
 	t.Parallel()
 	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
-		return nil, nil, &llm.Failure{Class: llm.ClassOverloaded, RetryAfter: maxRetryWait}
+		return nil, nil, &failure.Failure{Class: failure.ClassOverloaded, RetryAfter: maxRetryWait}
 	})
 	h := &Headless{Agent: a}
 	h.OnRetry = func(RetryNotice) { go h.Interrupt() }
@@ -616,8 +617,8 @@ func TestHeadlessRun_RetryHandsBackWhatItThrewAway(t *testing.T) {
 		ch := make(chan llm.StreamEvent, 2)
 		if requests == 1 {
 			ch <- llm.StreamEvent{Token: "half a sen"}
-			ch <- llm.StreamEvent{Err: &llm.Failure{
-				Class: llm.ClassNetwork, RetryAfter: time.Millisecond,
+			ch <- llm.StreamEvent{Err: &failure.Failure{
+				Class: failure.ClassNetwork, RetryAfter: time.Millisecond,
 			}}
 		} else {
 			ch <- llm.StreamEvent{Token: "the whole answer"}
@@ -653,7 +654,7 @@ func TestHeadlessRun_RetryHandsBackWhatItThrewAway(t *testing.T) {
 // hand the next one whatever was left of the three attempts.
 func TestHeadlessRun_EachTurnGetsItsOwnBound(t *testing.T) {
 	t.Parallel()
-	fail := &llm.Failure{Class: llm.ClassOverloaded, RetryAfter: maxRetryWait}
+	fail := &failure.Failure{Class: failure.ClassOverloaded, RetryAfter: maxRetryWait}
 	requests := 0
 	a := New(nil, func([]llm.Message, string) (<-chan llm.StreamEvent, context.CancelFunc, error) {
 		requests++

@@ -24,6 +24,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -53,12 +54,12 @@ func (m *Model) appendFailure(err error) {
 // classifyFailure names an error that somehow arrived unclassified rather
 // than letting it through raw: no raw provider error string reaches the
 // transcript.
-func classifyFailure(err error, providerName string) *llm.Failure {
-	if f, ok := llm.AsFailure(err); ok {
+func classifyFailure(err error, providerName string) *failure.Failure {
+	if f, ok := failure.As(err); ok {
 		return f
 	}
-	return &llm.Failure{
-		Class:    llm.ClassUnclassified,
+	return &failure.Failure{
+		Class:    failure.ClassUnclassified,
 		Provider: providerName,
 		Message:  err.Error(),
 	}
@@ -73,7 +74,7 @@ func classifyFailure(err error, providerName string) *llm.Failure {
 // otherwise rewrite under a failure that happened before either. What it
 // had done is the attempt that failed, from the retry where there was one,
 // as the duration beside it is.
-func (m *Model) appendFailureRecord(f *llm.Failure) {
+func (m *Model) appendFailureRecord(f *failure.Failure) {
 	var acts []receipt.Act
 	for _, e := range sinceRetry(m.turnEntries()) {
 		if isActivityEntry(e) {
@@ -114,12 +115,12 @@ func (m Model) failureCardFor(e entry, sel rowSel) components.FailureCard {
 // sentence: the fact about its class that decides what to do next, which
 // the row used to state in its outcome field and the card's header gives to
 // the class.
-func failureSentence(f *llm.Failure) string {
+func failureSentence(f *failure.Failure) string {
 	if f == nil {
 		return ""
 	}
 	switch f.Class {
-	case llm.ClassAuth:
+	case failure.ClassAuth:
 		if f.Provider == planName {
 			return "The ChatGPT sign-in is missing or has expired, so the plan refused the request."
 		}
@@ -127,30 +128,30 @@ func failureSentence(f *llm.Failure) string {
 			return "No key was sent, so the provider refused the request."
 		}
 		return "The provider rejected key ···" + f.KeyTail + "."
-	case llm.ClassRateLimit:
+	case failure.ClassRateLimit:
 		if f.RetryAfter > 0 {
 			return "The provider is limiting the rate and named a retry in " + components.FormatElapsed(f.RetryAfter) + "."
 		}
 		return "The provider is limiting the rate; a retry shortly should go through."
-	case llm.ClassQuota:
+	case failure.ClassQuota:
 		return "The account has run out of quota; it is the account, not the rate."
-	case llm.ClassOverloaded:
+	case failure.ClassOverloaded:
 		return "The provider is overloaded; the trouble is on its side."
-	case llm.ClassContextLength:
+	case failure.ClassContextLength:
 		return "The conversation is over the model's context window."
-	case llm.ClassModelNotFound:
+	case failure.ClassModelNotFound:
 		return "The provider serves no model by that id; the id is wrong, not the key."
-	case llm.ClassNetwork:
+	case failure.ClassNetwork:
 		return "The request never reached the provider."
-	case llm.ClassMalformed:
+	case failure.ClassMalformed:
 		return "The provider's reply could not be read."
-	case llm.ClassCancelled:
+	case failure.ClassCancelled:
 		return "You stopped the request."
-	case llm.ClassUsageLimit:
+	case failure.ClassUsageLimit:
 		return "The ChatGPT plan's allowance is spent, or the app's share of it is: the limit may be the plan's or shhh's own weekly cap. Manage usage at " + planUsageURL + "."
-	case llm.ClassNotEligible:
+	case failure.ClassNotEligible:
 		return "The plan will not serve this account, workspace or request. A retry or another sign-in changes nothing."
-	case llm.ClassUnsupported:
+	case failure.ClassUnsupported:
 		if f.Param != "" {
 			return "The plan route does not serve part of this request: " + f.Param + "."
 		}
@@ -181,7 +182,7 @@ func (m Model) failureRow(e entry) components.RecoveryRow {
 		Note:      failureNote(f),
 	}
 	switch {
-	case f.Class == llm.ClassCancelled:
+	case f.Class == failure.ClassCancelled:
 		row.State = components.RecoveryStopped
 	case f.Recoverable():
 		row.State = components.RecoveryStalled
@@ -197,7 +198,7 @@ func (m Model) failureRow(e entry) components.RecoveryRow {
 
 // failureSubject leads the target field: the model that failed, falling back
 // to the provider when the session never learned a model name.
-func (m Model) failureSubject(f *llm.Failure) string {
+func (m Model) failureSubject(f *failure.Failure) string {
 	if m.modelName != "" {
 		return m.modelName
 	}
@@ -210,9 +211,9 @@ func (m Model) failureSubject(f *llm.Failure) string {
 // failureOutcome is the right-aligned field: the one fact about this class
 // that decides what to do next. It never repeats the class, which is already
 // in the target.
-func failureOutcome(f *llm.Failure) string {
+func failureOutcome(f *failure.Failure) string {
 	switch f.Class {
-	case llm.ClassAuth:
+	case failure.ClassAuth:
 		if f.Provider == planName {
 			return "sign-in needed"
 		}
@@ -220,30 +221,30 @@ func failureOutcome(f *llm.Failure) string {
 			return "no key was sent"
 		}
 		return "key ···" + f.KeyTail + " rejected"
-	case llm.ClassRateLimit:
+	case failure.ClassRateLimit:
 		if f.RetryAfter > 0 {
 			return "retry in " + components.FormatElapsed(f.RetryAfter)
 		}
 		return "retry shortly"
-	case llm.ClassQuota:
+	case failure.ClassQuota:
 		return "the account, not the rate"
-	case llm.ClassOverloaded:
+	case failure.ClassOverloaded:
 		return "the provider's side"
-	case llm.ClassContextLength:
+	case failure.ClassContextLength:
 		return "over the window"
-	case llm.ClassModelNotFound:
+	case failure.ClassModelNotFound:
 		return "the id, not the key"
-	case llm.ClassNetwork:
+	case failure.ClassNetwork:
 		return "never reached it"
-	case llm.ClassMalformed:
+	case failure.ClassMalformed:
 		return "unreadable reply"
-	case llm.ClassCancelled:
+	case failure.ClassCancelled:
 		return components.OutcomeCancelled
-	case llm.ClassUsageLimit:
+	case failure.ClassUsageLimit:
 		return "the plan, not the rate"
-	case llm.ClassNotEligible:
+	case failure.ClassNotEligible:
 		return "not on this account"
-	case llm.ClassUnsupported:
+	case failure.ClassUnsupported:
 		if f.Param != "" {
 			return f.Param + " not served"
 		}
@@ -257,15 +258,15 @@ func failureOutcome(f *llm.Failure) string {
 // almost always the same one — the request never reached the conversation, so
 // the turn's edits, its steps and its transcript are all still there. Two
 // classes have something more useful to say instead.
-func failureNote(f *llm.Failure) string {
+func failureNote(f *failure.Failure) string {
 	switch f.Class {
-	case llm.ClassQuota:
+	case failure.ClassQuota:
 		return "waiting will not clear this one"
-	case llm.ClassContextLength:
+	case failure.ClassContextLength:
 		return "compacting keeps the plan and the recent turns"
-	case llm.ClassModelNotFound:
+	case failure.ClassModelNotFound:
 		return "/model lists what this provider serves"
-	case llm.ClassUsageLimit:
+	case failure.ClassUsageLimit:
 		return "waiting will not clear this one"
 	}
 	return "nothing in the turn was lost"
@@ -275,13 +276,13 @@ func failureNote(f *llm.Failure) string {
 // the session cannot honour is not offered: a provider that cannot be
 // switched offers no [p], and a session with nothing to compact offers no
 // [c].
-func (m Model) failureKeys(f *llm.Failure) []components.KeyOffer {
+func (m Model) failureKeys(f *failure.Failure) []components.KeyOffer {
 	var offers []components.KeyOffer
 	add := func(b keys.Binding, label string) {
 		offers = append(offers, rowOffer(b, label))
 	}
 	switch f.Class {
-	case llm.ClassAuth:
+	case failure.ClassAuth:
 		// A plan has no key to paste: on it the sign-in replaces the paste
 		// prompt, and elsewhere it stands beside it.
 		// See docs/capabilities/chatgpt-plan.md#in-a-session.
@@ -294,33 +295,33 @@ func (m Model) failureKeys(f *llm.Failure) []components.KeyOffer {
 		if m.canSwitchProvider() {
 			add(keys.Row.Provider, "switch provider")
 		}
-	case llm.ClassUsageLimit:
+	case failure.ClassUsageLimit:
 		// Where the allowance is managed leads, because it is the one thing
 		// that can end the limit; the switch is second and is the person's.
 		add(keys.Row.Usage, "manage usage")
 		if m.canSwitchProvider() {
 			add(keys.Row.Provider, "switch provider")
 		}
-	case llm.ClassNotEligible:
+	case failure.ClassNotEligible:
 		// Neither a retry nor another sign-in changes it.
 		if m.canSwitchProvider() {
 			add(keys.Row.Provider, "switch provider")
 		}
-	case llm.ClassQuota:
+	case failure.ClassQuota:
 		if m.canSwitchProvider() {
 			add(keys.Row.Provider, "switch provider")
 		}
-	case llm.ClassContextLength:
+	case failure.ClassContextLength:
 		add(keys.Row.Continue, "compact now")
 		add(keys.Row.Retry, "then try again")
-	case llm.ClassModelNotFound:
+	case failure.ClassModelNotFound:
 		// No [r]. The id is the failure, and the next request would carry
 		// the same one — the note sends the reader to the picker that can
 		// change it instead.
 		if m.canSwitchProvider() {
 			add(keys.Row.Provider, "switch provider")
 		}
-	case llm.ClassCancelled:
+	case failure.ClassCancelled:
 		// You stopped it on purpose. Offering a key here would be the
 		// interface arguing with the decision.
 	default:
@@ -503,7 +504,7 @@ func providerDesc(name string) string {
 // openKeyEntry borrows the bottom panel for the masked key prompt. The
 // failure's own key hint is what the prompt names, so the reader is told
 // which variable the replacement stands in for.
-func (m Model) openKeyEntry(f *llm.Failure) (tea.Model, tea.Cmd) {
+func (m Model) openKeyEntry(f *failure.Failure) (tea.Model, tea.Cmd) {
 	if m.wiring.ReplaceKey == nil {
 		return m.systemNotice("this session cannot replace its key")
 	}

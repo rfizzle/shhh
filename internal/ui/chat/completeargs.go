@@ -15,7 +15,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -263,7 +263,7 @@ func attachmentDropArgs(m *Model) []argOption {
 // attachmentArg is the word the completion menu offers for one staged
 // attachment: its handle, which is the one word no other chip shares, or
 // its name where it has none.
-func attachmentArg(a llm.Attachment) string {
+func attachmentArg(a llmattachment.Attachment) string {
 	if a.Handle != "" {
 		return a.Handle
 	}
@@ -272,7 +272,7 @@ func attachmentArg(a llm.Attachment) string {
 
 // attachmentArgDesc is the rest of the chip beside the offered handle, so a
 // row of three handles still says which file each one is.
-func attachmentArgDesc(a llm.Attachment) string {
+func attachmentArgDesc(a llmattachment.Attachment) string {
 	size := attachment.HumanSize(len(a.Data))
 	if a.Handle == "" {
 		return size
@@ -289,8 +289,8 @@ func attachmentShowArgs(m *Model) []argOption {
 	for _, a := range m.attachments {
 		what := "Look at this image · "
 		switch a.Kind {
-		case llm.AttachmentImage:
-		case llm.AttachmentText:
+		case llmattachment.Image:
+		case llmattachment.Text:
 			what = "Read this text · "
 		default:
 			continue
@@ -312,8 +312,8 @@ func attachmentShowArgs(m *Model) []argOption {
 		}
 		what := "Look at this image · "
 		switch f.att.Kind {
-		case llm.AttachmentImage:
-		case llm.AttachmentText:
+		case llmattachment.Image:
+		case llmattachment.Text:
 			what = "Read this text · "
 		default:
 			continue

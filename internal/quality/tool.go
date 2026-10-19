@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/toolvalue"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
@@ -108,11 +109,11 @@ func (r *Runner) executeTool(ctx context.Context, args json.RawMessage) (string,
 			return "", err
 		}
 		text := res.Format(res.Fingerprint)
-		llm.NoteValue(ToolName, args, res.Summary(res.Fingerprint).Value())
+		toolvalue.Note(ToolName, args, res.Summary(res.Fingerprint).Value())
 		return text, nil
 	case "result":
 		text, value := r.status()
-		llm.NoteValue(ToolName, args, value)
+		toolvalue.Note(ToolName, args, value)
 		return text, nil
 	}
 	return "", fmt.Errorf("unknown action %q (valid: run, result)", a.Action)

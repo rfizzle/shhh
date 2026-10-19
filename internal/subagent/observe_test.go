@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -332,7 +333,7 @@ var storedWord = regexp.MustCompile(`^[a-z0-9]+(?:[-_][a-z0-9]+)*$`)
 // clock is accounted for afterwards.
 func TestChildRecordsARetryAndSaysSoOnItsLane(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{fail: &llm.Failure{Class: llm.ClassRateLimit, Status: 429, RetryAfter: time.Millisecond}},
+		{fail: &failure.Failure{Class: failure.ClassRateLimit, Status: 429, RetryAfter: time.Millisecond}},
 		{text: "done"},
 	}}
 	rec := &testRecorder{}

@@ -15,8 +15,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/chatgpt"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -50,7 +50,7 @@ func openLog() {
 	}
 	// The library packages write through what they are handed, and the
 	// logger is the one logs.To just pointed at the file (or at nothing).
-	llm.SetLogger(logs.Logger())
+	failure.SetLogger(logs.Logger())
 	chatgpt.SetLogger(logs.Logger())
 }
 

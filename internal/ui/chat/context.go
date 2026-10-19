@@ -14,6 +14,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -87,7 +88,7 @@ func (m Model) windowFor(model string) int64 {
 			return w
 		}
 	}
-	if w, ok := llm.ContextWindowFor(model); ok {
+	if w, ok := catalog.ContextWindowFor(model); ok {
 		return w
 	}
 	return DefaultContextWindow

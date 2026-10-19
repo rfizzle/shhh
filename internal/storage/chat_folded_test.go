@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 )
 
 func TestChatFolded_StaysBesideAConversationThatIsRewritten(t *testing.T) {
@@ -14,9 +15,9 @@ func TestChatFolded_StaysBesideAConversationThatIsRewritten(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	pic := llm.Attachment{Kind: llm.AttachmentImage, Name: "a.png", MediaType: "image/png", Data: []byte{1, 2, 3}}
+	pic := attachment.Attachment{Kind: attachment.Image, Name: "a.png", MediaType: "image/png", Data: []byte{1, 2, 3}}
 	folded := []llm.Message{
-		{Role: llm.RoleUser, Content: "first", Attachments: []llm.Attachment{pic}},
+		{Role: llm.RoleUser, Content: "first", Attachments: []attachment.Attachment{pic}},
 		{Role: llm.RoleAssistant, Content: "answer"},
 	}
 	compacted := []llm.Message{

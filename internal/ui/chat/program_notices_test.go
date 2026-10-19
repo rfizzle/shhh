@@ -11,10 +11,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 )
 
 // refusingProvider answers every request with the same classified refusal.
-type refusingProvider struct{ fail *llm.Failure }
+type refusingProvider struct{ fail *failure.Failure }
 
 func (p refusingProvider) Name() string { return "scripted" }
 
@@ -26,8 +27,8 @@ func (p refusingProvider) StreamCompletion(context.Context, []llm.Message, llm.C
 // session that its own esc puts away and a refused request is a failure row:
 // none of them says `Error:`.
 func TestProgram_NoticesSpeakInTheReadmesVoice(t *testing.T) {
-	p := refusingProvider{fail: &llm.Failure{
-		Class: llm.ClassAuth, Status: 401, Provider: "openai",
+	p := refusingProvider{fail: &failure.Failure{
+		Class: failure.ClassAuth, Status: 401, Provider: "openai",
 		Message: "Incorrect API key provided",
 	}}
 	tm := runProgramAt(t, New([]llm.Message{{Role: llm.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}), 110, 40)

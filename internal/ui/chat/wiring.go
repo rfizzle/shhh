@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -329,8 +330,8 @@ type Wiring struct {
 	// makes a change reach the next request (nil is display-only);
 	// EffortDefault and EffortOutranked are the persisted level and whatever
 	// outranks it.
-	Effort          llm.Effort
-	SwitchEffort    func(llm.Effort)
+	Effort          effort.Level
+	SwitchEffort    func(effort.Level)
 	EffortDefault   string
 	EffortOutranked string
 	// EndpointWindows is the endpoint's own answer for a model's context

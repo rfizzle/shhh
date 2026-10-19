@@ -16,6 +16,10 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
+	"github.com/rfizzle/llm/effort"
+	"github.com/rfizzle/llm/failure"
+	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -1205,7 +1209,7 @@ func headlessCompactor(ctx context.Context, cfg config.Config, env *sessionEnv, 
 		window, _ = prices.ContextWindow(env.modelName)
 	}
 	if window <= 0 {
-		window, _ = llm.ContextWindowFor(env.modelName)
+		window, _ = catalog.ContextWindowFor(env.modelName)
 	}
 	if window <= 0 {
 		return nil
@@ -1248,7 +1252,7 @@ func summaryModelWindow(prices *pricing.Table, model string) (int64, bool) {
 			return w, true
 		}
 	}
-	return llm.ContextWindowFor(model)
+	return catalog.ContextWindowFor(model)
 }
 
 // summaryModelStream sends one request on another model of the same provider,
@@ -1261,14 +1265,14 @@ func summaryModelStream(ctx context.Context, env *sessionEnv, ledger *meter.Ledg
 		reqCtx, cancel := context.WithCancel(ctx)
 		events, err := ledger.For(env.prov, meter.SourceSummary).StreamCompletion(reqCtx, msgs, llm.CompletionOpts{
 			Model:      model,
-			Flow:       llm.FlowCompaction,
+			Flow:       flow.Compaction,
 			Tools:      defs,
 			ToolChoice: choice,
 			// A shallow thought over a conversation that is already written.
 			// The judgement asked for is what mattered in it, not what to do
 			// next, and a deep one here is paid for out of the budget the run
 			// is trying to get back under.
-			Effort: llm.EffortLow,
+			Effort: effort.Low,
 		})
 		if err != nil {
 			cancel()
@@ -1511,17 +1515,17 @@ func headlessTurnOutcome(err error) string {
 // unclassified failure — into a status that tells its reader their
 // configuration is wrong, on no evidence that it is.
 func providerRefusedRequest(err error) bool {
-	f, ok := llm.AsFailure(err)
+	f, ok := failure.As(err)
 	if !ok {
 		return false
 	}
 	switch f.Class {
-	case llm.ClassAuth, llm.ClassQuota,
-		llm.ClassContextLength, llm.ClassModelNotFound,
+	case failure.ClassAuth, failure.ClassQuota,
+		failure.ClassContextLength, failure.ClassModelNotFound,
 		// The ChatGPT plan's three: a spent allowance is the plan's quota,
 		// and an ineligible account or an unsupported request is refused the
 		// same way on every retry.
-		llm.ClassUsageLimit, llm.ClassNotEligible, llm.ClassUnsupported:
+		failure.ClassUsageLimit, failure.ClassNotEligible, failure.ClassUnsupported:
 		return true
 	}
 	return false

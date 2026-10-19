@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
@@ -203,7 +204,7 @@ func TestChatGPT_ResolvesFromTheSignedInAccount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("chatgpt did not resolve from a signed-in record: %v", err)
 	}
-	models, err := p.(llm.ModelLister).ListModels(context.Background())
+	models, err := p.(catalog.Lister).ListModels(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

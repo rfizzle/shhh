@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 )
 
 func TestProgram_AnAuthFailureOffersTheSignInBesideTheKey(t *testing.T) {
-	p := refusingProvider{fail: &llm.Failure{
-		Class: llm.ClassAuth, Status: 401, Provider: "openai",
+	p := refusingProvider{fail: &failure.Failure{
+		Class: failure.ClassAuth, Status: 401, Provider: "openai",
 		Message: "Incorrect API key provided",
 	}}
 	w := Wiring{

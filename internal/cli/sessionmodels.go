@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/catalog"
 )
 
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat
@@ -21,7 +22,7 @@ const modelListTimeout = 10 * time.Second
 // chat model's lazy lister. Providers without the capability return nil, and
 // the picker keeps the curated catalog.
 func modelListerFor(p llm.Provider) func(context.Context) ([]string, error) {
-	lister, ok := p.(llm.ModelLister)
+	lister, ok := p.(catalog.Lister)
 	if !ok {
 		return nil
 	}
@@ -110,7 +111,7 @@ func (e *endpointModels) list(ctx context.Context, spawn bool) ([]string, error)
 // and the first trim is many turns away in any case. A failure is dropped for
 // the same reason it is not logged: nobody asked for this.
 func endpointWindowsFor(p llm.Provider) func(string) (int64, bool) {
-	endpoint, ok := p.(llm.ModelWindower)
+	endpoint, ok := p.(catalog.Windower)
 	if !ok {
 		return nil
 	}

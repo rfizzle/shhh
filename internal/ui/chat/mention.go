@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/persona"
 )
@@ -102,7 +102,7 @@ func (m Model) insertMention() (tea.Model, tea.Cmd) {
 	// The peek reads first bytes only, the way a dragged-in path's does;
 	// the read that attaches the image happens in a command.
 	path := m.inWorkspace(item.name)
-	if kind, err := attachment.PeekKind(path); err == nil && kind == llm.AttachmentImage {
+	if kind, err := attachment.PeekKind(path); err == nil && kind == llmattachment.Image {
 		return m, attachFileCmd(path, false)
 	}
 	return m, nil

@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	llmattachment "github.com/rfizzle/llm/attachment"
+	"github.com/rfizzle/llm/toolvalue"
 	"github.com/rfizzle/shhh/internal/attachment"
 )
 
@@ -44,7 +46,7 @@ type ToolResult struct {
 	// a reader found where it was asked for a file. They ride on the result
 	// message, so the providers that can show the model a picture do, and the
 	// ones that cannot are left with the notice the tool wrote.
-	Attachments []llm.Attachment
+	Attachments []llmattachment.Attachment
 	// Value is what the result carries beside its text
 	// (provider.Message.Value): the quality gate's verdict, which the rows
 	// read in place of the text.
@@ -324,7 +326,7 @@ func (a *Agent) StartTurn(text string) { a.StartTurnWith(text, nil) }
 // StartTurnWith is StartTurn carrying the attachments staged for this turn
 // . They ride on the user message itself, so every later snapshot,
 // save and resume keeps them beside the sentence that was asked about them.
-func (a *Agent) StartTurnWith(text string, atts []llm.Attachment) {
+func (a *Agent) StartTurnWith(text string, atts []llmattachment.Attachment) {
 	a.startTurn()
 	a.Append(llm.Message{Role: llm.RoleUser, Content: text, Attachments: atts})
 }
@@ -556,7 +558,7 @@ func (a *Agent) ExecuteCallsWith(ctx context.Context, calls []llm.ToolCall, seam
 				Call:        tc,
 				Result:      result,
 				Attachments: attachment.TakeResult(result),
-				Value:       llm.TakeValue(tc.Name, tc.Arguments),
+				Value:       toolvalue.Take(tc.Name, tc.Arguments),
 				Duration:    time.Since(start),
 			}
 		}(i, tc)
@@ -637,7 +639,7 @@ func (a *Agent) ResolveApproval(content string) json.RawMessage {
 	if len(a.queue) == 0 {
 		return nil
 	}
-	value := llm.TakeValue(a.queue[0].Name, a.queue[0].Arguments)
+	value := toolvalue.Take(a.queue[0].Name, a.queue[0].Arguments)
 	a.Append(llm.Message{
 		Role:       llm.RoleTool,
 		Content:    content,

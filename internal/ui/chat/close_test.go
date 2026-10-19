@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
@@ -693,7 +694,7 @@ func TestClose_ARetriedTurnCountsOnlyTheRetry(t *testing.T) {
 	m = calls(m, 13)
 	m.vitals.record("gpt-4o", llm.Usage{PromptTokens: 41000, CompletionTokens: 1200}, 1.15, true)
 	now = now.Add(98 * time.Second)
-	updated, _ := m.Update(streamErrMsg{err: &llm.Failure{Class: llm.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
+	updated, _ := m.Update(streamErrMsg{err: &failure.Failure{Class: failure.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
 	m = updated.(Model)
 	failed := lastClose(t, m)
 
@@ -748,7 +749,7 @@ func TestRail_ThisTurnCountsOnlyTheRetry(t *testing.T) {
 
 	m := calls(sendText(t, readyModel(t), "raise the round cap"), 13)
 	now = now.Add(98 * time.Second)
-	updated, _ := m.Update(streamErrMsg{err: &llm.Failure{Class: llm.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
+	updated, _ := m.Update(streamErrMsg{err: &failure.Failure{Class: failure.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
 	m = updated.(Model)
 	now = now.Add(22 * time.Second)
 	next, _ := m.retryTurn()

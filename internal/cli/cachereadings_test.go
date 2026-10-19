@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/llm/cache"
+	"github.com/rfizzle/llm/capability"
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
 	"github.com/rfizzle/llm"
@@ -41,7 +43,7 @@ func TestProviders_CacheRowReadsTheStore(t *testing.T) {
 	keeper := newCacheKeeper(db, ledger)
 	keeper.now = func() time.Time { return at }
 	hit := llm.Usage{PromptTokens: 20_000, CachedTokens: 19_000, CacheCreationTokens: 500,
-		Reports: llm.FieldCachedTokens | llm.FieldCacheCreation}
+		Reports: cache.FieldCachedTokens | cache.FieldCreation}
 	ledger.ObserveCache("corp-gw", "anthropic/claude-sonnet-5-5", hit)
 	keeper.keep()
 	keeper.keep() // nothing new: nothing added twice
@@ -89,10 +91,10 @@ func TestDoctorModel_NamesTheCacheReading(t *testing.T) {
 		}
 	}
 
-	llm.RegisterDeclarations("gateway", map[string]llm.Declared{
-		"claude-sonnet-5-5": {Model: map[string]any{llm.KeyPromptCache: false}},
+	capability.RegisterDeclarations("gateway", map[string]capability.Declared{
+		"claude-sonnet-5-5": {Model: map[string]any{capability.KeyPromptCache: false}},
 	})
-	t.Cleanup(func() { llm.RegisterDeclarations("gateway", nil) })
+	t.Cleanup(func() { capability.RegisterDeclarations("gateway", nil) })
 	if f := withCacheNote(doctor.Finding{}, readings, "gateway", "claude-sonnet-5-5"); f.Detail != "cache off (profile gateway)" {
 		t.Errorf("a declared off: %q", f.Detail)
 	}

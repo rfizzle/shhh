@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
@@ -141,7 +142,7 @@ func (b *inflateBudget) read(path string) (string, error) {
 		return "", err
 	case errors.Is(err, errPastCeiling):
 		b.notes = append(b.notes, fmt.Sprintf("… (%s searched only in its first %s decompressed: one search decompresses at most %s)",
-			path, llm.HumanSize(len(data)), llm.HumanSize(MaxReadFileSize)))
+			path, attachment.HumanSize(len(data)), attachment.HumanSize(MaxReadFileSize)))
 	case err != nil:
 		return "", err
 	}
@@ -159,7 +160,7 @@ func (b *inflateBudget) tail() []string {
 	out := b.notes
 	if b.skipped > 0 {
 		out = append(out, fmt.Sprintf("… (%d more compressed %s not searched: one search decompresses at most %s)",
-			b.skipped, noun(b.skipped, "file", "files"), llm.HumanSize(MaxReadFileSize)))
+			b.skipped, noun(b.skipped, "file", "files"), attachment.HumanSize(MaxReadFileSize)))
 	}
 	return out
 }

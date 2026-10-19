@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -1408,7 +1409,7 @@ func TestHeader_ShedsTheConstantsFromTheRightAndKeepsTheModel(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	m.start = new(startFixture())
 	m.wiring.Prices, m.modelName = nil, "claude-opus-5"
-	m.effort, m.wiring.SwitchEffort = llm.EffortMedium, func(llm.Effort) {}
+	m.effort, m.wiring.SwitchEffort = effort.Medium, func(effort.Level) {}
 
 	full := stripANSI(m.headerRow(200))
 	if want := " shhh chat · ~/src/shhh · main · claude-opus-5 · think medium"; full != want {
@@ -1439,7 +1440,7 @@ func TestHeader_ShedsTheConstantsFromTheRightAndKeepsTheModel(t *testing.T) {
 // the vitals rail; what stays there is what moves.
 func TestVitals_CarryNoSessionConstants(t *testing.T) {
 	m := frameModel(t, 130, 40)
-	m.effort, m.wiring.SwitchEffort = llm.EffortHigh, func(llm.Effort) {}
+	m.effort, m.wiring.SwitchEffort = effort.High, func(effort.Level) {}
 	rail := stripANSI(m.frameVitals(frameWide, 200))
 	for _, gone := range []string{"gpt-4o", "think"} {
 		if strings.Contains(rail, gone) {

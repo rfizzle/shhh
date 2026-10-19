@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -43,7 +43,7 @@ var liveTakers = map[string]liveTaker{
 		w.ModelName = sessionResolved(c, env).Model
 	},
 	"provider.reasoning": func(c config.Config, env *sessionEnv, w *chat.Wiring) {
-		if e, err := llm.ParseEffort(sessionResolved(c, env).Reasoning); err == nil {
+		if e, err := effort.Parse(sessionResolved(c, env).Reasoning); err == nil {
 			w.Effort = e
 		}
 	},

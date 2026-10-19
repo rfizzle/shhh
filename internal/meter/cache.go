@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/cache"
+	"github.com/rfizzle/llm/capability"
 )
 
 // CacheState is the reading's verdict.
@@ -77,7 +79,7 @@ type CacheReading struct {
 	// the person did not ask for.
 	Confirmed string
 	// Reports is every cache field the endpoint has sent.
-	Reports llm.CacheFields
+	Reports cache.Fields
 	// SurvivedMax is the longest gap between two requests the cache was seen
 	// to outlast and ExpiredMin the shortest it was seen to expire within,
 	// each with how many gaps were seen; zero is a bound nothing has
@@ -117,7 +119,7 @@ func (r CacheReading) LastShare() int {
 // Downgraded reports a request that asked for the hour and was written for
 // five minutes: the dearer write paid for the shorter cache.
 func (r CacheReading) Downgraded() bool {
-	return r.Lease == string(llm.CacheTTL1h) && r.Confirmed == string(llm.CacheTTL5m)
+	return r.Lease == string(cache.TTL1h) && r.Confirmed == string(cache.TTL5m)
 }
 
 // SetCacheLease names the lease the session's requests ask for, so a
@@ -170,9 +172,9 @@ func (l *Ledger) ObserveCache(providerName, model string, u llm.Usage) {
 	r.LastIn, r.LastCached, r.LastCreated = u.PromptTokens, u.CachedTokens, u.CacheCreationTokens
 	switch {
 	case u.CacheCreation5m > 0:
-		r.Confirmed = string(llm.CacheTTL5m)
+		r.Confirmed = string(cache.TTL5m)
 	case u.CacheCreation1h > 0:
-		r.Confirmed = string(llm.CacheTTL1h)
+		r.Confirmed = string(cache.TTL1h)
 	}
 	r.Reports |= u.Reports
 }
@@ -199,7 +201,7 @@ func (l *Ledger) CacheReadings() []CacheReading {
 	out := slices.Clone(l.caches)
 	l.mu.Unlock()
 	for i := range out {
-		out[i].OffBy = llm.PromptCacheOff(out[i].Provider, out[i].Model)
+		out[i].OffBy = capability.PromptCacheOff(out[i].Provider, out[i].Model)
 	}
 	return out
 }
@@ -232,6 +234,6 @@ func (l *Ledger) CacheReadingFor(providerName, model string) CacheReading {
 	}
 	return CacheReading{
 		CacheKey: CacheKey{Provider: providerName, Model: model},
-		OffBy:    llm.PromptCacheOff(providerName, model),
+		OffBy:    capability.PromptCacheOff(providerName, model),
 	}
 }
