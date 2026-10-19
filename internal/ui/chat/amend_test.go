@@ -165,7 +165,7 @@ func TestAmend_TheBlockIsReadAgainstTheLineThatRuns(t *testing.T) {
 func TestAmend_TheRepeatDetectorIsFiledUnderTheLineThatRan(t *testing.T) {
 	var ran []string
 	m := amendModel(t, "npm test", &ran)
-	m.wiring.Repeats = agent.NewRepeatDetector()
+	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
 	m = openAmend(t, m, "npm test -- --runInBand")
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)

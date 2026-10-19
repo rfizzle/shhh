@@ -9,13 +9,11 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/structural"
 )
 
 func TestRepeatDetector_CountsIdenticalInteractions(t *testing.T) {
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	args := json.RawMessage(`{"pattern":"foo"}`)
 
 	if n := d.Note("search", args, "a.go:1: foo"); n != 1 {
@@ -33,7 +31,7 @@ func TestRepeatDetector_ChangedOutputIsNotARepeat(t *testing.T) {
 	// The whole point of keying on the output too: `go test` run again after
 	// a fix is a different interaction, and the one case where running the
 	// same command twice is exactly right.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	args := json.RawMessage(`{"command":"go test ./..."}`)
 
 	d.Note("execute_command", args, "FAIL")
@@ -43,7 +41,7 @@ func TestRepeatDetector_ChangedOutputIsNotARepeat(t *testing.T) {
 }
 
 func TestRepeatDetector_ArgumentsAreCanonicalised(t *testing.T) {
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	d.Note("search", json.RawMessage(`{"pattern":"foo","path":"internal"}`), "out")
 	n := d.Note("search", json.RawMessage(`{ "path": "internal",  "pattern": "foo" }`), "out")
 	if n != 2 {
@@ -52,7 +50,7 @@ func TestRepeatDetector_ArgumentsAreCanonicalised(t *testing.T) {
 }
 
 func TestRepeatDetector_WindowForgets(t *testing.T) {
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	args := json.RawMessage(`{"pattern":"foo"}`)
 	d.Note("search", args, "out")
 	for i := 0; i < repeatWindow; i++ {
@@ -64,7 +62,7 @@ func TestRepeatDetector_WindowForgets(t *testing.T) {
 }
 
 func TestRepeatDetector_WrapExecutorAnnotatesTheRepeat(t *testing.T) {
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	exec := d.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		return "a.go:1: foo", nil
 	})
@@ -97,7 +95,7 @@ func TestRepeatDetector_WrapExecutorNotesTheSameFailureTwice(t *testing.T) {
 	// A call that fails the same way every time is circling as surely as one
 	// that succeeds identically, and it is the shape a stuck turn usually
 	// takes: a path that is not there, an argument the tool will not accept.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	exec := d.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) {
 		return "", errors.New("no such file or directory")
 	})
@@ -129,7 +127,7 @@ func TestRepeatDetector_WrapResolverAnnotatesTheRepeat(t *testing.T) {
 	// The gated tier: a command is resolved rather than dispatched, so this
 	// is the only place the detector can see the call its own package
 	// comment is written about.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	resolve := d.WrapResolver(func(llm.ToolCall) string {
 		return "error: command exited with status 1\noutput:\nFAIL\tinternal/calc"
 	})
@@ -157,7 +155,7 @@ func TestRepeatDetector_ARepeatedRefusalIsStillAFailure(t *testing.T) {
 	// Everything that reads a result tells a failure by its "error:" head —
 	// the digest's outcome word, the record's class, the transcript row — so
 	// the notice goes behind it rather than in front of it.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	resolve := d.WrapResolver(func(llm.ToolCall) string {
 		return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
 	})
@@ -180,7 +178,7 @@ func TestRepeatDetector_OneDetectorIsOneHistoryAcrossBothTiers(t *testing.T) {
 	// The auto chain and the gated one share a window on purpose: a session
 	// that re-runs a command it once had approved is the same circle whether
 	// the second attempt was answered by a policy or by a person.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	exec := d.WrapExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "same output", nil })
 	resolve := d.WrapResolver(func(llm.ToolCall) string { return "same output" })
 	args := `{"command":"ls"}`
@@ -212,6 +210,76 @@ func TestRepeatDetector_NilIsSafe(t *testing.T) {
 	}
 }
 
+// The tool names the fakes answer for. They are not shhh's: the detector
+// knows none of them, and the real reading is pinned in internal/cli.
+const (
+	fakeAsk      = "ask"
+	fakeGitWrite = "git_write"
+)
+
+// fakeShapes is a small app: one question tool, two search tools that scope by
+// path, and four tools that write.
+func fakeShapes() Shapes {
+	return Shapes{
+		Question: func(tool string, args json.RawMessage) (string, bool) {
+			if tool != fakeAsk {
+				return "", false
+			}
+			var a struct {
+				Question string `json:"question"`
+			}
+			_ = json.Unmarshal(args, &a)
+			return a.Question, true
+		},
+		SearchScope: func(tool, rawArgs string) (string, bool) {
+			if tool != "search" && tool != "glob" {
+				return "", false
+			}
+			var a struct {
+				Path string `json:"path"`
+			}
+			_ = json.Unmarshal([]byte(rawArgs), &a)
+			if a.Path == "" {
+				return ".", true
+			}
+			return "./" + a.Path, true
+		},
+		Wrote: func(tool, _ string) bool {
+			switch tool {
+			case "execute_command", "edit_file", "write_file", fakeGitWrite:
+				return true
+			}
+			return false
+		},
+	}
+}
+
+// Nil funcs answer false: the zero Shapes still counts the exact repeat and
+// reads no sweep and no question.
+func TestRepeatDetector_ZeroShapesStillCountsTheExactRepeat(t *testing.T) {
+	d := NewRepeatDetector(Shapes{})
+	if got := d.Note("search", searchOf("a", "x"), "r"); got != 1 {
+		t.Fatalf("first = %d", got)
+	}
+	if got := d.Note("search", searchOf("a", "x"), "r"); got != 2 {
+		t.Errorf("second = %d, want 2", got)
+	}
+	for i := 1; i <= sweepNoticeAfter+2; i++ {
+		if out := d.Notice("search", searchOf(fmt.Sprintf("n%d", i), "x"), fmt.Sprintf("o%d", i)); swept(out) {
+			t.Fatalf("a detector with no scope shape swept:\n%s", out)
+		}
+	}
+	if got := d.Sweeps(); len(got) != 0 {
+		t.Errorf("sweeps = %v, want none", got)
+	}
+	// Without a question shape the answer is part of the key again.
+	q := json.RawMessage(`{"question":"Which?"}`)
+	d.Note(fakeAsk, q, "a")
+	if got := d.Note(fakeAsk, q, "b"); got != 1 {
+		t.Errorf("zero Shapes recognised a question: %d", got)
+	}
+}
+
 // searchOf is one search as the model writes it: a pattern, and the place it
 // was put. The pattern is what varies in a sweep and the place is what does
 // not, so every test below builds its calls this way.
@@ -224,7 +292,7 @@ func swept(result string) bool { return strings.HasPrefix(result, sweepNoticePre
 func TestRepeatDetector_ManyPatternsOverOnePlaceAreASweep(t *testing.T) {
 	// The failure the exact-repeat key cannot see: twenty different
 	// questions, all put to one directory, none of them followed by a change.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	var notice string
 	for i := 1; i <= 20; i++ {
 		out := d.Notice("search",
@@ -258,7 +326,7 @@ func TestRepeatDetector_AWriteBetweenTheSearchesIsNotASweep(t *testing.T) {
 	// The same twenty searches with one edit in the middle of them. A run
 	// that has changed something is acting on what it found, so the count
 	// starts again there and neither half reaches the threshold.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	for i := 1; i <= 20; i++ {
 		if i == 11 {
 			d.Notice("edit_file",
@@ -278,7 +346,7 @@ func TestRepeatDetector_ACommandEndsASweep(t *testing.T) {
 	// shhh cannot know whether a command wrote anything and assumes it did,
 	// so a run that searched, ran the tests and searched again is not one
 	// that has been reading without acting.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	for i := 1; i <= 20; i++ {
 		if i == 11 {
 			d.Notice("execute_command", json.RawMessage(`{"command":"go test ./..."}`), "ok")
@@ -295,7 +363,7 @@ func TestRepeatDetector_ANarrowingSweepIsNotCircling(t *testing.T) {
 	// The legitimate shape: a broad pattern, a narrower one, narrower again,
 	// then the file they pointed at. Four calls is not a circle, and a
 	// mechanism that called it one would cost every investigation a round.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	steps := []struct {
 		tool string
 		args json.RawMessage
@@ -317,7 +385,7 @@ func TestRepeatDetector_TwoPlacesAreTwoShapes(t *testing.T) {
 	// sweep. The place is half the shape, because a run working through a
 	// tree package by package is going somewhere and one asking a single
 	// package twenty questions is not.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	for i := 1; i <= 10; i++ {
 		for _, path := range []string{"internal/agent", "internal/ui/chat"} {
 			if out := d.Notice("search",
@@ -347,7 +415,7 @@ func TestRepeatDetector_TwoPlacesAreTwoShapes(t *testing.T) {
 func TestRepeatDetector_OneToolOverOnePlaceIsTheShape(t *testing.T) {
 	// A run that searches a package and then lists its files is asking two
 	// kinds of question, so the two are counted apart.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	for i := 1; i <= 10; i++ {
 		for _, tool := range []string{"search", "glob"} {
 			if out := d.Notice(tool,
@@ -363,7 +431,7 @@ func TestRepeatDetector_TheExactRepeatStillLeadsTheResult(t *testing.T) {
 	// A call that comes back identical is the cheapest and clearest thing to
 	// say, and it is still what a result leads with — one notice, not two,
 	// because the second would land where the model has stopped reading.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	args := searchOf("needle", "internal/agent")
 	if first := d.Notice("search", args, "a.go:1: needle"); IsRepeatNotice(first) || swept(first) {
 		t.Fatalf("the first call carries no notice, got %q", first)
@@ -387,7 +455,7 @@ func TestRepeatDetector_ASweepIsToldAgainOnlyAtTheNextThreshold(t *testing.T) {
 	// Once past the threshold every remaining call would carry the notice,
 	// which is the mechanism becoming the noise it warns about. It repeats at
 	// the multiples instead.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	var at []int
 	for i := 1; i <= 2*sweepNoticeAfter+2; i++ {
 		if swept(d.Notice("search",
@@ -408,7 +476,7 @@ func TestRepeatDetector_ASweepThatFillsTheWindowStopsBeingTold(t *testing.T) {
 	// the rest of the turn. Told on the count alone, the notice would fire on
 	// every one of those calls — the mechanism becoming the noise it warns
 	// about, in the run that needs it least noisy.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	var at []int
 	for i := 1; i <= 2*sweepWindow; i++ {
 		if swept(d.Notice("search",
@@ -443,10 +511,10 @@ func TestRepeatDetector_AGitWriteEndsASweep(t *testing.T) {
 	// is registered on every surface that reads a sweep. A run that searched
 	// a dozen times, committed, and searched a dozen more has not been going
 	// in one circle of twenty-four.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	for i := 1; i <= 20; i++ {
 		if i == 11 {
-			d.Notice(structural.GitWriteToolName,
+			d.Notice(fakeGitWrite,
 				json.RawMessage(`{"verb":"commit","message":"fix the thing"}`), "committed")
 		}
 		if out := d.Notice("search",
@@ -461,7 +529,7 @@ func TestRepeatDetector_AFailingSweepIsStillASweep(t *testing.T) {
 	// A dozen calls against a path that does not exist is the same circle as
 	// a dozen that keep returning hits, and the failure is wrapped rather
 	// than replaced so a caller testing it still finds it.
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	exec := d.WrapExecutor(func(_ context.Context, _ string, args json.RawMessage) (string, error) {
 		return "", fmt.Errorf("no such directory: internal/nope (%s)", args)
 	})
@@ -478,7 +546,7 @@ func TestRepeatDetector_AFailingSweepIsStillASweep(t *testing.T) {
 }
 
 func TestRepeatDetector_SweepsAreAFactTheReadingIsGiven(t *testing.T) {
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	if got := d.Sweeps(); len(got) != 0 {
 		t.Fatalf("nothing has been swept yet, got %v", got)
 	}
@@ -507,14 +575,14 @@ func TestRepeatDetector_SweepsAreAFactTheReadingIsGiven(t *testing.T) {
 // key that let that pull the two askings apart would never see the failure it
 // is here for.
 func TestRepeatDetector_OneQuestionAskedTwiceIsOneQuestion(t *testing.T) {
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	q := json.RawMessage(`{"question":"Which store should the cache use?","shape":"choose",` +
 		`"options":[{"label":"Postgres"},{"label":"SQLite"}]}`)
 
-	if got := d.AskedBefore(q); got != "" {
+	if got := d.AskedBefore(fakeAsk, q); got != "" {
 		t.Fatalf("the first asking is not a repeat, got %q", got)
 	}
-	notice := d.AskedBefore(q)
+	notice := d.AskedBefore(fakeAsk, q)
 	if notice == "" {
 		t.Fatal("the same question put twice should say so")
 	}
@@ -525,7 +593,7 @@ func TestRepeatDetector_OneQuestionAskedTwiceIsOneQuestion(t *testing.T) {
 	}
 	// Under the key every other tool is held to these were two interactions
 	// the moment the answers differed, which is the reasoning this inverts.
-	if n := d.Note(ask.ToolName, q, `{"answered":"on the card","picked":["Redis"]}`); n != 3 {
+	if n := d.Note(fakeAsk, q, `{"answered":"on the card","picked":["Redis"]}`); n != 3 {
 		t.Errorf("what came back is no part of a question's key, got %d", n)
 	}
 }
@@ -533,15 +601,15 @@ func TestRepeatDetector_OneQuestionAskedTwiceIsOneQuestion(t *testing.T) {
 // Only the question's own words are in the key, so a re-ask with the options
 // reworded is the same question — and a genuinely different one is not.
 func TestRepeatDetector_ADifferentQuestionIsNotARepeat(t *testing.T) {
-	d := NewRepeatDetector()
-	d.AskedBefore(json.RawMessage(`{"question":"Which store?","shape":"choose","options":[{"label":"A"}]}`))
+	d := NewRepeatDetector(fakeShapes())
+	d.AskedBefore(fakeAsk, json.RawMessage(`{"question":"Which store?","shape":"choose","options":[{"label":"A"}]}`))
 
 	reworded := json.RawMessage(`{"question":"Which store?","shape":"choose","options":[{"label":"B"},{"label":"C"}]}`)
-	if got := d.AskedBefore(reworded); got == "" {
+	if got := d.AskedBefore(fakeAsk, reworded); got == "" {
 		t.Error("one question with its options reworded is still one question")
 	}
 	other := json.RawMessage(`{"question":"Should the migration be reversible?","shape":"confirm"}`)
-	if got := d.AskedBefore(other); got != "" {
+	if got := d.AskedBefore(fakeAsk, other); got != "" {
 		t.Errorf("a different question is a different question, got %q", got)
 	}
 }
@@ -550,14 +618,14 @@ func TestRepeatDetector_ADifferentQuestionIsNotARepeat(t *testing.T) {
 // searches nor starts one: a run that stopped to ask in the middle of an
 // investigation is still on the same investigation.
 func TestRepeatDetector_AQuestionNeitherEndsASweepNorStartsOne(t *testing.T) {
-	if wroteSomething(ask.ToolName, json.RawMessage(`{"question":"Which store?","shape":"text"}`)) {
+	if fakeShapes().wrote(fakeAsk, `{"question":"Which store?","shape":"text"}`) {
 		t.Fatal("a question writes nothing")
 	}
-	d := NewRepeatDetector()
+	d := NewRepeatDetector(fakeShapes())
 	var notice string
 	for i := 1; i <= sweepNoticeAfter; i++ {
 		if i == 6 {
-			d.AskedBefore(json.RawMessage(`{"question":"Which store?","shape":"text"}`))
+			d.AskedBefore(fakeAsk, json.RawMessage(`{"question":"Which store?","shape":"text"}`))
 		}
 		notice = d.Notice("search",
 			searchOf(fmt.Sprintf("needle%d", i), "internal/ui/chat"),

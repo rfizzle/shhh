@@ -39,7 +39,7 @@ func gateChain(t *testing.T) (agent.ToolExecutor, *quality.Runner) {
 		return "unexpected " + name, nil
 	}
 	exec := reducer.WrapExecutor(gate.WrapExecutor(next))
-	exec = agent.NewRepeatDetector().WrapExecutor(exec)
+	exec = agent.NewRepeatDetector(repeatShapes()).WrapExecutor(exec)
 	return vault.WrapExecutor(exec), gate
 }
 

@@ -322,7 +322,7 @@ func TestHeadlessApprover_AShellReadThatRanNamesItsToolOncePerTurn(t *testing.T)
 		var ran []string
 		nudges := &nudge.Turn{}
 		resolve := headlessApprover(context.Background(), headlessApproval{opts: opts, run: nudges.Ran(fakeRun(&ran))})
-		resolve = agent.NewRepeatDetector().WrapResolver(resolve)
+		resolve = agent.NewRepeatDetector(repeatShapes()).WrapResolver(resolve)
 		return nudges.WrapResolver(func() int64 { return 1 }, resolve)
 	}
 
@@ -2276,7 +2276,7 @@ func TestShellWord_NothingInASlotNameIsLiveInTheShell(t *testing.T) {
 // executor chain the detector used to be wrapped around on its own.
 func TestHeadlessApprover_ARepeatedCommandSaysSo(t *testing.T) {
 	var ran []string
-	resolve := agent.NewRepeatDetector().WrapResolver(
+	resolve := agent.NewRepeatDetector(repeatShapes()).WrapResolver(
 		headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&ran)}))
 
 	if first := resolve(execCall("go test ./...")); agent.IsRepeatNotice(first) {
@@ -2297,7 +2297,7 @@ func TestHeadlessApprover_ARepeatedCommandSaysSo(t *testing.T) {
 // And a call the run refuses the same way twice, which is the other half of
 // the circle: an edit re-issued after the policy already said no.
 func TestHeadlessApprover_ARepeatedRefusalSaysSo(t *testing.T) {
-	resolve := agent.NewRepeatDetector().WrapResolver(
+	resolve := agent.NewRepeatDetector(repeatShapes()).WrapResolver(
 		headlessApprover(context.Background(), headlessApproval{run: fakeRun(&[]string{})}))
 	call := llm.ToolCall{ID: "c1", Name: "write_file", Arguments: `{"path":"a.go","content":"package a\n"}`}
 

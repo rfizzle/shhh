@@ -890,7 +890,7 @@ func runOnce(t *testing.T, m Model, command string) (Model, string) {
 func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "FAIL\tinternal/calc", 1 })
-	m.wiring.Repeats = agent.NewRepeatDetector()
+	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
 
 	m, first := runOnce(t, m, "go test ./internal/calc")
 	if agent.IsRepeatNotice(first) {
@@ -912,7 +912,7 @@ func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
 func TestApproval_FailedCommandIsAnErrorResultForEveryConsumer(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "compiler: undefined symbol", 1 })
-	m.wiring.Repeats = agent.NewRepeatDetector()
+	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
 
 	_, result := runOnce(t, m, "go test ./internal/chat")
 	if !strings.HasPrefix(result, "error:") {
@@ -930,7 +930,7 @@ func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
 	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		Runner:  legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 }),
-		Repeats: agent.NewRepeatDetector(),
+		Repeats: agent.NewRepeatDetector(testRepeatShapes()),
 	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -963,7 +963,7 @@ func TestApproval_ARepeatedDeclineSaysSo(t *testing.T) {
 	}
 
 	m := gatedModel(t, nil, map[string]GatedPreviewFunc{"write_file": writeFilePreview("")})
-	m.wiring.Repeats = agent.NewRepeatDetector()
+	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
 	m, first := decline(t, m)
 	if agent.IsRepeatNotice(first) {
 		t.Fatalf("the first decline is not a repeat: %q", first)

@@ -80,7 +80,7 @@ func TestModelFacingWordings(t *testing.T) {
 	// The repeat notices, from fixed calls: a repeated call that succeeded,
 	// one that failed, a repeated question (twice over), and a sweep.
 	twice := func(call func(d *agent.RepeatDetector) string) string {
-		d := agent.NewRepeatDetector()
+		d := agent.NewRepeatDetector(repeatShapes())
 		call(d)
 		return call(d)
 	}
@@ -88,9 +88,9 @@ func TestModelFacingWordings(t *testing.T) {
 	askArgs := json.RawMessage(`{"question":"which one?"}`)
 	repeatOK := twice(func(d *agent.RepeatDetector) string { return d.Notice("shell", shellArgs, "ok") })
 	repeatFailed := twice(func(d *agent.RepeatDetector) string { return d.Notice("shell", shellArgs, "error: exit 1") })
-	repeatAsked := twice(func(d *agent.RepeatDetector) string { return d.AskedBefore(askArgs) })
+	repeatAsked := twice(func(d *agent.RepeatDetector) string { return d.AskedBefore(ask.ToolName, askArgs) })
 	repeatAskCall := twice(func(d *agent.RepeatDetector) string { return d.Notice(ask.ToolName, askArgs, "") })
-	sweepD := agent.NewRepeatDetector()
+	sweepD := agent.NewRepeatDetector(repeatShapes())
 	var sweep string
 	for i := 1; i <= 12; i++ {
 		args := json.RawMessage(fmt.Sprintf(`{"pattern":"needle%d","path":"internal/ui/chat"}`, i))

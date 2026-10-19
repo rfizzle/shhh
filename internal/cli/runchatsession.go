@@ -475,7 +475,7 @@ func (b *screenBuild) children() {
 	// detector goes to the screen, because the tier it dispatches itself —
 	// an approved command, an applied edit — never reaches this chain, and
 	// the two commonest circles a session falls into are there.
-	b.repeats = agent.NewRepeatDetector()
+	b.repeats = agent.NewRepeatDetector(repeatShapes())
 	b.executor = b.repeats.WrapExecutor(b.executor)
 
 	// The directory the session's own paths belong to, read once: shhh never

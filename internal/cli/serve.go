@@ -492,7 +492,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// One detector for the session, on both tiers: the resolver below is
 	// wrapped with this same one, so a command a client has answered for and
 	// a search the chain ran are one history rather than two.
-	repeats := agent.NewRepeatDetector()
+	repeats := agent.NewRepeatDetector(repeatShapes())
 	l.repeats = repeats
 	// The loop's settings, written by the applier the screen's constructor
 	// uses; a served turn recovers its window at every round boundary, which
@@ -608,7 +608,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		// asking. The sentence comes back rather than leading the result: a
 		// notice in front of this one would be a line to skip past before
 		// finding the JSON the answer is read out of (internal/agent/repeat.go).
-		notice := repeats.AskedBefore(json.RawMessage(tc.Arguments))
+		notice := repeats.AskedBefore(tc.Name, json.RawMessage(tc.Arguments))
 		if !l.spendQuestion() {
 			// Nothing is put to the client at all, so nothing is recorded as
 			// put to them: the budget answered this one. A call that asked

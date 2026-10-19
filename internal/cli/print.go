@@ -725,7 +725,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// One detector for the run, because the two tiers are one history: the
 	// approver below is wrapped with this same one, so the command it runs
 	// and the search the chain dispatches are counted in the same window.
-	repeats := agent.NewRepeatDetector()
+	repeats := agent.NewRepeatDetector(repeatShapes())
 	var gate func(llm.ToolCall) bool
 	chat.ApplyLoop(a, headlessLoop(cfg, env, session, ts, opts.rounds(cfg),
 		agent.ToolExecutor(hooks.WrapExecutor(hookPos(a.Rounds),

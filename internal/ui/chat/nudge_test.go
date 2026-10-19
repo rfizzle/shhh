@@ -14,7 +14,7 @@ import (
 func TestAShellReadNamesTheToolThatAnswersItOncePerTurn(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "a.go:3: TODO", 0 })
-	m.wiring.Repeats = agent.NewRepeatDetector()
+	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
 
 	m, first := runOnce(t, m, "grep -rn TODO . | head -5")
 	if !strings.Contains(first, "a.go:3: TODO") || !strings.HasSuffix(first, "\n[built-in: search answers this without an approval: a pattern across the tree or in one file, each match with the lines around it; files_only names only the files, include narrows to one kind of file.]") {

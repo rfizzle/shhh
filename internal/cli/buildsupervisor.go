@@ -409,7 +409,7 @@ func childExecutors(base agent.ToolExecutor, red *evidence.Reducer, ts *lsp.Tool
 	// an auto-run one are the same history. A sub-agent is the least
 	// supervised thing the session runs, and its rounds are spent out of
 	// sight.
-	repeats = agent.NewRepeatDetector()
+	repeats = agent.NewRepeatDetector(repeatShapes())
 	autoExec = repeats.WrapExecutor(autoExec)
 	gatedExec = repeats.WrapExecutor(gatedExec)
 	// An applied edit carries the language server's verdict on the file

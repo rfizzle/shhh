@@ -46,10 +46,6 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/ask"
-	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/structural"
-	"github.com/rfizzle/shhh/internal/tools"
 )
 
 const (
@@ -92,6 +88,7 @@ const (
 // one shape over one place with nothing written between them. The zero value
 // is not usable; call NewRepeatDetector.
 type RepeatDetector struct {
+	shapes Shapes
 	mu     sync.Mutex
 	recent []string
 	// calls is the sweep's window, newest last: what shape each recent call
@@ -120,8 +117,46 @@ type sweepCall struct {
 	wrote bool
 }
 
-func NewRepeatDetector() *RepeatDetector {
+// Shapes is what the detector cannot know about an app's tools: which of them
+// is a question, which one searches a place, and which one writes. The app that
+// registers the tools supplies it, so the detector names none of them. A nil
+// func answers false, which turns that signal off and leaves the others
+// standing; an app that passes the zero Shapes gets the exact repeat on every
+// tool and nothing more.
+type Shapes struct {
+	// Question reports whether a call is a question put to the person, and the
+	// text that identifies it: two askings of one text are one question
+	// whatever the options say or the person answered.
+	Question func(tool string, args json.RawMessage) (text string, ok bool)
+	// SearchScope reports whether a call is one of a sweep's shape, and the
+	// place it was put to.
+	SearchScope func(tool, rawArgs string) (scope string, ok bool)
+	// Wrote reports whether a call changed anything, which ends a sweep.
+	Wrote func(tool, rawArgs string) bool
+}
+
+func (s Shapes) question(tool string, args json.RawMessage) (string, bool) {
+	if s.Question == nil {
+		return "", false
+	}
+	return s.Question(tool, args)
+}
+
+func (s Shapes) searchScope(tool, rawArgs string) (string, bool) {
+	if s.SearchScope == nil {
+		return "", false
+	}
+	return s.SearchScope(tool, rawArgs)
+}
+
+func (s Shapes) wrote(tool, rawArgs string) bool {
+	return s.Wrote != nil && s.Wrote(tool, rawArgs)
+}
+
+// NewRepeatDetector returns a detector that reads its tools through s.
+func NewRepeatDetector(s Shapes) *RepeatDetector {
 	return &RepeatDetector{
+		shapes: s,
 		recent: make([]string, 0, repeatWindow),
 		calls:  make([]sweepCall, 0, sweepWindow),
 		told:   map[string]int{},
@@ -145,9 +180,9 @@ func (d *RepeatDetector) note(tool string, args json.RawMessage, result string) 
 	if d == nil {
 		return 0, sweep{}
 	}
-	key := InteractionKey(tool, args, result)
-	call := sweepCall{wrote: wroteSomething(tool, args)}
-	scope, swept := digest.SearchScope(tool, string(args))
+	key := d.shapes.InteractionKey(tool, args, result)
+	call := sweepCall{wrote: d.shapes.wrote(tool, string(args))}
+	scope, swept := d.shapes.searchScope(tool, string(args))
 	if swept {
 		call.shape = tool + shapeSep + scope
 	}
@@ -230,7 +265,7 @@ func (d *RepeatDetector) Notice(tool string, args json.RawMessage, result string
 	switch {
 	case repeats >= repeatNoticeAfter:
 		failed := strings.HasPrefix(result, errorPrefix)
-		return leadNotice(repeatNotice(tool, repeats, failed), result)
+		return leadNotice(repeatNotice(d.asked(tool, args), tool, repeats, failed), result)
 	case sw.due:
 		return leadNotice(sweepNotice(sw), result)
 	}
@@ -250,14 +285,23 @@ func (d *RepeatDetector) Notice(tool string, args json.RawMessage, result string
 // the sentence where its own result shape has room for it, and every front
 // end of one agent answers a question alike
 // (docs/architecture.md#one-agent-several-front-ends).
-func (d *RepeatDetector) AskedBefore(args json.RawMessage) string {
+func (d *RepeatDetector) AskedBefore(tool string, args json.RawMessage) string {
 	// The result is no part of a question's key, so there is none to pass:
 	// what came back is exactly what two askings of one question are allowed
 	// to disagree about (InteractionKey).
-	if n := d.Note(ask.ToolName, args, ""); n >= repeatNoticeAfter {
+	if n := d.Note(tool, args, ""); n >= repeatNoticeAfter {
 		return askRepeatNotice(n)
 	}
 	return ""
+}
+
+// asked reports whether a call is a question. Safe on a nil detector.
+func (d *RepeatDetector) asked(tool string, args json.RawMessage) bool {
+	if d == nil {
+		return false
+	}
+	_, ok := d.shapes.question(tool, args)
+	return ok
 }
 
 // askRepeatNotice is what a model that has asked one question twice reads.
@@ -351,7 +395,7 @@ func (d *RepeatDetector) WrapExecutor(next ToolExecutor) ToolExecutor {
 			repeats, sw := d.note(name, args, errorPrefix+err.Error())
 			switch {
 			case repeats >= repeatNoticeAfter:
-				return out, fmt.Errorf("%s\n%w", repeatNotice(name, repeats, true), err)
+				return out, fmt.Errorf("%s\n%w", repeatNotice(d.asked(name, args), name, repeats, true), err)
 			case sw.due:
 				// A search that keeps failing over one directory is sweeping
 				// it as surely as one that keeps succeeding, and a run that
@@ -410,8 +454,8 @@ func leadNotice(notice, result string) string {
 // but not the same way out: "widen the search" is advice for an answer that
 // is not the one wanted, and nonsense for a command that will not run or an
 // edit a policy has refused twice.
-func repeatNotice(tool string, n int, failed bool) string {
-	if tool == ask.ToolName {
+func repeatNotice(asked bool, tool string, n int, failed bool) string {
+	if asked {
 		// Neither sentence is true of a question. "It returned exactly this
 		// each time" is what a question is allowed not to do, and "reach the
 		// same end another way" is advice for an act. A surface that wraps
@@ -449,9 +493,9 @@ func repeatNotice(tool string, n int, failed bool) string {
 // exists for. Nothing but the question text is in it either, so a re-ask with
 // the options reworded is caught as well.
 // See docs/capabilities/coding-agent.md#the-model-can-ask.
-func InteractionKey(tool string, args json.RawMessage, result string) string {
-	if tool == ask.ToolName {
-		return tool + "\x00" + ask.QuestionText(args)
+func (s Shapes) InteractionKey(tool string, args json.RawMessage, result string) string {
+	if text, ok := s.question(tool, args); ok {
+		return tool + "\x00" + text
 	}
 	canonical := string(args)
 	var v any
@@ -511,28 +555,3 @@ func sweepNotice(s sweep) string {
 }
 
 const sweepNoticePrefix = "[sweep:"
-
-// wroteSomething reports whether a call changed anything, which is what ends a
-// sweep: a run that has written something is acting on what it found,
-// whatever it searched for before that.
-//
-// The file writes are read the way every surface that keeps no changeset
-// reads them, so a third one of those ends a sweep the day it is registered
-// rather than the day somebody remembers this line. The other two are named
-// because they are registered elsewhere and no shared reading covers them: a
-// command, because shhh cannot know whether a command wrote anything and
-// assumes it did, and the writing half of git, whose four verbs all change
-// the repository. Missing either one would let a run that searched a dozen
-// times, committed, and searched a dozen more be told it had been going in
-// one circle of twenty-four.
-//
-// A question is on neither list and must stay off both: nothing on the
-// machine changed, so a question neither ends a sweep of searches nor starts
-// one, and a run that stopped to ask in the middle of an investigation is
-// still on the same investigation.
-// See docs/interface/principles.md#weight-tracks-risk.
-func wroteSomething(tool string, args json.RawMessage) bool {
-	return tool == tools.ExecCommandName ||
-		tool == structural.GitWriteToolName ||
-		len(tools.WrittenPaths(tool, string(args))) > 0
-}

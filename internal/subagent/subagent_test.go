@@ -2883,7 +2883,7 @@ func TestAReadingOfAChildThatOnlyReadsIsGivenTheSweep(t *testing.T) {
 	env := &scriptedEnv{
 		steps:   append(searchRounds(20), streamStep{text: "surveyed the exporter"}),
 		delay:   3 * time.Millisecond,
-		repeats: agent.NewRepeatDetector(),
+		repeats: agent.NewRepeatDetector(testRepeatShapes()),
 		summarizer: sidejobs.NewSummarizer(reader,
 			sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
 	}

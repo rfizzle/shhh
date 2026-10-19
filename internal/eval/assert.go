@@ -277,6 +277,18 @@ func drawnTool(c call) string {
 	return c.Tool
 }
 
+// loopShapes is the one thing of shhh's tools the loop's key reads: a question
+// is its text alone, so this agrees with the key the session's detector uses
+// (internal/cli/repeatshapes.go).
+var loopShapes = agent.Shapes{
+	Question: func(tool string, args json.RawMessage) (string, bool) {
+		if tool != ask.ToolName {
+			return "", false
+		}
+		return ask.QuestionText(args), true
+	},
+}
+
 // repeats counts the calls that share the loop's own key — the tool, its
 // canonical arguments and a byte-identical result — with an earlier one, and
 // names the tools they were calls of.
@@ -285,7 +297,7 @@ func repeats(calls []call) (int, string) {
 	counts := map[string]int{}
 	n := 0
 	for _, c := range calls {
-		key := agent.InteractionKey(c.Tool, json.RawMessage(c.Arguments), c.Result)
+		key := loopShapes.InteractionKey(c.Tool, json.RawMessage(c.Arguments), c.Result)
 		if seen[key] {
 			n++
 			counts[drawnTool(c)]++
