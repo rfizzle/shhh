@@ -708,6 +708,7 @@ func TestExecuteCalls_ResultCarriesWhatTheToolAttached(t *testing.T) {
 		MediaType: "image/png",
 		Data:      []byte{0x89, 'P', 'N', 'G'},
 	}
+	a.SetResultParts(attachment.TakeResult)
 	a.SetExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		notice := "logo.png is an image"
 		attachment.NoteResult(notice, img)
@@ -759,6 +760,7 @@ func TestExecuteCalls_ImagesSurviveAWholeRoundOfReaders(t *testing.T) {
 	// The repeat detector rewrites a result it has seen before, which is the
 	// wrapper an image has to survive: reading the same picture twice is what
 	// a person asks for when they did not believe the first answer.
+	a.SetResultParts(attachment.TakeResult)
 	a.SetExecutor(NewRepeatDetector(Shapes{}).WrapExecutor(func(ctx context.Context, name string, args json.RawMessage) (string, error) {
 		notice := string(args) + " is an image"
 		attachment.NoteResult(notice, llmattachment.Attachment{

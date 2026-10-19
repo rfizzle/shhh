@@ -14,7 +14,6 @@ import (
 	"github.com/rfizzle/llm"
 	llmattachment "github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/llm/toolvalue"
-	"github.com/rfizzle/shhh/internal/attachment"
 )
 
 // StreamFunc opens a completion stream over a message list. The choice is
@@ -83,8 +82,9 @@ const CancelledResult = "error: cancelled by user"
 // asks it what to do next, so the same Agent can back an interactive TUI or
 // a headless run.
 type Agent struct {
-	stream   StreamFunc
-	executor ToolExecutor
+	resultParts func(result string) []llmattachment.Attachment
+	stream      StreamFunc
+	executor    ToolExecutor
 	// callCancel, when set, is handed each auto-run call's own cancel as the
 	// call starts (SetCallCancel).
 	callCancel CallCancel
@@ -254,6 +254,19 @@ func (a *Agent) SetElidedWording(wording func(bytes int, id string) string) {
 // a front-end opens itself.
 // See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
 func (a *Agent) SetScrub(scrub func(llm.Message) llm.Message) { a.scrub = scrub }
+
+// SetResultParts sets how a tool result's image parts are collected: given the
+// result text, it returns the attachments the tool noted for that result and
+// forgets them. Nil, the default, collects nothing, so a caller that runs tools
+// which attach images must set it or the images are lost without a trace.
+func (a *Agent) SetResultParts(fn func(result string) []llmattachment.Attachment) { a.resultParts = fn }
+
+func (a *Agent) takeParts(result string) []llmattachment.Attachment {
+	if a.resultParts == nil {
+		return nil
+	}
+	return a.resultParts(result)
+}
 
 func (a *Agent) scrubbed(msg llm.Message) llm.Message {
 	if a.scrub == nil {
@@ -570,7 +583,7 @@ func (a *Agent) ExecuteCallsWith(ctx context.Context, calls []llm.ToolCall, seam
 			results[i] = ToolResult{
 				Call:        tc,
 				Result:      result,
-				Attachments: attachment.TakeResult(result),
+				Attachments: a.takeParts(result),
 				Value:       toolvalue.Take(tc.Name, tc.Arguments),
 				Duration:    time.Since(start),
 			}

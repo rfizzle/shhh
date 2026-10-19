@@ -61,6 +61,7 @@ func New(initialMessages []llm.Message, stream StreamFunc, w Wiring) Model {
 	s := components.NewSpinnerModel()
 
 	ag := agent.New(initialMessages, stream)
+	ag.SetResultParts(attachment.TakeResult)
 	m := Model{
 		agent:     ag,
 		wiring:    w,

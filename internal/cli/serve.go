@@ -33,6 +33,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -449,6 +450,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	l.seen.NoteRestoredReads(messages)
 
 	a := agent.New(messages, env.stream)
+	a.SetResultParts(attachment.TakeResult)
 	l.saved.adopt(a)
 	l.agent = a
 

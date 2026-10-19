@@ -8,6 +8,7 @@ import (
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -271,6 +272,7 @@ func roundCap(a *agent.Agent) int {
 // precisely the one that leaves no trace.
 func newChildAgent(env Env, maxRounds int) *agent.Agent {
 	a := agent.New([]llm.Message{{Role: llm.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
+	a.SetResultParts(attachment.TakeResult)
 	a.SetMaxRounds(maxRounds)
 	a.SetSteering(env.Steering)
 	// After the steering, and deliberately: the configured interval is a

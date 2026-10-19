@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -664,6 +665,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	saved, messages, recorder := tail.saved, tail.messages, tail.recorder
 
 	a := agent.New(messages, env.stream)
+	a.SetResultParts(attachment.TakeResult)
 	saved.adopt(a)
 	// Auto mode's judge, where --mode auto asked for one: the same
 	// classifier a session runs, with the one answer this surface cannot
