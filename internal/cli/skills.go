@@ -11,9 +11,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/spf13/cobra"
 )
 

@@ -10,12 +10,12 @@ import (
 	"testing"
 
 	"github.com/rfizzle/agentcore/secret"
+	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/sidejobs"
-	"github.com/rfizzle/shhh/internal/skill"
 )
 
 // wordingsMaster is the master commit the hashes below were captured from.

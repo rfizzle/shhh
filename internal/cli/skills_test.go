@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/skill"
 )
 
 func TestSkillsListing(t *testing.T) {

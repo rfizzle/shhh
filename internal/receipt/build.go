@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -20,7 +21,6 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/reports"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"

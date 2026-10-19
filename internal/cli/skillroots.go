@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/agentcore/skill"
 )
 
 // Where skills are looked for.

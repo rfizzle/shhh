@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )

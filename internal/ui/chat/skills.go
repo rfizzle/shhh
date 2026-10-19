@@ -9,8 +9,8 @@ package chat
 import (
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/skill"
 )
 
 // activateSkill sends a skill's content, with task after it, as the next

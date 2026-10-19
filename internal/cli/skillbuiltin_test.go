@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/agentcore/skill"
 )
 
 // The built-ins parse under the file rules with nothing to warn about, say

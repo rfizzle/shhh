@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/receipt"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )

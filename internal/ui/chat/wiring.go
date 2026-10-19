@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
@@ -38,7 +39,6 @@ import (
 	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/scope"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tree"

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/agentcore/skill"
 )
 
 // The binary's own instructions for this file are held to the structs that

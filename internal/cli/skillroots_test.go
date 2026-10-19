@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/agentcore/skill"
 )
 
 func TestProjectRootsWalkToRepoRoot(t *testing.T) {
