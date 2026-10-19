@@ -175,6 +175,9 @@ type Agent struct {
 	// archive, when set, is where a tool result about to be trimmed is put
 	// so the model can ask for it back. Nil makes every trim permanent.
 	archive func(tool, content string) (id string, ok bool)
+	// elidedWording builds the placeholder naming an archived result's id; nil
+	// is the module default (SetElidedWording).
+	elidedWording func(bytes int, id string) string
 
 	// scrub, when set, rewrites every text that joins the conversation or
 	// leaves it for a provider. Nil leaves text alone.
@@ -230,6 +233,16 @@ func (a *Agent) KeepResults(keep func(content string) bool) { a.keep = keep }
 // See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
 func (a *Agent) StoreElided(archive func(tool, content string) (string, bool)) {
 	a.archive = archive
+}
+
+// SetElidedWording installs the sentence a trim leaves in place of a result
+// the archive kept: it is given the original's size and the id the archive
+// returned. Nil, the default, is the module's own sentence, which says the
+// original is stored under the id and names no tool that reads it; an app
+// with such a tool says so here. The wording must carry the id after
+// "full output stored as evidence ", which Elided reads it back from.
+func (a *Agent) SetElidedWording(wording func(bytes int, id string) string) {
+	a.elidedWording = wording
 }
 
 // SetScrub installs the rewrite every message goes through on the way in

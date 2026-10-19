@@ -2,6 +2,7 @@ package agent
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -289,26 +290,46 @@ func TestEstimateMessageTokens_CountsReasoning(t *testing.T) {
 	}
 }
 
+// The default placeholder names no tool that reads the original back, and an
+// installed wording replaces it; Elided reads the id from either.
+func TestElideResult_WordingIsTheAppsToSet(t *testing.T) {
+	long := strings.Repeat("x", minEvidenceBytes)
+	keep := func(string, string) (string, bool) { return "ev-1", true }
+	if got := ElideResult("t", long, keep, nil); strings.Contains(got, "evidence tool") {
+		t.Fatalf("the default wording names a tool: %q", got)
+	}
+	app := func(n int, id string) string {
+		return "[result elided: " + strconv.Itoa(n) + "; full output stored as evidence " + id + " — ask]"
+	}
+	got := ElideResult("t", long, keep, app)
+	if want := app(len(long), "ev-1"); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	if id, ok := Elided(got); !ok || id != "ev-1" {
+		t.Fatalf("Elided(%q) = %q, %v", got, id, ok)
+	}
+}
+
 // ElideResult is the trim's own choice of placeholder: the one naming the id
 // where the store took a result long enough to keep, the bare one otherwise,
 // and an existing placeholder left as it is.
 func TestElideResult_MakesTheTrimsOffer(t *testing.T) {
 	long := strings.Repeat("x", minEvidenceBytes)
 	keep := func(tool, content string) (string, bool) { return "ev-0123456789abcdef", tool == "read_file" }
-	if got := ElideResult("read_file", long, keep); got != elidedWithEvidence(len(long), "ev-0123456789abcdef") {
+	if got := ElideResult("read_file", long, keep, nil); got != elidedWithEvidence(len(long), "ev-0123456789abcdef") {
 		t.Fatalf("a kept result: %q", got)
 	}
 	for name, got := range map[string]string{
-		"store refused": ElideResult("search", long, keep),
-		"too short":     ElideResult("read_file", "short", keep),
-		"no store":      ElideResult("read_file", long, nil),
+		"store refused": ElideResult("search", long, keep, nil),
+		"too short":     ElideResult("read_file", "short", keep, nil),
+		"no store":      ElideResult("read_file", long, nil, nil),
 	} {
 		if got != ElidedResult {
 			t.Errorf("%s: %q, want the bare placeholder", name, got)
 		}
 	}
 	placed := elidedWithEvidence(9000, "ev-ffffffffffffffff")
-	if got := ElideResult("read_file", placed, keep); got != placed {
+	if got := ElideResult("read_file", placed, keep, nil); got != placed {
 		t.Fatalf("an existing placeholder was replaced: %q", got)
 	}
 }

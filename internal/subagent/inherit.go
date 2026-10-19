@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/evidence"
 )
 
 // SetConversation names where the session's own conversation is read from
@@ -143,7 +144,7 @@ func inheritedPrologue(turns []llm.Message, count int, scrub func(llm.Message) l
 			if name != "" {
 				sb.WriteString(" (" + name + ")")
 			}
-			sb.WriteString(": " + agent.ElideResult(name, m.Content, archive) + "\n\n")
+			sb.WriteString(": " + agent.ElideResult(name, m.Content, archive, evidence.ElidedWording) + "\n\n")
 		}
 	}
 	sb.WriteString("That is the end of your parent's turns. Your own task follows.\n\n")

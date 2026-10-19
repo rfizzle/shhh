@@ -8,6 +8,7 @@ import (
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -294,6 +295,7 @@ func newChildAgent(env Env, maxRounds int) *agent.Agent {
 	}
 	if env.Archive != nil {
 		a.StoreElided(env.Archive)
+		a.SetElidedWording(evidence.ElidedWording)
 	}
 	if env.Scrub != nil {
 		a.SetScrub(env.Scrub)

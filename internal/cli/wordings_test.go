@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 	"github.com/rfizzle/shhh/internal/ask"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/skill"
@@ -106,7 +107,7 @@ func TestModelFacingWordings(t *testing.T) {
 	// through the exported ElideResult with a store that takes the result.
 	archived := agent.ElideResult("shell", string(make([]byte, 2048)), func(tool, content string) (string, bool) {
 		return "ev-0001", true
-	})
+	}, evidence.ElidedWording)
 
 	cases := []struct {
 		name string

@@ -77,15 +77,12 @@ const minEvidenceBytes = 512
 // offer the surface can see and cannot take.
 const elidedEvidenceIn = "full output stored as evidence "
 
-// elidedWithEvidence is the placeholder for a trimmed result the store took.
-// It is worded like the notice a reduction leaves so that the one instruction
-// the toolbox gives about evidence — a notice carrying an id can be paged
-// back with the evidence tool — covers a trimmed result too. A second wording
-// for the same offer would be a second thing the model has to be taught.
+// elidedWithEvidence is the module's default placeholder for a trimmed result
+// the store took: the size and the id, and nothing about what reads it back.
+// An app that has a tool for that says so with SetElidedWording. The clause
+// naming the id (elidedEvidenceIn) stays, because Elided reads the id from it.
 func elidedWithEvidence(size int, id string) string {
-	return fmt.Sprintf(
-		"[result elided: %d bytes; "+elidedEvidenceIn+"%s — retrieve it with the evidence tool (info/read/search)]",
-		size, id)
+	return fmt.Sprintf("[result elided: %d bytes; "+elidedEvidenceIn+"%s]", size, id)
 }
 
 // Elided reports whether content is what a trim left in place of a tool
@@ -105,7 +102,10 @@ func Elided(content string) (id string, elided bool) {
 	if !ok {
 		return "", true
 	}
-	id, _, _ = strings.Cut(named, " ")
+	if end := strings.IndexAny(named, " ]"); end >= 0 {
+		named = named[:end]
+	}
+	id = named
 	return id, true
 }
 
@@ -120,12 +120,18 @@ func Elided(content string) (id string, elided bool) {
 // somewhere other than the window — a child handed its parent's turns —
 // makes the same offer in the same words rather than a second spelling of it.
 // See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
-func ElideResult(tool, content string, archive func(tool, content string) (string, bool)) string {
+//
+// wording builds the placeholder that names an id; nil is the module's
+// default. It must keep the id after elidedEvidenceIn, which Elided reads.
+func ElideResult(tool, content string, archive func(tool, content string) (string, bool), wording func(bytes int, id string) string) string {
 	if strings.HasPrefix(content, elidedPrefix) {
 		return content
 	}
 	if archive != nil && len(content) >= minEvidenceBytes {
 		if id, ok := archive(tool, content); ok {
+			if wording != nil {
+				return wording(len(content), id)
+			}
 			return elidedWithEvidence(len(content), id)
 		}
 	}
@@ -402,7 +408,7 @@ func (a *Agent) TrimOldToolResults(est, threshold, mark int64, cal Calibration) 
 		// trim that failed because the disk did would send the very request
 		// it was called to shrink.
 		// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
-		if placeholder = ElideResult(called[msg.ToolCallID], msg.Content, a.archive); placeholder != ElidedResult {
+		if placeholder = ElideResult(called[msg.ToolCallID], msg.Content, a.archive, a.elidedWording); placeholder != ElidedResult {
 			saved = cal.Apply(EstimateTokens(msg.Content) - EstimateTokens(placeholder))
 		}
 		// What rode on the result goes with it. An image a reader attached

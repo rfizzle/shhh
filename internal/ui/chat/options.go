@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -221,6 +222,7 @@ func ApplyLoop(a *agent.Agent, w Wiring) {
 		a.SetScrub(w.Secrets.Scrub)
 	}
 	a.StoreElided(w.Evidence.Keep)
+	a.SetElidedWording(evidence.ElidedWording)
 	if w.Skills != nil {
 		// Activated skill content is exempted from context trimming: the
 		// instructions are guidance for every later turn, and a trimmed skill

@@ -293,3 +293,13 @@ func formatBytes(n int64) string {
 	}
 	return fmt.Sprintf("%d B", n)
 }
+
+// ElidedWording is the placeholder a trim leaves for a result it archived
+// under id: the loop's own sentence plus the clause naming the tool that pages
+// the original back. Every agent shhh builds installs it with SetElidedWording,
+// and the inherited prologue uses it directly.
+func ElidedWording(bytes int, id string) string {
+	return fmt.Sprintf(
+		"[result elided: %d bytes; full output stored as evidence %s — retrieve it with the evidence tool (info/read/search)]",
+		bytes, id)
+}
