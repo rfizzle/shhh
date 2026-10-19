@@ -9,6 +9,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -21,15 +22,35 @@ import (
 // one record per process, kept by the tools that do the showing — so it is
 // wired here, where both front-ends build their reading from one answer
 // rather than two that can drift apart.
-func treeCheck(cfg config.Config) *agent.TreeCheck {
+func treeCheck(cfg config.Config) *tree.TreeCheck {
 	if !cfg.TreeCheckEnabled() {
 		return nil
 	}
-	return &agent.TreeCheck{
+	return &tree.TreeCheck{
 		Dir:         ".",
 		IsCommand:   func(name string) bool { return name == tools.ExecCommandName },
 		ReadChanged: tools.SeenChanged,
 		Log:         func(msg string) { logs.Logger().Warn(msg) },
+	}
+}
+
+// watchTree turns the tree reading on for a headless run and returns the
+// boundary hook that asks it, which the run's Headless is given. Each notice
+// is told to told, and its message joins the run's conversation as the hook
+// returns. The reading is off, and the hook nil, where c is nil.
+func watchTree(a *agent.Agent, c *tree.TreeCheck, told func(tree.TreeNotice)) func(turnStart bool) (string, bool) {
+	if c == nil {
+		return nil
+	}
+	t := tree.New(*c)
+	a.SetCallObserver(t.NoteCalls)
+	return func(turnStart bool) (string, bool) {
+		n, ok := t.Next(turnStart)
+		if !ok {
+			return "", false
+		}
+		told(n)
+		return n.Message, true
 	}
 }
 

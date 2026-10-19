@@ -12,11 +12,11 @@ import (
 	"testing"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
@@ -265,7 +265,7 @@ func TestReadSibling_WithoutAStoreNobodyElseIsHere(t *testing.T) {
 	if withSibling(nil, sib) != nil {
 		t.Fatal("a tree reading that is off stays off")
 	}
-	c := withSibling(&agent.TreeCheck{Dir: "."}, sib)
+	c := withSibling(&tree.TreeCheck{Dir: "."}, sib)
 	if c.Sibling != nil {
 		t.Fatal("a reading with no store should hand the tree no answer to ask for")
 	}
@@ -278,7 +278,7 @@ func TestReadSibling_HandsTheTreeReadingTheLiveHalf(t *testing.T) {
 	}
 	defer db.Close()
 
-	c := withSibling(&agent.TreeCheck{Dir: "."}, readSibling(db))
+	c := withSibling(&tree.TreeCheck{Dir: "."}, readSibling(db))
 	if c.Sibling == nil {
 		t.Fatal("the tree reading was handed no way to ask")
 	}

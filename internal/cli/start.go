@@ -32,6 +32,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
@@ -78,7 +79,7 @@ func (s sessionSibling) live() bool {
 // withSibling hands the tree reading the question, so the block that says
 // the tree moved can name the likeliest author. Neither a reading that is
 // off nor a session with nothing to ask gains a clause.
-func withSibling(c *agent.TreeCheck, sib sessionSibling) *agent.TreeCheck {
+func withSibling(c *tree.TreeCheck, sib sessionSibling) *tree.TreeCheck {
 	if c == nil || sib.read == nil {
 		return c
 	}
@@ -89,7 +90,7 @@ func withSibling(c *agent.TreeCheck, sib sessionSibling) *agent.TreeCheck {
 // withCheckout hands the tree reading the checkout the session opened on, so
 // its root and its first baseline are that reading's rather than a second
 // call's. A reading that is off gains nothing.
-func withCheckout(c *agent.TreeCheck, opened project.Checkout) *agent.TreeCheck {
+func withCheckout(c *tree.TreeCheck, opened project.Checkout) *tree.TreeCheck {
 	if c == nil {
 		return c
 	}

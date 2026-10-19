@@ -91,7 +91,7 @@ func (m *Model) roundTail() agent.RoundTail {
 		// a boundary with nothing on the screen rather than going out
 		// unseen behind a card or a supporting screen (progress.go).
 		HoldProgress: func() bool { return m.state.isSurface() },
-		OnTree:       m.showTreeNotice,
+		Boundary:     m.treeBoundary,
 		OnIntervene:  m.showIntervention,
 	}
 }

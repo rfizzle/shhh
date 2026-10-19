@@ -48,6 +48,7 @@ import (
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/spf13/cobra"
 )
@@ -697,14 +698,15 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	}
 	resolveCall = own.wrap(resolveCall)
 	resolveCall = unattendedHooks(hooks, l.hookPos, hookNoteLine, record, tail.refusal, procSup, resolveCall)
-	if c := headlessTree(cfg, session.sibling, own); c != nil {
+	treeCfg := headlessTree(cfg, session.sibling, own)
+	if treeCfg != nil {
 		// The boundary re-check asks the same question the write asks, so it
 		// has to ask it of the same record: read from the process-wide one it
 		// would name every file some other session had been shown and none of
 		// this session's own.
-		c.ReadChanged = l.seen.SeenChanged
-		a.SetTreeCheck(*c)
+		treeCfg.ReadChanged = l.seen.SeenChanged
 	}
+	treeBoundary := watchTree(a, treeCfg, func(n tree.TreeNotice) { l.obs.tree(n) })
 	// The same record is the one a search names a file in, for the turn
 	// that asked it.
 	a.SetTurnStart(func() {
@@ -732,7 +734,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		OnIntervene:  l.obs.intervene,
 		OnWithheld:   l.obs.withheld,
 		OnCompact:    l.obs.compact,
-		OnTree:       l.obs.tree,
+		Boundary:     treeBoundary,
 		OnRetry:      l.obs.retry,
 		OnToolResult: l.obs.toolResult,
 		OnUsage: func(*llm.Usage) {

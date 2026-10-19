@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/tree"
 )
 
 // The reading — what moved, and what to say — is the agent's and is tested
@@ -51,7 +51,7 @@ func TestTree_ANoticeReachesTheConversationAndTheTranscript(t *testing.T) {
 	var signals []string
 	m := gatedModelWith(t, nil, nil, Wiring{
 		Changeset: changeset.New(changeset.DefaultMaxBytes),
-		TreeCheck: &agent.TreeCheck{Dir: ws},
+		TreeCheck: &tree.TreeCheck{Dir: ws},
 	})
 	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) { signals = append(signals, code+":"+reason) }}
 	m = advanceRounds(m, 2)
@@ -82,7 +82,7 @@ func TestTree_TheChangesetIsTheSubtrahend(t *testing.T) {
 	store := changeset.New(changeset.DefaultMaxBytes)
 	m := gatedModelWith(t, nil, nil, Wiring{
 		Changeset: store,
-		TreeCheck: &agent.TreeCheck{Dir: ws},
+		TreeCheck: &tree.TreeCheck{Dir: ws},
 	})
 
 	mine := filepath.Join(ws, "mine.txt")
@@ -112,7 +112,7 @@ func TestTree_TheInstructionFilesAreFoundWithoutBeingNamed(t *testing.T) {
 
 	m := gatedModelWith(t, nil, nil, Wiring{
 		Changeset: changeset.New(changeset.DefaultMaxBytes),
-		TreeCheck: &agent.TreeCheck{Dir: ws},
+		TreeCheck: &tree.TreeCheck{Dir: ws},
 	})
 
 	if err := os.WriteFile(agents, []byte("the new rule\n"), 0o644); err != nil {
@@ -127,7 +127,7 @@ func TestTree_TheInstructionFilesAreFoundWithoutBeingNamed(t *testing.T) {
 
 func TestTree_NilLeavesTheReadingOff(t *testing.T) {
 	m := gatedModelWith(t, nil, nil, Wiring{})
-	if m.agent.TreeChecking() {
+	if m.watch != nil && m.watch.Checking() {
 		t.Fatal("nil is off")
 	}
 }

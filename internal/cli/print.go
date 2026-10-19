@@ -38,6 +38,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
@@ -251,7 +252,7 @@ func maxRoundsFor(cfg config.Config, flag int, set bool) int {
 // two came to differ once already — the session's block named the likeliest
 // author of a change it had not made and the run's did not, which is backwards,
 // since the run is the one with nobody in front of it to work that out.
-func headlessTree(cfg config.Config, sib sessionSibling, own *writtenByCalls) *agent.TreeCheck {
+func headlessTree(cfg config.Config, sib sessionSibling, own *writtenByCalls) *tree.TreeCheck {
 	c := withSibling(treeCheck(cfg), sib)
 	if c == nil {
 		return nil
@@ -850,9 +851,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// registered is not a call, so it is not a hook's event and not a path
 	// this run wrote either.
 	resolve = onlyRegistered(session.toolDefs, resolve)
-	if c := headlessTree(cfg, session.sibling, own); c != nil {
-		a.SetTreeCheck(*c)
-	}
+	treeBoundary := watchTree(a, headlessTree(cfg, session.sibling, own), func(n tree.TreeNotice) {
+		fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
+		obs.tree(n)
+	})
 	// A run's reads and searches are filed in the process's record, and a
 	// search names a file for the turn that asked it.
 	a.SetTurnStart(tools.NewTurn)
@@ -882,12 +884,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
 			obs.compact(n)
 		},
-		Gate:    gate,
-		Resolve: resolve,
-		OnTree: func(n agent.TreeNotice) {
-			fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
-			obs.tree(n)
-		},
+		Gate:     gate,
+		Resolve:  resolve,
+		Boundary: treeBoundary,
 		OnToolCall: func(tc llm.ToolCall) {
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
 			obs.call(tc)

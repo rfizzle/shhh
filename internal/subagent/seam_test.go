@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 )
 
 // A surface's seams reach both of a child's dispatchers — the calls it runs
@@ -180,8 +181,8 @@ func TestAChildsTreeReadingSubtractsItsOwnWrites(t *testing.T) {
 
 	c := &child{root: ws}
 	a := agent.New(nil, nil)
-	c.watchTree(a, Env{TreeCheck: &agent.TreeCheck{Dir: ws}})
-	if !a.TreeChecking() {
+	c.watchTree(a, Env{TreeCheck: &tree.TreeCheck{Dir: ws}})
+	if !c.watch.Checking() {
 		t.Fatal("the surface asked for a reading and the child took none")
 	}
 
@@ -195,7 +196,7 @@ func TestAChildsTreeReadingSubtractsItsOwnWrites(t *testing.T) {
 	c.noteWrite(llm.ToolCall{Name: tools.WriteFileName,
 		Arguments: `{"path":"mine.txt","content":"the child\n"}`}, "wrote mine.txt")
 
-	n, ok := a.NextTreeNotice(false)
+	n, ok := c.watch.Next(false)
 	if !ok {
 		t.Fatal("a changed tree told the child nothing")
 	}
@@ -214,7 +215,7 @@ func TestAChildWithoutATreeReadingTakesNone(t *testing.T) {
 	c := &child{root: t.TempDir()}
 	a := agent.New(nil, nil)
 	c.watchTree(a, Env{})
-	if a.TreeChecking() {
+	if c.watch != nil {
 		t.Fatal("a child took a reading nobody asked for")
 	}
 }

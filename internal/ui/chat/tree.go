@@ -2,8 +2,8 @@ package chat
 
 // Delivering the tree reading.
 //
-// Whether the tree moved, and what to say about it, is agent.NextTreeNotice,
-// shared with every headless run (internal/agent/tree.go). What a session
+// Whether the tree moved, and what to say about it, is tree.Tree.Next,
+// shared with every headless run (internal/tree/tree.go). What a session
 // adds is the subtrahend and the showing: the changeset is the record of what
 // this session wrote, so it is what the reading subtracts, and the reader is
 // told what their agent was told.
@@ -11,10 +11,10 @@ package chat
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/tree"
 )
 
 // instructionFiles is the project's own instruction files, found the way the
@@ -66,17 +66,30 @@ func writtenPaths(store *changeset.Store) []string {
 // tool rounds is the round tail's (agent.RoundTail). The notice never touches
 // the round counter: it is a fact, not a message from the person.
 func (m *Model) injectTreeNotice() {
-	n, ok := m.agent.NextTreeNotice(true)
-	if !ok {
-		return
+	if msg, ok := m.treeBoundary(true); ok {
+		m.agent.AppendMachine(msg)
 	}
-	m.agent.AppendMachine(n.Message)
+}
+
+// treeBoundary asks the tree reading at a boundary and shows the notice it
+// gives, which is why the message is handed back to be appended rather than
+// appended here: the driver that asked owns the conversation. Without a
+// reading it has nothing to say.
+func (m *Model) treeBoundary(turnStart bool) (string, bool) {
+	if m.watch == nil {
+		return "", false
+	}
+	n, ok := m.watch.Next(turnStart)
+	if !ok {
+		return "", false
+	}
 	m.showTreeNotice(n)
+	return n.Message, true
 }
 
 // showTreeNotice puts a tree notice the conversation has just been given on
 // the screen.
-func (m *Model) showTreeNotice(n agent.TreeNotice) {
+func (m *Model) showTreeNotice(n tree.TreeNotice) {
 	e := entry{kind: entrySystem, text: n.Notice}
 	if !n.Unavailable {
 		e.tree = &treeMove{said: strings.TrimPrefix(n.Notice, treeMovedLead)}

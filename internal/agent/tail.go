@@ -64,7 +64,12 @@ type RoundTail struct {
 	// boundary. Nil never defers.
 	HoldProgress func() bool
 
-	OnTree      func(TreeNotice)
+	// Boundary, when set, is asked at this boundary whether the driver owes
+	// the conversation a message, and the message is appended through
+	// AppendMachine when it does: the tree reading's notice. A driver with
+	// nothing to say at a boundary leaves it nil.
+	Boundary func(turnStart bool) (message string, ok bool)
+
 	OnIntervene func(Intervention)
 	OnSummary   func(sidejobs.SummaryVerdict)
 	OnWithheld  func(reason string)
@@ -105,10 +110,9 @@ func (t RoundTail) Next() (Step, <-chan struct{}) {
 
 	// The tree first, then the question: a check-in asked against a tree
 	// the turn has not been told about is answered against the wrong one.
-	if n, ok := t.Agent.NextTreeNotice(false); ok {
-		t.Agent.AppendMachine(n.Message)
-		if t.OnTree != nil {
-			t.OnTree(n)
+	if t.Boundary != nil {
+		if msg, ok := t.Boundary(false); ok {
+			t.Agent.AppendMachine(msg)
 		}
 	}
 

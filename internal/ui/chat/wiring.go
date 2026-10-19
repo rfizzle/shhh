@@ -40,6 +40,7 @@ import (
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -208,7 +209,7 @@ type Wiring struct {
 	// TreeCheck turns the moved-tree reading on; nil leaves it off. Its Own
 	// is filled from the session's changeset when left unset, and its
 	// Instructions from the same walk the prompt made.
-	TreeCheck *agent.TreeCheck
+	TreeCheck *tree.TreeCheck
 	// Runner enables /run; TailRunner runs assistant commands and /run with a
 	// live tail, and without one they run with none.
 	Runner     RunFunc

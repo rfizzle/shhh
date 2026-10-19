@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
+	"github.com/rfizzle/shhh/internal/tree"
 )
 
 // run drives one child to completion on its own goroutine. It owns what
@@ -560,17 +561,17 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 		OnWithheld: func(reason string) {
 			signal(observe.SignalIntervene, reason)
 		},
-		// The workspace moved under the child. The message has already
-		// joined its conversation by the time this is called; the row is so
-		// that a parent attaching to the lane can see why the child went
-		// back and re-read a file it had already read.
-		OnTree: func(n agent.TreeNotice) {
+		// The workspace moved under the child. The message joins its
+		// conversation as this returns; the row is so that a parent
+		// attaching to the lane can see why the child went back and re-read
+		// a file it had already read.
+		Boundary: c.treeBoundary(func(n tree.TreeNotice) {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: n.Notice})
 			if !n.Unavailable {
 				signal(observe.SignalTree, n.Signal())
 			}
 			s.emitUpdate(c)
-		},
+		}),
 		Gate:    func(tc llm.ToolCall) bool { return c.env.Gated[tc.Name] },
 		Resolve: resolve,
 		Steer: func() []string {

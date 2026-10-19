@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/tree"
 )
 
 // A command that broke is answered by the suite the turn runs after it: the
@@ -83,7 +84,7 @@ func TestProgram_TheTreeMovingUnderASessionIsANotice(t *testing.T) {
 	ws := treeRepo(t)
 	tm := runProgram(t, readingSessionWith(ws, Wiring{
 		Changeset: changeset.New(changeset.DefaultMaxBytes),
-		TreeCheck: &agent.TreeCheck{Dir: ws},
+		TreeCheck: &tree.TreeCheck{Dir: ws},
 	},
 		programTurn{text: "The build is clean."},
 		programTurn{calls: reads("a.txt")},

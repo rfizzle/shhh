@@ -5673,7 +5673,7 @@ func TestGolden_TranscriptGrid(t *testing.T) {
 // TestGolden_TreeMoved captures the row the tree reading draws in the feed:
 // the count of what somebody else moved, and the same reading where the
 // checkout's own ignore rules suppressed the rest of the movement. The two
-// strings are the ones internal/agent/tree.go builds, pinned there by its own
+// strings are the ones internal/tree/tree.go builds, pinned there by its own
 // tests; what this file holds is what they look like in the transcript, a row
 // after the command whose cache the second one is not counting.
 func TestGolden_TreeMoved(t *testing.T) {

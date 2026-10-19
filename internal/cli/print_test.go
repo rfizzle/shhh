@@ -17,6 +17,7 @@ import (
 
 	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/tree"
 
 	"net/http"
 
@@ -2043,12 +2044,11 @@ func TestHeadlessTree_CarriesTheSiblingClause(t *testing.T) {
 	// itself would have been given.
 	c.Dir = ws
 
-	a := agent.New(nil, nil)
-	a.SetTreeCheck(*c)
+	a := tree.New(*c)
 	if err := os.WriteFile(filepath.Join(ws, "b.txt"), []byte("somebody else\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("a changed tree told the run nothing")
 	}
@@ -2083,8 +2083,7 @@ func TestHeadlessTree_AFileTheRunReadThatMovedIsNamedAtTheBoundary(t *testing.T)
 	if _, err := tools.Execute(context.Background(), tools.ReadFileName, args); err != nil {
 		t.Fatalf("read: %v", err)
 	}
-	a := agent.New(nil, nil)
-	a.SetTreeCheck(*c)
+	a := tree.New(*c)
 	// Rewritten in place at the same moment the run was working, which is a
 	// sibling session or a sub-agent and never this run: nothing here wrote
 	// it, so it is not in the subtrahend.
@@ -2092,7 +2091,7 @@ func TestHeadlessTree_AFileTheRunReadThatMovedIsNamedAtTheBoundary(t *testing.T)
 		t.Fatal(err)
 	}
 
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("a file the run had read moved and the run was told nothing")
 	}

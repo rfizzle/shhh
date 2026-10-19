@@ -50,7 +50,7 @@ const (
 // ResumeNotice is what a reopened conversation starts with, ready to deliver:
 // the messages that go in front of the restored transcript, the one line the
 // surface shows for them, and that line's expansion. It is the tree reading's
-// shape (internal/agent/tree.go) for the same reason — what the model is told
+// shape (internal/tree/tree.go) for the same reason — what the model is told
 // and what the reader is shown are two renderings of one finding, and a
 // surface that built the second from the first would be paraphrasing it.
 type ResumeNotice struct {

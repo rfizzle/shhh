@@ -183,9 +183,9 @@ type Agent struct {
 	// leaves it for a provider. Nil leaves text alone.
 	scrub func(msg llm.Message) llm.Message
 
-	// tree, when set, is the reading that tells a turn the working tree
-	// moved under it (tree.go). Nil reads nothing.
-	tree *treeState
+	// callObserver, when set, is told the calls of each round as the round
+	// begins. Nil tells nobody.
+	callObserver func(calls []llm.ToolCall)
 }
 
 func New(initial []llm.Message, stream StreamFunc) *Agent {
@@ -208,6 +208,11 @@ type CallCancel func(ctx context.Context, tc llm.ToolCall, cancel context.Cancel
 // SetCallCancel installs the per-call cancel seam. Nil, the default, hands
 // the cancels to nobody, and only the round's context stops a call.
 func (a *Agent) SetCallCancel(fn CallCancel) { a.callCancel = fn }
+
+// SetCallObserver installs what is told the calls of each round as the round
+// begins: the tree reading counts the ones that may write anywhere. Nil, the
+// default, tells nobody.
+func (a *Agent) SetCallObserver(fn func(calls []llm.ToolCall)) { a.callObserver = fn }
 
 // SetTurnStart installs what is told that a turn has begun: the tools' read
 // record, whose search results are evidence for the turn that asked them and
@@ -498,7 +503,9 @@ func (a *Agent) BeginToolRound(text string, calls []llm.ToolCall, gate ApprovalG
 		Checkpoint: answered,
 	})
 	a.reasoning = nil
-	a.noteTreeCalls(calls)
+	if a.callObserver != nil {
+		a.callObserver(calls)
+	}
 	a.progress.calls += len(calls)
 	for _, tc := range calls {
 		if gate != nil && gate(tc) {

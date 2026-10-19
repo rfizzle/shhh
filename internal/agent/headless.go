@@ -113,9 +113,11 @@ type Headless struct {
 	// may be nil.
 	OnWithheld func(reason string)
 
-	// OnTree, when set, is told each time the run was told the tree moved
-	// (tree.go), for the same reason. It may be nil.
-	OnTree func(n TreeNotice)
+	// Boundary, when set, is asked at each turn's start and between rounds
+	// whether the run is owed a message — the tree reading's notice — and
+	// the message joins the conversation through AppendMachine. It may be
+	// nil.
+	Boundary func(turnStart bool) (message string, ok bool)
 
 	// OnSummary, when set, is told each reading that lands, before the
 	// policy is offered it. Every reading arrives here and not only the ones
@@ -607,7 +609,7 @@ func (h *Headless) tail() RoundTail {
 		Steer:       h.steer,
 		Target:      h.summaryTarget,
 		Summary:     h.Summary,
-		OnTree:      h.OnTree,
+		Boundary:    h.Boundary,
 		OnIntervene: h.OnIntervene,
 		OnSummary:   h.OnSummary,
 		OnWithheld:  h.OnWithheld,
@@ -797,13 +799,11 @@ func (h *Headless) closeFeedback(final string) string {
 // deliverTree appends the tree notice a turn's start owes, if any, and shows
 // it. The notice between rounds is the round tail's (tail.go).
 func (h *Headless) deliverTree() {
-	n, ok := h.Agent.NextTreeNotice(true)
-	if !ok {
+	if h.Boundary == nil {
 		return
 	}
-	h.Agent.AppendMachine(n.Message)
-	if h.OnTree != nil {
-		h.OnTree(n)
+	if msg, ok := h.Boundary(true); ok {
+		h.Agent.AppendMachine(msg)
 	}
 }
 

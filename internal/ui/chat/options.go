@@ -28,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -262,7 +263,8 @@ func (m *Model) applyLoop() {
 		if cfg.Instructions == nil {
 			cfg.Instructions = instructionFiles(cfg.Dir)
 		}
-		a.SetTreeCheck(cfg)
+		m.watch = tree.New(cfg)
+		a.SetCallObserver(m.watch.NoteCalls)
 	}
 }
 

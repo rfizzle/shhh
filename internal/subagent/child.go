@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 )
 
 // child is one sub-agent: an internal/agent instance plus its runtime and
@@ -47,6 +48,9 @@ type child struct {
 	worktree string   // worktree top dir; "" for researchers
 	repoTop  string   // parent repo toplevel; "" for researchers
 	seeded   int      // parent paths the worktree was started from
+	// watch is this attempt's tree reading, nil where the surface asked for
+	// none (watchTree). The attempt's Headless asks it at each boundary.
+	watch *tree.Tree
 	// maxRounds is the per-turn round cap the next agent built for this
 	// child is given. It is the child's own field rather than a reading of
 	// the agent because there is not always an agent to ask: a writer's is
@@ -716,5 +720,23 @@ func (c *child) watchTree(a *agent.Agent, env Env) {
 	}
 	cfg := *env.TreeCheck
 	cfg.Own = c.ownPaths
-	a.SetTreeCheck(cfg)
+	c.watch = tree.New(cfg)
+	a.SetCallObserver(c.watch.NoteCalls)
+}
+
+// treeBoundary is the boundary hook that asks this attempt's tree reading and
+// tells told each notice it gives, or nil where the attempt has no reading.
+func (c *child) treeBoundary(told func(tree.TreeNotice)) func(turnStart bool) (string, bool) {
+	t := c.watch
+	if t == nil {
+		return nil
+	}
+	return func(turnStart bool) (string, bool) {
+		n, ok := t.Next(turnStart)
+		if !ok {
+			return "", false
+		}
+		told(n)
+		return n.Message, true
+	}
 }

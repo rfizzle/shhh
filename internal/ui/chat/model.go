@@ -28,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -834,6 +835,10 @@ type Model struct {
 	// agent owns the loop state (message list, tool dispatch, approval
 	// queue, iteration guard); the Model is one front-end driving it.
 	agent *agent.Agent
+	// watch is the tree reading that tells a turn the working tree moved
+	// under it (tree.go), asked at the turn's start and between rounds. Nil
+	// where the wiring asked for none.
+	watch *tree.Tree
 	// backend is what the screen reaches the stream through (backend.go):
 	// over agent today, and the thing a session in another process would
 	// stand behind.

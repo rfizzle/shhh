@@ -1,4 +1,4 @@
-package agent
+package tree
 
 import (
 	"os"
@@ -52,15 +52,14 @@ func write(t *testing.T, ws, rel, content string) string {
 	return p
 }
 
-func treeAgent(t *testing.T, ws string, own func() []string) *Agent {
+func treeAgent(t *testing.T, ws string, own func() []string) *Tree {
 	t.Helper()
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{
+	a := New(TreeCheck{
 		Dir:       ws,
 		Own:       own,
 		IsCommand: func(name string) bool { return name == "execute_command" },
 	})
-	if !a.TreeChecking() {
+	if !a.Checking() {
 		t.Fatal("the reading should be on inside a repository")
 	}
 	return a
@@ -69,12 +68,12 @@ func treeAgent(t *testing.T, ws string, own func() []string) *Agent {
 func TestTree_AForeignWriteIsReported(t *testing.T) {
 	ws, _ := treeFixture(t)
 	a := treeAgent(t, ws, nil)
-	if _, ok := a.NextTreeNotice(false); ok {
+	if _, ok := a.Next(false); ok {
 		t.Fatal("an unchanged tree owes nothing")
 	}
 
 	write(t, ws, "b.txt", "new\n")
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("a path written by somebody else should be reported")
 	}
@@ -91,7 +90,7 @@ func TestTree_AForeignWriteIsReported(t *testing.T) {
 		t.Errorf("notice fields: %+v", n)
 	}
 	// The snapshot moved with the report: the same change is not reported twice.
-	if _, ok := a.NextTreeNotice(false); ok {
+	if _, ok := a.Next(false); ok {
 		t.Fatal("a change already reported should not be reported again")
 	}
 }
@@ -106,13 +105,13 @@ func TestTree_RestartTakesTheBaselineAgain(t *testing.T) {
 	// not, is where the next conversation starts from.
 	write(t, ws, "b.txt", "new\n")
 
-	a.RestartTreeCheck()
+	a.Restart()
 
-	if n, ok := a.NextTreeNotice(true); ok {
+	if n, ok := a.Next(true); ok {
 		t.Fatalf("the tree as it stands is the new session's starting point, got:\n%s", n.Message)
 	}
 	write(t, ws, "c.txt", "later\n")
-	if _, ok := a.NextTreeNotice(true); !ok {
+	if _, ok := a.Next(true); !ok {
 		t.Fatal("a change after the new baseline is still reported")
 	}
 }
@@ -129,19 +128,18 @@ func TestTree_TheOpeningReadingIsTheBaselineOnce(t *testing.T) {
 	}
 	write(t, ws, "b.txt", "after the opening\n")
 
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: ws, Checkout: &opened})
-	if !a.TreeChecking() {
+	a := New(TreeCheck{Dir: ws, Checkout: &opened})
+	if !a.Checking() {
 		t.Fatal("the reading should be on in the checkout the session read")
 	}
-	n, ok := a.NextTreeNotice(true)
+	n, ok := a.Next(true)
 	if !ok || !strings.Contains(n.Message, "b.txt") {
 		t.Fatalf("a path written after the opening reading is reported, got ok=%v:\n%s", ok, n.Message)
 	}
 
 	write(t, ws, "c.txt", "before the restart\n")
-	a.RestartTreeCheck()
-	if n, ok := a.NextTreeNotice(true); ok {
+	a.Restart()
+	if n, ok := a.Next(true); ok {
 		t.Fatalf("a restart reads the tree as it stands, not the opening's reading, got:\n%s", n.Message)
 	}
 }
@@ -149,19 +147,18 @@ func TestTree_TheOpeningReadingIsTheBaselineOnce(t *testing.T) {
 // A reading handed over from outside a work tree leaves the reading off, the
 // way asking git there would.
 func TestTree_AnOpeningOutsideARepositoryLeavesTheReadingOff(t *testing.T) {
-	a := New(nil, nil)
 	outside := project.ReadCheckout(t.TempDir())
-	a.SetTreeCheck(TreeCheck{Dir: ".", Checkout: &outside})
-	if a.TreeChecking() {
+	a := New(TreeCheck{Dir: ".", Checkout: &outside})
+	if a.Checking() {
 		t.Fatal("no repository in the opening's reading, no reading")
 	}
 }
 
 // A reading that is off has no baseline to take.
 func TestTree_RestartOnASessionWithoutTheReading(t *testing.T) {
-	a := New(nil, nil)
-	a.RestartTreeCheck()
-	if a.TreeChecking() {
+	a := New(TreeCheck{Dir: t.TempDir()})
+	a.Restart()
+	if a.Checking() {
 		t.Fatal("restarting must not turn the reading on")
 	}
 }
@@ -173,7 +170,7 @@ func TestTree_TheSessionsOwnEditIsSubtracted(t *testing.T) {
 	// Written after the baseline was taken, so it is a change — but the
 	// session's own.
 	write(t, ws, "mine.txt", "mine again\n")
-	if n, ok := a.NextTreeNotice(false); ok {
+	if n, ok := a.Next(false); ok {
 		t.Fatalf("the session's own edit should not be reported, got:\n%s", n.Message)
 	}
 }
@@ -184,7 +181,7 @@ func TestTree_ANewDirectoryOfTheSessionsOwnIsSubtracted(t *testing.T) {
 	write(t, ws, "pkg/new.go", "package pkg\n")
 	// git collapses an untracked directory to `pkg/`; the file under it is
 	// the session's.
-	if n, ok := a.NextTreeNotice(false); ok {
+	if n, ok := a.Next(false); ok {
 		t.Fatalf("a directory holding only the session's own file should not be reported, got:\n%s", n.Message)
 	}
 }
@@ -192,10 +189,10 @@ func TestTree_ANewDirectoryOfTheSessionsOwnIsSubtracted(t *testing.T) {
 func TestTree_ACommandChangesTheAttribution(t *testing.T) {
 	ws, _ := treeFixture(t)
 	a := treeAgent(t, ws, nil)
-	a.BeginToolRound("", []llm.ToolCall{{ID: "c1", Name: "execute_command", Arguments: `{"command":"touch x"}`}}, nil)
+	a.NoteCalls([]llm.ToolCall{{ID: "c1", Name: "execute_command", Arguments: `{"command":"touch x"}`}})
 	write(t, ws, "x", "")
 
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("a change after a command is still reported")
 	}
@@ -207,7 +204,7 @@ func TestTree_ACommandChangesTheAttribution(t *testing.T) {
 	}
 	// The count is consumed with the snapshot.
 	write(t, ws, "y", "")
-	if n, _ := a.NextTreeNotice(false); n.Commands != 0 || !strings.Contains(n.Message, "outside this session") {
+	if n, _ := a.Next(false); n.Commands != 0 || !strings.Contains(n.Message, "outside this session") {
 		t.Errorf("a later change with no command between is somebody else's again, got:\n%s", n.Message)
 	}
 }
@@ -219,7 +216,7 @@ func TestTree_HeadAndBranchMovesAreReported(t *testing.T) {
 	write(t, ws, "a.txt", "changed\n")
 	git("commit", "-q", "-am", "move")
 
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("a moved head should be reported")
 	}
@@ -241,19 +238,18 @@ func TestTree_DetachedHeadIsNamed(t *testing.T) {
 	ws, git := treeFixture(t)
 	a := treeAgent(t, ws, nil)
 	git("checkout", "-q", "--detach")
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok || !strings.Contains(n.Message, "branch main → (detached)") {
 		t.Errorf("detaching is a branch move, got ok=%v:\n%s", ok, n.Message)
 	}
 }
 
 func TestTree_OutsideARepositoryTheReadingIsOff(t *testing.T) {
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: t.TempDir()})
-	if a.TreeChecking() {
+	a := New(TreeCheck{Dir: t.TempDir()})
+	if a.Checking() {
 		t.Fatal("no repository, no reading")
 	}
-	if _, ok := a.NextTreeNotice(true); ok {
+	if _, ok := a.Next(true); ok {
 		t.Fatal("an agent without the reading owes nothing")
 	}
 }
@@ -262,7 +258,7 @@ func TestTree_TheToolsOwnStateIsNotAChange(t *testing.T) {
 	ws, _ := treeFixture(t)
 	a := treeAgent(t, ws, nil)
 	write(t, ws, ".shhh/todo/.run/x.json", "{}")
-	if n, ok := a.NextTreeNotice(false); ok {
+	if n, ok := a.Next(false); ok {
 		t.Fatalf("writes under .shhh/ are the tool's, got:\n%s", n.Message)
 	}
 }
@@ -273,7 +269,7 @@ func TestTree_ThePathListIsBounded(t *testing.T) {
 	for i := 0; i < treeNoticePaths+3; i++ {
 		write(t, ws, "f"+string(rune('a'+i))+".txt", "")
 	}
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -288,18 +284,17 @@ func TestTree_ThePathListIsBounded(t *testing.T) {
 func TestTree_ASlowStatusKeepsOnlyTheTurnBoundary(t *testing.T) {
 	ws, _ := treeFixture(t)
 	var logged []string
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: ws, Budget: time.Nanosecond, Log: func(s string) { logged = append(logged, s) }})
+	a := New(TreeCheck{Dir: ws, Budget: time.Nanosecond, Log: func(s string) { logged = append(logged, s) }})
 
-	a.NextTreeNotice(false) // over budget: this one downgrades
+	a.Next(false) // over budget: this one downgrades
 	if len(logged) != 1 || !strings.Contains(logged[0], "turn boundaries only") {
 		t.Fatalf("the downgrade is logged once, got %q", logged)
 	}
 	write(t, ws, "b.txt", "")
-	if _, ok := a.NextTreeNotice(false); ok {
+	if _, ok := a.Next(false); ok {
 		t.Fatal("a degraded reading does not run between rounds")
 	}
-	n, ok := a.NextTreeNotice(true)
+	n, ok := a.Next(true)
 	if !ok || !strings.Contains(n.Message, "b.txt") {
 		t.Fatalf("a degraded reading still runs at the turn boundary, got ok=%v:\n%s", ok, n.Message)
 	}
@@ -314,9 +309,8 @@ func TestTree_ASlowStatusKeepsOnlyTheTurnBoundary(t *testing.T) {
 func TestTree_ABudgetSpentAfterTheStatusStillDowngrades(t *testing.T) {
 	ws, _ := treeFixture(t)
 	var logged []string
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: ws, Budget: 300 * time.Millisecond, Log: func(s string) { logged = append(logged, s) }})
-	if !a.TreeChecking() {
+	a := New(TreeCheck{Dir: ws, Budget: 300 * time.Millisecond, Log: func(s string) { logged = append(logged, s) }})
+	if !a.Checking() {
 		t.Fatal("the reading should be on inside a repository")
 	}
 	// A clock the reading spends rather than one it waits out. It is read at
@@ -324,14 +318,14 @@ func TestTree_ABudgetSpentAfterTheStatusStillDowngrades(t *testing.T) {
 	// inside the budget, the ignore rules well past it.
 	base, reads := time.Now(), 0
 	at := []time.Duration{0, 100 * time.Millisecond, 900 * time.Millisecond}
-	a.tree.now = func() time.Time {
+	a.now = func() time.Time {
 		d := at[min(reads, len(at)-1)]
 		reads++
 		return base.Add(d)
 	}
 
 	write(t, ws, "b.txt", "")
-	if _, ok := a.NextTreeNotice(false); !ok {
+	if _, ok := a.Next(false); !ok {
 		t.Fatal("a reading that ran over still reports what it read")
 	}
 	if len(logged) != 1 || !strings.Contains(logged[0], "git check-ignore") ||
@@ -339,10 +333,10 @@ func TestTree_ABudgetSpentAfterTheStatusStillDowngrades(t *testing.T) {
 		t.Fatalf("the call that found the budget gone is named, once: %q", logged)
 	}
 	write(t, ws, "c.txt", "")
-	if _, ok := a.NextTreeNotice(false); ok {
+	if _, ok := a.Next(false); ok {
 		t.Error("a reading that ran over does not run between rounds")
 	}
-	if n, ok := a.NextTreeNotice(true); !ok || !strings.Contains(n.Message, "c.txt") {
+	if n, ok := a.Next(true); !ok || !strings.Contains(n.Message, "c.txt") {
 		t.Errorf("it still runs at the turn boundary, got ok=%v:\n%s", ok, n.Message)
 	}
 }
@@ -421,7 +415,7 @@ func TestTree_DiffOnSnapshotsBuiltByHand(t *testing.T) {
 
 // A round's command calls are counted where the round is recorded, so no
 // surface has to remember to count them.
-func TestTree_BeginToolRoundCountsCommands(t *testing.T) {
+func TestTree_NoteCallsCountsCommands(t *testing.T) {
 	ws, _ := treeFixture(t)
 	a := treeAgent(t, ws, nil)
 	calls := []llm.ToolCall{
@@ -429,9 +423,9 @@ func TestTree_BeginToolRoundCountsCommands(t *testing.T) {
 		{ID: "2", Name: "execute_command", Arguments: `{}`},
 		{ID: "3", Name: "execute_command", Arguments: `{}`},
 	}
-	a.BeginToolRound("", calls, nil)
-	if a.tree.commands != 2 {
-		t.Errorf("commands = %d, want 2", a.tree.commands)
+	a.NoteCalls(calls)
+	if a.commands != 2 {
+		t.Errorf("commands = %d, want 2", a.commands)
 	}
 }
 
@@ -495,13 +489,12 @@ func TestTree_AFileTheModelReadIsNamedWhenItsContentMoved(t *testing.T) {
 		filepath.Join(ws, ".shhh", "run.json"),
 		filepath.Join(t.TempDir(), "elsewhere.txt"),
 	}
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: ws, ReadChanged: func() []string { return read }})
-	if !a.TreeChecking() {
+	a := New(TreeCheck{Dir: ws, ReadChanged: func() []string { return read }})
+	if !a.Checking() {
 		t.Fatal("the reading should be on inside a repository")
 	}
 
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("a file whose content moved is worth the block on its own")
 	}
@@ -519,18 +512,18 @@ func TestTree_AFileTheModelReadIsNamedWhenItsContentMoved(t *testing.T) {
 	// The file is still stale at the next boundary and at every one after it
 	// until the model reads it again. Saying so every round is how a block
 	// becomes the thing the model skips, so it is said once.
-	if n, ok := a.NextTreeNotice(false); ok {
+	if n, ok := a.Next(false); ok {
 		t.Errorf("a stale reading already named is not named again:\n%s", n.Message)
 	}
 
 	// Once it leaves the set — the model read it again, or the old content
 	// came back — a later move is news again.
 	read = nil
-	if _, ok := a.NextTreeNotice(false); ok {
+	if _, ok := a.Next(false); ok {
 		t.Fatal("a file that is no longer stale owes nothing")
 	}
 	read = []string{filepath.Join(ws, "a.txt")}
-	if n, ok := a.NextTreeNotice(false); !ok || n.ReadPaths != 1 {
+	if n, ok := a.Next(false); !ok || n.ReadPaths != 1 {
 		t.Errorf("a file that moved again is named again, got ok=%v:\n%s", ok, n.Message)
 	}
 }
@@ -545,20 +538,19 @@ func TestTree_AChangedInstructionFileSaysThePromptIsTheOlderReading(t *testing.T
 	git("add", ".")
 	git("commit", "-q", "-m", "instructions")
 
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: ws, Instructions: []string{
+	a := New(TreeCheck{Dir: ws, Instructions: []string{
 		filepath.Join(ws, "AGENTS.md"),
 		// A file the walk found outside this checkout — the user's own, on a
 		// surface that passes it — cannot be named beside a status line.
 		filepath.Join(t.TempDir(), "AGENTS.md"),
 	}})
-	if !a.TreeChecking() {
+	if !a.Checking() {
 		t.Fatal("the reading should be on inside a repository")
 	}
 
 	// Somebody else's edit to a file this session never read.
 	write(t, ws, "AGENTS.md", "the new rule\n")
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -570,7 +562,7 @@ func TestTree_AChangedInstructionFileSaysThePromptIsTheOlderReading(t *testing.T
 
 	// A change anywhere else says nothing about the prompt.
 	write(t, ws, "other.txt", "x\n")
-	other, ok := a.NextTreeNotice(false)
+	other, ok := a.Next(false)
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -745,7 +737,7 @@ func TestTree_TheTreesOwnIgnoreRulesAreAsked(t *testing.T) {
 	// the status stops naming it, which is a difference between the two
 	// snapshots and is not the tree moving.
 	write(t, ws, ".gitignore", "logs/\n")
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok {
 		t.Fatal("the new .gitignore is itself a path somebody else wrote")
 	}
@@ -782,8 +774,8 @@ func TestTree_ACacheACommandWroteIsNotReported(t *testing.T) {
 			run("commit", "-q", "-m", "src")
 			a := treeAgent(t, ws, nil)
 
-			a.BeginToolRound("", []llm.ToolCall{{ID: "c1", Name: "execute_command",
-				Arguments: `{"command":"GOCACHE=$PWD/.cache/gocache go build ./..."}`}}, nil)
+			a.NoteCalls([]llm.ToolCall{{ID: "c1", Name: "execute_command",
+				Arguments: `{"command":"GOCACHE=$PWD/.cache/gocache go build ./..."}`}})
 			for _, p := range []string{".cache/gocache/aa/one", ".cache/gocache/bb/two", ".cache/trim.txt"} {
 				write(t, ws, p, "x\n")
 			}
@@ -791,7 +783,7 @@ func TestTree_ACacheACommandWroteIsNotReported(t *testing.T) {
 			// files in: the line the subtraction may not cross.
 			write(t, ws, "src/theirs.go", "package src\n")
 
-			n, ok := a.NextTreeNotice(false)
+			n, ok := a.Next(false)
 			if !ok {
 				t.Fatal("a file in a tracked directory is still reported")
 			}
@@ -805,7 +797,7 @@ func TestTree_ACacheACommandWroteIsNotReported(t *testing.T) {
 			// It goes on growing after the round that made it, and goes on
 			// being the session's.
 			write(t, ws, ".cache/gocache/cc/three", "x\n")
-			if n, ok := a.NextTreeNotice(false); ok {
+			if n, ok := a.Next(false); ok {
 				t.Errorf("the cache is still the session's at a later boundary:\n%s", n.Message)
 			}
 		})
@@ -819,7 +811,7 @@ func TestTree_ANewDirectoryWithNoCommandIsStillReported(t *testing.T) {
 	ws, _ := treeFixture(t)
 	a := treeAgent(t, ws, nil)
 	write(t, ws, "vendor/theirs/x.go", "package theirs\n")
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok || n.Paths != 1 {
 		t.Fatalf("a directory nobody here made is news, got ok=%v:\n%s", ok, n.Message)
 	}
@@ -831,36 +823,35 @@ func TestTree_ANewDirectoryWithNoCommandIsStillReported(t *testing.T) {
 func TestTree_AFastReadingRecoversTheRoundBoundaries(t *testing.T) {
 	ws, _ := treeFixture(t)
 	var logged []string
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: ws, Budget: time.Nanosecond, Log: func(s string) { logged = append(logged, s) }})
-	a.NextTreeNotice(false) // over budget: degrades
+	a := New(TreeCheck{Dir: ws, Budget: time.Nanosecond, Log: func(s string) { logged = append(logged, s) }})
+	a.Next(false) // over budget: degrades
 	if len(logged) != 1 {
 		t.Fatalf("the downgrade is logged, got %q", logged)
 	}
 
-	a.tree.cfg.Budget = time.Hour
+	a.cfg.Budget = time.Hour
 	write(t, ws, "b.txt", "")
-	if _, ok := a.NextTreeNotice(false); ok {
+	if _, ok := a.Next(false); ok {
 		t.Fatal("still degraded until a turn boundary reads fast")
 	}
-	if _, ok := a.NextTreeNotice(true); !ok {
+	if _, ok := a.Next(true); !ok {
 		t.Fatal("the turn boundary still reads while degraded")
 	}
 	if len(logged) != 2 || !strings.Contains(logged[1], "reading at round boundaries again") {
 		t.Fatalf("the recovery is logged once, got %q", logged)
 	}
 	write(t, ws, "c.txt", "")
-	if n, ok := a.NextTreeNotice(false); !ok || !strings.Contains(n.Message, "c.txt") {
+	if n, ok := a.Next(false); !ok || !strings.Contains(n.Message, "c.txt") {
 		t.Fatalf("a recovered reading runs between rounds again, got ok=%v:\n%s", ok, n.Message)
 	}
 
-	a.tree.cfg.Budget = time.Nanosecond
-	a.NextTreeNotice(false)
+	a.cfg.Budget = time.Nanosecond
+	a.Next(false)
 	if len(logged) != 3 || !strings.Contains(logged[2], "turn boundaries only") {
 		t.Fatalf("a second slow reading degrades again, got %q", logged)
 	}
 	write(t, ws, "d.txt", "")
-	if _, ok := a.NextTreeNotice(false); ok {
+	if _, ok := a.Next(false); ok {
 		t.Error("degraded again: no reading between rounds")
 	}
 }
@@ -870,11 +861,10 @@ func TestTree_AFastReadingRecoversTheRoundBoundaries(t *testing.T) {
 func TestTree_AFailedSnapshotIsSaidOncePerReason(t *testing.T) {
 	ws, _ := treeFixture(t)
 	var logged []string
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: ws, Log: func(s string) { logged = append(logged, s) }})
+	a := New(TreeCheck{Dir: ws, Log: func(s string) { logged = append(logged, s) }})
 
 	write(t, ws, ".git/index", "not an index")
-	n, ok := a.NextTreeNotice(false)
+	n, ok := a.Next(false)
 	if !ok || !n.Unavailable {
 		t.Fatalf("a failed snapshot owes a notice, got ok=%v %+v", ok, n)
 	}
@@ -887,17 +877,17 @@ func TestTree_AFailedSnapshotIsSaidOncePerReason(t *testing.T) {
 	if len(logged) != 1 || !strings.Contains(logged[0], "git status failed") {
 		t.Fatalf("one machine line per reason, got %q", logged)
 	}
-	if _, ok := a.NextTreeNotice(false); ok {
+	if _, ok := a.Next(false); ok {
 		t.Error("the same reason is not said again at the next boundary")
 	}
-	if _, ok := a.NextTreeNotice(true); ok {
+	if _, ok := a.Next(true); ok {
 		t.Error("nor at the next turn")
 	}
 
 	if err := os.RemoveAll(filepath.Join(ws, ".git")); err != nil {
 		t.Fatal(err)
 	}
-	n2, ok := a.NextTreeNotice(false)
+	n2, ok := a.Next(false)
 	if !ok || n2.Notice == n.Notice {
 		t.Fatalf("a different reason is said, got ok=%v %q", ok, n2.Notice)
 	}
@@ -913,13 +903,12 @@ func TestTree_AFailedFirstSnapshotIsSaidAtTheFirstBoundary(t *testing.T) {
 	ws, git := treeFixture(t)
 	write(t, ws, ".git/index", "not an index")
 	var logged []string
-	a := New(nil, nil)
-	a.SetTreeCheck(TreeCheck{Dir: ws, Log: func(s string) { logged = append(logged, s) }})
-	if !a.TreeChecking() {
+	a := New(TreeCheck{Dir: ws, Log: func(s string) { logged = append(logged, s) }})
+	if !a.Checking() {
 		t.Fatal("a repository whose status fails keeps the reading on")
 	}
 
-	n, ok := a.NextTreeNotice(true)
+	n, ok := a.Next(true)
 	if !ok || !n.Unavailable || !strings.HasPrefix(n.Notice, "tree check unavailable · ") {
 		t.Fatalf("the first boundary owes the unavailable notice, got ok=%v %+v", ok, n)
 	}
@@ -934,16 +923,16 @@ func TestTree_AFailedFirstSnapshotIsSaidAtTheFirstBoundary(t *testing.T) {
 		t.Fatal(err)
 	}
 	git("reset", "-q")
-	if n, ok := a.NextTreeNotice(false); ok {
+	if n, ok := a.Next(false); ok {
 		t.Fatalf("the first snapshot git gives is the baseline, got %+v", n)
 	}
 	write(t, ws, "b.txt", "new\n")
-	n, ok = a.NextTreeNotice(false)
+	n, ok = a.Next(false)
 	if !ok || n.Unavailable || n.Paths != 1 {
 		t.Fatalf("a readable tree reports movement again, got ok=%v %+v", ok, n)
 	}
 	write(t, ws, ".git/index", "not an index")
-	if _, ok := a.NextTreeNotice(false); !ok {
+	if _, ok := a.Next(false); !ok {
 		t.Error("the reason is said again after a snapshot cleared it")
 	}
 }

@@ -167,7 +167,9 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// subtracts this session's own edits from it has just been emptied — so
 	// the baseline is taken again here, or the first reading of the new
 	// session would report the last one's work as a stranger's.
-	m.agent.RestartTreeCheck()
+	if m.watch != nil {
+		m.watch.Restart()
+	}
 	// A new conversation is a new session with a slot of its own; the one
 	// just left stays in the store as it was, for --resume to find — and is
 	// only given back when this session is leaving it empty.

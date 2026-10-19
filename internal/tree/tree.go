@@ -1,4 +1,4 @@
-package agent
+package tree
 
 // Telling a turn that the tree moved.
 //
@@ -185,8 +185,8 @@ func (n TreeNotice) Signal() string {
 	return "paths"
 }
 
-// treeState is what an Agent knows about the tree between two boundaries.
-type treeState struct {
+// Tree is what a session knows about the tree between two boundaries.
+type Tree struct {
 	cfg  TreeCheck
 	top  string
 	last TreeSnapshot
@@ -246,10 +246,10 @@ type treeState struct {
 	reported map[string]bool
 }
 
-// SetTreeCheck turns the reading on. A directory that is not inside a git
+// New turns the reading on. A directory that is not inside a git
 // repository leaves it off: there is no status to read, and a reading that
 // shells out on every round to be told so would be paying for nothing.
-func (a *Agent) SetTreeCheck(c TreeCheck) {
+func New(c TreeCheck) *Tree {
 	opened := c.Checkout
 	// The opening's reading is taken once: kept on the config, a restart
 	// would compare the next session's tree with the first one's.
@@ -259,13 +259,12 @@ func (a *Agent) SetTreeCheck(c TreeCheck) {
 		opened = &read
 	}
 	if !opened.Repo() {
-		a.tree = nil
-		return
+		return &Tree{}
 	}
 	if c.Budget <= 0 {
 		c.Budget = DefaultTreeBudget
 	}
-	t := &treeState{cfg: c, top: opened.Top}
+	t := &Tree{cfg: c, top: opened.Top}
 	// A repository whose status will not read — a broken index — keeps the
 	// reading on with no baseline, so the first boundary says why through
 	// unavailable rather than the check being off from the first round with
@@ -279,48 +278,47 @@ func (a *Agent) SetTreeCheck(c TreeCheck) {
 			t.instructions[rel] = true
 		}
 	}
-	a.tree = t
+	return t
 }
 
-// RestartTreeCheck takes the baseline again, for a front-end that ended one
+// Restart takes the baseline again, for a front-end that ended one
 // session and began another in the same process. What the tree looked like
 // when the old conversation opened is not what the new one should be told
 // about: without this the first reading of the new session would report
 // every change the last one made as somebody else's work, since the
 // changeset that subtracts a session's own edits started over too. A reading
 // that is off stays off.
-func (a *Agent) RestartTreeCheck() {
-	if a.tree == nil {
+func (t *Tree) Restart() {
+	if t.top == "" {
 		return
 	}
-	a.SetTreeCheck(a.tree.cfg)
+	*t = *New(t.cfg)
 }
 
-// TreeChecking reports whether the reading is on.
-func (a *Agent) TreeChecking() bool { return a.tree != nil }
+// Checking reports whether the reading is on.
+func (t *Tree) Checking() bool { return t.top != "" }
 
-// noteTreeCalls counts the calls of a round that may write anywhere, so the
+// NoteCalls counts the calls of a round that may write anywhere, so the
 // next notice can say a command ran rather than claim the changes are
 // somebody else's.
-func (a *Agent) noteTreeCalls(calls []llm.ToolCall) {
-	if a.tree == nil || a.tree.cfg.IsCommand == nil {
+func (t *Tree) NoteCalls(calls []llm.ToolCall) {
+	if t.top == "" || t.cfg.IsCommand == nil {
 		return
 	}
 	for _, tc := range calls {
-		if a.tree.cfg.IsCommand(tc.Name) {
-			a.tree.commands++
+		if t.cfg.IsCommand(tc.Name) {
+			t.commands++
 		}
 	}
 }
 
-// NextTreeNotice takes a snapshot, compares it with the last one, and returns
+// Next takes a snapshot, compares it with the last one, and returns
 // what the turn should be told, if anything. turnStart says which boundary
 // this is: a degraded reading answers only at a turn start. The caller
 // appends Message and shows Notice; nothing here touches the conversation,
 // for the same reason NextIntervention does not.
-func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
-	t := a.tree
-	if t == nil || (t.degraded && !turnStart) {
+func (t *Tree) Next(turnStart bool) (TreeNotice, bool) {
+	if t.top == "" || (t.degraded && !turnStart) {
 		return TreeNotice{}, false
 	}
 	t.begin()
@@ -362,7 +360,7 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 // broken index or a repository removed from under the session is otherwise
 // silence, and silence is what a tree that has not moved sounds like. The
 // reason is said once, and again only when it changes.
-func (t *treeState) unavailable(err error) (TreeNotice, bool) {
+func (t *Tree) unavailable(err error) (TreeNotice, bool) {
 	reason := err.Error()
 	if reason == t.failed {
 		return TreeNotice{}, false
@@ -382,7 +380,7 @@ func (t *treeState) unavailable(err error) (TreeNotice, bool) {
 }
 
 // clock is what the budget is spent against.
-func (t *treeState) clock() time.Time {
+func (t *Tree) clock() time.Time {
 	if t.now != nil {
 		return t.now()
 	}
@@ -390,14 +388,14 @@ func (t *treeState) clock() time.Time {
 }
 
 // begin starts the deadline this reading's git calls share.
-func (t *treeState) begin() {
+func (t *Tree) begin() {
 	t.started, t.overCall, t.overAt = t.clock(), "", 0
 }
 
 // spent is called as each git call of the reading comes back, and remembers
 // the first one that found the budget gone — the call worth naming, since a
 // reading three calls long has three answers to "which one was slow".
-func (t *treeState) spent(call string) {
+func (t *Tree) spent(call string) {
 	if t.overCall != "" {
 		return
 	}
@@ -410,7 +408,7 @@ func (t *treeState) spent(call string) {
 // budget, and says so once. A reading already downgraded says nothing: the
 // line is about the change of behaviour, and repeating it every round would
 // cost the reader more than the reading does.
-func (t *treeState) downgrade() {
+func (t *Tree) downgrade() {
 	if t.overCall == "" || t.degraded {
 		return
 	}
@@ -427,7 +425,7 @@ func (t *treeState) downgrade() {
 // stall under a `git gc` is not the checkout's size, and without this it cost
 // the rest of the session its round-boundary readings. A later reading over
 // the budget degrades again through downgrade.
-func (t *treeState) recover() {
+func (t *Tree) recover() {
 	if !t.degraded || t.overCall != "" {
 		return
 	}
@@ -454,7 +452,7 @@ func (t *treeState) recover() {
 // line that matters: a file a stranger drops into a source directory while a
 // build runs is still reported, and it is only the scratch directory nothing
 // tracks that goes quiet.
-func (t *treeState) noteCommandDirs(last, now TreeSnapshot, commands int) {
+func (t *Tree) noteCommandDirs(last, now TreeSnapshot, commands int) {
 	if commands == 0 {
 		return
 	}
@@ -496,7 +494,7 @@ const treeDirProbe = 256
 // call. An empty answer, and any failure, keeps every path in the notice:
 // this subtraction exists to stop a false alarm, and guessing it while git is
 // unavailable would trade that for a silence nothing can see.
-func (t *treeState) untrackedDirs(dirs map[string]bool) []string {
+func (t *Tree) untrackedDirs(dirs map[string]bool) []string {
 	if len(dirs) == 0 {
 		return nil
 	}
@@ -564,7 +562,7 @@ func ancestors(p string) []string {
 // The index is consulted (hostgit.CheckIgnore), so a tracked file that also
 // matches a pattern is not ignored — somebody changed a file git is keeping,
 // and that is the notice's whole subject.
-func (t *treeState) ignoredPaths(paths []string) map[string]bool {
+func (t *Tree) ignoredPaths(paths []string) map[string]bool {
 	if len(paths) == 0 {
 		return nil
 	}
@@ -578,7 +576,7 @@ func (t *treeState) ignoredPaths(paths []string) map[string]bool {
 
 // ownPaths is what the session has written, keyed the way the snapshot keys
 // paths.
-func (t *treeState) ownPaths() map[string]bool {
+func (t *Tree) ownPaths() map[string]bool {
 	if t.cfg.Own == nil {
 		return nil
 	}
@@ -599,7 +597,7 @@ func (t *treeState) ownPaths() map[string]bool {
 // A file already named stays out until it leaves the set — which it does when
 // the model reads it again, or when somebody puts the old content back — and
 // is named afresh if it moves after that.
-func (t *treeState) readChanged() []string {
+func (t *Tree) readChanged() []string {
 	if t.cfg.ReadChanged == nil {
 		return nil
 	}
@@ -623,7 +621,7 @@ func (t *treeState) readChanged() []string {
 // root, forward slashes. A path outside the repository is dropped — it cannot
 // appear in the status, so it can neither be subtracted from one nor named
 // beside one.
-func (t *treeState) relative(p string) (string, bool) {
+func (t *Tree) relative(p string) (string, bool) {
 	abs, err := filepath.Abs(p)
 	if err != nil {
 		return "", false

@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -313,7 +314,7 @@ func (h headlessObserver) withheld(reason string) {
 }
 
 // tree records the run being told the tree moved under it.
-func (h headlessObserver) tree(n agent.TreeNotice) {
+func (h headlessObserver) tree(n tree.TreeNotice) {
 	if n.Unavailable {
 		return
 	}

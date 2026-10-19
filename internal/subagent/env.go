@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 )
 
 // Env is everything a child needs to run, assembled by the CLI so this
@@ -176,7 +177,7 @@ type Env struct {
 	// beside its siblings, beside the session that spawned it and beside
 	// whoever else has the checkout open, and it is the party with nobody
 	// watching its screen. Nil takes no reading.
-	TreeCheck *agent.TreeCheck
+	TreeCheck *tree.TreeCheck
 }
 
 // Seam is what a child's dispatchers hand whoever wraps them: where the child

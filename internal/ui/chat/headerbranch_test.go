@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/tree"
 )
 
 // headedBy is a session opened on ws, its header reading the branch the
@@ -56,7 +57,7 @@ func TestHeader_TheBranchFollowsAGitSwitch(t *testing.T) {
 // the tree reading, and the header follows it there.
 func TestHeader_TheBranchFollowsTheTreeReading(t *testing.T) {
 	ws := treeRepo(t)
-	m := headedBy(t, gatedModelWith(t, nil, nil, Wiring{TreeCheck: &agent.TreeCheck{Dir: ws}}), ws)
+	m := headedBy(t, gatedModelWith(t, nil, nil, Wiring{TreeCheck: &tree.TreeCheck{Dir: ws}}), ws)
 	m.injectTreeNotice() // the baseline
 
 	gitIn(t, ws, "switch", "-q", "-c", "feature/y")

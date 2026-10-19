@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/tree"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
@@ -384,7 +385,7 @@ func childWindow(prices *pricing.Table, model string) int64 {
 // checkout. A writer's worktree is a directory nobody else has open, so
 // naming another session there would be answering a question that could not
 // have been asked.
-func childTree(cfg config.Config, sib sessionSibling, root string, worktree bool) *agent.TreeCheck {
+func childTree(cfg config.Config, sib sessionSibling, root string, worktree bool) *tree.TreeCheck {
 	c := treeCheck(cfg)
 	if c == nil {
 		return nil
