@@ -18,10 +18,10 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/decision"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
@@ -344,7 +344,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 
 	model := ""
 	if c != nil {
-		model = sidejobs.ModelAt(c.cfg.ModelAt, c.cfg.Model)
+		model = reading.ModelAt(c.cfg.ModelAt, c.cfg.Model)
 	}
 	if c == nil || c.provider == nil || model == "" {
 		v.Reason = "the permission classifier is not configured"
@@ -353,10 +353,10 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 
 	proposed := map[string]string{
 		"tool":      req.Tool,
-		"arguments": sidejobs.TruncateTail(req.Arguments, maxEvidenceArgChars),
+		"arguments": reading.TruncateTail(req.Arguments, maxEvidenceArgChars),
 	}
 	if len(req.Claims) > 0 {
-		proposed["claims"] = sidejobs.TruncateTail(strings.Join(req.Claims, "\n"), maxEvidenceArgChars)
+		proposed["claims"] = reading.TruncateTail(strings.Join(req.Claims, "\n"), maxEvidenceArgChars)
 	}
 	if req.Reading.Standing != "" {
 		proposed["host_standing"] = string(req.Reading.Standing)
@@ -692,7 +692,7 @@ func ParseDecisionText(text string) (Decision, string, bool) {
 		}
 	}
 
-	if match := decisionLineRe.FindStringSubmatch(sidejobs.FirstNonEmptyLine(trimmed)); match != nil {
+	if match := decisionLineRe.FindStringSubmatch(reading.FirstNonEmptyLine(trimmed)); match != nil {
 		return normalizeDecision(match[1], match[2])
 	}
 	return Ask, "", false
@@ -839,7 +839,7 @@ func RecentContext(msgs []llm.Message, maxMessages, maxChars int) string {
 			if !done && tc.ID != "" {
 				continue
 			}
-			row := sidejobs.SummaryActivity(tc.Name, digest.Arg(tc.Name, tc.Arguments), outcome)
+			row := reading.SummaryActivity(tc.Name, digest.Arg(tc.Name, tc.Arguments), outcome)
 			entries = append(entries, entry{text: "[Tool] " + row, call: true})
 			calls++
 		}

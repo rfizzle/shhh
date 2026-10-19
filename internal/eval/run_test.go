@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/permission"
@@ -623,7 +623,7 @@ func TestASummaryTableComparesTheStateTheReadingCameBackWith(t *testing.T) {
 		return llm.StreamEvent{
 			ToolCalls: []llm.ToolCall{{
 				ID:        "s1",
-				Name:      sidejobs.SummaryToolName,
+				Name:      reading.SummaryToolName,
 				Arguments: `{"summary":"doing the thing","state":"` + state + `","reason":""}`,
 			}},
 			Usage: &llm.Usage{PromptTokens: 300, CompletionTokens: 20},

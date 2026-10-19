@@ -32,6 +32,7 @@ import (
 	"github.com/rfizzle/shhh/internal/spend"
 
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
@@ -221,7 +222,7 @@ type serveLoop struct {
 	// summarizer takes the periodic readings of a turn. The run over it is
 	// built per turn because what a reading is judged against is that turn's
 	// instruction, and a session has one per turn.
-	summarizer *sidejobs.Summarizer
+	summarizer *reading.Summarizer
 	// account keeps the slot's standing account for this session, revised
 	// at a turn's close on the interval a session on a screen uses and once
 	// more where the session ends.

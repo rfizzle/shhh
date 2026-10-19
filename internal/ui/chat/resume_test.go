@@ -11,6 +11,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/llm/pricing"
@@ -312,7 +313,7 @@ func TestRetryWait_CtrlCStopsWithoutLosingTheTurn(t *testing.T) {
 
 func TestRetryWait_BoundIsHonoured(t *testing.T) {
 	m := streamed(resumeModel(t), "")
-	for i := 1; i <= agent.MaxRetryAttempts; i++ {
+	for i := 1; i <= retry.MaxRetryAttempts; i++ {
 		updated, _ := m.Update(streamErrMsg{err: rateLimit(time.Second)})
 		m = updated.(Model)
 		if m.turnState() != stateRetryWait {

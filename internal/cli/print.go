@@ -17,6 +17,8 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/reading"
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/catalog"
 	"github.com/rfizzle/llm/effort"
@@ -765,7 +767,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// recorded.
 	var lateMu sync.Mutex
 	runOver := false
-	summary := func(v sidejobs.SummaryVerdict) {
+	summary := func(v reading.SummaryVerdict) {
 		lateMu.Lock()
 		defer lateMu.Unlock()
 		if runOver {
@@ -907,7 +909,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		// script that reads stdout for the answer is not the reader this line
 		// is for: a run that has gone quiet for a minute is otherwise
 		// indistinguishable from one that has hung.
-		OnRetry: func(n agent.RetryNotice) {
+		OnRetry: func(n retry.RetryNotice) {
 			if n.Partial != "" && !strings.HasSuffix(n.Partial, "\n") {
 				// Half a sentence is already on stdout and the retry asks the
 				// whole question again, so it is closed off here rather than

@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
@@ -252,7 +253,7 @@ type Wiring struct {
 	// offers nothing and the key does nothing.
 	Explainer *sidejobs.Explainer
 	// Summarizer writes the session summary; nil leaves the block undrawn.
-	Summarizer *sidejobs.Summarizer
+	Summarizer *reading.Summarizer
 	// Titler names the session's rows, and Titles says it starts on.
 	Titler *sidejobs.Titler
 	Titles bool

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
@@ -426,7 +426,7 @@ func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
 	}
 	if run.summary {
 		out.SummaryModel = modelOr(cfg.Summary.Model, run.model)
-		out.SummaryInterval = sidejobs.SummaryConfig{IntervalRounds: cfg.Summary.IntervalRounds}.Interval()
+		out.SummaryInterval = reading.SummaryConfig{IntervalRounds: cfg.Summary.IntervalRounds}.Interval()
 	}
 	if run.classifier {
 		out.ClassifierModel = modelOr(cfg.Behavior.ClassifierModel, run.model)

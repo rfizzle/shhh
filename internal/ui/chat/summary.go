@@ -47,7 +47,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -86,11 +86,11 @@ const (
 // on screen, when it was taken, and whether another is in flight.
 type summaryState struct {
 	// writer is the summarizer, and cancel abandons the reading it has out.
-	writer *sidejobs.Summarizer
+	writer *reading.Summarizer
 	cancel context.CancelFunc
 	// last is the reading being drawn. It survives a failed refresh, which is
 	// the whole reason it is kept here rather than rebuilt per frame.
-	last *sidejobs.SummaryVerdict
+	last *reading.SummaryVerdict
 	// schedule is when the next reading is due. It is the agent's own type
 	// rather than a pair of fields here because an unattended run schedules
 	// against the same bounds, and two copies of one predicate is one place
@@ -206,7 +206,7 @@ func (s *summaryState) markSteered(iv agent.Intervention, row string) {
 	at := -1
 	for i := len(s.readings) - 1; i >= 0; i-- {
 		r := s.readings[i]
-		if r.steer != "" || r.verdict.State != sidejobs.SummaryOffTarget {
+		if r.steer != "" || r.verdict.State != reading.SummaryOffTarget {
 			continue
 		}
 		if at < 0 {
@@ -282,7 +282,7 @@ func (m *Model) resetSummary() {
 type summaryDoneMsg struct {
 	runID   int
 	gen     int
-	verdict sidejobs.SummaryVerdict
+	verdict reading.SummaryVerdict
 }
 
 // summaryEnabled reports whether readings are taken at all.
@@ -413,7 +413,7 @@ func (m *Model) finishSummary(msg summaryDoneMsg) bool {
 // It does not add to the session totals: the reading was billed at the
 // provider gate as it streamed, and adding it here as well would count it
 // twice. What the session spent on summaries is the ledger's answer.
-func (m *Model) countSummarySpend(v sidejobs.SummaryVerdict) {
+func (m *Model) countSummarySpend(v reading.SummaryVerdict) {
 	if v.Usage.PromptTokens == 0 && v.Usage.CompletionTokens == 0 {
 		return
 	}
@@ -425,8 +425,8 @@ func (m *Model) countSummarySpend(v sidejobs.SummaryVerdict) {
 // summaryRequest assembles the digest. Everything in it is something the
 // session already knows and already shows; the only thing being paid for is
 // the reading of it.
-func (m Model) summaryRequest() sidejobs.SummaryRequest {
-	req := sidejobs.SummaryRequest{
+func (m Model) summaryRequest() reading.SummaryRequest {
+	req := reading.SummaryRequest{
 		Target:   m.summaryTarget,
 		Plan:     m.summaryPlan(),
 		Activity: m.summaryActivity(),
@@ -495,10 +495,10 @@ func (m Model) summaryActivity() []string {
 		}
 		switch e.kind {
 		case entryCommand:
-			rows = append(rows, sidejobs.SummaryActivity(
+			rows = append(rows, reading.SummaryActivity(
 				"command", firstLine(e.text), components.OutcomeExit(e.exitCode)))
 		default:
-			rows = append(rows, sidejobs.SummaryActivity(
+			rows = append(rows, reading.SummaryActivity(
 				e.toolName, digest.Arg(e.toolName, e.toolArgs), rowOutcome(e)))
 		}
 	}
@@ -546,7 +546,7 @@ func (m Model) summaryAssistant() string {
 // digest's own (sidejobs.SummaryChanges), which is what keeps a session's
 // changeset and an unattended run's the same evidence.
 func (m Model) summaryChanges() string {
-	return sidejobs.SummaryChanges(m.changes.Totals())
+	return reading.SummaryChanges(m.changes.Totals())
 }
 
 // summaryAlerts is the standing bad news the rail already keeps on screen.
@@ -603,13 +603,13 @@ func (m Model) summaryStale() bool {
 }
 
 // summaryTone maps the session's verdict onto the rail's own vocabulary.
-func summaryTone(s sidejobs.SummaryState) components.SummaryTone {
+func summaryTone(s reading.SummaryState) components.SummaryTone {
 	switch s {
-	case sidejobs.SummaryOnTarget:
+	case reading.SummaryOnTarget:
 		return components.SummaryOnTarget
-	case sidejobs.SummaryOffTarget:
+	case reading.SummaryOffTarget:
 		return components.SummaryOffTarget
-	case sidejobs.SummarySufficient:
+	case reading.SummarySufficient:
 		return components.SummarySufficient
 	}
 	return components.SummaryUnclear
@@ -711,7 +711,7 @@ func (m *Model) summaryStatus() (string, tea.Cmd) {
 	sb.WriteString(v.Text + "\n")
 	fmt.Fprintf(&sb, "%s · read at round %d", v.State, v.Round)
 	if behind := m.agent.Rounds() - v.Round; behind > 0 {
-		sb.WriteString(" (" + sidejobs.SummaryElapsed(behind) + ")")
+		sb.WriteString(" (" + reading.SummaryElapsed(behind) + ")")
 	}
 	sb.WriteString("\n")
 	if v.Reason != "" {
@@ -773,7 +773,7 @@ func truncateRunes(s string, limit int) string {
 // this turn extends it, and a row that then claimed to have been read against
 // words that did not exist yet would be the one lie this row can tell.
 type summaryReading struct {
-	verdict sidejobs.SummaryVerdict
+	verdict reading.SummaryVerdict
 	target  string
 	// turn, steer and withdrawn are the readings screen's and the row never
 	// reads them: the turn the reading was taken in, the digest row of the
@@ -802,7 +802,7 @@ const summaryReadAgainstChars = 120
 // something to say there. It reports whether it did, because the caller is
 // the only thing that will repaint the transcript for it — a reading arrives
 // out of band, with no stream behind it owing a frame.
-func (m *Model) appendSummaryRow(v sidejobs.SummaryVerdict) bool {
+func (m *Model) appendSummaryRow(v reading.SummaryVerdict) bool {
 	if strings.TrimSpace(v.Text) == "" {
 		// A reading with no words is not a reading. The rail declines to
 		// draw one for the same reason, and a row counting zero lines would
@@ -827,9 +827,9 @@ func (m *Model) appendSummaryRow(v sidejobs.SummaryVerdict) bool {
 // is not lost there either. This is drawing, not recording: the record files
 // every reading in finishSummary whether it rows or not
 // (docs/interface/surfaces.md#the-session-summary).
-func quietReading(v sidejobs.SummaryVerdict) bool {
+func quietReading(v reading.SummaryVerdict) bool {
 	switch v.State {
-	case sidejobs.SummaryOnTarget, sidejobs.SummaryUncertain:
+	case reading.SummaryOnTarget, reading.SummaryUncertain:
 	default:
 		return false
 	}

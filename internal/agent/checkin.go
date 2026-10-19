@@ -37,7 +37,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 )
 
 // DefaultCheckInInterval is how many tool rounds pass before a session is
@@ -210,13 +210,13 @@ func stepNote(r StepReading) string {
 	case r.Age == 0:
 		b.WriteString("Your working list, as you sent it in the round just finished:")
 	default:
-		fmt.Fprintf(&b, "Your working list, as you last sent it %d tool %s ago:", r.Age, sidejobs.Plural(r.Age, "round"))
+		fmt.Fprintf(&b, "Your working list, as you last sent it %d tool %s ago:", r.Age, reading.Plural(r.Age, "round"))
 	}
 	b.WriteString("\n")
 	if r.List != "" {
 		b.WriteString(r.List)
 	} else {
-		fmt.Fprintf(&b, "%d of %d %s done", min(max(r.Done, 0), r.Total), r.Total, sidejobs.Plural(r.Total, "step"))
+		fmt.Fprintf(&b, "%d of %d %s done", min(max(r.Done, 0), r.Total), r.Total, reading.Plural(r.Total, "step"))
 		if r.Current != "" {
 			b.WriteString(" — on: " + r.Current)
 		}
@@ -343,7 +343,7 @@ func budgetNote(written []string) string {
 		names = names[:maxCheckInWritten]
 	}
 	return fmt.Sprintf("So far you have written %d %s: %s%s. Say which of those you consider finished and what is still to be written.",
-		len(written), sidejobs.Plural(len(written), "file"), strings.Join(names, ", "), more)
+		len(written), reading.Plural(len(written), "file"), strings.Join(names, ", "), more)
 }
 
 // FinishedInSession and FinishedAsSubAgent are the closing lines for the two

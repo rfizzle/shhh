@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/permission"
@@ -443,8 +443,8 @@ func askClassifier(ctx context.Context, p llm.Provider, model string, row Row, b
 }
 
 func askSummary(ctx context.Context, p llm.Provider, model string, row Row) Answer {
-	s := sidejobs.NewSummarizer(p, sidejobs.SummaryConfig{Model: model})
-	v := s.Summarize(ctx, sidejobs.SummaryRequest{
+	s := reading.NewSummarizer(p, reading.SummaryConfig{Model: model})
+	v := s.Summarize(ctx, reading.SummaryRequest{
 		Target:    row.Instruction,
 		Plan:      row.Plan,
 		Activity:  row.Activity,
@@ -462,11 +462,11 @@ func askSummary(ctx context.Context, p llm.Provider, model string, row Row) Answ
 	}
 	a.Reason = v.Text
 	switch v.State {
-	case sidejobs.SummaryOnTarget:
+	case reading.SummaryOnTarget:
 		a.Label = LabelOnTarget
-	case sidejobs.SummarySufficient:
+	case reading.SummarySufficient:
 		a.Label = LabelSufficient
-	case sidejobs.SummaryOffTarget:
+	case reading.SummaryOffTarget:
 		a.Label = LabelOffTarget
 	default:
 		a.Label = LabelUnclear

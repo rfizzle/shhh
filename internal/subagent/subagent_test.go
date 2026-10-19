@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -55,7 +55,7 @@ type scriptedEnv struct {
 	// summarizer, when set, is the reader the child takes periodic readings
 	// through — off in an ordinary session, so a test that wants a child
 	// judged has to say so.
-	summarizer *sidejobs.Summarizer
+	summarizer *reading.Summarizer
 	// delay is how long each scripted round takes to answer. Rounds here are
 	// otherwise instant, which no provider is, and a reading that runs beside
 	// the loop needs the loop to take some time for the reading to land in.
@@ -239,7 +239,7 @@ func (p *readingProvider) StreamCompletion(_ context.Context, msgs []llm.Message
 	ch <- llm.StreamEvent{
 		ToolCalls: []llm.ToolCall{{
 			ID:   "s1",
-			Name: sidejobs.SummaryToolName,
+			Name: reading.SummaryToolName,
 			Arguments: `{"summary":"reading files in the importer","state":"` + state +
 				`","reason":"reading the importer, not the exporter"}`,
 		}},
@@ -279,8 +279,8 @@ func readRounds(n int) []streamStep {
 func judgedChild(t *testing.T, reader llm.Provider, rounds int) *Supervisor {
 	t.Helper()
 	env := &scriptedEnv{steps: readRounds(rounds), delay: 3 * time.Millisecond,
-		summarizer: sidejobs.NewSummarizer(reader,
-			sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1})}
+		summarizer: reading.NewSummarizer(reader,
+			reading.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1})}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
 	return sup
@@ -872,12 +872,12 @@ func TestSteeredChildCountsItsSteersOnTheStatusAndTheRoster(t *testing.T) {
 	if st.Steers < 2 {
 		t.Fatalf("a child steered and read again must count more than one steer, got %d", st.Steers)
 	}
-	if st.Verdict != sidejobs.SummaryOffTarget.String() {
+	if st.Verdict != reading.SummaryOffTarget.String() {
 		t.Fatalf("the status must carry the last reading's word, got %q", st.Verdict)
 	}
 
 	roster := execTool(t, sup, ReportToolName, `{}`)
-	for _, want := range []string{plural(st.Steers, "steer"), sidejobs.SummaryOffTarget.String()} {
+	for _, want := range []string{plural(st.Steers, "steer"), reading.SummaryOffTarget.String()} {
 		if !strings.Contains(roster, want) {
 			t.Fatalf("the roster does not say %q:\n%s", want, roster)
 		}
@@ -893,13 +893,13 @@ func TestSteeredChildCountsItsSteersOnTheStatusAndTheRoster(t *testing.T) {
 // child's work is still the last reading.
 func TestASteerCountBelongsToTheTurnItWasGivenIn(t *testing.T) {
 	c := &child{name: "researcher-1", role: RoleResearcher}
-	c.steers, c.verdict = 2, sidejobs.SummaryOffTarget.String()
+	c.steers, c.verdict = 2, reading.SummaryOffTarget.String()
 	c.beginTurn()
 	st := c.status()
 	if st.Steers != 0 {
 		t.Fatalf("a new turn starts with no steers, got %d", st.Steers)
 	}
-	if st.Verdict != sidejobs.SummaryOffTarget.String() {
+	if st.Verdict != reading.SummaryOffTarget.String() {
 		t.Fatalf("the last reading stands into the next turn, got %q", st.Verdict)
 	}
 	if got := steerMark(st); got != " · off target" {
@@ -2472,7 +2472,7 @@ func TestAStatusSaysWhereTheLastSteerCameFrom(t *testing.T) {
 		t.Fatalf("a child nobody has steered says nothing, got %q", got)
 	}
 
-	c.steers, c.verdict, c.steerFrom = 2, sidejobs.SummaryOffTarget.String(), SteerFromReading
+	c.steers, c.verdict, c.steerFrom = 2, reading.SummaryOffTarget.String(), SteerFromReading
 	st := c.status()
 	if st.SteerFrom != SteerFromReading {
 		t.Fatalf("the status carries the source, got %q", st.SteerFrom)
@@ -2565,7 +2565,7 @@ func TestAReportCarriesTheReadingAndTheSteerCount(t *testing.T) {
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 
 	st := statusOf(t, sup, "researcher-1")
-	for _, want := range []string{sidejobs.SummaryOffTarget.String(), plural(st.Steers, "steer")} {
+	for _, want := range []string{reading.SummaryOffTarget.String(), plural(st.Steers, "steer")} {
 		if !strings.Contains(report, want) {
 			t.Fatalf("the report does not say %q:\n%s", want, report)
 		}
@@ -2885,8 +2885,8 @@ func TestAReadingOfAChildThatOnlyReadsIsGivenTheSweep(t *testing.T) {
 		steps:   append(searchRounds(20), streamStep{text: "surveyed the exporter"}),
 		delay:   3 * time.Millisecond,
 		repeats: agent.NewRepeatDetector(testRepeatShapes()),
-		summarizer: sidejobs.NewSummarizer(reader,
-			sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
+		summarizer: reading.NewSummarizer(reader,
+			reading.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
 	}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)

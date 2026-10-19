@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 )
 
 // The round tail: the boundary after a tool round's results are recorded and
@@ -71,7 +71,7 @@ type RoundTail struct {
 	Boundary func(turnStart bool) (message string, ok bool)
 
 	OnIntervene func(Intervention)
-	OnSummary   func(sidejobs.SummaryVerdict)
+	OnSummary   func(reading.SummaryVerdict)
 	OnWithheld  func(reason string)
 }
 

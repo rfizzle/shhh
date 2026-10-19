@@ -22,9 +22,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 )
 
@@ -130,14 +131,14 @@ type Headless struct {
 	// caller has already exited, which is the one-shot case and loses the
 	// reading rather than racing anything.
 	// See docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did.
-	OnSummary func(v sidejobs.SummaryVerdict)
+	OnSummary func(v reading.SummaryVerdict)
 
 	// OnRetry, when set, is told before each wait the run puts itself on
 	// after a request the provider never answered. An unattended run that
 	// goes quiet for a minute and a hung one look identical from outside, so
 	// every surface says which of the two this is.
 	// See docs/capabilities/coding-agent.md#an-unattended-run-runs-the-same-loop.
-	OnRetry func(n RetryNotice)
+	OnRetry func(n retry.RetryNotice)
 
 	// Compact, when set, is the window-recovery step this run takes at each
 	// round boundary: old tool results elided first, and the conversation
@@ -181,7 +182,7 @@ type Headless struct {
 	// retry is the bound across the whole turn, not across one request: three
 	// rate limits in a row are three attempts and not three fresh chances
 	// (retry.go).
-	retry Backoff
+	retry retry.Backoff
 
 	// truncated is what TruncatedReply answers. It describes a turn that is
 	// over and is written only by the goroutine running it, which is why it
@@ -941,7 +942,7 @@ func (h *Headless) waitOn(release <-chan struct{}) bool {
 // false when the run was interrupted while waiting, which is the one thing
 // that can happen during it: a wait holds no stream, owes no results, and
 // leaves the conversation exactly as the failed request found it.
-func (h *Headless) waitToRetry(n RetryNotice) bool {
+func (h *Headless) waitToRetry(n retry.RetryNotice) bool {
 	// The wait is for the model: the request is asked again at its end.
 	h.mark((*TurnClock).Request)
 	if h.OnRetry != nil {

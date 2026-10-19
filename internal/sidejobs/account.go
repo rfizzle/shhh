@@ -22,6 +22,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
@@ -156,7 +157,7 @@ func (a *Accountant) Model() string {
 	if a == nil {
 		return ""
 	}
-	return ModelAt(a.cfg.ModelAt, a.cfg.Model)
+	return reading.ModelAt(a.cfg.ModelAt, a.cfg.Model)
 }
 
 var accountSchema = json.RawMessage(`{

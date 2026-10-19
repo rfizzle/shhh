@@ -5,10 +5,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/cache"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -224,7 +225,7 @@ func TestConfigRows_SteeringKeysStateTheirDefaults(t *testing.T) {
 	for key, want := range map[string]string{
 		"behavior.check_in_interval_rounds":    strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",
 		"behavior.check_in_max_doublings":      strconv.Itoa(agent.DefaultCheckInDoublings) + " doublings",
-		"summary.intervene_cooldown_intervals": strconv.Itoa(sidejobs.DefaultCooldownIntervals) + " readings",
+		"summary.intervene_cooldown_intervals": strconv.Itoa(reading.DefaultCooldownIntervals) + " readings",
 		"summary.steer_target_chars":           strconv.Itoa(agent.DefaultSteerTargetChars) + " characters",
 		"prompts.steer":                        "(the built-in wording)",
 		"prompts.check_in":                     "(the built-in wording)",
@@ -402,7 +403,7 @@ func TestConfigRows_TheBacklogCommitStatesItsDefault(t *testing.T) {
 // that showed it as "0 attempts" would read as an empty field.
 func TestConfigRows_TheRetryBoundStatesItsDefault(t *testing.T) {
 	row := rowFor(configRows(config.Config{}, config.Config{}, config.Project{}), "behavior.provider_retries")
-	if want := strconv.Itoa(agent.MaxRetryAttempts) + " attempts"; row.Value != want || row.Source != "default" {
+	if want := strconv.Itoa(retry.MaxRetryAttempts) + " attempts"; row.Value != want || row.Source != "default" {
 		t.Fatalf("unset provider_retries row = %q/%q, want %q/default", row.Value, row.Source, want)
 	}
 	var off config.Config

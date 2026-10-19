@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/llm"
 
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -56,7 +57,7 @@ var flowBuilders = []struct {
 		generateDescription(ctx, p, "m", "m", "ls")
 	}},
 	{flow.Reading, "sidejobs.Summarizer", func(ctx context.Context, p llm.Provider) {
-		sidejobs.NewSummarizer(p, sidejobs.SummaryConfig{Model: "m"}).Summarize(ctx, sidejobs.SummaryRequest{})
+		reading.NewSummarizer(p, reading.SummaryConfig{Model: "m"}).Summarize(ctx, reading.SummaryRequest{})
 	}},
 	{flow.Reading, "sidejobs.HandoffWriter", func(ctx context.Context, p llm.Provider) {
 		sidejobs.NewHandoffWriter(p, sidejobs.HandoffConfig{Model: "m"}).Write(ctx, sidejobs.HandoffRequest{First: "fix it"})

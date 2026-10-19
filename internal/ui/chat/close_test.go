@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -556,8 +556,8 @@ func TestTurnClose_TheNotebookIsToldWhichTurnIsOpen(t *testing.T) {
 // answer.
 func TestTurnClose_ASummaryFoldBesideItExpandsRatherThanReviews(t *testing.T) {
 	m, _ := undoModel(t)
-	m.appendEntry(summaryRowEntry(sidejobs.SummaryVerdict{
-		Text: "Capped the rounds and nothing else.", State: sidejobs.SummaryOnTarget, Round: 3}, ""))
+	m.appendEntry(summaryRowEntry(reading.SummaryVerdict{
+		Text: "Capped the rounds and nothing else.", State: reading.SummaryOnTarget, Round: 3}, ""))
 	at := len(m.transcript) - 1
 	m.pointer.lit, m.focusIdx = true, at
 	m.refreshCursorView()

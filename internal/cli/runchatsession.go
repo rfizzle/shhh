@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -74,7 +75,7 @@ type screenBuild struct {
 	// were.
 	classifier *permission.Classifier
 	explainer  *sidejobs.Explainer
-	summarizer *sidejobs.Summarizer
+	summarizer *reading.Summarizer
 	titler     *sidejobs.Titler
 
 	// The record and the boundary.

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
@@ -190,7 +191,7 @@ func (w *HandoffWriter) Model() string {
 	if w == nil {
 		return ""
 	}
-	return ModelAt(w.cfg.ModelAt, w.cfg.Model)
+	return reading.ModelAt(w.cfg.ModelAt, w.cfg.Model)
 }
 
 var handoffSchema = json.RawMessage(`{

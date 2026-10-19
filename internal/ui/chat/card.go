@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/receipt"
@@ -479,7 +479,7 @@ func headerSays(h receipt.Header, line string) bool {
 // cardVerdict is a reading's verdict as a card states it: the summary's own
 // mark and today's four words, the two that ask the reader to look in the
 // accent (docs/interface/surfaces.md#the-session-summary).
-func cardVerdict(s sidejobs.SummaryState) (string, bool) {
+func cardVerdict(s reading.SummaryState) (string, bool) {
 	tone := summaryTone(s)
 	alert := tone == components.SummaryOffTarget || tone == components.SummaryUnclear
 	return "≡ " + components.SummaryWord(tone), alert

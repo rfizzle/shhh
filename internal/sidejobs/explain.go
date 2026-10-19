@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
@@ -97,7 +98,7 @@ func (e *Explainer) Model() string {
 	if e == nil {
 		return ""
 	}
-	return ModelAt(e.cfg.ModelAt, e.cfg.Model)
+	return reading.ModelAt(e.cfg.ModelAt, e.cfg.Model)
 }
 
 // ExplainRequest is the command a paragraph is asked about.
@@ -136,7 +137,7 @@ func (e *Explainer) Explain(ctx context.Context, req ExplainRequest) ExplainVerd
 		v.Err = "there is no command to explain"
 		return finish(v)
 	}
-	command = TruncateTail(command, maxExplainCommand)
+	command = reading.TruncateTail(command, maxExplainCommand)
 
 	attemptCtx, cancel := context.WithTimeout(ctx, e.cfg.timeout())
 	defer cancel()

@@ -13,13 +13,14 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
+	"github.com/rfizzle/agentcore/reading"
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/llm/pricing"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/sandbox"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -342,14 +343,15 @@ func TestTheLoopsRetryLineIsTheSameLineThroughTheHook(t *testing.T) {
 	t.Cleanup(func() {
 		logs.To("")
 		agent.SetLogger(nil)
-		sidejobs.SetLogger(nil)
+		retry.SetLogger(nil)
+		reading.SetLogger(nil)
 	})
 
 	// What the loop wrote before the hook existed.
 	logs.Logger().Info("provider request retried",
 		"provider", "openai", "class", "rate limited",
 		"wait", 30*time.Second, "attempt", 1, "of", 3)
-	var b agent.Backoff
+	var b retry.Backoff
 	f := &failure.Failure{Class: failure.ClassRateLimit, Status: 429, Provider: "openai", RetryAfter: 30 * time.Second}
 	three := 3
 	b.SetLimit(&three)

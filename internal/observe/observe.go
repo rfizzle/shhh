@@ -31,7 +31,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -164,13 +164,13 @@ func PlanReason(items int) string {
 // surface takes the same one: a chat session, a headless run and every
 // sub-agent all report this signal, and three spellings of "the run has
 // drifted" is three columns nothing can add up.
-func SummaryCode(s sidejobs.SummaryState) string {
+func SummaryCode(s reading.SummaryState) string {
 	switch s {
-	case sidejobs.SummaryOnTarget:
+	case reading.SummaryOnTarget:
 		return "on-target"
-	case sidejobs.SummaryOffTarget:
+	case reading.SummaryOffTarget:
 		return "off-target"
-	case sidejobs.SummarySufficient:
+	case reading.SummarySufficient:
 		return "sufficient"
 	}
 	return "unclear"

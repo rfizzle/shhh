@@ -32,7 +32,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -247,7 +247,7 @@ func (s *scriptedChild) factory() subagent.EnvFactory {
 			// The interval is one round and the wall-clock floor is off: the
 			// child runs three rounds in as many milliseconds, and a reader
 			// held back by either would never be asked at all.
-			env.Summarizer = sidejobs.NewSummarizer(s.reader, sidejobs.SummaryConfig{
+			env.Summarizer = reading.NewSummarizer(s.reader, reading.SummaryConfig{
 				Model: "scripted", IntervalRounds: 1, MinGap: -1})
 		}
 		return env, nil
@@ -304,7 +304,7 @@ func (r *scriptedReader) StreamCompletion(context.Context, []llm.Message, llm.Co
 	})
 	ch := make(chan llm.StreamEvent, 1)
 	ch <- llm.StreamEvent{
-		ToolCalls: []llm.ToolCall{{ID: "s1", Name: sidejobs.SummaryToolName, Arguments: string(args)}},
+		ToolCalls: []llm.ToolCall{{ID: "s1", Name: reading.SummaryToolName, Arguments: string(args)}},
 		Done:      true,
 	}
 	close(ch)

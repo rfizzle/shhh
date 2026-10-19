@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 )
 
 // SummaryRun takes periodic readings of one unattended run and hands the
@@ -29,7 +29,7 @@ import (
 // call NewSummaryRun. A nil *SummaryRun takes no readings, so a surface that
 // was not configured for them wires it unconditionally and pays nothing.
 type SummaryRun struct {
-	summarizer *sidejobs.Summarizer
+	summarizer *reading.Summarizer
 	recorder   *Recorder
 	started    time.Time
 	// changes is what the surface has written so far, in the three numbers a
@@ -82,12 +82,12 @@ type SummaryRun struct {
 	// failure and a failure the run caused itself must not put the
 	// summarizer into its backoff.
 	cancel  context.CancelFunc
-	verdict *sidejobs.SummaryVerdict
+	verdict *reading.SummaryVerdict
 	// onClose is where a reading goes once the run has returned, and nil
 	// while it is still running. A parked verdict is collected by the next
 	// round boundary, and after the last one there is no next: without this
 	// the reading a run ends on would be paid for and read by nobody.
-	onClose func(sidejobs.SummaryVerdict)
+	onClose func(reading.SummaryVerdict)
 	// turn counts the turns this runner has served and readTurn is the one
 	// the reading in flight was asked in. Readings are turn-scoped, because
 	// the round counter they are scheduled and stamped in goes back to zero
@@ -120,7 +120,7 @@ type SummaryRun struct {
 // NewSummaryRun returns a runner, or nil when readings are not to be taken —
 // no summarizer, a disabled one, or no recorder to read from. Callers do not
 // branch on that; a nil runner is safe everywhere.
-func NewSummaryRun(s *sidejobs.Summarizer, rec *Recorder, target string) *SummaryRun {
+func NewSummaryRun(s *reading.Summarizer, rec *Recorder, target string) *SummaryRun {
 	if !s.Enabled() || rec == nil {
 		return nil
 	}
@@ -305,9 +305,9 @@ func (r *SummaryRun) Bounds() (interval, cooldownIntervals int) {
 // Tick is called at a round boundary. It starts a reading if one is due and
 // none is in flight, and returns whatever earlier reading has since come
 // back. Nothing here blocks on a request.
-func (r *SummaryRun) Tick(rounds int) (sidejobs.SummaryVerdict, bool) {
+func (r *SummaryRun) Tick(rounds int) (reading.SummaryVerdict, bool) {
 	if r == nil {
-		return sidejobs.SummaryVerdict{}, false
+		return reading.SummaryVerdict{}, false
 	}
 	r.mu.Lock()
 	v := r.verdict
@@ -323,7 +323,7 @@ func (r *SummaryRun) Tick(rounds int) (sidejobs.SummaryVerdict, bool) {
 		go r.read(rounds)
 	}
 	if v == nil {
-		return sidejobs.SummaryVerdict{}, false
+		return reading.SummaryVerdict{}, false
 	}
 	return *v, true
 }
@@ -414,7 +414,7 @@ func (r *SummaryRun) StartTurn() {
 // The verdict is never offered to the intervention policy. There is no turn
 // left to interrupt, which is the same reason a session's close reading is
 // applied with the turn already idle. Safe on a nil runner.
-func (r *SummaryRun) Close(rounds int, deliver func(sidejobs.SummaryVerdict)) {
+func (r *SummaryRun) Close(rounds int, deliver func(reading.SummaryVerdict)) {
 	if r == nil || deliver == nil {
 		return
 	}
@@ -459,7 +459,7 @@ func (r *SummaryRun) read(rounds int) {
 	r.cancel = cancel
 	r.mu.Unlock()
 
-	req := sidejobs.SummaryRequest{
+	req := reading.SummaryRequest{
 		Target:        target,
 		Activity:      r.recorder.Rows(),
 		Assistant:     r.recorder.LastAssistant(),
@@ -547,7 +547,7 @@ func (r *SummaryRun) changed() string {
 	if r.changes == nil {
 		return ""
 	}
-	return sidejobs.SummaryChanges(r.changes())
+	return reading.SummaryChanges(r.changes())
 }
 
 // stepped is the run's plan progress for the digest, empty where the surface
@@ -557,7 +557,7 @@ func (r *SummaryRun) stepped() string {
 	if r.steps == nil {
 		return ""
 	}
-	return sidejobs.SummarySteps(r.steps())
+	return reading.SummarySteps(r.steps())
 }
 
 // supplied is one of the list-valued digest fields, empty where the surface

@@ -2,7 +2,6 @@ package sidejobs
 
 import (
 	"context"
-	"strings"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
@@ -33,12 +32,6 @@ func eventsOf(evs ...llm.StreamEvent) <-chan llm.StreamEvent {
 	}
 	close(ch)
 	return ch
-}
-
-// extendTarget is the agent's ExtendTarget for these tests: what was asked,
-// then a steer typed since, a blank line apart.
-func extendTarget(target, steer string) string {
-	return strings.TrimSpace(target) + TargetJoin + strings.TrimSpace(steer)
 }
 
 // thinkingProvider models what every current frontier model does: it spends

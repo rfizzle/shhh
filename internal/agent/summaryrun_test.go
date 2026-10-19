@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 )
@@ -58,7 +58,7 @@ func (p *slowProvider) StreamCompletion(ctx context.Context, msgs []llm.Message,
 	ch := make(chan llm.StreamEvent, 1)
 	ch <- llm.StreamEvent{
 		ToolCalls: []llm.ToolCall{{
-			ID: "s1", Name: sidejobs.SummaryToolName,
+			ID: "s1", Name: reading.SummaryToolName,
 			Arguments: `{"summary":"` + text + `","state":"` + state + `","reason":"a reason"}`,
 		}},
 		Usage: &llm.Usage{PromptTokens: 100, CompletionTokens: 10},
@@ -87,7 +87,7 @@ func testSummaryRun(t *testing.T, p llm.Provider, target string) (*SummaryRun, *
 	rec := NewRecorder(0, testDigest)
 	// MinGap negative removes the wall-clock floor: these tests are about the
 	// round interval, and twenty real seconds is not a thing a test waits for.
-	r := NewSummaryRun(sidejobs.NewSummarizer(p, sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1}), rec, target)
+	r := NewSummaryRun(reading.NewSummarizer(p, reading.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1}), rec, target)
 	if r == nil {
 		t.Fatal("expected a runner")
 	}
@@ -95,14 +95,14 @@ func testSummaryRun(t *testing.T, p llm.Provider, target string) (*SummaryRun, *
 }
 
 // waitVerdict ticks until a reading comes back, or gives up.
-func waitVerdict(t *testing.T, r *SummaryRun, rounds int) sidejobs.SummaryVerdict {
+func waitVerdict(t *testing.T, r *SummaryRun, rounds int) reading.SummaryVerdict {
 	t.Helper()
-	var v sidejobs.SummaryVerdict
+	var v reading.SummaryVerdict
 	if eventually(func() bool { var ok bool; v, ok = r.Tick(rounds); return ok }) {
 		return v
 	}
 	t.Fatal("no reading came back")
-	return sidejobs.SummaryVerdict{}
+	return reading.SummaryVerdict{}
 }
 
 // A summary is never the reason a run is slower: the request goes out in the
@@ -116,7 +116,7 @@ func TestSummaryRun_TickNeverBlocksOnTheRequest(t *testing.T) {
 
 	ticked := make(chan bool, 1)
 	go func() {
-		_, ok := r.Tick(sidejobs.FirstSummaryRound)
+		_, ok := r.Tick(reading.FirstSummaryRound)
 		ticked <- ok
 	}()
 	select {
@@ -129,32 +129,32 @@ func TestSummaryRun_TickNeverBlocksOnTheRequest(t *testing.T) {
 		t.Fatal("the round waited on a background reading")
 	}
 	close(p.hold)
-	waitVerdict(t, r, sidejobs.FirstSummaryRound+1)
+	waitVerdict(t, r, reading.FirstSummaryRound+1)
 }
 
 func TestSummaryRun_FirstReadingComesEarlyThenOnTheInterval(t *testing.T) {
 	p := &slowProvider{}
 	r, _ := testSummaryRun(t, p, "ship the parser")
 
-	for i := 1; i < sidejobs.FirstSummaryRound; i++ {
+	for i := 1; i < reading.FirstSummaryRound; i++ {
 		r.Tick(i)
 	}
 	if p.count() != 0 {
-		t.Fatalf("a reading went out before round %d", sidejobs.FirstSummaryRound)
+		t.Fatalf("a reading went out before round %d", reading.FirstSummaryRound)
 	}
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 	if p.count() != 1 {
 		t.Fatalf("readings = %d, want 1", p.count())
 	}
 
 	// Nothing more until a whole interval has gone by.
-	for i := sidejobs.FirstSummaryRound + 1; i < sidejobs.FirstSummaryRound+10; i++ {
+	for i := reading.FirstSummaryRound + 1; i < reading.FirstSummaryRound+10; i++ {
 		r.Tick(i)
 	}
 	if p.count() != 1 {
 		t.Fatalf("readings = %d inside the interval, want 1", p.count())
 	}
-	r.Tick(sidejobs.FirstSummaryRound + 10)
+	r.Tick(reading.FirstSummaryRound + 10)
 	eventually(func() bool { return p.count() >= 2 })
 	if p.count() != 2 {
 		t.Fatalf("readings = %d after a full interval, want 2", p.count())
@@ -168,24 +168,24 @@ func TestSummaryRun_FirstReadingComesEarlyThenOnTheInterval(t *testing.T) {
 func TestSummaryRun_AnInterventionEarnsAnEarlyReadingThatIsToldAboutIt(t *testing.T) {
 	p := &slowProvider{state: "off_target"}
 	r, _ := testSummaryRun(t, p, "ship the parser")
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 
-	const steered = sidejobs.FirstSummaryRound + 1
+	const steered = reading.FirstSummaryRound + 1
 	r.Intervened(steered, Intervention{
 		Kind:   InterveneSteer,
 		Reason: "editing files outside the exporter",
 	})
-	for round := steered + 1; round < steered+sidejobs.FirstSummaryRound; round++ {
+	for round := steered + 1; round < steered+reading.FirstSummaryRound; round++ {
 		r.Tick(round)
 	}
 	if p.count() != 1 {
 		t.Fatalf("readings = %d before the steer's own count came round, want 1", p.count())
 	}
 
-	r.Tick(steered + sidejobs.FirstSummaryRound)
+	r.Tick(steered + reading.FirstSummaryRound)
 	eventually(func() bool { return p.count() >= 2 })
 	if p.count() != 2 {
-		t.Fatalf("readings = %d, want a second one %d rounds after the steer", p.count(), sidejobs.FirstSummaryRound)
+		t.Fatalf("readings = %d, want a second one %d rounds after the steer", p.count(), reading.FirstSummaryRound)
 	}
 	sent := strings.Join(p.requests(), "\n")
 	if !strings.Contains(sent, "round 4 · steered · editing files outside the exporter") {
@@ -200,14 +200,14 @@ func TestSummaryRun_NeverTwoInFlight(t *testing.T) {
 	p := &slowProvider{hold: make(chan struct{})}
 	t.Cleanup(func() { close(p.hold) })
 	r, _ := testSummaryRun(t, p, "x")
-	r.Tick(sidejobs.FirstSummaryRound) // starts one
+	r.Tick(reading.FirstSummaryRound) // starts one
 
 	// Wait for it to actually be in flight, then tick well past several
 	// intervals while it still is.
 	if !eventually(func() bool { return p.count() != 0 }) {
 		t.Fatal("the first reading never went out")
 	}
-	for i := sidejobs.FirstSummaryRound + 1; i < sidejobs.FirstSummaryRound+40; i++ {
+	for i := reading.FirstSummaryRound + 1; i < reading.FirstSummaryRound+40; i++ {
 		r.Tick(i)
 	}
 	if got := p.count(); got != 1 {
@@ -229,7 +229,7 @@ func TestSummaryRun_SendsRowsAndNoToolOutput(t *testing.T) {
 	rec.Tool("web_fetch", `{"url":"https://example.com/page"}`, attack)
 	rec.Assistant("Reading the fetched page now.")
 
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 	first := p.requests()[0]
 	for _, want := range []string{"web_fetch", "https://example.com/page", "ship the parser",
 		"Reading the fetched page now.", "2 files · +21 −4"} {
@@ -244,7 +244,7 @@ func TestSummaryRun_SendsRowsAndNoToolOutput(t *testing.T) {
 
 	// The second reading revises the first rather than describing the same
 	// work in new words.
-	waitVerdict(t, r, sidejobs.FirstSummaryRound+10)
+	waitVerdict(t, r, reading.FirstSummaryRound+10)
 	reqs := p.requests()
 	if len(reqs) < 2 {
 		t.Fatalf("readings = %d, want a second one", len(reqs))
@@ -267,7 +267,7 @@ func TestSummaryRun_NoChangesetIsNoChangedFiles(t *testing.T) {
 	p := &slowProvider{}
 	r, _ := testSummaryRun(t, p, "read the exporter")
 
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 	if sent := p.requests()[0]; strings.Contains(sent, `"files_changed"`) {
 		t.Errorf("a surface with no changeset sends no changed files:\n%s", sent)
 	}
@@ -282,7 +282,7 @@ func TestSummaryRun_AlertsAndPlanReachTheDigest(t *testing.T) {
 	r.WithAlerts(func() []string { return []string{`quality gate "ci" — fail`, "unit — exit 1"} }).
 		WithPlan(func() []string { return []string{"[done] read the exporter", "[running] rewrite the parser"} })
 
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 	sent := p.requests()[0]
 	for _, want := range []string{`"failing_checks"`, "unit — exit 1", `"approved_plan"`, "[running] rewrite the parser"} {
 		if !strings.Contains(sent, want) {
@@ -303,7 +303,7 @@ func TestSummaryRun_NoAlertsAndNoPlanAreNoFields(t *testing.T) {
 	// wired one.
 	r.WithAlerts(func() []string { return nil }).WithPlan(func() []string { return nil })
 
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 	sent := p.requests()[0]
 	for _, key := range []string{`"failing_checks"`, `"approved_plan"`} {
 		if strings.Contains(sent, key) {
@@ -317,10 +317,10 @@ func TestSummaryRun_NoAlertsAndNoPlanAreNoFields(t *testing.T) {
 func TestSummaryRun_ANewTurnHasNothingToRevise(t *testing.T) {
 	p := &slowProvider{text: "rewriting the exporter"}
 	r, _ := testSummaryRun(t, p, "ship the parser")
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 
 	r.StartTurn()
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 	reqs := p.requests()
 	if len(reqs) < 2 {
 		t.Fatalf("readings = %d, want one in each turn", len(reqs))
@@ -335,10 +335,10 @@ func TestSummaryRun_ANewTurnHasNothingToRevise(t *testing.T) {
 func TestSummaryRun_DriftVerdictSteersAnUnattendedRun(t *testing.T) {
 	p := &slowProvider{state: "off_target"}
 	r, _ := testSummaryRun(t, p, "ship the parser")
-	v := waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	v := waitVerdict(t, r, reading.FirstSummaryRound)
 
 	a := New(nil, noStream)
-	a.rounds = sidejobs.FirstSummaryRound
+	a.rounds = reading.FirstSummaryRound
 	a.SetInterveneBounds(r.Bounds())
 	a.ConsiderVerdict(v, a.rounds, true)
 
@@ -373,11 +373,11 @@ func TestSummaryRun_BoundsAreTheIntervalAndHowManyOfThem(t *testing.T) {
 // A surface that was not configured for readings wires the runner
 // unconditionally and pays nothing.
 func TestSummaryRun_NilWhenNotConfigured(t *testing.T) {
-	disabled := sidejobs.NewSummarizer(&slowProvider{}, sidejobs.SummaryConfig{Model: "fast", Disabled: true})
+	disabled := reading.NewSummarizer(&slowProvider{}, reading.SummaryConfig{Model: "fast", Disabled: true})
 	if r := NewSummaryRun(disabled, NewRecorder(0, testDigest), "x"); r != nil {
 		t.Error("a disabled summarizer takes no readings")
 	}
-	if r := NewSummaryRun(sidejobs.NewSummarizer(&slowProvider{}, sidejobs.SummaryConfig{Model: "fast"}), nil, "x"); r != nil {
+	if r := NewSummaryRun(reading.NewSummarizer(&slowProvider{}, reading.SummaryConfig{Model: "fast"}), nil, "x"); r != nil {
 		t.Error("no recorder means nothing to read")
 	}
 
@@ -392,7 +392,7 @@ func TestSummaryRun_NilWhenNotConfigured(t *testing.T) {
 	if in != 0 || out != 0 {
 		t.Error("a nil runner spends nothing")
 	}
-	r.Close(50, func(sidejobs.SummaryVerdict) { t.Error("a nil runner takes no closing reading") })
+	r.Close(50, func(reading.SummaryVerdict) { t.Error("a nil runner takes no closing reading") })
 }
 
 // waitFor polls until cond holds, or fails the test saying what it waited for.
@@ -440,7 +440,7 @@ func TestSummaryRun_ASteerExtendsTheTargetAndRetiresTheVerdict(t *testing.T) {
 	p := &slowProvider{state: "off_target"}
 	r, _ := testSummaryRun(t, p, "ship the parser")
 
-	r.Tick(sidejobs.FirstSummaryRound)
+	r.Tick(reading.FirstSummaryRound)
 	waitFor(t, "the first reading to park a verdict", func() bool {
 		r.mu.Lock()
 		defer r.mu.Unlock()
@@ -455,7 +455,7 @@ func TestSummaryRun_ASteerExtendsTheTargetAndRetiresTheVerdict(t *testing.T) {
 	// The round counter a steer resets is the one the schedule counts in, so
 	// the next reading is due on a turn's own count and not an interval past
 	// a round number that no longer exists.
-	if _, ok := r.Tick(sidejobs.FirstSummaryRound); ok {
+	if _, ok := r.Tick(reading.FirstSummaryRound); ok {
 		t.Fatal("the verdict about the instruction before the steer was collected")
 	}
 	waitFor(t, "a second reading", func() bool { return p.count() == 2 })
@@ -473,7 +473,7 @@ func TestSummaryRun_ASteerRetiresTheReadingInFlight(t *testing.T) {
 	p := &slowProvider{state: "off_target", delay: 50 * time.Millisecond}
 	r, _ := testSummaryRun(t, p, "ship the parser")
 
-	r.Tick(sidejobs.FirstSummaryRound)
+	r.Tick(reading.FirstSummaryRound)
 	waitFor(t, "the reading to go out", func() bool { return p.count() == 1 })
 	r.Extend("actually, fix the lexer first")
 
@@ -502,13 +502,13 @@ func TestSummaryRun_CloseReadsHowTheTurnEnded(t *testing.T) {
 	p := &slowProvider{}
 	r, rec := testSummaryRun(t, p, "ship the parser")
 	rec.Assistant("the parser ships")
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
+	waitVerdict(t, r, reading.FirstSummaryRound)
 
-	got := make(chan sidejobs.SummaryVerdict, 2)
-	r.Close(sidejobs.FirstSummaryRound+3, func(v sidejobs.SummaryVerdict) { got <- v })
+	got := make(chan reading.SummaryVerdict, 2)
+	r.Close(reading.FirstSummaryRound+3, func(v reading.SummaryVerdict) { got <- v })
 	select {
 	case v := <-got:
-		if v.State != sidejobs.SummaryOnTarget {
+		if v.State != reading.SummaryOnTarget {
 			t.Fatalf("state = %v, want the closing reading", v.State)
 		}
 	case <-time.After(2 * time.Second):
@@ -536,14 +536,14 @@ func TestSummaryRun_CloseSkipsATurnWithNothingNewToSay(t *testing.T) {
 
 	// Close starts its reading before it returns, so asking the runner
 	// whether one is out is the whole answer and no waiting is involved.
-	r.Close(1, func(sidejobs.SummaryVerdict) { t.Error("a one-round turn was read at its close") })
-	if reading(r) {
+	r.Close(1, func(reading.SummaryVerdict) { t.Error("a one-round turn was read at its close") })
+	if readingOut(r) {
 		t.Fatal("a one-round turn was read at its close")
 	}
 
-	waitVerdict(t, r, sidejobs.FirstSummaryRound)
-	r.Close(sidejobs.FirstSummaryRound, func(sidejobs.SummaryVerdict) {})
-	if reading(r) {
+	waitVerdict(t, r, reading.FirstSummaryRound)
+	r.Close(reading.FirstSummaryRound, func(reading.SummaryVerdict) {})
+	if readingOut(r) {
 		t.Fatal("a turn read at the round it ended at was read again for ending")
 	}
 	if p.count() != 1 {
@@ -551,9 +551,9 @@ func TestSummaryRun_CloseSkipsATurnWithNothingNewToSay(t *testing.T) {
 	}
 }
 
-// reading reports whether a reading is out, which Close decides before it
+// readingOut reports whether a reading is out, which Close decides before it
 // returns.
-func reading(r *SummaryRun) bool {
+func readingOut(r *SummaryRun) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.inFlight
@@ -565,11 +565,11 @@ func reading(r *SummaryRun) bool {
 func TestSummaryRun_CloseCollectsTheReadingInFlight(t *testing.T) {
 	p := &slowProvider{delay: 50 * time.Millisecond}
 	r, _ := testSummaryRun(t, p, "ship the parser")
-	r.Tick(sidejobs.FirstSummaryRound)
+	r.Tick(reading.FirstSummaryRound)
 	waitFor(t, "the reading to go out", func() bool { return p.count() == 1 })
 
-	got := make(chan sidejobs.SummaryVerdict, 2)
-	r.Close(sidejobs.FirstSummaryRound+3, func(v sidejobs.SummaryVerdict) { got <- v })
+	got := make(chan reading.SummaryVerdict, 2)
+	r.Close(reading.FirstSummaryRound+3, func(v reading.SummaryVerdict) { got <- v })
 	select {
 	case <-got:
 	case <-time.After(2 * time.Second):
@@ -590,18 +590,18 @@ func TestSummaryRun_CloseCollectsTheReadingInFlight(t *testing.T) {
 func TestSummaryRun_CloseCollectsAParkedVerdict(t *testing.T) {
 	p := &slowProvider{}
 	r, _ := testSummaryRun(t, p, "ship the parser")
-	r.Tick(sidejobs.FirstSummaryRound)
+	r.Tick(reading.FirstSummaryRound)
 	waitFor(t, "the first reading to park a verdict", func() bool {
 		r.mu.Lock()
 		defer r.mu.Unlock()
 		return r.verdict != nil
 	})
 
-	got := make(chan sidejobs.SummaryVerdict, 2)
-	r.Close(sidejobs.FirstSummaryRound, func(v sidejobs.SummaryVerdict) { got <- v })
+	got := make(chan reading.SummaryVerdict, 2)
+	r.Close(reading.FirstSummaryRound, func(v reading.SummaryVerdict) { got <- v })
 	select {
 	case v := <-got:
-		if v.Round != sidejobs.FirstSummaryRound {
+		if v.Round != reading.FirstSummaryRound {
 			t.Fatalf("round = %d, want the parked reading", v.Round)
 		}
 	case <-time.After(time.Second):
@@ -616,14 +616,14 @@ func TestSummaryRun_CloseCollectsAParkedVerdict(t *testing.T) {
 func TestSummaryRun_ANewTurnRetiresTheClosingReading(t *testing.T) {
 	p := &slowProvider{delay: 50 * time.Millisecond}
 	r, _ := testSummaryRun(t, p, "ship the parser")
-	r.Tick(sidejobs.FirstSummaryRound)
+	r.Tick(reading.FirstSummaryRound)
 	waitFor(t, "the reading to go out", func() bool { return p.count() == 1 })
-	r.Close(sidejobs.FirstSummaryRound+3, func(sidejobs.SummaryVerdict) {
+	r.Close(reading.FirstSummaryRound+3, func(reading.SummaryVerdict) {
 		t.Error("a reading the turn before closed on was delivered into the next turn")
 	})
 
 	r.StartTurn()
-	waitFor(t, "the retired reading to come back", func() bool { return !reading(r) })
+	waitFor(t, "the retired reading to come back", func() bool { return !readingOut(r) })
 	r.mu.Lock()
 	parked, failures := r.verdict, r.failures
 	r.mu.Unlock()
@@ -635,7 +635,7 @@ func TestSummaryRun_ANewTurnRetiresTheClosingReading(t *testing.T) {
 	}
 	// And the new turn is read: the runner is not left holding the old
 	// turn's request.
-	waitVerdict(t, r, sidejobs.FirstSummaryRound+sidejobs.FirstSummaryRound+3)
+	waitVerdict(t, r, reading.FirstSummaryRound+reading.FirstSummaryRound+3)
 }
 
 // A verdict nobody collected is the turn before's too. A run that ended on
@@ -646,7 +646,7 @@ func TestSummaryRun_ANewTurnRetiresTheClosingReading(t *testing.T) {
 func TestSummaryRun_ANewTurnRetiresAnUncollectedVerdict(t *testing.T) {
 	p := &slowProvider{state: "off_target"}
 	r, _ := testSummaryRun(t, p, "ship the parser")
-	r.Tick(sidejobs.FirstSummaryRound)
+	r.Tick(reading.FirstSummaryRound)
 	waitFor(t, "the reading to park a verdict", func() bool {
 		r.mu.Lock()
 		defer r.mu.Unlock()

@@ -3,8 +3,8 @@ package subagent
 import (
 	"context"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/catalog"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -96,7 +96,7 @@ type Env struct {
 	// summary.subagents=false leaves behind: a child nothing reads is never
 	// listed as steered, so the roster says so rather than leaving the parent
 	// to read an empty field as good news.
-	Summarizer *sidejobs.Summarizer
+	Summarizer *reading.Summarizer
 	// Steering is the interruption machinery's tuning as the config file
 	// left it. A child runs the same machinery a session does, so the same
 	// wordings and thresholds reach it — all but the interval, which is the

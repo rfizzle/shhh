@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -123,7 +123,7 @@ func TestIntervene_AReadingAnIntervalOldStillLandsAndSteersNothing(t *testing.T)
 	if got := lastUserMessage(m); strings.Contains(got, "moved away") {
 		t.Errorf("a reading a whole interval old steered the session:\n%s", got)
 	}
-	if m.summary.last == nil || m.summary.last.State != sidejobs.SummaryOffTarget {
+	if m.summary.last == nil || m.summary.last.State != reading.SummaryOffTarget {
 		t.Error("the reading itself should still be on the rail")
 	}
 	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySummary {
@@ -216,7 +216,7 @@ func TestIntervene_TheNextReadingIsToldAndComesSooner(t *testing.T) {
 
 	// And it is asked for on the turn-start count rather than the interval:
 	// the interval is the cost, and a steer is a reason.
-	for i := 1; i < sidejobs.FirstSummaryRound; i++ {
+	for i := 1; i < reading.FirstSummaryRound; i++ {
 		m = advanceRounds(m, 1)
 		if m.summaryDue() {
 			t.Fatalf("a reading came due %d rounds after the steer", i)
@@ -225,7 +225,7 @@ func TestIntervene_TheNextReadingIsToldAndComesSooner(t *testing.T) {
 	m = advanceRounds(m, 1)
 	if !m.summaryDue() {
 		t.Fatalf("a reading is due %d rounds after a steer, inside the interval of %d",
-			sidejobs.FirstSummaryRound, m.summaryInterval())
+			reading.FirstSummaryRound, m.summaryInterval())
 	}
 }
 
@@ -236,7 +236,7 @@ func TestIntervene_ConfiguredWordingReachesTheConversation(t *testing.T) {
 	m := verdictModel(t, "off_target")
 	m.agent.SetSteering(agent.Steering{Steer: "off track: " + agent.PlaceholderTarget})
 	m.summaryTarget = "build the exporter"
-	m.considerVerdict(sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: 4})
+	m.considerVerdict(reading.SummaryVerdict{State: reading.SummaryOffTarget, Round: 4})
 	m.roundTail().Next()
 	if got := lastUserMessage(m); got != "off track: build the exporter" {
 		t.Fatalf("the steer the session sent was %q", got)
@@ -359,7 +359,7 @@ func TestWithdrawSteer_NoFurtherReadingSteersTheTurn(t *testing.T) {
 		t.Errorf("a withdrawn turn was steered again:\n%s", got)
 	}
 	// The reading itself still lands: only the interruption was withheld.
-	if m.summary.last == nil || m.summary.last.State != sidejobs.SummaryOffTarget {
+	if m.summary.last == nil || m.summary.last.State != reading.SummaryOffTarget {
 		t.Error("the reading should still reach the rail")
 	}
 }

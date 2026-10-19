@@ -12,9 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
@@ -295,7 +296,7 @@ func (h headlessObserver) usage(u llm.Usage) {
 // session hands the run an observer fixed to the turn it was built for
 // (inTurn), since by the time a closing reading lands the loop may be
 // counting the next.
-func (h headlessObserver) summary(v sidejobs.SummaryVerdict) {
+func (h headlessObserver) summary(v reading.SummaryVerdict) {
 	h.signalAt(h.at(v.Round), observe.SignalSummary, observe.SummaryCode(v.State))
 }
 
@@ -340,7 +341,7 @@ func (h headlessObserver) compact(n agent.CompactNotice) {
 // retry records one wait the run sat out after a request the provider never
 // answered. It is recorded per attempt, so a population of unattended runs
 // can be asked how much of its wall clock was a provider's and not its own.
-func (h headlessObserver) retry(n agent.RetryNotice) {
+func (h headlessObserver) retry(n retry.RetryNotice) {
 	h.signal(observe.SignalRetry, n.Signal())
 }
 

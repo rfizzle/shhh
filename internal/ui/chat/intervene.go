@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -35,7 +35,7 @@ import (
 // session has long since passed is recorded and nothing more: no message
 // joins the conversation, so there is nothing to show the reader, and the row
 // on the rail is already the reading itself.
-func (m *Model) considerVerdict(v sidejobs.SummaryVerdict) {
+func (m *Model) considerVerdict(v reading.SummaryVerdict) {
 	m.agent.SetInterveneBounds(m.summaryInterval(), m.summary.writer.Config().CooldownIntervals())
 	if reason := m.agent.ConsiderVerdict(v, m.agent.Rounds(), m.working()); reason != "" {
 		m.signal(observe.SignalIntervene, reason)

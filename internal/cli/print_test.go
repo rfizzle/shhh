@@ -15,12 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/tree"
 
 	"net/http"
 
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
@@ -914,9 +915,9 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 	obs.decision(observe.DecisionDeny, "headless-default")
 	rounds = 3
 	obs.toolResult(toolResultOf("search", time.Millisecond, "[repeat: this exact search call has now run 3 times]"))
-	obs.summary(sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: 3})
+	obs.summary(reading.SummaryVerdict{State: reading.SummaryOffTarget, Round: 3})
 	obs.intervene(agent.Intervention{Kind: agent.InterveneSteer})
-	obs.retry(agent.RetryNotice{Failure: &failure.Failure{Class: failure.ClassOverloaded}, Attempt: 1, Max: agent.MaxRetryAttempts})
+	obs.retry(retry.RetryNotice{Failure: &failure.Failure{Class: failure.ClassOverloaded}, Attempt: 1, Max: retry.MaxRetryAttempts})
 	rec.turn(1, 3, time.Second, observe.TurnDone)
 	rec.end()
 
@@ -948,7 +949,7 @@ func TestHeadlessObserver_SummaryFilesAtTheReadingsRound(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		obs.summary(sidejobs.SummaryVerdict{State: sidejobs.SummaryOnTarget, Round: 4})
+		obs.summary(reading.SummaryVerdict{State: reading.SummaryOnTarget, Round: 4})
 	}()
 	a.StartTurn("the next turn")
 	<-done

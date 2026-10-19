@@ -19,6 +19,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
@@ -110,7 +111,7 @@ func (t *Titler) Model() string {
 	if t == nil {
 		return ""
 	}
-	return ModelAt(t.cfg.ModelAt, t.cfg.Model)
+	return reading.ModelAt(t.cfg.ModelAt, t.cfg.Model)
 }
 
 var titleSchema = json.RawMessage(`{

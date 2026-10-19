@@ -43,7 +43,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 )
@@ -365,7 +365,7 @@ func (d *RepeatDetector) Sweeps() []string {
 	})
 	rows := make([]string, 0, len(out))
 	for _, s := range out {
-		rows = append(rows, sidejobs.SummarySweep(s.tool, s.scope, s.n))
+		rows = append(rows, reading.SummarySweep(s.tool, s.scope, s.n))
 	}
 	return rows
 }

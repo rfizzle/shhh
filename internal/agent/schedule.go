@@ -23,7 +23,7 @@ package agent
 import (
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 )
 
 // SummarySchedule is when the next reading of one turn is due. The zero value
@@ -62,7 +62,7 @@ func (s SummarySchedule) roundsDue(rounds, interval int) bool {
 	if s.lastRound == 0 {
 		// The first reading comes early, so a long turn has a verdict to act
 		// on well before a whole interval has gone by.
-		return rounds >= sidejobs.FirstSummaryRound
+		return rounds >= reading.FirstSummaryRound
 	}
 	if rounds-s.lastRound >= interval {
 		return true
@@ -78,7 +78,7 @@ func (s SummarySchedule) roundsDue(rounds, interval int) bool {
 	// at the boundary of the very round the reading that earned it was taken
 	// at, and a reading already in flight when it was delivered knows nothing
 	// about it either way.
-	return s.intervenedRound >= s.lastRound && rounds-s.intervenedRound >= sidejobs.FirstSummaryRound
+	return s.intervenedRound >= s.lastRound && rounds-s.intervenedRound >= reading.FirstSummaryRound
 }
 
 // Read records a reading taken at this round: both bounds move.
@@ -130,5 +130,5 @@ func (s SummarySchedule) Moved(rounds int) bool {
 // is what sits on the rail while nothing else moves, and the unattended run,
 // where it is the last thing the record says about the turn.
 func (s SummarySchedule) CloseDue(rounds int) bool {
-	return rounds >= sidejobs.SummaryCloseMinRounds && s.Moved(rounds)
+	return rounds >= reading.SummaryCloseMinRounds && s.Moved(rounds)
 }

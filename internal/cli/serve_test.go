@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -378,7 +378,7 @@ func (p *heldSummaries) StreamCompletion(context.Context, []llm.Message, llm.Com
 	<-p.release
 	ch := make(chan llm.StreamEvent, 1)
 	ch <- llm.StreamEvent{
-		ToolCalls: []llm.ToolCall{{ID: "s1", Name: sidejobs.SummaryToolName,
+		ToolCalls: []llm.ToolCall{{ID: "s1", Name: reading.SummaryToolName,
 			Arguments: `{"summary":"reading","state":"on_target","reason":"a reason"}`}},
 		Done: true,
 	}
@@ -422,7 +422,7 @@ func TestServedClosingReadingIsFiledUnderItsOwnTurn(t *testing.T) {
 		saved:  &headlessChat{},
 		// A negative floor removes the wall clock from the schedule, which a
 		// test does not wait out.
-		summarizer: sidejobs.NewSummarizer(held, sidejobs.SummaryConfig{Model: "fast", MinGap: -1}),
+		summarizer: reading.NewSummarizer(held, reading.SummaryConfig{Model: "fast", MinGap: -1}),
 	}
 	l.obs = headlessObserver{rounds: a.Rounds, turn: l.turnNow, stream: l.events}
 	l.headless = &agent.Headless{Agent: a, OnSummary: l.obs.summary}

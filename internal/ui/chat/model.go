@@ -9,6 +9,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	llmattachment "github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/llm/effort"
@@ -1438,7 +1439,7 @@ type Model struct {
 	// backoff is the shared bound and schedule this stall is being retried
 	// on (internal/agent). It outlives each individual wait, which is what
 	// makes the bound a bound.
-	backoff  agent.Backoff
+	backoff  retry.Backoff
 	retrySeq int
 	// The context-pressure card: the card while it is up, and
 	// whether this crossing of the alert threshold has already been

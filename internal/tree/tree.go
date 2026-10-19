@@ -57,7 +57,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/hostgit"
@@ -719,7 +719,7 @@ func diffTree(last, now TreeSnapshot, at treeAttribution) (TreeNotice, bool) {
 	}
 	count := ""
 	if n.Paths > 0 {
-		count = fmt.Sprintf("%s %s changed %s", grouped(n.Paths), sidejobs.Plural(n.Paths, "path"), attribution)
+		count = fmt.Sprintf("%s %s changed %s", grouped(n.Paths), reading.Plural(n.Paths, "path"), attribution)
 		parts = append(parts, count+": "+pathList(changed))
 	}
 	// The read set is named on its own clause rather than folded into the
@@ -728,7 +728,7 @@ func diffTree(last, now TreeSnapshot, at treeAttribution) (TreeNotice, bool) {
 	// A path can honestly be in both.
 	readCount := ""
 	if n.ReadPaths > 0 {
-		readCount = fmt.Sprintf("%s %s you have read changed", grouped(n.ReadPaths), sidejobs.Plural(n.ReadPaths, "file"))
+		readCount = fmt.Sprintf("%s %s you have read changed", grouped(n.ReadPaths), reading.Plural(n.ReadPaths, "file"))
 		parts = append(parts, readCount+": "+pathList(read))
 	}
 	var b strings.Builder

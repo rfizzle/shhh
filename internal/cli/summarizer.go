@@ -27,6 +27,7 @@ import (
 	"github.com/rfizzle/llm"
 
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/permission"
 )
@@ -343,8 +344,8 @@ func (env *sessionEnv) flowModelAt(cfg config.Config, f boundedFlow) func() stri
 // surface's switch; a disabled one still returns a summarizer, which reports
 // itself disabled rather than being nil — the callers all handle a disabled
 // reader and none of them should have to handle a nil one as well.
-func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, enabled bool) *sidejobs.Summarizer {
-	return sidejobs.NewSummarizer(ledger.For(env.prov, meter.SourceSummary), sidejobs.SummaryConfig{
+func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, enabled bool) *reading.Summarizer {
+	return reading.NewSummarizer(ledger.For(env.prov, meter.SourceSummary), reading.SummaryConfig{
 		// Model is the answer at start, which is what the settings readout
 		// states; the reading itself asks ModelAt.
 		Model:                      resolveFlow(cfg, flowReading, env.provName, env.modelName).model,

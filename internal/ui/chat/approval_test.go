@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -1090,7 +1090,7 @@ func TestAutoApproval_ASummaryCannotLandInsideAnApprovedAct(t *testing.T) {
 
 	// The reading comes back while the edit is still being written.
 	m.appendEntry(entry{kind: entrySummary, reading: &summaryReading{
-		verdict: sidejobs.SummaryVerdict{Round: 77, State: sidejobs.SummaryOnTarget, Text: "editing the approval queue"},
+		verdict: reading.SummaryVerdict{Round: 77, State: reading.SummaryOnTarget, Text: "editing the approval queue"},
 	}})
 
 	var done approvedToolDoneMsg

@@ -6,7 +6,7 @@ package chat
 import (
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -16,8 +16,8 @@ import (
 // reading whole in the preview, the instruction it was read against included.
 func TestProgram_ReadingsOpensEveryReadingTheSessionTook(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading."})
-	landReading(&m, sidejobs.SummaryVerdict{Text: "Reading the loop and its counter.", State: sidejobs.SummaryOnTarget, Round: 3})
-	landReading(&m, sidejobs.SummaryVerdict{Text: "Rewriting the README.", State: sidejobs.SummaryOffTarget,
+	landReading(&m, reading.SummaryVerdict{Text: "Reading the loop and its counter.", State: reading.SummaryOnTarget, Round: 3})
+	landReading(&m, reading.SummaryVerdict{Text: "Rewriting the README.", State: reading.SummaryOffTarget,
 		Reason: "docs were not asked for", Round: 9})
 	tm := runProgramAt(t, m, 130, 40)
 

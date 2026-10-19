@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 )
 
 // The built-in set is what a zero Steering runs, so a surface that
@@ -191,10 +191,10 @@ func TestValidatePlaceholders(t *testing.T) {
 
 // The cooldown is counted in reading intervals, and the count is a setting.
 func TestSummaryConfig_CooldownIntervals(t *testing.T) {
-	if got := (sidejobs.SummaryConfig{}).CooldownIntervals(); got != sidejobs.DefaultCooldownIntervals {
-		t.Errorf("unset cooldown = %d, want %d", got, sidejobs.DefaultCooldownIntervals)
+	if got := (reading.SummaryConfig{}).CooldownIntervals(); got != reading.DefaultCooldownIntervals {
+		t.Errorf("unset cooldown = %d, want %d", got, reading.DefaultCooldownIntervals)
 	}
-	if got := (sidejobs.SummaryConfig{InterveneCooldownIntervals: 5}).CooldownIntervals(); got != 5 {
+	if got := (reading.SummaryConfig{InterveneCooldownIntervals: 5}).CooldownIntervals(); got != 5 {
 		t.Errorf("configured cooldown = %d, want 5", got)
 	}
 }

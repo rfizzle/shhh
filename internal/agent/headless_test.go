@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 )
 
@@ -325,15 +326,15 @@ func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 		// call runs, so the boundary after it is certain to collect one:
 		// this is about what happens to a reading once it has landed, not
 		// about when one is asked for.
-		waitFor(t, "a reading in flight to come back", func() bool { return !reading(run) })
+		waitFor(t, "a reading in flight to come back", func() bool { return !readingOut(run) })
 		return "contents", nil
 	})
 
-	seen := make(chan sidejobs.SummaryVerdict, 4)
+	seen := make(chan reading.SummaryVerdict, 4)
 	h := &Headless{
 		Agent:     a,
 		Summary:   run,
-		OnSummary: func(v sidejobs.SummaryVerdict) { seen <- v },
+		OnSummary: func(v reading.SummaryVerdict) { seen <- v },
 	}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
@@ -342,9 +343,9 @@ func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 	// this is about. The run closes on a second one, which is its own test.
 	select {
 	case v := <-seen:
-		if v.State != sidejobs.SummaryOnTarget || v.Round != sidejobs.FirstSummaryRound {
+		if v.State != reading.SummaryOnTarget || v.Round != reading.FirstSummaryRound {
 			t.Fatalf("OnSummary saw %v at round %d, want the on-target reading of round %d",
-				v.State, v.Round, sidejobs.FirstSummaryRound)
+				v.State, v.Round, reading.FirstSummaryRound)
 		}
 	default:
 		t.Fatal("a reading landed and OnSummary was never told")
@@ -360,7 +361,7 @@ func TestHeadlessRun_OnSummarySilentWithoutAReading(t *testing.T) {
 	a.SetExecutor(func(context.Context, string, json.RawMessage) (string, error) { return "contents", nil })
 
 	called := 0
-	h := &Headless{Agent: a, OnSummary: func(sidejobs.SummaryVerdict) { called++ }}
+	h := &Headless{Agent: a, OnSummary: func(reading.SummaryVerdict) { called++ }}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -497,8 +498,8 @@ func TestHeadlessRun_WaitsOutAnUnansweredRequest(t *testing.T) {
 	}
 	a := New(nil, stream)
 
-	var waits []RetryNotice
-	h := &Headless{Agent: a, OnRetry: func(n RetryNotice) { waits = append(waits, n) }}
+	var waits []retry.RetryNotice
+	h := &Headless{Agent: a, OnRetry: func(n retry.RetryNotice) { waits = append(waits, n) }}
 	final, err := h.Run("go")
 	if err != nil {
 		t.Fatalf("two 529s then an answer should finish the turn, got %v", err)
@@ -529,7 +530,7 @@ func TestHeadlessRun_DoesNotWaitOutAFailureItCannotFix(t *testing.T) {
 		requests++
 		return nil, nil, fail
 	})
-	h := &Headless{Agent: a, OnRetry: func(RetryNotice) { t.Error("a rejected key is not waited out") }}
+	h := &Headless{Agent: a, OnRetry: func(retry.RetryNotice) { t.Error("a rejected key is not waited out") }}
 	if _, err := h.Run("go"); !errors.Is(err, failure.ErrAuth) {
 		t.Fatalf("err = %v, want the auth failure", err)
 	}
@@ -547,7 +548,7 @@ func TestHeadlessRun_ABoundOfNoneWaitsOutNothing(t *testing.T) {
 		requests++
 		return nil, nil, &failure.Failure{Class: failure.ClassOverloaded, Status: 529}
 	})
-	h := &Headless{Agent: a, OnRetry: func(RetryNotice) { t.Error("a bound of none makes no attempt") }}
+	h := &Headless{Agent: a, OnRetry: func(retry.RetryNotice) { t.Error("a bound of none makes no attempt") }}
 	none := 0
 	h.SetRetryLimit(&none)
 	if _, err := h.Run("go"); err == nil {
@@ -558,6 +559,11 @@ func TestHeadlessRun_ABoundOfNoneWaitsOutNothing(t *testing.T) {
 	}
 }
 
+// maxRetryWait is a provider-named wait as long as the backoff allows, so a
+// test that interrupts it is certain to be cutting a countdown short. It is
+// the cap retry.Backoff applies; the tests here only need a long wait.
+const maxRetryWait = 60 * time.Second
+
 // Interrupt is honoured during a wait: it holds no stream and owes no
 // results, so the turn ends there rather than after the countdown.
 func TestHeadlessRun_InterruptEndsAWait(t *testing.T) {
@@ -566,7 +572,7 @@ func TestHeadlessRun_InterruptEndsAWait(t *testing.T) {
 		return nil, nil, &failure.Failure{Class: failure.ClassOverloaded, RetryAfter: maxRetryWait}
 	})
 	h := &Headless{Agent: a}
-	h.OnRetry = func(RetryNotice) { go h.Interrupt() }
+	h.OnRetry = func(retry.RetryNotice) { go h.Interrupt() }
 	start := time.Now()
 	if _, err := h.Run("go"); !errors.Is(err, ErrInterrupted) {
 		t.Fatalf("err = %v, want ErrInterrupted", err)
@@ -599,8 +605,8 @@ func TestHeadlessRun_RetryHandsBackWhatItThrewAway(t *testing.T) {
 		return ch, cancel, nil
 	})
 
-	var waits []RetryNotice
-	h := &Headless{Agent: a, OnRetry: func(n RetryNotice) { waits = append(waits, n) }}
+	var waits []retry.RetryNotice
+	h := &Headless{Agent: a, OnRetry: func(n retry.RetryNotice) { waits = append(waits, n) }}
 	final, err := h.Run("go")
 	if err != nil {
 		t.Fatalf("a dropped reply should be asked again, got %v", err)
@@ -642,7 +648,7 @@ func TestHeadlessRun_EachTurnGetsItsOwnBound(t *testing.T) {
 	h := &Headless{Agent: a}
 	// The first turn is interrupted while it waits, spending an attempt it
 	// never got to use.
-	h.OnRetry = func(RetryNotice) { go h.Interrupt() }
+	h.OnRetry = func(retry.RetryNotice) { go h.Interrupt() }
 	if _, err := h.Run("go"); !errors.Is(err, ErrInterrupted) {
 		t.Fatalf("err = %v, want ErrInterrupted", err)
 	}
@@ -1115,7 +1121,7 @@ func TestHeadlessRun_AVerdictTooOldToActOnIsWithheldAndRecorded(t *testing.T) {
 	// collected at the boundary of round 3 is exactly one interval old, which
 	// is the first age that earns nothing.
 	run := NewSummaryRun(
-		sidejobs.NewSummarizer(&slowProvider{}, sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 2, MinGap: -1}),
+		reading.NewSummarizer(&slowProvider{}, reading.SummaryConfig{Model: "fast", IntervalRounds: 2, MinGap: -1}),
 		NewRecorder(0, testDigest), "ship the parser")
 	if run == nil {
 		t.Fatal("expected a runner")
@@ -1168,8 +1174,8 @@ func TestHeadlessRun_ClosesOnAReadingItDoesNotWaitFor(t *testing.T) {
 	p := &slowProvider{delay: 300 * time.Millisecond}
 	run, _ := testSummaryRun(t, p, "ship the parser")
 
-	seen := make(chan sidejobs.SummaryVerdict, 4)
-	h := &Headless{Agent: a, Summary: run, OnSummary: func(v sidejobs.SummaryVerdict) { seen <- v }}
+	seen := make(chan reading.SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v reading.SummaryVerdict) { seen <- v }}
 	start := time.Now()
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
@@ -1179,7 +1185,7 @@ func TestHeadlessRun_ClosesOnAReadingItDoesNotWaitFor(t *testing.T) {
 	}
 	select {
 	case v := <-seen:
-		if v.State != sidejobs.SummaryOnTarget {
+		if v.State != reading.SummaryOnTarget {
 			t.Fatalf("state = %v, want the closing reading", v.State)
 		}
 	case <-time.After(2 * time.Second):
@@ -1205,14 +1211,14 @@ func TestHeadlessRun_TheClosingVerdictSteersNothing(t *testing.T) {
 
 	run, _ := testSummaryRun(t, &slowProvider{state: "off_target"}, "ship the parser")
 
-	seen := make(chan sidejobs.SummaryVerdict, 4)
-	h := &Headless{Agent: a, Summary: run, OnSummary: func(v sidejobs.SummaryVerdict) { seen <- v }}
+	seen := make(chan reading.SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v reading.SummaryVerdict) { seen <- v }}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 	select {
 	case v := <-seen:
-		if v.State != sidejobs.SummaryOffTarget {
+		if v.State != reading.SummaryOffTarget {
 			t.Fatalf("state = %v, want the off-target close", v.State)
 		}
 	case <-time.After(2 * time.Second):
@@ -1230,7 +1236,7 @@ func TestHeadlessRun_AShortRunClosesOnNothing(t *testing.T) {
 	p := &slowProvider{}
 	run, _ := testSummaryRun(t, p, "ship the parser")
 
-	h := &Headless{Agent: a, Summary: run, OnSummary: func(sidejobs.SummaryVerdict) {
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(reading.SummaryVerdict) {
 		t.Error("a one-round run was read at its close")
 	}}
 	if _, err := h.Run("go"); err != nil {
@@ -1255,8 +1261,8 @@ func TestHeadlessRun_ASecondTurnRetiresTheClosingReading(t *testing.T) {
 
 	run, _ := testSummaryRun(t, &slowProvider{delay: 300 * time.Millisecond}, "ship the parser")
 
-	seen := make(chan sidejobs.SummaryVerdict, 4)
-	h := &Headless{Agent: a, Summary: run, OnSummary: func(v sidejobs.SummaryVerdict) { seen <- v }}
+	seen := make(chan reading.SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v reading.SummaryVerdict) { seen <- v }}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("first turn: %v", err)
 	}

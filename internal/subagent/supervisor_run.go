@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -526,7 +527,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 			}
 			s.emitUpdate(c)
 		},
-		OnSummary: func(v sidejobs.SummaryVerdict) {
+		OnSummary: func(v reading.SummaryVerdict) {
 			// The reading's own round, not the child's live one. This is the
 			// one hook that can be called from the reading's goroutine while
 			// the child goes on running — a closing reading is handed over
@@ -657,7 +658,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 		// A child's retry is a status update on its lane: the one place a
 		// parent watching a fan-out can see that a writer is waiting out a
 		// limit rather than thinking.
-		OnRetry: func(n agent.RetryNotice) {
+		OnRetry: func(n retry.RetryNotice) {
 			if n.Partial != "" {
 				// What the broken stream wrote is dropped rather than
 				// flushed: the retry asks the whole question again, and a

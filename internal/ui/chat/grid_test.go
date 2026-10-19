@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -55,7 +55,7 @@ func gridTranscript() []entry {
 			text: "tree moved — 14 paths changed outside this session · 5,811 ignored"},
 		{kind: entryError, turn: 1, text: "the notebook is read-only, so nothing was written down"},
 		{kind: entrySummary, turn: 1, reading: &summaryReading{
-			verdict: sidejobs.SummaryVerdict{Round: 36, State: sidejobs.SummaryOnTarget,
+			verdict: reading.SummaryVerdict{Round: 36, State: reading.SummaryOnTarget,
 				Text: "The constant has one home and the caller no longer passes its own."},
 		}},
 		{kind: entryTurnClose, turn: 1, close: &components.TurnClose{

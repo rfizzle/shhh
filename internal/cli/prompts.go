@@ -34,6 +34,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/sidejobs"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/permission"
@@ -165,7 +166,7 @@ func wordingKeys() []wording {
 			agent.CheckInWording, agent.ValidateCheckIn},
 		{"summary", func(c config.PromptsConfig) string { return c.Summary },
 			setSummary, func(p sessionPrompts) string { return p.summary },
-			sidejobs.SummaryWording, agent.ValidateVerbatim},
+			reading.SummaryWording, agent.ValidateVerbatim},
 		{"classifier", func(c config.PromptsConfig) string { return c.Classifier },
 			setClassifier, func(p sessionPrompts) string { return p.classifier },
 			permission.ClassifierWording, agent.ValidateVerbatim},

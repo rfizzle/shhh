@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 )
 
 // The three bounds the two surfaces used to keep a copy of each are exercised
@@ -21,14 +21,14 @@ func TestSummarySchedule_AnInterventionPullsTheNextReadingForward(t *testing.T) 
 	s.Read(10)
 	s.Intervened(11)
 
-	for round := 11; round < 11+sidejobs.FirstSummaryRound; round++ {
+	for round := 11; round < 11+reading.FirstSummaryRound; round++ {
 		if s.Due(round, scheduleInterval, 0) {
 			t.Fatalf("a reading came due at round %d, %d rounds after the steer", round, round-11)
 		}
 	}
-	if !s.Due(11+sidejobs.FirstSummaryRound, scheduleInterval, 0) {
+	if !s.Due(11+reading.FirstSummaryRound, scheduleInterval, 0) {
 		t.Fatalf("a reading is due %d rounds after a steer, well inside the interval of %d",
-			sidejobs.FirstSummaryRound, scheduleInterval)
+			reading.FirstSummaryRound, scheduleInterval)
 	}
 
 	// The ordinary case is the interruption sharing the reading's round: the
@@ -37,7 +37,7 @@ func TestSummarySchedule_AnInterventionPullsTheNextReadingForward(t *testing.T) 
 	var same SummarySchedule
 	same.Read(10)
 	same.Intervened(10)
-	if !same.Due(10+sidejobs.FirstSummaryRound, scheduleInterval, 0) {
+	if !same.Due(10+reading.FirstSummaryRound, scheduleInterval, 0) {
 		t.Fatal("a steer delivered at the round that was read still restarts the schedule")
 	}
 }
@@ -61,7 +61,7 @@ func TestSummarySchedule_TheFloorHoldsUnderAnIntervention(t *testing.T) {
 	var s SummarySchedule
 	s.Read(10)
 	s.Intervened(11)
-	if s.Due(11+sidejobs.FirstSummaryRound, scheduleInterval, time.Hour) {
+	if s.Due(11+reading.FirstSummaryRound, scheduleInterval, time.Hour) {
 		t.Fatal("the floor holds a reading back however good the reason for it")
 	}
 }
@@ -74,7 +74,7 @@ func TestSummarySchedule_TheInterventionIsSpentByTheReadingItEarned(t *testing.T
 	s.Read(10)
 	s.Intervened(11)
 	s.Read(14)
-	if s.Due(14+sidejobs.FirstSummaryRound, scheduleInterval, 0) {
+	if s.Due(14+reading.FirstSummaryRound, scheduleInterval, 0) {
 		t.Fatal("the steer earned one early reading, not a shorter interval")
 	}
 	if !s.Due(14+scheduleInterval, scheduleInterval, 0) {

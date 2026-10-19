@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 )
 
 // DefaultDigestRows is how many recent rows a digest carries. It matches what the
@@ -86,7 +86,7 @@ func (r *Recorder) Tool(name, args, result string) {
 	if r == nil {
 		return
 	}
-	row := sidejobs.SummaryActivity(name, r.digest.arg(name, args), r.digest.outcome(result))
+	row := reading.SummaryActivity(name, r.digest.arg(name, args), r.digest.outcome(result))
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.calls++
@@ -102,7 +102,7 @@ func (r *Recorder) Command(command string, exitCode int) {
 	if r == nil {
 		return
 	}
-	row := sidejobs.SummaryActivity("command", r.digest.firstLine(command), ExitOutcome(exitCode))
+	row := reading.SummaryActivity("command", r.digest.firstLine(command), ExitOutcome(exitCode))
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.calls++

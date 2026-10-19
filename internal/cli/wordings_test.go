@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/memory"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 )
 
 // wordingsMaster is the master commit the hashes below were captured from.
@@ -135,7 +135,7 @@ func TestModelFacingWordings(t *testing.T) {
 		{"agent.RepeatDetector sweep notice", sweep, "cd15278b31e655d07b8f0dd21621d171ba5772abe370bcba2ceb09a25950f84f"},
 		{"agent.SessionSteerWording", agent.SessionSteerWording(), "7b00096f5f1d70d8a5780d3a79d380d965da5d475df56acedca42d8bd30a0a47"},
 		{"agent.Steering.SessionSteer", agent.Steering{}.SessionSteer("slot-1", "the line"), "79038b492c9b2db1ce13e6aed3fdfd22a9c377ca7eca2189e59d11495ef0236a"},
-		{"sidejobs.SummaryWording", sidejobs.SummaryWording(), "5492cddecfcb194ec748fb25dc05711693f26e3235290b67e4d7b21b19c043a9"},
+		{"sidejobs.SummaryWording", reading.SummaryWording(), "5492cddecfcb194ec748fb25dc05711693f26e3235290b67e4d7b21b19c043a9"},
 		{"skill.PromptBlock", skill.PromptBlock(cat), "05daee882fd95e4e9a980205b08da417285b94cfcd92a847a9320455c5e46491"},
 		{"skill.Content", content, "1854ff9780c0e542d11d30ec4e5efcae82f193d69471478bc5e7b4a1c1fa4a97"},
 		{"skill.ToolDefinition", jsonOf(t, skill.ToolDefinition(cat)), "87d9c75b6e0e5795def41acba2e25e3c3676922fa70cb6d52a18c9e2dd6060f1"},

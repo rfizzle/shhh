@@ -4,19 +4,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 )
 
 // working is what a front-end answers about its own turn; these tests are
 // about a turn that is running.
 const running = true
 
-func driftVerdict(round int) sidejobs.SummaryVerdict {
-	return sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: round, Reason: "editing files outside the exporter"}
+func driftVerdict(round int) reading.SummaryVerdict {
+	return reading.SummaryVerdict{State: reading.SummaryOffTarget, Round: round, Reason: "editing files outside the exporter"}
 }
 
-func enoughVerdict(round int) sidejobs.SummaryVerdict {
-	return sidejobs.SummaryVerdict{State: sidejobs.SummarySufficient, Round: round, Reason: "has named the file and the line"}
+func enoughVerdict(round int) reading.SummaryVerdict {
+	return reading.SummaryVerdict{State: reading.SummarySufficient, Round: round, Reason: "has named the file and the line"}
 }
 
 func TestConsiderVerdict_DriftEarnsASteer(t *testing.T) {
@@ -66,10 +66,10 @@ func TestConsiderVerdict_SufficiencyEarnsAnEarlyCheckIn(t *testing.T) {
 }
 
 func TestConsiderVerdict_OnTargetAndUnclearEarnNothing(t *testing.T) {
-	for _, state := range []sidejobs.SummaryState{sidejobs.SummaryOnTarget, sidejobs.SummaryUncertain} {
+	for _, state := range []reading.SummaryState{reading.SummaryOnTarget, reading.SummaryUncertain} {
 		a := New(nil, noStream)
 		a.rounds = 5
-		a.ConsiderVerdict(sidejobs.SummaryVerdict{State: state, Round: 5}, a.rounds, running)
+		a.ConsiderVerdict(reading.SummaryVerdict{State: state, Round: 5}, a.rounds, running)
 		if _, ok := a.NextIntervention("x"); ok {
 			t.Errorf("%v should not interrupt the turn", state)
 		}
@@ -81,7 +81,7 @@ func TestConsiderVerdict_OnTargetAndUnclearEarnNothing(t *testing.T) {
 func TestConsiderVerdict_AFailedReadingActsOnNothing(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(sidejobs.SummaryVerdict{State: sidejobs.SummaryOffTarget, Round: 5, Failed: true}, a.rounds, running)
+	a.ConsiderVerdict(reading.SummaryVerdict{State: reading.SummaryOffTarget, Round: 5, Failed: true}, a.rounds, running)
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("a failed reading must not steer")
 	}
@@ -120,7 +120,7 @@ func TestConsiderVerdict_ALaterReadingRetiresAQueuedSteer(t *testing.T) {
 	a.rounds = 5
 	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	a.rounds = 8
-	a.ConsiderVerdict(sidejobs.SummaryVerdict{State: sidejobs.SummaryOnTarget, Round: 8}, a.rounds, running)
+	a.ConsiderVerdict(reading.SummaryVerdict{State: reading.SummaryOnTarget, Round: 8}, a.rounds, running)
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("a steer whose case was withdrawn by a later reading must not be delivered")
 	}
@@ -133,7 +133,7 @@ func TestConsiderVerdict_ALaterReadingRetiresAQueuedSteer(t *testing.T) {
 	b.rounds = 5
 	b.ConsiderVerdict(driftVerdict(5), b.rounds, running)
 	b.rounds = 8
-	b.ConsiderVerdict(sidejobs.SummaryVerdict{State: sidejobs.SummaryUncertain, Round: 8}, b.rounds, running)
+	b.ConsiderVerdict(reading.SummaryVerdict{State: reading.SummaryUncertain, Round: 8}, b.rounds, running)
 	if _, ok := b.NextIntervention("x"); ok {
 		t.Fatal("an unclear reading after a drift one leaves nothing to deliver")
 	}
@@ -146,7 +146,7 @@ func TestConsiderVerdict_AnOlderReadingLeavesTheQueueAlone(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 8
 	a.ConsiderVerdict(driftVerdict(8), a.rounds, running)
-	a.ConsiderVerdict(sidejobs.SummaryVerdict{State: sidejobs.SummaryOnTarget, Round: 5}, a.rounds, running)
+	a.ConsiderVerdict(reading.SummaryVerdict{State: reading.SummaryOnTarget, Round: 5}, a.rounds, running)
 	if iv, ok := a.NextIntervention("x"); !ok || iv.Kind != InterveneSteer {
 		t.Fatal("a reading older than the queued one must not retire it")
 	}
@@ -158,7 +158,7 @@ func TestConsiderVerdict_AFailedReadingRetiresNothing(t *testing.T) {
 	a.rounds = 5
 	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	a.rounds = 8
-	a.ConsiderVerdict(sidejobs.SummaryVerdict{State: sidejobs.SummaryOnTarget, Round: 8, Failed: true}, a.rounds, running)
+	a.ConsiderVerdict(reading.SummaryVerdict{State: reading.SummaryOnTarget, Round: 8, Failed: true}, a.rounds, running)
 	if _, ok := a.NextIntervention("x"); !ok {
 		t.Fatal("a reading that did not happen must not retire the queued steer")
 	}
@@ -488,13 +488,13 @@ func TestStartTurn_RetiresAQueuedVerdict(t *testing.T) {
 
 // Sufficiency is a refinement of on target, never a departure.
 func TestSummaryState_SufficiencyIsNotDrift(t *testing.T) {
-	if sidejobs.SummarySufficient.Drifting() {
+	if reading.SummarySufficient.Drifting() {
 		t.Error("a session that has what it needs has not left its instruction")
 	}
-	if !sidejobs.SummarySufficient.Sufficient() {
+	if !reading.SummarySufficient.Sufficient() {
 		t.Error("Sufficient() should recognise its own state")
 	}
-	for _, s := range []sidejobs.SummaryState{sidejobs.SummaryOnTarget, sidejobs.SummaryOffTarget, sidejobs.SummaryUncertain} {
+	for _, s := range []reading.SummaryState{reading.SummaryOnTarget, reading.SummaryOffTarget, reading.SummaryUncertain} {
 		if s.Sufficient() {
 			t.Errorf("%v is not a sufficiency reading", s)
 		}

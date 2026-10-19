@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/sidejobs"
+	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/failure"
@@ -640,7 +640,7 @@ func (p *heldReader) StreamCompletion(ctx context.Context, _ []llm.Message, _ ll
 	ch <- llm.StreamEvent{
 		ToolCalls: []llm.ToolCall{{
 			ID:        "s1",
-			Name:      sidejobs.SummaryToolName,
+			Name:      reading.SummaryToolName,
 			Arguments: `{"summary":"reading the importer","state":"` + p.state + `","reason":"reading the importer, not the exporter"}`,
 		}},
 		Done: true,
@@ -703,8 +703,8 @@ func TestChildFilesALateReadingAtTheRoundItRead(t *testing.T) {
 	env := &scriptedEnv{
 		steps: append(toolRounds(3), streamStep{text: "spent it", usage: &llm.Usage{PromptTokens: 300100}}),
 		delay: 2 * time.Millisecond,
-		summarizer: sidejobs.NewSummarizer(reader,
-			sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
+		summarizer: reading.NewSummarizer(reader,
+			reading.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
 	}
 	rec := &testRecorder{}
 	sup := supervisorRecording(t, env, rec)
@@ -737,9 +737,9 @@ func TestChildFilesALateReadingAtTheRoundItRead(t *testing.T) {
 	close(reader.release)
 
 	sig := waitSignal(t, rec, observe.SignalSummary)
-	if sig.pos.Round != sidejobs.FirstSummaryRound {
+	if sig.pos.Round != reading.FirstSummaryRound {
 		t.Fatalf("the reading is filed at round %d, want the round %d it read",
-			sig.pos.Round, sidejobs.FirstSummaryRound)
+			sig.pos.Round, reading.FirstSummaryRound)
 	}
 	if sig.pos.Turn != 1 {
 		t.Fatalf("the reading is filed at turn %d, want the child's own turn 1", sig.pos.Turn)
@@ -755,8 +755,8 @@ func TestChildFilesAWithheldVerdictAtItsLivePosition(t *testing.T) {
 	env := &scriptedEnv{
 		steps: toolRounds(200),
 		delay: time.Millisecond,
-		summarizer: sidejobs.NewSummarizer(reader,
-			sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
+		summarizer: reading.NewSummarizer(reader,
+			reading.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
 	}
 	rec := &testRecorder{}
 	sup := supervisorRecording(t, env, rec)
@@ -765,13 +765,13 @@ func TestChildFilesAWithheldVerdictAtItsLivePosition(t *testing.T) {
 	reader.waitAsked(t)
 	// A whole interval past the round it was taken at, the verdict describes
 	// work the child has left behind and is withheld rather than delivered.
-	waitToolCalls(t, sup, "researcher-1", sidejobs.FirstSummaryRound+11)
+	waitToolCalls(t, sup, "researcher-1", reading.FirstSummaryRound+11)
 	close(reader.release)
 
 	sig := waitSignal(t, rec, observe.SignalSummary)
-	if sig.pos.Round != sidejobs.FirstSummaryRound {
+	if sig.pos.Round != reading.FirstSummaryRound {
 		t.Fatalf("the reading is filed at round %d, want the round %d it read",
-			sig.pos.Round, sidejobs.FirstSummaryRound)
+			sig.pos.Round, reading.FirstSummaryRound)
 	}
 	withheld := waitSignal(t, rec, observe.SignalIntervene)
 	if withheld.reason != agent.InterveneStale {
@@ -892,10 +892,10 @@ func TestAChildsEndCarriesTheReadingInTheRecordsOwnWord(t *testing.T) {
 	reader := newHeldReader("off_target")
 	close(reader.release)
 	env := &scriptedEnv{
-		steps: append(toolRounds(sidejobs.FirstSummaryRound+1), streamStep{text: "done"}),
+		steps: append(toolRounds(reading.FirstSummaryRound+1), streamStep{text: "done"}),
 		delay: time.Millisecond,
-		summarizer: sidejobs.NewSummarizer(reader,
-			sidejobs.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
+		summarizer: reading.NewSummarizer(reader,
+			reading.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
 	}
 	rec := &endRecorder{}
 	sup := supervisorEnding(t, env, rec)
@@ -908,7 +908,7 @@ func TestAChildsEndCarriesTheReadingInTheRecordsOwnWord(t *testing.T) {
 	if len(ends) != 1 {
 		t.Fatalf("expected one closed row, got %+v", ends)
 	}
-	want := observe.SummaryCode(sidejobs.SummaryOffTarget)
+	want := observe.SummaryCode(reading.SummaryOffTarget)
 	if ends[0].Verdict != want {
 		t.Fatalf("the end carries verdict %q, want the record's own %q", ends[0].Verdict, want)
 	}

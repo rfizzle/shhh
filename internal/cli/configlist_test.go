@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/cache"
 	"github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/sidejobs"
 
+	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -195,10 +196,10 @@ func TestSettings_StatedDefaultsAreTheConstants(t *testing.T) {
 		"behavior.context_max_tokens":          strconv.Itoa(config.DefaultContextMaxTokens) + " tokens",
 		"behavior.check_in_interval_rounds":    strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",
 		"behavior.check_in_max_doublings":      strconv.Itoa(agent.DefaultCheckInDoublings) + " doublings",
-		"behavior.provider_retries":            strconv.Itoa(agent.MaxRetryAttempts) + " attempts",
+		"behavior.provider_retries":            strconv.Itoa(retry.MaxRetryAttempts) + " attempts",
 		"behavior.memory_max_entries":          strconv.Itoa(config.DefaultMemoryMaxEntries),
 		"behavior.memory_max_tokens":           strconv.Itoa(config.DefaultMemoryMaxTokens),
-		"summary.intervene_cooldown_intervals": strconv.Itoa(sidejobs.DefaultCooldownIntervals) + " readings",
+		"summary.intervene_cooldown_intervals": strconv.Itoa(reading.DefaultCooldownIntervals) + " readings",
 		"summary.steer_target_chars":           strconv.Itoa(agent.DefaultSteerTargetChars) + " characters",
 		"appearance.paste_lines":               strconv.Itoa(attachment.DefaultPasteLines) + " lines",
 		"appearance.paste_columns":             strconv.Itoa(attachment.DefaultPasteColumns) + " columns",
