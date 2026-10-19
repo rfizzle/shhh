@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/hook"
@@ -390,7 +391,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 // too because the child's environment asks it what ground the child has
 // covered.
 func childExecutors(base agent.ToolExecutor, red *evidence.Reducer, ts *lsp.Toolset,
-	hooks *hook.Runner) (autoExec, gatedExec agent.ToolExecutor, repeats *agent.RepeatDetector) {
+	hooks *hook.Runner) (autoExec, gatedExec agent.ToolExecutor, repeats *repeat.RepeatDetector) {
 	// Approved non-exec gated calls: file mutations dispatch through their
 	// own path (never the auto-run executor), everything else falls back to
 	// the child's base chain.
@@ -410,7 +411,7 @@ func childExecutors(base agent.ToolExecutor, red *evidence.Reducer, ts *lsp.Tool
 	// an auto-run one are the same history. A sub-agent is the least
 	// supervised thing the session runs, and its rounds are spent out of
 	// sight.
-	repeats = agent.NewRepeatDetector(repeatShapes())
+	repeats = repeat.NewRepeatDetector(repeatShapes())
 	autoExec = repeats.WrapExecutor(autoExec)
 	gatedExec = repeats.WrapExecutor(gatedExec)
 	// An applied edit carries the language server's verdict on the file

@@ -9,10 +9,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/reading"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/agentcore/skill"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/memory"
@@ -84,25 +85,25 @@ func TestModelFacingWordings(t *testing.T) {
 
 	// The repeat notices, from fixed calls: a repeated call that succeeded,
 	// one that failed, a repeated question (twice over), and a sweep.
-	twice := func(call func(d *agent.RepeatDetector) string) string {
-		d := agent.NewRepeatDetector(repeatShapes())
+	twice := func(call func(d *repeat.RepeatDetector) string) string {
+		d := repeat.NewRepeatDetector(repeatShapes())
 		call(d)
 		return call(d)
 	}
 	shellArgs := json.RawMessage(`{"command":"go test ./..."}`)
 	askArgs := json.RawMessage(`{"question":"which one?"}`)
-	repeatOK := twice(func(d *agent.RepeatDetector) string { return d.Notice("shell", shellArgs, "ok") })
-	repeatFailed := twice(func(d *agent.RepeatDetector) string { return d.Notice("shell", shellArgs, "error: exit 1") })
-	repeatAsked := twice(func(d *agent.RepeatDetector) string { return d.AskedBefore(ask.ToolName, askArgs) })
-	repeatAskCall := twice(func(d *agent.RepeatDetector) string { return d.Notice(ask.ToolName, askArgs, "") })
-	sweepD := agent.NewRepeatDetector(repeatShapes())
+	repeatOK := twice(func(d *repeat.RepeatDetector) string { return d.Notice("shell", shellArgs, "ok") })
+	repeatFailed := twice(func(d *repeat.RepeatDetector) string { return d.Notice("shell", shellArgs, "error: exit 1") })
+	repeatAsked := twice(func(d *repeat.RepeatDetector) string { return d.AskedBefore(ask.ToolName, askArgs) })
+	repeatAskCall := twice(func(d *repeat.RepeatDetector) string { return d.Notice(ask.ToolName, askArgs, "") })
+	sweepD := repeat.NewRepeatDetector(repeatShapes())
 	var sweep string
 	for i := 1; i <= 12; i++ {
 		args := json.RawMessage(fmt.Sprintf(`{"pattern":"needle%d","path":"internal/ui/chat"}`, i))
 		sweep = sweepD.Notice("search", args, fmt.Sprintf("a.go:%d: needle%d", i, i))
 	}
 	for _, n := range []string{repeatOK, repeatFailed} {
-		if !agent.IsRepeatNotice(n) {
+		if !repeat.IsRepeatNotice(n) {
 			t.Fatalf("a repeat fixture is not a repeat notice: %q", n)
 		}
 	}

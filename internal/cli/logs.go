@@ -15,11 +15,11 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/storage"

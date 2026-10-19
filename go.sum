@@ -132,8 +132,8 @@ github.com/pb33f/ordered-map/v2 v2.3.1 h1:5319HDO0aw4DA4gzi+zv4FXU9UlSs3xGZ40wcP
 github.com/pb33f/ordered-map/v2 v2.3.1/go.mod h1:qxFQgd0PkVUtOMCkTapqotNgzRhMPL7VvaHKbd1HnmQ=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
-github.com/rfizzle/agentcore v0.0.5 h1:IoTMJruZurJ6+VwbtVc8/25BlQA5GhReseLs2DKPsDE=
-github.com/rfizzle/agentcore v0.0.5/go.mod h1:hrKT2wzmds87eVccuxinRDjS4EWBQM3s3Xr+mQ4sMu4=
+github.com/rfizzle/agentcore v0.0.6 h1:PvKYm4wOJbHwil+r7HccEPx3d8QN551+uUQTU59lVvw=
+github.com/rfizzle/agentcore v0.0.6/go.mod h1:hrKT2wzmds87eVccuxinRDjS4EWBQM3s3Xr+mQ4sMu4=
 github.com/rfizzle/llm v0.6.0 h1:WCK1nJXhl3ZFq9jsATT2E0JMJPLwIkWtpyPui4CnqiM=
 github.com/rfizzle/llm v0.6.0/go.mod h1:h9guMyHpxzG8CiHFK6ALpPRksFj+lanF3vMC8FEMf08=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=

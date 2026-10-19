@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/rpc"
 	"github.com/rfizzle/shhh/internal/storage"

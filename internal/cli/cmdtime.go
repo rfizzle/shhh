@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 )
 
 // oneShotTimer splits the one-shot's single turn by what it waited on: the

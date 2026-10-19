@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
 )

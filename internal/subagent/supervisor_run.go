@@ -9,9 +9,10 @@ import (
 
 	"github.com/rfizzle/agentcore/reading"
 
+	"github.com/rfizzle/agentcore/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
@@ -650,7 +651,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 				c.rec.ToolCall(c.pos(), r.Call.Name, r.Duration, outcome, class,
 					observe.ToolPurpose(r.Call.Name, r.Call.Arguments))
 			}
-			if agent.IsRepeatNotice(r.Result) {
+			if repeat.IsRepeatNotice(r.Result) {
 				signal(observe.SignalRepeat, r.Call.Name)
 			}
 			s.emitUpdate(c)

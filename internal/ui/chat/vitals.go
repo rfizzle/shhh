@@ -19,9 +19,9 @@ package chat
 import (
 	"time"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/agent"
 )
 
 // vitalsHistory bounds the per-turn ring. It only has to outlive the

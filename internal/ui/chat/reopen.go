@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/storage"

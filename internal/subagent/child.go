@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"

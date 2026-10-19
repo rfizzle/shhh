@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -20,7 +20,7 @@ func TestRepeatShapes_AreAllSet(t *testing.T) {
 }
 
 func TestRepeatShapes_OneQuestionAskedTwiceIsOneQuestion(t *testing.T) {
-	d := agent.NewRepeatDetector(repeatShapes())
+	d := repeat.NewRepeatDetector(repeatShapes())
 	q := json.RawMessage(`{"question":"Which store should the cache use?","shape":"choose",` +
 		`"options":[{"label":"Postgres"},{"label":"SQLite"}]}`)
 	if got := d.AskedBefore(ask.ToolName, q); got != "" {
@@ -62,7 +62,7 @@ func TestRepeatShapes_WhatWritesEndsASweep(t *testing.T) {
 }
 
 func TestRepeatShapes_AQuestionNeitherEndsASweepNorStartsOne(t *testing.T) {
-	d := agent.NewRepeatDetector(repeatShapes())
+	d := repeat.NewRepeatDetector(repeatShapes())
 	var last string
 	for i := 1; i <= 12; i++ {
 		if i == 6 {
@@ -81,7 +81,7 @@ func TestRepeatShapes_AQuestionNeitherEndsASweepNorStartsOne(t *testing.T) {
 }
 
 func TestRepeatShapes_AGitWriteEndsASweep(t *testing.T) {
-	d := agent.NewRepeatDetector(repeatShapes())
+	d := repeat.NewRepeatDetector(repeatShapes())
 	for i := 1; i <= 20; i++ {
 		if i == 11 {
 			d.Notice(structural.GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"fix"}`), "committed")

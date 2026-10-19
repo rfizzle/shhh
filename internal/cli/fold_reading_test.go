@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 )
 
 // The reading a continuation splices in front of the conversation is built

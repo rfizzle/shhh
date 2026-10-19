@@ -31,10 +31,11 @@ import (
 	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/spend"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/agentcore/reading"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -232,7 +233,7 @@ type serveLoop struct {
 	// the turn's for the reason the window is: a session that asked one
 	// question and went round in circles answering it is circling on the
 	// second turn too.
-	repeats *agent.RepeatDetector
+	repeats *repeat.RepeatDetector
 	// seen is what this session has been shown, which is what its writes are
 	// checked against. It is the session's and not the process's: a server
 	// holds several sessions over one checkout, and a file one of them read
@@ -499,7 +500,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// One detector for the session, on both tiers: the resolver below is
 	// wrapped with this same one, so a command a client has answered for and
 	// a search the chain ran are one history rather than two.
-	repeats := agent.NewRepeatDetector(repeatShapes())
+	repeats := repeat.NewRepeatDetector(repeatShapes())
 	l.repeats = repeats
 	// The loop's settings, written by the applier the screen's constructor
 	// uses; a served turn recovers its window at every round boundary, which

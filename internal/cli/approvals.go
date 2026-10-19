@@ -8,9 +8,9 @@ import (
 	"github.com/rfizzle/shhh/internal/sidejobs"
 	"github.com/rfizzle/shhh/internal/spend"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/mcp"

@@ -9,8 +9,8 @@ import (
 	"github.com/rfizzle/llm/cache"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/retry"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )

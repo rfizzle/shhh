@@ -23,9 +23,9 @@ import (
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/web"

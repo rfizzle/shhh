@@ -14,7 +14,7 @@ import (
 	"github.com/rfizzle/agentcore/reading"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 

@@ -15,9 +15,10 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/agentcore/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
@@ -917,7 +918,7 @@ func (m Model) finishClassifierCheck(v permission.ClassifierVerdict) (tea.Model,
 // conversation, and the model reads only the result (repeat.go).
 func (m *Model) refusedResult(tc llm.ToolCall, content string) string {
 	out := m.wiring.Repeats.Notice(tc.Name, json.RawMessage(tc.Arguments), content)
-	if agent.IsRepeatNotice(out) {
+	if repeat.IsRepeatNotice(out) {
 		m.signal(observe.SignalRepeat, tc.Name)
 	}
 	return out

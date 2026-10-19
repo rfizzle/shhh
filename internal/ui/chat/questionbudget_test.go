@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -131,7 +131,7 @@ func TestQuestionBudget_TheNextTurnOpeningStartsItOver(t *testing.T) {
 // the answer is what this result is read for.
 func TestQuestionBudget_TheSameQuestionTwiceIsToldSo(t *testing.T) {
 	m := questionModel(t, permission.ModeManual)
-	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
+	m.wiring.Repeats = repeat.NewRepeatDetector(testRepeatShapes())
 	same := `{"question":"Should the migration be reversible?","shape":"confirm"}`
 
 	m = askAndAnswer(t, m, same, tea.KeyPressMsg{Code: tea.KeyEnter})

@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/tools"
 )

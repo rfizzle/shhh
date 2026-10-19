@@ -8,8 +8,8 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/permission"
@@ -403,7 +403,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.noteDrew()
 		for _, r := range msg.results {
 			m.recordToolResult(r.Call, r.Duration, r.Result)
-			if agent.IsRepeatNotice(r.Result) {
+			if repeat.IsRepeatNotice(r.Result) {
 				m.signal(observe.SignalRepeat, r.Call.Name)
 			}
 			// In call order, so two steps calls in one round leave the second.
@@ -780,7 +780,7 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 		}
 		toolResult := m.wiring.Repeats.Notice(tools.ExecCommandName,
 			json.RawMessage(ranArgs), formatted)
-		if agent.IsRepeatNotice(toolResult) {
+		if repeat.IsRepeatNotice(toolResult) {
 			m.signal(observe.SignalRepeat, tools.ExecCommandName)
 		}
 		// What ran, where it was not what was asked for, leads the whole
@@ -843,7 +843,7 @@ func (m Model) finishApprovedTool(msg approvedToolDoneMsg) (tea.Model, tea.Cmd) 
 	// A git write is gated at the write tier, so this is the one place a
 	// switch lands.
 	m.noteBranchSwitch(req.call.Name, req.call.Arguments)
-	if agent.IsRepeatNotice(msg.result) {
+	if repeat.IsRepeatNotice(msg.result) {
 		m.signal(observe.SignalRepeat, req.call.Name)
 	}
 	m.noteEvictedTurns(msg.evicted)

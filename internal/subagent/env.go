@@ -6,8 +6,8 @@ import (
 	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/catalog"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"

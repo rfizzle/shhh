@@ -13,10 +13,10 @@ import (
 
 	"github.com/rfizzle/agentcore/reading"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"

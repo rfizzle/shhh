@@ -12,9 +12,9 @@ import (
 	"github.com/rfizzle/llm/cache"
 	"github.com/rfizzle/llm/effort"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/resolve"

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
 )

@@ -16,8 +16,10 @@ import (
 	"github.com/rfizzle/shhh/internal/spend"
 
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/agentcore/reading"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/catalog"
@@ -25,7 +27,6 @@ import (
 	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/llm/flow"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
@@ -733,7 +734,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// One detector for the run, because the two tiers are one history: the
 	// approver below is wrapped with this same one, so the command it runs
 	// and the search the chain dispatches are counted in the same window.
-	repeats := agent.NewRepeatDetector(repeatShapes())
+	repeats := repeat.NewRepeatDetector(repeatShapes())
 	var gate func(llm.ToolCall) bool
 	chat.ApplyLoop(a, headlessLoop(cfg, env, session, ts, opts.rounds(cfg),
 		agent.ToolExecutor(hooks.WrapExecutor(hookPos(a.Rounds),

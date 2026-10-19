@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/attachment"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/agent"
 )
 
 func vitalsModel(t *testing.T) Model {

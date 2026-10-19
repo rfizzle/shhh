@@ -3,8 +3,8 @@ package cli
 import (
 	"testing"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 )
 
 // A headless continuation keeps the turns the slot's compaction folded, and a

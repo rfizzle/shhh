@@ -21,9 +21,10 @@ import (
 
 	"net/http"
 
+	"github.com/rfizzle/agentcore/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
@@ -325,7 +326,7 @@ func TestHeadlessApprover_AShellReadThatRanNamesItsToolOncePerTurn(t *testing.T)
 		var ran []string
 		nudges := &nudge.Turn{}
 		resolve := headlessApprover(context.Background(), headlessApproval{opts: opts, run: nudges.Ran(fakeRun(&ran))})
-		resolve = agent.NewRepeatDetector(repeatShapes()).WrapResolver(resolve)
+		resolve = repeat.NewRepeatDetector(repeatShapes()).WrapResolver(resolve)
 		return nudges.WrapResolver(func() int64 { return 1 }, resolve)
 	}
 
@@ -340,7 +341,7 @@ func TestHeadlessApprover_AShellReadThatRanNamesItsToolOncePerTurn(t *testing.T)
 		t.Fatalf("a read that ran should name read_file under its output: %q", first)
 	}
 	second := resolve(execCall("cat go.mod | head -3"))
-	if !agent.IsRepeatNotice(second) || strings.Contains(second, "[built-in:") {
+	if !repeat.IsRepeatNotice(second) || strings.Contains(second, "[built-in:") {
 		t.Fatalf("the second run is a repeat, told once already: %q", second)
 	}
 	if got := resolve(execCall("go build ./...")); strings.Contains(got, "[built-in:") {
@@ -2277,14 +2278,14 @@ func TestShellWord_NothingInASlotNameIsLiveInTheShell(t *testing.T) {
 // executor chain the detector used to be wrapped around on its own.
 func TestHeadlessApprover_ARepeatedCommandSaysSo(t *testing.T) {
 	var ran []string
-	resolve := agent.NewRepeatDetector(repeatShapes()).WrapResolver(
+	resolve := repeat.NewRepeatDetector(repeatShapes()).WrapResolver(
 		headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&ran)}))
 
-	if first := resolve(execCall("go test ./...")); agent.IsRepeatNotice(first) {
+	if first := resolve(execCall("go test ./...")); repeat.IsRepeatNotice(first) {
 		t.Fatalf("the first run is not a repeat: %q", first)
 	}
 	second := resolve(execCall("go test ./..."))
-	if !agent.IsRepeatNotice(second) {
+	if !repeat.IsRepeatNotice(second) {
 		t.Fatalf("the same command returning the same output should say so, got %q", second)
 	}
 	if !strings.Contains(second, "exit code: 0") {
@@ -2298,13 +2299,13 @@ func TestHeadlessApprover_ARepeatedCommandSaysSo(t *testing.T) {
 // And a call the run refuses the same way twice, which is the other half of
 // the circle: an edit re-issued after the policy already said no.
 func TestHeadlessApprover_ARepeatedRefusalSaysSo(t *testing.T) {
-	resolve := agent.NewRepeatDetector(repeatShapes()).WrapResolver(
+	resolve := repeat.NewRepeatDetector(repeatShapes()).WrapResolver(
 		headlessApprover(context.Background(), headlessApproval{run: fakeRun(&[]string{})}))
 	call := llm.ToolCall{ID: "c1", Name: "write_file", Arguments: `{"path":"a.go","content":"package a\n"}`}
 
 	_ = resolve(call)
 	second := resolve(call)
-	if !agent.IsRepeatNotice(second) {
+	if !repeat.IsRepeatNotice(second) {
 		t.Fatalf("a refusal repeated should say so, got %q", second)
 	}
 	if !strings.HasPrefix(second, "error:") {

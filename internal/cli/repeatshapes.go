@@ -3,7 +3,7 @@ package cli
 import (
 	"encoding/json"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -15,8 +15,8 @@ import (
 // of a detector passes it. A detector built without it still counts the exact
 // repeat, but silently stops telling a question from any other call and a
 // sweep from a run of unrelated ones, which nothing would report.
-func repeatShapes() agent.Shapes {
-	return agent.Shapes{
+func repeatShapes() repeat.Shapes {
+	return repeat.Shapes{
 		Question:    repeatQuestion,
 		SearchScope: digest.SearchScope,
 		Wrote:       repeatWrote,

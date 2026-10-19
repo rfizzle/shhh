@@ -33,7 +33,7 @@ import (
 
 	"github.com/rfizzle/agentcore/reading"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/permission"
 	"github.com/rfizzle/shhh/internal/quality"

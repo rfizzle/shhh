@@ -11,9 +11,9 @@ import (
 	"encoding/json"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/attachment"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/tools"

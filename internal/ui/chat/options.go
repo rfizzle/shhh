@@ -19,9 +19,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"

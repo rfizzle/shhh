@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/repeat"
 )
 
 // A shell read the model ran is answered with its output and, under it, the
@@ -14,7 +14,7 @@ import (
 func TestAShellReadNamesTheToolThatAnswersItOncePerTurn(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "a.go:3: TODO", 0 })
-	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
+	m.wiring.Repeats = repeat.NewRepeatDetector(testRepeatShapes())
 
 	m, first := runOnce(t, m, "grep -rn TODO . | head -5")
 	if !strings.Contains(first, "a.go:3: TODO") || !strings.HasSuffix(first, "\n[built-in: search answers this without an approval: a pattern across the tree or in one file, each match with the lines around it; files_only names only the files, include narrows to one kind of file.]") {
@@ -28,7 +28,7 @@ func TestAShellReadNamesTheToolThatAnswersItOncePerTurn(t *testing.T) {
 
 	m.state = stateStreaming
 	m, second := runOnce(t, m, "grep -rn TODO . | head -5")
-	if !agent.IsRepeatNotice(second) {
+	if !repeat.IsRepeatNotice(second) {
 		t.Fatalf("the line on the first run must not hide the repeat from the detector:\n%s", second)
 	}
 	if strings.Contains(second, "[built-in:") {

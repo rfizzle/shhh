@@ -17,8 +17,9 @@ import (
 	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/failure"
 
+	"github.com/rfizzle/agentcore/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/permission"
@@ -89,7 +90,7 @@ type scriptedEnv struct {
 	// is a surface that wired none, which is the ordinary test child. It is
 	// set before the supervisor runs and only read after that, so it is
 	// outside the lock the steps are under.
-	repeats *agent.RepeatDetector
+	repeats *repeat.RepeatDetector
 }
 
 // asked reports whether any request the child has made carried this text —
@@ -2884,7 +2885,7 @@ func TestAReadingOfAChildThatOnlyReadsIsGivenTheSweep(t *testing.T) {
 	env := &scriptedEnv{
 		steps:   append(searchRounds(20), streamStep{text: "surveyed the exporter"}),
 		delay:   3 * time.Millisecond,
-		repeats: agent.NewRepeatDetector(testRepeatShapes()),
+		repeats: repeat.NewRepeatDetector(testRepeatShapes()),
 		summarizer: reading.NewSummarizer(reader,
 			reading.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
 	}

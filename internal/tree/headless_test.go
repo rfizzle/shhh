@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 )
 
 // scriptedStream, toolCallRound and doneRound are copies of the helpers in

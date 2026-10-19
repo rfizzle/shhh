@@ -7,9 +7,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/agent"
 )
 
 // waitingModel is a turn whose request has just gone out, on a held clock

@@ -15,10 +15,11 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/agentcore/reading"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -92,7 +93,7 @@ type screenBuild struct {
 	changes  *changeset.Store
 	sup      *subagent.Supervisor
 	executor agent.ToolExecutor
-	repeats  *agent.RepeatDetector
+	repeats  *repeat.RepeatDetector
 	cwd      string
 }
 
@@ -478,7 +479,7 @@ func (b *screenBuild) children() {
 	// detector goes to the screen, because the tier it dispatches itself —
 	// an approved command, an applied edit — never reaches this chain, and
 	// the two commonest circles a session falls into are there.
-	b.repeats = agent.NewRepeatDetector(repeatShapes())
+	b.repeats = repeat.NewRepeatDetector(repeatShapes())
 	b.executor = b.repeats.WrapExecutor(b.executor)
 
 	// The directory the session's own paths belong to, read once: shhh never

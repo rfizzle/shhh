@@ -1,6 +1,6 @@
 package cli
 
-import "github.com/rfizzle/shhh/internal/agent"
+import "github.com/rfizzle/agentcore/agent"
 
 // shhhSessionSteerWording is what the model reads above a line another shhh
 // session sent it: who sent it, that it is not the person at the keyboard,

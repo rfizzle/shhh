@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/capability"
 	llmeffort "github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"

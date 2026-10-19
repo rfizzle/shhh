@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )

@@ -3,7 +3,7 @@ package chat
 import (
 	"encoding/json"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -12,8 +12,8 @@ import (
 
 // testRepeatShapes is shhh's tools as the repeat detector reads them, the
 // same reading internal/cli builds for a real session.
-func testRepeatShapes() agent.Shapes {
-	return agent.Shapes{
+func testRepeatShapes() repeat.Shapes {
+	return repeat.Shapes{
 		Question: func(tool string, args json.RawMessage) (string, bool) {
 			if tool != ask.ToolName {
 				return "", false

@@ -123,7 +123,6 @@ Packages not listed are named for what they do.
 cmd/shhh/main.go   entry point (cobra root, executed through fang)
 internal/
   cli/             every cobra command, and each surface's assembly
-  agent/           front-end-agnostic agent loop; Headless drives it unattended
   permission/      modes, tiers, the classifier and the read-only and deny rules
   ui/chat/         the chat TUI model (the main interactive surface)
   ui/components/   reusable TUI components
@@ -159,7 +158,9 @@ sits at a different depth. Never commit it. An item that changes `llm` commits
 and tags it there; the person pushes `llm` and its tag before pushing shhh.
 The generic agent packages are moving the same way to
 `github.com/rfizzle/agentcore`, a sibling module at `../agentcore`, under
-the same `go.work`, tag and push rules.
+the same `go.work`, tag and push rules. The front-end-agnostic agent loop
+is already there as `agentcore/agent` (Headless drives it unattended), with
+the repeat detector as `agentcore/repeat`.
 
 ## Invariants
 

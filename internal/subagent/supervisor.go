@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/permission"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )

@@ -6,10 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/agentcore/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/secret"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/toolvalue"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/quality"
 )
@@ -39,7 +40,7 @@ func gateChain(t *testing.T) (agent.ToolExecutor, *quality.Runner) {
 		return "unexpected " + name, nil
 	}
 	exec := reducer.WrapExecutor(gate.WrapExecutor(next))
-	exec = agent.NewRepeatDetector(repeatShapes()).WrapExecutor(exec)
+	exec = repeat.NewRepeatDetector(repeatShapes()).WrapExecutor(exec)
 	return vault.WrapExecutor(exec), gate
 }
 

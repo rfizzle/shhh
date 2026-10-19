@@ -25,13 +25,14 @@ import (
 
 	"github.com/rfizzle/shhh/internal/sidejobs"
 
+	"github.com/rfizzle/agentcore/agent"
 	"github.com/rfizzle/agentcore/meter"
 	"github.com/rfizzle/agentcore/reading"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/skill"
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/pricing"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/hook"
@@ -182,7 +183,7 @@ type Wiring struct {
 	// the rest. It is the detector rather than a wrap because the two tiers
 	// meet nowhere else, and only the screen knows which of its commands is
 	// the agent's own rather than a `/run` the reader typed.
-	Repeats *agent.RepeatDetector
+	Repeats *repeat.RepeatDetector
 	// MaxToolRounds overrides the per-turn round cap; zero keeps the default
 	// and a negative one starts the session with no checkpoint at all.
 	MaxToolRounds int

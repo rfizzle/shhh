@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/agent"
 )
 
 // Startup phases, one row each. A server's connect is one row per server,

@@ -25,8 +25,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
@@ -280,7 +280,7 @@ func drawnTool(c call) string {
 // loopShapes is the one thing of shhh's tools the loop's key reads: a question
 // is its text alone, so this agrees with the key the session's detector uses
 // (internal/cli/repeatshapes.go).
-var loopShapes = agent.Shapes{
+var loopShapes = repeat.Shapes{
 	Question: func(tool string, args json.RawMessage) (string, bool) {
 		if tool != ask.ToolName {
 			return "", false

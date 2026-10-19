@@ -12,8 +12,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -165,7 +165,7 @@ func TestAmend_TheBlockIsReadAgainstTheLineThatRuns(t *testing.T) {
 func TestAmend_TheRepeatDetectorIsFiledUnderTheLineThatRan(t *testing.T) {
 	var ran []string
 	m := amendModel(t, "npm test", &ran)
-	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
+	m.wiring.Repeats = repeat.NewRepeatDetector(testRepeatShapes())
 	m = openAmend(t, m, "npm test -- --runInBand")
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
@@ -180,7 +180,7 @@ func TestAmend_TheRepeatDetectorIsFiledUnderTheLineThatRan(t *testing.T) {
 	updated, _ = m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)
 
-	if got := lastToolMessage(t, m).Content; !agent.IsRepeatNotice(got) {
+	if got := lastToolMessage(t, m).Content; !repeat.IsRepeatNotice(got) {
 		t.Fatalf("the amended line should have been filed under itself, got %q", got)
 	}
 }

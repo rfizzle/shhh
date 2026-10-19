@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/agentcore/agent"
 )
 
 // A connect is filed under its own status, a failure that was the wait

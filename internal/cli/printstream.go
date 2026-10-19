@@ -15,9 +15,10 @@ import (
 	"github.com/rfizzle/agentcore/reading"
 	"github.com/rfizzle/llm/failure"
 
+	"github.com/rfizzle/agentcore/agent"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/agentcore/retry"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -256,7 +257,7 @@ func (h headlessObserver) toolResult(r agent.ToolResult) {
 	h.rec.toolCallAt(h.pos(), r.Call.Name, r.Duration, outcome, class,
 		observe.ToolPurpose(r.Call.Name, r.Call.Arguments))
 	h.stream.result(h.pos(), r, outcome, class)
-	if agent.IsRepeatNotice(r.Result) {
+	if repeat.IsRepeatNotice(r.Result) {
 		h.signal(observe.SignalRepeat, r.Call.Name)
 	}
 	h.sourcesRead()

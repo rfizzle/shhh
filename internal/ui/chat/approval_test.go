@@ -15,8 +15,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/agentcore/repeat"
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -891,15 +891,15 @@ func runOnce(t *testing.T, m Model, command string) (Model, string) {
 func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "FAIL\tinternal/calc", 1 })
-	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
+	m.wiring.Repeats = repeat.NewRepeatDetector(testRepeatShapes())
 
 	m, first := runOnce(t, m, "go test ./internal/calc")
-	if agent.IsRepeatNotice(first) {
+	if repeat.IsRepeatNotice(first) {
 		t.Fatalf("the first run is not a repeat: %q", first)
 	}
 	m.state = stateStreaming
 	_, second := runOnce(t, m, "go test ./internal/calc")
-	if !agent.IsRepeatNotice(second) {
+	if !repeat.IsRepeatNotice(second) {
 		t.Fatalf("the same command returning the same output should say so, got %q", second)
 	}
 	if !strings.Contains(second, "FAIL\tinternal/calc") {
@@ -913,7 +913,7 @@ func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
 func TestApproval_FailedCommandIsAnErrorResultForEveryConsumer(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "compiler: undefined symbol", 1 })
-	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
+	m.wiring.Repeats = repeat.NewRepeatDetector(testRepeatShapes())
 
 	_, result := runOnce(t, m, "go test ./internal/chat")
 	if !strings.HasPrefix(result, "error:") {
@@ -931,7 +931,7 @@ func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
 	msgs := []llm.Message{{Role: llm.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{
 		Runner:  legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 }),
-		Repeats: agent.NewRepeatDetector(testRepeatShapes()),
+		Repeats: repeat.NewRepeatDetector(testRepeatShapes()),
 	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -941,7 +941,7 @@ func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
 		m = updated.(Model)
 	}
 	for _, e := range m.transcript {
-		if agent.IsRepeatNotice(e.toolResult) {
+		if repeat.IsRepeatNotice(e.toolResult) {
 			t.Fatal("a /run the reader typed is theirs, and is never called a repeat")
 		}
 	}
@@ -964,14 +964,14 @@ func TestApproval_ARepeatedDeclineSaysSo(t *testing.T) {
 	}
 
 	m := gatedModel(t, nil, map[string]GatedPreviewFunc{"write_file": writeFilePreview("")})
-	m.wiring.Repeats = agent.NewRepeatDetector(testRepeatShapes())
+	m.wiring.Repeats = repeat.NewRepeatDetector(testRepeatShapes())
 	m, first := decline(t, m)
-	if agent.IsRepeatNotice(first) {
+	if repeat.IsRepeatNotice(first) {
 		t.Fatalf("the first decline is not a repeat: %q", first)
 	}
 	m.state = stateStreaming
 	_, second := decline(t, m)
-	if !agent.IsRepeatNotice(second) {
+	if !repeat.IsRepeatNotice(second) {
 		t.Fatalf("a call declined twice should say so, got %q", second)
 	}
 	if !strings.HasPrefix(second, "error:") || !strings.Contains(second, "declined") {
