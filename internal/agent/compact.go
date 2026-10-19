@@ -26,7 +26,6 @@ import (
 	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 
 	"github.com/rfizzle/llm"
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // What a compaction keeps besides the summary.
@@ -372,16 +371,16 @@ func (c *Compactor) Recover(a *Agent, ask CompactAsk) CompactNotice {
 func logRecovery(n CompactNotice) {
 	switch {
 	case n.Compacted:
-		logs.Logger().Info("conversation compacted",
+		log().Info("conversation compacted",
 			"before_pct", n.BeforePct, "after_pct", n.AfterPct, "kept_turns", n.Kept)
 	case n.Err != nil:
 		// The one half of this that is a failure: the window is over the
 		// line, the conversation could not be replaced, and the run goes on
 		// towards a request the provider will refuse for its size.
-		logs.Logger().Warn("conversation not compacted",
+		log().Warn("conversation not compacted",
 			"before_pct", n.BeforePct, "error", n.Err)
 	case n.Elided > 0:
-		logs.Logger().Info("context trimmed",
+		log().Info("context trimmed",
 			"elided", n.Elided, "before_pct", n.BeforePct, "after_pct", n.AfterPct)
 	}
 }

@@ -17,6 +17,8 @@ import (
 
 	"github.com/rfizzle/llm/chatgpt"
 	"github.com/rfizzle/llm/failure"
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -48,10 +50,17 @@ func openLog() {
 	if path, err := logPath(); err == nil {
 		logs.To(path)
 	}
-	// The library packages write through what they are handed, and the
-	// logger is the one logs.To just pointed at the file (or at nothing).
+	handLoggers()
+}
+
+// handLoggers gives the packages that write through what they are handed the
+// logger logs.To pointed at the file (or at nothing), so the diagnostic log
+// holds the same lines whichever package wrote them.
+func handLoggers() {
 	failure.SetLogger(logs.Logger())
 	chatgpt.SetLogger(logs.Logger())
+	agent.SetLogger(logs.Logger())
+	sidejobs.SetLogger(logs.Logger())
 }
 
 func newLogsCmd() *cobra.Command {

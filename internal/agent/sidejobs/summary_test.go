@@ -1,19 +1,18 @@
 package sidejobs
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 func summaryCall(args string) llm.StreamEvent {
@@ -499,9 +498,9 @@ func TestSummary_PromptAndSchemaAgreeOnTheStates(t *testing.T) {
 // what leaves nothing on screen: the block keeps the last reading and calls
 // it stale, which is right at the time and useless three hours later.
 func TestSummarizer_ATimedOutReadingReachesTheLog(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "shhh.log")
-	logs.To(path)
-	t.Cleanup(func() { logs.To("") })
+	var buf bytes.Buffer
+	SetLogger(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { SetLogger(nil) })
 
 	p := &fakeClassifierProvider{fn: func(int, llm.CompletionOpts) (<-chan llm.StreamEvent, error) {
 		// Never answers, so the attempt's own deadline is what ends it.
@@ -513,7 +512,7 @@ func TestSummarizer_ATimedOutReadingReachesTheLog(t *testing.T) {
 		t.Fatalf("the setup is wrong: the reading succeeded, %+v", v)
 	}
 
-	written := readLog(t, path)
+	written := buf.String()
 	for _, want := range []string{"session summary not taken", "model=small", `failure="timed out"`} {
 		if !strings.Contains(written, want) {
 			t.Errorf("the line does not say %s:\n%s", want, written)
@@ -530,9 +529,9 @@ func TestSummarizer_ATimedOutReadingReachesTheLog(t *testing.T) {
 // A reading the session cancelled is not a failure of the summariser, and a
 // line for every session that ended mid-request would bury the ones that are.
 func TestSummarizer_ACancelledReadingWritesNothing(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "shhh.log")
-	logs.To(path)
-	t.Cleanup(func() { logs.To("") })
+	var buf bytes.Buffer
+	SetLogger(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { SetLogger(nil) })
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -541,8 +540,8 @@ func TestSummarizer_ACancelledReadingWritesNothing(t *testing.T) {
 	}}
 	NewSummarizer(p, SummaryConfig{Model: "small"}).Summarize(ctx, testSummaryRequest())
 
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Errorf("a cancelled reading wrote a log line: %v, %s", err, readLog(t, path))
+	if buf.Len() != 0 {
+		t.Errorf("a cancelled reading wrote a log line: %s", buf.String())
 	}
 }
 

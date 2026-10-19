@@ -1,15 +1,14 @@
 package agent
 
 import (
+	"bytes"
 	"errors"
-	"os"
-	"path/filepath"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 func overloaded(after time.Duration) *failure.Failure {
@@ -224,9 +223,9 @@ func TestBackoff_ConfiguredBound(t *testing.T) {
 // each driver: stderr, a lane and a countdown are all gone by the time
 // somebody asks why a run took twenty minutes, and the file is not.
 func TestBackoff_WritesEveryAttemptToTheLog(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "shhh.log")
-	logs.To(path)
-	t.Cleanup(func() { logs.To("") })
+	var buf bytes.Buffer
+	SetLogger(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { SetLogger(nil) })
 
 	b := steady()
 	f := &failure.Failure{Class: failure.ClassRateLimit, Status: 429, Provider: "openai", RetryAfter: 30 * time.Second}
@@ -234,11 +233,7 @@ func TestBackoff_WritesEveryAttemptToTheLog(t *testing.T) {
 		t.Fatal("a rate limit earns a wait")
 	}
 
-	body, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("nothing was written to the log: %v", err)
-	}
-	written := string(body)
+	written := buf.String()
 	for _, want := range []string{"provider request retried", "provider=openai", `class="rate limited"`, "wait=30s", "attempt=1"} {
 		if !strings.Contains(written, want) {
 			t.Errorf("the retry line does not say %s:\n%s", want, written)

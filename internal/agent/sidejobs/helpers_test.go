@@ -2,9 +2,7 @@ package sidejobs
 
 import (
 	"context"
-	"os"
 	"strings"
-	"testing"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
@@ -66,13 +64,3 @@ func (t *thinkingProvider) StreamCompletion(_ context.Context, _ []llm.Message, 
 // lowBudget is what a shallow thought costs on the dialects whose knob is a
 // number rather than a name — the floor the ceilings here have to clear.
 func lowBudget() int { return effort.Low.ThinkingBudget(0) }
-
-// readLog reads back what the diagnostic sink was handed.
-func readLog(t *testing.T, path string) string {
-	t.Helper()
-	body, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("nothing was written to the log: %v", err)
-	}
-	return string(body)
-}

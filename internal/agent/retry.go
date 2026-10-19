@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // MaxRetryAttempts bounds one stall when nothing has said otherwise. Three
@@ -173,7 +172,7 @@ func (b *Backoff) Next(err error) (RetryNotice, bool) {
 	// not depend on which driver was running: a run that went quiet is read
 	// back from the log afterwards, and stderr, a lane and a transcript are
 	// all gone by then.
-	logs.Logger().Info("provider request retried",
+	log().Info("provider request retried",
 		"provider", f.Provider, "class", string(f.Class),
 		"wait", wait, "attempt", b.attempt, "of", limit)
 	return RetryNotice{

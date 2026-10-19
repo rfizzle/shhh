@@ -32,7 +32,6 @@ import (
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/effort"
 	"github.com/rfizzle/llm/flow"
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // SummaryToolName is the tool the summarizer is asked to call with its
@@ -460,7 +459,7 @@ func logSummaryFailure(model string, err error, elapsed time.Duration) {
 	if errors.Is(err, context.DeadlineExceeded) {
 		failure = "timed out"
 	}
-	logs.Logger().Warn("session summary not taken",
+	log().Warn("session summary not taken",
 		"model", model, "failure", failure, "elapsed", elapsed.Round(time.Millisecond))
 }
 

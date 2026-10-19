@@ -1,17 +1,16 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"errors"
-	"os"
-	"path/filepath"
+	"log/slog"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/rfizzle/llm"
 	"github.com/rfizzle/llm/failure"
-	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // recordedRequest is one request a test's stream was asked for: what it
@@ -470,9 +469,9 @@ func TestRecoverFiresTheSeamsAroundACompactionOnly(t *testing.T) {
 // round, and the second is the shape that turns a long unattended run into a
 // bill nobody can account for afterwards.
 func TestRecoverWritesDownWhatItDidAndAtWhatShareOfTheWindow(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "shhh.log")
-	logs.To(path)
-	t.Cleanup(func() { logs.To("") })
+	var buf bytes.Buffer
+	SetLogger(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { SetLogger(nil) })
 
 	// A crossing a trim settles, then one that has to be compacted.
 	a := New([]llm.Message{
@@ -493,11 +492,7 @@ func TestRecoverWritesDownWhatItDidAndAtWhatShareOfTheWindow(t *testing.T) {
 		t.Fatalf("expected a compaction, got %+v", n)
 	}
 
-	written, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read the log: %v", err)
-	}
-	body := string(written)
+	body := buf.String()
 	for _, want := range []string{"context trimmed", "elided=1", "conversation compacted", "before_pct=", "after_pct="} {
 		if !strings.Contains(body, want) {
 			t.Errorf("the log does not say %q:\n%s", want, body)
@@ -505,11 +500,11 @@ func TestRecoverWritesDownWhatItDidAndAtWhatShareOfTheWindow(t *testing.T) {
 	}
 	// And a round boundary under the line — which is almost every one of
 	// them — writes nothing at all.
-	before := len(written)
+	before := buf.Len()
 	a.SetMessages([]llm.Message{{Role: llm.RoleUser, Content: "short"}})
 	c.Recover(a, nil)
-	if after, _ := os.ReadFile(path); len(after) != before {
-		t.Errorf("a boundary with nothing to do wrote a line:\n%s", after[before:])
+	if buf.Len() != before {
+		t.Errorf("a boundary with nothing to do wrote a line:\n%s", buf.String()[before:])
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -13,7 +14,11 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/doctor"
 
 	"github.com/rfizzle/llm"
+	"github.com/rfizzle/llm/failure"
 	"github.com/rfizzle/llm/pricing"
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/agent/sidejobs"
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage/datadir"
 	"github.com/rfizzle/shhh/internal/web"
@@ -325,4 +330,44 @@ func (w *syncWriter) String() string {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.b.String()
+}
+
+// The loop's retry line reaches the diagnostic log through the hook the app
+// hands it, and reads exactly as it did when the loop called internal/logs
+// itself.
+func TestTheLoopsRetryLineIsTheSameLineThroughTheHook(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	handLoggers()
+	t.Cleanup(func() {
+		logs.To("")
+		agent.SetLogger(nil)
+		sidejobs.SetLogger(nil)
+	})
+
+	// What the loop wrote before the hook existed.
+	logs.Logger().Info("provider request retried",
+		"provider", "openai", "class", "rate limited",
+		"wait", 30*time.Second, "attempt", 1, "of", 3)
+	var b agent.Backoff
+	f := &failure.Failure{Class: failure.ClassRateLimit, Status: 429, Provider: "openai", RetryAfter: 30 * time.Second}
+	three := 3
+	b.SetLimit(&three)
+	if _, ok := b.Next(f); !ok {
+		t.Fatal("a rate limit earns a wait")
+	}
+
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("nothing was written to the log: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(body)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("want the line before and the line after, got:\n%s", body)
+	}
+	// The stamp is the clock's and the wait carries jitter; the rest is the line.
+	stamp := regexp.MustCompile(`^time=\S+ | wait=\S+`)
+	if before, after := stamp.ReplaceAllString(lines[0], ""), stamp.ReplaceAllString(lines[1], ""); before != after {
+		t.Errorf("the hook changed the line:\nbefore %s\nafter  %s", before, after)
+	}
 }
