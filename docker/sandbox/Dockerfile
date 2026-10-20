@@ -13,7 +13,7 @@
 # as a Go bump (dependabot's docker entry proposes it weekly). Resolve it with
 # `crane digest cgr.dev/chainguard/wolfi-base:latest` or
 # `docker buildx imagetools inspect cgr.dev/chainguard/wolfi-base:latest`.
-FROM cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299564a1aa95c21973efcc1980a9d1d2e73e
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:d68b2b10db0ddb2c6d9cb3a7720ecab5ca19b4b430fd592cd07c23d7da971b56
 
 # Links the published package to this repository, which is what keeps the
 # release workflow's token able to push new versions to it.
